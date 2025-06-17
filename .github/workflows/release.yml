@@ -31,7 +31,11 @@ jobs:
       run: cd local-server && yarn install
     - uses: actions/checkout@v4
     - name: Make release
-      run: cd app && fastlane distribute_release --verbose
+      run: git config --global credential.helper store \
+        && echo "https://gsabran:${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}@github.com" >> ~/.git-credentials \
+        && cd app && fastlane distribute_release --verbose \
+        && git config --global --unset credential.helper \
+        && rm ~/.git-credentials
       env:
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
