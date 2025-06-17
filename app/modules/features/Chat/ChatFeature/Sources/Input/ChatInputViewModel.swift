@@ -263,7 +263,7 @@ final class ChatInputViewModel {
         }
         return true
       } else if key == .return, !modifiers.contains(.shift) {
-        handleApproval(of: pendingToolApproval, result: pendingToolApprovalSuggestedResult)
+        handleApproval(of: pendingToolApproval)
         return true
       }
       return false
