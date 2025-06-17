@@ -45,7 +45,7 @@ describe("mapResponseError", () => {
 				type: "error",
 				message:
 					"Invalid schema for function 'list_files': In context=('properties', 'recursive'), schema must have a 'type' key.",
-				statusCode: 400,
+				statusCode: 500,
 				idx: 42,
 			})
 		})
