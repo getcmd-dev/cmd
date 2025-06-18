@@ -80,9 +80,9 @@ platform :mac do
       skip_archive: true,
       export_options: {
         method: "development",
-        signingStyle: "manual",
-        signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
-        teamID: "GP78T2GNXD",
+        # signingStyle: "manual",
+        # signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
+        # teamID: "GP78T2GNXD",
       },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
