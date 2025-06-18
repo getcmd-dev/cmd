@@ -82,7 +82,16 @@ platform :mac do
       output_name: "command.app",
       scheme: "command",
       silent: true,
-      skip_archive: true
+      skip_archive: true,
+      export_options: {
+        method: "development",
+        signingStyle: "manual",
+        signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
+        teamID: "GP78T2GNXD",
+        # provisioningProfiles: {
+        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+        # }
+      },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
@@ -121,15 +130,6 @@ platform :mac do
       scheme: "command",
       silent: true,
       skip_archive: true,
-      export_options: {
-        method: "development",
-        signingStyle: "manual",
-        signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
-        teamID: "GP78T2GNXD",
-        # provisioningProfiles: {
-        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-        # }
-      },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
