@@ -44,7 +44,6 @@ struct ToolUseView: View {
           }
           #endif
         }
-        .padding(.vertical)
       }
     }
   }
@@ -253,7 +252,6 @@ struct FileChangeView: View {
     }
     .with(cornerRadius: Constants.cornerRadius, borderColor: colorScheme.textAreaBorderColor)
     .padding(.horizontal, 4)
-    .padding(.vertical, 2)
   }
 
   private enum Constants {
