@@ -38,6 +38,15 @@ platform :mac do
     )
   end
 
+
+
+  desc "Build and archive the app for Mac App Store distribution"
+  lane :build_release_debug do
+    setup_ci if ENV['CI']
+
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+  end
+
   desc "Build and archive the app for Mac App Store distribution"
   lane :build_release do
     setup_ci if ENV['CI']
