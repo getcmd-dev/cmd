@@ -62,14 +62,33 @@ class KeychainHelper {
 extension UserDefaults {
 
   public func securelySave(_ value: String, forKey key: String) {
+    guard isKeychainSupported else {
+      return
+    }
     KeychainHelper.save(key: key, value: value)
   }
 
   public func loadSecuredValue(forKey key: String) -> String? {
-    KeychainHelper.load(key: key)
+    guard isKeychainSupported else {
+      return "<cannot load secured value for \(key)>"
+    }
+    return KeychainHelper.load(key: key)
   }
 
   public func removeSecuredValue(forKey key: String) {
+    guard isKeychainSupported else {
+      return
+    }
     KeychainHelper.delete(key: key)
+  }
+
+  private var isKeychainSupported: Bool {
+    // The keychain should only be used by the host app.
+    // More precisely an entry written in the keychain should only be accessed by the target that wrote it,
+    // otherwise trying to access it prompt the user for permission / password.
+    //
+    // Since the DefaultSettingService can load keys eagerly, whether from the host app or the extension,
+    // we mitigate the issue by only making the keychain available to the host app which is the only context in which it is needed.
+    Bundle.main.bundleIdentifier == Bundle.main.object(forInfoDictionaryKey: "APP_BUNDLE_IDENTIFIER") as? String
   }
 }
