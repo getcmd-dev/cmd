@@ -1,11 +1,6 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
-
 name: Release MacOS app
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request: # TODO: Remove
     branches: [ "main" ]
 concurrency:
@@ -31,7 +26,7 @@ jobs:
       run: cd local-server && yarn install
     - uses: actions/checkout@v4
     - name: Make release
-      run: cd app && fastlane mac distribute_release --verbose
+      run: cd app && fastlane mac distribute_release
       env:
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
@@ -39,3 +34,4 @@ jobs:
         NOTARY_P8: ${{ secrets.NOTARY_P8 }}
         NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         SPARKLE_SECRET_KEY: ${{ secrets.SPARKLE_SECRET_KEY }}
+        GH_WRITE_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
