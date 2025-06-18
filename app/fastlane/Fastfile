@@ -44,9 +44,7 @@ platform :mac do
   lane :build_release_debug do
     setup_ci if ENV['CI']
 
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile")
-
-    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # Install required certificates and provisioning profiles
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     readonly = true
@@ -59,16 +57,13 @@ platform :mac do
       git_url: git_url
     )
 
-    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    # sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+    # Run package resolution independently to avoid issues with Fastlane's `build_mac_app` command
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile | xcbeautify --quiet")
 
+    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
-      # export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
-      # xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
-      # use_system_scm: true,
       destination: "platform=macOS",
       skip_package_dependencies_resolution: true,
-      # disable_package_automatic_updates: true,
       project: "./command.xcodeproj",
       configuration: "Release", 
       export_method: "mac-application",
@@ -76,14 +71,12 @@ platform :mac do
       derived_data_path: "build/derived_data",
       output_name: "command.app",
       scheme: "command",
-      silent: true,
       skip_archive: true,
       export_options: {
         method: "development",
-        # signingStyle: "manual",
-        # signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
-        # teamID: "GP78T2GNXD",
       },
+      silent: true,
+      xcodebuild_formatter: "xcbeautify --quiet",
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
