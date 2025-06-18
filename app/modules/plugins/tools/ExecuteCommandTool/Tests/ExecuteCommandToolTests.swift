@@ -61,7 +61,7 @@ struct ExecuteCommandToolTests {
       toolUse.startExecuting()
       return toolUse
     }
-    let result = try await toolUse.result
+    let result = try await toolUse.output
     #expect(result.exitCode == 0)
     #expect(result.output == "file.txt")
   }
@@ -96,7 +96,7 @@ struct ExecuteCommandToolTests {
       return toolUse
     }
     await #expect(throws: Error.self, performing: {
-      try await toolUse.result
+      try await toolUse.output
     })
   }
 }

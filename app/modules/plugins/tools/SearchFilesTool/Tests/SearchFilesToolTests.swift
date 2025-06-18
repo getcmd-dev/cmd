@@ -43,7 +43,7 @@ struct SearchFilesToolTests {
       toolUse.startExecuting()
       return toolUse
     }
-    let result = try await toolUse.result
+    let result = try await toolUse.output
     #expect(result.hasMore == false)
     #expect(result.results.count == 1)
     // The path should be resolved to the absolute path
@@ -68,7 +68,7 @@ struct SearchFilesToolTests {
       return toolUse
     }
     await #expect(throws: APIError.self, performing: {
-      try await toolUse.result
+      try await toolUse.output
     })
   }
 }

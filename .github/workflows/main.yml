@@ -33,7 +33,7 @@ jobs:
     - name: Make release
       run: git config --global credential.helper store \
         && echo "https://gsabran:${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}@github.com" >> ~/.git-credentials \
-        && cd app && fastlane build_release \
+        && cd app && fastlane mac build_release \
         && git config --global --unset credential.helper \
         && rm ~/.git-credentials
       env:
