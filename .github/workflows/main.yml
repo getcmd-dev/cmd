@@ -32,11 +32,13 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    # - uses: extractions/netrc@v1
-    #   with:
-    #     machine: api.github.com
-    #     username: oauth2
-    #     password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Cache derived data
+      uses: actions/cache@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}-app-derived-data-
+        restore-keys: |
+          ${{ runner.os }}-app-derived-data-
     - name: Make release
       run: cd app && fastlane mac build_release
       env:
