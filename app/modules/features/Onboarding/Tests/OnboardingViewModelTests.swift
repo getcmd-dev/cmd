@@ -347,6 +347,7 @@ struct OnboardingViewModelTests {
   @MainActor
   @Test("available models changes trigger step updates")
   func test_availableModelsChanges() async throws {
+    var cancellables = Set<AnyCancellable>()
     let mockUserDefaults = MockUserDefaults()
     let mockSettingsService = MockSettingsService()
     let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
@@ -363,22 +364,30 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
 
-    // Set up expectation for step change
-    let stepChangeExpectation = expectation(description: "Step should change to setupComplete")
-    let stepCancellable = viewModel.didSet(\.currentStep) { step in
-      if step == .setupComplete {
-        stepChangeExpectation.fulfill()
+    let canSkipProviderSetupExpectation = expectation(description: "canSkipProviderSetup should be true")
+    viewModel.didSet(\.canSkipProviderSetup) { canSkip in
+      if canSkip {
+        canSkipProviderSetupExpectation.fulfill()
       }
-    }
+    }.store(in: &cancellables)
 
     // Add a provider with API key
     var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
     newSettings[.openAI] = LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1)
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    try await fulfillment(of: canSkipProviderSetupExpectation)
+
+    // Set up expectation for step change
+    let stepChangeExpectation = expectation(description: "Step should change to setupComplete")
+    viewModel.didSet(\.currentStep) { step in
+      if step == .setupComplete {
+        stepChangeExpectation.fulfill()
+      }
+    }.store(in: &cancellables)
+    viewModel.handleMoveToNextStep()
 
     // Wait for async update
     try await fulfillment(of: [stepChangeExpectation])
-    stepCancellable.cancel()
 
     #expect(viewModel.currentStep == .setupComplete)
   }
