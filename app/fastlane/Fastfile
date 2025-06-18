@@ -44,7 +44,7 @@ platform :mac do
   lane :build_release_debug do
     setup_ci if ENV['CI']
 
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile")
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
@@ -53,11 +53,6 @@ platform :mac do
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
     git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
-    # match(
-    #   type: 'appstore',
-    #   readonly: readonly,
-    #   git_url: git_url
-    # )
     match(
       type: 'development',
       readonly: readonly,
@@ -65,13 +60,13 @@ platform :mac do
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+    # sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
 
     build_mac_app(
       # export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       # xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       # use_system_scm: true,
-      destination: "platform=macOS,arch=arm64",
+      destination: "platform=macOS",
       skip_package_dependencies_resolution: true,
       # disable_package_automatic_updates: true,
       project: "./command.xcodeproj",
@@ -88,51 +83,48 @@ platform :mac do
         signingStyle: "manual",
         signingCertificate: "Apple Development: Guillaume Sabran (HANPLYGJ85)",
         teamID: "GP78T2GNXD",
-        # provisioningProfiles: {
-        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-        # }
       },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 
-  desc "Build and archive the app for Mac App Store distribution"
-  lane :build_release do
-    setup_ci if ENV['CI']
+  # desc "Build and archive the app for Mac App Store distribution"
+  # lane :build_release do
+  #   setup_ci if ENV['CI']
 
-    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
-    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
-    readonly = true
-    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
-    git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
-    match(
-      type: 'appstore',
-      readonly: readonly,
-      git_url: git_url
-    )
+  #   # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+  #   personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+  #   ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+  #   readonly = true
+  #   # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+  #   # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+  #   git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+  #   match(
+  #     type: 'appstore',
+  #     readonly: readonly,
+  #     git_url: git_url
+  #   )
 
-    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
-    build_mac_app(
-      export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
-      xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
-      use_system_scm: true,
-      skip_package_dependencies_resolution: true,
-      disable_package_automatic_updates: true,
-      project: "./command.xcodeproj",
-      configuration: "Release",
-      export_method: "mac-application",
-      output_directory: "build/release",
-      derived_data_path: "build/derived_data",
-      output_name: "command.app",
-      scheme: "command",
-      silent: true,
-      skip_archive: true,
-    )
-    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
-  end
+  #   sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+  #   sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+  #   build_mac_app(
+  #     export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
+  #     xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
+  #     use_system_scm: true,
+  #     skip_package_dependencies_resolution: true,
+  #     disable_package_automatic_updates: true,
+  #     project: "./command.xcodeproj",
+  #     configuration: "Release",
+  #     export_method: "mac-application",
+  #     output_directory: "build/release",
+  #     derived_data_path: "build/derived_data",
+  #     output_name: "command.app",
+  #     scheme: "command",
+  #     silent: true,
+  #     skip_archive: true,
+  #   )
+  #   sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+  # end
 
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
