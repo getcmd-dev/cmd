@@ -25,7 +25,7 @@ extension View {
         .overlay(
           RoundedCornerShape(radius: radius ?? 0, corners: corners)
             .fill(backgroundColor ?? .clear)
-            .stroke(borderColor ?? .clear, lineWidth: borderWidth))
+            .strokeBorder(borderColor ?? .clear, lineWidth: borderWidth))
     }
   }
 
@@ -40,7 +40,7 @@ extension View {
     clipShape(RoundedCornerShape(radius: radius ?? 0, corners: corners))
       .overlay(
         RoundedCornerShape(radius: radius ?? 0, corners: corners)
-          .stroke(borderColor ?? .clear, lineWidth: borderWidth))
+          .strokeBorder(borderColor ?? .clear, lineWidth: borderWidth))
   }
 }
 
@@ -73,13 +73,23 @@ public struct Corners: OptionSet, Sendable {
 // MARK: - RoundedCornerShape
 
 /// A Shape that rounds only the specified corners.
-public struct RoundedCornerShape: Shape {
+public struct RoundedCornerShape: InsettableShape {
+
   public init(radius: CGFloat, corners: Corners) {
     self.radius = radius
     self.corners = corners
   }
 
+  public func inset(by amount: CGFloat) -> RoundedCornerShape {
+    var shape = self
+    shape.insetAmount += amount
+    return shape
+  }
+
   public func path(in rect: CGRect) -> Path {
+    let rect = rect.insetBy(dx: insetAmount, dy: insetAmount)
+    let radius = max(0, radius - insetAmount)
+
     var path = Path()
 
     // Helper for corner radius if in `corners`, or 0 if not
@@ -145,4 +155,5 @@ public struct RoundedCornerShape: Shape {
   var radius: CGFloat
   var corners: Corners
 
+  private var insetAmount: CGFloat = 0
 }

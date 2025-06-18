@@ -77,6 +77,10 @@ struct ChatMessageView: View {
     }
   }
 
+  var style: MarkdownStyle {
+    MarkdownStyle(colorScheme: colorScheme)
+  }
+
   @State private var size = CGSize.zero
 
   @Environment(\.colorScheme) private var colorScheme
@@ -89,7 +93,9 @@ struct ChatMessageView: View {
   private func textElementView(_ element: TextFormatter.Element) -> some View {
     switch element {
     case .text(let text):
-      LongText(markdown(for: text), maxWidth: size.width - 2 * horizontalPadding)
+      // Only format the text for the assistant messages.
+      let attributedText = message.role == .user ? plainText(for: text) : markdown(for: text)
+      LongText(attributedText, maxWidth: size.width - 2 * horizontalPadding)
         .textSelection(.enabled)
         .padding(.horizontal, horizontalPadding)
         .padding(.vertical, Constants.textVerticalPadding)
@@ -102,7 +108,6 @@ struct ChatMessageView: View {
 
   private func markdown(for text: TextFormatter.Element.TextElement) -> AttributedString {
     let markDown = Down(markdownString: text.text)
-    let style = MarkdownStyle(colorScheme: colorScheme)
     do {
       let attributedString = try markDown.toAttributedString(using: style)
       return AttributedString(attributedString.trimmedAttributedString())
@@ -111,6 +116,14 @@ struct ChatMessageView: View {
 
       return AttributedString(text.text)
     }
+  }
+
+  private func plainText(for text: TextFormatter.Element.TextElement) -> AttributedString {
+    AttributedString(text.text).settingAttributes(.init([
+      .foregroundColor: style.baseFontColor,
+      .font: style.baseFont,
+      .paragraphStyle: style.baseParagraphStyle,
+    ]))
   }
 }
 
@@ -274,8 +287,11 @@ struct CodeBlockContentView: View {
         }
       }
     }
-    .background(colorScheme.primaryBackground)
-    .with(cornerRadius: Constants.codePreviewCornerRadius, borderColor: colorScheme.textAreaBorderColor)
+    .padding(.bottom, 2)
+    .with(
+      cornerRadius: Constants.codePreviewCornerRadius,
+      backgroundColor: colorScheme.primaryBackground,
+      borderColor: colorScheme.textAreaBorderColor)
     .foregroundColor(role == .user ? .white : .primary)
   }
 

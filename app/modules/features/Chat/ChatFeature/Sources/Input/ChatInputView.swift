@@ -268,7 +268,7 @@ struct ChatInputView: View {
     ToolApprovalView(
       request: pendingToolApproval,
       suggestedResult: $inputViewModel.pendingToolApprovalSuggestedResult,
-      onApprovalResult: { result in
+      onApprovalResult: { _ in
         inputViewModel.handleApproval(of: pendingToolApproval)
       })
       .with(
@@ -284,11 +284,11 @@ struct ChatInputView: View {
   }
 
   private func sendIfReady() {
-      if let pendingToolApproval = inputViewModel.pendingToolApproval {
-        inputViewModel.handleApproval(of: pendingToolApproval)
-        return
-      }
-      
+    if let pendingToolApproval = inputViewModel.pendingToolApproval {
+      inputViewModel.handleApproval(of: pendingToolApproval)
+      return
+    }
+
     guard isInputReady else {
       return
     }
