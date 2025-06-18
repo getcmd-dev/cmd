@@ -59,6 +59,7 @@ platform :mac do
     build_mac_app(
       export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
+      use_system_scm: true,
       disable_package_automatic_updates: true,
       project: "./command.xcodeproj",
       configuration: "Release",
