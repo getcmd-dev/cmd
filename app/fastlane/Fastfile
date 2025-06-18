@@ -72,9 +72,9 @@ platform :mac do
 
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
+    setup_ci if ENV['CI']
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
-    setup_ci if ENV['CI']
 
     personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
@@ -186,6 +186,7 @@ platform :mac do
 
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do
+    setup_ci if ENV['CI']
     app_config_path = File.absolute_path("../command.shared.xcconfig")
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
