@@ -38,7 +38,7 @@ jobs:
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Make release
-      run: cd app && fastlane mac build_release_debug
+      run: cd app && fastlane mac build_release
       env:
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
@@ -60,8 +60,15 @@ jobs:
   #       node-version-file: "./local-server/.nvmrc"
   #   - name: Install dependencies
   #     run: cd local-server && yarn install && yarn build && yarn copy-to-app
+  #   - name: Cache SPM .build
+  #     uses: actions/cache@v4
+  #     with:
+  #       path: app/modules/.build
+  #       key: ${{ runner.os }}-spm-app-modules-${{ hashFiles('app/modules/Package.swift') }}
+  #       restore-keys: |
+  #         ${{ runner.os }}-spm-app-modules-
   #   - name: Run tests
-  #     run: cd app && ./cmd.sh clean && ./cmd.sh test:swift
+  #     run: cd app && ./cmd.sh test:swift
 
   # lint-swift:
   #   runs-on: macos-15
