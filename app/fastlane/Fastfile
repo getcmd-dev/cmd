@@ -63,8 +63,8 @@ platform :mac do
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
 
     build_mac_app(
-      export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
-      xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
+      # export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
+      # xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       use_system_scm: true,
       skip_package_dependencies_resolution: true,
       disable_package_automatic_updates: true,
