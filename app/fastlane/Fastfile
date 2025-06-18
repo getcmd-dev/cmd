@@ -56,7 +56,7 @@ platform :mac do
     )
 
     # Run package resolution independently to avoid issues with Fastlane's `build_mac_app` command
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile | xcbeautify")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile")
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
@@ -81,10 +81,12 @@ platform :mac do
 
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
-    setup_ci if ENV['CI']
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
 
+    setup_ci if ENV['CI']
+
+    # Install required certificates and provisioning profiles
     personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     readonly = true
@@ -112,7 +114,7 @@ platform :mac do
     # sh('security find-identity -v -p codesigning')
 
     # Run package resolution independently to avoid issues with Fastlane's `build_mac_app` command
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile | xcbeautify")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile")
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")

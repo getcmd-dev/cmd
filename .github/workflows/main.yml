@@ -27,16 +27,16 @@ jobs:
     - name: Install node dependencies
       run: cd local-server && yarn install
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
-    # - uses: extractions/netrc@v1
-    #   with:
-    #     machine: github.com
-    #     username: oauth2
-    #     password: ${{ secrets.GITHUB_TOKEN }}
-    # - uses: extractions/netrc@v1
-    #   with:
-    #     machine: api.github.com
-    #     username: oauth2
-    #     password: ${{ secrets.GITHUB_TOKEN }}
+    - uses: extractions/netrc@v1
+      with:
+        machine: github.com
+        username: oauth2
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - uses: extractions/netrc@v1
+      with:
+        machine: api.github.com
+        username: oauth2
+        password: ${{ secrets.GITHUB_TOKEN }}
     - name: Cache derived data
       uses: actions/cache@v4
       with:
