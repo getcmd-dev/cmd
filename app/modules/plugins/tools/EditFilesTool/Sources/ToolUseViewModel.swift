@@ -7,7 +7,6 @@ import Combine
 import Dependencies
 import FileDiffFoundation
 import Foundation
-import FoundationInterfaces
 import JSONFoundation
 import Observation
 import SwiftUI
@@ -23,12 +22,14 @@ final class ToolUseViewModel {
     status: EditFilesTool.Use.Status,
     input: EditFilesTool.Use.Input,
     isInputComplete: Bool,
-    updateToolStatus: @escaping (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void)
+    updateToolStatus: @escaping (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void,
+    syncBaselineContent: @escaping (String, String) -> Void)
   {
     self.status = status.value
     self.input = input
     self.isInputComplete = isInputComplete
     self.updateToolStatus = updateToolStatus
+    self.syncBaselineContent = syncBaselineContent
 
     handleUpdatedInput()
 
@@ -132,12 +133,10 @@ final class ToolUseViewModel {
     }
   }
 
+  private let syncBaselineContent: (String, String) -> Void
+
   @ObservationIgnored
   @Dependency(\.xcodeController) private var xcodeController
-  @ObservationIgnored
-  @Dependency(\.fileManager) private var fileManager
-  @ObservationIgnored
-  @Dependency(\.xcodeObserver) private var xcodeObserver
 
   private let updateToolStatus: (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void
   private var filesEdit = [URL: FileEditState]()
@@ -171,11 +170,15 @@ final class ToolUseViewModel {
       model.handle(newChanges: changes.map { .init(search: $0.search, replace: $0.replace) })
     } else {
       if
-        let model = FileDiffViewModel(filePath: file.path, changes: changes.map {
-          FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
-        })
+        let model = FileDiffViewModel(
+          filePath: file.path,
+          changes: changes.map {
+            FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
+          },
+          oldContent: input.files.first(where: { $0.path == file.path })?.baseLineContent)
       {
         filesEditModels[file.path] = model
+        syncBaselineContent(file.path, model.baseLineContent)
       }
     }
   }

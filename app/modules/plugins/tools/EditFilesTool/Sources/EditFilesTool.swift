@@ -75,17 +75,21 @@ public final class EditFilesTool: Tool {
         public let path: String
         public let isNewFile: Bool?
         public let changes: [Change]
+        /// Baseline content is a property set locally, not sent by the LLM.
+        /// It is used to help persist the content of the file before applying changes, so that the change is correctly displayed even after the file has changed.
+        public fileprivate(set) var baseLineContent: String?
 
       }
 
-      public let files: [FileChange]
+      public fileprivate(set) var files: [FileChange]
 
       func withPathsResolved(from root: URL?) -> Input {
         Input(files: files.map { fileChange in
           FileChange(
             path: fileChange.path.resolvePath(from: root).path(),
             isNewFile: fileChange.isNewFile,
-            changes: fileChange.changes)
+            changes: fileChange.changes,
+            baseLineContent: fileChange.baseLineContent)
         })
       }
     }
@@ -157,6 +161,17 @@ public final class EditFilesTool: Tool {
         isInputComplete: isInputComplete.value,
         updateToolStatus: { [weak self] newStatus in
           self?.updateStatus.yield(newStatus)
+        },
+        syncBaselineContent: { [weak self] filePath, content in
+          self?._input.mutate { input in
+            input.files = input.files.map { fileChange in
+              var fileChange = fileChange
+              if fileChange.path == filePath {
+                fileChange.baseLineContent = fileChange.baseLineContent ?? content
+              }
+              return fileChange
+            }
+          }
         })
       _viewModel = viewModel
       return viewModel
