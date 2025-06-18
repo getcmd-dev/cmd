@@ -57,6 +57,7 @@ platform :mac do
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
+      xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       project: "./command.xcodeproj",
       configuration: "Release",
       export_method: "mac-application",
