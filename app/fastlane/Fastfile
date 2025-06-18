@@ -53,8 +53,13 @@ platform :mac do
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
     git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+    # match(
+    #   type: 'appstore',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
     match(
-      type: 'appstore',
+      type: 'development',
       readonly: readonly,
       git_url: git_url
     )
