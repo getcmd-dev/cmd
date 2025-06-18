@@ -38,15 +38,6 @@ platform :mac do
     )
   end
 
-
-
-  desc "Build and archive the app for Mac App Store distribution"
-  lane :build_release_debug do
-    setup_ci if ENV['CI']
-
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
-  end
-
   desc "Build and archive the app for Mac App Store distribution"
   lane :build_release do
     setup_ci if ENV['CI']
@@ -65,10 +56,12 @@ platform :mac do
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
     build_mac_app(
       export_xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       xcargs: "-scmProvider system -packageAuthorizationProvider netrc",
       use_system_scm: true,
+      skip_package_dependencies_resolution: true,
       disable_package_automatic_updates: true,
       project: "./command.xcodeproj",
       configuration: "Release",
