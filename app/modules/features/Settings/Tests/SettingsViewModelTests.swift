@@ -179,14 +179,6 @@ struct SettingsViewModelTests {
       SettingsViewModel()
     }
 
-    // Set up expectation for settings change
-    let settingsChangeExpectation = expectation(description: "Settings should update when service emits new values")
-    let cancellable = viewModel.didSet(\.settings) { settings in
-      if settings.allowAnonymousAnalytics {
-        settingsChangeExpectation.fulfill()
-      }
-    }
-
     // Update settings through the service
     let newSettings = SettingsServiceInterface.Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
@@ -194,8 +186,7 @@ struct SettingsViewModelTests {
     mockSettingsService.update(to: newSettings)
 
     // Wait for the settings change
-    try await fulfillment(of: [settingsChangeExpectation])
-    cancellable.cancel()
+    try await viewModel.wait(for: \.settings.allowAnonymousAnalytics, toBe: true)
 
     #expect(viewModel.settings.allowAnonymousAnalytics == true)
   }

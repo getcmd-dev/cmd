@@ -4,6 +4,7 @@
 @preconcurrency import Combine
 import Foundation
 import Observation
+import Testing
 
 extension Observable where Self: Sendable {
   /// When the value of a at a given key path changes, this function will be called.
@@ -27,6 +28,29 @@ extension Observable where Self: Sendable {
         action(self[keyPath: keyPath])
       })
     return cancellable
+  }
+
+  /// Wait for the property at the given key path to change to the desired value.
+  public func wait<Value: Sendable & Equatable>(
+    for keyPath: KeyPath<Self, Value>,
+    toBe desiredValue: Value,
+    timeout: TimeInterval = 5,
+    _sourceLocation: SourceLocation = #_sourceLocation)
+    async throws
+  {
+    let exp = expectation(
+      description: "The property at \(keyPath.debugDescription) changed to the desired value",
+      _sourceLocation: _sourceLocation)
+    let cancellable = didSet(keyPath) { value in
+      if value == desiredValue {
+        exp.fulfillAtMostOnce()
+      }
+    }
+    if self[keyPath: keyPath] == desiredValue {
+      exp.fulfillAtMostOnce()
+    }
+    try await fulfillment(of: exp, timeout: timeout)
+    _ = cancellable
   }
 }
 
