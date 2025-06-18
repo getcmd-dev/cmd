@@ -53,7 +53,6 @@ platform :mac do
       type: 'development',
       readonly: readonly,
       git_url: git_url,
-      silent: true,
     )
 
     # Run package resolution independently to avoid issues with Fastlane's `build_mac_app` command
