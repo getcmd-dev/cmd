@@ -4,7 +4,7 @@ default_platform(:mac)
 require 'base64'
 
 def load_secret(env_key)
-  return ENV[env_key] if ENV[env_key] && store_secret_to_keychain(env_key, ENV[env_key])
+  return ENV[env_key] if ENV[env_key] && !store_secret_to_keychain(env_key, ENV[env_key])
   puts "Loading secret from keychain: #{env_key}"
   encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
   return nil if encoded.empty?
@@ -14,13 +14,15 @@ def load_secret(env_key)
 end
 
 # Store a secret to the keychain if it is not already stored or if it has changed.
+# Returns whether the secret was stored to the keychain.
 def store_secret_to_keychain(key, value)
-  return if ENV['CI']
+  return false if ENV['CI']
   encoded_value = Base64.strict_encode64(value)
   existing_encoded = `security find-generic-password -s 'dev.getcmd.#{key}' -w 2>/dev/null`.strip
-  return if existing_encoded == encoded_value
+  return false if existing_encoded == encoded_value
 
   sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{key}' -w '#{encoded_value}' -U")
+  return true
 end
 
 platform :mac do
