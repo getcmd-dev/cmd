@@ -38,7 +38,7 @@ jobs:
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Make release
-      run: cd app && fastlane mac build_release
+      run: cd app && fastlane mac build_release_debug
       env:
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}

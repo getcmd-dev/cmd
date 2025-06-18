@@ -38,6 +38,31 @@ platform :mac do
     )
   end
 
+
+
+  desc "Build and archive the app for Mac App Store distribution"
+  lane :build_release_debug do
+    setup_ci if ENV['CI']
+
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+
+    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    readonly = true
+    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+    git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+    match(
+      type: 'appstore',
+      readonly: readonly,
+      git_url: git_url
+    )
+
+    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution")
+  end
+
   desc "Build and archive the app for Mac App Store distribution"
   lane :build_release do
     setup_ci if ENV['CI']
