@@ -25,6 +25,25 @@ extension SettingsServiceInterface.Settings {
     availableModels.filter { !inactiveModels.contains($0) }
   }
 
+  /// A model that can be used for simple queries that favor speed & low cost over accuracy.
+  public var lowTierModel: LLMModel? {
+    let preferredLowTierModels: [LLMModel] = [
+      .claudeHaiku_3_5,
+      .o4_mini,
+    ]
+    return availableModels.sorted(by: { a, b in
+      let i = preferredLowTierModels.firstIndex(of: a)
+      let j = preferredLowTierModels.firstIndex(of: b)
+
+      switch (i, j) {
+      case (let i?, let j?): return i < j
+      case (_?, nil): return true
+      case (nil, _?): return false
+      case (nil, nil): return a.defaultPricing.input < b.defaultPricing.input
+      }
+    }).first
+  }
+
   /// The provider for a given model, and its configuration.
   public func provider(for model: LLMModel) throws -> (LLMProvider, LLMProviderSettings) {
     let preferedProviders = preferedProviders[model]
@@ -44,4 +63,5 @@ extension SettingsServiceInterface.Settings {
     }
     return (provider.key, provider.value)
   }
+
 }

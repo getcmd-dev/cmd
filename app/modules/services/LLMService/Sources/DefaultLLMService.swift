@@ -28,6 +28,8 @@ final class DefaultLLMService: LLMService {
     #endif
   }
 
+  let settingsService: SettingsService
+
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
@@ -106,64 +108,52 @@ final class DefaultLLMService: LLMService {
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
-    let (provider, providerSettings) = try settings.provider(for: model)
     let customInstructions = customInstructions(for: context.chatMode, from: settings)
     let promptConfiguration = PromptConfiguration(
       projectRoot: context.projectRoot,
       mode: context.chatMode,
       customInstructions: customInstructions)
-    let params = try Schema.SendMessageRequestParams(
-      messages: messageHistory,
+
+    return try await streamCompletionResponse(
       system: Prompt.defaultPrompt(configuration: promptConfiguration),
-      projectRoot: context.projectRoot?.path,
-      tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
-      model: provider.id(for: model),
+      messageHistory: messageHistory,
+      tools: tools,
+      model: model,
       enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
-      provider: .init(provider: provider, settings: providerSettings))
-    let data = try JSONEncoder().encode(params)
+      context: context,
+      supportDebugStreamRepeatInDebug: true,
+      handleUpdateStream: handleUpdateStream)
+  }
 
-    let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
-    handleUpdateStream(result)
+  func nameConversation(firstMessage: String) async throws -> String {
+    let settings = settingsService.values()
+    guard let lowTierModel = settings.lowTierModel else {
+      defaultLogger.error("Unable to name conversation: no low tier model available")
+      return "New conversation"
+    }
 
-    let isTaskCancelled = Atomic(false)
+    let assistantMessage = try await streamCompletionResponse(
+      system: """
+        Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addresseds. Respond with ONLY the sumary, nothing else
 
-    return try await withTaskCancellationHandler(operation: {
-      #if DEBUG
-      let stream = {
-        if let stream = try? repeatDebugHelper.repeatStream() { return stream }
-        return server.streamPostRequest(path: "sendMessage", data: data)
-      }()
+        good output example : `Fixing the login flow in the app`
+        bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
+        """,
+      messageHistory: [.init(
+        role: .user,
+        content: [.textMessage(.init(text: "Please write a 5-10 word title the following conversation:\n\n\(firstMessage)"))])],
+      tools: [],
+      model: lowTierModel,
+      enableReasoning: false,
+      context: nil,
+      handleUpdateStream: { _ in })
 
-      let helper = RequestStreamingHelper(
-        stream: stream,
-        result: result,
-        tools: tools,
-        context: context,
-        isTaskCancelled: { isTaskCancelled.value },
-        repeatDebugHelper: repeatDebugHelper)
-      #else
-      let stream = server.streamPostRequest(path: "sendMessage", data: data)
-
-      let helper = RequestStreamingHelper(
-        stream: stream,
-        result: result,
-        tools: tools,
-        context: context,
-        isTaskCancelled: { isTaskCancelled.value })
-      #endif
-
-      try await helper.processStream()
-
-      return await result.lastValue
-    }, onCancel: {
-      isTaskCancelled.mutate { $0 = true }
-    })
+    return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
   #endif
-  private let settingsService: SettingsService
   private let server: Server
 
   /// Wait for the result of a tool use request.
@@ -194,6 +184,77 @@ final class DefaultLLMService: LLMService {
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
+  }
+
+  /// Streams a completion response from the LLM service with real-time updates.
+  /// - Parameters:
+  ///   - system: The system prompt to guide the assistant's behavior
+  ///   - messageHistory: Array of previous messages in the conversation
+  ///   - tools: Available tools the assistant can use during the conversation
+  ///   - model: The LLM model to use for generating the response
+  ///   - enableReasoning: Whether to enable reasoning capabilities for the model
+  ///   - context: Chat context containing conversation state and metadata
+  ///   - supportDebugStreamRepeatInDebug: Whether to support debug stream repetition in debug mode
+  ///   - handleUpdateStream: Closure called with streaming updates as the response is generated
+  private func streamCompletionResponse(
+    system: String,
+    messageHistory: [Schema.Message],
+    tools: [any ToolFoundation.Tool],
+    model: LLMModel,
+    enableReasoning: Bool,
+    context: (any ChatContext)?,
+    supportDebugStreamRepeatInDebug: Bool = false,
+    handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
+    async throws -> AssistantMessage
+  {
+    let settings = settingsService.values()
+    let (provider, providerSettings) = try settings.provider(for: model)
+    let params = try Schema.SendMessageRequestParams(
+      messages: messageHistory,
+      system: system,
+      projectRoot: context?.projectRoot?.path,
+      tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
+      model: provider.id(for: model),
+      enableReasoning: enableReasoning,
+      provider: .init(provider: provider, settings: providerSettings))
+    let data = try JSONEncoder().encode(params)
+
+    let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
+    handleUpdateStream(result)
+
+    let isTaskCancelled = Atomic(false)
+
+    return try await withTaskCancellationHandler(operation: {
+      #if DEBUG
+      let stream = {
+        if supportDebugStreamRepeatInDebug, let stream = try? repeatDebugHelper.repeatStream() { return stream }
+        return server.streamPostRequest(path: "sendMessage", data: data)
+      }()
+
+      let helper = RequestStreamingHelper(
+        stream: stream,
+        result: result,
+        tools: tools,
+        context: context,
+        isTaskCancelled: { isTaskCancelled.value },
+        repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)
+      #else
+      let stream = server.streamPostRequest(path: "sendMessage", data: data)
+
+      let helper = RequestStreamingHelper(
+        stream: stream,
+        result: result,
+        tools: tools,
+        context: context,
+        isTaskCancelled: { isTaskCancelled.value })
+      #endif
+
+      try await helper.processStream()
+
+      return await result.lastValue
+    }, onCancel: {
+      isTaskCancelled.mutate { $0 = true }
+    })
   }
 
   /// Retrieves the appropriate custom instructions based on the chat mode.

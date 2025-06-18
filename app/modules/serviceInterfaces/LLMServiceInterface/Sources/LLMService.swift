@@ -30,6 +30,7 @@ public protocol ChatContext: Sendable {
 // MARK: - LLMService
 
 public protocol LLMService: Sendable {
+  /// Send a message and wait for responses from the assistant
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
@@ -37,6 +38,9 @@ public protocol LLMService: Sendable {
     context: ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> [AssistantMessage]
+
+  /// Generate a title for a conversation based on the first message.
+  func nameConversation(firstMessage: String) async throws -> String
 }
 
 // MARK: - LLMServiceError

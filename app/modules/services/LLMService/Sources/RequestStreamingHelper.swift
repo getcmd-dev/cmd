@@ -29,9 +29,9 @@ final class RequestStreamingHelper: Sendable {
     stream: AsyncThrowingStream<Data, any Error>,
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
-    context: any ChatContext,
+    context: (any ChatContext)?,
     isTaskCancelled: @escaping @Sendable () -> Bool,
-    repeatDebugHelper: RepeatDebugHelper)
+    repeatDebugHelper: RepeatDebugHelper?)
   {
     self.stream = stream
     self.result = result
@@ -51,7 +51,7 @@ final class RequestStreamingHelper: Sendable {
     stream: AsyncThrowingStream<Data, any Error>,
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
-    context: any ChatContext,
+    context: (any ChatContext)?,
     isTaskCancelled: @escaping @Sendable () -> Bool)
   {
     self.stream = stream
@@ -65,7 +65,7 @@ final class RequestStreamingHelper: Sendable {
   let result: MutableCurrentValueStream<AssistantMessage>
   let stream: AsyncThrowingStream<Data, any Error>
   let tools: [any ToolFoundation.Tool]
-  let context: any ChatContext
+  let context: (any ChatContext)?
   var err: Error? = nil
   var streamingToolUse: (any ToolUse)? = nil
   var streamingToolUseInput = ""
@@ -77,7 +77,7 @@ final class RequestStreamingHelper: Sendable {
       for try await chunk in stream {
         do {
           #if DEBUG
-          repeatDebugHelper.receive(chunk: chunk)
+          repeatDebugHelper?.receive(chunk: chunk)
           #endif
           guard !isTaskCancelled() else {
             // This should not be necessary. Cancelling the task should make the post request fail with an error.
@@ -137,7 +137,7 @@ final class RequestStreamingHelper: Sendable {
   private var lastChunkIdx = -1
 
   #if DEBUG
-  private let repeatDebugHelper: RepeatDebugHelper
+  private let repeatDebugHelper: RepeatDebugHelper?
   #endif
 
   private static func missingToolError(toolName name: String) -> Error {
@@ -160,7 +160,7 @@ final class RequestStreamingHelper: Sendable {
     result.finish()
 
     #if DEBUG
-    repeatDebugHelper.streamCompleted()
+    repeatDebugHelper?.streamCompleted()
     #endif
   }
 
@@ -184,6 +184,10 @@ final class RequestStreamingHelper: Sendable {
 
   private func handle(toolUseDelta: Schema.ToolUseDelta) async {
     endPreviousContent()
+    guard let context else {
+      defaultLogger.error("No context available to handle tool use.")
+      return
+    }
 
     let toolName = toolUseDelta.toolName
     let toolUseId = toolUseDelta.toolUseId
@@ -235,7 +239,7 @@ final class RequestStreamingHelper: Sendable {
     }
   }
 
-  private func startExecution(of toolUse: any ToolUse) async {
+  private func startExecution(of toolUse: any ToolUse, context: any ChatContext) async {
     do {
       try await context.requestToolApproval(toolUse)
       toolUse.startExecuting()
@@ -257,6 +261,10 @@ final class RequestStreamingHelper: Sendable {
 
   private func handle(toolUseRequest: Schema.ToolUseRequest) async {
     endPreviousContent()
+    guard let context else {
+      defaultLogger.error("No context available to handle tool use.")
+      return
+    }
 
     if let toolUse = streamingToolUse {
       if toolUse.toolUseId != toolUseRequest.toolUseId {
@@ -278,7 +286,7 @@ final class RequestStreamingHelper: Sendable {
         result.update(with: AssistantMessage(content: content))
       }
       endStreamedToolUse()
-      await startExecution(of: toolUse)
+      await startExecution(of: toolUse, context: context)
       return
     }
 
@@ -310,7 +318,7 @@ final class RequestStreamingHelper: Sendable {
         }
         content.append(toolUse: toolUse)
 
-        await startExecution(of: toolUse)
+        await startExecution(of: toolUse, context: context)
 
       } catch {
         // If the above fails, this is because the input could not be parsed by the tool.

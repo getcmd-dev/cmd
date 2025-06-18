@@ -84,14 +84,14 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     name: "o3",
     id: "o3",
     contextSize: 200_000,
-    defaultPricing: .init(input: 10, output: 40, cacheWrite: 0, cachedInput: 2.5, inputImage: 10),
+    defaultPricing: .init(input: 2, output: 8, cacheWrite: 0, cachedInput: 0.5, inputImage: 1.53),
     documentationURL: URL(string: "https://platform.openai.com/docs/models/o3"),
     reasoning: LLMReasoning())
   public static let o4_mini = LLMModel(
     name: "o4-mini",
     id: "o4-mini",
     contextSize: 200_000,
-    defaultPricing: .init(input: 1.1, output: 4.4, cacheWrite: 0, cachedInput: 0.275, inputImage: 1.1),
+    defaultPricing: .init(input: 0.4, output: 1.6, cacheWrite: 0, cachedInput: 0.1, inputImage: 1.1),
     documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"),
     reasoning: LLMReasoning())
 

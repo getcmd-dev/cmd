@@ -13,8 +13,6 @@ public final class MockLLMService: LLMService {
 
   public init() { }
 
-  public var projectRoot = URL(filePath: "/")
-
   public var onSendMessage: (@Sendable (
     [Schema.Message],
     [any Tool],
@@ -23,17 +21,7 @@ public final class MockLLMService: LLMService {
     (UpdateStream) -> Void)
     -> [AssistantMessage])?
 
-  public var onIsWithinRoot: @Sendable (URL) -> Bool = { _ in true }
-
-  public var onResolve: @Sendable (String) -> URL = { URL(fileURLWithPath: $0) }
-
-  public func resolve(path: String) -> URL {
-    onResolve(path)
-  }
-
-  public func isWithinRoot(path: URL) -> Bool {
-    onIsWithinRoot(path)
-  }
+  public var onNameConversation: (@Sendable (String) async throws -> String)?
 
   // MARK: - LLMService
 
@@ -51,6 +39,13 @@ public final class MockLLMService: LLMService {
 
     // Default implementation returning empty array if no handler is set
     return []
+  }
+
+  public func nameConversation(firstMessage: String) async throws -> String {
+    if let onNameConversation {
+      return try await onNameConversation(firstMessage)
+    }
+    return "Unnamed Conversation"
   }
 
 }
