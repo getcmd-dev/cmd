@@ -74,7 +74,7 @@ platform :mac do
         method: "development",
       },
       silent: true,
-      xcodebuild_formatter: "xcbeautify",
+      # xcodebuild_formatter: "xcbeautify",
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
@@ -109,7 +109,10 @@ platform :mac do
       git_url: git_url
     )
     # Print available signing certificates
-    sh('security find-identity -v -p codesigning')
+    # sh('security find-identity -v -p codesigning')
+
+    # Run package resolution independently to avoid issues with Fastlane's `build_mac_app` command
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile | xcbeautify")
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -119,18 +122,20 @@ platform :mac do
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
     build_mac_app(
-      xcargs: "-allowProvisioningUpdates",
+      # xcargs: "-allowProvisioningUpdates",
+      destination: "platform=macOS",
+      skip_package_dependencies_resolution: true,
       export_method: "developer-id",
       export_options: {
         method: "developer-id",
-        signingStyle: "manual",
-        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
-        teamID: "GP78T2GNXD",
+        # signingStyle: "manual",
+        # signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
+        # teamID: "GP78T2GNXD",
         # provisioningProfiles: {
         #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
         # }
       },
-      skip_profile_detection: "true",
+      # skip_profile_detection: "true",
       
       project: "./command.xcodeproj",
       configuration: "Release",
@@ -140,7 +145,7 @@ platform :mac do
       scheme: "command",
       silent: true,
       skip_archive: false,
-      xcodebuild_formatter: "xcbeautify",
+      # xcodebuild_formatter: "xcbeautify",
     )
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
