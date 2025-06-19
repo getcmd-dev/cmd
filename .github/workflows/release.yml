@@ -1,4 +1,9 @@
-name: Release MacOS app
+name: Draft GitHub Release
+
+# on:
+#   push:
+#     tags:
+#       - v**
 
 on:
   pull_request: # TODO: Remove
