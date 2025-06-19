@@ -162,7 +162,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       Task { [weak self] in
         let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
         guard let self else { return }
-        self.name = conversationName
+        name = conversationName
         await persistThread()
       }
     }

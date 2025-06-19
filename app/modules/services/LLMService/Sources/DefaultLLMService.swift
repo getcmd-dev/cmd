@@ -28,8 +28,6 @@ final class DefaultLLMService: LLMService {
     #endif
   }
 
-  private let settingsService: SettingsService
-
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
@@ -150,6 +148,8 @@ final class DefaultLLMService: LLMService {
 
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
+
+  private let settingsService: SettingsService
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper

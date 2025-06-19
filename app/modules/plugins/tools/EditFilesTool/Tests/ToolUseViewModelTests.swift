@@ -44,7 +44,7 @@ struct ToolUseViewModelTests {
         input: input,
         isInputComplete: true,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == true)
@@ -76,7 +76,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -133,7 +133,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.changes.count == 1)
@@ -205,7 +205,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -273,7 +273,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -324,7 +324,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -364,7 +364,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -427,7 +427,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in})
+        syncBaselineContent: { _, _ in })
     }
 
     viewModel.acknowledgeSuggestionReceived()
@@ -449,10 +449,10 @@ struct ToolUseViewModelTests {
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
     let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
-    
+
     var syncedFilePath: String?
     var syncedContent: String?
-    
+
     let viewModel = withDependencies {
       $0.fileManager = mockFileManager
     } operation: {
@@ -488,10 +488,10 @@ struct ToolUseViewModelTests {
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
     let mockFileManager = MockFileManager(files: [:])
-    
+
     var syncedFilePath: String?
     var syncedContent: String?
-    
+
     let viewModel = withDependencies {
       $0.fileManager = mockFileManager
     } operation: {
