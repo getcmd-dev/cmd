@@ -3,13 +3,13 @@ name: Integration tests
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  pull_request: # TODO: remove
     branches: [ "main" ]
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
-  build-release-app:
+  warm-up-release-app-cache:
     runs-on: macos-15
     steps:
     - name: MacOS version
@@ -25,144 +25,20 @@ jobs:
       with:
         xcode-version: latest-stable
     - name: Install node dependencies
-      run: cd local-server && yarn install
+      run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
     - uses: extractions/netrc@v1
       with:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Cache derived data
-      uses: actions/cache@v4
-      with:
-        path: app/build/derived_data
-        key: ${{ runner.os }}-app-derived-data-
-        restore-keys: |
-          ${{ runner.os }}-app-derived-data-
     - name: Make release
       run: cd app && fastlane mac build_release
       env:
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
-
-  # test-swift:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - uses: swift-actions/setup-swift@v2
-  #     with:
-  #       swift-version: "6.1"
-  #   - uses: maxim-lobanov/setup-xcode@v1
-  #     with:
-  #       xcode-version: latest-stable
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version-file: "./local-server/.nvmrc"
-  #   - name: Install dependencies
-  #     run: cd local-server && yarn install && yarn build && yarn copy-to-app
-  #   - name: Cache SPM .build
-  #     uses: actions/cache@v4
-  #     with:
-  #       path: app/modules/.build
-  #       key: ${{ runner.os }}-spm-app-modules-${{ hashFiles('app/modules/Package.swift') }}
-  #       restore-keys: |
-  #         ${{ runner.os }}-spm-app-modules-
-  #   - name: Run tests
-  #     run: cd app && ./cmd.sh test:swift
-
-  # lint-swift:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - name: Set up Homebrew
-  #     id: set-up-homebrew
-  #     uses: Homebrew/actions/setup-homebrew@master
-  #   - name: Install swiftformat
-  #     run: brew install swiftformat
-  #   - name: Run linter
-  #     run: cd app && ./cmd.sh lint:swift
-  #   - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
-  #     run: git diff --exit-code
-
-  # sync-app-dependencies:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - uses: swift-actions/setup-swift@v2
-  #     with:
-  #       swift-version: "6.1"
-  #   - name: Set up Homebrew
-  #     id: set-up-homebrew
-  #     uses: Homebrew/actions/setup-homebrew@master
-  #   - name: Install swiftformat
-  #     run: brew install swiftformat
-  #   - name: Run sync dependencies
-  #     run: cd app && ./cmd.sh sync:dependencies
-  #   - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
-  #     run: git diff --exit-code
-
-  # test-node:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version-file: "./local-server/.nvmrc"
-  #   - name: Install dependencies
-  #     run: cd local-server && yarn install
-  #   - name: Run tests
-  #     run: cd local-server && yarn test
-
-  # tsc:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version-file: "./local-server/.nvmrc"
-  #   - name: Install dependencies
-  #     run: cd local-server && yarn install
-  #   - name: Run tests
-  #     run: cd local-server && yarn tsc
-
-  # lint-node:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version-file: "./local-server/.nvmrc"
-  #   - name: Install dependencies
-  #     run: cd local-server && yarn install
-  #   - name: Run linter
-  #     run: cd local-server && yarn lint:fix
-  #   - name: Verify that `yarn lint:fix` did not change outputs (if it did, please re-run it and re-commit!)
-  #     run: git diff --exit-code
-
-  # lint-shell:
-  #   runs-on: macos-15
-  #   steps:
-  #   - name: MacOS version
-  #     run: sw_vers
-  #   - uses: actions/checkout@v4
-  #   - name: Set up Homebrew
-  #     id: set-up-homebrew
-  #     uses: Homebrew/actions/setup-homebrew@master
-  #   - name: Install shfmt
-  #     run: brew install shfmt
-  #   - name: Run linter
-  #     run: shfmt -w ./**/*.sh
-  #   - name: Verify that `shfmt -w ./**/*.sh` did not change outputs (if it did, please re-run it and re-commit!)
-  #     run: git diff --exit-code
+    - name: Cache derived data
+      uses: actions/cache/save@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}-app-derived-data-main

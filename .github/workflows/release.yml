@@ -1,11 +1,10 @@
 name: Release MacOS app
 
-# on:
-#   pull_request: # TODO: Remove
-#     branches: [ "main" ]
+on:
+  pull_request: # TODO: Remove
+    branches: [ "main" ]
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   distribute-app:
     runs-on: macos-15
@@ -23,19 +22,14 @@ jobs:
       with:
         xcode-version: latest-stable
     - name: Install node dependencies
-      run: cd local-server && yarn install
+      run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
     - uses: extractions/netrc@v1
       with:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: extractions/netrc@v1
-      with:
-        machine: api.github.com
-        username: oauth2
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Make release
+    - name: Publish release
       run: cd app && fastlane mac distribute_release
       env:
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
