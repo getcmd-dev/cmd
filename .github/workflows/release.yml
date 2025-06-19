@@ -17,7 +17,7 @@ jobs:
         node-version-file: "./local-server/.nvmrc"
     - uses: swift-actions/setup-swift@v2
       with:
-        swift-version: "6.1"
+        swift-version: "6.1.2"
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
@@ -29,6 +29,11 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Load derived data cache
+      uses: actions/cache/restore@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}-app-derived-data-main
     - name: Publish release
       run: cd app && fastlane mac distribute_release
       env:
