@@ -64,7 +64,7 @@ platform :mac do
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
 
     build_mac_app(
-      destination: "platform=macOS, arch:arm64",
+      destination: "platform=macOS,arch=arm64",
       skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
       configuration: "Release", 
@@ -121,7 +121,7 @@ platform :mac do
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
     build_mac_app(
-      destination: "platform=macOS, arch:arm64",
+      destination: "platform=macOS,arch=arm64",
       skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
       configuration: "Release",
