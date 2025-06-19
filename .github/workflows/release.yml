@@ -1,15 +1,5 @@
 name: Draft GitHub Release
 
-# on:
-#   push:
-#     tags:
-#       - v**
-
-on:
-  pull_request: # TODO: Remove
-    branches: [ "main" ]
-concurrency:
-  group: release-app-${{ github.ref }}
 jobs:
   distribute-app:
     runs-on: macos-15
