@@ -12,7 +12,6 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
-    "LLMServiceInterface",
     "ServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",

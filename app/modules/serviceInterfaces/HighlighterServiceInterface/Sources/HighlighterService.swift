@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import AppKit
 import Dependencies
 import Foundation
@@ -18,6 +19,11 @@ extension HighlightColors {
   /// @MainActor ensures thread safety when accessing NSAppearance APIs.
   @MainActor
   public static var codeHighlight: HighlightColors {
+    #if DEBUG
+    if ProcessInfo.processInfo.isRunningInTestEnvironment {
+      return .dark(.xcode)
+    }
+    #endif
     let isDarkMode = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
     if isDarkMode {
       return .dark(.xcode)

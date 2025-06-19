@@ -3,7 +3,6 @@
 
 import Dependencies
 import Foundation
-import LLMServiceInterface
 import ServerServiceInterface
 import ShellServiceInterface
 import SwiftTesting
@@ -41,14 +40,8 @@ struct ExecuteCommandToolTests {
         mergedOutput: "file.txt")
     }
 
-    let llmService = MockLLMService()
-    llmService.onResolve = { path in
-      URL(filePath: "/path/to/root").appending(path: path)
-    }
-
     let toolUse = withDependencies {
       $0.shellService = shellService
-      $0.llmService = llmService
     } operation: {
       let toolUse = ExecuteCommandTool().use(
         toolUseId: "123",
@@ -75,14 +68,9 @@ struct ExecuteCommandToolTests {
       }
       throw ShellError(message: "Command failed")
     }
-    let llmService = MockLLMService()
-    llmService.onResolve = { path in
-      URL(filePath: "/path/to/root").appending(path: path)
-    }
 
     let toolUse = withDependencies {
       $0.shellService = shellService
-      $0.llmService = llmService
     } operation: {
       let toolUse = ExecuteCommandTool().use(
         toolUseId: "123",

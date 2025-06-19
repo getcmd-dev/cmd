@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppEventServiceInterface
+import AppFoundation
 import ChatAppEvents
 import ChatFoundation
 import ChatHistoryServiceInterface
@@ -163,7 +164,7 @@ public class ChatViewModel {
 
   private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
     Task { @MainActor in
-      if !["swiftpm-testing-helper", "xctest"].contains(ProcessInfo.processInfo.processName) {
+      if !ProcessInfo.processInfo.isRunningInTestEnvironment {
         NSApp.setActivationPolicy(.regular)
         // TODO: make sure the app is activated. Sometimes it doesn't work.
         Task { try await NSApplication.activateCurrentApp() }

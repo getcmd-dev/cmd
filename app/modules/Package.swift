@@ -208,7 +208,6 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [
     "FoundationInterfaces",
-    "LLMServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -264,7 +263,6 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
-    "LLMServiceInterface",
     "ServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
@@ -740,6 +738,7 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "HighlightSwift", package: "highlightswift"),
+    "AppFoundation",
     "DependencyFoundation",
   ],
   path: "./serviceInterfaces/HighlighterServiceInterface"))
