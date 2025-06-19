@@ -45,7 +45,7 @@ platform :mac do
     setup_ci if ENV['CI']
 
     # Resolve package dependencies before running match, so that the provisioning profiles are correctly set up.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -disableAutomaticPackageResolution -onlyUsePackageVersionsFromResolvedFile")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
