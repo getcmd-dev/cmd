@@ -43,7 +43,8 @@ struct ToolUseViewModelTests {
         status: status,
         input: input,
         isInputComplete: true,
-        updateToolStatus: { _ in })
+        updateToolStatus: { _ in },
+        syncBaselineContent: { _, _ in})
     }
 
     #expect(viewModel.isInputComplete == true)
@@ -74,7 +75,8 @@ struct ToolUseViewModelTests {
         status: status,
         input: initialInput,
         isInputComplete: false,
-        updateToolStatus: { _ in })
+        updateToolStatus: { _ in },
+        syncBaselineContent: { _, _ in})
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -130,7 +132,8 @@ struct ToolUseViewModelTests {
         status: status,
         input: initialInput,
         isInputComplete: false,
-        updateToolStatus: { _ in })
+        updateToolStatus: { _ in },
+        syncBaselineContent: { _, _ in})
     }
 
     #expect(viewModel.changes.count == 1)
@@ -201,7 +204,8 @@ struct ToolUseViewModelTests {
           if case .completed(.success) = status {
             toolStatusUpdated = true
           }
-        })
+        },
+        syncBaselineContent: { _, _ in})
     }
 
     // Wait for initialization
@@ -268,7 +272,8 @@ struct ToolUseViewModelTests {
           if case .completed(.success) = status {
             toolStatusUpdated = true
           }
-        })
+        },
+        syncBaselineContent: { _, _ in})
     }
 
     // Wait for initialization
@@ -318,7 +323,8 @@ struct ToolUseViewModelTests {
           if case .completed(.success) = status {
             toolStatusUpdated = true
           }
-        })
+        },
+        syncBaselineContent: { _, _ in})
     }
 
     // Wait for initialization
@@ -357,7 +363,8 @@ struct ToolUseViewModelTests {
         status: status,
         input: initialInput,
         isInputComplete: false,
-        updateToolStatus: { _ in })
+        updateToolStatus: { _ in },
+        syncBaselineContent: { _, _ in})
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -419,12 +426,92 @@ struct ToolUseViewModelTests {
           if case .completed(.success) = status {
             toolStatusUpdated = true
           }
-        })
+        },
+        syncBaselineContent: { _, _ in})
     }
 
     viewModel.acknowledgeSuggestionReceived()
 
     #expect(toolStatusUpdated == true)
+  }
+
+  @MainActor
+  @Test("Syncs baseline content when creating file diff models")
+  func test_syncBaselineContent() async throws {
+    let input = EditFilesTool.Use.Input(files: [
+      EditFilesTool.Use.Input.FileChange(
+        path: filePath.path,
+        isNewFile: nil,
+        changes: [
+          .init(search: "Hello", replace: "Hi"),
+        ]),
+    ])
+
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
+    
+    var syncedFilePath: String?
+    var syncedContent: String?
+    
+    let viewModel = withDependencies {
+      $0.fileManager = mockFileManager
+    } operation: {
+      ToolUseViewModel(
+        status: status,
+        input: input,
+        isInputComplete: true,
+        updateToolStatus: { _ in },
+        syncBaselineContent: { filePath, content in
+          syncedFilePath = filePath
+          syncedContent = content
+        })
+    }
+
+    // Wait for initialization
+    await waitForUpdate(of: viewModel)
+
+    #expect(syncedFilePath == filePath.path)
+    #expect(syncedContent == "Hello World")
+  }
+
+  @MainActor
+  @Test("Syncs baseline content for new files with empty content")
+  func test_syncBaselineContentForNewFiles() async throws {
+    let input = EditFilesTool.Use.Input(files: [
+      EditFilesTool.Use.Input.FileChange(
+        path: filePath.path,
+        isNewFile: true,
+        changes: [
+          .init(search: "", replace: "Hello World"),
+        ]),
+    ])
+
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let mockFileManager = MockFileManager(files: [:])
+    
+    var syncedFilePath: String?
+    var syncedContent: String?
+    
+    let viewModel = withDependencies {
+      $0.fileManager = mockFileManager
+    } operation: {
+      ToolUseViewModel(
+        status: status,
+        input: input,
+        isInputComplete: true,
+        updateToolStatus: { _ in },
+        syncBaselineContent: { filePath, content in
+          syncedFilePath = filePath
+          syncedContent = content
+        })
+    }
+
+    // Wait for initialization
+    await waitForUpdate(of: viewModel)
+
+    // syncBaselineContent should be called for new files with empty baseline content
+    #expect(syncedFilePath == filePath.path)
+    #expect(syncedContent == "")
   }
 
   private func waitForUpdate(of viewModel: ToolUseViewModel) async {

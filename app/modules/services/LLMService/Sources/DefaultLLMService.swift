@@ -28,7 +28,7 @@ final class DefaultLLMService: LLMService {
     #endif
   }
 
-  let settingsService: SettingsService
+  private let settingsService: SettingsService
 
   func sendMessage(
     messageHistory: [Schema.Message],
@@ -134,7 +134,7 @@ final class DefaultLLMService: LLMService {
 
     let assistantMessage = try await streamCompletionResponse(
       system: """
-        Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addresseds. Respond with ONLY the sumary, nothing else
+        Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
 
         good output example : `Fixing the login flow in the app`
         bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`

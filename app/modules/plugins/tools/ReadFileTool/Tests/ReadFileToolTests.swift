@@ -12,15 +12,10 @@ import Testing
 struct ReadFileToolTests {
   @Test
   func completesWithTheExpectedOutcome() async throws {
-    let llmService = MockLLMService()
-    llmService.onResolve = { path in
-      URL(filePath: "/path/to/root").appending(path: path)
-    }
     let fileManager = MockFileManager(files: ["/path/to/root/path/to/file.txt": "Hello, world!"])
 
     let toolUse = withDependencies {
       $0.fileManager = fileManager
-      $0.llmService = llmService
     } operation: {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",
@@ -35,15 +30,10 @@ struct ReadFileToolTests {
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
-    let llmService = MockLLMService()
-    llmService.onResolve = { path in
-      URL(filePath: "/path/to/root").appending(path: path)
-    }
     let fileManager = MockFileManager(files: [:])
 
     let toolUse = withDependencies {
       $0.fileManager = fileManager
-      $0.llmService = llmService
     } operation: {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",

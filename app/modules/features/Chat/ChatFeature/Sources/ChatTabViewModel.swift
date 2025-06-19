@@ -160,9 +160,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     if !textInput.string.string.isEmpty, name == nil {
       Task { [weak self] in
-        let name = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
+        let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
         guard let self else { return }
-        self.name = name
+        self.name = conversationName
         await persistThread()
       }
     }
