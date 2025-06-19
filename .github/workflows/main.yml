@@ -6,7 +6,7 @@ on:
   pull_request: # TODO: remove
     branches: [ "main" ]
 concurrency:
-  group: ${{ github.ref }}
+  group: main-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   warm-up-release-app-cache:

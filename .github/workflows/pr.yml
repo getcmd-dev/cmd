@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main" ]
 concurrency:
-  group: ${{ github.ref }}
+  group: integration-tests-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   build-release-app:

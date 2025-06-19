@@ -4,7 +4,7 @@ on:
   pull_request: # TODO: Remove
     branches: [ "main" ]
 concurrency:
-  group: ${{ github.ref }}
+  group: release-app-${{ github.ref }}
 jobs:
   distribute-app:
     runs-on: macos-15

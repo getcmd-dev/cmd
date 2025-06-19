@@ -106,12 +106,14 @@ platform :mac do
       readonly: readonly,
       git_url: git_url
     )
-    match(
-      type: 'development',
-      team_id: 'GP78T2GNXD',
-      readonly: readonly,
-      git_url: git_url
-    )
+    # match(
+    #   type: 'development',
+    #   team_id: 'GP78T2GNXD',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
+    # Print available signing certificates
+    sh('security find-identity -v -p codesigning')
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -138,9 +140,9 @@ platform :mac do
         # signingStyle: "manual",
         # signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
         # teamID: "GP78T2GNXD",
-        # provisioningProfiles: {
-        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-        # }
+        provisioningProfiles: {
+          "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+        }
       },
 
       xcargs: "-allowProvisioningUpdates",
