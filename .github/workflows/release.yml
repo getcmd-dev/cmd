@@ -1,5 +1,7 @@
 name: Draft GitHub Release
 
+on:
+  workflow_dispatch:
 jobs:
   distribute-app:
     runs-on: macos-15
