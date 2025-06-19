@@ -37,6 +37,8 @@ jobs:
     - name: Publish release
       run: cd app && fastlane mac distribute_release
       env:
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}

@@ -33,7 +33,7 @@ platform :mac do
       configuration: "Debug",
       skip_archive: true,
       scheme: "command",
-      silent: true,
+      # silent: true,
       xcodebuild_formatter: "xcbeautify",
     )
   end
@@ -73,7 +73,7 @@ platform :mac do
       derived_data_path: "build/derived_data",
       output_name: "command.app",
       scheme: "command",
-      silent: true,
+      # silent: true,
       skip_archive: true,
       xcodebuild_formatter: "xcbeautify",
       export_options: {
@@ -130,7 +130,7 @@ platform :mac do
       derived_data_path: "#{build_path}/derived_data",
       output_name: app_name,
       scheme: "command",
-      silent: true,
+      # silent: true,
       skip_archive: false,
       xcodebuild_formatter: "xcbeautify",
       export_options: {
