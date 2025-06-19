@@ -3,24 +3,23 @@ default_platform(:mac)
 # Load a secret from the keychain if it is not passed as an environment variable.
 require 'base64'
 
+# A helper that loads a secret from the environment variable or the keychain.
 def load_secret(env_key)
-  return ENV[env_key] if ENV[env_key] && store_secret_to_keychain(env_key, ENV[env_key])
+  if ENV[env_key]
+    unless ENV['CI']
+      # When the secret is passed as an environment variable locally, we store it in the keychain for future use.
+      puts "Writting secret to keychain: #{env_key}"
+      # Use base64 encoding to avoid dealing with new lines.
+      sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{env_key}' -w '#{Base64.strict_encode64(ENV[env_key])}' -U")
+    end
+    return ENV[env_key]
+  end
+  
   puts "Loading secret from keychain: #{env_key}"
   encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
   return nil if encoded.empty?
-  # Use base64 encoding to avoid dealing with new lines.
   decoded = Base64.decode64(encoded)
   ENV[env_key] = decoded
-end
-
-# Store a secret to the keychain if it is not already stored or if it has changed.
-def store_secret_to_keychain(key, value)
-  return if ENV['CI']
-  encoded_value = Base64.strict_encode64(value)
-  existing_encoded = `security find-generic-password -s 'dev.getcmd.#{key}' -w 2>/dev/null`.strip
-  return if existing_encoded == encoded_value
-
-  sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{key}' -w '#{encoded_value}' -U")
 end
 
 platform :mac do
@@ -31,7 +30,7 @@ platform :mac do
       configuration: "Debug",
       skip_archive: true,
       scheme: "command",
-      silent: true,
+      # silent: true,
       xcodebuild_formatter: "xcbeautify",
     )
   end
@@ -40,93 +39,90 @@ platform :mac do
   lane :build_release do
     setup_ci if ENV['CI']
 
+    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
+
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     readonly = true
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
-    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+    git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
-      type: 'appstore',
+      type: 'development',
+      team_id: 'GP78T2GNXD',
       readonly: readonly,
       git_url: git_url
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
+      destination: "platform=macOS,arch=arm64",
+      skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
-      configuration: "Release",
+      configuration: "Release", 
       export_method: "mac-application",
       output_directory: "build/release",
       derived_data_path: "build/derived_data",
       output_name: "command.app",
       scheme: "command",
-      silent: true,
-      skip_archive: true
+      # silent: true,
+      skip_archive: true,
+      xcodebuild_formatter: "xcbeautify",
+      export_options: {
+        method: "development",
+      },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
-    remove_zip = options.fetch(:remove_zip, true)
     setup_ci if ENV['CI']
+    remove_zip = options.fetch(:remove_zip, true)
+    version = options.fetch(:version, nil)
 
-    personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
+
+    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     readonly = true
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
-    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
-
-    # match(
-    #   type: 'appstore',
-    #   readonly: readonly,
-    #   git_url: git_url
-    # )
-    # match(
-    #   type: 'development',
-    #   readonly: readonly,
-    #   git_url: git_url
-    # )
+    git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+    
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
       readonly: readonly,
       git_url: git_url
     )
-    # Print available signing certificates
-    sh('security find-identity -v -p codesigning')
+    update_code_signing_settings(
+      code_sign_identity: 'Developer ID Application',
+      use_automatic_signing: false,
+      path: "./command.xcodeproj"
+    )
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-
     build_path = File.absolute_path("../build")
     release_path = "#{build_path}/release"
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
     build_mac_app(
-      xcargs: "-allowProvisioningUpdates",
-      export_method: "developer-id",
-      export_options: {
-        method: "developer-id",
-        signingStyle: "manual",
-        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
-        teamID: "GP78T2GNXD",
-        # provisioningProfiles: {
-        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-        # }
-      },
-      skip_profile_detection: "true",
-      
+      destination: "platform=macOS,arch=arm64",
+      skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
       configuration: "Release",
+      export_method: "developer-id",
       output_directory: release_path,
       derived_data_path: "#{build_path}/derived_data",
       output_name: app_name,
       scheme: "command",
-      silent: true,
+      # silent: true,
       skip_archive: false,
       xcodebuild_formatter: "xcbeautify",
     )
@@ -165,11 +161,9 @@ platform :mac do
 
     sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{app_zip_path} --ed-key-file -")
     app_config_path = File.absolute_path("../command.shared.xcconfig")
-    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+    version = version || sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
 
-    puts "version: #{version}"
-
-    puts "Notarization completed successfully. app_path: #{app_path}"
+    puts "Notarization completed successfully. version: #{version}, app_path: #{app_path}"
 
     appcast_template_path = File.absolute_path("./appcast.template.xml")
     appcast_path = File.absolute_path("./appcast.xml")
@@ -185,35 +179,46 @@ platform :mac do
 
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do
-    result = create_and_sign_release(remove_zip: false)
+    setup_ci if ENV['CI']
+    app_config_path = File.absolute_path("../command.shared.xcconfig")
+    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+    # Look for an existing version tag. If one exist, bump the version.
+    existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
+    if existing_version.empty?
+      puts "Using version: #{version}"
+    else
+      version_parts = version.split('.')
+      version_parts[-1] = (version_parts[-1].to_i + 1).to_s
+      new_version = version_parts.join('.')
+      puts "Bumping version from #{version} to #{new_version}."
+
+      sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
+      version = new_version
+    end
+
+    result = create_and_sign_release(remove_zip: false, version: version)
     version = result[:version]
     app_zip_path = result[:app_zip_path]
     build_path = result[:build_path]
 
     set_github_release(
-      api_token: load_secret("GITHUB_TOKEN"),
+      api_token: load_secret("GH_WRITE_TOKEN"),
       server_url: "https://api.github.com",
       repository_name: "getcmd-dev/cmd",
       name: "v#{version}",
       tag_name: "v#{version}",
-      description: "test release",
-      commitish: "main",
-      upload_assets: app_zip_path
-    )
-
-    set_github_release(
-      api_token: load_secret("GITHUB_TEST_TOKEN"),
-      server_url: "https://api.github.com",
-      repository_name: "gsabran/test",
-      name: "v#{version}",
-      tag_name: "v#{version}",
-      description: "test release",
+      description: "v#{version}",
       commitish: "main",
       upload_assets: app_zip_path
     )
 
     sh("rm -rf #{build_path}")
 
-    puts "👉 Don't forget to push the changes to appcast.xml"
+    create_pull_request(
+      api_token: load_secret("GH_WRITE_TOKEN"),
+      repo: "getcmd-dev/cmd",
+      title: "Release v#{version}",
+      base: "main"
+    )
   end
 end

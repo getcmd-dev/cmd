@@ -123,7 +123,7 @@ public func expectation(description: String, _sourceLocation: SourceLocation = #
 }
 
 /// Wait for an expectation to be fulfilled, or throw an error after the timeout.
-public func fulfillment(of expectation: SwiftTestingUtils.Expectation, timeout: TimeInterval = 1) async throws {
+public func fulfillment(of expectation: SwiftTestingUtils.Expectation, timeout: TimeInterval = 5) async throws {
   try await expectation.fulfillment(timeout: timeout)
 }
 

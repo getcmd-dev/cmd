@@ -134,8 +134,6 @@ final class UpdateChecker: NSObject, Sendable {
   override init() {
     super.init()
 
-    let hostBundle = Bundle.main
-    let applicationBundle = Bundle.main
     setupUpdater()
   }
 

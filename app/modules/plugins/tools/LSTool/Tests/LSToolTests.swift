@@ -44,7 +44,7 @@ struct LSToolTests {
       toolUse.startExecuting()
       return toolUse
     }
-    let result = try await toolUse.result
+    let result = try await toolUse.output
     #expect(toolUse.directoryPath.path() == "/path/to/root/path/to/dir")
     #expect(result.hasMore == false)
     #expect(result.files.count == 1)
@@ -70,7 +70,7 @@ struct LSToolTests {
       return toolUse
     }
     await #expect(throws: APIError.self, performing: {
-      try await toolUse.result
+      try await toolUse.output
     })
   }
 }

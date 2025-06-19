@@ -1,18 +1,7 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
+name: Draft GitHub Release
 
-name: Release MacOS app
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request: # TODO: Remove
-    branches: [ "main" ]
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
-  build-release-app:
+  distribute-app:
     runs-on: macos-15
     steps:
     - name: MacOS version
@@ -28,14 +17,27 @@ jobs:
       with:
         xcode-version: latest-stable
     - name: Install node dependencies
-      run: cd local-server && yarn install
-    - uses: actions/checkout@v4
-    - name: Make release
-      run: cd app && fastlane distribute_release --verbose
+      run: cd local-server && yarn install && yarn build && yarn copy-to-app
+    # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
+    - uses: extractions/netrc@v1
+      with:
+        machine: github.com
+        username: oauth2
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Load derived data cache
+      uses: actions/cache/restore@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}-app-derived-data-main
+    - name: Publish release
+      run: cd app && fastlane mac distribute_release
       env:
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
         NOTARY_P8: ${{ secrets.NOTARY_P8 }}
         NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
         SPARKLE_SECRET_KEY: ${{ secrets.SPARKLE_SECRET_KEY }}
+        GH_WRITE_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}

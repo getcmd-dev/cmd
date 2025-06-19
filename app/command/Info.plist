@@ -11,7 +11,7 @@
 	<key>ReleaseUserDefaultsSharedSuiteName</key>
 	<string>$(INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName)</string>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/gsabran/test/refs/heads/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/getcmd-dev/cmd/refs/heads/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>oIUy9brsbVznI5y2tOrX59KVITPCxYltusDhv4z9byE=</string>
 	<key>UserDefaultsSharedSuiteName</key>

@@ -122,6 +122,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
 
     func reject(reason _: String?) { }
 
+    func cancel() { }
+
     func encode(to _: Encoder) throws {
       fatalError("Decoding not implemented for TestTool.Use")
     }
@@ -221,6 +223,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     func startExecuting() { }
 
     func reject(reason _: String?) { }
+
+    func cancel() { }
 
     func encode(to _: Encoder) throws {
       fatalError("Decoding not implemented for TestStreamingTool.Use")

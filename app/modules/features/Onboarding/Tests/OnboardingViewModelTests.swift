@@ -111,38 +111,18 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep() // welcome -> accessibility
     #expect(viewModel.currentStep == .accessibilityPermission)
 
-    // Set up expectation for step change
-    let stepChangeExpectation = expectation(description: "Step should change to xcodeExtensionPermission")
-    let cancellable = viewModel.didSet(\.currentStep) { step in
-      if step == .xcodeExtensionPermission {
-        stepChangeExpectation.fulfill()
-      }
-    }
-
     // Grant accessibility permission
     mockPermissionsService.set(permission: .accessibility, granted: true)
 
     // Wait for the step change
-    try await fulfillment(of: [stepChangeExpectation])
-    cancellable.cancel()
-
+    try await viewModel.wait(for: \.currentStep, toBe: .xcodeExtensionPermission)
     #expect(viewModel.currentStep == .xcodeExtensionPermission)
-
-    // Set up expectation for next step change
-    let nextStepChangeExpectation = expectation(description: "Step should change to providersSetup")
-    let nextCancellable = viewModel.didSet(\.currentStep) { step in
-      if step == .providersSetup {
-        nextStepChangeExpectation.fulfill()
-      }
-    }
 
     // Grant Xcode extension permission
     mockPermissionsService.set(permission: .xcodeExtension, granted: true)
 
     // Wait for the step change
-    try await fulfillment(of: [nextStepChangeExpectation])
-    nextCancellable.cancel()
-
+    try await viewModel.wait(for: \.currentStep, toBe: .providersSetup)
     #expect(viewModel.currentStep == .providersSetup)
   }
 
@@ -286,20 +266,10 @@ struct OnboardingViewModelTests {
     #expect(viewModel.currentStep == .accessibilityPermission)
     #expect(viewModel.isAccessibilityPermissionGranted == false)
 
-    // Set up expectation for permission change
-    let permissionChangeExpectation = expectation(description: "Accessibility permission should be granted")
-    let permissionCancellable = viewModel.didSet(\.isAccessibilityPermissionGranted) { granted in
-      if granted {
-        permissionChangeExpectation.fulfill()
-      }
-    }
-
     // Grant accessibility permission
     mockPermissionsService.set(permission: .accessibility, granted: true)
-
     // Wait for async update
-    try await fulfillment(of: [permissionChangeExpectation])
-    permissionCancellable.cancel()
+    try await viewModel.wait(for: \.isAccessibilityPermissionGranted, toBe: true)
 
     #expect(viewModel.isAccessibilityPermissionGranted == true)
     #expect(viewModel.currentStep == .xcodeExtensionPermission)
@@ -325,20 +295,10 @@ struct OnboardingViewModelTests {
     #expect(viewModel.currentStep == .xcodeExtensionPermission)
     #expect(viewModel.isXcodeExtensionPermissionGranted == false)
 
-    // Set up expectation for permission change
-    let permissionChangeExpectation = expectation(description: "Xcode extension permission should be granted")
-    let permissionCancellable = viewModel.didSet(\.isXcodeExtensionPermissionGranted) { granted in
-      if granted {
-        permissionChangeExpectation.fulfill()
-      }
-    }
-
     // Grant xcode extension permission
     mockPermissionsService.set(permission: .xcodeExtension, granted: true)
-
     // Wait for async update
-    try await fulfillment(of: [permissionChangeExpectation])
-    permissionCancellable.cancel()
+    try await viewModel.wait(for: \.isXcodeExtensionPermissionGranted, toBe: true)
 
     #expect(viewModel.isXcodeExtensionPermissionGranted == true)
     #expect(viewModel.currentStep == .providersSetup)
@@ -363,22 +323,15 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
 
-    // Set up expectation for step change
-    let stepChangeExpectation = expectation(description: "Step should change to setupComplete")
-    let stepCancellable = viewModel.didSet(\.currentStep) { step in
-      if step == .setupComplete {
-        stepChangeExpectation.fulfill()
-      }
-    }
-
     // Add a provider with API key
     var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
     newSettings[.openAI] = LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1)
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
 
+    viewModel.handleMoveToNextStep()
     // Wait for async update
-    try await fulfillment(of: [stepChangeExpectation])
-    stepCancellable.cancel()
+    try await viewModel.wait(for: \.currentStep, toBe: .setupComplete)
 
     #expect(viewModel.currentStep == .setupComplete)
   }

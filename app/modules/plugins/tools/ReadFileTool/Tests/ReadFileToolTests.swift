@@ -29,7 +29,7 @@ struct ReadFileToolTests {
       toolUse.startExecuting()
       return toolUse
     }
-    let result = try await toolUse.result
+    let result = try await toolUse.output
     #expect(result.content == "Hello, world!")
   }
 
@@ -53,7 +53,7 @@ struct ReadFileToolTests {
       return toolUse
     }
     await #expect(throws: NSError.self, performing: {
-      try await toolUse.result
+      try await toolUse.output
     })
   }
 }

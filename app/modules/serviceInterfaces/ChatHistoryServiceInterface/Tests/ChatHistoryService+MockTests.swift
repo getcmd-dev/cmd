@@ -128,15 +128,16 @@ struct MockChatHistoryServiceTests {
 
   @Test("Load last threads - custom callback returns result")
   func test_loadLastThreads_customCallback() async throws {
-    let sut = MockChatHistoryService()
-    let expectedMetadata = [createTestThreadMetadata(name: "Custom Thread")]
+    let threads = Array(0..<11).map { i in
+      createTestThread(id: UUID(), name: "Custom Thread #\(i)", createdAt: Date(timeIntervalSinceNow: TimeInterval(-i)))
+    }
+    let sut = MockChatHistoryService(chatThreads: threads)
     let receivedLast = Atomic<Int?>(nil)
     let receivedOffset = Atomic<Int?>(nil)
 
     sut.onLoadLastChatThreads = { last, offset in
       receivedLast.set(to: last)
       receivedOffset.set(to: offset)
-      return expectedMetadata
     }
 
     let result = try await sut.loadLastChatThreads(last: 5, offset: 10)
@@ -144,7 +145,7 @@ struct MockChatHistoryServiceTests {
     #expect(receivedLast.value == 5)
     #expect(receivedOffset.value == 10)
     #expect(result.count == 1)
-    #expect(result.first?.name == "Custom Thread")
+    #expect(result.first?.name == "Custom Thread #10")
   }
 
   @Test("Load last threads - callback fallback to default")
@@ -184,14 +185,13 @@ struct MockChatHistoryServiceTests {
 
   @Test("Load thread by ID - custom callback")
   func test_loadThread_customCallback() async throws {
-    let sut = MockChatHistoryService()
     let threadId = UUID()
     let expectedThread = createTestThread(id: threadId, name: "Custom Thread")
+    let sut = MockChatHistoryService(chatThreads: [expectedThread])
     let receivedId = Atomic<UUID?>(nil)
 
     sut.onLoadChatThread = { id in
       receivedId.set(to: id)
-      return expectedThread
     }
 
     let result = try await sut.loadChatThread(id: threadId)
@@ -366,18 +366,6 @@ struct MockChatHistoryServiceTests {
       messages: [],
       events: [],
       projectInfo: nil,
-      createdAt: createdAt)
-  }
-
-  private func createTestThreadMetadata(
-    id: UUID = UUID(),
-    name: String = "Test Thread",
-    createdAt: Date = Date())
-    -> ChatThreadModelMetadata
-  {
-    ChatThreadModelMetadata(
-      id: id,
-      name: name,
       createdAt: createdAt)
   }
 

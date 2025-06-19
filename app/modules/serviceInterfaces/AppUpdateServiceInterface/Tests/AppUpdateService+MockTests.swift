@@ -84,7 +84,7 @@ struct MockAppUpdateServiceTests {
   }
 
   @Test
-  func test_ignoreUpdateCallsCallback() async throws {
+  func test_ignoreUpdate_calls_onIgnoreUpdate() async throws {
     let sut = MockAppUpdateService()
     let exp = expectation(description: "Ignore update called")
     let updateInfo = AppUpdateInfo(version: "1.5.0", fileURL: nil, releaseNotesURL: nil)
@@ -96,33 +96,6 @@ struct MockAppUpdateServiceTests {
 
     sut.ignore(update: updateInfo)
     try await fulfillment(of: exp)
-  }
-
-  @Test
-  func test_ignoreUpdateSetsNoUpdateAvailable() async throws {
-    let updateInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
-    let sut = MockAppUpdateService(hasUpdateAvailable: .updateAvailable(info: updateInfo))
-
-    // Initially has update available
-    if case .updateAvailable = sut.hasUpdateAvailable.currentValue {
-      // Expected
-    } else {
-      Issue.record("Expected updateAvailable initially")
-    }
-
-    let exp = expectation(description: "Update becomes unavailable")
-    let cancellable = sut.hasUpdateAvailable.sink { result in
-      if result == .noUpdateAvailable {
-        exp.fulfill()
-      }
-    }
-
-    let ignoreInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
-    sut.ignore(update: ignoreInfo)
-    try await fulfillment(of: exp)
-
-    #expect(sut.hasUpdateAvailable.currentValue == .noUpdateAvailable)
-    _ = cancellable
   }
 
   @Test

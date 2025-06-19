@@ -1,0 +1,44 @@
+name: Integration tests
+
+on:
+  push:
+    branches: [ "main" ]
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+jobs:
+  warm-up-release-app-cache:
+    runs-on: macos-15
+    steps:
+    - name: MacOS version
+      run: sw_vers
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: "./local-server/.nvmrc"
+    - uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: "6.1"
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    - name: Install node dependencies
+      run: cd local-server && yarn install && yarn build && yarn copy-to-app
+    # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
+    - uses: extractions/netrc@v1
+      with:
+        machine: github.com
+        username: oauth2
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Make release
+      run: cd app && fastlane mac build_release
+      env:
+        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
+        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+        MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
+        FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
+    - name: Cache derived data
+      uses: actions/cache/save@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}-app-derived-data-main
