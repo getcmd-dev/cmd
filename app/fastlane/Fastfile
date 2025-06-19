@@ -140,17 +140,17 @@ platform :mac do
       # silent: true,
       skip_archive: false,
       xcodebuild_formatter: "xcbeautify",
-      export_options: {
-        method: "developer-id",
-        signingStyle: "manual",
-        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
-        teamID: "GP78T2GNXD",
-        provisioningProfiles: {
-          "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-        }
-      },
+      # export_options: {
+      #   method: "developer-id",
+      #   signingStyle: "manual",
+      #   signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
+      #   teamID: "GP78T2GNXD",
+      #   # provisioningProfiles: {
+      #   #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+      #   # }
+      # },
 
-      xcargs: "-allowProvisioningUpdates",
+      # xcargs: "-allowProvisioningUpdates",
       # skip_profile_detection: "true",
       
     )
