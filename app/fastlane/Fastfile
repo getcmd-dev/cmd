@@ -214,10 +214,13 @@ platform :mac do
 
     sh("rm -rf #{build_path}")
 
+    new_branch_name = "release-v#{version}"
+    sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' && git push origin #{new_branch_name}")
     create_pull_request(
       api_token: load_secret("GH_WRITE_TOKEN"),
-      repo: "getcmd-dev/cmd",
       title: "Release v#{version}",
+      repo: "getcmd-dev/cmd",
+      head: new_branch_name,
       base: "main"
     )
   end

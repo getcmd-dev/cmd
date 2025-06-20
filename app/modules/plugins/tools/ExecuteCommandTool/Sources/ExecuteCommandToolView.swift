@@ -38,8 +38,8 @@ struct ToolUseView: View {
       content(statusDescription: "Running \(toolUse.command)...")
     case .completed(.success):
       content(statusDescription: toolUse.command)
-    case .completed(.failure(let error)):
-      content(statusDescription: "Running \(toolUse.command) failed: \(error.localizedDescription)")
+    case .completed(.failure):
+      content(statusDescription: "Running \(toolUse.command) failed")
     }
   }
 
@@ -67,7 +67,7 @@ struct ToolUseView: View {
   @ViewBuilder
   private func content(statusDescription: String) -> some View {
     VStack(alignment: .leading) {
-      HStack {
+      HStack(alignment: .top, spacing: 0) {
         if isExpanded {
           Icon(systemName: "chevron.down")
             .frame(width: 14, height: 14)
@@ -88,21 +88,8 @@ struct ToolUseView: View {
           .font(.system(.body, design: .monospaced))
           .foregroundColor(foregroundColor)
           .lineLimit(nil)
-        if isHovered {
-          IconButton(
-            action: {
-              NSPasteboard.general.clearContents()
-              NSPasteboard.general.setString(toolUse.command, forType: .string)
-            },
-            systemName: "doc.on.doc",
-            padding: 2,
-            cornerRadius: 0,
-            withCheckMark: true)
-            .frame(width: 15, height: 15)
-        } else {
-          Spacer(minLength: 0)
-            .frame(width: 15)
-        }
+          .fixedSize(horizontal: false, vertical: true)
+          .padding(.leading, 5)
         if case .running = toolUse.status {
           Spacer(minLength: 0)
           IconButton(
@@ -118,12 +105,10 @@ struct ToolUseView: View {
       }
       .tappableTransparentBackground()
       .onTapGesture { isExpanded.toggle() }
-      .acceptClickThrough()
       if isExpanded {
         VStack(alignment: .leading, spacing: 8) {
           stdoutView
         }
-//        .padding(.leading, 15)
         .frame(maxWidth: 600, alignment: .leading)
       }
     }.onHover { isHovered = $0 }
