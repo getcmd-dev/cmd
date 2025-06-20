@@ -35,7 +35,7 @@ struct ToolUseView: View {
     case .approvalRejected:
       content(statusDescription: "Rejected: \(toolUse.command)")
     case .running:
-      content(statusDescription: "Running \(toolUse.command)...")
+      content(statusDescription: toolUse.command)
     case .completed(.success):
       content(statusDescription: toolUse.command)
     case .completed(.failure):
@@ -86,6 +86,7 @@ struct ToolUseView: View {
         }
         Text(statusDescription)
           .font(.system(.body, design: .monospaced))
+          .textSelection(.enabled)
           .foregroundColor(foregroundColor)
           .lineLimit(nil)
           .fixedSize(horizontal: false, vertical: true)

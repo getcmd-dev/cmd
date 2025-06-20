@@ -6,25 +6,25 @@ import SwiftUI
 // MARK: - ThreeDotsLoadingAnimation
 
 public struct ThreeDotsLoadingAnimation: View {
-  public init(duration: TimeInterval = 2) {
+  public init(baseText: String = "", duration: TimeInterval = 2) {
+    self.baseText = baseText
     self.duration = duration
   }
 
   public var body: some View {
-    HStack {
-      Text(text)
-        .onAppear {
-          startAnimation()
-        }
-    }
+    Text(text)
+      .onAppear {
+        startAnimation()
+      }
   }
 
   @State private var i = 0
 
   private let duration: TimeInterval
+  private let baseText: String
 
   private var text: String {
-    String(repeating: ".", count: i) + String(repeating: " ", count: 4 - i)
+    baseText + String(repeating: ".", count: i) + String(repeating: " ", count: 4 - i)
   }
 
   private func startAnimation() {

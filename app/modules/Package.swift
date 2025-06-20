@@ -330,26 +330,6 @@ targets.append(contentsOf: Target.module(
   path: "./plugins/ExtensionCommandHandler"))
 
 targets.append(contentsOf: Target.module(
-  name: "SettingsFeature",
-  dependencies: [
-    "AppUpdateServiceInterface",
-    "ChatFoundation",
-    "ConcurrencyFoundation",
-    "DLS",
-    "FoundationInterfaces",
-    "LLMFoundation",
-    "SettingsServiceInterface",
-    "ToolFoundation",
-  ],
-  testDependencies: [
-    "FoundationInterfaces",
-    "LLMFoundation",
-    "SettingsServiceInterface",
-    "SwiftTesting",
-  ],
-  path: "./features/Settings"))
-
-targets.append(contentsOf: Target.module(
   name: "ChatFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -412,6 +392,26 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   path: "./features/Chat/ChatFeatureInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "SettingsFeature",
+  dependencies: [
+    "AppUpdateServiceInterface",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FoundationInterfaces",
+    "LLMFoundation",
+    "SettingsServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "FoundationInterfaces",
+    "LLMFoundation",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./features/SettingsFeature"))
 
 targets.append(contentsOf: Target.module(
   name: "Onboarding",
