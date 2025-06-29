@@ -226,7 +226,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
       streamingTask = nil
 
       if case .message(let lastEvent) = events.last {
-        events[events.count - 1] = .message(lastEvent.with(failureReason: "Error sending message: \(error.localizedDescription)"))
+        if error is CancellationError {
+          events[events.count - 1] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
+        } else {
+          events[events.count - 1] = .message(lastEvent.with(info: .init(
+            info: "Error sending message: \(error.localizedDescription)",
+            level: .error)))
+        }
       }
 
       // Save even after error to preserve the failure state

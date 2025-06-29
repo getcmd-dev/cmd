@@ -35,16 +35,33 @@ public struct ChatMessageContentWithRoleModel: Sendable {
   public init(
     content: ChatMessageContentModel,
     role: MessageRole,
-    failureReason: String? = nil)
+    info: Info? = nil)
   {
     self.content = content
     self.role = role
-    self.failureReason = failureReason
+    self.info = info
+  }
+
+  public struct Info: Sendable {
+    public init(info: String, level: InfoLevel) {
+      self.info = info
+      self.level = level
+    }
+
+    public let info: String
+    public let level: InfoLevel
+
+    public enum InfoLevel: String, Sendable {
+      case info
+      case warning
+      case error
+    }
   }
 
   public let content: ChatMessageContentModel
   public let role: MessageRole
-  public let failureReason: String?
+  public let info: Info?
+
 }
 
 // MARK: - ChatMessageContentModel

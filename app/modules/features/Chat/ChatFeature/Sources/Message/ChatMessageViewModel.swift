@@ -68,26 +68,26 @@ struct ChatMessageContentWithRole: Identifiable {
   init(
     content: ChatMessageContent,
     role: MessageRole,
-    failureReason: String? = nil)
+    info: ChatMessageContentWithRoleModel.Info? = nil)
   {
     self.content = content
     self.role = role
-    self.failureReason = failureReason
+    self.info = info
   }
 
   let content: ChatMessageContent
   let role: MessageRole
-  let failureReason: String?
+  let info: ChatMessageContentWithRoleModel.Info?
 
   var id: UUID {
     content.id
   }
 
-  func with(failureReason: String) -> ChatMessageContentWithRole {
+  func with(info: ChatMessageContentWithRoleModel.Info) -> ChatMessageContentWithRole {
     ChatMessageContentWithRole(
       content: content,
       role: role,
-      failureReason: failureReason)
+      info: info)
   }
 }
 

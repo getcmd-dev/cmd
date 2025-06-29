@@ -25,6 +25,7 @@ export type StreamedResponseChunk =
 	| ResponseError
 	| ReasoningDelta
 	| ReasoningSignature
+	| ResponseUsage
 	| Ping
 
 export interface TextDelta {
@@ -91,6 +92,22 @@ export interface ResponseError {
 	 * @format integer
 	 */
 	statusCode?: number
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+
+export interface ResponseUsage {
+	type: "usage"
+	/**
+	 * @format integer
+	 */
+	inputTokens: number
+	/**
+	 * @format integer
+	 */
+	outputTokens: number
 	/**
 	 * @format integer
 	 */

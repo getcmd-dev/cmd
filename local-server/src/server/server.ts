@@ -1,7 +1,7 @@
 import express from "express"
 import Router from "express-promise-router"
 import { logInfo } from "../logger"
-import { registerEndpoint as registerSendMessageEndpoint } from "./endpoints/sendMessage"
+import { registerEndpoint as registerSendMessageEndpoint } from "./endpoints/sendMessage/sendMessage"
 import { registerEndpoint as registerExtensionBridge } from "./endpoints/interProcessesBridge"
 import { registerEndpoint as registerListFilesEndpoint } from "./endpoints/tools/listFiles"
 import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/tools/searchFiles/endpoint"

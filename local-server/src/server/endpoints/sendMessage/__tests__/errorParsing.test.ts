@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals"
-import { mapResponseError } from "../sendMessage"
+import { mapResponseError } from "../errorParsing"
 
 describe("mapResponseError", () => {
 	const mockIdx = () => 42
@@ -45,7 +45,35 @@ describe("mapResponseError", () => {
 				type: "error",
 				message:
 					"Invalid schema for function 'list_files': In context=('properties', 'recursive'), schema must have a 'type' key.",
-				statusCode: 500,
+				statusCode: 400,
+				idx: 42,
+			})
+		})
+	})
+
+	describe("OpenRouter error", () => {
+		describe("Anthopic provider", () => {
+			const result = mapResponseError(
+				{
+					responseBody: JSON.stringify({
+						error: {
+							message: "Provider returned error",
+							code: 400,
+							metadata: {
+								raw: '{"type":"error","error":{"type":"invalid_request_error","message":"prompt is too long: 221676 tokens > 200000 maximum"}}',
+								provider_name: "Anthropic",
+							},
+						},
+						user_id: "user_2u49N1Ky5KjctB9KpizutDZlvKO",
+					}),
+				},
+				mockIdx,
+			)
+
+			expect(result).toEqual({
+				type: "error",
+				message: "prompt is too long: 221676 tokens > 200000 maximum",
+				statusCode: 400,
 				idx: 42,
 			})
 		})

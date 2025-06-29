@@ -886,6 +886,45 @@ extension Schema {
       try container.encode(idx, forKey: .idx)
     }
   }
+  public struct ResponseUsage: Codable, Sendable {
+    public let type = "usage"
+    public let inputTokens: Int
+    public let outputTokens: Int
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case inputTokens = "inputTokens"
+      case outputTokens = "outputTokens"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "usage",
+        inputTokens: Int,
+        outputTokens: Int,
+        idx: Int
+    ) {
+      self.inputTokens = inputTokens
+      self.outputTokens = outputTokens
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      inputTokens = try container.decode(Int.self, forKey: .inputTokens)
+      outputTokens = try container.decode(Int.self, forKey: .outputTokens)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(inputTokens, forKey: .inputTokens)
+      try container.encode(outputTokens, forKey: .outputTokens)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
   public struct Ping: Codable, Sendable {
     public let type = "ping"
     public let timestamp: Double
@@ -926,6 +965,7 @@ extension Schema {
     case responseError(_ value: ResponseError)
     case reasoningDelta(_ value: ReasoningDelta)
     case reasoningSignature(_ value: ReasoningSignature)
+    case responseUsage(_ value: ResponseUsage)
     case ping(_ value: Ping)
   
     private enum CodingKeys: String, CodingKey {
@@ -948,6 +988,8 @@ extension Schema {
           self = .reasoningDelta(try ReasoningDelta(from: decoder))
         case "reasoning_signature":
           self = .reasoningSignature(try ReasoningSignature(from: decoder))
+        case "usage":
+          self = .responseUsage(try ResponseUsage(from: decoder))
         case "ping":
           self = .ping(try Ping(from: decoder))
         default:
@@ -968,6 +1010,8 @@ extension Schema {
         case .reasoningDelta(let value):
           try value.encode(to: encoder)
         case .reasoningSignature(let value):
+          try value.encode(to: encoder)
+        case .responseUsage(let value):
           try value.encode(to: encoder)
         case .ping(let value):
           try value.encode(to: encoder)

@@ -411,8 +411,8 @@ private class RichTextView: NSTextView {
   private func handleFocus() {
     if let onFocus {
       if let window {
-        window.makeFirstResponder(self)
         Task { @MainActor in
+          window.makeFirstResponder(self)
           onFocus()
         }
         self.onFocus = nil

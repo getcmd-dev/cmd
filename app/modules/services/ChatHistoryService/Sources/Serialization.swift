@@ -90,20 +90,45 @@ extension ChatMessageContentWithRoleModel: Codable {
     try self.init(
       content: container.decode(ChatMessageContentModel.self, forKey: .content),
       role: container.decode(MessageRole.self, forKey: .role),
-      failureReason: container.decodeIfPresent(String.self, forKey: .failureReason))
+      info: container.decodeIfPresent(Info.self, forKey: .info))
   }
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(content, forKey: .content)
     try container.encode(role, forKey: .role)
-    try container.encodeIfPresent(failureReason, forKey: .failureReason)
+    try container.encodeIfPresent(info, forKey: .info)
   }
 
   enum CodingKeys: String, CodingKey {
-    case content, role, failureReason
+    case content, role, info
   }
 }
+
+// MARK: - ChatMessageContentWithRoleModel.Info + Codable
+
+extension ChatMessageContentWithRoleModel.Info: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      info: container.decode(String.self, forKey: .info),
+      level: container.decode(InfoLevel.self, forKey: .level))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(info, forKey: .info)
+    try container.encode(level, forKey: .level)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case info, level
+  }
+}
+
+// MARK: - ChatMessageContentWithRoleModel.Info.InfoLevel + Codable
+
+extension ChatMessageContentWithRoleModel.Info.InfoLevel: Codable { }
 
 // MARK: - ChatMessageContentModel + Codable
 

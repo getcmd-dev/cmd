@@ -130,7 +130,7 @@ extension ChatEvent {
         taskId: checkpoint.taskId))
 
     case .message(let message):
-      self = .message(.init(content: .init(from: message.content), role: message.role, failureReason: message.failureReason))
+      self = .message(.init(content: .init(from: message.content), role: message.role, info: message.info))
     }
   }
 
@@ -138,7 +138,7 @@ extension ChatEvent {
   var persistentModel: ChatEventModel {
     switch self {
     case .message(let message):
-      .message(.init(content: message.content.persistentModel, role: message.role, failureReason: message.failureReason))
+      .message(.init(content: message.content.persistentModel, role: message.role, info: message.info))
 
     case .checkpoint(let checkpoint):
       .checkpoint(.init(

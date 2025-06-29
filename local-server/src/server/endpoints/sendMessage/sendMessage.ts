@@ -1,20 +1,20 @@
 import { Request, Response, Router } from "express"
-import { logError, logInfo } from "../../logger"
-import { ModelProvider } from "../providers/provider"
+import { logError, logInfo } from "../../../logger"
+import { ModelProvider } from "../../providers/provider"
 import {
 	Message,
 	MessageContent,
 	Ping,
 	ReasoningMessage,
-	ResponseError,
+	ResponseUsage,
 	SendMessageRequestParams,
 	StreamedResponseChunk,
 	TextMessage,
 	Tool,
 	ToolResultMessage,
 	ToolUseRequest,
-} from "../schemas/sendMessageSchema"
-import { addUserFacingError, UserFacingError } from "../errors"
+} from "../../schemas/sendMessageSchema"
+import { addUserFacingError, UserFacingError } from "../../errors"
 
 import {
 	CoreAssistantMessage,
@@ -30,6 +30,7 @@ import {
 	FilePart,
 	CoreSystemMessage,
 } from "ai"
+import { mapResponseError } from "./errorParsing"
 
 export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
@@ -39,6 +40,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				statusCode: 400,
 			})
 		}
+		logInfo("Received request to /sendMessage endpoint")
 
 		try {
 			const body = req.body as SendMessageRequestParams
@@ -76,7 +78,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
 				})
 			}
-			const { fullStream } = await streamText({
+			const { fullStream, usage } = await streamText({
 				model,
 				tools: tools?.map(mapTool).reduce(
 					(acc, tool) => {
@@ -92,7 +94,18 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				providerOptions: generalProviderOptions,
 			})
 
-			await processResponseStream(fullStream, res)
+			let idx = await processResponseStream(fullStream, res)
+
+			const usageInfo = await usage
+			const usageRes: ResponseUsage = {
+				type: "usage",
+				inputTokens: usageInfo.promptTokens,
+				outputTokens: usageInfo.completionTokens,
+				idx: idx++,
+			}
+
+			res.write(JSON.stringify(usageRes))
+			res.end()
 		} catch (error) {
 			logInfo("Request body that led to error:\n\n" + JSON.stringify(req.body, null, 2))
 			logError(error)
@@ -108,12 +121,15 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
  * @param res - The Express response object to write the streamed response chunks to.
  * @throws {UserFacingError} If an error occurs while processing the stream or sending the response.
  */
-async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>, res: Response) {
+async function processResponseStream(
+	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+	res: Response,
+): Promise<number> {
 	let interval: NodeJS.Timeout | undefined
+	let i = 0
 	try {
 		const chunks: Array<StreamedResponseChunk> = []
 
-		let i = 0
 		interval = setInterval(() => {
 			if (res.getHeader("Content-Type") === undefined) {
 				res.setHeader("Content-Type", "text/event-stream")
@@ -185,7 +201,6 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 		if (interval) {
 			clearInterval(interval)
 		}
-		res.end()
 
 		if (process.env.NODE_ENV === "development") {
 			debugLogSendingResponseMessageToApp(chunks)
@@ -197,6 +212,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 		console.log({ error })
 		throw addUserFacingError(error, "Failed to send message.")
 	}
+	return i
 }
 
 const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk>) => {
@@ -208,6 +224,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "ping"
 		| "reasoning_delta"
 		| "reasoning_signature"
+		| "usage"
 		| undefined
 	let text: string | undefined
 
@@ -393,101 +410,4 @@ const isReasoningMessage = (message: MessageContent): message is ReasoningMessag
 
 const isDefined = <T>(value: T | undefined): value is T => {
 	return value !== undefined
-}
-
-/**
- * Maps an unknown error to a ResponseError. Deal with different error formats from supported providers.
- * @param err - The error to map.
- * @param idx - A function that returns the current index of the chunk.
- * @returns A ResponseError.
- */
-export const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
-	const error = err as UnknownError
-	if (!error) {
-		return {
-			type: "error",
-			message: "Error sending message",
-			statusCode: 400,
-			idx: idx(),
-		}
-	} else if (typeof error === "string") {
-		return {
-			type: "error",
-			message: error as string,
-			statusCode: 400,
-			idx: idx(),
-		}
-	} else if (typeof error === "object" && error !== null) {
-		const responseBody = error.responseBody
-		if (typeof responseBody === "string") {
-			try {
-				const info = JSON.parse(responseBody) as ResponseBody
-				return {
-					type: "error",
-					message: info.message || info.error?.message || "Error sending message",
-					statusCode: mapErrorCode(
-						info.statusCode || info.code || info.error?.statusCode || info.error?.code,
-					),
-					idx: idx(),
-				}
-			} catch {
-				return {
-					type: "error",
-					message: responseBody,
-					statusCode: 400,
-					idx: idx(),
-				}
-			}
-		} else {
-			return {
-				type: "error",
-				message: error.message || "Error sending message",
-				statusCode: error.statusCode || 400,
-				idx: idx(),
-			}
-		}
-	} else {
-		return {
-			type: "error",
-			message: "Error sending message",
-			statusCode: 400,
-			idx: idx(),
-		}
-	}
-}
-
-type UnknownError =
-	| undefined
-	| string
-	| {
-			responseBody: string | unknown | undefined
-			message: string | undefined
-			statusCode: number | undefined
-	  }
-
-type ResponseBody = {
-	error?: {
-		message?: string
-		statusCode?: number | string
-		code?: number | string
-	}
-	message?: string
-	statusCode?: number | string
-	code?: number | string
-}
-
-/**
- * Maps an error code to a HTTP status code.
- * @param code - The error code to map. Format might differ between providers.
- * @returns The mapped HTTP status code.
- */
-const mapErrorCode = (code: string | number | undefined): number => {
-	if (typeof code === "number") {
-		return code
-	} else if (typeof code === "string") {
-		if (code.includes("not_found")) {
-			return 404
-		}
-	}
-	return 500 // Default to 500 if code is undefined
 }
