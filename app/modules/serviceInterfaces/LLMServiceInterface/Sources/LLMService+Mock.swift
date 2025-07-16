@@ -19,7 +19,7 @@ public final class MockLLMService: LLMService {
     LLMModel,
     ChatContext,
     (UpdateStream) -> Void)
-    -> [AssistantMessage])?
+    -> SendMessageResponse)?
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
 
@@ -32,16 +32,15 @@ public final class MockLLMService: LLMService {
     tools: [any Tool],
     model: LLMModel,
     context: any ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void,
-    handleUsageInfo _: (LLMUsageInfo) -> Void)
-    async throws -> [AssistantMessage]
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> SendMessageResponse
   {
     if let onSendMessage {
       return onSendMessage(messageHistory, tools, model, context, handleUpdateStream)
     }
 
     // Default implementation returning empty array if no handler is set
-    return []
+    return SendMessageResponse(newMessages: [], usageInfo: nil)
   }
 
   public func nameConversation(firstMessage: String) async throws -> String {

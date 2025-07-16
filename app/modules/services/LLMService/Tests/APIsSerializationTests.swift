@@ -225,8 +225,7 @@ struct APIParamsEncodingTests {
       tools: [],
       model: reasoningModel,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
-      handleUpdateStream: { _ in },
-      handleUsageInfo: { _ in })
+      handleUpdateStream: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }
@@ -275,8 +274,7 @@ struct APIParamsEncodingTests {
       tools: [],
       model: reasoningModel,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
-      handleUpdateStream: { _ in },
-      handleUsageInfo: { _ in })
+      handleUpdateStream: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }
@@ -325,8 +323,7 @@ struct APIParamsEncodingTests {
       tools: [],
       model: nonReasoningModel,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
-      handleUpdateStream: { _ in },
-      handleUsageInfo: { _ in })
+      handleUpdateStream: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }

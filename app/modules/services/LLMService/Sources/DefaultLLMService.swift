@@ -33,12 +33,13 @@ final class DefaultLLMService: LLMService {
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
     context: any ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void,
-    handleUsageInfo: (Schema.ResponseUsage) -> Void)
-    async throws -> [AssistantMessage]
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> SendMessageResponse
   {
     let response = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
     handleUpdateStream(response)
+
+    let usageInfo = Atomic<LLMUsageInfo?>(nil)
 
     do {
       var messageHistory = messageHistory
@@ -56,7 +57,7 @@ final class DefaultLLMService: LLMService {
             newMessages.append(newMessage)
             response.update(with: newMessages)
           },
-          handleUsageInfo: handleUsageInfo)
+          handleUsageInfo: { info in usageInfo.set(to: info) })
 
         // The new message is now entirely received. We can deal with tool calls.
         let toolUseRequests: [ToolUseMessage] = newMessage.content.compactMap { content in
@@ -90,7 +91,7 @@ final class DefaultLLMService: LLMService {
       let finalMessage = await message.lastValue
       messages.append(finalMessage)
     }
-    return messages
+    return SendMessageResponse(newMessages: messages, usageInfo: usageInfo.value)
   }
 
   /// Call the `sendMessage` endpoint once.

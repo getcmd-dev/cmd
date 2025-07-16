@@ -32,22 +32,20 @@ public protocol ChatContext: Sendable {
 public protocol LLMService: Sendable {
   /// Send a message and wait for responses from the assistant
   ///
-  /// - Returns: The message received from the assistant.
+  /// - Returns: A response containing the assistant's messages and usage information (token counts, costs, etc.) if available.
   /// - Parameters:
   ///   - messageHistory: The historical context of all messages in the conversation. The last message is expected to be the last one sent by the user.
   ///   - tools: The tools available to the assistant.
   ///   - model: The model to use for the assistant.
   ///   - context: The context in which the message is sent, providing information and hooks for the assistant to use.
   ///   - handleUpdateStream: A callback called synchronously with a stream that will broadcast updates about received messages. This can be usefull if you want to display the messages as they are streamed.
-  ///   - handleUsageInfo: Closure called when usage information is available.
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
     model: LLMModel,
     context: ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void,
-    handleUsageInfo: (LLMUsageInfo) -> Void)
-    async throws -> [AssistantMessage]
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> SendMessageResponse
 
   /// Generate a title for a conversation based on the first message.
   func nameConversation(firstMessage: String) async throws -> String
@@ -57,6 +55,18 @@ public protocol LLMService: Sendable {
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage
+
+// MARK: - SendMessageResponse
+
+public struct SendMessageResponse: Sendable {
+  public let newMessages: [AssistantMessage]
+  public let usageInfo: LLMUsageInfo?
+
+  public init(newMessages: [AssistantMessage], usageInfo: LLMUsageInfo?) {
+    self.newMessages = newMessages
+    self.usageInfo = usageInfo
+  }
+}
 
 // MARK: - LLMServiceError
 
@@ -87,17 +97,15 @@ extension LLMService {
     tools: [any Tool],
     model: LLMModel,
     context: ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void,
-    handleUsageInfo: (Schema.ResponseUsage) -> Void)
-    async throws -> [AssistantMessage]
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> SendMessageResponse
   {
     try await sendMessage(
       messageHistory: messageHistory,
       tools: tools,
       model: model,
       context: context,
-      handleUpdateStream: handleUpdateStream,
-      handleUsageInfo: handleUsageInfo)
+      handleUpdateStream: handleUpdateStream)
   }
 }
 #endif

@@ -7,6 +7,7 @@ import ChatFoundation
 import ChatHistoryServiceInterface
 import CheckpointServiceInterface
 import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
@@ -128,6 +129,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
+    if let summarizationTask {
+      try? await summarizationTask.value
+    }
+
     if let streamingTask {
       defaultLogger.info("Cancelling current chat streaming task")
       streamingTask.cancel()
@@ -174,8 +179,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
     // Send the message to the server and stream the response.
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
+      let usageInfo = Atomic<LLMUsageInfo?>(nil)
       streamingTask = Task {
-        async let done = llmService.sendMessage(
+        async let response = llmService.sendMessage(
           messageHistory: messages.apiFormat,
           tools: tools,
           model: selectedModel,
@@ -213,13 +219,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
                 }
               }
             }
-          },
-          handleUsageInfo: { info in
-            Task { @MainActor [weak self] in
-              self?.handle(usageInfo: info, model: selectedModel)
-            }
           })
-        _ = try await done
+
+        try await usageInfo.set(to: response.usageInfo)
       }
 
       try await streamingTask?.value
@@ -227,6 +229,14 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
       // Save the conversation after successful completion
       await persistThread()
+
+      if let usageInfo = usageInfo.value {
+        do {
+          try await handle(usageInfo: usageInfo, model: selectedModel)
+        } catch {
+          defaultLogger.error("Failed to handle usage info", error)
+        }
+      }
     } catch {
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
@@ -313,25 +323,27 @@ final class ChatTabViewModel: Identifiable, Equatable {
   @Dependency(\.checkpointService) private var checkpointService: CheckpointService
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
+  private var summarizationTask: Task<Void, any Error>? = nil
+
   private var streamingTask: Task<Void, any Error>? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
   }
 
-  private func handle(usageInfo: LLMUsageInfo, model: LLMModel) {
+  private func handle(usageInfo: LLMUsageInfo, model: LLMModel) async throws {
     // Handle usage info, including if the conversation needs compatcing
-    let llmService = llmService
-    let messages = messages
     if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
-      Task {
+      defaultLogger.log("Summarizing conversation")
+
+      summarizationTask = Task {
         let conversationSummary = try await llmService.summarizeConversation(
           messageHistory: messages.apiFormat,
           model: model)
-        Task { @MainActor [weak self] in
-          self?.messages.append(.init(content: [.conversationSummary(.init(text: conversationSummary))], role: .user))
-        }
+        messages.append(.init(content: [.conversationSummary(.init(text: conversationSummary))], role: .user))
       }
+      try await summarizationTask?.value
+      summarizationTask = nil
     }
   }
 
