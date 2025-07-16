@@ -168,7 +168,14 @@ extension [ChatMessageViewModel] {
   /// Converts the content to the API format.
   @MainActor
   var apiFormat: [Schema.Message] {
-    flatMap(\.apiFormat)
+    let lastSummaryIdx = lastIndex(where: { message in
+      if case .conversationSummary = message.content.first {
+        return true
+      }
+      return false
+    })
+
+    return suffix(from: lastSummaryIdx ?? 0).flatMap(\.apiFormat)
   }
 }
 
@@ -243,6 +250,9 @@ extension ChatMessageContent {
         defaultLogger.error("Unable to serialize the tool use request.")
         return []
       }
+
+    case .conversationSummary(let summary):
+      return [(nil, .textMessage(.init(text: summary.text)))]
     }
   }
 }

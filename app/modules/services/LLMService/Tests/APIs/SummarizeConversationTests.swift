@@ -57,8 +57,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0,
-      context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
+      model: .claudeSonnet_4_0)
 
     // Then
     #expect(summary == expectedSummary)
@@ -86,8 +85,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0,
-      context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
+      model: .claudeSonnet_4_0)
 
     // Then
     #expect(summary == "")
@@ -116,8 +114,7 @@ final class SummarizeConversationTests {
     await #expect(throws: AppError.self) {
       _ = try await service.summarizeConversation(
         messageHistory: messageHistory,
-        model: .claudeSonnet_4_0,
-        context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
+        model: .claudeSonnet_4_0)
     }
   }
 
@@ -148,8 +145,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0,
-      context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
+      model: .claudeSonnet_4_0)
 
     // Then
     #expect(summary == expectedSummary)
@@ -195,8 +191,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0,
-      context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
+      model: .claudeSonnet_4_0)
 
     // Then
     #expect(summary == expectedSummary)

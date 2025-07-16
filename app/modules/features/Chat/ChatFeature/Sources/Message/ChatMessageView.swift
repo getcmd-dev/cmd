@@ -61,6 +61,9 @@ struct ChatMessageView: View {
             ReasoningMessageView(reasoning: reasoningContent)
               .padding(.horizontal, horizontalPadding)
               .padding(.vertical, Constants.textVerticalPadding)
+
+          case .conversationSummary:
+            EmptyView()
           }
         }
         Spacer(minLength: 0)

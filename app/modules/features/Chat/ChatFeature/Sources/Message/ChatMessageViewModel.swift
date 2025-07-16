@@ -40,6 +40,7 @@ enum ChatMessageContent: Identifiable {
   /// Messages that are relevant for the LLM but should not be shown to the user.
   case nonUserFacingText(ChatMessageTextContent)
   case toolUse(ChatMessageToolUseContent)
+  case conversationSummary(ChatMessageTextContent)
 
   var id: UUID {
     switch self {
@@ -50,6 +51,8 @@ enum ChatMessageContent: Identifiable {
     case .toolUse(let content):
       content.id
     case .reasoning(let content):
+      content.id
+    case .conversationSummary(let content):
       content.id
     }
   }

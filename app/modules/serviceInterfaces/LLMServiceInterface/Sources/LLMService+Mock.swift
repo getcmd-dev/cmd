@@ -23,7 +23,7 @@ public final class MockLLMService: LLMService {
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
 
-  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModel, ChatContext) async throws -> String)?
+  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModel) async throws -> String)?
 
   // MARK: - LLMService
 
@@ -53,12 +53,11 @@ public final class MockLLMService: LLMService {
 
   public func summarizeConversation(
     messageHistory: [Schema.Message],
-    model: LLMModel,
-    context: ChatContext)
+    model: LLMModel)
     async throws -> String
   {
     if let onSummarizeConversation {
-      return try await onSummarizeConversation(messageHistory, model, context)
+      return try await onSummarizeConversation(messageHistory, model)
     }
     return "Mock conversation summary"
   }

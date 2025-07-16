@@ -154,6 +154,10 @@ extension ChatMessageContentModel: Codable {
       let data = try container.decode(ChatMessageToolUseContentModel.self, forKey: .data)
       self = .toolUse(data)
 
+    case "conversationSummary":
+      let data = try container.decode(ChatMessageTextContentModel.self, forKey: .data)
+      self = .conversationSummary(data)
+
     default:
       throw DecodingError.dataCorruptedError(
         forKey: .type,
@@ -180,6 +184,10 @@ extension ChatMessageContentModel: Codable {
 
     case .toolUse(let data):
       try container.encode("toolUse", forKey: .type)
+      try container.encode(data, forKey: .data)
+
+    case .conversationSummary(let data):
+      try container.encode("conversationSummary", forKey: .type)
       try container.encode(data, forKey: .data)
     }
   }

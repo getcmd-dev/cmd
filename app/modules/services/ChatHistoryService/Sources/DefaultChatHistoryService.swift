@@ -221,6 +221,8 @@ extension ChatMessageContentModel {
       content.id
     case .toolUse(let content):
       content.id
+    case .conversationSummary(let content):
+      content.id
     }
   }
 }

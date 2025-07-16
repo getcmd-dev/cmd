@@ -155,7 +155,7 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel, context: ChatContext) async throws -> String {
+  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel) async throws -> String {
     var messages = messageHistory
     messages.append(.init(
       role: .user,
@@ -170,7 +170,7 @@ final class DefaultLLMService: LLMService {
       tools: [],
       model: model,
       enableReasoning: false,
-      context: context,
+      context: nil,
       handleUpdateStream: { _ in },
       handleUsageInfo: { _ in })
 

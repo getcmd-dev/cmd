@@ -86,6 +86,12 @@ extension ChatMessageContent {
       self = .toolUse(.init(
         id: toolUseContent.id,
         toolUse: toolUseContent.toolUse))
+
+    case .conversationSummary(let summary):
+      self = .conversationSummary(.init(
+        id: summary.id,
+        projectRoot: nil,
+        deltas: [summary.text]))
     }
   }
 
@@ -111,6 +117,13 @@ extension ChatMessageContent {
 
     case .toolUse(let toolUseContent):
       .toolUse(.init(id: toolUseContent.id, toolUse: toolUseContent.toolUse))
+
+    case .conversationSummary(let summary):
+      .conversationSummary(ChatMessageTextContentModel(
+        id: summary.id,
+        projectRoot: nil,
+        text: summary.text,
+        attachments: []))
     }
   }
 

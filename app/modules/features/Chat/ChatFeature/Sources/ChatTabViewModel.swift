@@ -10,6 +10,7 @@ import Combine
 import Dependencies
 import Foundation
 import FoundationInterfaces
+import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
@@ -215,7 +216,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
           },
           handleUsageInfo: { info in
             Task { @MainActor [weak self] in
-              self?.handle(usageInfo: info)
+              self?.handle(usageInfo: info, model: selectedModel)
             }
           })
         _ = try await done
@@ -318,8 +319,20 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  private func handle(usageInfo _: LLMUsageInfo) {
-    /// Handle usage info, including if the conversation needs copmatcing
+  private func handle(usageInfo: LLMUsageInfo, model: LLMModel) {
+    // Handle usage info, including if the conversation needs compatcing
+    let llmService = llmService
+    let messages = messages
+    if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
+      Task {
+        let conversationSummary = try await llmService.summarizeConversation(
+          messageHistory: messages.apiFormat,
+          model: model)
+        Task { @MainActor [weak self] in
+          self?.messages.append(.init(content: [.conversationSummary(.init(text: conversationSummary))], role: .user))
+        }
+      }
+    }
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {

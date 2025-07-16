@@ -72,6 +72,7 @@ public enum ChatMessageContentModel: Sendable {
   /// Messages that are relevant for the LLM but should not be shown to the user.
   case nonUserFacingText(ChatMessageTextContentModel)
   case toolUse(ChatMessageToolUseContentModel)
+  case conversationSummary(ChatMessageTextContentModel)
 }
 
 // MARK: - ChatMessageTextContentModel
