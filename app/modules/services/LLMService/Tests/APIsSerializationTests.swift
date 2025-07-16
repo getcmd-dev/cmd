@@ -224,7 +224,9 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: reasoningModel,
-      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      handleUpdateStream: { _ in },
+      handleUsageInfo: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }
@@ -272,7 +274,9 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: reasoningModel,
-      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      handleUpdateStream: { _ in },
+      handleUsageInfo: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }
@@ -320,7 +324,9 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: nonReasoningModel,
-      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      handleUpdateStream: { _ in },
+      handleUsageInfo: { _ in })
 
     try await fulfillment(of: [requestCompleted])
   }

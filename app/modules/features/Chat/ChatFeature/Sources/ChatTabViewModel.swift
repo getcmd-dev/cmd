@@ -212,6 +212,11 @@ final class ChatTabViewModel: Identifiable, Equatable {
                 }
               }
             }
+          },
+          handleUsageInfo: { info in
+            Task { @MainActor [weak self] in
+              self?.handle(usageInfo: info)
+            }
           })
         _ = try await done
       }
@@ -311,6 +316,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
+  }
+
+  private func handle(usageInfo _: LLMUsageInfo) {
+    /// Handle usage info, including if the conversation needs copmatcing
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {

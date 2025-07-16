@@ -73,6 +73,7 @@ final class RequestStreamingHelper: Sendable {
   /// Handle all the streamed data, updating the `result` stream with the new content.
   ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
   func processStream() async throws -> Schema.ResponseUsage? {
+    var usage: Schema.ResponseUsage? = nil
     do {
       for try await chunk in stream {
         do {
@@ -116,9 +117,8 @@ final class RequestStreamingHelper: Sendable {
           case .reasoningSignature(let reasoningSignature):
             handle(reasoningSignature: reasoningSignature)
 
-          case .responseUsage(let usage):
-            endPreviousContent()
-            return usage
+          case .responseUsage(let value):
+            usage = value
           }
         } catch {
           defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
@@ -135,7 +135,7 @@ final class RequestStreamingHelper: Sendable {
       finish()
       throw error
     }
-    return nil
+    return usage
   }
 
   private let isTaskCancelled: @Sendable () -> Bool

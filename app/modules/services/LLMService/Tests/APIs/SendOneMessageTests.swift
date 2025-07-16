@@ -315,7 +315,8 @@ final class SendOneMessageTests {
             _ = await updateStream.lastValue
             updateStreamFinished.fulfill()
           }
-        })
+        },
+        handleUsageInfo: { _ in })
     }
 
     // Wait for request to start then cancel
@@ -371,7 +372,8 @@ final class SendOneMessageTests {
             }
             updateStreamFinished.fulfill()
           }
-        })
+        },
+        handleUsageInfo: { _ in })
     }
 
     // Wait for request to start then cancel

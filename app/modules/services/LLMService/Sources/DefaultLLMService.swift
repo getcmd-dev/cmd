@@ -33,7 +33,8 @@ final class DefaultLLMService: LLMService {
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
     context: any ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void)
+    handleUpdateStream: (UpdateStream) -> Void,
+    handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> [AssistantMessage]
   {
     let response = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
@@ -48,13 +49,14 @@ final class DefaultLLMService: LLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: model,
-          context: context)
-        { newMessage in
-          // Add the new message to the response stream.
-          var newMessages = response.value
-          newMessages.append(newMessage)
-          response.update(with: newMessages)
-        }
+          context: context,
+          handleUpdateStream: { newMessage in
+            // Add the new message to the response stream.
+            var newMessages = response.value
+            newMessages.append(newMessage)
+            response.update(with: newMessages)
+          },
+          handleUsageInfo: handleUsageInfo)
 
         // The new message is now entirely received. We can deal with tool calls.
         let toolUseRequests: [ToolUseMessage] = newMessage.content.compactMap { content in
@@ -97,12 +99,14 @@ final class DefaultLLMService: LLMService {
   ///   - messageHistory: The historical context of all messages in the conversation. The last message is expected to be the last one sent by the user.
   ///   - tools: The tools available to the assistant.
   ///   - handleUpdateStream: A callback called synchronously with a stream that will broadcast updates about received messages. This can be usefull if you want to display the messages as they are streamed.
+  ///   - handleUsageInfo: Closure called when usage information is available.
   func sendOneMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
     context: any ChatContext,
-    handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
+    handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
+    handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
@@ -120,7 +124,8 @@ final class DefaultLLMService: LLMService {
       enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
       context: context,
       supportDebugStreamRepeatInDebug: true,
-      handleUpdateStream: handleUpdateStream)
+      handleUpdateStream: handleUpdateStream,
+      handleUsageInfo: handleUsageInfo)
   }
 
   func nameConversation(firstMessage: String) async throws -> String {
@@ -144,7 +149,8 @@ final class DefaultLLMService: LLMService {
       model: lowTierModel,
       enableReasoning: false,
       context: nil,
-      handleUpdateStream: { _ in })
+      handleUpdateStream: { _ in },
+      handleUsageInfo: { _ in })
 
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
@@ -196,6 +202,7 @@ final class DefaultLLMService: LLMService {
   ///   - context: Chat context containing conversation state and metadata
   ///   - supportDebugStreamRepeatInDebug: Whether to support debug stream repetition in debug mode
   ///   - handleUpdateStream: Closure called with streaming updates as the response is generated
+  ///   - handleUsageInfo: Closure called when usage information is available.
   private func streamCompletionResponse(
     system: String,
     messageHistory: [Schema.Message],
@@ -204,7 +211,8 @@ final class DefaultLLMService: LLMService {
     enableReasoning: Bool,
     context: (any ChatContext)?,
     supportDebugStreamRepeatInDebug: Bool = false,
-    handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
+    handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
+    handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
@@ -249,7 +257,10 @@ final class DefaultLLMService: LLMService {
         isTaskCancelled: { isTaskCancelled.value })
       #endif
 
-      try await helper.processStream()
+      let usage = try await helper.processStream()
+      if let usage {
+        handleUsageInfo(usage)
+      }
 
       return await result.lastValue
     }, onCancel: {

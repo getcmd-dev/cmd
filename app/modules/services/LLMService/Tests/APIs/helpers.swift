@@ -45,10 +45,11 @@ extension DefaultLLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: .claudeSonnet_4_0,
-          context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
-        { stream in continuation
-          .resume(returning: stream)
-        }
+          context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
+          handleUpdateStream: { stream in continuation
+            .resume(returning: stream)
+          },
+          handleUsageInfo: { _ in })
       }
     }
   }
@@ -64,10 +65,11 @@ extension DefaultLLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: .claudeSonnet_4_0,
-          context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
-        { stream in continuation
-          .resume(returning: stream)
-        }
+          context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
+          handleUpdateStream: { stream in continuation
+            .resume(returning: stream)
+          },
+          handleUsageInfo: { _ in })
       }
     }
   }

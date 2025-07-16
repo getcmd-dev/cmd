@@ -31,17 +31,29 @@ public protocol ChatContext: Sendable {
 
 public protocol LLMService: Sendable {
   /// Send a message and wait for responses from the assistant
+  ///
+  /// - Returns: The message received from the assistant.
+  /// - Parameters:
+  ///   - messageHistory: The historical context of all messages in the conversation. The last message is expected to be the last one sent by the user.
+  ///   - tools: The tools available to the assistant.
+  ///   - model: The model to use for the assistant.
+  ///   - context: The context in which the message is sent, providing information and hooks for the assistant to use.
+  ///   - handleUpdateStream: A callback called synchronously with a stream that will broadcast updates about received messages. This can be usefull if you want to display the messages as they are streamed.
+  ///   - handleUsageInfo: Closure called when usage information is available.
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
     model: LLMModel,
     context: ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void)
+    handleUpdateStream: (UpdateStream) -> Void,
+    handleUsageInfo: (LLMUsageInfo) -> Void)
     async throws -> [AssistantMessage]
 
   /// Generate a title for a conversation based on the first message.
   func nameConversation(firstMessage: String) async throws -> String
 }
+
+public typealias LLMUsageInfo = Schema.ResponseUsage
 
 // MARK: - LLMServiceError
 
@@ -72,7 +84,8 @@ extension LLMService {
     tools: [any Tool],
     model: LLMModel,
     context: ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void)
+    handleUpdateStream: (UpdateStream) -> Void,
+    handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> [AssistantMessage]
   {
     try await sendMessage(
@@ -80,7 +93,8 @@ extension LLMService {
       tools: tools,
       model: model,
       context: context,
-      handleUpdateStream: handleUpdateStream)
+      handleUpdateStream: handleUpdateStream,
+      handleUsageInfo: handleUsageInfo)
   }
 }
 #endif

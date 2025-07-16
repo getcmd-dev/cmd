@@ -30,7 +30,8 @@ public final class MockLLMService: LLMService {
     tools: [any Tool],
     model: LLMModel,
     context: any ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void)
+    handleUpdateStream: (UpdateStream) -> Void,
+    handleUsageInfo _: (LLMUsageInfo) -> Void)
     async throws -> [AssistantMessage]
   {
     if let onSendMessage {
