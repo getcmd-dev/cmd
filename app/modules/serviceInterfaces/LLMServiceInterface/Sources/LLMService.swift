@@ -51,6 +51,9 @@ public protocol LLMService: Sendable {
 
   /// Generate a title for a conversation based on the first message.
   func nameConversation(firstMessage: String) async throws -> String
+
+  /// Generate a summary of a conversation based on the message history.
+  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel, context: ChatContext) async throws -> String
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage

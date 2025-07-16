@@ -155,6 +155,28 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
+  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel, context: ChatContext) async throws -> String {
+    var messages = messageHistory
+    messages.append(.init(
+      role: .user,
+      content: [
+        .textMessage(.init(
+          text: "Please provide a comprehensive summary of this conversation, highlighting the main topics discussed, key decisions made, and any important outcomes or next steps.")),
+      ]))
+
+    let assistantMessage = try await streamCompletionResponse(
+      system: Prompt.summarizationSystemPrompt,
+      messageHistory: messages,
+      tools: [],
+      model: model,
+      enableReasoning: false,
+      context: context,
+      handleUpdateStream: { _ in },
+      handleUsageInfo: { _ in })
+
+    return assistantMessage.content.first?.asText?.content ?? ""
+  }
+
   private let settingsService: SettingsService
 
   #if DEBUG
