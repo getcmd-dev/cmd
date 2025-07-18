@@ -17,7 +17,6 @@ const parseErrorMessage = (error: UnknownError): string | undefined => {
 		if (typeof responseBody === "string") {
 			try {
 				const info = JSON.parse(responseBody) as ResponseBody
-				let message: string | undefined
 
 				try {
 					// Open Router
@@ -26,7 +25,7 @@ const parseErrorMessage = (error: UnknownError): string | undefined => {
 					return parseErrorMessage(err)
 				} catch {}
 
-				return message || info.message || info.error?.message
+				return info.message || info.error?.message
 			} catch {}
 			return responseBody
 		} else {
