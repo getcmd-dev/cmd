@@ -341,7 +341,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
         let conversationSummary = try await llmService.summarizeConversation(
           messageHistory: messages.apiFormat,
           model: model)
-        messages.append(.init(content: [.conversationSummary(.init(text: conversationSummary))], role: .user))
+        messages.append(.init(content: [.conversationSummary(.init(
+          projectRoot: nil,
+          deltas: [conversationSummary],
+          attachments: []))], role: .user))
       }
       try await summarizationTask?.value
       summarizationTask = nil
