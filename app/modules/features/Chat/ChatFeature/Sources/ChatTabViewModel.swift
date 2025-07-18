@@ -163,6 +163,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     events.append(.message(.init(content: messageContent, role: .user)))
     messages.append(userMessage)
+    let messages = messages.apiFormat
 
     if !textInput.string.string.isEmpty, name == nil {
       Task { [weak self] in
@@ -182,7 +183,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
       streamingTask = Task {
         async let response = llmService.sendMessage(
-          messageHistory: messages.apiFormat,
+          messageHistory: messages,
           tools: tools,
           model: selectedModel,
           context: DefaultChatContext(
@@ -204,7 +205,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
                   let newMessageState = ChatMessageViewModel(
                     content: newMessage.content.map { $0.domainFormat(projectRoot: projectInfo?.dirPath) },
                     role: .assistant)
-                  messages.append(newMessageState)
+                  self.messages.append(newMessageState)
 
                   for await update in newMessage.updates {
                     // new message content was received
