@@ -128,7 +128,8 @@ public final class LSTool: NonStreamableTool {
       "properties": .object([
         "path": .object([
           "type": .string("string"),
-          "description": .string("The directory path to list. If the absolute path is known it should be used. Otherwise use a relative path."),
+          "description": .string(
+            "The directory path to list. If the absolute path is known it should be used. Otherwise use a relative path."),
         ]),
         "recursive": .object([
           "type": .string("boolean"),

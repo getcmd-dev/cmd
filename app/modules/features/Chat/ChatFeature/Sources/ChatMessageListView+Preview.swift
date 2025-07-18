@@ -42,8 +42,9 @@ struct DebugStreamingMessages: View {
     }
   }
 
-  private let messages: [ChatMessageViewModel]
   @Bindable private var currentMessages = ObservableValue<[ChatMessageViewModel]>([])
+
+  private let messages: [ChatMessageViewModel]
 
   private func streamOneChunk() -> Bool {
     var currentMessages = currentMessages.value

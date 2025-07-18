@@ -169,7 +169,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
         ]),
         "canModifyDerivedFiles": .object([
           "type": .string("boolean"),
-          "description": .string("Whether the command can modify derived files that are unlikely to be tracked by the source control system. For instance `swift build` generates derived files but doesn't modify source files."),
+          "description": .string(
+            "Whether the command can modify derived files that are unlikely to be tracked by the source control system. For instance `swift build` generates derived files but doesn't modify source files."),
         ]),
       ]),
       "required": .array([

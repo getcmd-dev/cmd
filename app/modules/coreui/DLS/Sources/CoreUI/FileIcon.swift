@@ -56,6 +56,7 @@ public struct FileIcon: View {
   private static var fileExtensionToLanguage: [String: String]?
 
   @Bindable private var image: ObservableValue<NSImage?>
+
   @Dependency(\.server) private var server
 }
 

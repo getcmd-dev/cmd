@@ -62,10 +62,9 @@ private struct ToolRow: View {
       Spacer()
       Toggle("", isOn: Binding(
         get: { isAlwaysApproved },
-        set: { onToggle($0) },
-      ))
-      .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-      .labelsHidden()
+        set: { onToggle($0) }))
+        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+        .labelsHidden()
     }
     .padding(.vertical, 8)
     .padding(.horizontal, 12)

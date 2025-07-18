@@ -125,7 +125,8 @@ public final class SearchFilesTool: NonStreamableTool {
       "properties": .object([
         "directoryPath": .object([
           "type": .string("string"),
-          "description": .string("The path of the directory to search in (relative to the current working directory ${args.cwd}). This directory will be recursively searched."),
+          "description": .string(
+            "The path of the directory to search in (relative to the current working directory ${args.cwd}). This directory will be recursively searched."),
         ]),
         "regex": .object([
           "type": .string("string"),
@@ -133,7 +134,8 @@ public final class SearchFilesTool: NonStreamableTool {
         ]),
         "filePattern": .object([
           "type": .string("string"),
-          "description": .string("Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*)"),
+          "description": .string(
+            "Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*)"),
         ]),
       ]),
       "required": .array([.string("directoryPath"), .string("regex")]),

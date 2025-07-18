@@ -85,10 +85,10 @@ public struct ChatView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
+  @Bindable private var viewModel: ChatViewModel
+
   @Dependency(\.userDefaults) private var userDefaults
   private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
-
-  @Bindable private var viewModel: ChatViewModel
 
   @ViewBuilder
   private var quickActionsRow: some View {

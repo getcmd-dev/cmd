@@ -135,8 +135,9 @@ extension ChatTabViewModel {
         * macOS Version: \((try? macOSVersion)?.stdout ?? "unkonwn")
         * Default Xcode Version: \((try? defaultXcodeVersion.stdout)?.split(separator: "\n").first ?? "unknown")
         * Swift Version: \((try? swiftVersion.stdout)?.split(separator: "\n")
-      .first ?? "unknown")\(hasXcPretty ?
-      "\n  * xcpretty is installed. Make sure to use it when relevant to improve build outputs" : "")
+      .first ?? "unknown")\(hasXcPretty
+      ? "\n  * xcpretty is installed. Make sure to use it when relevant to improve build outputs"
+      : "")
         * Current Workspace Directory: \(workspace.url.path)
         * Project root (root of all relative path): \(projectRoot.path)
         * Files (first \(fileLimit)):

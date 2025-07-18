@@ -49,6 +49,7 @@ struct OnboardingView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @Bindable private var viewModel: OnboardingViewModel
+
   private let createLLMProvidersView: @MainActor (@MainActor @escaping () -> Void) -> AnyView
 
   @ViewBuilder

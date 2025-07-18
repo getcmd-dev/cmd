@@ -121,11 +121,13 @@ public final class ReadFileTool: NonStreamableTool {
       "properties": .object([
         "path": .object([
           "type": .string("string"),
-          "description": .string("The file path to read. If the absolute path is known it should be used. Otherwise use a relative path."),
+          "description": .string(
+            "The file path to read. If the absolute path is known it should be used. Otherwise use a relative path."),
         ]),
         "lineRange": .object([
           "type": .string("object"),
-          "description": .string("The range of lines to read (1-based-indexed). For ex: {\"start\": 1, \"finish\": 10} will read the first 10 lines"),
+          "description": .string(
+            "The range of lines to read (1-based-indexed). For ex: {\"start\": 1, \"finish\": 10} will read the first 10 lines"),
           "properties": .object([
             "start": .object([
               "type": .string("integer"),

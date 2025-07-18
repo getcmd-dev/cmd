@@ -123,6 +123,7 @@ struct PartialDiffView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @Bindable private var change: FileDiffViewModel
+
   private let partialRange: Range<Int>
   private let continousChanges: [Range<Int>]
 
@@ -213,6 +214,7 @@ struct PartialDiffView: View {
 struct PartialApplyView: View {
 
   @Bindable var hoveringPosition: ObservableValue<CGPoint?>
+
   let apply: () -> Void
   let reject: () -> Void
 

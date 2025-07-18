@@ -78,7 +78,8 @@ struct AttachmentPreview: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
+  @Bindable private var image: ObservableValue<Image?>
+
   @Dependency(\.fileManager) private var fileManager
 
-  @Bindable private var image: ObservableValue<Image?>
 }

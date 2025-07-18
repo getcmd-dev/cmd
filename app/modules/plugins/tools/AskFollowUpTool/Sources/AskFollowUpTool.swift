@@ -86,7 +86,8 @@ public final class AskFollowUpTool: NonStreamableTool {
       "properties": .object([
         "question": .object([
           "type": .string("string"),
-          "description": .string("A clear question to ask the user for clarification or additional information needed to complete the task."),
+          "description": .string(
+            "A clear question to ask the user for clarification or additional information needed to complete the task."),
         ]),
         "followUp": .object([
           "type": .string("array"),

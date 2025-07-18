@@ -189,8 +189,9 @@ struct DebugStreamingMessage: View {
     }
   }
 
-  private let message: ChatMessageViewModel
   @Bindable private var currentMessage: ChatMessageViewModel
+
+  private let message: ChatMessageViewModel
 }
 
 #Preview("Failed user message") {

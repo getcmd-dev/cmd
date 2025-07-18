@@ -28,8 +28,9 @@ struct AppUpdateWidget: View {
     }
   }
 
-  @Dependency(\.appUpdateService) private var appUpdateService
   @Bindable private var availableAppUpdate: ObservableValue<AppUpdateResult>
+
+  @Dependency(\.appUpdateService) private var appUpdateService
 
 }
 

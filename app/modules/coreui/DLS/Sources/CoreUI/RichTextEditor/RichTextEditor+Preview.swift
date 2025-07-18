@@ -14,6 +14,7 @@ private struct HelperView: View {
   }
 
   @Bindable var text: ObservableValue<NSAttributedString>
+
   var onFocusChanged: (Bool) -> Void = { _ in }
 
   var body: some View {

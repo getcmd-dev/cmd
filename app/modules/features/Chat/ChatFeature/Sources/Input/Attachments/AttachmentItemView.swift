@@ -47,10 +47,10 @@ struct AttachmentItemView: View {
     }
   }
 
+  @Bindable private var image: ObservableValue<Image?>
+
   private let primaryAction: ((AttachmentModel) -> Void)?
   private let removeAttachment: ((AttachmentModel) -> Void)?
-
-  @Bindable private var image: ObservableValue<Image?>
 
   @ViewBuilder
   private var details: some View {

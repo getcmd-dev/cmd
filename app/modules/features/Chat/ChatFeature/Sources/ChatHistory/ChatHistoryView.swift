@@ -11,6 +11,7 @@ struct ChatHistoryView: View {
   }
 
   @Bindable var viewModel: ChatHistoryViewModel
+
   let onBack: @MainActor () -> Void
   let onSelectThread: @MainActor (UUID) -> Void
 
