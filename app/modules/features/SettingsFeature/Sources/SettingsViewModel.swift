@@ -79,6 +79,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var fileEditMode: FileEditMode {
+    get {
+      settings.fileEditMode
+    }
+    set {
+      settings.fileEditMode = newValue
+      settingsService.update(setting: \.fileEditMode, to: newValue)
+    }
+  }
+
   // MARK: - Internal settings
   var repeatLastLLMInteraction: Bool {
     didSet {

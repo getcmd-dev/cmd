@@ -37,7 +37,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       fileManager: fileManager,
       timeout: ExtensionTimeout.applyFileChangeTimeout,
       canUseAppleScript: true,
-      startApplyingFileChange: { Task { @MainActor in
+      startApplyingFileChangeWithXcodeExtension: { Task { @MainActor in
         try await Self.triggerExtension(
           xcodeObserver: xcodeObserver,
           shellService: shellService,
@@ -53,14 +53,14 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     fileManager: FileManagerI,
     timeout: TimeInterval,
     canUseAppleScript: Bool = false,
-    startApplyingFileChange: @escaping @Sendable () async throws -> Void)
+    startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void)
   {
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.shellService = shellService
     self.xcodeObserver = xcodeObserver
     self.settingsService = settingsService
     self.fileManager = fileManager
-    self.startApplyingFileChange = startApplyingFileChange
+    self.startApplyingFileChangeWithXcodeExtension = startApplyingFileChangeWithXcodeExtension
     self.timeout = timeout
     self.canUseAppleScript = canUseAppleScript
 
@@ -108,7 +108,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   private let settingsService: SettingsService
 
   /// Start applying the code change, typically by selecting the extension menu item in Xcode.
-  private let startApplyingFileChange: @Sendable () async throws -> Void
+  private let startApplyingFileChangeWithXcodeExtension: @Sendable () async throws -> Void
 
   private func registerAppEventHandler() {
     appEventHandlerRegistry.registerHandler { [weak self] event in
@@ -145,29 +145,39 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
-  /// Apply the file change using the Xcode extension, assuming none are pending.
+  /// Apply the file change using the method specified in settings.
   private func _apply(fileChange: FileChange) async throws {
-    do {
-      guard fileManager.fileExists(atPath: fileChange.filePath.path) else {
-        let data = fileChange.suggestedNewContent.utf8Data
-        // TODO: look at making the required modification to the xcode project if necessary.
-        try fileManager.write(data: data, to: fileChange.filePath)
-        return
-      }
-      try await applyWithXcodeExtension(fileChange: fileChange)
-    } catch {
-      let err = error
-      defaultLogger.error("Failed to apply code change with Xcode extension, falling back to Apple Script: \(err)")
-      do {
-        guard canUseAppleScript else {
-          throw err
-        }
-        try await Self.modifyFile(at: fileChange.filePath, with: fileChange.suggestedNewContent)
-      } catch {
-        // Rethrow the original error if the fallback fails.
-        throw err
-      }
+    guard fileManager.fileExists(atPath: fileChange.filePath.path) else {
+      let data = fileChange.suggestedNewContent.utf8Data
+      // TODO: look at making the required modification to the xcode project if necessary.
+      try fileManager.write(data: data, to: fileChange.filePath)
+      return
     }
+
+    let fileEditMode = settingsService.value(for: \.fileEditMode)
+
+    switch fileEditMode {
+    case .xcodeExtension:
+      // Try Xcode extension first, fall back to direct I/O if it fails
+      do {
+        try await applyWithXcodeExtension(fileChange: fileChange)
+      } catch {
+        let err = error
+        defaultLogger.error("Failed to apply code change with Xcode extension, falling back to direct I/O: \(err)")
+        try await applyDirectIO(fileChange: fileChange)
+      }
+
+    case .directIO:
+      // Use direct I/O method
+      try await applyDirectIO(fileChange: fileChange)
+    }
+  }
+
+  /// Apply the file change using direct I/O to the file system.
+  private func applyDirectIO(fileChange: FileChange) async throws {
+    let data = fileChange.suggestedNewContent.utf8Data
+    try fileManager.write(data: data, to: fileChange.filePath)
+    defaultLogger.log("Successfully updated '\(fileChange.filePath.path)' using direct I/O.")
   }
 
   private func applyWithXcodeExtension(fileChange: FileChange) async throws {
@@ -189,7 +199,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
             try? await Self.openFileWithAppleScript(at: fileChange.filePath)
           }
 
-          try await startApplyingFileChange()
+          try await startApplyingFileChangeWithXcodeExtension()
           let duration = Date().timeIntervalSince(start)
           defaultLogger.log("Time to trigger extension: \(duration)")
         } catch {
@@ -393,42 +403,6 @@ extension DefaultXcodeController {
       """)
   }
 
-  /// Modify the content of the file using Apple Script. This might lead to a non ideal UX with the code moving around in the editor but is a good fallback.
-  @MainActor
-  private static func modifyFile(at path: URL, with newContent: String) throws {
-    let pasteboard = NSPasteboard.general
-    let pasteboardContent = pasteboard.pasteboardItems
-    pasteboard.clearContents()
-    pasteboard.writeObjects([newContent as NSPasteboardWriting])
-
-    defer {
-      // Reset the content of the pasteboard.
-      let copies = pasteboardContent?.map { item in
-        let copy = NSPasteboardItem()
-        for type in item.types {
-          if let data = item.data(forType: type) {
-            copy.setData(data, forType: type)
-          }
-        }
-        return copy
-      }
-      _ = copies.map(pasteboard.writeObjects)
-    }
-
-    try activateXcodeWithAppleScript()
-    try openFileWithAppleScript(at: path)
-
-    try run(appleScript: """
-      tell application "Xcode"
-          tell application "System Events"
-            keystroke "a" using command down
-            keystroke "v" using command down
-          end tell
-      end tell
-      """)
-
-    defaultLogger.log("Successfully updated '\(path.path)' in Xcode.")
-  }
 }
 
 extension BaseProviding where

@@ -17,4 +17,16 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ExtensionEventsInterface",
+    "FileDiffFoundation",
+    "FoundationInterfaces",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
+  ])

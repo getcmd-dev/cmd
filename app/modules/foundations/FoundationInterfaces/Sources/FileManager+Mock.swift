@@ -42,25 +42,25 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func read(contentsOf url: URL, encoding _: String.Encoding) throws -> String {
-    guard let content = files[url]?.asString else {
+    guard let content = read(url)?.asString else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func read(dataFrom url: URL) throws -> Data {
-    guard let content = files[url] else {
+    guard let content = read(url) else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func write(data: Data, to url: URL, options _: Data.WritingOptions) throws {
-    inLock { $0.files[url] = data }
+    set(url, to: data)
   }
 
   public func write(string: String, to url: URL, options _: Data.WritingOptions) throws {
-    inLock { $0.files[url] = string.asData }
+    set(url, to: string.asData)
   }
 
   public func createDirectory(
@@ -106,15 +106,15 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func copyItem(atPath srcPath: String, toPath dstPath: String) throws {
-    inLock { $0.files[URL(fileURLWithPath: dstPath)] = $0.files[URL(fileURLWithPath: srcPath)] }
+    inLock { $0.files[path(matching: dstPath)] = $0.files[path(matching: srcPath)] }
   }
 
   public func removeItem(atPath path: String) throws {
-    inLock { $0.files[URL(fileURLWithPath: path)] = nil }
+    inLock { $0.files[self.path(matching: path)] = nil }
   }
 
   public func fileExists(atPath path: String) -> Bool {
-    files[URL(fileURLWithPath: path)] != nil
+    files[self.path(matching: path)] != nil
   }
 
   public func contentsOfDirectory(
@@ -160,6 +160,24 @@ public final class MockFileManager: FileManagerI {
   private(set) var files = [URL: Data]()
   private(set) var directories = [URL]()
 
+  // We use URL as keys to support file properties.
+  // Since URL are reference types, for most functions we need to compare path instead of references. Those helpers help do this.
+    
+  private func read(_ path: URL) -> Data? {
+    files[self.path(matching: path)]
+  }
+
+  private func set(_ path: URL, to content: Data?) {
+    files[self.path(matching: path)] = content
+  }
+
+  private func path(matching url: URL) -> URL {
+    files.keys.first { $0.path == url.path } ?? url
+  }
+
+  private func path(matching url: String) -> URL {
+    path(matching: URL(fileURLWithPath: url))
+  }
 }
 
 // MARK: - MockDirectoryEnumerator

@@ -8,6 +8,31 @@ import Foundation
 import JSONFoundation
 import LLMFoundation
 
+// MARK: - FileEditMode
+
+public enum FileEditMode: String, Sendable, Codable, Equatable, CaseIterable {
+  case directIO = "direct I/O"
+  case xcodeExtension = "Xcode Extension"
+
+  public var description: String {
+    switch self {
+    case .directIO:
+      """
+      Direct I/O - Modify files directly on disk.
+      + simplest and non disruptive.
+      - does not work with unsaved changes in Xcode, and does not maintain edit history.
+      """
+
+    case .xcodeExtension:
+      """
+      Xcode Extension - Modify the file through Xcode.
+      + consistent with unsaved changes and maintain edit history.
+      - activate Xcode and bring the file in focus, which can be disruptive.
+      """
+    }
+  }
+}
+
 // MARK: - LLMReasoningSetting
 
 public struct LLMReasoningSetting: Sendable, Equatable {
@@ -24,6 +49,7 @@ public struct Settings: Sendable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
+    fileEditMode: FileEditMode = .xcodeExtension,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
@@ -34,6 +60,7 @@ public struct Settings: Sendable, Equatable {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
+    self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
@@ -83,6 +110,7 @@ public struct Settings: Sendable, Equatable {
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var automaticallyCheckForUpdates: Bool
+  public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]

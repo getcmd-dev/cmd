@@ -171,4 +171,59 @@ struct SettingsServiceMockTests {
     #expect(receivedSettings[1].pointReleaseXcodeExtensionToDebugApp == true)
     #expect(receivedSettings[2].pointReleaseXcodeExtensionToDebugApp == false)
   }
+
+  @Test("FileEditMode setting in Settings")
+  func test_fileEditModeSetting() {
+    // Test default value
+    let defaultSettings = Settings(pointReleaseXcodeExtensionToDebugApp: false)
+    #expect(defaultSettings.fileEditMode == .xcodeExtension)
+
+    // Test with custom value
+    let customSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      fileEditMode: .directIO)
+    #expect(customSettings.fileEditMode == .directIO)
+
+    // Test with MockSettingsService
+    let sut = MockSettingsService(defaultSettings: customSettings)
+    #expect(sut.value(for: \.fileEditMode) == .directIO)
+
+    // Test updating the setting
+    sut.update(setting: \.fileEditMode, to: .xcodeExtension)
+    #expect(sut.value(for: \.fileEditMode) == .xcodeExtension)
+  }
+
+  @Test("FileEditMode live updates")
+  func test_fileEditModeLiveUpdates() async throws {
+    let initialSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      fileEditMode: .xcodeExtension)
+    let sut = MockSettingsService(defaultSettings: initialSettings)
+
+    var cancellables = Set<AnyCancellable>()
+    var receivedModes: [FileEditMode] = []
+    let modesReceived = expectation(description: "File edit modes received")
+
+    sut.liveValue(for: \.fileEditMode)
+      .sink { mode in
+        receivedModes.append(mode)
+        if receivedModes.count == 3 {
+          modesReceived.fulfill()
+        }
+      }
+      .store(in: &cancellables)
+
+    // Initial value should be received
+    #expect(receivedModes.count == 1)
+    #expect(receivedModes.first == .xcodeExtension)
+
+    // Update to direct I/O
+    sut.update(setting: \.fileEditMode, to: .directIO)
+
+    // Reset to default
+    sut.resetToDefault(setting: \.fileEditMode)
+
+    try await fulfillment(of: [modesReceived])
+    #expect(receivedModes == [.xcodeExtension, .directIO, .xcodeExtension])
+  }
 }

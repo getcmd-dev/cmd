@@ -865,7 +865,19 @@ targets.append(contentsOf: Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ExtensionEventsInterface",
+    "FileDiffFoundation",
+    "FoundationInterfaces",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
+  ],
   path: "./services/XcodeControllerService"))
 
 targets.append(contentsOf: Target.module(

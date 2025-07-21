@@ -167,6 +167,29 @@ struct SettingsViewModelTests {
     #expect(mockSettingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
   }
 
+  @Test("fileEditMode setter updates settings service")
+  func test_fileEditMode_setter() {
+    let mockSettingsService = MockSettingsService()
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    // Test setting to direct I/O
+    viewModel.fileEditMode = .directIO
+    #expect(viewModel.fileEditMode == .directIO)
+    #expect(mockSettingsService.value(for: \.fileEditMode) == .directIO)
+
+    // Test setting to Xcode extension
+    viewModel.fileEditMode = .xcodeExtension
+    #expect(viewModel.fileEditMode == .xcodeExtension)
+    #expect(mockSettingsService.value(for: \.fileEditMode) == .xcodeExtension)
+  }
+
   @Test("observes live settings updates")
   func test_liveSettingsUpdates() async throws {
     let mockSettingsService = MockSettingsService()

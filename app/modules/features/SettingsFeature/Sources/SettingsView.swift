@@ -110,7 +110,8 @@ public struct SettingsView: View {
       case .about:
         AboutSettingsView(
           allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics,
-          automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates)
+          automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
+          fileEditMode: $viewModel.fileEditMode)
 
       case .landing:
         EmptyView()

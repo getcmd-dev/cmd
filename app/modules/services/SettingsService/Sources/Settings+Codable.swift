@@ -15,6 +15,7 @@ extension Settings: Codable {
         .decodeIfPresent(Bool.self, forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
       allowAnonymousAnalytics: container.decodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true,
       automaticallyCheckForUpdates: container.decodeIfPresent(Bool.self, forKey: "automaticallyCheckForUpdates") ?? true,
+      fileEditMode: container.decodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
       preferedProviders: container.decodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [LLMModel: LLMProvider]()) { acc, el in
           guard let model = LLMModel(rawValue: el.key), let provider = LLMProvider(rawValue: el.value) else { return }
@@ -46,6 +47,7 @@ extension Settings: Codable {
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
     try container.encode(allowAnonymousAnalytics, forKey: "allowAnonymousAnalytics")
     try container.encode(automaticallyCheckForUpdates, forKey: "automaticallyCheckForUpdates")
+    try container.encode(fileEditMode, forKey: "fileEditMode")
     try container.encode(preferedProviders.reduce(into: [String: String]()) { acc, el in
       acc[el.key.rawValue] = el.value.rawValue
     }, forKey: "preferedProviders")
