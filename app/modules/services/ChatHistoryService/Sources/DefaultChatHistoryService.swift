@@ -174,14 +174,14 @@ extension BaseProviding where
         createDBConnection: {
           do {
             // Create database directory if it doesn't exist
-            let documentsURLs = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+            let documentsURLs = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             guard let documentsURL = documentsURLs.first else {
               throw NSError(
                 domain: "ChatDatabaseService",
                 code: 1,
                 userInfo: [NSLocalizedDescriptionKey: "Could not find documents directory"])
             }
-            let chatDataURL = documentsURL.appendingPathComponent("ChatData")
+            let chatDataURL = documentsURL.appendingPathComponent("\(Bundle.main.hostAppBundleId)/ChatData")
 
             if !fileManager.fileExists(atPath: chatDataURL.path) {
               try fileManager.createDirectory(
