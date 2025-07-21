@@ -17,9 +17,9 @@ import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 @testable import XcodeControllerService
 
-// MARK: - DetaultXcodeControllerTests
+// MARK: - DefaultXcodeControllerTests
 
-struct DetaultXcodeControllerTests {
+struct DefaultXcodeControllerTests {
 
   @Test("File edit mode setting is respected - Xcode Extension mode")
   func testFileEditModeXcodeExtension() async throws {

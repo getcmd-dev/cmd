@@ -176,13 +176,13 @@ struct SettingsServiceMockTests {
   func test_fileEditModeSetting() {
     // Test default value
     let defaultSettings = Settings(pointReleaseXcodeExtensionToDebugApp: false)
-    #expect(defaultSettings.fileEditMode == .xcodeExtension)
+    #expect(defaultSettings.fileEditMode == .directIO)
 
     // Test with custom value
     let customSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      fileEditMode: .directIO)
-    #expect(customSettings.fileEditMode == .directIO)
+      fileEditMode: .xcodeExtension)
+    #expect(customSettings.fileEditMode == .xcodeExtension)
 
     // Test with MockSettingsService
     let sut = MockSettingsService(defaultSettings: customSettings)

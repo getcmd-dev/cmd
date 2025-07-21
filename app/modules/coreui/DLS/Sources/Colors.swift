@@ -79,7 +79,7 @@ extension ColorScheme {
 
   // TODO: this depends on the theme used in Xcode.
   // The current color schema can be read with `defaults read ~/Library/Preferences/com.apple.dt.Xcode | grep XCFontAndColorCurrent`
-  // also contains indentation info, path to the detault app (eg file:///Applications/Xcode-16.2.0.app/),
+  // also contains indentation info, path to the default app (eg file:///Applications/Xcode-16.2.0.app/),
   // key binding
   public var xcodeEditorBackground: Color {
     self == .dark ? Color(red: 41.0 / 255, green: 42.0 / 255, blue: 48.0 / 255) : .white

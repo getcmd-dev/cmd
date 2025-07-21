@@ -49,7 +49,7 @@ public struct Settings: Sendable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
-    fileEditMode: FileEditMode = .xcodeExtension,
+    fileEditMode: FileEditMode = .directIO,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],

@@ -162,7 +162,7 @@ public final class MockFileManager: FileManagerI {
 
   // We use URL as keys to support file properties.
   // Since URL are reference types, for most functions we need to compare path instead of references. Those helpers help do this.
-    
+
   private func read(_ path: URL) -> Data? {
     files[self.path(matching: path)]
   }
