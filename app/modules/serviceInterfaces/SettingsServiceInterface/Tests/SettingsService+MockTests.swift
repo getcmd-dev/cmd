@@ -186,7 +186,7 @@ struct SettingsServiceMockTests {
 
     // Test with MockSettingsService
     let sut = MockSettingsService(defaultSettings: customSettings)
-    #expect(sut.value(for: \.fileEditMode) == .directIO)
+    #expect(sut.value(for: \.fileEditMode) == .xcodeExtension)
 
     // Test updating the setting
     sut.update(setting: \.fileEditMode, to: .xcodeExtension)

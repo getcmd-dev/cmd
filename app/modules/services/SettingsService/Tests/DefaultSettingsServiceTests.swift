@@ -260,7 +260,8 @@ struct DefaultSettingsServiceTests {
         "preferedProviders" : {},
         "reasoningModels" : {},
         "inactiveModels" : [],
-        "toolPreferences" : []
+        "toolPreferences" : [],
+        "fileEditMode": "direct I/O" 
       }
       """)
     _ = cancellable

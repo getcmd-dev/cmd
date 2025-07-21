@@ -34,7 +34,8 @@ struct SettingsCodableTests {
           "claude-haiku-35" : "anthropic",
           "gpt-4o" : "openai"
         },
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -71,7 +72,8 @@ struct SettingsCodableTests {
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -122,7 +124,8 @@ struct SettingsCodableTests {
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -246,7 +249,8 @@ struct SettingsCodableTests {
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -284,7 +288,8 @@ struct SettingsCodableTests {
             "isEnabled" : false
           }
         },
-        "toolPreferences": []
+        "toolPreferences": [],
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -420,7 +425,8 @@ struct SettingsCodableTests {
         "toolPreferences" : [],
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -455,7 +461,8 @@ struct SettingsCodableTests {
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
-        "reasoningModels": {}
+        "reasoningModels": {},
+        "fileEditMode": "direct I/O" 
       }
       """
 
@@ -556,7 +563,8 @@ struct SettingsCodableTests {
             "alwaysApprove" : true,
             "toolName" : "ReadFileTool"
           }
-        ]
+        ],
+        "fileEditMode": "direct I/O" 
       }
       """
 
