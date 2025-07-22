@@ -17,6 +17,9 @@ extension SettingsServiceInterface.Settings {
     if llmProviderSettings[.openRouter] != nil {
       for supportedModel in LLMProvider.openRouter.supportedModels { models.insert(supportedModel) }
     }
+    if llmProviderSettings[.claudeCode] != nil {
+      for supportedModel in LLMProvider.claudeCode.supportedModels { models.insert(supportedModel) }
+    }
     return LLMModel.allCases.filter { models.contains($0) }
   }
 

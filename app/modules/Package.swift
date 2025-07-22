@@ -403,6 +403,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [

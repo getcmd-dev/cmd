@@ -8,8 +8,8 @@ import SwiftUI
 #if DEBUG
 
 extension LLMProviderSettings {
-  init(apiKey: String, baseUrl: String? = nil) {
-    self.init(apiKey: apiKey, baseUrl: baseUrl, createdOrder: 0)
+  init(apiKey: String, baseUrl: String? = nil, executable: String? = nil) {
+    self.init(apiKey: apiKey, baseUrl: baseUrl, executable: executable, createdOrder: 0)
   }
 }
 
@@ -23,9 +23,9 @@ extension MockSettingsService {
     self.init(.init(
       pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
       llmProviderSettings: [
-        .anthropic: anthropicAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 0) },
-        .openAI: openAIAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 1) },
-        .openRouter: openRouterAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 2) },
+        .anthropic: anthropicAPIKey.map { .init(apiKey: $0, baseUrl: nil, executable: nil, createdOrder: 0) },
+        .openAI: openAIAPIKey.map { .init(apiKey: $0, baseUrl: nil, executable: nil, createdOrder: 1) },
+        .openRouter: openRouterAPIKey.map { .init(apiKey: $0, baseUrl: nil, executable: nil, createdOrder: 2) },
       ].compactMapValues { $0 }))
   }
 }

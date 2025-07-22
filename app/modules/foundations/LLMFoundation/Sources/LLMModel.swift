@@ -67,6 +67,30 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
     reasoning: LLMReasoning())
 
+  public static let claudeCode_default = LLMModel(
+    name: "Claude Code",
+    id: "claude_code_default",
+    contextSize: 200_000,
+    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
+  public static let claudeCode_claudeSonnet_4_0 = LLMModel(
+    name: "Claude Code (claude-4-sonnet)",
+    id: "claude_code_claude-sonnet-4",
+    // Somewhat random value, not used.
+    contextSize: 200_000,
+    // Somewhat random value, not used.
+    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
+  public static let claudeCode_claudeOpus_4 = LLMModel(
+    name: "Claude Code (claude-4-opus)",
+    id: "claude_code_claude-opus-4",
+    contextSize: 200_000,
+    defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
+
   /// OpenAI
   public static let gpt_4_1 = LLMModel(
     name: "gpt-4.1",
@@ -101,6 +125,9 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
       .claudeSonnet_4_0,
       .claudeSonnet_3_7,
       .claudeOpus_4,
+      .claudeCode_default,
+      .claudeCode_claudeSonnet_4_0,
+      .claudeCode_claudeOpus_4,
       .gpt_4_1,
       .gpt_4o,
       .claudeHaiku_3_5,

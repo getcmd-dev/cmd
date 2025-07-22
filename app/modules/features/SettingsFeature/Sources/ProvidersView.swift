@@ -1,9 +1,11 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Dependencies
 import DLS
 import LLMFoundation
 import SettingsServiceInterface
+import ShellServiceInterface
 import SwiftUI
 
 // MARK: - ProvidersView
@@ -62,7 +64,7 @@ public struct ProvidersView: View {
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
-        isConnected: existingSettings?.hasValidAPIKey ?? false)
+        isConnected: existingSettings?.hasValidAPIKey == true || existingSettings?.hasValidExecutable == true)
     }
 
     return searchText.isEmpty
@@ -90,7 +92,11 @@ public struct ProvidersView: View {
     // Add new settings if provided
     if let newSettings {
       let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
-      providerSettings[provider] = .init(apiKey: newSettings.apiKey, baseUrl: newSettings.baseUrl, createdOrder: createdOrder)
+      providerSettings[provider] = .init(
+        apiKey: newSettings.apiKey,
+        baseUrl: newSettings.baseUrl,
+        executable: newSettings.executable,
+        createdOrder: createdOrder)
     } else {
       // Remove existing settings for this provider
       providerSettings.removeValue(forKey: provider)
@@ -109,6 +115,19 @@ private struct ProviderInfo {
 // MARK: - ProviderCard
 
 private struct ProviderCard: View {
+  init(
+    provider: LLMProvider,
+    settings: LLMProviderSettings?,
+    isConnected: Bool,
+    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void)
+  {
+    self.provider = provider
+    self.settings = settings
+    self.isConnected = isConnected
+    self.onSettingsChanged = onSettingsChanged
+    executableFinder = ExecutableFinder(defaultExecutable: provider.defaultExecutable)
+  }
+
   let provider: LLMProvider
   let settings: LLMProviderSettings?
   let isConnected: Bool
@@ -136,36 +155,38 @@ private struct ProviderCard: View {
       }
 
       // API Key section
-      VStack(alignment: .leading, spacing: 8) {
-        Text("API Key")
-          .font(.subheadline)
-          .fontWeight(.medium)
+      if provider.needsAPIKey {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("API Key")
+            .font(.subheadline)
+            .fontWeight(.medium)
 
-        HStack {
-          if showAPIKey {
-            TextField("Enter API key...", text: $apiKey)
-              .textFieldStyle(.plain)
-          } else {
-            SecureField("Enter API key...", text: $apiKey)
-              .textFieldStyle(.plain)
-          }
-
-          if !apiKey.isEmpty {
-            Button(action: { showAPIKey.toggle() }) {
-              Image(systemName: showAPIKey ? "eye.slash" : "eye")
-                .foregroundColor(.secondary)
+          HStack {
+            if showAPIKey {
+              TextField("Enter API key...", text: $apiKey)
+                .textFieldStyle(.plain)
+            } else {
+              SecureField("Enter API key...", text: $apiKey)
+                .textFieldStyle(.plain)
             }
-            .buttonStyle(.plain)
-          }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color(NSColor.textBackgroundColor))
-        .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
 
-        Text("API keys are stored securely in the keychain")
-          .font(.footnote)
-          .foregroundColor(.secondary)
+            if !apiKey.isEmpty {
+              Button(action: { showAPIKey.toggle() }) {
+                Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                  .foregroundColor(.secondary)
+              }
+              .buttonStyle(.plain)
+            }
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .background(Color(NSColor.textBackgroundColor))
+          .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
+
+          Text("API keys are stored securely in the keychain")
+            .font(.footnote)
+            .foregroundColor(.secondary)
+        }
       }
 
       // Base URL section (for providers that support it)
@@ -183,6 +204,27 @@ private struct ProviderCard: View {
             .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
         }
       }
+
+      // Local executable section (for providers that are local)
+      if provider.isLocal {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Path to \(provider.name)")
+            .font(.subheadline)
+            .fontWeight(.medium)
+
+          // keep the default executable name if it can be found, as there is no need to hardcode a specivic path.
+          TextField(
+            executableFinder.executablePath != nil
+              ? "\(provider.defaultExecutable ?? "executable")"
+              : "/path/to/\(provider.defaultExecutable ?? "executable")",
+            text: $executable)
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.textBackgroundColor))
+            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
+        }
+      }
     }
     .padding(16)
     .background(Color(NSColor.controlBackgroundColor))
@@ -193,6 +235,9 @@ private struct ProviderCard: View {
     .onChange(of: apiKey) { _, _ in
       saveSettings()
     }
+    .onChange(of: executable) { _, _ in
+      saveSettings()
+    }
     .onChange(of: baseURL) { _, _ in
       if provider.supportsBaseURL {
         saveSettings()
@@ -200,29 +245,35 @@ private struct ProviderCard: View {
     }
   }
 
+  @Bindable private var executableFinder: ExecutableFinder
+
   @Environment(\.colorScheme) private var colorScheme
 
   @State private var apiKey = ""
   @State private var baseURL = ""
+  @State private var executable = ""
   @State private var showAPIKey = false
 
   private func loadCurrentSettings() {
     apiKey = settings?.apiKey ?? ""
     baseURL = settings?.baseUrl ?? ""
+    executable = settings?.executable ?? ""
   }
 
   private func saveSettings() {
-    guard !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+    let trimmedAPIKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    let trimmedExecutable = executable.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    guard !trimmedAPIKey.isEmpty || !trimmedExecutable.isEmpty else {
       onSettingsChanged(nil)
       return
     }
 
-    let trimmedAPIKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-    let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-
     let settings = LLMProviderSettings(
       apiKey: trimmedAPIKey,
       baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL,
+      executable: trimmedExecutable.isEmpty ? nil : trimmedExecutable,
       createdOrder: -1)
     onSettingsChanged(settings)
   }
@@ -239,6 +290,8 @@ extension LLMProvider {
       "GPT models"
     case .openRouter:
       "Multiple model providers"
+    case .claudeCode:
+      "Claude Code"
     default:
       "Unknown provider"
     }
@@ -248,10 +301,35 @@ extension LLMProvider {
     switch self {
     case .anthropic:
       true
-    case .openAI, .openRouter:
-      false
     default:
       false
+    }
+  }
+
+  var needsAPIKey: Bool {
+    switch self {
+    case .claudeCode:
+      false
+    default:
+      true
+    }
+  }
+
+  var isLocal: Bool {
+    switch self {
+    case .claudeCode:
+      true
+    default:
+      false
+    }
+  }
+
+  var defaultExecutable: String? {
+    switch self {
+    case .claudeCode:
+      "claude"
+    default:
+      nil
     }
   }
 }
@@ -263,4 +341,29 @@ extension LLMProviderSettings {
   var hasValidAPIKey: Bool {
     !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
   }
+
+  var hasValidExecutable: Bool {
+    executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+  }
+}
+
+@MainActor @Observable
+private final class ExecutableFinder {
+  init(defaultExecutable: String?) {
+    self.defaultExecutable = defaultExecutable
+    if let defaultExecutable {
+      Task {
+        let executablePath = try await shellService.run("which \(defaultExecutable)", useInteractiveShell: true)
+        Task { @MainActor [weak self] in
+          self?.executablePath = executablePath.stdout?.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+      }
+    }
+  }
+
+  private(set) var executablePath: String?
+
+  private let defaultExecutable: String?
+  @ObservationIgnored
+  @Dependency(\.shellService) private var shellService
 }

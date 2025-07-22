@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -43,6 +44,9 @@ final class DefaultShellService: ShellService {
     let stderrData = Atomic(Data())
     let mergedData = Atomic(Data())
 
+    let (stdoutHasCompleted, stdoutCompleted) = Future<Void, Never>.make()
+    let (stderrHasCompleted, stderrCompleted) = Future<Void, Never>.make()
+
     let result = try await Subprocess.run(
       .path("/bin/zsh"),
       arguments: Arguments(["-c"] + [command]),
@@ -58,14 +62,19 @@ final class DefaultShellService: ShellService {
           stdoutData.mutate { $0.append(data) }
           mergedData.mutate { $0.append(data) }
         }
+        stdoutCompleted(.success(()))
       }
       Task {
         for await data in errorStream {
           stderrData.mutate { $0.append(data) }
           mergedData.mutate { $0.append(data) }
         }
+        stderrCompleted(.success(()))
       }
     }
+
+    await stdoutHasCompleted.value
+    await stderrHasCompleted.value
 
     return CommandExecutionResult(
       exitCode: result.terminationStatus.code,

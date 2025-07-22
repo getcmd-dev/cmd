@@ -75,14 +75,17 @@ public struct Settings: Sendable, Equatable {
     public let createdOrder: Int
     public var apiKey: String
     public var baseUrl: String?
+    public var executable: String?
 
     public init(
       apiKey: String,
       baseUrl: String?,
+      executable: String?,
       createdOrder: Int)
     {
       self.apiKey = apiKey
       self.baseUrl = baseUrl
+      self.executable = executable
       self.createdOrder = createdOrder
     }
   }

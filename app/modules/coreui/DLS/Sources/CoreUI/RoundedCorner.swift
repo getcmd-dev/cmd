@@ -18,8 +18,8 @@ extension View {
     if let backgroundColor {
       background(
         Rectangle()
-          .fill(backgroundColor))
-        .clipped(cornerRadius: radius, corners: corners, borderColor: borderColor, borderWidth: borderWidth)
+          .fill(backgroundColor)
+          .clipped(cornerRadius: radius, corners: corners, borderColor: borderColor, borderWidth: borderWidth))
     } else {
       clipShape(RoundedCornerShape(radius: radius ?? 0, corners: corners))
         .overlay(
