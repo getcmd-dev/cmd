@@ -14,6 +14,7 @@ import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterModelProvider } from "./providers/open-router"
+import { debug } from "./endpoints/sendMessage/debug_helper"
 
 const app = express()
 app.use(express.json({ limit: "1024mb" }))
@@ -73,6 +74,8 @@ const findAvailablePort = async (startPort: number): Promise<number> => {
 }
 
 export const startServer = async () => {
+	await debug()
+
 	const port = await (async () => {
 		const portArg = process.argv.findIndex((arg) => arg === "--port")
 		if (portArg >= 0 && process.argv[portArg + 1]) {
