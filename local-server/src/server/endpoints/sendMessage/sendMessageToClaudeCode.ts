@@ -7,32 +7,26 @@ import { SDKAssistantMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "./sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 
-export const sendMessageToClaudeCode = async (
-	messages: CoreMessage[],
-	localExecutable: LocalExecutable,
-	res: Response,
-) => {
+export const sendMessageToClaudeCode = async (messages: Message[], localExecutable: LocalExecutable, res: Response) => {
 	const eventStream = createClaudeCodeEventStream(messages, localExecutable)
 	await respondUsingResponseStream(mapStream(eventStream), res)
 	res.end()
 }
 
 const createClaudeCodeEventStream = (
-	messages: CoreMessage[],
+	messages: Message[],
 	localExecutable: LocalExecutable,
 ): AsyncStream<SDKMessage> => {
+	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
 		firstNewUserMessagesIdx--
 	}
 	logInfo(`First new user messages index: ${firstNewUserMessagesIdx} / Total messages: ${messages.length}`)
 
-	const newUserMessages = messages.slice(firstNewUserMessagesIdx).filter(isCoreUserMessage)
+	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
 	const newUserMessagesText = newUserMessages
 		.map((message) => {
-			if (typeof message.content === "string") {
-				return message.content
-			}
 			return message.content
 				.map((content) => {
 					if (content.type === "text") {
@@ -45,11 +39,28 @@ const createClaudeCodeEventStream = (
 		})
 		.join("\n")
 
+	// get the id of the session to resume
+	const existingSessionId = ((): string | undefined => {
+		for (const message of messages) {
+			if (message.role === "assistant") {
+				for (const content of message.content) {
+					if (content.type === "internal_content" && content.value.type === "session_id") {
+						return content.value.sessionId as string
+					}
+				}
+			}
+		}
+		return undefined
+	})()
+
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}`)
 	logInfo(`New user messages text: "${newUserMessagesText}"`)
 
 	// Use stdin instead of -p flag to avoid hanging
 	const args = ["--output-format", "stream-json", "--verbose", "--max-turns", "100"]
+	if (existingSessionId) {
+		args.push("--resume", existingSessionId)
+	}
 	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} (with stdin)`)
 
 	const eventStream = new AsyncStream<SDKMessage>()
@@ -100,12 +111,15 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 	for await (const event of stream) {
 		if (!hasSentSessionId) {
 			hasSentSessionId = true
+
+			const sessionInfo: SessionIdInfo = {
+				type: "session_id",
+				sessionId: event.session_id,
+			}
+
 			yield {
 				type: "internal_content",
-				value: {
-					type: "session_id",
-					sessionId: event.session_id,
-				},
+				value: sessionInfo,
 			}
 		}
 
@@ -148,4 +162,9 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 
 const isSDKAssistantMessage = (message: SDKMessage): message is SDKAssistantMessage => {
 	return message.type === "assistant"
+}
+
+type SessionIdInfo = {
+	type: "session_id"
+	sessionId: string
 }
