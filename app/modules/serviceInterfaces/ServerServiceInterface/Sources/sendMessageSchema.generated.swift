@@ -671,30 +671,36 @@ extension Schema {
     public struct Settings: Codable, Sendable {
       public let apiKey: String?
       public let baseUrl: String?
+      public let localExecutable: LocalExecutable?
     
       private enum CodingKeys: String, CodingKey {
         case apiKey = "apiKey"
         case baseUrl = "baseUrl"
+        case localExecutable = "localExecutable"
       }
     
       public init(
           apiKey: String? = nil,
-          baseUrl: String? = nil
+          baseUrl: String? = nil,
+          localExecutable: LocalExecutable? = nil
       ) {
         self.apiKey = apiKey
         self.baseUrl = baseUrl
+        self.localExecutable = localExecutable
       }
     
       public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         apiKey = try container.decodeIfPresent(String?.self, forKey: .apiKey)
         baseUrl = try container.decodeIfPresent(String?.self, forKey: .baseUrl)
+        localExecutable = try container.decodeIfPresent(LocalExecutable?.self, forKey: .localExecutable)
       }
     
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(apiKey, forKey: .apiKey)
         try container.encodeIfPresent(baseUrl, forKey: .baseUrl)
+        try container.encodeIfPresent(localExecutable, forKey: .localExecutable)
       }
     }
   }
@@ -702,7 +708,43 @@ extension Schema {
     case openai = "openai"
     case anthropic = "anthropic"
     case openrouter = "openrouter"
+    case claudeCode = "claude_code"
   }    
+  public struct LocalExecutable: Codable, Sendable {
+    public let executable: String
+    public let env: JSON
+    public let cwd: String?
+  
+    private enum CodingKeys: String, CodingKey {
+      case executable = "executable"
+      case env = "env"
+      case cwd = "cwd"
+    }
+  
+    public init(
+        executable: String,
+        env: JSON,
+        cwd: String? = nil
+    ) {
+      self.executable = executable
+      self.env = env
+      self.cwd = cwd
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      executable = try container.decode(String.self, forKey: .executable)
+      env = try container.decode(JSON.self, forKey: .env)
+      cwd = try container.decodeIfPresent(String?.self, forKey: .cwd)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(executable, forKey: .executable)
+      try container.encode(env, forKey: .env)
+      try container.encodeIfPresent(cwd, forKey: .cwd)
+    }
+  }
   public struct TextDelta: Codable, Sendable {
     public let type = "text_delta"
     public let text: String
@@ -785,7 +827,7 @@ extension Schema {
     public let type = "error"
     public let message: String
     public let statusCode: Int?
-    public let idx: Int
+    public let idx: Int?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -798,7 +840,7 @@ extension Schema {
         type: String = "error",
         message: String,
         statusCode: Int? = nil,
-        idx: Int
+        idx: Int? = nil
     ) {
       self.message = message
       self.statusCode = statusCode
@@ -809,7 +851,7 @@ extension Schema {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       message = try container.decode(String.self, forKey: .message)
       statusCode = try container.decodeIfPresent(Int?.self, forKey: .statusCode)
-      idx = try container.decode(Int.self, forKey: .idx)
+      idx = try container.decodeIfPresent(Int?.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -817,7 +859,7 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(message, forKey: .message)
       try container.encodeIfPresent(statusCode, forKey: .statusCode)
-      try container.encode(idx, forKey: .idx)
+      try container.encodeIfPresent(idx, forKey: .idx)
     }
   }
   public struct ReasoningDelta: Codable, Sendable {

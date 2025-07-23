@@ -42,8 +42,8 @@ build_and_copy() {
 	(cd "$repo_root/local-server" && yarn build) || exit 1
 
 	files_to_copy=(
-		"$repo_root/local-server/dist/main.bundle.js"
-		"$repo_root/local-server/dist/main.bundle.js.map"
+		"$repo_root/local-server/dist/main.bundle.cjs"
+		"$repo_root/local-server/dist/main.bundle.cjs.map"
 		"$repo_root/local-server/build.sha256"
 	)
 	destination_dir=(

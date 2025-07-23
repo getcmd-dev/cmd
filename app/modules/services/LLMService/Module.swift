@@ -13,6 +13,7 @@ Target.module(
     "LoggingServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],

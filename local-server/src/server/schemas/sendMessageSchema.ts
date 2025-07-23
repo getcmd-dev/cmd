@@ -13,10 +13,17 @@ export interface APIProvider {
 	settings: {
 		apiKey?: string
 		baseUrl?: string
+		localExecutable?: LocalExecutable
 	}
 }
 
-export type APIProviderName = "openai" | "anthropic" | "openrouter"
+export interface LocalExecutable {
+	executable: string
+	env: Record<string, string>
+	cwd?: string
+}
+
+export type APIProviderName = "openai" | "anthropic" | "openrouter" | "claude_code"
 
 export type StreamedResponseChunk =
 	| TextDelta
@@ -95,7 +102,7 @@ export interface ResponseError {
 	/**
 	 * @format integer
 	 */
-	idx: number
+	idx?: number
 }
 
 export interface ResponseUsage {

@@ -6,7 +6,7 @@ import { execSync } from "child_process"
 
 const buildOptions = {
 	entryPoints: ["src/main.ts"],
-	outfile: "dist/main.bundle.js",
+	outfile: "dist/main.bundle.cjs",
 	bundle: true,
 	plugins: [
 		esbuildPluginTsc({
@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === "production") {
 export async function computeAndSaveHash() {
 	let fileBuffer = ""
 	try {
-		fileBuffer = await fs.readFile("./dist/main.bundle.js")
+		fileBuffer = await fs.readFile("./dist/main.bundle.cjs")
 	} catch (error) {
 		// the bundle file doesn't exist yet. This is ok.
 	}
@@ -50,20 +50,20 @@ export async function computeAndSaveHash() {
 export async function computeAndSaveBuildFileSize() {
 	let fileBuffer = ""
 	try {
-		fileBuffer = await fs.readFile("./dist/main.bundle.js")
+		fileBuffer = await fs.readFile("./dist/main.bundle.cjs")
 	} catch (error) {
 		// the bundle file doesn't exist yet. This is ok.
 		return;
 	}
 	
 	// buid file size in MB
-	const stats = await fs.stat("./dist/main.bundle.js").catch(() => ({ size: 0 }))
+	const stats = await fs.stat("./dist/main.bundle.cjs").catch(() => ({ size: 0 }))
 	const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2)
 
 	// compressed  file using process
 	// Compressed file size in MB
-	execSync(`gzip -k ./dist/main.bundle.js -f`, { stdio: "inherit" });
-	const compressedStats = await fs.stat("./dist/main.bundle.js.gz").catch(() => ({ size: 0 }))
+	execSync(`gzip -k ./dist/main.bundle.cjs -f`, { stdio: "inherit" });
+	const compressedStats = await fs.stat("./dist/main.bundle.cjs.gz").catch(() => ({ size: 0 }))
 	const compressedSizeInMB = (compressedStats.size / (1024 * 1024)).toFixed(2)
 
 	await fs.writeFile("./build.size", JSON.stringify({

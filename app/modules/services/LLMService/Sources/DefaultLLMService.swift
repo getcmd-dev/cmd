@@ -12,6 +12,7 @@ import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
+import ShellServiceInterface
 import SettingsServiceInterface
 import ToolFoundation
 
@@ -19,9 +20,10 @@ import ToolFoundation
 
 final class DefaultLLMService: LLMService {
 
-  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI) {
+    init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
     self.server = server
     self.settingsService = settingsService
+        self.shellService = shellService
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
@@ -179,6 +181,8 @@ final class DefaultLLMService: LLMService {
   }
 
   private let settingsService: SettingsService
+    
+    private let shellService: ShellService
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
@@ -247,7 +251,7 @@ final class DefaultLLMService: LLMService {
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
       enableReasoning: enableReasoning,
-      provider: .init(provider: provider, settings: providerSettings))
+      provider: .init(provider: provider, settings: providerSettings, shellService: shellService, projectRoot: context?.projectRoot?.path))
     let data = try JSONEncoder().encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
@@ -309,14 +313,16 @@ final class DefaultLLMService: LLMService {
 extension BaseProviding where
   Self: ServerProviding,
   Self: SettingsServiceProviding,
-  Self: UserDefaultsProviding
+  Self: UserDefaultsProviding,
+Self: ShellServiceProviding
 {
   public var llmService: LLMService {
     shared {
       DefaultLLMService(
         server: server,
         settingsService: settingsService,
-        userDefaults: sharedUserDefaults)
+        userDefaults: sharedUserDefaults,
+        shellService: shellService)
     }
   }
 }
@@ -328,7 +334,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: LLMProvider, settings: LLMProviderSettings) throws {
+    init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -337,10 +343,18 @@ extension Schema.APIProvider {
         return .openai
       case .openRouter:
         return .openrouter
+      case .claudeCode:
+          return .claudeCode
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    self = .init(name: apiProviderName, settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl))
+      let localExecutable = settings.executable.map {
+          Schema.LocalExecutable(
+            executable: $0,
+            env: JSON(shellService.env),
+            cwd: projectRoot)
+      }
+      self = .init(name: apiProviderName, settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))
   }
 }

@@ -31,6 +31,7 @@ import {
 	CoreSystemMessage,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
+import { sendMessageToClaudeCode } from "./sendMessageToClaudeCode"
 
 export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
@@ -60,6 +61,18 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			]
 
 			const tools = body.tools
+
+			if (body.provider.name == "claude_code") {
+				// Claude Code is treated as a special case.
+				const localExecutable = body.provider.settings.localExecutable
+				if (!localExecutable) {
+					throw new UserFacingError({
+						message: "Local executable is required for Claude Code provider.",
+					})
+				}
+				await sendMessageToClaudeCode(messages.map(mapMessage), localExecutable, res)
+				return
+			}
 
 			const modelProvider = modelProviders.find((provider) => provider.name === body.provider.name)
 			if (!modelProvider) {

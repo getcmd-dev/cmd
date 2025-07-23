@@ -253,7 +253,7 @@ final class DefaultServer: Server {
       return
     }
     hasCopiedFiles = true
-    let files = ["main.bundle.js", "main.bundle.js.map", "launch-server.sh"]
+    let files = ["main.bundle.cjs", "main.bundle.cjs.map", "launch-server.sh"]
     let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
 
     guard filePaths.count == files.count else {

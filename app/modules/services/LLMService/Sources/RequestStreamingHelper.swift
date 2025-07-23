@@ -89,10 +89,12 @@ final class RequestStreamingHelper: Sendable {
 
           let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
-          let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: event.idx)
-          if event.idx <= previousChunkIdx {
-            defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
-          }
+            if let idx = event.idx {
+                let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: idx)
+                if idx <= previousChunkIdx {
+                    defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
+                }
+            }
 
           switch event {
           case .ping:
@@ -131,9 +133,9 @@ final class RequestStreamingHelper: Sendable {
       }
       finish()
     } catch {
-      defaultLogger.error("Finished streaming response with error \(error)")
+      defaultLogger.error("Finished streaming response with error \(err ?? error)")
       finish()
-      throw error
+      throw err ?? error
     }
     return usage
   }
@@ -392,7 +394,7 @@ final class RequestStreamingHelper: Sendable {
 }
 
 extension Schema.StreamedResponseChunk {
-  var idx: Int {
+  var idx: Int? {
     switch self {
     case .ping(let ping):
       ping.idx

@@ -83,7 +83,7 @@ final class DefaultShellService: ShellService {
       mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 
-  private var env: [String: String] = [:]
+  public private(set) var env: [String: String] = [:]
 
   private static func loadZshEnvironment(userEnv: [String: String]? = nil) async throws -> [String: String] {
     let result = try await Subprocess.run(

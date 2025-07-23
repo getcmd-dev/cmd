@@ -14,8 +14,8 @@ Target.module(
   resources: [
     .process("Resources/build.sha256"),
     .process("Resources/launch-server.sh"),
-    .process("Resources/main.bundle.js"),
-    .process("Resources/main.bundle.js.map"),
+    .process("Resources/main.bundle.cjs"),
+    .process("Resources/main.bundle.cjs.map"),
   ],
   testDependencies: [
     "AppFoundation",

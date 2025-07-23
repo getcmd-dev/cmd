@@ -64,4 +64,4 @@ setup_dependencies() {
 setup_node_environment >"./launch-server.log" 2>&1
 setup_dependencies >"./launch-server.log" 2>&1
 
-./node --enable-source-maps ./main.bundle.js "$@" 2> >(tee "./launch-server.stderr.log") 1> >(tee "./launch-server.stdout.log")
+./node --enable-source-maps ./main.bundle.cjs "$@" 2> >(tee "./launch-server.stderr.log") 1> >(tee "./launch-server.stdout.log")

@@ -28,5 +28,7 @@ public final class MockShellService: ShellService {
   {
     try await onRun(command, cwd, useInteractiveShell, body)
   }
+    
+    public var env: [String : String] = [:]
 }
 #endif

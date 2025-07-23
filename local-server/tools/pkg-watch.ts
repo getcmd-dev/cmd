@@ -9,7 +9,7 @@ const isWatcherDisabled = (): boolean => {
 	return existsSync("../.build/disable-watcher")
 }
 
-watch("./dist/main.bundle.js", { recursive: true }, async function (evt, name) {
+watch("./dist/main.bundle.cjs", { recursive: true }, async function (evt, name) {
 	if (isWatcherDisabled()) {
 		return
 	}
