@@ -247,6 +247,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "reasoning_delta"
 		| "reasoning_signature"
 		| "usage"
+		| "internal_content"
 		| undefined
 	let text: string | undefined
 

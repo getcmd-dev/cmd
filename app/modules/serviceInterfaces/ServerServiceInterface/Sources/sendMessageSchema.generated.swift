@@ -363,12 +363,46 @@ extension Schema {
       try container.encode(type, forKey: .type)
     }
   }
+  public struct InternalContent: Codable, Sendable {
+    public let type = "internal_content"
+    public let value: JSON
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case value = "value"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "internal_content",
+        value: JSON,
+        idx: Int
+    ) {
+      self.value = value
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      value = try container.decode(JSON.self, forKey: .value)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(value, forKey: .value)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
   public enum MessageContent: Codable, Sendable {
     case textMessage(_ value: TextMessage)
     case reasoningMessage(_ value: ReasoningMessage)
     case toolUseRequest(_ value: ToolUseRequest)
     case toolResultMessage(_ value: ToolResultMessage)
     case internalTextMessage(_ value: InternalTextMessage)
+    case internalContent(_ value: InternalContent)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -388,6 +422,8 @@ extension Schema {
           self = .toolResultMessage(try ToolResultMessage(from: decoder))
         case "internal_text":
           self = .internalTextMessage(try InternalTextMessage(from: decoder))
+        case "internal_content":
+          self = .internalContent(try InternalContent(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -404,6 +440,8 @@ extension Schema {
         case .toolResultMessage(let value):
           try value.encode(to: encoder)
         case .internalTextMessage(let value):
+          try value.encode(to: encoder)
+        case .internalContent(let value):
           try value.encode(to: encoder)
       }
     }
@@ -1009,6 +1047,7 @@ extension Schema {
     case reasoningSignature(_ value: ReasoningSignature)
     case responseUsage(_ value: ResponseUsage)
     case ping(_ value: Ping)
+    case internalContent(_ value: InternalContent)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -1034,6 +1073,8 @@ extension Schema {
           self = .responseUsage(try ResponseUsage(from: decoder))
         case "ping":
           self = .ping(try Ping(from: decoder))
+        case "internal_content":
+          self = .internalContent(try InternalContent(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -1056,6 +1097,8 @@ extension Schema {
         case .responseUsage(let value):
           try value.encode(to: encoder)
         case .ping(let value):
+          try value.encode(to: encoder)
+        case .internalContent(let value):
           try value.encode(to: encoder)
       }
     }

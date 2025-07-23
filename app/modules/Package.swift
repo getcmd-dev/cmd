@@ -389,6 +389,7 @@ targets.append(contentsOf: Target.module(
     "CheckpointServiceInterface",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ServerServiceInterface",
     "ToolFoundation",
   ],
   path: "./features/Chat/ChatFeatureInterface"))
@@ -1016,6 +1017,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [

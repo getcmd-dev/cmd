@@ -48,6 +48,9 @@ extension AssistantMessage {
           return .reasoningMessage(Schema.ReasoningMessage(
             text: reasoning.content,
             signature: reasoning.signature))
+            
+        case .internalContent(let content):
+            return .internalContent(content)
         }
       })
     }

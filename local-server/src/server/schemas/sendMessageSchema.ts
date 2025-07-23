@@ -34,6 +34,7 @@ export type StreamedResponseChunk =
 	| ReasoningSignature
 	| ResponseUsage
 	| Ping
+	| InternalContent
 
 export interface TextDelta {
 	type: "text_delta"
@@ -121,7 +122,30 @@ export interface ResponseUsage {
 	idx: number
 }
 
-export type MessageContent = TextMessage | ReasoningMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
+/**
+ * An opaque message that the local server sends to the host app for it to be sent back in the next turn.
+ * This can be helpful for the local server to remain stateless while later receiving the required information (somewhat similar to a session cookie).
+ */
+export interface InternalContent {
+	type: "internal_content"
+	/**
+	 * The content of the message that should be preserved.
+	 */
+	value: Record<string, unknown>
+
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+
+export type MessageContent =
+	| TextMessage
+	| ReasoningMessage
+	| ToolUseRequest
+	| ToolResultMessage
+	| InternalTextMessage
+	| InternalContent
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.

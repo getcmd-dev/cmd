@@ -121,6 +121,9 @@ final class RequestStreamingHelper: Sendable {
 
           case .responseUsage(let value):
             usage = value
+              
+          case .internalContent(let message):
+              handle(internalMessage: message)
           }
         } catch {
           defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
@@ -390,6 +393,14 @@ final class RequestStreamingHelper: Sendable {
       result.update(with: AssistantMessage(content: content))
     }
   }
+    
+    private func handle(internalMessage: Schema.InternalContent) {
+        endPreviousContent()
+        
+        var content = result.content
+        content.append(.internalContent(internalMessage))
+        result.update(with: AssistantMessage(content: content))
+    }
 
 }
 
@@ -412,6 +423,8 @@ extension Schema.StreamedResponseChunk {
       reasoningSignature.idx
     case .responseUsage(let usage):
       usage.idx
+    case .internalContent(let message):
+        message.idx
     }
   }
 }

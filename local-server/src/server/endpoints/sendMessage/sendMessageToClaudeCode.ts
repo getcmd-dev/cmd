@@ -96,21 +96,33 @@ export const isCoreUserMessage = (message: CoreMessage): message is CoreUserMess
 }
 
 async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<ResponseChunkWithoutIndex> {
+	let hasSentSessionId = false
 	for await (const event of stream) {
+		if (!hasSentSessionId) {
+			hasSentSessionId = true
+			yield {
+				type: "internal_content",
+				value: {
+					type: "session_id",
+					sessionId: event.session_id,
+				},
+			}
+		}
+
 		if (isSDKAssistantMessage(event)) {
 			for (const contentPart of event.message.content) {
 				switch (contentPart.type) {
 					case "text": {
 						yield {
 							type: "text_delta",
-							text: contentPart.text,
+							text: contentPart.text + "\n",
 						}
 						break
 					}
 					case "thinking": {
 						yield {
 							type: "reasoning_delta",
-							delta: contentPart.thinking,
+							delta: contentPart.thinking + "\n",
 						}
 						break
 					}

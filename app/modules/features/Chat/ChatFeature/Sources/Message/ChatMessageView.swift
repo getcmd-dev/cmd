@@ -54,7 +54,7 @@ struct ChatMessageView: View {
               .padding(.horizontal, horizontalPadding)
               .padding(.vertical, Constants.toolPadding)
 
-          case .nonUserFacingText:
+          case .nonUserFacingText, .internalContent:
             EmptyView()
 
           case .reasoning(let reasoningContent):

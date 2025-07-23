@@ -5,5 +5,6 @@ Target.module(
     "CheckpointServiceInterface",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ServerServiceInterface",
     "ToolFoundation",
   ])

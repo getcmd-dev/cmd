@@ -223,6 +223,8 @@ extension ChatMessageContentModel {
       content.id
     case .conversationSummary(let content):
       content.id
+    case .internalContent(let content):
+        content.id
     }
   }
 }
