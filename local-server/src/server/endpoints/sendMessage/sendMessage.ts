@@ -107,7 +107,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				providerOptions: generalProviderOptions,
 			})
 
-			let idx = await processResponseStream(fullStream, res)
+			let idx = await respondUsingResponseStream(mapStream(fullStream), res)
 
 			const usageInfo = await usage
 			const usageRes: ResponseUsage = {
@@ -128,14 +128,71 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 	})
 }
 
+type MappedOmit<T, K extends keyof T> = { [P in keyof T as P extends K ? never : P]: T[P] }
+
+export type ResponseChunkWithoutIndex = MappedOmit<StreamedResponseChunk, "idx">
+
 /**
- * Processes the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
- * @param stream - The resonse stream.
+ * Converts the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
+ */
+async function* mapStream(
+	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+): AsyncIterable<ResponseChunkWithoutIndex> {
+	for await (const chunk of stream) {
+		switch (chunk.type) {
+			case "text-delta":
+				yield {
+					type: "text_delta",
+					text: chunk.textDelta,
+				}
+				break
+			case "tool-call-delta":
+				yield {
+					type: "tool_call_delta",
+					toolName: chunk.toolName,
+					toolUseId: chunk.toolCallId,
+					inputDelta: chunk.argsTextDelta,
+				}
+				break
+			case "tool-call":
+				yield {
+					type: "tool_call",
+					toolName: chunk.toolName,
+					toolUseId: chunk.toolCallId,
+					input: chunk.args,
+				}
+				break
+			case "reasoning":
+				yield {
+					type: "reasoning_delta",
+					delta: chunk.textDelta,
+				}
+				break
+			case "reasoning-signature":
+				yield {
+					type: "reasoning_signature",
+					signature: chunk.signature,
+				}
+				break
+			case "error":
+				yield mapResponseError(chunk.error, () => 0)
+				break
+			default:
+				logInfo(`skipping chunk: ${chunk.type}`)
+				break
+		}
+	}
+}
+
+/**
+ * Respond to the request, using the stream of relevant events.
+ * Note: this will add the required event index, as well as send ping on a regular interval.
+ * @param stream - The stream of events to send to the caller.
  * @param res - The Express response object to write the streamed response chunks to.
  * @throws {UserFacingError} If an error occurs while processing the stream or sending the response.
  */
-async function processResponseStream(
-	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+export async function respondUsingResponseStream(
+	stream: AsyncIterable<ResponseChunkWithoutIndex>,
 	res: Response,
 ): Promise<number> {
 	let interval: NodeJS.Timeout | undefined
@@ -153,62 +210,14 @@ async function processResponseStream(
 		}, 1000)
 
 		for await (const chunk of stream) {
-			const transformChunk = (
-				chunk: TextStreamPart<Record<string, MappedTool>>,
-			): StreamedResponseChunk | undefined => {
-				switch (chunk.type) {
-					case "text-delta":
-						return {
-							type: "text_delta",
-							text: chunk.textDelta,
-							idx: i++,
-						}
-					case "tool-call-delta":
-						return {
-							type: "tool_call_delta",
-							toolName: chunk.toolName,
-							toolUseId: chunk.toolCallId,
-							inputDelta: chunk.argsTextDelta,
-							idx: i++,
-						}
-					case "tool-call":
-						return {
-							type: "tool_call",
-							toolName: chunk.toolName,
-							toolUseId: chunk.toolCallId,
-							input: chunk.args,
-							idx: i++,
-						}
-					case "reasoning":
-						return {
-							type: "reasoning_delta",
-							delta: chunk.textDelta,
-							idx: i++,
-						}
-					case "reasoning-signature":
-						return {
-							type: "reasoning_signature",
-							signature: chunk.signature,
-							idx: i++,
-						}
-					case "error":
-						return mapResponseError(chunk.error, () => i++)
-					default:
-						logInfo(`skipping chunk: ${chunk.type}`)
-						return undefined
-				}
-			}
-			const newChunk = transformChunk(chunk)
-			if (newChunk === undefined) {
-				continue // skip unsupported chunk types
-			}
-			chunks.push(newChunk)
+			const chunkWithIdx: StreamedResponseChunk = { ...chunk, idx: i++ }
+			chunks.push(chunkWithIdx)
 			if (res.getHeader("Content-Type") === undefined) {
 				res.setHeader("Content-Type", "text/event-stream")
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
-			res.write(JSON.stringify(newChunk))
+			res.write(JSON.stringify(chunkWithIdx))
 		}
 		logInfo("Stream ended")
 		if (interval) {

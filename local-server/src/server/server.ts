@@ -74,7 +74,9 @@ const findAvailablePort = async (startPort: number): Promise<number> => {
 }
 
 export const startServer = async () => {
-	await debug()
+	if (process.env.DEBUG) {
+		await debug()
+	}
 
 	const port = await (async () => {
 		const portArg = process.argv.findIndex((arg) => arg === "--port")
