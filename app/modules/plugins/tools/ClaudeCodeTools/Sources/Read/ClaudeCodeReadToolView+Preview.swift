@@ -4,14 +4,14 @@
 import SwiftUI
 
 #if DEBUG
-let path = "/path/to/some-file.txt"
+let readPath = "/path/to/some-file.txt"
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
       ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.running),
-        input: .init(file_path: path, offset: 1, limit: 10)))
-      ReadToolUseView(toolUse: ReadToolUseViewModel(status: .Just(.notStarted), input: .init(file_path: path, offset: nil, limit: nil)))
+        input: .init(file_path: readPath, offset: 1, limit: 10)))
+      ReadToolUseView(toolUse: ReadToolUseViewModel(status: .Just(.notStarted), input: .init(file_path: readPath, offset: nil, limit: nil)))
       ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: """
@@ -24,12 +24,12 @@ let path = "/path/to/some-file.txt"
             // This is an example file content
             // for the ReadFileTool preview
             """)))),
-        input: .init(file_path: path, offset: nil, limit: nil)))
+        input: .init(file_path: readPath, offset: nil, limit: nil)))
 
       ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: longContent)))),
-        input: .init(file_path: path, offset: nil, limit: nil)))
+        input: .init(file_path: readPath, offset: nil, limit: nil)))
     }
   }
   .frame(minWidth: 500, minHeight: 500)
