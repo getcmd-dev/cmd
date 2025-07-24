@@ -17,6 +17,7 @@ Target.module(
     "ChatHistoryServiceInterface",
     "CheckpointService",
     "CheckpointServiceInterface",
+    "ClaudeCodeTools",
     "DependencyFoundation",
     "DLS",
     "EditFilesTool",

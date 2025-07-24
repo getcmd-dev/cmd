@@ -244,7 +244,6 @@ extension ChatMessageContent {
           (.assistant, request),
           (.tool, .toolResultMessage(.init(
             toolUseId: toolUse.toolUse.toolUseId,
-            toolName: toolUse.toolUse.toolName,
             result: toolResult))),
         ]
       } catch {
@@ -254,9 +253,9 @@ extension ChatMessageContent {
 
     case .conversationSummary(let summary):
       return [(nil, .textMessage(.init(text: summary.text)))]
-        
+
     case .internalContent(let content):
-        return [(nil, .internalContent(content.value))]
+      return [(nil, .internalContent(content.value))]
     }
   }
 }
@@ -337,9 +336,9 @@ extension AssistantMessageContent {
         content.finishStreaming()
       }
       return .reasoning(content)
-        
+
     case .internalContent(let content):
-        return .internalContent(.init(content))
+      return .internalContent(.init(content))
     }
   }
 }

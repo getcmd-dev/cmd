@@ -3,9 +3,9 @@
 
 import AppFoundation
 import Foundation
-import ServerServiceInterface
 import LLMServiceInterface
 import LoggingServiceInterface
+import ServerServiceInterface
 import ToolFoundation
 
 // MARK: - ChatMessageModel
@@ -74,7 +74,7 @@ public enum ChatMessageContentModel: Sendable {
   case nonUserFacingText(ChatMessageTextContentModel)
   case toolUse(ChatMessageToolUseContentModel)
   case conversationSummary(ChatMessageTextContentModel)
-    case internalContent(ChatMessageInternalContentModel)
+  case internalContent(ChatMessageInternalContentModel)
 }
 
 // MARK: - ChatMessageTextContentModel
@@ -127,15 +127,16 @@ public struct ChatMessageReasoningContentModel: Identifiable, Sendable {
 
 }
 
+// MARK: - ChatMessageInternalContentModel
 
 public struct ChatMessageInternalContentModel: Identifiable, Sendable {
-    public let id: UUID
-    public let value: Schema.InternalContent
-    
-    public init(id: UUID = UUID(), _ value: Schema.InternalContent) {
-      self.id = id
-      self.value = value
-    }
+  public let id: UUID
+  public let value: Schema.InternalContent
+
+  public init(id: UUID = UUID(), _ value: Schema.InternalContent) {
+    self.id = id
+    self.value = value
+  }
 }
 
 // MARK: - MessageRole

@@ -76,6 +76,11 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
+public protocol ExternalToolUse: ToolUse {
+  /// Set the output
+  func receive(output: JSON.Value) throws
+}
+
 extension ToolUseExecutionStatus {
   var asOutput: Output? {
     get throws {

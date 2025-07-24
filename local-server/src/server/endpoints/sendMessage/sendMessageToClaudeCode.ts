@@ -3,7 +3,7 @@ import { LocalExecutable, Message, StreamedResponseChunk } from "@/server/schema
 import { CoreMessage, CoreUserMessage } from "ai"
 import { Response } from "express"
 import { spawn } from "child_process"
-import { SDKAssistantMessage, type SDKMessage } from "@anthropic-ai/claude-code"
+import { SDKAssistantMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "./sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 
@@ -140,15 +140,15 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						}
 						break
 					}
-					// case "tool_use": {
-					// 	yield {
-					// 		type: "tool_call",
-					// 		toolName: contentPart.name,
-					// 		toolUseId: contentPart.id,
-					// 		input: contentPart.input,
-					// 	}
-					//     break
-					// }
+					case "tool_use": {
+						yield {
+							type: "tool_call",
+							toolName: `claude_code_${contentPart.name}`,
+							toolUseId: contentPart.id,
+							input: contentPart.input as Record<string, unknown>,
+						}
+						break
+					}
 					default: {
 						// Ignore other content types for now (server_tool_use, web_search_tool_result, etc.)
 						logInfo(`Ignoring unsupported content type: ${contentPart.type}`)
@@ -156,12 +156,41 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 					}
 				}
 			}
+		} else if (isSDKUserMessage(event)) {
+			for (const contentPart of event.message.content) {
+				if (typeof contentPart === "string") {
+					continue
+				}
+				switch (contentPart.type) {
+					case "tool_result": {
+						yield {
+							type: "tool_result",
+							toolUseId: contentPart.tool_use_id,
+							result: {
+								type: "tool_result_success",
+								success: contentPart.content,
+							},
+						}
+						break
+					}
+					default: {
+						// Ignore other content types for now (server_tool_use, web_search_tool_result, etc.)
+						logInfo(`Ignoring unsupported content type: ${contentPart.type}`)
+						break
+					}
+				}
+			}
+		} else {
+			logInfo(`Ignoring non-SDK message: ${JSON.stringify(event)}`)
 		}
 	}
 }
 
 const isSDKAssistantMessage = (message: SDKMessage): message is SDKAssistantMessage => {
 	return message.type === "assistant"
+}
+const isSDKUserMessage = (message: SDKMessage): message is SDKUserMessage => {
+	return message.type === "user"
 }
 
 type SessionIdInfo = {

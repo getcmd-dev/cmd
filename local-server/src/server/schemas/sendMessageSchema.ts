@@ -29,6 +29,7 @@ export type StreamedResponseChunk =
 	| TextDelta
 	| ToolUseRequest
 	| ToolUseDelta
+	| ToolResultMessage // When interacting with an external agent, like Claude Code, the tool results are produced externally and sent back to the host application.
 	| ResponseError
 	| ReasoningDelta
 	| ReasoningSignature
@@ -236,9 +237,12 @@ export interface ToolResultFailureMessage {
 
 export interface ToolResultMessage {
 	toolUseId: string
-	toolName: string
 	type: "tool_result"
 	result: ToolResultSuccessMessage | ToolResultFailureMessage
+	/**
+	 * @format integer
+	 */
+	idx?: number
 }
 
 export interface Tool {

@@ -89,12 +89,12 @@ final class RequestStreamingHelper: Sendable {
 
           let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
-            if let idx = event.idx {
-                let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: idx)
-                if idx <= previousChunkIdx {
-                    defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
-                }
+          if let idx = event.idx {
+            let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: idx)
+            if idx <= previousChunkIdx {
+              defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
             }
+          }
 
           switch event {
           case .ping:
@@ -109,6 +109,9 @@ final class RequestStreamingHelper: Sendable {
           case .toolUseRequest(let toolUseRequest):
             await handle(toolUseRequest: toolUseRequest)
 
+          case .toolResultMessage(let toolResult):
+            await handle(toolResult: toolResult)
+
           case .responseError(let error):
             // We received an error from the server.
             err = err ?? AppError(message: error.message)
@@ -121,9 +124,9 @@ final class RequestStreamingHelper: Sendable {
 
           case .responseUsage(let value):
             usage = value
-              
+
           case .internalContent(let message):
-              handle(internalMessage: message)
+            handle(internalMessage: message)
           }
         } catch {
           defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
@@ -347,6 +350,24 @@ final class RequestStreamingHelper: Sendable {
     result.update(with: AssistantMessage(content: content))
   }
 
+  private func handle(toolResult: Schema.ToolResultMessage) async {
+    guard case .toolResultSuccessMessage(let toolResultSuccess) = toolResult.result else {
+      defaultLogger.error("External tool \(toolResult.toolUseId) failed. This is not handled for now")
+      return
+    }
+    guard
+      let toolUse = result.content
+        .compactMap(\.asToolUseRequest)
+        .first(where: { toolUseRequest in
+          toolUseRequest.id == toolResult.toolUseId
+        })?.toolUse as? ExternalToolUse
+    else {
+      defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
+      return
+    }
+    try? toolUse.receive(output: toolResultSuccess.success)
+  }
+
   private func endStreamedToolUse() {
     streamingToolUse = nil
     streamingToolUseInput = ""
@@ -393,14 +414,14 @@ final class RequestStreamingHelper: Sendable {
       result.update(with: AssistantMessage(content: content))
     }
   }
-    
-    private func handle(internalMessage: Schema.InternalContent) {
-        endPreviousContent()
-        
-        var content = result.content
-        content.append(.internalContent(internalMessage))
-        result.update(with: AssistantMessage(content: content))
-    }
+
+  private func handle(internalMessage: Schema.InternalContent) {
+    endPreviousContent()
+
+    var content = result.content
+    content.append(.internalContent(internalMessage))
+    result.update(with: AssistantMessage(content: content))
+  }
 
 }
 
@@ -415,6 +436,8 @@ extension Schema.StreamedResponseChunk {
       toolUseDelta.idx
     case .toolUseRequest(let toolUseRequest):
       toolUseRequest.idx
+    case .toolResultMessage(let toolResult):
+      toolResult.idx
     case .responseError(let error):
       error.idx
     case .reasoningDelta(let reasoningDelta):
@@ -424,7 +447,7 @@ extension Schema.StreamedResponseChunk {
     case .responseUsage(let usage):
       usage.idx
     case .internalContent(let message):
-        message.idx
+      message.idx
     }
   }
 }

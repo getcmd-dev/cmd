@@ -26,11 +26,10 @@ public enum JSON: Codable, Equatable, Sendable {
 // MARK: ExpressibleByDictionaryLiteral
 
 extension JSON: ExpressibleByDictionaryLiteral {
-    public init(dictionaryLiteral elements: (String, JSON.Value)...) {
-        self.init(dictionaryLiteral: elements)
-    }
-      
-      
+  public init(dictionaryLiteral elements: (String, JSON.Value)...) {
+    self.init(dictionaryLiteral: elements)
+  }
+
   public init(dictionaryLiteral elements: [(String, JSON.Value)]) {
     var object = [String: JSON.Value]()
 
@@ -40,10 +39,10 @@ extension JSON: ExpressibleByDictionaryLiteral {
 
     self = .object(object)
   }
-    
-    public init<Value: JSONValueConvertible>(_ dictionary: Dictionary<String, Value>) {
-        self.init(dictionaryLiteral: dictionary.map({ k, v in (k, v.asJSONValue)}))
-    }
+
+  public init(_ dictionary: [String: some JSONValueConvertible]) {
+    self.init(dictionaryLiteral: dictionary.map { k, v in (k, v.asJSONValue) })
+  }
 }
 
 // MARK: ExpressibleByArrayLiteral
@@ -369,25 +368,28 @@ extension String: @retroactive CodingKey {
 }
 
 public protocol JSONValueConvertible {
-    var asJSONValue: JSON.Value { get }
+  var asJSONValue: JSON.Value { get }
 }
 
 extension String: JSONValueConvertible {
-    public var asJSONValue: JSON.Value { .string(self) }
+  public var asJSONValue: JSON.Value { .string(self) }
 }
+
 extension Int: JSONValueConvertible {
-    public var asJSONValue: JSON.Value { .number(Double(self)) }
+  public var asJSONValue: JSON.Value { .number(Double(self)) }
 }
+
 extension Bool: JSONValueConvertible {
-    public var asJSONValue: JSON.Value { .bool(self) }
+  public var asJSONValue: JSON.Value { .bool(self) }
 }
+
 extension Optional: JSONValueConvertible where Wrapped: JSONValueConvertible {
-    public var asJSONValue: JSON.Value {
-        switch self {
-        case .none:
-            return .null
-        case .some(let value):
-            return value.asJSONValue
-        }
+  public var asJSONValue: JSON.Value {
+    switch self {
+    case .none:
+      .null
+    case .some(let value):
+      value.asJSONValue
     }
+  }
 }

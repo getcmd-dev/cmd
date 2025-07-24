@@ -243,6 +243,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "text_delta"
 		| "tool_call"
 		| "tool_call_delta"
+		| "tool_result"
 		| "ping"
 		| "reasoning_delta"
 		| "reasoning_signature"
@@ -393,7 +394,6 @@ const mapMessage = (message: Message): CoreMessage => {
 			content: message.content.map(asToolResultMessage).map((content) => ({
 				type: "tool-result",
 				toolCallId: content.toolUseId,
-				toolName: content.toolName,
 				result: content.result,
 			})),
 		} as CoreToolMessage

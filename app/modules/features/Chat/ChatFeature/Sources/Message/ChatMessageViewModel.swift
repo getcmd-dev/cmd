@@ -41,7 +41,7 @@ enum ChatMessageContent: Identifiable {
   case nonUserFacingText(ChatMessageTextContent)
   case toolUse(ChatMessageToolUseContent)
   case conversationSummary(ChatMessageTextContent)
-    case internalContent(ChatMessageInternalContent)
+  case internalContent(ChatMessageInternalContent)
 
   var id: UUID {
     switch self {
@@ -56,7 +56,7 @@ enum ChatMessageContent: Identifiable {
     case .conversationSummary(let content):
       content.id
     case .internalContent(let content):
-        content.id
+      content.id
     }
   }
 

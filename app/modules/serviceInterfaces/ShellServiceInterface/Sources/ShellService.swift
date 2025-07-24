@@ -52,8 +52,8 @@ public protocol ShellService: Sendable {
     useInteractiveShell: Bool,
     body: SubprocessHandle?)
     async throws -> CommandExecutionResult
-    
-    var env: [String: String] { get }
+
+  var env: [String: String] { get }
 }
 
 extension ShellService {

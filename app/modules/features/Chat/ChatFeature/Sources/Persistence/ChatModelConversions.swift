@@ -92,9 +92,9 @@ extension ChatMessageContent {
         id: summary.id,
         projectRoot: nil,
         deltas: [summary.text]))
-        
+
     case .internalContent(let content):
-        self = .internalContent(content)
+      self = .internalContent(content)
     }
   }
 
@@ -127,9 +127,9 @@ extension ChatMessageContent {
         projectRoot: nil,
         text: summary.text,
         attachments: []))
-        
+
     case .internalContent(let content):
-            .internalContent(content)
+      .internalContent(content)
     }
   }
 

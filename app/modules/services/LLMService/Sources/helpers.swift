@@ -48,9 +48,9 @@ extension AssistantMessage {
           return .reasoningMessage(Schema.ReasoningMessage(
             text: reasoning.content,
             signature: reasoning.signature))
-            
+
         case .internalContent(let content):
-            return .internalContent(content)
+          return .internalContent(content)
         }
       })
     }
@@ -61,7 +61,6 @@ extension Schema.ToolResultMessage {
   public init(request: Schema.ToolUseRequest, output: JSON.Value) {
     self.init(
       toolUseId: request.toolUseId,
-      toolName: request.toolName,
       result: .toolResultSuccessMessage(.init(success: output)))
   }
 }

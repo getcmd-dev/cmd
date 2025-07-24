@@ -25,7 +25,7 @@ public enum AssistantMessageContent: Sendable { // TODO: rename to StreamedAssis
   case text(_ message: MutableCurrentValueStream<TextContentMessage>)
   case reasoning(_ message: MutableCurrentValueStream<ReasoningContentMessage>)
   case tool(_ message: ToolUseMessage)
-    case internalContent(_ message: Schema.InternalContent)
+  case internalContent(_ message: Schema.InternalContent)
 }
 
 // MARK: - TextContentMessage

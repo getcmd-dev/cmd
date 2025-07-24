@@ -3,6 +3,7 @@
 
 import AskFollowUpTool
 import BuildTool
+import ClaudeCodeTools
 import EditFilesTool
 import ExecuteCommandTool
 import LSTool
@@ -20,5 +21,8 @@ extension ToolsPlugin {
     plugIn(tool: ExecuteCommandTool())
     plugIn(tool: AskFollowUpTool())
     plugIn(tool: BuildTool())
+
+    // Claude Code
+    plugIn(tool: ClaudeCodeReadTool())
   }
 }

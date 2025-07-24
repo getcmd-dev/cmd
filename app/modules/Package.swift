@@ -90,6 +90,7 @@ targets.append(contentsOf: Target.module(
     "ChatHistoryServiceInterface",
     "CheckpointService",
     "CheckpointServiceInterface",
+    "ClaudeCodeTools",
     "DependencyFoundation",
     "DLS",
     "EditFilesTool",
@@ -298,6 +299,22 @@ targets.append(contentsOf: Target.module(
     "XcodeControllerServiceInterface",
   ],
   path: "./plugins/tools/EditFilesTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "ClaudeCodeTools",
+  dependencies: [
+    "CodePreview",
+    "DLS",
+    "HighlighterServiceInterface",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "JSONFoundation",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/ClaudeCodeTools"))
 
 targets.append(contentsOf: Target.module(
   name: "SearchFilesTool",

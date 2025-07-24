@@ -12,18 +12,18 @@ import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
-import ShellServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 import ToolFoundation
 
 // MARK: - DefaultLLMService
 
 final class DefaultLLMService: LLMService {
 
-    init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
+  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
     self.server = server
     self.settingsService = settingsService
-        self.shellService = shellService
+    self.shellService = shellService
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
@@ -78,6 +78,11 @@ final class DefaultLLMService: LLMService {
         for toolUseRequest in toolUseRequests {
           try Task.checkCancellation()
           await messageHistory.append(Self.waitForResult(of: toolUseRequest, context: context))
+        }
+
+        if toolUseRequests.filter({ $0.toolUse as? any ExternalToolUse == nil }).isEmpty {
+          // All tool uses are external, we don't need to send their result back to the assistant.
+          break
         }
       }
       response.finish()
@@ -181,8 +186,8 @@ final class DefaultLLMService: LLMService {
   }
 
   private let settingsService: SettingsService
-    
-    private let shellService: ShellService
+
+  private let shellService: ShellService
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
@@ -207,13 +212,11 @@ final class DefaultLLMService: LLMService {
 
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
-        toolName: toolUse.toolName,
         result: .toolResultSuccessMessage(.init(success: json)))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     } catch {
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
-        toolName: toolUse.toolName,
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
@@ -251,7 +254,11 @@ final class DefaultLLMService: LLMService {
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
       enableReasoning: enableReasoning,
-      provider: .init(provider: provider, settings: providerSettings, shellService: shellService, projectRoot: context?.projectRoot?.path))
+      provider: .init(
+        provider: provider,
+        settings: providerSettings,
+        shellService: shellService,
+        projectRoot: context?.projectRoot?.path))
     let data = try JSONEncoder().encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
@@ -314,7 +321,7 @@ extension BaseProviding where
   Self: ServerProviding,
   Self: SettingsServiceProviding,
   Self: UserDefaultsProviding,
-Self: ShellServiceProviding
+  Self: ShellServiceProviding
 {
   public var llmService: LLMService {
     shared {
@@ -334,7 +341,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-    init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) throws {
+  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -344,17 +351,19 @@ extension Schema.APIProvider {
       case .openRouter:
         return .openrouter
       case .claudeCode:
-          return .claudeCode
+        return .claudeCode
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-      let localExecutable = settings.executable.map {
-          Schema.LocalExecutable(
-            executable: $0,
-            env: JSON(shellService.env),
-            cwd: projectRoot)
-      }
-      self = .init(name: apiProviderName, settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))
+    let localExecutable = settings.executable.map {
+      Schema.LocalExecutable(
+        executable: $0,
+        env: JSON(shellService.env),
+        cwd: projectRoot)
+    }
+    self = .init(
+      name: apiProviderName,
+      settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))
   }
 }

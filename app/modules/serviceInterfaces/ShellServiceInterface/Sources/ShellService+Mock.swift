@@ -19,6 +19,8 @@ public final class MockShellService: ShellService {
     CommandExecutionResult(exitCode: 0)
   }
 
+  public var env: [String: String] = [:]
+
   public func run(
     _ command: String,
     cwd: String?,
@@ -28,7 +30,6 @@ public final class MockShellService: ShellService {
   {
     try await onRun(command, cwd, useInteractiveShell, body)
   }
-    
-    public var env: [String : String] = [:]
+
 }
 #endif

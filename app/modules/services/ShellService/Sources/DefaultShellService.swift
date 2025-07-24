@@ -22,6 +22,8 @@ final class DefaultShellService: ShellService {
     loadZshEnvironmentInBackground()
   }
 
+  public private(set) var env: [String: String] = [:]
+
   @discardableResult
   func run(
     _ command: String,
@@ -82,8 +84,6 @@ final class DefaultShellService: ShellService {
       stderr: String(data: stderrData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
       mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
-
-  public private(set) var env: [String: String] = [:]
 
   private static func loadZshEnvironment(userEnv: [String: String]? = nil) async throws -> [String: String] {
     let result = try await Subprocess.run(

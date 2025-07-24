@@ -158,10 +158,10 @@ extension ChatMessageContentModel: Codable {
     case "conversationSummary":
       let data = try container.decode(ChatMessageTextContentModel.self, forKey: .data)
       self = .conversationSummary(data)
-        
+
     case "internalContent":
-        let data = try container.decode(ChatMessageInternalContentModel.self, forKey: .data)
-        self = .internalContent(data)
+      let data = try container.decode(ChatMessageInternalContentModel.self, forKey: .data)
+      self = .internalContent(data)
 
     default:
       throw DecodingError.dataCorruptedError(
@@ -194,10 +194,10 @@ extension ChatMessageContentModel: Codable {
     case .conversationSummary(let data):
       try container.encode("conversationSummary", forKey: .type)
       try container.encode(data, forKey: .data)
-        
+
     case .internalContent(let content):
-        try container.encode("internalContent", forKey: .type)
-        try container.encode(content, forKey: .data)
+      try container.encode("internalContent", forKey: .type)
+      try container.encode(content, forKey: .data)
     }
   }
 
@@ -284,24 +284,26 @@ extension ChatMessageReasoningContentModel: Codable {
 
 }
 
+// MARK: - ChatMessageInternalContentModel + Codable
+
 extension ChatMessageInternalContentModel: Codable {
-    
-    public init(from decoder: any Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-      try self.init(
-        id: container.decode(UUID.self, forKey: .id),
-        container.decode(Schema.InternalContent.self, forKey: .value))
-    }
 
-    public func encode(to encoder: any Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(id, forKey: .id)
-      try container.encode(value, forKey: .value)
-    }
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      id: container.decode(UUID.self, forKey: .id),
+      container.decode(Schema.InternalContent.self, forKey: .value))
+  }
 
-    enum CodingKeys: String, CodingKey {
-      case id, value
-    }
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(value, forKey: .value)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, value
+  }
 }
 
 // MARK: - MessageRole + Decodable
