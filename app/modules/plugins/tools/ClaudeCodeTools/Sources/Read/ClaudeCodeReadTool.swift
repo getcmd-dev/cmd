@@ -134,11 +134,11 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
 
 }
 
-// MARK: - ToolUseViewModel
+// MARK: - ReadToolUseViewModel
 
 @Observable
 @MainActor
-final class ToolUseViewModel {
+final class ReadToolUseViewModel {
 
   init(status: ClaudeCodeReadTool.Use.Status, input: ClaudeCodeReadTool.Use.Input) {
     self.status = status.value

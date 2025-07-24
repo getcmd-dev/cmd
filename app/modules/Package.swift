@@ -313,6 +313,7 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     "JSONFoundation",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/ClaudeCodeTools"))
 

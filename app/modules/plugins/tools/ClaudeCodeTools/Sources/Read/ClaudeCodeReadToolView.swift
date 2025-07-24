@@ -11,16 +11,16 @@ import ToolFoundation
 
 extension ClaudeCodeReadTool.Use: DisplayableToolUse {
   public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+    AnyView(ReadToolUseView(toolUse: ReadToolUseViewModel(
       status: status, input: input)))
   }
 }
 
-// MARK: - ToolUseView
+// MARK: - ReadToolUseView
 
-struct ToolUseView: View {
+struct ReadToolUseView: View {
 
-  @Bindable var toolUse: ToolUseViewModel
+  @Bindable var toolUse: ReadToolUseViewModel
 
   var body: some View {
     HoveredButton(action: {
@@ -89,6 +89,6 @@ struct ToolUseView: View {
 
 }
 
-extension ToolUseViewModel {
+extension ReadToolUseViewModel {
   var filePath: URL { URL(fileURLWithPath: input.file_path) }
 }

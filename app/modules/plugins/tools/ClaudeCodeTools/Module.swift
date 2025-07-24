@@ -11,4 +11,5 @@ Target.module(
   testDependencies: [
     "JSONFoundation",
     "SwiftTesting",
+    "ToolFoundation",
   ])

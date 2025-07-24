@@ -8,11 +8,11 @@ let path = "/path/to/some-file.txt"
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
-      ToolUseView(toolUse: ToolUseViewModel(
+      ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.running),
         input: .init(file_path: path, offset: 1, limit: 10)))
-      ToolUseView(toolUse: ToolUseViewModel(status: .Just(.notStarted), input: .init(file_path: path, offset: nil, limit: nil)))
-      ToolUseView(toolUse: ToolUseViewModel(
+      ReadToolUseView(toolUse: ReadToolUseViewModel(status: .Just(.notStarted), input: .init(file_path: path, offset: nil, limit: nil)))
+      ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: """
             import Foundation
@@ -26,7 +26,7 @@ let path = "/path/to/some-file.txt"
             """)))),
         input: .init(file_path: path, offset: nil, limit: nil)))
 
-      ToolUseView(toolUse: ToolUseViewModel(
+      ReadToolUseView(toolUse: ReadToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: longContent)))),
         input: .init(file_path: path, offset: nil, limit: nil)))
