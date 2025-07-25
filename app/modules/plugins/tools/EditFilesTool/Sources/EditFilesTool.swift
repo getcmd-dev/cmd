@@ -125,7 +125,7 @@ public final class EditFilesTool: Tool {
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard _isInputComplete.value else {
-        updateStatus.yield(.completed(.failure(AppError("Started executing before the input was entirely received"))))
+        updateStatus.complete(with: .failure(AppError("Started executing before the input was entirely received")))
         return
       }
 
@@ -145,7 +145,7 @@ public final class EditFilesTool: Tool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let _isInputComplete: Atomic<Bool>

@@ -101,7 +101,6 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
-
 extension ToolUseExecutionStatus {
   var asOutput: Output? {
     get throws {
@@ -190,9 +189,7 @@ private enum ToolUseCodingKeys: String, CodingKey {
 
 // MARK: - ExternalTool
 
-public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse {
-  
-}
+public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
 
 public protocol ExternalToolUse: NonStreamableToolUse where SomeTool: ExternalTool {
   /// Set the output
@@ -200,12 +197,11 @@ public protocol ExternalToolUse: NonStreamableToolUse where SomeTool: ExternalTo
 }
 
 extension Tool {
-    
-      
-      /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
-      public var isExternalTool: Bool {
-          self as? (any ExternalTool) != nil
-      }
+
+  /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
+  public var isExternalTool: Bool {
+    self as? (any ExternalTool) != nil
+  }
 }
 
 // MARK: - StreamableTool
@@ -284,4 +280,11 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {
   case streaming(_ input: StreamingInput)
   case streamed(_ input: StreamedInput)
+}
+
+extension AsyncStream.Continuation {
+  public func complete<Output>(with result: Result<Output, Error>) where Element == ToolUseExecutionStatus<Output> {
+    yield(.completed(result))
+    finish()
+  }
 }

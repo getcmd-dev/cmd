@@ -59,12 +59,12 @@ public final class ClaudeCodeEditTool: ExternalTool {
     }
 
     public func receive(output: JSON.Value) throws {
-      guard case .string(_) = output else {
+      guard case .string = output else {
         return
       }
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = Output(result: JSON.object(["status": .string("Edit completed successfully")]))
-      updateStatus.yield(.completed(.success(placeholderOutput)))
+      updateStatus.complete(with: .success(placeholderOutput))
     }
 
     public func reject(reason: String?) {
@@ -72,7 +72,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
@@ -135,7 +135,6 @@ public final class ClaudeCodeEditTool: ExternalTool {
 
 }
 
-
 // MARK: - ClaudeCodeEditTool.Use + DisplayableToolUse
 
 extension ClaudeCodeEditTool.Use: DisplayableToolUse {
@@ -148,23 +147,21 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
             search: input.old_string,
-            replace: input.new_string
-          )
+            replace: input.new_string),
         ],
-        baseLineContent: nil
-      )
+        baseLineContent: nil),
     ])
-    
+
     // Create a placeholder status stream for the view
     let (placeholderStream, _) = EditFilesTool.Use.Status.makeStream(initial: .pendingApproval)
-    
+
     let viewModel = ToolUseViewModel(
       status: placeholderStream,
       input: editFilesInput,
       isInputComplete: true,
       updateToolStatus: { _ in },
       syncBaselineContent: { _, _ in })
-    
+
     return AnyView(ToolUseView(toolUse: viewModel))
   }
 }

@@ -1,5 +1,5 @@
 import { logError, logInfo } from "@/logger"
-import { sendMessageToClaudeCode } from "./sendMessageToClaudeCode"
+import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 import { exit } from "process"
 import { Response } from "express"
 

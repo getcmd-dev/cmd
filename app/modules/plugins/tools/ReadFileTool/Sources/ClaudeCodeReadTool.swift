@@ -70,7 +70,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
         .split(separator: "\n")
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
-      updateStatus.yield(.completed(.success(.init(content: parsedOutput, uri: input.file_path))))
+      updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
     }
 
     public func reject(reason: String?) {
@@ -78,7 +78,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let filePath: URL

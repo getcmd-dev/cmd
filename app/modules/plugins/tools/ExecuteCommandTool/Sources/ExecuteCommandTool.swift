@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ShellServiceInterface
+import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -88,9 +89,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
             self.setStderrStream(.init(stderr))
           }
           if shellResult.exitCode == 0 {
-            updateStatus.yield(.completed(.success(Output(
+            updateStatus.complete(with: .success(Output(
               output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
-              exitCode: shellResult.exitCode))))
+              exitCode: shellResult.exitCode)))
           } else {
             try updateStatus
               .yield(
@@ -100,7 +101,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
                       "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
           }
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
         runningProcess = nil
       }
@@ -111,7 +112,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>
@@ -243,5 +244,18 @@ extension String {
     let i = index(startIndex, offsetBy: limit / 2)
     let j = index(endIndex, offsetBy: -limit / 2)
     return String(self[startIndex..<i]) + "... [\(count - limit) characters truncated] ..." + String(self[j..<endIndex])
+  }
+}
+
+// MARK: - ExecuteCommandTool.Use + DisplayableToolUse
+
+extension ExecuteCommandTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      command: input.command,
+      status: status,
+      stdout: stdoutStream,
+      stderr: stderrStream,
+      kill: killRunningProcess)))
   }
 }

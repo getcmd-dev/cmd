@@ -7,19 +7,6 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ExecuteCommandTool.Use + DisplayableToolUse
-
-extension ExecuteCommandTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      command: input.command,
-      status: status,
-      stdout: stdoutStream,
-      stderr: stderrStream,
-      kill: killRunningProcess)))
-  }
-}
-
 // MARK: - ToolUseView
 
 struct ToolUseView: View {

@@ -63,7 +63,7 @@ public final class SearchFilesTool: NonStreamableTool {
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard let projectRoot = context.projectRoot else {
-        updateStatus.yield(.completed(.failure(AppError("Cannot search files without a project"))))
+        updateStatus.complete(with: .failure(AppError("Cannot search files without a project")))
         return
       }
 
@@ -76,7 +76,7 @@ public final class SearchFilesTool: NonStreamableTool {
             filePattern: input.filePattern)
           let data = try JSONEncoder().encode(fullInput)
           let response: Schema.SearchFilesToolOutput = try await server.postRequest(path: "searchFiles", data: data)
-          updateStatus.yield(.completed(.success(Schema.SearchFilesToolOutput(
+          updateStatus.complete(with: .success(Schema.SearchFilesToolOutput(
             outputForLLm: response.outputForLLm,
             results: response.results.map { result in
               Schema.SearchFileResult(
@@ -84,9 +84,9 @@ public final class SearchFilesTool: NonStreamableTool {
                 searchResults: result.searchResults)
             },
             rootPath: response.rootPath,
-            hasMore: response.hasMore))))
+            hasMore: response.hasMore)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
@@ -96,7 +96,7 @@ public final class SearchFilesTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     @Dependency(\.server) private var server

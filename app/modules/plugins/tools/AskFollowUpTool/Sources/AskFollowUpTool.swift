@@ -65,11 +65,11 @@ public final class AskFollowUpTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     func select(followUp: String) {
-      updateStatus.yield(.completed(.success(.init(response: followUp))))
+      updateStatus.complete(with: .success(.init(response: followUp)))
     }
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation

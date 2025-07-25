@@ -23,8 +23,9 @@ extension ToolsPlugin {
     plugIn(tool: BuildTool())
 
     // Claude Code
-      plugIn(tool: ClaudeCodeReadTool())
-      plugIn(tool: ClaudeCodeLSTool())
-      plugIn(tool: ClaudeCodeGlobTool())
+    plugIn(tool: ClaudeCodeReadTool())
+    plugIn(tool: ClaudeCodeLSTool())
+    plugIn(tool: ClaudeCodeGlobTool())
+    plugIn(tool: ClaudeCodeBash())
   }
 }

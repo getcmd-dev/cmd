@@ -61,7 +61,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
       guard case .string(let stringOutput) = output else {
         return
       }
-      updateStatus.yield(.completed(.success(parse(rawOutput: stringOutput))))
+      updateStatus.complete(with: .success(parse(rawOutput: stringOutput)))
     }
 
     public func reject(reason: String?) {
@@ -69,7 +69,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let directoryPath: URL
@@ -172,26 +172,6 @@ public final class ClaudeCodeLSTool: ExternalTool {
     true
   }
 
-}
-
-// MARK: - LSToolUseViewModel
-
-@Observable
-@MainActor
-final class LSToolUseViewModel {
-
-  init(status: ClaudeCodeLSTool.Use.Status, input: ClaudeCodeLSTool.Use.Input) {
-    self.status = status.value
-    self.input = input
-    Task { [weak self] in
-      for await status in status {
-        self?.status = status
-      }
-    }
-  }
-
-  let input: ClaudeCodeLSTool.Use.Input
-  var status: ToolUseExecutionStatus<ClaudeCodeLSTool.Use.Output>
 }
 
 // MARK: - ClaudeCodeLSTool.Use + DisplayableToolUse

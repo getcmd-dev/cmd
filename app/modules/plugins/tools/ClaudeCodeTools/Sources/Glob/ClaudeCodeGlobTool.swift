@@ -69,7 +69,7 @@ public final class ClaudeCodeGlobTool: ExternalTool {
         .map(String.init)
         .filter { !$0.isEmpty }
 
-      updateStatus.yield(.completed(.success(.init(files: files))))
+      updateStatus.complete(with: .success(.init(files: files)))
     }
 
     public func reject(reason: String?) {
@@ -77,7 +77,7 @@ public final class ClaudeCodeGlobTool: ExternalTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation

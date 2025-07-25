@@ -6,6 +6,9 @@ process.on("unhandledRejection", (reason, promise) => {
 	// Log the error and prevent crash
 	logError(`Unhandled Rejection at: ${promise}, reason: ${reason}`)
 })
+process.on("uncaughtException", (err) => {
+	logError("Caught exception: " + err)
+})
 
 startNewLogSession()
 

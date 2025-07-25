@@ -74,9 +74,9 @@ public final class ReadFileTool: NonStreamableTool {
           content = selectedLines?.joined(separator: "\n") ?? content
         }
 
-        updateStatus.yield(.completed(.success(Output(content: content, uri: filePath.absoluteString))))
+        updateStatus.complete(with: .success(Output(content: content, uri: filePath.absoluteString)))
       } catch {
-        updateStatus.yield(.completed(.failure(error)))
+        updateStatus.complete(with: .failure(error))
       }
     }
 
@@ -85,7 +85,7 @@ public final class ReadFileTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let filePath: URL

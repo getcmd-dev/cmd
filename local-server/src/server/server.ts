@@ -7,6 +7,7 @@ import { registerEndpoint as registerListFilesEndpoint } from "./endpoints/tools
 import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/tools/searchFiles/endpoint"
 import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/checkpoint"
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
+import { registerMCPServerEndpoints } from "./endpoints/mcp/mcp"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -15,6 +16,10 @@ import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterModelProvider } from "./providers/open-router"
 import { debug } from "./endpoints/sendMessage/debug_helper"
+
+const connectionInfo: ConnectionInfo = {
+	port: 3000, // Default port
+}
 
 const app = express()
 app.use(express.json({ limit: "1024mb" }))
@@ -29,16 +34,19 @@ app.get("/launch", (_, res) => {
 	res.json({ ok: true })
 })
 
-registerSendMessageEndpoint(router, [
-	new AnthropicModelProvider(),
-	new OpenAIModelProvider(),
-	new OpenRouterModelProvider(),
-])
+registerSendMessageEndpoint(
+	router,
+	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider()],
+	() => {
+		return connectionInfo.port
+	},
+)
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)
 registerCheckpointEndpoints(router)
 registerGetFileIconEndpoint(router)
+registerMCPServerEndpoints(router)
 
 // Add middleware to handle 404 errors (no route matched)
 app.use((req, res, next) => {
@@ -90,7 +98,7 @@ export const startServer = async () => {
 	})()
 
 	// Log the port used, so that the client knows which port to connect to.
-	const connectionInfo: ConnectionInfo = { port }
+	connectionInfo.port = port
 	console.log(JSON.stringify(connectionInfo))
 	fs.writeFileSync(connectionInfoFilePath, JSON.stringify(connectionInfo))
 

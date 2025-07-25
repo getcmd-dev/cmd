@@ -4,19 +4,37 @@ import { CoreMessage, CoreUserMessage } from "ai"
 import { Response } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
-import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "./sendMessage"
+import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
+import { writeFileSync } from "fs"
+import path from "path"
 
-export const sendMessageToClaudeCode = async (messages: Message[], localExecutable: LocalExecutable, res: Response) => {
-	const eventStream = createClaudeCodeEventStream(messages, localExecutable)
+export const sendMessageToClaudeCode = async (
+	{
+		messages,
+		localExecutable,
+		port,
+	}: {
+		messages: Message[]
+		localExecutable: LocalExecutable
+		port: number
+	},
+	res: Response,
+) => {
+	const eventStream = createClaudeCodeEventStream({ messages, localExecutable, port })
 	await respondUsingResponseStream(mapStream(eventStream), res)
 	res.end()
 }
 
-const createClaudeCodeEventStream = (
-	messages: Message[],
-	localExecutable: LocalExecutable,
-): AsyncStream<SDKMessage> => {
+const createClaudeCodeEventStream = ({
+	messages,
+	localExecutable,
+	port,
+}: {
+	messages: Message[]
+	localExecutable: LocalExecutable
+	port: number
+}): AsyncStream<SDKMessage> => {
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
@@ -53,11 +71,32 @@ const createClaudeCodeEventStream = (
 		return undefined
 	})()
 
+	// Create a tmp file for the mcp config used to receive permission requests
+	const mcpConfig = {
+		mcpServers: {
+			command: {
+				type: "sse",
+				url: `http://localhost:${port}/mcp`,
+			},
+		},
+	}
+	const mcpConfigFilePath = path.join(__dirname, "mcp.json")
+	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
+
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}`)
 	logInfo(`New user messages text: "${newUserMessagesText}"`)
 
 	// Use stdin instead of -p flag to avoid hanging
-	const args = ["--output-format", "stream-json", "--verbose", "--max-turns", "100"]
+	const args = [
+		"--output-format",
+		"stream-json",
+		"--verbose",
+		"--max-turns",
+		"100",
+		"--mcp-config",
+		mcpConfigFilePath,
+		"--dangerously-skip-permissions", // For now, the MCP seems to not work and not receive requests.
+	]
 	if (existingSessionId) {
 		args.push("--resume", existingSessionId)
 	}

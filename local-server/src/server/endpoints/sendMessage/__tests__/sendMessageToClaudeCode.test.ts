@@ -1,6 +1,6 @@
 import { describe, expect, it, jest, beforeEach } from "@jest/globals"
 import { Response } from "express"
-import { sendMessageToClaudeCode } from "../sendMessageToClaudeCode"
+import { sendMessageToClaudeCode } from "../claudeCode/sendMessageToClaudeCode"
 import { LocalExecutable } from "../../../schemas/sendMessageSchema"
 import { CoreMessage } from "ai"
 import { spawn } from "child_process"

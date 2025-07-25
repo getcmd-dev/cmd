@@ -74,7 +74,7 @@ public final class LSTool: NonStreamableTool {
       updateStatus.yield(.running)
 
       guard let projectRoot = context.projectRoot else {
-        updateStatus.yield(.completed(.failure(AppError("Cannot list files without a project"))))
+        updateStatus.complete(with: .failure(AppError("Cannot list files without a project")))
         return
       }
       Task {
@@ -86,9 +86,9 @@ public final class LSTool: NonStreamableTool {
 
           let data = try JSONEncoder().encode(fullInput)
           let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
-          updateStatus.yield(.completed(.success(response.transformed(with: context))))
+          updateStatus.complete(with: .success(response.transformed(with: context)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
@@ -98,7 +98,7 @@ public final class LSTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let directoryPath: URL

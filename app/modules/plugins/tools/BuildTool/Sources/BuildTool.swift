@@ -69,7 +69,7 @@ public final class BuildTool: NonStreamableTool {
       updateStatus.yield(.running)
 
       guard let project = context.project else {
-        updateStatus.yield(.completed(.failure(AppError("No project selected to run build"))))
+        updateStatus.complete(with: .failure(AppError("No project selected to run build")))
         return
       }
 
@@ -79,9 +79,9 @@ public final class BuildTool: NonStreamableTool {
           let buildResult = try await xcodeController.build(project: project, buildType: buildType)
 
           let isSuccess = buildResult.maxSeverity != .error
-          updateStatus.yield(.completed(.success(Output(buildResult: buildResult, isSuccess: isSuccess))))
+          updateStatus.complete(with: .success(Output(buildResult: buildResult, isSuccess: isSuccess)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
@@ -91,7 +91,7 @@ public final class BuildTool: NonStreamableTool {
     }
 
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     @Dependency(\.xcodeController) private var xcodeController
