@@ -108,6 +108,8 @@ export const isCoreUserMessage = (message: CoreMessage): message is CoreUserMess
 
 async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<ResponseChunkWithoutIndex> {
 	let hasSentSessionId = false
+	const toolNames: { [toolId: string]: string } = {}
+
 	for await (const event of stream) {
 		if (!hasSentSessionId) {
 			hasSentSessionId = true
@@ -141,9 +143,11 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						break
 					}
 					case "tool_use": {
+						const toolName = `claude_code_${contentPart.name}`
+						toolNames[contentPart.id] = toolName
 						yield {
 							type: "tool_call",
-							toolName: `claude_code_${contentPart.name}`,
+							toolName,
 							toolUseId: contentPart.id,
 							input: contentPart.input as Record<string, unknown>,
 						}
@@ -166,6 +170,7 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						yield {
 							type: "tool_result",
 							toolUseId: contentPart.tool_use_id,
+							toolName: toolNames[contentPart.tool_use_id] || "claude_code_tool",
 							result: {
 								type: "tool_result_success",
 								success: contentPart.content,

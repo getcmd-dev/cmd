@@ -244,6 +244,7 @@ extension ChatMessageContent {
           (.assistant, request),
           (.tool, .toolResultMessage(.init(
             toolUseId: toolUse.toolUse.toolUseId,
+            toolName: toolUse.toolUse.toolName,
             result: toolResult))),
         ]
       } catch {

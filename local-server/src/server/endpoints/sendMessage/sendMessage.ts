@@ -297,7 +297,7 @@ const mapMessage = (message: Message): CoreMessage => {
 		return {
 			role: "system",
 			content: message.content.map(asTextMessage)[0].text,
-		} as CoreSystemMessage
+		} satisfies CoreSystemMessage
 	} else if (message.role === "user") {
 		return {
 			role: "user",
@@ -354,7 +354,7 @@ const mapMessage = (message: Message): CoreMessage => {
 				})
 				return result
 			}),
-		} as CoreUserMessage
+		} satisfies CoreUserMessage
 	} else if (message.role === "assistant") {
 		return {
 			role: "assistant",
@@ -363,23 +363,23 @@ const mapMessage = (message: Message): CoreMessage => {
 					if (isTextMessage(content)) {
 						if (content.text.length > 0) {
 							return {
-								type: "text",
+								type: "text" as const,
 								text: content.text,
-							} as TextPart
+							} satisfies TextPart
 						} else {
 							// skipping messages with empty text
 							return undefined
 						}
 					} else if (isToolUseRequestMessage(content)) {
 						return {
-							type: "tool-call",
+							type: "tool-call" as const,
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
 							args: content.input,
 						}
 					} else if (isReasoningMessage(content)) {
 						return {
-							type: "reasoning",
+							type: "reasoning" as const,
 							text: content.text,
 							signature: content.signature,
 						}
@@ -387,16 +387,17 @@ const mapMessage = (message: Message): CoreMessage => {
 					throw new Error(`Unsupported content type: ${content.type}`)
 				})
 				.filter(isDefined),
-		} as CoreAssistantMessage
+		} satisfies CoreAssistantMessage
 	} else if (message.role === "tool") {
 		return {
 			role: "tool",
 			content: message.content.map(asToolResultMessage).map((content) => ({
 				type: "tool-result",
 				toolCallId: content.toolUseId,
+				toolName: content.toolName,
 				result: content.result,
 			})),
-		} as CoreToolMessage
+		} satisfies CoreToolMessage
 	} else {
 		throw new Error(`Unsupported message role: ${message.role}`)
 	}

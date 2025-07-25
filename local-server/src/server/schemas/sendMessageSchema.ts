@@ -236,8 +236,9 @@ export interface ToolResultFailureMessage {
 }
 
 export interface ToolResultMessage {
-	toolUseId: string
 	type: "tool_result"
+	toolUseId: string
+	toolName: string
 	result: ToolResultSuccessMessage | ToolResultFailureMessage
 	/**
 	 * @format integer

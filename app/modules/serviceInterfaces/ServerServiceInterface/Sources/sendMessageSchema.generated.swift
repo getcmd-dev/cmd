@@ -267,25 +267,29 @@ extension Schema {
     }
   }
   public struct ToolResultMessage: Codable, Sendable {
-    public let toolUseId: String
     public let type = "tool_result"
+    public let toolUseId: String
+    public let toolName: String
     public let result: Result
     public let idx: Int?
   
     private enum CodingKeys: String, CodingKey {
-      case toolUseId = "toolUseId"
       case type = "type"
+      case toolUseId = "toolUseId"
+      case toolName = "toolName"
       case result = "result"
       case idx = "idx"
     }
   
     public init(
-        toolUseId: String,
         type: String = "tool_result",
+        toolUseId: String,
+        toolName: String,
         result: Result,
         idx: Int? = nil
     ) {
       self.toolUseId = toolUseId
+      self.toolName = toolName
       self.result = result
       self.idx = idx
     }
@@ -293,14 +297,16 @@ extension Schema {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       toolUseId = try container.decode(String.self, forKey: .toolUseId)
+      toolName = try container.decode(String.self, forKey: .toolName)
       result = try container.decode(Result.self, forKey: .result)
       idx = try container.decodeIfPresent(Int?.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(toolUseId, forKey: .toolUseId)
       try container.encode(type, forKey: .type)
+      try container.encode(toolUseId, forKey: .toolUseId)
+      try container.encode(toolName, forKey: .toolName)
       try container.encode(result, forKey: .result)
       try container.encodeIfPresent(idx, forKey: .idx)
     }

@@ -212,11 +212,13 @@ final class DefaultLLMService: LLMService {
 
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultSuccessMessage(.init(success: json)))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     } catch {
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
