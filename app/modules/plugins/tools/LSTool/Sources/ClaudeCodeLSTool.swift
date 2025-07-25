@@ -31,6 +31,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
       directoryPath = URL(fileURLWithPath: input.path)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }

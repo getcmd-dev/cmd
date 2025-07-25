@@ -85,7 +85,7 @@ public struct CodePreview: View {
           .background(colorScheme.xcodeEditorBackground)
           .frame(maxWidth: desiredTextWidth, alignment: .leading)
       }
-      .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
+      .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
       if showExpandButton {
         expandButton
       }

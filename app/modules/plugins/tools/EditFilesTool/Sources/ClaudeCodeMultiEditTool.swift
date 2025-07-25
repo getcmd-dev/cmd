@@ -29,7 +29,8 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
       self.context = context
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .completed(.success(.init(result: .object([:])))))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }

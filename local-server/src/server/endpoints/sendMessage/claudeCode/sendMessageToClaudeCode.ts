@@ -8,6 +8,7 @@ import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMe
 import { AsyncStream } from "@/utils/asyncStream"
 import { writeFileSync } from "fs"
 import path from "path"
+import { StreamingJsonParser } from "@/utils/streamingJSONParser"
 
 export const sendMessageToClaudeCode = async (
 	{
@@ -103,6 +104,7 @@ const createClaudeCodeEventStream = ({
 	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} (with stdin)`)
 
 	const eventStream = new AsyncStream<SDKMessage>()
+	const jsonParser = new StreamingJsonParser()
 
 	const child = spawn(localExecutable.executable, args, {
 		stdio: ["pipe", "pipe", "pipe"],
@@ -116,8 +118,10 @@ const createClaudeCodeEventStream = ({
 	child.stdout.on("data", (data) => {
 		const output = data.toString()
 		logInfo(`Received data from Claude: ${output}`)
-		const payload = JSON.parse(output) as SDKMessage
-		eventStream.yield(payload)
+		const parsedMessages = jsonParser.processChunk(output)
+		for (const payload of parsedMessages) {
+			eventStream.yield(payload as SDKMessage)
+		}
 	})
 
 	child.stderr.on("data", (data) => {

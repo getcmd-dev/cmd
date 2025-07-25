@@ -31,6 +31,7 @@ public final class AskFollowUpTool: NonStreamableTool {
       self.context = context
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }

@@ -36,6 +36,7 @@ public final class SearchFilesTool: NonStreamableTool {
         filePattern: input.filePattern)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }

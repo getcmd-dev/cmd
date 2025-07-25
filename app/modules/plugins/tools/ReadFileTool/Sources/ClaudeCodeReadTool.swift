@@ -31,7 +31,8 @@ public final class ClaudeCodeReadTool: ExternalTool {
       self.input = input
       filePath = URL(fileURLWithPath: input.file_path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }

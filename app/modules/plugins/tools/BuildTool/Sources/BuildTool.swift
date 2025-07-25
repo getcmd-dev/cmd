@@ -35,6 +35,7 @@ public final class BuildTool: NonStreamableTool {
       self.input = input
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
