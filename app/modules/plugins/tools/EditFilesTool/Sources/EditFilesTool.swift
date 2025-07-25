@@ -21,27 +21,46 @@ public final class EditFilesTool: Tool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-
-    init(
+    public init(
       callingTool: EditFilesTool,
       toolUseId: String,
-      input: Data,
+      input: Input,
       isInputComplete: Bool,
-      context: ToolExecutionContext,
-      initialStatus: Status.Element? = nil)
-      throws
+      context: ToolFoundation.ToolExecutionContext,
+      initialStatus: Status.Element?)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.isInputComplete = Atomic(isInputComplete)
+      _isInputComplete = Atomic(isInputComplete)
       self.context = context
-      let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
+      let input = input.withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
+
+//      public init(
+//      callingTool: EditFilesTool,
+//      toolUseId: String,
+//      input: Data,
+//      isInputComplete: Bool,
+//      context: ToolExecutionContext,
+//      initialStatus: Status.Element? = nil)
+//      throws
+//    {
+//      self.callingTool = callingTool
+//      self.toolUseId = toolUseId
+//      self.isInputComplete = Atomic(isInputComplete)
+//      self.context = context
+//      let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
+//      _input = Atomic(input)
+//
+//      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+//      status = stream
+//      self.updateStatus = updateStatus
+//    }
 
     public struct Input: Codable, Sendable {
       init(files: [FileChange]) {
@@ -105,12 +124,16 @@ public final class EditFilesTool: Tool {
     public let _input: Atomic<Input>
     public let status: Status
 
+    public let context: ToolExecutionContext
+
     public var input: Input { _input.value }
+
+    public var isInputComplete: Bool { _isInputComplete.value }
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
       let input = try JSONDecoder().decode(Input.self, from: data).withPathsResolved(from: context.projectRoot)
       _input.set(to: input)
-      isInputComplete.set(to: isLast)
+      _isInputComplete.set(to: isLast)
 
       Task { @MainActor [weak self] in
         self?._viewModel?.input = input
@@ -122,7 +145,7 @@ public final class EditFilesTool: Tool {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-      guard isInputComplete.value else {
+      guard _isInputComplete.value else {
         updateStatus.yield(.completed(.failure(AppError("Started executing before the input was entirely received"))))
         return
       }
@@ -146,9 +169,7 @@ public final class EditFilesTool: Tool {
       updateStatus.yield(.completed(.failure(CancellationError())))
     }
 
-    let isInputComplete: Atomic<Bool>
-
-    let context: ToolExecutionContext
+    let _isInputComplete: Atomic<Bool>
 
     @MainActor
     var viewModel: ToolUseViewModel {
@@ -158,7 +179,7 @@ public final class EditFilesTool: Tool {
       let viewModel = ToolUseViewModel(
         status: status,
         input: input,
-        isInputComplete: isInputComplete.value,
+        isInputComplete: isInputComplete,
         updateToolStatus: { [weak self] newStatus in
           self?.updateStatus.yield(newStatus)
         },
@@ -305,20 +326,20 @@ public final class EditFilesTool: Tool {
     }
   }
 
-  public func use(
-    toolUseId: String,
-    input: Data,
-    isInputComplete: Bool,
-    context: ToolExecutionContext)
-    throws -> Use
-  {
-    try Use(
-      callingTool: self,
-      toolUseId: toolUseId,
-      input: input,
-      isInputComplete: isInputComplete,
-      context: context)
-  }
+//  public func use(
+//    toolUseId: String,
+//    input: Data,
+//    isInputComplete: Bool,
+//    context: ToolExecutionContext)
+//    throws -> Use
+//  {
+//    try Use(
+//      callingTool: self,
+//      toolUseId: toolUseId,
+//      input: input,
+//      isInputComplete: isInputComplete,
+//      context: context)
+//  }
 
   private let shouldAutoApply: Bool
 

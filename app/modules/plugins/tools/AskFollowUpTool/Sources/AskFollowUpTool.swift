@@ -16,11 +16,19 @@ public final class AskFollowUpTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input, initialStatus: Status.Element? = nil) {
+  public final class Use: NonStreamableToolUse, @unchecked Sendable {
+
+    public init(
+      callingTool: AskFollowUpTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolFoundation.ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.input = input
+      self.context = context
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       status = stream
@@ -35,6 +43,8 @@ public final class AskFollowUpTool: NonStreamableTool {
     public struct Output: Codable, Sendable {
       public let response: String
     }
+
+    public let context: ToolFoundation.ToolExecutionContext
 
     public let isReadonly = true
 
@@ -107,10 +117,6 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   public func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input)
   }
 }
 

@@ -17,8 +17,8 @@ public final class LSTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-    init(
+  public final class Use: NonStreamableToolUse, @unchecked Sendable {
+    public init(
       callingTool: LSTool,
       toolUseId: String,
       input: Input,
@@ -65,6 +65,8 @@ public final class LSTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -99,8 +101,6 @@ public final class LSTool: NonStreamableTool {
     }
 
     let directoryPath: URL
-
-    let context: ToolExecutionContext
 
     @Dependency(\.server) private var server
 
@@ -142,10 +142,6 @@ public final class LSTool: NonStreamableTool {
 
   public func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }

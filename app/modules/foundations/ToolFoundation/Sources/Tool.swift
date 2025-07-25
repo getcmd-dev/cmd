@@ -15,9 +15,7 @@ import SwiftUI
 /// A tool that can be called by the assistant and execute tasks locally.
 /// Each invocation of the tool is a 'tool use' that has its own input/output/state and possibly UI.
 public protocol Tool: Sendable {
-  associatedtype Use: ToolUse
-  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use
+  associatedtype Use: ToolUse where Use.SomeTool == Self
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
   var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
@@ -38,6 +36,21 @@ extension Tool {
   public typealias Input = Use.Input
   public typealias Output = Use.Output
 
+  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
+  public func use(toolUseId: String, input: Use.Input, isInputComplete: Bool, context: ToolExecutionContext) -> Use {
+    Use(
+      callingTool: self,
+      toolUseId: toolUseId,
+      input: input,
+      isInputComplete: isInputComplete,
+      context: context,
+      initialStatus: nil)
+  }
+
+  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
+    let decodedInput = try JSONDecoder().decode(Input.self, from: input)
+    return use(toolUseId: toolUseId, input: decodedInput, isInputComplete: isInputComplete, context: context)
+  }
 }
 
 // MARK: - ToolUse
@@ -50,6 +63,14 @@ public protocol ToolUse: Sendable, Codable {
 
   typealias Status = CurrentValueStream<ToolUseExecutionStatus<Output>>
 
+  init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    isInputComplete: Bool,
+    context: ToolExecutionContext,
+    initialStatus: Status.Element?)
+
   /// The unique identifier of the tool use.
   var toolUseId: String { get }
   /// The input of the tool use.
@@ -61,6 +82,10 @@ public protocol ToolUse: Sendable, Codable {
   var callingTool: SomeTool { get }
   /// The status of the execution of the tool use.
   var status: Status { get }
+  /// The context in which the tool is executed.
+  var context: ToolExecutionContext { get }
+  /// Whether the input has been entirely streamed.
+  var isInputComplete: Bool { get }
   /// Update the input with the updated one.
   /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
   /// - Parameters:
@@ -76,7 +101,7 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
-public protocol ExternalToolUse: ToolUse {
+public protocol ExternalToolUse: NonStreamableToolUse {
   /// Set the output
   func receive(output: JSON.Value) throws
 }
@@ -101,6 +126,25 @@ extension ToolUseExecutionStatus {
 }
 
 extension ToolUse {
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
+
+    let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
+    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    let input = try container.decode(Input.self, forKey: .input)
+    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
+    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
+    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
+
+    self.init(
+      callingTool: callingTool,
+      toolUseId: toolUseId,
+      input: input,
+      isInputComplete: isInputComplete,
+      context: context,
+      initialStatus: statusValue)
+  }
 
   public var toolName: String { callingTool.name }
 
@@ -127,22 +171,56 @@ extension ToolUse {
     }
   }
 
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: ToolUseCodingKeys.self)
+
+    try container.encode(callingTool, forKey: .callingTool)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(input, forKey: .input)
+    try container.encode(context, forKey: .context)
+    try container.encode(status.value, forKey: .status)
+    try container.encode(isInputComplete, forKey: .isInputComplete)
+  }
+}
+
+private enum ToolUseCodingKeys: String, CodingKey {
+  case callingTool
+  case toolUseId
+  case input
+  case context
+  case status
+  case isInputComplete
 }
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
-public protocol NonStreamableTool: Tool {
-  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use
-}
+public protocol NonStreamableTool: Tool where Use: NonStreamableToolUse { }
 
 extension NonStreamableTool {
   public var canInputBeStreamed: Bool { false }
+}
 
-  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
-    assert(isInputComplete)
-    let input = try JSONDecoder().decode(Input.self, from: input)
-    return use(toolUseId: toolUseId, input: input, context: context)
+public protocol NonStreamableToolUse: ToolUse where SomeTool: NonStreamableTool {
+  init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    context: ToolExecutionContext,
+    initialStatus: Status.Element?)
+}
+
+extension NonStreamableToolUse {
+  public init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    isInputComplete _: Bool,
+    context: ToolExecutionContext,
+    initialStatus: CurrentValueStream<ToolUseExecutionStatus<Output>>.Element? = nil)
+  {
+    self.init(callingTool: callingTool, toolUseId: toolUseId, input: input, context: context, initialStatus: initialStatus)
   }
+
+  public var isInputComplete: Bool { true }
 }
 
 extension ToolUse where SomeTool: NonStreamableTool {

@@ -18,9 +18,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
-  public final class Use: ToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, @unchecked Sendable {
 
-    init(
+    public init(
       callingTool: ExecuteCommandTool,
       toolUseId: String,
       input: Input,
@@ -68,6 +68,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -117,8 +119,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     let setStdoutStream: (BroadcastedStream<Data>) -> Void
     let setStderrStream: (BroadcastedStream<Data>) -> Void
-
-    let context: ToolExecutionContext
 
     func killRunningProcess() async {
       commandWasManuallyInterrupted = true
@@ -184,10 +184,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
   public func isAvailable(in mode: ChatMode) -> Bool {
     // TODO: add support for readonly uses of the terminal.
     mode == .agent
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
   static let truncationLimit = 30000

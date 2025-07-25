@@ -232,9 +232,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: toolUseId,
           input: data,
           isInputComplete: false,
-          context: ToolExecutionContext(
-            project: context.project,
-            projectRoot: context.projectRoot))
+          context: context.toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -295,7 +293,8 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: toolUse.toolUseId,
           toolName: toolUse.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription))
+          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
+          context: context.toolExecutionContext))
         result.update(with: AssistantMessage(content: content))
       }
       endStreamedToolUse()
@@ -316,7 +315,6 @@ final class RequestStreamingHelper: Sendable {
       toolUseId: toolUseRequest.toolUseId,
       idx: toolUseRequest.idx)
 
-    let toolExecutionContext = ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
         let data = try JSONEncoder().encode(request.input)
@@ -324,7 +322,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: request.toolUseId,
           input: data,
           isInputComplete: true,
-          context: toolExecutionContext)
+          context: context.toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -338,14 +336,16 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription))
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription,
+          context: context.toolExecutionContext))
       }
     } else {
       // Tool not found
       content.append(toolUse: FailedToolUse(
         toolUseId: request.toolUseId,
         toolName: request.toolName,
-        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription))
+        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription,
+        context: context.toolExecutionContext))
     }
     result.update(with: AssistantMessage(content: content))
   }
@@ -360,7 +360,7 @@ final class RequestStreamingHelper: Sendable {
         .compactMap(\.asToolUseRequest)
         .first(where: { toolUseRequest in
           toolUseRequest.id == toolResult.toolUseId
-        })?.toolUse as? ExternalToolUse
+        })?.toolUse as? (any ExternalToolUse)
     else {
       defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
       return
@@ -449,5 +449,13 @@ extension Schema.StreamedResponseChunk {
     case .internalContent(let message):
       message.idx
     }
+  }
+}
+
+extension ChatContext {
+  var toolExecutionContext: ToolExecutionContext {
+    ToolExecutionContext(
+      project: project,
+      projectRoot: projectRoot)
   }
 }

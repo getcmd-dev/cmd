@@ -12,28 +12,49 @@ struct EmptyObject: Codable, Sendable { }
 
 // MARK: - FailedToolUse
 
-struct FailedToolUse: ToolUse {
-
-  init(toolUseId: String, toolName: String, errorDescription: String) {
+struct FailedToolUse: NonStreamableToolUse {
+  init(
+    callingTool: FailedTool,
+    toolUseId: String,
+    input: Input,
+    context: ToolFoundation.ToolExecutionContext,
+    initialStatus _: Status.Element?)
+  {
+    self.callingTool = callingTool
+    self.input = input
+    self.context = context
     self.toolUseId = toolUseId
-    callingTool = FailedTool(name: toolName)
-    self.errorDescription = errorDescription
   }
+
+  init(toolUseId: String, toolName: String, errorDescription: String, context: ToolFoundation.ToolExecutionContext) {
+    let callingTool = FailedTool(name: toolName)
+    self.init(
+      callingTool: callingTool,
+      toolUseId: toolUseId,
+      input: Input(errorDescription: errorDescription),
+      context: context,
+      initialStatus: nil)
+  }
+
+  public let context: ToolFoundation.ToolExecutionContext
 
   public let isReadonly = true
 
-  typealias Input = EmptyObject
+  struct Input: Codable {
+    let errorDescription: String
+  }
+
   typealias Output = EmptyObject
 
-  var callingTool: FailedTool
+  let callingTool: FailedTool
   let toolUseId: String
-  let errorDescription: String
+  let input: Input
+
+  var errorDescription: String { input.errorDescription }
 
   var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> {
     .Just(.completed(.failure(AppError(errorDescription))))
   }
-
-  var input: Input { Input() }
 
   func startExecuting() { }
 
@@ -68,30 +89,30 @@ struct FailedTool: NonStreamableTool {
     true
   }
 
-  func use(toolUseId _: String, input _: EmptyObject, context _: ToolExecutionContext) -> FailedToolUse {
-    fatalError("Should not be called")
-  }
+//  func use(toolUseId _: String, input _: EmptyObject, context _: ToolExecutionContext) -> FailedToolUse {
+//    fatalError("Should not be called")
+//  }
 
 }
 
-extension FailedToolUse {
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    callingTool = try container.decode(FailedTool.self, forKey: .tool)
-    errorDescription = try container.decode(String.self, forKey: .errorDescription)
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(callingTool, forKey: .tool)
-    try container.encode(errorDescription, forKey: .errorDescription)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case toolUseId
-    case tool
-    case errorDescription
-  }
-}
+// extension FailedToolUse {
+//  public init(from decoder: Decoder) throws {
+//    let container = try decoder.container(keyedBy: CodingKeys.self)
+//    toolUseId = try container.decode(String.self, forKey: .toolUseId)
+//    callingTool = try container.decode(FailedTool.self, forKey: .tool)
+//    errorDescription = try container.decode(String.self, forKey: .errorDescription)
+//  }
+//
+//  public func encode(to encoder: Encoder) throws {
+//    var container = encoder.container(keyedBy: CodingKeys.self)
+//    try container.encode(toolUseId, forKey: .toolUseId)
+//    try container.encode(callingTool, forKey: .tool)
+//    try container.encode(errorDescription, forKey: .errorDescription)
+//  }
+//
+//  private enum CodingKeys: String, CodingKey {
+//    case toolUseId
+//    case tool
+//    case errorDescription
+//  }
+// }

@@ -15,11 +15,13 @@ struct TestTool: NonStreamableTool {
     true
   }
 
-  struct Use: ToolUse {
+  struct Use: NonStreamableToolUse {
     init(
+      callingTool _: TestTool,
       toolUseId _: String,
-      input _: Data)
-      throws
+      input _: String,
+      context _: ToolFoundation.ToolExecutionContext,
+      initialStatus _: Status.Element?)
     {
       fatalError("not implemented")
     }

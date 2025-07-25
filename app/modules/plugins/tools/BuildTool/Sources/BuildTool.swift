@@ -20,9 +20,9 @@ public final class BuildTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, @unchecked Sendable {
 
-    init(
+    public init(
       callingTool: BuildTool,
       toolUseId: String,
       input: Input,
@@ -61,6 +61,8 @@ public final class BuildTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -91,8 +93,6 @@ public final class BuildTool: NonStreamableTool {
     public func cancel() {
       updateStatus.yield(.completed(.failure(CancellationError())))
     }
-
-    let context: ToolExecutionContext
 
     @Dependency(\.xcodeController) private var xcodeController
 
@@ -133,10 +133,6 @@ public final class BuildTool: NonStreamableTool {
 
   public func isAvailable(in chatMode: ChatMode) -> Bool {
     chatMode == .agent
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 }
 
