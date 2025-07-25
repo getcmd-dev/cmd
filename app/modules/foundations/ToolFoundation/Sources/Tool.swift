@@ -101,10 +101,6 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
-public protocol ExternalToolUse: NonStreamableToolUse {
-  /// Set the output
-  func receive(output: JSON.Value) throws
-}
 
 extension ToolUseExecutionStatus {
   var asOutput: Output? {
@@ -191,6 +187,28 @@ private enum ToolUseCodingKeys: String, CodingKey {
   case status
   case isInputComplete
 }
+
+// MARK: - ExternalTool
+
+public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse {
+  
+}
+
+public protocol ExternalToolUse: NonStreamableToolUse where SomeTool: ExternalTool {
+  /// Set the output
+  func receive(output: JSON.Value) throws
+}
+
+extension Tool {
+    
+      
+      /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
+      public var isExternalTool: Bool {
+          self as? (any ExternalTool) != nil
+      }
+}
+
+// MARK: - StreamableTool
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
 public protocol NonStreamableTool: Tool where Use: NonStreamableToolUse { }

@@ -41,27 +41,6 @@ public final class EditFilesTool: Tool {
       self.updateStatus = updateStatus
     }
 
-//      public init(
-//      callingTool: EditFilesTool,
-//      toolUseId: String,
-//      input: Data,
-//      isInputComplete: Bool,
-//      context: ToolExecutionContext,
-//      initialStatus: Status.Element? = nil)
-//      throws
-//    {
-//      self.callingTool = callingTool
-//      self.toolUseId = toolUseId
-//      self.isInputComplete = Atomic(isInputComplete)
-//      self.context = context
-//      let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
-//      _input = Atomic(input)
-//
-//      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
-//      status = stream
-//      self.updateStatus = updateStatus
-//    }
-
     public struct Input: Codable, Sendable {
       init(files: [FileChange]) {
         self.files = files
@@ -325,21 +304,6 @@ public final class EditFilesTool: Tool {
       !shouldAutoApply
     }
   }
-
-//  public func use(
-//    toolUseId: String,
-//    input: Data,
-//    isInputComplete: Bool,
-//    context: ToolExecutionContext)
-//    throws -> Use
-//  {
-//    try Use(
-//      callingTool: self,
-//      toolUseId: toolUseId,
-//      input: input,
-//      isInputComplete: isInputComplete,
-//      context: context)
-//  }
 
   private let shouldAutoApply: Bool
 

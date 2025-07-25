@@ -1,0 +1,218 @@
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+@preconcurrency import Combine
+import ConcurrencyFoundation
+import Dependencies
+import DLS
+import Foundation
+import JSONFoundation
+import SwiftUI
+import ToolFoundation
+
+// MARK: - ClaudeCodeMultiEditTool
+
+public final class ClaudeCodeMultiEditTool: ExternalTool {
+
+  public init() { }
+
+  public final class Use: ExternalToolUse, Sendable {
+    public init(
+      callingTool: ClaudeCodeMultiEditTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
+      self.callingTool = callingTool
+      self.toolUseId = toolUseId
+      self.context = context
+      self.input = input
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .completed(.success(.init(result: .object([:])))))
+      status = stream
+      self.updateStatus = updateStatus
+    }
+
+    public struct Input: Codable, Sendable {
+      public struct Edit: Codable, Sendable {
+        public let old_string: String
+        public let new_string: String
+        public let replace_all: Bool?
+      }
+      
+      public let file_path: String
+      public let edits: [Edit]
+    }
+
+    public typealias Output = EditFilesTool.Use.Output
+
+    public let isReadonly = false
+
+    public let callingTool: ClaudeCodeMultiEditTool
+    public let toolUseId: String
+    public let input: Input
+    public let status: Status
+
+    public let context: ToolExecutionContext
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+      // The execution is managed externally by Claude Code. Nothing to do here.
+    }
+
+    public func receive(output: JSON.Value) throws {
+      guard case .string(_) = output else {
+        return
+      }
+      // Placeholder parsing - using placeholder values for now
+      let placeholderOutput = Output(result: JSON.object(["status": .string("MultiEdit completed successfully")]))
+      updateStatus.yield(.completed(.success(placeholderOutput)))
+    }
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.approvalRejected(reason: reason))
+    }
+
+    public func cancel() {
+      updateStatus.yield(.completed(.failure(CancellationError())))
+    }
+
+    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+  }
+
+  public let name = "claude_code_MultiEdit"
+
+  public let description = """
+    This is a tool for making multiple edits to a single file in one operation. It is built on top of the Edit tool and allows you to perform multiple find-and-replace operations efficiently. Prefer this tool over the Edit tool when you need to make multiple edits to the same file.
+
+    Before using this tool:
+
+    1. Use the Read tool to understand the file's contents and context
+    2. Verify the directory path is correct
+
+    To make multiple file edits, provide the following:
+    1. file_path: The absolute path to the file to modify (must be absolute, not relative)
+    2. edits: An array of edit operations to perform, where each edit contains:
+       - old_string: The text to replace (must match the file contents exactly, including all whitespace and indentation)
+       - new_string: The edited text to replace the old_string
+       - replace_all: Replace all occurences of old_string. This parameter is optional and defaults to false.
+
+    IMPORTANT:
+    - All edits are applied in sequence, in the order they are provided
+    - Each edit operates on the result of the previous edit
+    - All edits must be valid for the operation to succeed - if any edit fails, none will be applied
+    - This tool is ideal when you need to make several changes to different parts of the same file
+    - For Jupyter notebooks (.ipynb files), use the NotebookEdit instead
+
+    CRITICAL REQUIREMENTS:
+    1. All edits follow the same requirements as the single Edit tool
+    2. The edits are atomic - either all succeed or none are applied
+    3. Plan your edits carefully to avoid conflicts between sequential operations
+
+    WARNING:
+    - The tool will fail if edits.old_string doesn't match the file contents exactly (including whitespace)
+    - The tool will fail if edits.old_string and edits.new_string are the same
+    - Since edits are applied in sequence, ensure that earlier edits don't affect the text that later edits are trying to find
+
+    When making edits:
+    - Ensure all edits result in idiomatic, correct code
+    - Do not leave the code in a broken state
+    - Always use absolute file paths (starting with /)
+    - Only use emojis if the user explicitly requests it. Avoid adding emojis to files unless asked.
+    - Use replace_all for replacing and renaming strings across the file. This parameter is useful if you want to rename a variable for instance.
+
+    If you want to create a new file, use:
+    - A new file path, including dir name if needed
+    - First edit: empty old_string and the new file's contents as new_string
+    - Subsequent edits: normal edit operations on the created content
+    """
+
+  public var displayName: String {
+    "MultiEdit (Claude Code)"
+  }
+
+  public var shortDescription: String {
+    "Claude Code tool to make multiple edits to a single file in one operation."
+  }
+
+  public var inputSchema: JSON {
+    .object([
+      "type": .string("object"),
+      "properties": .object([
+        "file_path": .object([
+          "type": .string("string"),
+          "description": .string("The absolute path to the file to modify"),
+        ]),
+        "edits": .object([
+          "type": .string("array"),
+          "items": .object([
+            "type": .string("object"),
+            "properties": .object([
+              "old_string": .object([
+                "type": .string("string"),
+                "description": .string("The text to replace"),
+              ]),
+              "new_string": .object([
+                "type": .string("string"),
+                "description": .string("The text to replace it with"),
+              ]),
+              "replace_all": .object([
+                "type": .string("boolean"),
+                "default": .bool(false),
+                "description": .string("Replace all occurences of old_string (default false)."),
+              ]),
+            ]),
+            "required": .array([.string("old_string"), .string("new_string")]),
+            "additionalProperties": .bool(false),
+          ]),
+          "minItems": .number(1),
+          "description": .string("Array of edit operations to perform sequentially on the file"),
+        ]),
+      ]),
+      "required": .array([.string("file_path"), .string("edits")]),
+      "additionalProperties": .bool(false),
+      "$schema": .string("http://json-schema.org/draft-07/schema#"),
+    ])
+  }
+
+  public func isAvailable(in _: ChatMode) -> Bool {
+    true
+  }
+
+}
+
+// MARK: - ClaudeCodeMultiEditTool.Use + DisplayableToolUse
+
+extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    // Create a compatible EditFilesTool.Use.Input for reusing the existing view
+    let editFilesInput = EditFilesTool.Use.Input(files: [
+      EditFilesTool.Use.Input.FileChange(
+        path: input.file_path,
+        isNewFile: false,
+        changes: input.edits.map { edit in
+          EditFilesTool.Use.Input.FileChange.Change(
+            search: edit.old_string,
+            replace: edit.new_string
+          )
+        },
+        baseLineContent: nil
+      )
+    ])
+    
+    // Create a placeholder status stream for the view
+    let (placeholderStream, _) = EditFilesTool.Use.Status.makeStream(initial: .pendingApproval)
+    
+    let viewModel = ToolUseViewModel(
+      status: placeholderStream,
+      input: editFilesInput,
+      isInputComplete: true,
+      updateToolStatus: { _ in },
+      syncBaselineContent: { _, _ in })
+    
+    return AnyView(ToolUseView(toolUse: viewModel))
+  }
+}

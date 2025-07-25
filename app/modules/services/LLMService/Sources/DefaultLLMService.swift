@@ -253,7 +253,9 @@ final class DefaultLLMService: LLMService {
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
-      tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
+      tools: tools
+        .filter { !$0.isExternalTool }
+        .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
       enableReasoning: enableReasoning,
       provider: .init(

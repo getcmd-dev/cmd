@@ -13,7 +13,7 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeReadTool
 
-public final class ClaudeCodeReadTool: NonStreamableTool {
+public final class ClaudeCodeReadTool: ExternalTool {
 
   public init() { }
 

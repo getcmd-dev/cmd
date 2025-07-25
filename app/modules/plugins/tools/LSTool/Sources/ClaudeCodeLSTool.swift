@@ -12,7 +12,7 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeLSTool
 
-public final class ClaudeCodeLSTool: NonStreamableTool {
+public final class ClaudeCodeLSTool: ExternalTool {
 
   public init() { }
 

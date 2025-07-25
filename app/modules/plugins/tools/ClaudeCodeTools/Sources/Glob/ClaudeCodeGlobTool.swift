@@ -11,7 +11,7 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeGlobTool
 
-public final class ClaudeCodeGlobTool: NonStreamableTool {
+public final class ClaudeCodeGlobTool: ExternalTool {
 
   public init() { }
 
