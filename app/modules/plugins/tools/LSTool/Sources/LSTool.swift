@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ServerServiceInterface
+import SwiftUI
 import ToolFoundation
 
 // MARK: - LSTool
@@ -51,9 +52,9 @@ public final class LSTool: NonStreamableTool {
         /// The full path of the file
         public let path: String
         /// The attributes of the file, e.g. like `drwxr-xr-x`.
-        public let attr: String
+        public let attr: String?
         /// The size of the file in human-readable format.
-        public let size: String
+        public let size: String?
       }
     }
 
@@ -146,26 +147,6 @@ public final class LSTool: NonStreamableTool {
 
 }
 
-// MARK: - ToolUseViewModel
-
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(status: LSTool.Use.Status, directoryPath: URL) {
-    self.status = status.value
-    self.directoryPath = directoryPath
-    Task {
-      for await status in status {
-        self.status = status
-      }
-    }
-  }
-
-  let directoryPath: URL
-  var status: ToolUseExecutionStatus<LSTool.Use.Output>
-}
-
 extension Schema.ListFilesToolOutput {
   func transformed(with context: ToolExecutionContext) -> LSTool.Use.Output {
     .init(
@@ -175,5 +156,16 @@ extension Schema.ListFilesToolOutput {
           attr: file.permissions,
           size: ByteCountFormatter.string(fromByteCount: Int64(file.byteSize), countStyle: .file))
       }, hasMore: files.contains(where: { $0.hasMoreContent == true }))
+  }
+}
+
+// MARK: - LSTool.Use + DisplayableToolUse
+
+extension LSTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    let viewModel = ToolUseViewModel(
+      status: status,
+      directoryPath: directoryPath)
+    return AnyView(ToolUseView(viewModel: viewModel))
   }
 }

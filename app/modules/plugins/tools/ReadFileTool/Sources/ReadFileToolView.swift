@@ -7,15 +7,6 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ReadFileTool.Use + DisplayableToolUse
-
-extension ReadFileTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: input)))
-  }
-}
-
 // MARK: - ToolUseView
 
 struct ToolUseView: View {

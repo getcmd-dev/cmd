@@ -4,13 +4,13 @@
 #if DEBUG
 
 let sampleGlobOutput = """
-/Users/user/project/src/main.swift
-/Users/user/project/src/utils/helpers.swift
-/Users/user/project/src/models/User.swift
-/Users/user/project/src/views/ContentView.swift
-/Users/user/project/tests/MainTests.swift
-/Users/user/project/tests/HelperTests.swift
-/Users/user/project/Package.swift
-"""
+  /Users/user/project/src/main.swift
+  /Users/user/project/src/utils/helpers.swift
+  /Users/user/project/src/models/User.swift
+  /Users/user/project/src/views/ContentView.swift
+  /Users/user/project/tests/MainTests.swift
+  /Users/user/project/tests/HelperTests.swift
+  /Users/user/project/Package.swift
+  """
 
 #endif

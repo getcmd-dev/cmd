@@ -10,11 +10,11 @@ import SwiftUI
       GlobToolUseView(toolUse: GlobToolUseViewModel(
         status: .Just(.running),
         input: .init(pattern: "**/*.swift", path: nil)))
-      
+
       GlobToolUseView(toolUse: GlobToolUseViewModel(
-        status: .Just(.notStarted), 
+        status: .Just(.notStarted),
         input: .init(pattern: "src/**/*.ts", path: "/Users/user/project")))
-      
+
       GlobToolUseView(toolUse: GlobToolUseViewModel(
         status: .Just(.completed(.success(.init(
           files: [
@@ -22,7 +22,7 @@ import SwiftUI
             "/Users/user/project/src/utils/helpers.swift",
             "/Users/user/project/src/models/User.swift",
             "/Users/user/project/src/views/ContentView.swift",
-            "/Users/user/project/tests/MainTests.swift"
+            "/Users/user/project/tests/MainTests.swift",
           ])))),
         input: .init(pattern: "**/*.swift", path: nil)))
 

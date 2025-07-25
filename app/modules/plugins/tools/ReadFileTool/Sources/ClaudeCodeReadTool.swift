@@ -2,11 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Dependencies
 import DLS
 import Foundation
 import HighlighterServiceInterface
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeReadTool
@@ -16,7 +18,7 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
   public init() { }
 
   public final class Use: ExternalToolUse, Sendable {
-    init(
+    public init(
       callingTool: ClaudeCodeReadTool,
       toolUseId: String,
       input: Input,
@@ -40,9 +42,7 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
       public let limit: Int?
     }
 
-    public struct Output: Codable, Sendable {
-      public let content: String
-    }
+    public typealias Output = ReadFileTool.Use.Output
 
     public let isReadonly = true
 
@@ -50,6 +50,8 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
     public let toolUseId: String
     public let input: Input
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       updateStatus.yield(.notStarted)
@@ -68,7 +70,7 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
         .split(separator: "\n")
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
-      updateStatus.yield(.completed(.success(.init(content: parsedOutput))))
+      updateStatus.yield(.completed(.success(.init(content: parsedOutput, uri: input.file_path))))
     }
 
     public func reject(reason: String?) {
@@ -80,8 +82,6 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
     }
 
     let filePath: URL
-
-    let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
@@ -128,51 +128,27 @@ public final class ClaudeCodeReadTool: NonStreamableTool {
     true
   }
 
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
-
 }
 
-// MARK: - ReadToolUseViewModel
+// MARK: - ClaudeCodeReadTool.Use + DisplayableToolUse
 
-@Observable
-@MainActor
-final class ReadToolUseViewModel {
-
-  init(status: ClaudeCodeReadTool.Use.Status, input: ClaudeCodeReadTool.Use.Input) {
-    self.status = status.value
-    self.input = input
-    Task { [weak self] in
-      for await status in status {
-        self?.status = status
-        if case .completed(.success(let output)) = status {
-          Task {
-            guard let self else { return }
-            let highlightedContent = try await self.highlighter.attributedText(
-              output.content,
-              colors: .codeHighlight)
-            self.highlightedContent = highlightedContent
-          }
+extension ClaudeCodeReadTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    let lineRange: ReadFileTool.Use.Input.Range? = {
+      if let limit = input.limit {
+        if let offset = input.offset {
+          return .init(start: offset, end: offset + limit)
+        } else {
+          return .init(start: 0, end: limit)
         }
       }
-    }
-  }
+      if let offset = input.offset {
+        return .init(start: offset, end: Int.max)
+      }
+      return nil
+    }()
 
-  let input: ClaudeCodeReadTool.Use.Input
-  var status: ToolUseExecutionStatus<ClaudeCodeReadTool.Use.Output>
-  var highlightedContent: AttributedString?
-
-  @ObservationIgnored
-  @Dependency(\.highlighter) private var highlighter
-}
-
-extension [String] {
-  subscript(safe range: Range<Int>) -> [String]? {
-    let start = Swift.max(0, range.lowerBound)
-    let end = Swift.min(count, range.upperBound)
-
-    guard start < end else { return nil }
-    return Array(self[start..<end])
+    return AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      status: status, input: .init(path: input.file_path, lineRange: lineRange))))
   }
 }

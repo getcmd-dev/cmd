@@ -2,10 +2,12 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeLSTool
@@ -15,7 +17,7 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
   public init() { }
 
   public final class Use: ExternalToolUse, Sendable {
-    init(
+    public init(
       callingTool: ClaudeCodeLSTool,
       toolUseId: String,
       input: Input,
@@ -38,9 +40,7 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
       public let ignore: [String]?
     }
 
-    public struct Output: Codable, Sendable {
-      public let content: String
-    }
+    public typealias Output = LSTool.Use.Output
 
     public let isReadonly = true
 
@@ -48,6 +48,8 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
     public let toolUseId: String
     public let input: Input
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       updateStatus.yield(.notStarted)
@@ -59,9 +61,7 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
       guard case .string(let stringOutput) = output else {
         return
       }
-      // Parse the LS output from Claude Code
-      // The output is in a tree-like format showing directory structure
-      updateStatus.yield(.completed(.success(.init(content: stringOutput))))
+      updateStatus.yield(.completed(.success(parse(rawOutput: stringOutput))))
     }
 
     public func reject(reason: String?) {
@@ -74,9 +74,61 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
 
     let directoryPath: URL
 
-    let context: ToolExecutionContext
-
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    /// Parse the LS output from Claude Code
+    /// The output is in a tree-like format showing directory structure and some optional comments, like:
+    /// ```
+    ///  - /Users/me/cmd/app/modules/plugins/tools/ClaudeCodeTools/Tests/
+    ///    - ../
+    ///      - Module.swift
+    ///      - Sources/
+    ///        - ClaudeCodeReadTool.swift
+    ///        - ClaudeCodeReadToolView+Preview.swift
+    ///        - ClaudeCodeReadToolView.swift
+    ///        - Content.swift
+    ///    - ClaudeCodeReadToolEncodingTests.swift
+    ///    - ClaudeCodeReadToolTests.swift
+    ///
+    ///  build the list of full path
+    /// ```
+    private func parse(rawOutput: String) -> Output {
+      // Given a string like
+
+      var pathComponents: [(Int, String)] = [(0, directoryPath.path)]
+      var paths = [[String]]()
+
+      for line in rawOutput.components(separatedBy: .newlines) {
+        // Count leading spaces to determine nesting level
+        let leadingSpaces = line.prefix(while: { $0 == " " }).count
+
+        let startIndex = line.index(line.startIndex, offsetBy: leadingSpaces)
+        guard
+          leadingSpaces < line.count - 1,
+          line[startIndex] == "-"
+        else { continue } // Only process lines containing "- " after the leading spaces.
+
+        let afterDashIndex = line.index(startIndex, offsetBy: 2)
+
+        let newPathComponent = String(line[afterDashIndex...]).trimmingCharacters(in: .whitespaces)
+        while pathComponents.last?.0 ?? 0 >= leadingSpaces {
+          pathComponents.removeLast()
+        }
+        pathComponents.append((leadingSpaces, newPathComponent))
+        paths.append(pathComponents.map(\.1))
+      }
+
+      let files = paths.map { components in
+        let absolutePathIdx = components.lastIndex(where: { $0.hasPrefix("/") }) ?? 0
+        var url = URL(fileURLWithPath: components[absolutePathIdx])
+        for component in components.dropFirst(absolutePathIdx + 1) {
+          url.appendPathComponent(component)
+        }
+        return Output.File(path: url.standardized.path, attr: nil, size: nil)
+      }
+
+      return Output(files: files, hasMore: false)
+    }
 
   }
 
@@ -105,7 +157,7 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
         "ignore": .object([
           "type": .string("array"),
           "items": .object([
-            "type": .string("string")
+            "type": .string("string"),
           ]),
           "description": .string("List of glob patterns to ignore"),
         ]),
@@ -118,10 +170,6 @@ public final class ClaudeCodeLSTool: NonStreamableTool {
 
   public func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }
@@ -144,4 +192,15 @@ final class LSToolUseViewModel {
 
   let input: ClaudeCodeLSTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeLSTool.Use.Output>
+}
+
+// MARK: - ClaudeCodeLSTool.Use + DisplayableToolUse
+
+extension ClaudeCodeLSTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    let viewModel = ToolUseViewModel(
+      status: status,
+      directoryPath: directoryPath)
+    return AnyView(ToolUseView(viewModel: viewModel))
+  }
 }

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Dependencies
 import DLS
 import Foundation
@@ -15,7 +16,7 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
   public init() { }
 
   public final class Use: ExternalToolUse, Sendable {
-    init(
+    public init(
       callingTool: ClaudeCodeGlobTool,
       toolUseId: String,
       input: Input,
@@ -48,6 +49,8 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
     public let input: Input
     public let status: Status
 
+    public let context: ToolExecutionContext
+
     public func startExecuting() {
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
@@ -58,14 +61,14 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
       guard case .string(let stringOutput) = output else {
         return
       }
-      
+
       // Parse the glob output from Claude Code
       // The output is newline-separated file paths
       let files = stringOutput
         .split(separator: "\n")
         .map(String.init)
         .filter { !$0.isEmpty }
-      
+
       updateStatus.yield(.completed(.success(.init(files: files))))
     }
 
@@ -76,8 +79,6 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
     public func cancel() {
       updateStatus.yield(.completed(.failure(CancellationError())))
     }
-
-    let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
@@ -112,7 +113,8 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
         ]),
         "path": .object([
           "type": .string("string"),
-          "description": .string("The directory to search in. If not specified, the current working directory will be used. IMPORTANT: Omit this field to use the default directory. DO NOT enter \"undefined\" or \"null\" - simply omit it for the default behavior. Must be a valid directory path if provided."),
+          "description": .string(
+            "The directory to search in. If not specified, the current working directory will be used. IMPORTANT: Omit this field to use the default directory. DO NOT enter \"undefined\" or \"null\" - simply omit it for the default behavior. Must be a valid directory path if provided."),
         ]),
       ]),
       "required": .array([.string("pattern")]),
@@ -123,10 +125,6 @@ public final class ClaudeCodeGlobTool: NonStreamableTool {
 
   public func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }

@@ -6,23 +6,29 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - LSTool.Use + DisplayableToolUse
-
-extension LSTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, directoryPath: directoryPath)))
-  }
-}
-
 // MARK: - ToolUseView
 
 struct ToolUseView: View {
+  @Bindable private var viewModel: ToolUseViewModel
 
-  @Bindable var toolUse: ToolUseViewModel
+  init(viewModel: ToolUseViewModel) {
+    self.viewModel = viewModel
+  }
 
   var body: some View {
-    switch toolUse.status {
+    ToolUseDetailView(status: viewModel.status, directoryPath: viewModel.directoryPath)
+  }
+}
+
+// MARK: - ToolUseDetailView
+
+struct ToolUseDetailView: View {
+
+  let status: ToolUseExecutionStatus<LSTool.Use.Output>
+  let directoryPath: URL
+
+  var body: some View {
+    switch status {
     case .notStarted:
       EmptyView()
     case .pendingApproval:
@@ -49,7 +55,7 @@ struct ToolUseView: View {
       Icon(systemName: "folder")
         .frame(width: 14, height: 14)
         .foregroundColor(foregroundColor)
-      Text("Waiting for approval: List \(toolUse.directoryPath.lastPathComponent)")
+      Text("Waiting for approval: List \(directoryPath.lastPathComponent)")
         .foregroundColor(foregroundColor)
     }
   }
@@ -60,7 +66,7 @@ struct ToolUseView: View {
       Icon(systemName: "folder")
         .frame(width: 14, height: 14)
         .foregroundColor(foregroundColor)
-      Text("Rejected: List \(toolUse.directoryPath.lastPathComponent)")
+      Text("Rejected: List \(directoryPath.lastPathComponent)")
         .foregroundColor(foregroundColor)
     }
   }
@@ -71,7 +77,7 @@ struct ToolUseView: View {
       Icon(systemName: "folder")
         .frame(width: 14, height: 14)
         .foregroundColor(foregroundColor)
-      Text("Listing \(toolUse.directoryPath.lastPathComponent)...")
+      Text("Listing \(directoryPath.lastPathComponent)...")
         .foregroundColor(foregroundColor)
     }
   }
@@ -104,7 +110,7 @@ struct ToolUseView: View {
             .foregroundColor(foregroundColor)
             .frame(width: 15)
         }
-        Text("Listed \(files.files.count) files in \(toolUse.directoryPath.lastPathComponent)")
+        Text("Listed \(files.files.count) files in \(directoryPath.lastPathComponent)")
           .foregroundColor(foregroundColor)
       }
       .tappableTransparentBackground()
@@ -116,7 +122,7 @@ struct ToolUseView: View {
           VStack {
             ForEach(files.files) { file in
               HStack(spacing: 3) {
-                if file.attr.hasPrefix("d") {
+                if file.attr?.hasPrefix("d") == true {
                   Icon(systemName: "folder")
                     .foregroundColor(foregroundColor)
                     .frame(width: 12, height: 12)
@@ -127,8 +133,8 @@ struct ToolUseView: View {
                 Text(URL(fileURLWithPath: file.path).lastPathComponent)
                   .foregroundColor(foregroundColor)
                 Spacer()
-                if !file.attr.starts(with: "d") {
-                  Text(file.size)
+                if let size = file.size, file.attr?.starts(with: "d") == false {
+                  Text(size)
                     .foregroundColor(foregroundColor)
                 }
               }
@@ -146,7 +152,7 @@ struct ToolUseView: View {
       Icon(systemName: "folder")
         .frame(width: 14, height: 14)
         .foregroundColor(foregroundColor)
-      Text("Listing \(toolUse.directoryPath.lastPathComponent) failed: \(error.localizedDescription)")
+      Text("Listing \(directoryPath.lastPathComponent) failed: \(error.localizedDescription)")
         .foregroundColor(foregroundColor)
     }
   }

@@ -23,6 +23,8 @@ extension ToolsPlugin {
     plugIn(tool: BuildTool())
 
     // Claude Code
-    plugIn(tool: ClaudeCodeReadTool())
+      plugIn(tool: ClaudeCodeReadTool())
+      plugIn(tool: ClaudeCodeLSTool())
+      plugIn(tool: ClaudeCodeGlobTool())
   }
 }

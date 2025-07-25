@@ -24,16 +24,20 @@ struct ClaudeCodeGlobToolTests {
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
-    
+
     #expect(result.files.count == 5)
-    #expect(result.files.contains("/Users/guigui/dev/cmd.git/cc-provider/app/modules/plugins/tools/ClaudeCodeTools/Tests/ClaudeCodeGlobToolTests.swift"))
-    #expect(result.files.contains("/Users/guigui/dev/cmd.git/cc-provider/app/modules/plugins/tools/ClaudeCodeTools/Tests/ClaudeCodeReadToolTests.swift"))
+    #expect(result.files
+      .contains(
+        "/Users/guigui/dev/cmd.git/cc-provider/app/modules/plugins/tools/ClaudeCodeTools/Tests/ClaudeCodeGlobToolTests.swift"))
+    #expect(result.files
+      .contains(
+        "/Users/guigui/dev/cmd.git/cc-provider/app/modules/plugins/tools/ClaudeCodeTools/Tests/ClaudeCodeReadToolTests.swift"))
   }
-  
+
   @Test
   func handlesEmptyOutput() async throws {
     let toolUse = ClaudeCodeGlobTool().use(
-      toolUseId: "456", 
+      toolUseId: "456",
       input: .init(pattern: "**/*.nonexistent", path: "/some/path"),
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
@@ -44,7 +48,7 @@ struct ClaudeCodeGlobToolTests {
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
-    
+
     #expect(result.files.isEmpty)
   }
 

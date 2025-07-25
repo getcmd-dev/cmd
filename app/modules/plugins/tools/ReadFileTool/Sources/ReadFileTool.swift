@@ -4,11 +4,10 @@
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
-import DLS
 import Foundation
 import FoundationInterfaces
-import HighlighterServiceInterface
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ReadFileTool
@@ -151,38 +150,13 @@ public final class ReadFileTool: NonStreamableTool {
   }
 }
 
-// MARK: - ToolUseViewModel
+// MARK: - ReadFileTool.Use + DisplayableToolUse
 
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(status: ReadFileTool.Use.Status, input: ReadFileTool.Use.Input) {
-    self.status = status.value
-    self.input = input
-    Task { [weak self] in
-      for await status in status {
-        self?.status = status
-        if case .completed(.success(let output)) = status {
-          Task {
-            guard let self else { return }
-            let highlightedContent = try await self.highlighter.attributedText(
-              output.content,
-              language: FileIcon.language(for: URL(fileURLWithPath: output.uri)),
-              colors: .codeHighlight)
-            self.highlightedContent = highlightedContent
-          }
-        }
-      }
-    }
+extension ReadFileTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      status: status, input: input)))
   }
-
-  let input: ReadFileTool.Use.Input
-  var status: ToolUseExecutionStatus<ReadFileTool.Use.Output>
-  var highlightedContent: AttributedString?
-
-  @ObservationIgnored
-  @Dependency(\.highlighter) private var highlighter
 }
 
 extension [String] {
