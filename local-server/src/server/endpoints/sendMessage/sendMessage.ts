@@ -231,7 +231,7 @@ export async function respondUsingResponseStream(
 		if (interval) {
 			clearInterval(interval)
 		}
-		console.log({ error })
+		logError(`Error while processing stream: ${error}`)
 		throw addUserFacingError(error, "Failed to send message.")
 	}
 	return i

@@ -1,5 +1,5 @@
 import { logError, logInfo } from "@/logger"
-import { LocalExecutable, Message, StreamedResponseChunk } from "@/server/schemas/sendMessageSchema"
+import { LocalExecutable, Message } from "@/server/schemas/sendMessageSchema"
 import { CoreMessage, CoreUserMessage } from "ai"
 import { Response } from "express"
 import { spawn } from "child_process"

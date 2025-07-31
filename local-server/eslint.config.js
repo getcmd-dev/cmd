@@ -38,7 +38,7 @@ export default tseslint.config(
 		rules: {
 			indent: "off",
 			"@typescript-eslint/no-namespace": "off",
-			"@typescript-eslint/no-unused-vars": "warn",
+			"@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
 		},
 	},
 )
