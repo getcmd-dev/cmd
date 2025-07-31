@@ -15,12 +15,13 @@ struct ClaudeCodeGlobToolTests {
     let toolUse = ClaudeCodeGlobTool().use(
       toolUseId: "123",
       input: .init(pattern: "**/*.swift", path: nil),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate external output from Claude Code
-    let output = JSON.Value.string(testGlobOutput)
+    let output = testGlobOutput
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
@@ -39,12 +40,13 @@ struct ClaudeCodeGlobToolTests {
     let toolUse = ClaudeCodeGlobTool().use(
       toolUseId: "456",
       input: .init(pattern: "**/*.nonexistent", path: "/some/path"),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate empty output
-    let output = JSON.Value.string("")
+    let output = ""
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output

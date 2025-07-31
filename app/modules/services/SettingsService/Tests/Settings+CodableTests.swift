@@ -47,6 +47,7 @@ struct SettingsCodableTests {
     let providerSettings = Settings.LLMProviderSettings(
       apiKey: "test-api-key",
       baseUrl: "https://api.example.com",
+      executable: nil,
       createdOrder: 1)
 
     let settings = Settings(
@@ -85,11 +86,13 @@ struct SettingsCodableTests {
     let anthropicSettings = Settings.LLMProviderSettings(
       apiKey: "anthropic-key",
       baseUrl: nil,
+      executable: nil,
       createdOrder: 1)
 
     let openAISettings = Settings.LLMProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com",
+      executable: nil,
       createdOrder: 2)
 
     let settings = Settings(
@@ -196,6 +199,7 @@ struct SettingsCodableTests {
     let anthropicSettings = Settings.LLMProviderSettings(
       apiKey: "anthropic-key",
       baseUrl: nil,
+      executable: nil,
       createdOrder: 2)
 
     let expectedSettings = Settings(
@@ -217,10 +221,12 @@ struct SettingsCodableTests {
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
+          executable: nil,
           createdOrder: 1),
         .openRouter: Settings.LLMProviderSettings(
           apiKey: "openrouter-key",
           baseUrl: "https://openrouter.ai/api/v1",
+          executable: nil,
           createdOrder: 3),
       ])
 
@@ -323,6 +329,7 @@ struct SettingsCodableTests {
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "test-key",
           baseUrl: nil,
+          executable: nil,
           createdOrder: 1),
       ])
 
@@ -374,14 +381,17 @@ struct SettingsCodableTests {
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "anthropic-very-long-api-key-for-testing-purposes",
           baseUrl: "https://api.anthropic.com/v1/messages",
+          executable: nil,
           createdOrder: 1),
         .openAI: Settings.LLMProviderSettings(
           apiKey: "openai-very-long-api-key-for-testing-purposes",
           baseUrl: "https://api.openai.com/v1/chat/completions",
+          executable: nil,
           createdOrder: 2),
         .openRouter: Settings.LLMProviderSettings(
           apiKey: "openrouter-very-long-api-key-for-testing-purposes",
           baseUrl: "https://openrouter.ai/api/v1",
+          executable: nil,
           createdOrder: 3),
       ])
 
@@ -627,6 +637,7 @@ struct SettingsCodableTests {
         .openAI: Settings.LLMProviderSettings(
           apiKey: "openai-key",
           baseUrl: nil,
+          executable: nil,
           createdOrder: 1),
       ],
       customInstructions: Settings.CustomInstructions(

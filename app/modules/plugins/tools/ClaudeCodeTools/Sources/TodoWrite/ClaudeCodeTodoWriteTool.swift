@@ -50,7 +50,7 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       public let message: String
     }
 
-    public let isReadonly = false
+    public let isReadonly = true
 
     public let callingTool: ClaudeCodeTodoWriteTool
     public let toolUseId: String

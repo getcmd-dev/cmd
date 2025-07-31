@@ -28,12 +28,13 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "123",
       input: .init(todos: todoItems),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate successful output from Claude Code
-    let output = JSON.Value.string("Todos have been modified successfully")
+    let output = "Todos have been modified successfully"
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
@@ -55,15 +56,15 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "456",
       input: .init(todos: todoItems),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate error output from Claude Code
     let errorMessage = "Error: Invalid todo status provided"
-    let output = JSON.Value.string(errorMessage)
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: errorMessage)
     let result = try await toolUse.output
 
     #expect(result.success == false)
@@ -75,12 +76,13 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "789",
       input: .init(todos: []),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate successful output for empty list
-    let output = JSON.Value.string("Todos have been modified successfully")
+    let output = "Todos have been modified successfully"
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
@@ -102,12 +104,13 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "large",
       input: .init(todos: todoItems),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate successful output
-    let output = JSON.Value.string("Todos have been modified successfully")
+    let output = "Todos have been modified successfully"
 
     try toolUse.receive(output: output)
     let result = try await toolUse.output
@@ -139,6 +142,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "statuses",
       input: .init(todos: todoItems),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     #expect(toolUse.input.todos.count == 3)
@@ -156,6 +160,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = tool.use(
       toolUseId: "readonly",
       input: .init(todos: []),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     #expect(toolUse.isReadonly == false)
@@ -165,8 +170,8 @@ struct ClaudeCodeTodoWriteToolTests {
   func isAvailableInAllChatModes() {
     let tool = ClaudeCodeTodoWriteTool()
 
-    #expect(tool.isAvailable(in: .standard) == true)
-    #expect(tool.isAvailable(in: .project) == true)
+    #expect(tool.isAvailable(in: .ask) == true)
+    #expect(tool.isAvailable(in: .agent) == true)
   }
 
   @Test

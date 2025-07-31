@@ -45,6 +45,7 @@ struct DefaultSettingsServiceTests {
     let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
+      executable: nil,
       createdOrder: 1)
     var newSettings = service.value(for: \.llmProviderSettings)
     newSettings[.anthropic] = anthropicSettings
@@ -68,6 +69,7 @@ struct DefaultSettingsServiceTests {
     let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
+      executable: nil,
       createdOrder: 1)
 
     var newSettings = service.value(for: \.llmProviderSettings)
@@ -94,10 +96,12 @@ struct DefaultSettingsServiceTests {
     let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
+      executable: nil,
       createdOrder: 1)
     let openAISettings = LLMProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com/test",
+      executable: nil,
       createdOrder: 2)
 
     var newSettings = service.value(for: \.llmProviderSettings)
@@ -227,6 +231,7 @@ struct DefaultSettingsServiceTests {
     let anthropicSettings = LLMProviderSettings(
       apiKey: "secret-key",
       baseUrl: nil,
+      executable: nil,
       createdOrder: 1)
     let exp = expectation(description: "Storage updated")
     let updateCount = Atomic(0)

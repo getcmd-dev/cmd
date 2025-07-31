@@ -66,7 +66,11 @@ struct OnboardingViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .openAI: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
       ]))
     let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
     var onDoneCalled = false
@@ -154,7 +158,11 @@ struct OnboardingViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .openAI: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
       ]))
     let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
 
@@ -325,7 +333,11 @@ struct OnboardingViewModelTests {
 
     // Add a provider with API key
     var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
-    newSettings[.openAI] = LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1)
+    newSettings[.openAI] = LLMProviderSettings(
+      apiKey: "test",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 1)
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
     try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
 

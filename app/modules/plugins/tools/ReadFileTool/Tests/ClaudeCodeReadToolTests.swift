@@ -6,7 +6,7 @@ import Foundation
 import JSONFoundation
 import SwiftTesting
 import Testing
-@testable import ClaudeCodeTools
+@testable import ReadFileTool
 
 struct ClaudeCodeReadToolTests {
 
@@ -15,12 +15,13 @@ struct ClaudeCodeReadToolTests {
     let toolUse = ClaudeCodeReadTool().use(
       toolUseId: "123",
       input: .init(file_path: "path/to/file.txt", offset: nil, limit: nil),
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
     // Simulate invalid external output
-    let invalidOutput = JSON.Value.string(testOutput)
+    let invalidOutput = testOutput
 
     try toolUse.receive(output: invalidOutput)
     let result = try await toolUse.output

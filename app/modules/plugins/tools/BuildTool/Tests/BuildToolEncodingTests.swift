@@ -18,7 +18,7 @@ struct BuildToolEncodingTests {
   func test_toolUseEncodingDecodingTest() throws {
     let tool = BuildTool()
     let input = BuildTool.Use.Input(for: .test)
-    let use = tool.use(toolUseId: "build-test-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "build-test-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -39,7 +39,7 @@ struct BuildToolEncodingTests {
   func test_toolUseEncodingDecodingRun() throws {
     let tool = BuildTool()
     let input = BuildTool.Use.Input(for: .run)
-    let use = tool.use(toolUseId: "build-run-101", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "build-run-101", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {

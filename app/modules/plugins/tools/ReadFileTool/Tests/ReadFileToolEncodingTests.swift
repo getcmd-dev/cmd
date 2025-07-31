@@ -19,7 +19,7 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/src/main.swift",
       lineRange: nil)
-    let use = tool.use(toolUseId: "read-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -43,7 +43,7 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/test/file.py",
       lineRange: lineRange)
-    let use = tool.use(toolUseId: "read-range-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-range-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -71,7 +71,7 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/config/settings.json",
       lineRange: lineRange)
-    let use = tool.use(toolUseId: "read-single-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-single-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {

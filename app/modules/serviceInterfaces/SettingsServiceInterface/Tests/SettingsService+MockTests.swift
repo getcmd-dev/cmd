@@ -18,44 +18,46 @@ struct SettingsServiceMockTests {
         .anthropic: LLMProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
+          executable: nil,
           createdOrder: 1),
       ])
 
     let sut = MockSettingsService(defaultSettings: defaultSettings)
 
     // Test initial values
-    #expect(sut.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "default-key")
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com")
-    #expect(sut.value(for: \.llmProviderSettings[.openAI]) == nil)
+    #expect(sut.value(for: \Settings.pointReleaseXcodeExtensionToDebugApp) == false)
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.apiKey) == "default-key")
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com")
+    #expect(sut.value(for: \Settings.llmProviderSettings[.openAI]) == nil)
 
     // Test updating values
-    sut.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
+    sut.update(setting: \Settings.pointReleaseXcodeExtensionToDebugApp, to: true)
 
     let newAnthropicSettings = LLMProviderSettings(
       apiKey: "new-key",
       baseUrl: "https://api.anthropic.com/v1",
+      executable: nil,
       createdOrder: 1)
 
-    var newSettings = sut.value(for: \.llmProviderSettings)
+    var newSettings = sut.value(for: \Settings.llmProviderSettings)
     newSettings[.anthropic] = newAnthropicSettings
-    sut.update(setting: \.llmProviderSettings, to: newSettings)
+    sut.update(setting: \Settings.llmProviderSettings, to: newSettings)
 
-    #expect(sut.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "new-key")
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com/v1")
+    #expect(sut.value(for: \Settings.pointReleaseXcodeExtensionToDebugApp) == true)
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.apiKey) == "new-key")
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com/v1")
 
     // Test resetting individual setting
-    sut.resetToDefault(setting: \.pointReleaseXcodeExtensionToDebugApp)
-    #expect(sut.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "new-key") // Unchanged
+    sut.resetToDefault(setting: \Settings.pointReleaseXcodeExtensionToDebugApp)
+    #expect(sut.value(for: \Settings.pointReleaseXcodeExtensionToDebugApp) == false)
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.apiKey) == "new-key") // Unchanged
 
     // Test resetting all settings
     sut.resetAllToDefault()
-    #expect(sut.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "default-key")
-    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com")
-    #expect(sut.value(for: \.llmProviderSettings[.openAI]) == nil)
+    #expect(sut.value(for: \Settings.pointReleaseXcodeExtensionToDebugApp) == false)
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.apiKey) == "default-key")
+    #expect(sut.value(for: \Settings.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com")
+    #expect(sut.value(for: \Settings.llmProviderSettings[.openAI]) == nil)
   }
 
   @Test("All values access")
@@ -67,6 +69,7 @@ struct SettingsServiceMockTests {
         .anthropic: LLMProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
+          executable: nil,
           createdOrder: 1),
       ])
 
@@ -80,7 +83,7 @@ struct SettingsServiceMockTests {
     #expect(allSettings.llmProviderSettings[.openAI] == nil)
 
     // Test updating and getting all values
-    sut.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
+    sut.update(setting: \Settings.pointReleaseXcodeExtensionToDebugApp, to: true)
     let updatedSettings = sut.values()
     #expect(updatedSettings.pointReleaseXcodeExtensionToDebugApp == true)
   }
@@ -94,6 +97,7 @@ struct SettingsServiceMockTests {
         .anthropic: LLMProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
+          executable: nil,
           createdOrder: 1),
       ])
 
@@ -104,7 +108,7 @@ struct SettingsServiceMockTests {
     var receivedValues: [Bool] = []
     let valuesReceived = expectation(description: "Values received")
 
-    sut.liveValue(for: \.pointReleaseXcodeExtensionToDebugApp)
+    sut.liveValue(for: \Settings.pointReleaseXcodeExtensionToDebugApp)
       .sink { value in
         receivedValues.append(value)
         if receivedValues.count == 3 {
@@ -118,10 +122,10 @@ struct SettingsServiceMockTests {
     #expect(receivedValues.first == false)
 
     // Update value
-    sut.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
+    sut.update(setting: \Settings.pointReleaseXcodeExtensionToDebugApp, to: true)
 
     // Reset value
-    sut.resetToDefault(setting: \.pointReleaseXcodeExtensionToDebugApp)
+    sut.resetToDefault(setting: \Settings.pointReleaseXcodeExtensionToDebugApp)
 
     try await fulfillment(of: [valuesReceived])
     #expect(receivedValues == [false, true, false])
@@ -136,6 +140,7 @@ struct SettingsServiceMockTests {
         .anthropic: LLMProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
+          executable: nil,
           createdOrder: 1),
       ])
 
@@ -160,7 +165,7 @@ struct SettingsServiceMockTests {
     #expect(receivedSettings[0].pointReleaseXcodeExtensionToDebugApp == false)
 
     // Update value
-    sut.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
+    sut.update(setting: \Settings.pointReleaseXcodeExtensionToDebugApp, to: true)
 
     // Reset all values
     sut.resetAllToDefault()
@@ -186,11 +191,11 @@ struct SettingsServiceMockTests {
 
     // Test with MockSettingsService
     let sut = MockSettingsService(defaultSettings: customSettings)
-    #expect(sut.value(for: \.fileEditMode) == .xcodeExtension)
+    #expect(sut.value(for: \Settings.fileEditMode) == .xcodeExtension)
 
     // Test updating the setting
-    sut.update(setting: \.fileEditMode, to: .xcodeExtension)
-    #expect(sut.value(for: \.fileEditMode) == .xcodeExtension)
+    sut.update(setting: \Settings.fileEditMode, to: .xcodeExtension)
+    #expect(sut.value(for: \Settings.fileEditMode) == .xcodeExtension)
   }
 
   @Test("FileEditMode live updates")
@@ -204,7 +209,7 @@ struct SettingsServiceMockTests {
     var receivedModes: [FileEditMode] = []
     let modesReceived = expectation(description: "File edit modes received")
 
-    sut.liveValue(for: \.fileEditMode)
+    sut.liveValue(for: \Settings.fileEditMode)
       .sink { mode in
         receivedModes.append(mode)
         if receivedModes.count == 3 {
@@ -218,10 +223,10 @@ struct SettingsServiceMockTests {
     #expect(receivedModes.first == .xcodeExtension)
 
     // Update to direct I/O
-    sut.update(setting: \.fileEditMode, to: .directIO)
+    sut.update(setting: \Settings.fileEditMode, to: .directIO)
 
     // Reset to default
-    sut.resetToDefault(setting: \.fileEditMode)
+    sut.resetToDefault(setting: \Settings.fileEditMode)
 
     try await fulfillment(of: [modesReceived])
     #expect(receivedModes == [.xcodeExtension, .directIO, .xcodeExtension])

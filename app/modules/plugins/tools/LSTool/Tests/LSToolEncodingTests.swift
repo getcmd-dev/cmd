@@ -19,7 +19,7 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/project",
       recursive: false)
-    let use = tool.use(toolUseId: "ls-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -43,7 +43,7 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/workspace/src",
       recursive: true)
-    let use = tool.use(toolUseId: "ls-recursive-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-recursive-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -67,7 +67,7 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/home/user/projects",
       recursive: nil)
-    let use = tool.use(toolUseId: "ls-structure-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-structure-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {

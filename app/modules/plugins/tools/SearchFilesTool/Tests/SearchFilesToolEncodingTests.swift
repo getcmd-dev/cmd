@@ -20,7 +20,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/project",
       regex: "FIXME",
       filePattern: nil)
-    let use = tool.use(toolUseId: "search-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -45,7 +45,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/codebase/src",
       regex: "class\\s+\\w+Test",
       filePattern: "*.swift")
-    let use = tool.use(toolUseId: "search-pattern-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-pattern-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -71,7 +71,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/workspace/backend",
       regex: "api\\..*\\(",
       filePattern: "*.{py,js}")
-    let use = tool.use(toolUseId: "search-structure-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-structure-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {

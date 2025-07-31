@@ -182,6 +182,7 @@ struct APIParamsEncodingTests {
         .anthropic: LLMProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
+          executable: nil,
           createdOrder: 2),
       ],
       reasoningModels: [.claudeSonnet_4_0: .init(isEnabled: true)]))

@@ -12,28 +12,26 @@ struct GrepToolTests {
 
   @Test
   func handlesExternalOutputCorrectly() async throws {
+    let inputJSON = """
+      {
+        "pattern": "JSON",
+        "output_mode": "files_with_matches",
+        "projectRoot": "/Users/guigui/dev/cmd.git/cc-provider/app"
+      }
+      """
+
+    let input = try JSONDecoder().decode(ClaudeCodeGrepInput.self, from: inputJSON.data(using: .utf8)!)
+
     let toolUse = ClaudeCodeGrepTool().use(
       toolUseId: "123",
-      input: .init(
-        pattern: "JSON",
-        path: nil,
-        glob: nil,
-        outputMode: "files_with_matches",
-        beforeContext: nil,
-        afterContext: nil,
-        contextLines: nil,
-        lineNumbers: nil,
-        caseInsensitive: nil,
-        type: nil,
-        headLimit: nil,
-        multiline: nil,
-        projectRoot: "/Users/guigui/dev/cmd.git/cc-provider/app"),
+      input: input,
+      isInputComplete: true,
       context: .init(project: nil, projectRoot: URL(filePath: "/Users/guigui/dev/cmd.git/cc-provider/app")))
 
     toolUse.startExecuting()
 
     // Simulate external output
-    let externalOutput = JSON.Value.string(testOutput)
+    let externalOutput = testOutput
 
     try toolUse.receive(output: externalOutput)
     let result = try await toolUse.output.results.map(\.path)

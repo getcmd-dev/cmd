@@ -96,8 +96,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -119,8 +127,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -148,8 +164,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -186,8 +210,16 @@ extension MockSettingsService {
     MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
   }
 }

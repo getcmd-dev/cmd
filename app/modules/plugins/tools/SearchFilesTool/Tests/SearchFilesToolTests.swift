@@ -39,6 +39,7 @@ struct SearchFilesToolTests {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",
         input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
+        isInputComplete: true,
         context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
@@ -63,6 +64,7 @@ struct SearchFilesToolTests {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",
         input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
+        isInputComplete: true,
         context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse

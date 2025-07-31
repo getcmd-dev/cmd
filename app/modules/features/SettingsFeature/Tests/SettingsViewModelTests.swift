@@ -220,8 +220,16 @@ struct SettingsViewModelTests {
     #expect(emptySettings.nextCreatedOrder == 1)
 
     let settingsWithProviders: AllLLMProviderSettings = [
-      LLMProvider.openAI: LLMProviderSettings(apiKey: "key1", baseUrl: nil, createdOrder: 5),
-      LLMProvider.anthropic: LLMProviderSettings(apiKey: "key2", baseUrl: nil, createdOrder: 3),
+      LLMProvider.openAI: LLMProviderSettings(
+        apiKey: "key1",
+        baseUrl: nil,
+        executable: nil,
+        createdOrder: 5),
+      LLMProvider.anthropic: LLMProviderSettings(
+        apiKey: "key2",
+        baseUrl: nil,
+        executable: nil,
+        createdOrder: 3),
     ]
     #expect(settingsWithProviders.nextCreatedOrder == 6)
   }

@@ -61,7 +61,7 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
   }
 
-  public let name = "Write"
+  public let name = "claude_code_Write"
 
   public let description = """
     Writes a file to the local filesystem.

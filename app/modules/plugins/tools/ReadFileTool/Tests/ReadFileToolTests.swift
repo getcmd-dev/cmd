@@ -19,6 +19,7 @@ struct ReadFileToolTests {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",
         input: .init(path: "path/to/file.txt", lineRange: nil),
+        isInputComplete: true,
         context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
@@ -37,6 +38,7 @@ struct ReadFileToolTests {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",
         input: .init(path: "path/to/file.txt", lineRange: nil),
+        isInputComplete: true,
         context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse

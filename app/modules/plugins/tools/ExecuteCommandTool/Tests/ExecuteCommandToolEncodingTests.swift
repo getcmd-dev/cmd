@@ -21,7 +21,7 @@ struct ExecuteCommandToolEncodingTests {
       cwd: nil,
       canModifySourceFiles: false,
       canModifyDerivedFiles: false)
-    let use = tool.use(toolUseId: "exec-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "exec-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -48,7 +48,7 @@ struct ExecuteCommandToolEncodingTests {
       cwd: "/path/to/project",
       canModifySourceFiles: false,
       canModifyDerivedFiles: true)
-    let use = tool.use(toolUseId: "exec-git-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "exec-git-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -76,7 +76,7 @@ struct ExecuteCommandToolEncodingTests {
       cwd: "/source",
       canModifySourceFiles: true,
       canModifyDerivedFiles: true)
-    let use = tool.use(toolUseId: "exec-build-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "exec-build-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {

@@ -88,31 +88,4 @@ struct FailedTool: NonStreamableTool {
   func isAvailable(in _: ChatMode) -> Bool {
     true
   }
-
-//  func use(toolUseId _: String, input _: EmptyObject, context _: ToolExecutionContext) -> FailedToolUse {
-//    fatalError("Should not be called")
-//  }
-
 }
-
-// extension FailedToolUse {
-//  public init(from decoder: Decoder) throws {
-//    let container = try decoder.container(keyedBy: CodingKeys.self)
-//    toolUseId = try container.decode(String.self, forKey: .toolUseId)
-//    callingTool = try container.decode(FailedTool.self, forKey: .tool)
-//    errorDescription = try container.decode(String.self, forKey: .errorDescription)
-//  }
-//
-//  public func encode(to encoder: Encoder) throws {
-//    var container = encoder.container(keyedBy: CodingKeys.self)
-//    try container.encode(toolUseId, forKey: .toolUseId)
-//    try container.encode(callingTool, forKey: .tool)
-//    try container.encode(errorDescription, forKey: .errorDescription)
-//  }
-//
-//  private enum CodingKeys: String, CodingKey {
-//    case toolUseId
-//    case tool
-//    case errorDescription
-//  }
-// }
