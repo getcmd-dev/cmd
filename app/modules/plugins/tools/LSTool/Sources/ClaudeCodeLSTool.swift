@@ -30,7 +30,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
       self.input = input
       directoryPath = URL(fileURLWithPath: input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -52,30 +52,13 @@ public final class ClaudeCodeLSTool: ExternalTool {
 
     public let context: ToolExecutionContext
 
-    public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
-      // The execution is managed externally by Claude Code. Nothing to do here.
-    }
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: JSON.Value) throws {
-      guard case .string(let stringOutput) = output else {
-        return
-      }
-      updateStatus.complete(with: .success(parse(rawOutput: stringOutput)))
-    }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+    public func receive(output: String) throws {
+      updateStatus.complete(with: .success(parse(rawOutput: output)))
     }
 
     let directoryPath: URL
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
     /// Parse the LS output from Claude Code
     /// The output is in a tree-like format showing directory structure and some optional comments, like:

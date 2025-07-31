@@ -6,15 +6,6 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - SearchFilesTool.Use + DisplayableToolUse
-
-extension SearchFilesTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: input)))
-  }
-}
-
 // MARK: - ToolUseView
 
 struct ToolUseView: View {

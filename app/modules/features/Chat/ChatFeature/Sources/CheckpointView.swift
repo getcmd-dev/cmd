@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import CheckpointServiceInterface
+import DLS
 import SwiftUI
 
 // MARK: - CheckpointView
@@ -30,16 +31,23 @@ struct CheckpointView: View {
 
       Spacer()
 
-      Button(action: {
-        onRestoreTapped?(checkpoint)
-      }) {
-        Text("Restore")
-          .foregroundColor(Color.gray)
-      }
-      .buttonStyle(PlainButtonStyle())
+      HoveredButton(
+        action: {
+          onRestoreTapped?(checkpoint)
+        },
+        onHover: { isHovered in
+          self.isHovered = isHovered
+        },
+        content: {
+          Text("Restore")
+            .foregroundColor(isHovered ? Color.primary : Color.gray)
+        })
     }
     .padding(ChatMessageView.Constants.checkpointPadding)
   }
+
+  @State private var isHovered = false
+
 }
 
 // MARK: - CircleWithLine

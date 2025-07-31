@@ -18,7 +18,7 @@ public final class LSTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
     public init(
       callingTool: LSTool,
       toolUseId: String,
@@ -69,6 +69,8 @@ public final class LSTool: NonStreamableTool {
 
     public let context: ToolExecutionContext
 
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -94,19 +96,9 @@ public final class LSTool: NonStreamableTool {
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
     let directoryPath: URL
 
     @Dependency(\.server) private var server
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 

@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -54,37 +55,20 @@ public final class ClaudeCodeReadTool: ExternalTool {
 
     public let context: ToolExecutionContext
 
-    public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
-      // The execution is managed externally by Claude Code. Nothing to do here.
-    }
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: JSON.Value) throws {
-      guard case .string(let stringOutput) = output else {
-        return
-      }
+    public func receive(output: String) throws {
       // Parse the read file from the text output sent by Claude Code to the server.
       // The ouput is in the format (line number)→... and can contain extra XML like info.
 
-      let parsedOutput = stringOutput
+      let parsedOutput = output
         .split(separator: "\n")
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
       updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
     let filePath: URL
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 

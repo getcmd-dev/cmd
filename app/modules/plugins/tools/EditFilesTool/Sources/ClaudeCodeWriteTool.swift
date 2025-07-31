@@ -51,30 +51,13 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
     public let context: ToolExecutionContext
 
-    public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
-      // The execution is managed externally by Claude Code. Nothing to do here.
-    }
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: JSON.Value) throws {
-      guard case .string = output else {
-        return
-      }
+    public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = Output(result: JSON.object(["status": .string("Write completed successfully")]))
       updateStatus.complete(with: .success(placeholderOutput))
     }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -141,11 +124,8 @@ extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
         baseLineContent: nil),
     ])
 
-    // Create a placeholder status stream for the view
-    let (placeholderStream, _) = EditFilesTool.Use.Status.makeStream(initial: .pendingApproval)
-
     let viewModel = ToolUseViewModel(
-      status: placeholderStream,
+      status: status,
       input: editFilesInput,
       isInputComplete: true,
       updateToolStatus: { _ in },

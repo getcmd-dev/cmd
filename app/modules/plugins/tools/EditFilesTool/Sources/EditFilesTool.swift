@@ -8,6 +8,7 @@ import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -20,7 +21,7 @@ public final class EditFilesTool: Tool {
   }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
+  public final class Use: UpdatableToolUse, @unchecked Sendable {
     public init(
       callingTool: EditFilesTool,
       toolUseId: String,
@@ -41,17 +42,7 @@ public final class EditFilesTool: Tool {
       status = stream
       self.updateStatus = updateStatus
     }
-    
-    public struct WriteInput: Codable, Sendable {
-      public let file_path: String
-      public let content: String
-      
-      public init(file_path: String, content: String) {
-        self.file_path = file_path
-        self.content = content
-      }
-    }
-    
+
     public convenience init(
       callingTool: EditFilesTool,
       toolUseId: String,
@@ -65,18 +56,26 @@ public final class EditFilesTool: Tool {
         path: writeInput.file_path,
         isNewFile: true,
         changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-        baseLineContent: nil
-      )
+        baseLineContent: nil)
       let input = Input(files: [fileChange])
-      
+
       self.init(
         callingTool: callingTool,
         toolUseId: toolUseId,
         input: input,
         isInputComplete: isInputComplete,
         context: context,
-        initialStatus: initialStatus
-      )
+        initialStatus: initialStatus)
+    }
+
+    public struct WriteInput: Codable, Sendable {
+      public let file_path: String
+      public let content: String
+
+      public init(file_path: String, content: String) {
+        self.file_path = file_path
+        self.content = content
+      }
     }
 
     public struct Input: Codable, Sendable {
@@ -143,6 +142,8 @@ public final class EditFilesTool: Tool {
 
     public let context: ToolExecutionContext
 
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public var input: Input { _input.value }
 
     public var isInputComplete: Bool { _isInputComplete.value }
@@ -157,15 +158,14 @@ public final class EditFilesTool: Tool {
         self?._viewModel?.isInputComplete = isLast
       }
     }
-    
+
     public func receiveWriteInput(inputUpdate data: Data, isLast: Bool) throws {
       let writeInput = try JSONDecoder().decode(WriteInput.self, from: data)
       let fileChange = Input.FileChange(
         path: writeInput.file_path.resolvePath(from: context.projectRoot).path(),
         isNewFile: true,
         changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-        baseLineContent: nil
-      )
+        baseLineContent: nil)
       let input = Input(files: [fileChange])
       _input.set(to: input)
       _isInputComplete.set(to: isLast)
@@ -194,14 +194,6 @@ public final class EditFilesTool: Tool {
           viewModel.acknowledgeSuggestionReceived()
         }
       }
-    }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let _isInputComplete: Atomic<Bool>
@@ -234,8 +226,6 @@ public final class EditFilesTool: Tool {
     }
 
     @MainActor private var _viewModel: ToolUseViewModel?
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -282,7 +272,7 @@ public final class EditFilesTool: Tool {
         "required": ["files"]
       }
       """.utf8Data)
-      
+
   public let writeInputSchema: JSON =
     try! JSONDecoder().decode(JSON.self, from: """
       {
@@ -311,7 +301,7 @@ public final class EditFilesTool: Tool {
       "suggest_files_changes"
     }
   }
-  
+
   public var writeToolName: String {
     "Write"
   }
@@ -386,4 +376,12 @@ public final class EditFilesTool: Tool {
 
   private let shouldAutoApply: Bool
 
+}
+
+// MARK: - EditFilesTool.Use + DisplayableToolUse
+
+extension EditFilesTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: viewModel))
+  }
 }

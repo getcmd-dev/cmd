@@ -11,14 +11,6 @@ import SwiftUI
 import ToolFoundation
 import XcodeControllerServiceInterface
 
-// MARK: - EditFilesTool.Use + DisplayableToolUse
-
-extension EditFilesTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: viewModel))
-  }
-}
-
 // MARK: - ToolUseView
 
 struct ToolUseView: View {

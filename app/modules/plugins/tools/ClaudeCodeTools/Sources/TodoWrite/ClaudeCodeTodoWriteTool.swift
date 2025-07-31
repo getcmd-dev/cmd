@@ -59,33 +59,15 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
 
     public let context: ToolExecutionContext
 
-    public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
-      // The execution is managed externally by Claude Code. Nothing to do here.
-    }
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: JSON.Value) throws {
-      guard case .string(let stringOutput) = output else {
-        return
-      }
-
+    public func receive(output: String) throws {
       // Parse the todo write output from Claude Code
-      let success = stringOutput.contains("successfully")
-      let message = success ? "Todo list updated successfully" : stringOutput
+      let success = output.contains("successfully")
+      let message = success ? "Todo list updated successfully" : output
 
       updateStatus.complete(with: .success(.init(success: success, message: message)))
     }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 

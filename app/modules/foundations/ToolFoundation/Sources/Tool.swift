@@ -101,25 +101,6 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
-extension ToolUseExecutionStatus {
-  var asOutput: Output? {
-    get throws {
-      if case .completed(let result) = self {
-        return try result.get()
-      }
-      if case .approvalRejected(let reason) = self {
-        if let reason, !reason.isEmpty {
-          throw AppError(
-            message: "User denied permission to execute this tool with the following explanation: `\(reason)`. Follow the user's direction or ask for clarification.")
-        }
-        throw AppError(
-          message: "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification.")
-      }
-      return nil
-    }
-  }
-}
-
 extension ToolUse {
 
   public init(from decoder: Decoder) throws {
@@ -185,23 +166,6 @@ private enum ToolUseCodingKeys: String, CodingKey {
   case context
   case status
   case isInputComplete
-}
-
-// MARK: - ExternalTool
-
-public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
-
-public protocol ExternalToolUse: NonStreamableToolUse where SomeTool: ExternalTool {
-  /// Set the output
-  func receive(output: JSON.Value) throws
-}
-
-extension Tool {
-
-  /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
-  public var isExternalTool: Bool {
-    self as? (any ExternalTool) != nil
-  }
 }
 
 // MARK: - StreamableTool
@@ -275,6 +239,81 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
   case running
   case completed(Result<Output, Error>)
 
+}
+
+extension ToolUseExecutionStatus {
+  var asOutput: Output? {
+    get throws {
+      if case .completed(let result) = self {
+        return try result.get()
+      }
+      if case .approvalRejected(let reason) = self {
+        if let reason, !reason.isEmpty {
+          throw AppError(
+            message: "User denied permission to execute this tool with the following explanation: `\(reason)`. Follow the user's direction or ask for clarification.")
+        }
+        throw AppError(
+          message: "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification.")
+      }
+      return nil
+    }
+  }
+}
+
+// MARK: UpdatableToolUse
+
+/// A tool use that can update its status in a standardized way.
+///
+/// Conforming to this protocol helps reduce redundant boilerplate that is provided by the extension.
+public protocol UpdatableToolUse: ToolUse {
+  var updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation { get }
+}
+
+extension UpdatableToolUse {
+  public func reject(reason: String?) {
+    updateStatus.yield(.approvalRejected(reason: reason))
+  }
+
+  public func cancel() {
+    updateStatus.complete(with: .failure(CancellationError()))
+  }
+}
+
+// MARK: - ExternalTool
+
+public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
+
+public protocol ExternalToolUse: NonStreamableToolUse, UpdatableToolUse where SomeTool: ExternalTool {
+  /// Set the output
+  func receive(output: String) throws
+}
+
+extension ExternalToolUse {
+
+  public func startExecuting() {
+    updateStatus.yield(.notStarted)
+    updateStatus.yield(.running)
+    // The execution is managed externally by Claude Code. Nothing to do here.
+  }
+
+  public func receive(output: JSON.Value, isSuccess: Bool) throws {
+    guard case .string(let stringOutput) = output else {
+      return
+    }
+    if isSuccess {
+      try receive(output: stringOutput)
+    } else {
+      updateStatus.complete(with: .failure(AppError(stringOutput)))
+    }
+  }
+}
+
+extension Tool {
+
+  /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
+  public var isExternalTool: Bool {
+    self as? (any ExternalTool) != nil
+  }
 }
 
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {

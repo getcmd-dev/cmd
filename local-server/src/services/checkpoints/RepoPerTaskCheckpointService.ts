@@ -9,7 +9,7 @@ export class RepoPerTaskCheckpointService extends ShadowCheckpointService {
 	public static create({ taskId, workspaceDir, shadowDir, log = console.log }: CheckpointServiceOptions) {
 		return new RepoPerTaskCheckpointService(
 			taskId,
-			path.join(shadowDir, "tasks", taskId, "checkpoints"),
+			path.join(shadowDir, "tasks", taskId.replace(/[/\\]/g, "_"), "checkpoints"),
 			workspaceDir,
 			log,
 		)

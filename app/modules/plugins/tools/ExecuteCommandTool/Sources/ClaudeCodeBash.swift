@@ -51,29 +51,12 @@ public final class ClaudeCodeBash: ExternalTool {
 
     public let context: ToolExecutionContext
 
-    public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
-      // The execution is managed externally by Claude Code. Nothing to do here.
-    }
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: JSON.Value) throws {
-      guard case .string(let stringOutput) = output else {
-        return
-      }
-      let parsedOutput = Output(output: stringOutput, exitCode: 0)
+    public func receive(output: String) throws {
+      let parsedOutput = Output(output: output, exitCode: 0)
       updateStatus.complete(with: .success(parsedOutput))
     }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 

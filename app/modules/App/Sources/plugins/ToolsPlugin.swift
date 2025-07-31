@@ -27,10 +27,10 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeLSTool())
     plugIn(tool: ClaudeCodeGlobTool())
     plugIn(tool: ClaudeCodeBash())
-  plugIn(tool: ClaudeCodeEditTool())
-  plugIn(tool: ClaudeCodeMultiEditTool())
-      plugIn(tool: ClaudeCodeTodoWriteTool())
-      plugIn(tool: ClaudeCodeWriteTool())
-      
+    plugIn(tool: ClaudeCodeEditTool())
+    plugIn(tool: ClaudeCodeMultiEditTool())
+    plugIn(tool: ClaudeCodeTodoWriteTool())
+    plugIn(tool: ClaudeCodeWriteTool())
+    plugIn(tool: ClaudeCodeGrepTool())
   }
 }

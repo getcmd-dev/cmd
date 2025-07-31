@@ -11,6 +11,8 @@ import Testing
 import ToolFoundation
 @testable import LLMService
 
+// MARK: - RequestStreamingHelperReasoningTests
+
 @Suite("RequestStreamingHelper Reasoning Tests")
 struct RequestStreamingHelperReasoningTests {
 
@@ -267,6 +269,8 @@ struct RequestStreamingHelperReasoningTests {
   }
 }
 
+// MARK: - RequestStreamingHelperToolFailureTests
+
 @Suite("RequestStreamingHelper Tool Failure Tests")
 struct RequestStreamingHelperToolFailureTests {
 
@@ -278,9 +282,8 @@ struct RequestStreamingHelperToolFailureTests {
       toolUseId: "test-tool-123",
       input: EmptyObject(),
       context: TestToolExecutionContext(projectRoot: URL(filePath: "/test")),
-      initialStatus: nil
-    )
-    
+      initialStatus: nil)
+
     let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 
@@ -294,13 +297,11 @@ struct RequestStreamingHelperToolFailureTests {
 
     // Create a tool failure message
     let failureMessage = Schema.ToolResultFailureMessage(
-      failure: JSON.Value.object(["message": JSON.Value.string("Tool execution failed with error")])
-    )
+      failure: JSON.Value.object(["message": JSON.Value.string("Tool execution failed with error")]))
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "test-tool-123",
       toolName: "mock_tool",
-      result: .toolResultFailureMessage(failureMessage)
-    )
+      result: .toolResultFailureMessage(failureMessage))
     let chunk = Schema.StreamedResponseChunk.toolResult(toolResult)
     let data = try JSONEncoder().encode(chunk)
 
@@ -334,9 +335,8 @@ struct RequestStreamingHelperToolFailureTests {
       toolUseId: "test-tool-456",
       input: EmptyObject(),
       context: TestToolExecutionContext(projectRoot: URL(filePath: "/test")),
-      initialStatus: nil
-    )
-    
+      initialStatus: nil)
+
     let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 
@@ -350,13 +350,11 @@ struct RequestStreamingHelperToolFailureTests {
 
     // Create a tool failure message with string error
     let failureMessage = Schema.ToolResultFailureMessage(
-      failure: JSON.Value.string("Simple error message")
-    )
+      failure: JSON.Value.string("Simple error message"))
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "test-tool-456",
       toolName: "mock_tool",
-      result: .toolResultFailureMessage(failureMessage)
-    )
+      result: .toolResultFailureMessage(failureMessage))
     let chunk = Schema.StreamedResponseChunk.toolResult(toolResult)
     let data = try JSONEncoder().encode(chunk)
 
@@ -366,8 +364,10 @@ struct RequestStreamingHelperToolFailureTests {
     try await helper.processStream()
 
     let finalMessage = result.value
-    guard case .tool(let toolMessage) = finalMessage.content.first,
-          let failedToolUse = toolMessage.toolUse as? FailedToolUse else {
+    guard
+      case .tool(let toolMessage) = finalMessage.content.first,
+      let failedToolUse = toolMessage.toolUse as? FailedToolUse
+    else {
       Issue.record("Expected FailedToolUse")
       return
     }
@@ -377,57 +377,68 @@ struct RequestStreamingHelperToolFailureTests {
   }
 }
 
-// MARK: - Mock types for testing
+// MARK: - MockExternalTool
 
 struct MockExternalTool: ExternalTool {
   let name = "mock_tool"
   let description = "A mock tool for testing"
-  
-  func use(toolUseId: String, input: EmptyObject, context: ToolFoundation.ToolExecutionContext, initialStatus: Status.Element?) -> MockExternalToolUse {
-    return MockExternalToolUse(toolUseId: toolUseId, input: input, context: context)
+
+  func use(
+    toolUseId: String,
+    input: EmptyObject,
+    context: ToolFoundation.ToolExecutionContext,
+    initialStatus _: Status.Element?)
+    -> MockExternalToolUse
+  {
+    MockExternalToolUse(toolUseId: toolUseId, input: input, context: context)
   }
-  
+
   var schema: ToolSchema {
-    return ToolSchema(
+    ToolSchema(
       name: name,
       description: description,
-      input_schema: .object(.init(properties: [:], required: []))
-    )
+      input_schema: .object(.init(properties: [:], required: [])))
   }
 }
+
+// MARK: - MockExternalToolUse
 
 struct MockExternalToolUse: ExternalToolUse {
   let toolUseId: String
   let input: EmptyObject
   let context: ToolFoundation.ToolExecutionContext
-  let callingTool: MockExternalTool = MockExternalTool()
+  let callingTool = MockExternalTool()
   let isReadonly = false
-  
-  private let _status = MutableCurrentValueStream<Status.Element>(.pending)
+
   var status: CurrentValueStream<Status.Element> { _status }
-  
-  private let _output = MutableCurrentValueStream<EmptyObject>(EmptyObject())
   var output: CurrentValueStream<EmptyObject> { _output }
-  
-  func receive(output: JSON.Value) throws {
+
+  func receive(output _: String) throws {
     // Mock implementation
   }
-  
+
   func startExecuting() {
     _status.update(with: .inProgress)
   }
-  
+
   func cancel() {
     _status.update(with: .cancelled)
   }
+
+  private let _status = MutableCurrentValueStream<Status.Element>(.pending)
+
+  private let _output = MutableCurrentValueStream<EmptyObject>(EmptyObject())
+
 }
+
+// MARK: - TestToolExecutionContext
 
 struct TestToolExecutionContext: ToolFoundation.ToolExecutionContext {
   let project: any Project?
   let projectRoot: URL
-  
+
   init(projectRoot: URL) {
-    self.project = nil
+    project = nil
     self.projectRoot = projectRoot
   }
 }

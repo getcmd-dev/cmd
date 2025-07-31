@@ -19,7 +19,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
 
     public init(
       callingTool: ExecuteCommandTool,
@@ -73,6 +73,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     public let context: ToolExecutionContext
 
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -108,14 +110,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
     let stdoutStream: Future<BroadcastedStream<Data>, Never>
     let stderrStream: Future<BroadcastedStream<Data>, Never>
 
@@ -131,8 +125,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
     private var runningProcess: (any Execution)?
 
     @Dependency(\.shellService) private var shellService
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 

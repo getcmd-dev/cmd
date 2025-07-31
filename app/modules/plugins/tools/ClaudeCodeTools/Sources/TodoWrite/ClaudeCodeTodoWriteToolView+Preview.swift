@@ -14,60 +14,51 @@ import SwiftUI
             content: "Implement user authentication system",
             status: "in_progress",
             priority: "high",
-            id: "1"
-          ),
+            id: "1"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Add API endpoints for data fetching",
             status: "pending",
             priority: "medium",
-            id: "2"
-          ),
+            id: "2"),
         ])))
 
       TodoWriteToolUseView(toolUse: TodoWriteToolUseViewModel(
         status: .Just(.completed(.success(.init(
           success: true,
-          message: "Todo list updated successfully"
-        )))),
+          message: "Todo list updated successfully")))),
         input: .init(todos: [
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Implement user authentication system",
             status: "completed",
             priority: "high",
-            id: "1"
-          ),
+            id: "1"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Add API endpoints for data fetching",
             status: "in_progress",
             priority: "high",
-            id: "2"
-          ),
+            id: "2"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Write unit tests for core functionality",
             status: "pending",
             priority: "medium",
-            id: "3"
-          ),
+            id: "3"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Update documentation with new features",
             status: "pending",
             priority: "low",
-            id: "4"
-          ),
+            id: "4"),
         ])))
 
       TodoWriteToolUseView(toolUse: TodoWriteToolUseViewModel(
         status: .Just(.completed(.success(.init(
           success: true,
-          message: "Todo list updated successfully with 15 items"
-        )))),
+          message: "Todo list updated successfully with 15 items")))),
         input: .init(todos: Array(1...15).map { i in
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Task \(i): Lorem ipsum dolor sit amet, consectetur adipiscing elit",
             status: i <= 5 ? "completed" : i <= 8 ? "in_progress" : "pending",
             priority: i <= 5 ? "high" : i <= 10 ? "medium" : "low",
-            id: "\(i)"
-          )
+            id: "\(i)")
         })))
     }
   }

@@ -17,14 +17,12 @@ struct ClaudeCodeTodoWriteToolTests {
         content: "Implement authentication",
         status: "pending",
         priority: "high",
-        id: "1"
-      ),
+        id: "1"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Add unit tests",
-        status: "in_progress", 
+        status: "in_progress",
         priority: "medium",
-        id: "2"
-      ),
+        id: "2"),
     ]
 
     let toolUse = ClaudeCodeTodoWriteTool().use(
@@ -51,8 +49,7 @@ struct ClaudeCodeTodoWriteToolTests {
         content: "Invalid task",
         status: "invalid_status",
         priority: "high",
-        id: "1"
-      ),
+        id: "1"),
     ]
 
     let toolUse = ClaudeCodeTodoWriteTool().use(
@@ -99,8 +96,7 @@ struct ClaudeCodeTodoWriteToolTests {
         content: "Task \(i): Long description of what needs to be done",
         status: i <= 10 ? "completed" : i <= 20 ? "in_progress" : "pending",
         priority: i <= 15 ? "high" : i <= 35 ? "medium" : "low",
-        id: "\(i)"
-      )
+        id: "\(i)")
     }
 
     let toolUse = ClaudeCodeTodoWriteTool().use(
@@ -125,22 +121,19 @@ struct ClaudeCodeTodoWriteToolTests {
     let todoItems = [
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Pending task",
-        status: "pending", 
+        status: "pending",
         priority: "high",
-        id: "1"
-      ),
+        id: "1"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "In progress task",
         status: "in_progress",
-        priority: "medium", 
-        id: "2"
-      ),
+        priority: "medium",
+        id: "2"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Completed task",
         status: "completed",
         priority: "low",
-        id: "3"
-      ),
+        id: "3"),
     ]
 
     let toolUse = ClaudeCodeTodoWriteTool().use(
@@ -150,7 +143,7 @@ struct ClaudeCodeTodoWriteToolTests {
 
     #expect(toolUse.input.todos.count == 3)
     #expect(toolUse.input.todos[0].status == "pending")
-    #expect(toolUse.input.todos[1].status == "in_progress") 
+    #expect(toolUse.input.todos[1].status == "in_progress")
     #expect(toolUse.input.todos[2].status == "completed")
     #expect(toolUse.input.todos[0].priority == "high")
     #expect(toolUse.input.todos[1].priority == "medium")
@@ -171,7 +164,7 @@ struct ClaudeCodeTodoWriteToolTests {
   @Test
   func isAvailableInAllChatModes() {
     let tool = ClaudeCodeTodoWriteTool()
-    
+
     #expect(tool.isAvailable(in: .standard) == true)
     #expect(tool.isAvailable(in: .project) == true)
   }

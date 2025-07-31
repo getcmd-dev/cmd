@@ -47,7 +47,6 @@ struct TodoWriteToolUseView: View {
 
           if isExpanded {
             VStack(alignment: .leading, spacing: 2) {
-
               ForEach(toolUse.input.todos.prefix(10), id: \.id) { todo in
                 HStack(spacing: 4) {
                   Rectangle()
@@ -120,12 +119,15 @@ struct TodoWriteToolUseView: View {
       case "completed":
         Image(systemName: "checkmark.circle.fill")
           .foregroundColor(.green)
+
       case "in_progress":
         Image(systemName: "play.circle.fill")
           .foregroundColor(.orange)
+
       case "pending":
         Image(systemName: "circle")
           .foregroundColor(.gray)
+
       default:
         Image(systemName: "circle")
           .foregroundColor(.gray)
@@ -142,13 +144,13 @@ struct TodoWriteToolUseView: View {
   private func priorityColor(for priority: String) -> Color {
     switch priority {
     case "high":
-      return .red
+      .red
     case "medium":
-      return .orange
+      .orange
     case "low":
-      return .blue
+      .blue
     default:
-      return .gray
+      .gray
     }
   }
 }

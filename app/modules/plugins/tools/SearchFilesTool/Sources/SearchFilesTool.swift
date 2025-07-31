@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ServerServiceInterface
+import SwiftUI
 import ToolFoundation
 
 // MARK: - SearchFilesTool
@@ -17,7 +18,7 @@ public final class SearchFilesTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
 
     public init(
       callingTool: SearchFilesTool,
@@ -59,6 +60,8 @@ public final class SearchFilesTool: NonStreamableTool {
 
     public let context: ToolExecutionContext
 
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -92,17 +95,7 @@ public final class SearchFilesTool: NonStreamableTool {
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
-    }
-
     @Dependency(\.server) private var server
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -178,5 +171,14 @@ extension SearchFilesTool.Use.Output {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(outputForLLm)
+  }
+}
+
+// MARK: - SearchFilesTool.Use + DisplayableToolUse
+
+extension SearchFilesTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      status: status, input: input)))
   }
 }

@@ -352,69 +352,23 @@ final class RequestStreamingHelper: Sendable {
   }
 
   private func handle(toolResult: Schema.ToolResultMessage) async {
+    guard
+      let toolUse = result.content
+        .compactMap(\.asToolUseRequest)
+        .first(where: { toolUseRequest in
+          toolUseRequest.id == toolResult.toolUseId
+        })?.toolUse as? (any ExternalToolUse)
+    else {
+      defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
+      return
+    }
+
     switch toolResult.result {
     case .toolResultSuccessMessage(let toolResultSuccess):
-      guard
-        let toolUse = result.content
-          .compactMap(\.asToolUseRequest)
-          .first(where: { toolUseRequest in
-            toolUseRequest.id == toolResult.toolUseId
-          })?.toolUse as? (any ExternalToolUse)
-      else {
-        defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
-        return
-      }
-      try? toolUse.receive(output: toolResultSuccess.success)
-      
+      try? toolUse.receive(output: toolResultSuccess.success, isSuccess: true)
+
     case .toolResultFailureMessage(let toolResultFailure):
-      // Handle external tool failure by replacing with FailedToolUse
-      var content = result.content
-      
-      // Find and replace the failed tool use
-      if let index = content.firstIndex(where: { contentItem in
-        contentItem.asToolUseRequest?.id == toolResult.toolUseId
-      }) {
-        let errorDescription = extractErrorDescription(from: toolResultFailure.failure)
-        
-        // Remove the original tool use and replace with failed tool use
-        content.remove(at: index)
-        
-        if let toolExecutionContext = context?.toolExecutionContext {
-          let failedToolUse = FailedToolUse(
-            toolUseId: toolResult.toolUseId,
-            toolName: toolResult.toolName,
-            errorDescription: errorDescription,
-            context: toolExecutionContext
-          )
-          content.insert(.tool(ToolUseMessage(toolUse: failedToolUse)), at: index)
-        } else {
-          // Fallback if no context is available - still create the failed tool use
-          // Use a default context if needed
-          defaultLogger.log("No tool execution context available for failed tool \(toolResult.toolUseId)")
-        }
-        
-        result.update(with: AssistantMessage(content: content))
-      } else {
-        defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId) to mark as failed")
-      }
-    }
-  }
-  
-  private func extractErrorDescription(from failure: JSON.Value) -> String {
-    // Extract error message from JSON failure object
-    switch failure {
-    case .string(let message):
-      return message
-    case .object(let dict):
-      if let message = dict["message"]?.asString {
-        return message
-      } else if let error = dict["error"]?.asString {
-        return error
-      } else {
-        return "Tool execution failed: \(failure)"
-      }
-    default:
-      return "Tool execution failed: \(failure)"
+      try? toolUse.receive(output: toolResultFailure.failure, isSuccess: false)
     }
   }
 

@@ -388,7 +388,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       // Create checkpoint and add it to events before the tool call is executed.
       let checkpoint = try await checkpointService.createCheckpoint(
         projectRoot: projectInfo.dirPath,
-        taskId: "main",
+        taskId: id.uuidString,
         message: "checkpoint")
       if !events.compactMap(\.checkpoint).contains(where: { $0.id == checkpoint.id }) {
         // Execute on the main actor to update the UI
