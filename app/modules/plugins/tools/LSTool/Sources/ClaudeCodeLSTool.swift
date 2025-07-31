@@ -112,7 +112,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
         let afterDashIndex = line.index(startIndex, offsetBy: 2)
 
         let newPathComponent = String(line[afterDashIndex...]).trimmingCharacters(in: .whitespaces)
-        while pathComponents.last?.0 ?? 0 >= leadingSpaces {
+        while let lastPathComponent = pathComponents.last, lastPathComponent.0 >= leadingSpaces {
           pathComponents.removeLast()
         }
         pathComponents.append((leadingSpaces, newPathComponent))

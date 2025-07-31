@@ -41,6 +41,43 @@ public final class EditFilesTool: Tool {
       status = stream
       self.updateStatus = updateStatus
     }
+    
+    public struct WriteInput: Codable, Sendable {
+      public let file_path: String
+      public let content: String
+      
+      public init(file_path: String, content: String) {
+        self.file_path = file_path
+        self.content = content
+      }
+    }
+    
+    public convenience init(
+      callingTool: EditFilesTool,
+      toolUseId: String,
+      writeInput: WriteInput,
+      isInputComplete: Bool,
+      context: ToolFoundation.ToolExecutionContext,
+      initialStatus: Status.Element?)
+    {
+      // Convert Write input to EditFilesTool input format
+      let fileChange = Input.FileChange(
+        path: writeInput.file_path,
+        isNewFile: true,
+        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
+        baseLineContent: nil
+      )
+      let input = Input(files: [fileChange])
+      
+      self.init(
+        callingTool: callingTool,
+        toolUseId: toolUseId,
+        input: input,
+        isInputComplete: isInputComplete,
+        context: context,
+        initialStatus: initialStatus
+      )
+    }
 
     public struct Input: Codable, Sendable {
       init(files: [FileChange]) {
@@ -112,6 +149,24 @@ public final class EditFilesTool: Tool {
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
       let input = try JSONDecoder().decode(Input.self, from: data).withPathsResolved(from: context.projectRoot)
+      _input.set(to: input)
+      _isInputComplete.set(to: isLast)
+
+      Task { @MainActor [weak self] in
+        self?._viewModel?.input = input
+        self?._viewModel?.isInputComplete = isLast
+      }
+    }
+    
+    public func receiveWriteInput(inputUpdate data: Data, isLast: Bool) throws {
+      let writeInput = try JSONDecoder().decode(WriteInput.self, from: data)
+      let fileChange = Input.FileChange(
+        path: writeInput.file_path.resolvePath(from: context.projectRoot).path(),
+        isNewFile: true,
+        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
+        baseLineContent: nil
+      )
+      let input = Input(files: [fileChange])
       _input.set(to: input)
       _isInputComplete.set(to: isLast)
 
@@ -227,6 +282,25 @@ public final class EditFilesTool: Tool {
         "required": ["files"]
       }
       """.utf8Data)
+      
+  public let writeInputSchema: JSON =
+    try! JSONDecoder().decode(JSON.self, from: """
+      {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "The absolute path to the file to write (must be absolute, not relative)"
+          },
+          "content": {
+            "type": "string",
+            "description": "The content to write to the file"
+          }
+        },
+        "required": ["file_path", "content"],
+        "additionalProperties": false
+      }
+      """.utf8Data)
 
   public let canInputBeStreamed = true
 
@@ -236,6 +310,10 @@ public final class EditFilesTool: Tool {
     } else {
       "suggest_files_changes"
     }
+  }
+  
+  public var writeToolName: String {
+    "Write"
   }
 
   public var displayName: String {

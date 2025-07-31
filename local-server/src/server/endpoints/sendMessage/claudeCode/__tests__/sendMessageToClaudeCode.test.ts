@@ -434,5 +434,65 @@ describe("sendMessageToClaudeCode", () => {
 			simulateClaudeResponse("Restore test")
 			await done
 		})
+
+		it("should handle Claude AI usage limit reached response", async () => {
+			const done = sendMessageToClaudeCode(
+				{
+					messages: [createTestMessage("Test usage limit")],
+					localExecutable: createTestLocalExecutable(),
+					port: 3000,
+				},
+				res as unknown as Response,
+			)
+
+			// Simulate Claude usage limit response
+			spawned?.stdout.write(
+				JSON.stringify({
+					type: "assistant",
+					message: {
+						content: [
+							{
+								type: "text",
+								text: "Claude AI usage limit reached|1753938000",
+							},
+						],
+					},
+					parent_tool_use_id: null,
+					session_id: "41184823-1c4b-4117-a10e-6bb9ba71c60c",
+				}),
+			)
+
+			// Simulate result message
+			spawned?.stdout.write(
+				JSON.stringify({
+					type: "result",
+					subtype: "success",
+					is_error: true,
+					result: "Claude AI usage limit reached|1753938000",
+					session_id: "41184823-1c4b-4117-a10e-6bb9ba71c60c",
+				}),
+			)
+
+			spawned?.stdout.end()
+			spawned?.emit("close", 0)
+
+			await done
+
+			expect(res.writtenData).toEqual([
+				JSON.stringify({
+					type: "internal_content",
+					value: {
+						type: "session_id",
+						sessionId: "41184823-1c4b-4117-a10e-6bb9ba71c60c",
+					},
+					idx: 0,
+				} satisfies StreamedResponseChunk),
+				JSON.stringify({
+					type: "error",
+					message: "Claude AI usage limit reached. Your limit will reset at 10:00 PM PDT.",
+					idx: 1,
+				} satisfies StreamedResponseChunk),
+			])
+		})
 	})
 })

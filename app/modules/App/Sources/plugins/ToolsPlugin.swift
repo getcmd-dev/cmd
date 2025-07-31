@@ -29,6 +29,8 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeBash())
   plugIn(tool: ClaudeCodeEditTool())
   plugIn(tool: ClaudeCodeMultiEditTool())
+      plugIn(tool: ClaudeCodeTodoWriteTool())
+      plugIn(tool: ClaudeCodeWriteTool())
       
   }
 }

@@ -1,9 +1,14 @@
 import { logError, logInfo } from "@/logger"
-import { LocalExecutable, Message } from "@/server/schemas/sendMessageSchema"
+import {
+	LocalExecutable,
+	Message,
+	ToolResultFailureMessage,
+	ToolResultSuccessMessage,
+} from "@/server/schemas/sendMessageSchema"
 import { CoreMessage, CoreUserMessage } from "ai"
 import { Response } from "express"
 import { spawn } from "child_process"
-import { SDKAssistantMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
+import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { writeFileSync } from "fs"
@@ -172,6 +177,11 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 			for (const contentPart of event.message.content) {
 				switch (contentPart.type) {
 					case "text": {
+						// Special cases
+						if (contentPart.text.startsWith("Claude AI usage limit reached|")) {
+							// ignore, this will also show up as an error
+							break
+						}
 						yield {
 							type: "text_delta",
 							text: contentPart.text + "\n",
@@ -210,14 +220,20 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 				}
 				switch (contentPart.type) {
 					case "tool_result": {
+						const result: ToolResultSuccessMessage | ToolResultFailureMessage = contentPart.is_error
+							? {
+									type: "tool_result_failure",
+									failure: contentPart.content,
+								}
+							: {
+									type: "tool_result_success",
+									success: contentPart.content,
+								}
 						yield {
 							type: "tool_result",
 							toolUseId: contentPart.tool_use_id,
 							toolName: toolNames[contentPart.tool_use_id] || "claude_code_tool",
-							result: {
-								type: "tool_result_success",
-								success: contentPart.content,
-							},
+							result,
 						}
 						break
 					}
@@ -225,6 +241,47 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						// Ignore other content types for now (server_tool_use, web_search_tool_result, etc.)
 						logInfo(`Ignoring unsupported content type: ${contentPart.type}`)
 						break
+					}
+				}
+			}
+		} else if (isSDKResultMessage(event)) {
+			if (event.is_error) {
+				if (event.subtype === "success") {
+					// Special cases
+					if (event.result.startsWith("Claude AI usage limit reached|")) {
+						try {
+							const resetTS = event.result.split("|")[1]
+							const resetDate = new Date(Number(resetTS) * 1000)
+							yield {
+								type: "error",
+								// Format like `10pm (America/Los_Angeles).`
+								message: `Claude AI usage limit reached. Your limit will reset at ${resetDate.toLocaleTimeString(
+									Intl.DateTimeFormat().resolvedOptions().locale,
+									{
+										hour: "numeric",
+										minute: "2-digit",
+										timeZoneName: "short",
+									},
+								)}.`,
+							}
+							break
+						} catch (e) {
+							console.error(
+								"Error parsing Claude AI usage limit error:",
+								e,
+								Intl.DateTimeFormat().resolvedOptions().timeZone,
+							)
+							// Do nothing, fallback to generic error
+						}
+					}
+					yield {
+						type: "error",
+						message: event.result,
+					}
+				} else {
+					yield {
+						type: "error",
+						message: "Claude Code encountered an error.",
 					}
 				}
 			}
@@ -239,6 +296,9 @@ const isSDKAssistantMessage = (message: SDKMessage): message is SDKAssistantMess
 }
 const isSDKUserMessage = (message: SDKMessage): message is SDKUserMessage => {
 	return message.type === "user"
+}
+const isSDKResultMessage = (message: SDKMessage): message is SDKResultMessage => {
+	return message.type === "result"
 }
 
 type SessionIdInfo = {
