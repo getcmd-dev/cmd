@@ -21,15 +21,15 @@ struct ChatMessageView: View {
   enum Constants {
     static let cornerRadius: CGFloat = 5
     static let userTextHorizontalPadding: CGFloat = 8
-    static let textVerticalPadding: CGFloat = 8
-    static let toolPadding: CGFloat = 8
+    static let textVerticalPadding: CGFloat = 6
+    static let toolPadding: CGFloat = 6
     static let checkpointPadding: CGFloat = 8
   }
 
   let message: ChatMessageContentWithRole
 
   var body: some View {
-    VStack(alignment: .leading) {
+    VStack(alignment: .leading, spacing: 0) {
       GeometryReader { geometry in
         ReshareGeometry(geometry, geometryReader: $size) {
           Color.clear

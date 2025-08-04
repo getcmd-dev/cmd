@@ -119,7 +119,7 @@ struct ToolUseDetailView: View {
       if isExpanded {
         HStack {
           Spacer().frame(width: 15)
-          VStack {
+          LazyVStack {
             ForEach(files.files) { file in
               HStack(spacing: 3) {
                 if file.attr?.hasPrefix("d") == true {

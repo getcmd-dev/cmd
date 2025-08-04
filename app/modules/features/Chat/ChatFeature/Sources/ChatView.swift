@@ -71,6 +71,7 @@ public struct ChatView: View {
 
   enum Constants {
     static let iconSize: CGFloat = 22
+    static let chatPadding: CGFloat = 16
   }
 
   var projectName: String? {

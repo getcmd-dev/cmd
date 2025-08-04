@@ -32,5 +32,6 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeTodoWriteTool())
     plugIn(tool: ClaudeCodeWriteTool())
     plugIn(tool: ClaudeCodeGrepTool())
+    plugIn(tool: ClaudeCodeWebFetchTool())
   }
 }
