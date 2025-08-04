@@ -199,7 +199,9 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "ReadFileTool",
   dependencies: [
+    "AppFoundation",
     "CodePreview",
+    "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
     "HighlighterServiceInterface",
@@ -209,6 +211,7 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [
     "FoundationInterfaces",
+    "JSONFoundation",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -244,6 +247,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "JSONFoundation",
     "ServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
@@ -303,11 +307,9 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "ClaudeCodeTools",
   dependencies: [
-    "CodePreview",
+    "ConcurrencyFoundation",
     "DLS",
-    "HighlighterServiceInterface",
     "JSONFoundation",
-    "ServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
@@ -324,10 +326,12 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
+    "LoggingServiceInterface",
     "ServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
+    "JSONFoundation",
     "ServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
@@ -1003,6 +1007,7 @@ targets.append(contentsOf: Target.module(
     "LLMServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "SwiftTesting",
     "ThreadSafe",
     "ToolFoundation",

@@ -9,6 +9,16 @@ import ToolFoundation
 
 // MARK: - ToolUseView
 
+/// A SwiftUI view that displays the status and output of a tool execution.
+///
+/// This view presents a command execution with its current status, allowing users to:
+/// - See the command being executed
+/// - View its current status (not started, pending approval, rejected, running, or completed)
+/// - Expand/collapse to see stdout/stderr output
+/// - Stop a running command
+///
+/// The view adapts its appearance based on hover state and execution status,
+/// using different colors to indicate success or failure states.
 struct ToolUseView: View {
 
   @Bindable var toolUse: ToolUseViewModel
@@ -21,12 +31,8 @@ struct ToolUseView: View {
       content(statusDescription: "Waiting for approval: \(toolUse.command)")
     case .approvalRejected:
       content(statusDescription: "Rejected: \(toolUse.command)")
-    case .running:
+    case .running, .completed:
       content(statusDescription: toolUse.command)
-    case .completed(.success):
-      content(statusDescription: toolUse.command)
-    case .completed(.failure):
-      content(statusDescription: "Running \(toolUse.command) failed")
     }
   }
 
@@ -45,10 +51,36 @@ struct ToolUseView: View {
 
   @ViewBuilder
   private var stdoutView: some View {
-    if let std = toolUse.std, !std.isEmpty {
+    if let std {
       CodePreview(filePath: nil, content: std)
         .with(cornerRadius: 5, borderColor: colorScheme.textAreaBorderColor)
     }
+  }
+
+  private var statusColor: Color {
+    switch toolUse.status {
+    case .completed(.failure):
+      colorScheme.removedLineDiffText
+    case .completed(.success):
+      colorScheme.addedLineDiffText
+    default: .gray
+    }
+  }
+
+  private var errorDescription: String? {
+    switch toolUse.status {
+    case .completed(.failure(let error)):
+      error.localizedDescription
+    default:
+      nil
+    }
+  }
+
+  private var std: String? {
+    if toolUse.std?.isEmpty == false || errorDescription?.isEmpty == false {
+      return "\(toolUse.std ?? "")\(errorDescription ?? "")"
+    }
+    return nil
   }
 
   @ViewBuilder
@@ -78,8 +110,10 @@ struct ToolUseView: View {
           .lineLimit(nil)
           .fixedSize(horizontal: false, vertical: true)
           .padding(.leading, 5)
+
+        Spacer(minLength: 0)
+
         if case .running = toolUse.status {
-          Spacer(minLength: 0)
           IconButton(
             action: {
               await toolUse.kill()
@@ -89,6 +123,11 @@ struct ToolUseView: View {
             cornerRadius: 0,
             withCheckMark: false)
             .frame(width: 15, height: 15)
+        } else {
+          Circle()
+            .frame(width: 6, height: 6)
+            .foregroundColor(statusColor)
+            .frame(height: 14)
         }
       }
       .tappableTransparentBackground()

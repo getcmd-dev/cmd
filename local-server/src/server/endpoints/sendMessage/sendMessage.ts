@@ -63,6 +63,12 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			const tools = body.tools
 
 			if (body.provider.name == "claude_code") {
+				const threadId = body.threadId
+				if (!threadId) {
+					throw new UserFacingError({
+						message: "Thread ID is required for Claude Code provider.",
+					})
+				}
 				// Claude Code is treated as a special case.
 				const localExecutable = body.provider.settings.localExecutable
 				if (!localExecutable) {
@@ -70,7 +76,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 						message: "Local executable is required for Claude Code provider.",
 					})
 				}
-				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort() }, res)
+				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort(), threadId, router }, res)
 				return
 			}
 

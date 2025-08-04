@@ -9,6 +9,7 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "JSONFoundation",
     "ServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",

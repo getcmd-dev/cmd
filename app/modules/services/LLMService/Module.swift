@@ -26,6 +26,7 @@ Target.module(
     "LLMServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "SwiftTesting",
     "ThreadSafe",
     "ToolFoundation",

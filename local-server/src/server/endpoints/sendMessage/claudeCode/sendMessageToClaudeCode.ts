@@ -5,8 +5,8 @@ import {
 	ToolResultFailureMessage,
 	ToolResultSuccessMessage,
 } from "@/server/schemas/sendMessageSchema"
-import { CoreMessage, CoreUserMessage } from "ai"
-import { Response } from "express"
+import { CoreMessage, CoreUserMessage, tool } from "ai"
+import { Response, Router } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
@@ -14,20 +14,25 @@ import { AsyncStream } from "@/utils/asyncStream"
 import { writeFileSync } from "fs"
 import path from "path"
 import { StreamingJsonParser } from "@/utils/streamingJSONParser"
+import { registerMCPServerEndpoints } from "./mcp"
 
 export const sendMessageToClaudeCode = async (
 	{
 		messages,
+		threadId,
 		localExecutable,
 		port,
+		router,
 	}: {
 		messages: Message[]
+		threadId: string
 		localExecutable: LocalExecutable
 		port: number
+		router: Router
 	},
 	res: Response,
 ) => {
-	const eventStream = createClaudeCodeEventStream({ messages, localExecutable, port })
+	const eventStream = createClaudeCodeEventStream({ messages, localExecutable, port, threadId, router })
 	await respondUsingResponseStream(mapStream(eventStream), res)
 	res.end()
 }
@@ -36,10 +41,14 @@ const createClaudeCodeEventStream = ({
 	messages,
 	localExecutable,
 	port,
+	threadId,
+	router,
 }: {
 	messages: Message[]
 	localExecutable: LocalExecutable
 	port: number
+	threadId: string
+	router: Router
 }): AsyncStream<SDKMessage> => {
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
@@ -78,18 +87,30 @@ const createClaudeCodeEventStream = ({
 	})()
 
 	// Create a tmp file for the mcp config used to receive permission requests
+	const mcpEndpoint = `/mcp/${threadId}`
 	const mcpConfig = {
 		mcpServers: {
 			command: {
-				type: "sse",
-				url: `http://localhost:${port}/mcp`,
+				type: "http",
+				url: `http://localhost:${port}${mcpEndpoint}`,
 			},
 		},
 	}
-	const mcpConfigFilePath = path.join(__dirname, "mcp.json")
+	// const mcpConfigFilePath = path.join(__dirname, "mcp.json")
+	const mcpConfigFilePath = path.join("/tmp/command", `mcp-${threadId}.json`)
 	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
+	registerMCPServerEndpoints(router, mcpEndpoint, (toolName, input) => {
+		logInfo(
+			`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
+		)
+		// For now, we approve all requests
+		return {
+			isAllowed: true,
+			rejectionMessage: undefined,
+		}
+	})
 
-	logInfo(`Spawning Claude with executable: ${localExecutable.executable}`)
+	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
 	logInfo(`New user messages text: "${newUserMessagesText}"`)
 
 	// Use stdin instead of -p flag to avoid hanging
@@ -101,12 +122,14 @@ const createClaudeCodeEventStream = ({
 		"100",
 		"--mcp-config",
 		mcpConfigFilePath,
-		"--dangerously-skip-permissions", // For now, the MCP seems to not work and not receive requests.
+		// "--dangerously-skip-permissions", // For now, the MCP seems to not work and not receive requests.
+		"--permission-prompt-tool",
+		"mcp__command__tool_approval",
 	]
 	if (existingSessionId) {
 		args.push("--resume", existingSessionId)
 	}
-	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} (with stdin)`)
+	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")}`)
 
 	const eventStream = new AsyncStream<SDKMessage>()
 	const jsonParser = new StreamingJsonParser()

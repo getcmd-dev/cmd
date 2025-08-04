@@ -25,6 +25,8 @@ public protocol ChatContext: Sendable {
   var requestToolApproval: @Sendable (any ToolUse) async throws -> Void { get }
   /// Which chat mode applies to the current context.
   var chatMode: ChatMode { get }
+  /// The identifier for the chat thread
+  var threadId: String { get }
 }
 
 // MARK: - LLMService

@@ -14,6 +14,7 @@ extension Schema {
     public let model: String
     public let enableReasoning: Bool
     public let provider: APIProvider
+    public let threadId: String?
   
     private enum CodingKeys: String, CodingKey {
       case messages = "messages"
@@ -23,6 +24,7 @@ extension Schema {
       case model = "model"
       case enableReasoning = "enableReasoning"
       case provider = "provider"
+      case threadId = "threadId"
     }
   
     public init(
@@ -32,7 +34,8 @@ extension Schema {
         tools: [Tool]? = nil,
         model: String,
         enableReasoning: Bool,
-        provider: APIProvider
+        provider: APIProvider,
+        threadId: String? = nil
     ) {
       self.messages = messages
       self.system = system
@@ -41,6 +44,7 @@ extension Schema {
       self.model = model
       self.enableReasoning = enableReasoning
       self.provider = provider
+      self.threadId = threadId
     }
   
     public init(from decoder: Decoder) throws {
@@ -52,6 +56,7 @@ extension Schema {
       model = try container.decode(String.self, forKey: .model)
       enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
+      threadId = try container.decodeIfPresent(String?.self, forKey: .threadId)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -63,6 +68,7 @@ extension Schema {
       try container.encode(model, forKey: .model)
       try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)
+      try container.encodeIfPresent(threadId, forKey: .threadId)
     }
   }
   public struct Message: Codable, Sendable {

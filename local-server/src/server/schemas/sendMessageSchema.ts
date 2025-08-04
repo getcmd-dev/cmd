@@ -6,6 +6,7 @@ export interface SendMessageRequestParams {
 	model: string
 	enableReasoning: boolean
 	provider: APIProvider
+	threadId: string | undefined
 }
 
 export interface APIProvider {

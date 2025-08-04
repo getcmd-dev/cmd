@@ -7,7 +7,6 @@ import { registerEndpoint as registerListFilesEndpoint } from "./endpoints/tools
 import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/tools/searchFiles/endpoint"
 import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/checkpoint"
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
-import { registerMCPServerEndpoints } from "./endpoints/mcp/mcp"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -46,7 +45,6 @@ registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)
 registerCheckpointEndpoints(router)
 registerGetFileIconEndpoint(router)
-registerMCPServerEndpoints(router)
 
 // Add middleware to handle 404 errors (no route matched)
 app.use((req, res, next) => {

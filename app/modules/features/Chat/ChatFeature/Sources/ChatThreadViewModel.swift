@@ -193,7 +193,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             requestToolApproval: { [weak self] toolUse in
               try await self?.handleToolApproval(for: toolUse)
             },
-            chatMode: input.mode),
+            chatMode: input.mode,
+            threadId: self.id.uuidString),
           handleUpdateStream: { newMessages in
             Task { @MainActor [weak self] in
               guard let self else { return }
@@ -451,13 +452,15 @@ struct DefaultChatContext: ChatContext {
     projectRoot: URL?,
     prepareForWriteToolUse: @escaping @Sendable () async -> Void,
     requestToolApproval: @escaping @Sendable (any ToolUse) async throws -> Void,
-    chatMode: ChatMode)
+    chatMode: ChatMode,
+    threadId: String)
   {
     self.project = project
     self.projectRoot = projectRoot
     self.prepareForWriteToolUse = prepareForWriteToolUse
     self.requestToolApproval = requestToolApproval
     self.chatMode = chatMode
+    self.threadId = threadId
   }
 
   let project: URL?
@@ -465,6 +468,7 @@ struct DefaultChatContext: ChatContext {
   let prepareForWriteToolUse: @Sendable () async -> Void
   let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
   let chatMode: ChatMode
+  let threadId: String
 }
 
 // MARK: - ChatEvent

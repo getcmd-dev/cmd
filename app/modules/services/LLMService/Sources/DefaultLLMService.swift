@@ -262,7 +262,8 @@ final class DefaultLLMService: LLMService {
         provider: provider,
         settings: providerSettings,
         shellService: shellService,
-        projectRoot: context?.projectRoot?.path))
+        projectRoot: context?.projectRoot?.path),
+      threadId: context?.threadId)
     let data = try JSONEncoder().encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))

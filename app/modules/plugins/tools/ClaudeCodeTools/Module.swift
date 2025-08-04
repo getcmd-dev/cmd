@@ -1,11 +1,9 @@
 Target.module(
   name: "ClaudeCodeTools",
   dependencies: [
-    "CodePreview",
+    "ConcurrencyFoundation",
     "DLS",
-    "HighlighterServiceInterface",
     "JSONFoundation",
-    "ServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
