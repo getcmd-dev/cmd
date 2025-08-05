@@ -19,29 +19,31 @@ struct CheckpointView: View {
   let onRestoreTapped: ((Checkpoint) -> Void)?
 
   var body: some View {
-    HStack(spacing: 8) {
-      CircleWithLine(circleRadiusRatio: 0.25, lineWidthRatio: 0.15)
-        .fill(Color.blue)
-        .frame(square: 16)
-        .scaledToFit()
-        .onHover(perform: { isHovered in
-          self.isHovered = isHovered || self.isHovered
-        })
-        .frame(width: ChatView.Constants.chatPadding)
+    HStack(spacing: 0) {
+      HStack(spacing: 8) {
+        CircleWithLine(circleRadiusRatio: 0.25, lineWidthRatio: 0.15)
+          .fill(Color.blue)
+          .frame(square: 16)
+          .scaledToFit()
+          .frame(width: ChatView.Constants.chatPadding)
 
-      if isHovered {
-        HoveredButton(
-          action: {
-            onRestoreTapped?(checkpoint)
-          },
-          onHover: { isHovered in
-            isButtonHovered = isHovered
-          },
-          content: {
-            Text("Restore checkpoint")
-              .foregroundColor(isButtonHovered ? Color.primary : Color.gray)
-          })
+        if isHovered {
+          HoveredButton(
+            action: {
+              onRestoreTapped?(checkpoint)
+            },
+            onHover: { isHovered in
+              isButtonHovered = isHovered
+            },
+            content: {
+              Text("Restore checkpoint")
+                .foregroundColor(isButtonHovered ? Color.primary : Color.gray)
+            })
+        }
       }
+      .onHover(perform: { isHovered in
+        self.isHovered = isHovered
+      })
 
       Spacer()
     }
