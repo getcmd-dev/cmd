@@ -28,8 +28,9 @@ struct ClaudeCodeGlobToolEncodingTests {
         "input": {
           "pattern": "**/*.swift"
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "glob-123"
       }
@@ -52,8 +53,9 @@ struct ClaudeCodeGlobToolEncodingTests {
           "pattern": "src/**/*.ts",
           "path": "/Users/user/project"
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "glob-456"
       }
@@ -76,8 +78,9 @@ struct ClaudeCodeGlobToolEncodingTests {
           "pattern": "**/*.{js,ts,jsx,tsx}",
           "path": "/project/frontend"
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "glob-789"
       }

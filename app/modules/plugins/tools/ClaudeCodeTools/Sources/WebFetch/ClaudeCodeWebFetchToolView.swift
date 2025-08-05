@@ -34,24 +34,8 @@ struct WebFetchToolUseView: View {
           HStack(spacing: 0) {
             Text("Fetch(")
               .foregroundColor(foregroundColor)
-            if let url {
-              Link(displayUrl, destination: url)
-                .foregroundColor(foregroundColor)
-                .underline()
-                .buttonStyle(PlainButtonStyle())
-                .onHover { isHovering in
-                  if isHovering {
-                    NSCursor.pointingHand.push()
-                  } else {
-                    NSCursor.pop()
-                  }
-                }
-            } else {
-              // unexpected, could not parse URL
-              Text(displayUrl)
-                .foregroundColor(foregroundColor)
-            }
-
+            LinkView(url: toolUse.input.url)
+              .foregroundColor(foregroundColor)
             Text(")")
               .foregroundColor(foregroundColor)
           }
@@ -113,20 +97,28 @@ struct WebFetchToolUseView: View {
       nil
     }
   }
+}
 
-  private var url: URL? {
-    URL(string: toolUse.input.url)
+// MARK: - LinkView
+
+struct LinkView: View {
+  let url: String
+
+  var body: some View {
+    if let url = URL(string: url) {
+      Link(url.absoluteString, destination: url)
+        .underline()
+        .buttonStyle(PlainButtonStyle())
+        .onHover { isHovering in
+          if isHovering {
+            NSCursor.pointingHand.push()
+          } else {
+            NSCursor.pop()
+          }
+        }
+    } else {
+      Text(url)
+    }
   }
 
-  private var displayUrl: String {
-    guard let url = URL(string: toolUse.input.url) else {
-      return toolUse.input.url
-    }
-
-    if let host = url.host {
-      return host + (url.path.isEmpty || url.path == "/" ? "" : url.path)
-    }
-
-    return toolUse.input.url
-  }
 }

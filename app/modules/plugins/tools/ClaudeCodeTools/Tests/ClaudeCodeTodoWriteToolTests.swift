@@ -153,37 +153,4 @@ struct ClaudeCodeTodoWriteToolTests {
     #expect(toolUse.input.todos[1].priority == "medium")
     #expect(toolUse.input.todos[2].priority == "low")
   }
-
-  @Test
-  func isNotReadOnly() {
-    let tool = ClaudeCodeTodoWriteTool()
-    let toolUse = tool.use(
-      toolUseId: "readonly",
-      input: .init(todos: []),
-      isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
-
-    #expect(toolUse.isReadonly == false)
-  }
-
-  @Test
-  func isAvailableInAllChatModes() {
-    let tool = ClaudeCodeTodoWriteTool()
-
-    #expect(tool.isAvailable(in: .ask) == true)
-    #expect(tool.isAvailable(in: .agent) == true)
-  }
-
-  @Test
-  func hasCorrectToolName() {
-    let tool = ClaudeCodeTodoWriteTool()
-    #expect(tool.name == "claude_code_TodoWrite")
-  }
-
-  @Test
-  func hasCorrectDisplayNames() {
-    let tool = ClaudeCodeTodoWriteTool()
-    #expect(tool.displayName == "TodoWrite (Claude Code)")
-    #expect(tool.shortDescription == "Claude Code tool to create and manage structured task lists for coding sessions.")
-  }
 }

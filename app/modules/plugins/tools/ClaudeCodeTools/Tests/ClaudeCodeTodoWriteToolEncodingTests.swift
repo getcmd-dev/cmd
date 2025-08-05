@@ -40,8 +40,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             }
           ]
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "todo-123"
       }
@@ -97,8 +98,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             }
           ]
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "todo-456"
       }
@@ -118,8 +120,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         "input": {
           "todos": []
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "todo-empty"
       }
@@ -154,8 +157,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             }
           ]
         },
+        "isInputComplete" : true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "todo-long"
       }

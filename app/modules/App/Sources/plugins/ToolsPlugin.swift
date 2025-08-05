@@ -33,5 +33,6 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeWriteTool())
     plugIn(tool: ClaudeCodeGrepTool())
     plugIn(tool: ClaudeCodeWebFetchTool())
+    plugIn(tool: ClaudeCodeWebSearchTool())
   }
 }
