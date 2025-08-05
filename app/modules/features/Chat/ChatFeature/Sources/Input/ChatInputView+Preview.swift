@@ -19,16 +19,14 @@ extension ChatInputViewModel {
   ChatInputView(
     inputViewModel: ChatInputViewModel(activeModels: LLMModel.allCases, mode: .ask)
       .withApproval(for: TestTool().use()),
-    isStreamingResponse: .constant(false),
-    didTapCancel: { })
+    isStreamingResponse: .constant(false))
     .frame(minHeight: 300)
 }
 
 #Preview("Ask mode") {
   ChatInputView(
     inputViewModel: ChatInputViewModel(activeModels: LLMModel.allCases, mode: .ask),
-    isStreamingResponse: .constant(false),
-    didTapCancel: { })
+    isStreamingResponse: .constant(false))
 }
 
 #Preview("Agent mode") {
@@ -36,14 +34,12 @@ extension ChatInputViewModel {
     inputViewModel: ChatInputViewModel(
       activeModels: LLMModel.allCases,
       mode: .agent),
-    isStreamingResponse: .constant(false),
-    didTapCancel: { })
+    isStreamingResponse: .constant(false))
 }
 
 #Preview("streaming") {
   ChatInputView(
     inputViewModel: .init(activeModels: LLMModel.allCases),
-    isStreamingResponse: .constant(true),
-    didTapCancel: { })
+    isStreamingResponse: .constant(true))
 }
 #endif

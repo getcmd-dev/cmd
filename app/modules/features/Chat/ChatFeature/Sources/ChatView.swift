@@ -43,12 +43,17 @@ public struct ChatView: View {
         secondaryActionRow
         ChatMessageList(viewModel: viewModel.tab)
           .id("ChatMessageList-\(viewModel.tab.id)")
+
+        if viewModel.tab.isStreamingResponse {
+          HStack(spacing: 0) {
+            ThreeDotsLoadingAnimation()
+            Spacer(minLength: 0)
+          }
+        }
+
         ChatInputView(
           inputViewModel: viewModel.tab.input,
-          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse,
-          didTapCancel: { [weak viewModel] in
-            viewModel?.tab.cancelCurrentMessage()
-          }).id("ChatInputView-\(viewModel.tab.id)")
+          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {
         ChatHistoryView(

@@ -19,12 +19,10 @@ struct ChatInputView: View {
 
   init(
     inputViewModel: ChatInputViewModel,
-    isStreamingResponse: Binding<Bool>,
-    didTapCancel: @escaping () -> Void)
+    isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
     _isStreamingResponse = isStreamingResponse
-    self.didTapCancel = didTapCancel
     #if DEBUG
     _debugTextViewHandler = nil
     #endif
@@ -34,12 +32,10 @@ struct ChatInputView: View {
   init(
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
-    isStreamingResponse: Binding<Bool>,
-    didTapCancel: @escaping () -> Void)
+    isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
     _isStreamingResponse = isStreamingResponse
-    self.didTapCancel = didTapCancel
     self._debugTextViewHandler = _debugTextViewHandler
   }
   #endif
@@ -95,12 +91,6 @@ struct ChatInputView: View {
       }
     }
     .padding(8)
-    .overlay(alignment: .top) {
-      if isStreamingResponse {
-        stopStreamButton
-          .offset(y: -30)
-      }
-    }
     .animation(.easeInOut, value: hasPendingToolApproval)
     .onTapGesture {
       inputViewModel.textInputNeedsFocus = true
@@ -119,8 +109,6 @@ struct ChatInputView: View {
   @Bindable private var inputViewModel: ChatInputViewModel
 
   private let sidePadding: CGFloat = 6
-
-  private var didTapCancel: () -> Void
 
   private var enableAttachments: Bool {
     inputViewModel.pendingToolApproval == nil
@@ -247,21 +235,6 @@ struct ChatInputView: View {
 
   private var hasPendingToolApproval: Bool {
     inputViewModel.pendingToolApproval != nil
-  }
-
-  private var stopStreamButton: some View {
-    HStack {
-      Button {
-        didTapCancel()
-      } label: {
-        HStack(spacing: 2) {
-          Image(systemName: "command")
-          Image(systemName: "delete.left")
-          Text("Stop")
-        }
-      }
-      .acceptClickThrough()
-    }
   }
 
   private func approvalView(for pendingToolApproval: ToolApprovalRequest) -> some View {

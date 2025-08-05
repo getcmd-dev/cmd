@@ -63,6 +63,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     input = ChatInputViewModel()
     input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
+    input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
       guard state.focusedWorkspace != nil else { return }
