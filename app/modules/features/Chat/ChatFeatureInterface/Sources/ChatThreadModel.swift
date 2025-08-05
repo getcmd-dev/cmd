@@ -12,6 +12,7 @@ public struct ChatThreadModel: Sendable {
     messages: [ChatMessageModel],
     events: [ChatEventModel],
     projectInfo: SelectedProjectInfo?,
+    knownFilesContent: [URL: String],
     createdAt: Date)
   {
     self.id = id
@@ -19,6 +20,7 @@ public struct ChatThreadModel: Sendable {
     self.messages = messages
     self.events = events
     self.projectInfo = projectInfo
+    self.knownFilesContent = knownFilesContent
     self.createdAt = createdAt
   }
 
@@ -36,10 +38,11 @@ public struct ChatThreadModel: Sendable {
   }
 
   public let id: UUID
-  public var name: String
-  public var messages: [ChatMessageModel]
-  public var events: [ChatEventModel]
-  public var projectInfo: SelectedProjectInfo?
+  public let name: String
+  public let messages: [ChatMessageModel]
+  public let events: [ChatEventModel]
+  public let projectInfo: SelectedProjectInfo?
+  public let knownFilesContent: [URL: String]
   public let createdAt: Date
 
 }

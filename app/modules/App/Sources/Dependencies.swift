@@ -6,8 +6,8 @@ import AppEventServiceInterface
 import AppKit
 import AppUpdateService
 import AppUpdateServiceInterface
-import ChatHistoryService
-import ChatHistoryServiceInterface
+import ChatService
+import ChatServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
 import Combine
@@ -60,6 +60,12 @@ extension AppUpdateServiceDependencyKey: DependencyKey {
 
 extension ChatHistoryServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatHistoryService { AppScope.shared.chatHistoryService }
+}
+
+// MARK: - ChatContextRegistryServiceDependencyKey + DependencyKey
+
+extension ChatContextRegistryServiceDependencyKey: DependencyKey {
+  public static var liveValue: ChatContextRegistryService { AppScope.shared.chatContextRegistry }
 }
 
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
@@ -157,6 +163,10 @@ extension AppScope: AppUpdateServiceProviding { }
 // MARK: - AppScope + ChatHistoryServiceProviding
 
 extension AppScope: ChatHistoryServiceProviding { }
+
+// MARK: - AppScope + ChatContextRegistryServiceProviding
+
+extension AppScope: ChatContextRegistryServiceProviding { }
 
 // MARK: - AppScope + CheckpointServiceProviding
 

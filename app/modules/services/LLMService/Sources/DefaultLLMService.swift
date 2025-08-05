@@ -34,6 +34,7 @@ final class DefaultLLMService: LLMService {
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
+    chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
@@ -52,6 +53,7 @@ final class DefaultLLMService: LLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: model,
+          chatMode: chatMode,
           context: context,
           handleUpdateStream: { newMessage in
             // Add the new message to the response stream.
@@ -77,7 +79,7 @@ final class DefaultLLMService: LLMService {
         // Execute each tool call.
         for toolUseRequest in toolUseRequests {
           try Task.checkCancellation()
-          await messageHistory.append(Self.waitForResult(of: toolUseRequest, context: context))
+          await messageHistory.append(Self.waitForResult(of: toolUseRequest))
         }
 
         if toolUseRequests.filter({ $0.toolUse as? any ExternalToolUse == nil }).isEmpty {
@@ -112,16 +114,17 @@ final class DefaultLLMService: LLMService {
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
+    chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
     handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
-    let customInstructions = customInstructions(for: context.chatMode, from: settings)
+    let customInstructions = customInstructions(for: chatMode, from: settings)
     let promptConfiguration = PromptConfiguration(
       projectRoot: context.projectRoot,
-      mode: context.chatMode,
+      mode: chatMode,
       customInstructions: customInstructions)
 
     return try await streamCompletionResponse(
@@ -197,8 +200,7 @@ final class DefaultLLMService: LLMService {
   /// Wait for the result of a tool use request.
   /// This returns a message representing the result of the tool use, and broadcast the execution status to the update stream.
   private static func waitForResult(
-    of toolUseRequest: ToolUseMessage,
-    context _: ChatContext)
+    of toolUseRequest: ToolUseMessage)
     async -> Schema.Message
   {
     let toolUse = toolUseRequest.toolUse
@@ -371,4 +373,10 @@ extension Schema.APIProvider {
       name: apiProviderName,
       settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))
   }
+}
+
+extension ChatContext {
+  var project: URL? { toolExecutionContext.projectRoot }
+  var projectRoot: URL? { toolExecutionContext.projectRoot }
+  var threadId: String { toolExecutionContext.threadId }
 }

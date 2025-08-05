@@ -455,11 +455,3 @@ extension Schema.StreamedResponseChunk {
     }
   }
 }
-
-extension ChatContext {
-  var toolExecutionContext: ToolExecutionContext {
-    ToolExecutionContext(
-      project: project,
-      projectRoot: projectRoot)
-  }
-}

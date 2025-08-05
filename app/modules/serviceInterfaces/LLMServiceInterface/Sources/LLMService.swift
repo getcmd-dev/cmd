@@ -13,20 +13,12 @@ public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<Assistant
 // MARK: - ChatContext
 
 public protocol ChatContext: Sendable {
-  /// The path to the project that is being worked on.
-  var project: URL? { get }
-  /// The root of the project that is being worked on.
-  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
-  var projectRoot: URL? { get }
-
   /// When a tool that is not read-only runs, this function will be called before.
   var prepareForWriteToolUse: @Sendable () async -> Void { get }
   /// Request user approval before executing a tool.
   var requestToolApproval: @Sendable (any ToolUse) async throws -> Void { get }
-  /// Which chat mode applies to the current context.
-  var chatMode: ChatMode { get }
-  /// The identifier for the chat thread
-  var threadId: String { get }
+
+  var toolExecutionContext: ToolExecutionContext { get }
 }
 
 // MARK: - LLMService
@@ -45,6 +37,7 @@ public protocol LLMService: Sendable {
     messageHistory: [Schema.Message],
     tools: [any Tool],
     model: LLMModel,
+    chatMode: ChatMode,
     context: ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
@@ -91,23 +84,26 @@ extension LLMServiceError: LocalizedError {
   }
 }
 
-#if DEBUG
-// TODO: Remove this once tests have been migrated to use the new API.
-extension LLMService {
-  func sendMessage(
-    messageHistory: [Schema.Message],
-    tools: [any Tool],
-    model: LLMModel,
-    context: ChatContext,
-    handleUpdateStream: (UpdateStream) -> Void)
-    async throws -> SendMessageResponse
-  {
-    try await sendMessage(
-      messageHistory: messageHistory,
-      tools: tools,
-      model: model,
-      context: context,
-      handleUpdateStream: handleUpdateStream)
-  }
-}
-#endif
+//
+// #if DEBUG
+//// TODO: Remove this once tests have been migrated to use the new API.
+// extension LLMService {
+//  func sendMessage(
+//    messageHistory: [Schema.Message],
+//    tools: [any Tool],
+//    model: LLMModel,
+//    chatMode: ChatMode,
+//    context: ChatContext,
+//    handleUpdateStream: (UpdateStream) -> Void)
+//    async throws -> SendMessageResponse
+//  {
+//    try await sendMessage(
+//      messageHistory: messageHistory,
+//      tools: tools,
+//      model: model,
+//      chatMode: chatMode,
+//      context: context,
+//      handleUpdateStream: handleUpdateStream)
+//  }
+// }
+// #endif

@@ -7,7 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import SwiftTesting
 import Testing
-@testable import ChatHistoryServiceInterface
+@testable import ChatServiceInterface
 
 // MARK: - MockChatHistoryServiceTests
 

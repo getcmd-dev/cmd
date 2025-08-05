@@ -17,6 +17,7 @@ public final class MockLLMService: LLMService {
     [Schema.Message],
     [any Tool],
     LLMModel,
+    ChatMode,
     ChatContext,
     (UpdateStream) -> Void)
   async throws -> SendMessageResponse)?
@@ -31,12 +32,13 @@ public final class MockLLMService: LLMService {
     messageHistory: [Schema.Message],
     tools: [any Tool],
     model: LLMModel,
+    chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
   {
     if let onSendMessage {
-      return try await onSendMessage(messageHistory, tools, model, context, handleUpdateStream)
+      return try await onSendMessage(messageHistory, tools, model, chatMode, context, handleUpdateStream)
     }
 
     // Default implementation returning empty array if no handler is set

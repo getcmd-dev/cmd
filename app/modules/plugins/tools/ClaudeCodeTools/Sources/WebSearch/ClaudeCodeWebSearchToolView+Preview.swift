@@ -5,6 +5,7 @@ import DLS
 import SwiftUI
 import ToolFoundation
 
+#if DEBUG
 #Preview("WebSearch - Not Started") {
   let use = ClaudeCodeWebSearchTool.Use(
     callingTool: .init(),
@@ -13,7 +14,7 @@ import ToolFoundation
       query: "MCP HTTP streaming specifications",
       allowed_domains: nil,
       blocked_domains: nil),
-    context: .init(project: nil, projectRoot: nil),
+    context: ToolExecutionContext(),
     initialStatus: .notStarted)
   return use.body
     .padding()
@@ -28,7 +29,7 @@ import ToolFoundation
       query: "SwiftUI best practices 2025",
       allowed_domains: ["developer.apple.com"],
       blocked_domains: nil),
-    context: .init(project: nil, projectRoot: nil),
+    context: ToolExecutionContext(),
     initialStatus: .running)
   return use.body
     .padding()
@@ -43,7 +44,7 @@ import ToolFoundation
       query: "MCP HTTP streaming specifications",
       allowed_domains: nil,
       blocked_domains: nil),
-    context: .init(project: nil, projectRoot: nil),
+    context: ToolExecutionContext(),
     initialStatus: .completed(.success(.init(
       links: [
         .init(
@@ -70,7 +71,7 @@ import ToolFoundation
       query: "test query",
       allowed_domains: nil,
       blocked_domains: ["example.com"]),
-    context: .init(project: nil, projectRoot: nil),
+    context: ToolExecutionContext(),
     initialStatus: .completed(.failure(NSError(
       domain: "WebSearchError",
       code: 1,
@@ -81,3 +82,4 @@ import ToolFoundation
     .padding()
     .frame(width: 500)
 }
+#endif

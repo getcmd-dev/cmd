@@ -36,7 +36,7 @@ struct TestTool: NonStreamableTool {
 
     public let isReadonly = true
 
-    let context = ToolExecutionContext(project: nil, projectRoot: nil)
+    let context = ToolExecutionContext()
 
     let input: String
 

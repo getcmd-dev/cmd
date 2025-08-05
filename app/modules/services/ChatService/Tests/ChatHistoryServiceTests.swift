@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import ChatFeatureInterface
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -11,7 +11,7 @@ import LLMServiceInterface
 import SwiftTesting
 import Testing
 import ToolFoundation
-@testable import ChatHistoryService
+@testable import ChatService
 
 // MARK: - DefaultChatHistoryServiceTests
 

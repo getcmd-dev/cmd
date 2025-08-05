@@ -102,26 +102,6 @@ public protocol ToolUse: Sendable, Codable {
 }
 
 extension ToolUse {
-
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
-
-    let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
-    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
-    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
-
-    self.init(
-      callingTool: callingTool,
-      toolUseId: toolUseId,
-      input: input,
-      isInputComplete: isInputComplete,
-      context: context,
-      initialStatus: statusValue)
-  }
-
   public var toolName: String { callingTool.name }
 
   public var toolDisplayName: String { callingTool.displayName }
@@ -146,26 +126,6 @@ extension ToolUse {
       try status.value.asOutput
     }
   }
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: ToolUseCodingKeys.self)
-
-    try container.encode(callingTool, forKey: .callingTool)
-    try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(input, forKey: .input)
-    try container.encode(context, forKey: .context)
-    try container.encode(status.value, forKey: .status)
-    try container.encode(isInputComplete, forKey: .isInputComplete)
-  }
-}
-
-private enum ToolUseCodingKeys: String, CodingKey {
-  case callingTool
-  case toolUseId
-  case input
-  case context
-  case status
-  case isInputComplete
 }
 
 // MARK: - StreamableTool
@@ -218,16 +178,44 @@ public protocol DisplayableToolUse: ToolUse {
 
 /// The context in which a tool use has been created.
 public struct ToolExecutionContext: Sendable, Codable {
-  /// The path to the project.
-  public let project: URL?
-  /// The path to the root of the project.
-  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
-  public let projectRoot: URL?
-
-  public init(project: URL?, projectRoot: URL?) {
+  public init(threadId: String, project: URL? = nil, projectRoot: URL? = nil) {
+    self.threadId = threadId
     self.project = project
     self.projectRoot = projectRoot
   }
+
+  #if DEBUG
+  public init(threadId: String = "mock-thread-id") {
+    self.threadId = threadId
+    project = nil
+    projectRoot = nil
+  }
+  #endif
+
+  /// The identifier for the chat thread where the tool is being used.
+  public let threadId: String
+  /// The path to the project that is being worked on.
+  public let project: URL?
+  /// The root of the project that is being worked on.
+  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
+  public let projectRoot: URL?
+
+}
+
+/// The current context in which the tool use exists. The tool can modify relevant properties.
+public protocol LiveToolExecutionContext: Sendable {
+  /// The files whose content has been read/modified during the conversation.
+  ///
+  /// To ensure correct execution, we enforce that a file has to be read before being modified. This properties helps keep track of this.
+  @MainActor
+  func knownFileContent(for path: URL) -> String?
+  @MainActor
+  func set(knownFileContent: String, for path: URL)
+  /// A properties that allows chat plugins (e.g. tools) to store state relevant to them within the context of a conversation.
+  @MainActor
+  func pluginState<T: Codable & Sendable>(for key: String) -> T?
+  @MainActor
+  func set(pluginState: some Codable & Sendable, for key: String)
 }
 
 // MARK: - ToolUseExecutionStatus

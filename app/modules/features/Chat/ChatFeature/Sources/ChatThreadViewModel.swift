@@ -4,7 +4,7 @@
 import AppFoundation
 import ChatFeatureInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation
@@ -17,6 +17,7 @@ import LoggingServiceInterface
 import Observation
 import ServerServiceInterface
 import SettingsServiceInterface
+import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
 
@@ -47,6 +48,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     messages: [ChatMessageViewModel],
     events: [ChatEvent]? = nil,
     projectInfo: SelectedProjectInfo? = nil,
+    knownFilesContent: [URL: String] = [:],
     createdAt: Date = Date())
   {
     self.id = id
@@ -54,6 +56,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.messages = messages
     self.projectInfo = projectInfo
     self.createdAt = createdAt
+    self.knownFilesContent = knownFilesContent
     self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
@@ -78,6 +81,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
         self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
       }
     }.store(in: &cancellables)
+
+    @Dependency(\.chatContextRegistry) var chatContextRegistry
+    chatContextRegistry.register(context: self, for: id.uuidString)
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -95,6 +101,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   private(set) var projectInfo: SelectedProjectInfo?
 
   private(set) var isShowingChatHistory = false
+
+  private(set) var knownFilesContent: [URL: String]
 
   private(set) var name: String? {
     didSet {
@@ -187,6 +195,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           messageHistory: messages,
           tools: tools,
           model: selectedModel,
+          chatMode: input.mode,
           context: DefaultChatContext(
             project: projectInfo?.path,
             projectRoot: projectInfo?.dirPath,
@@ -444,10 +453,29 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
 }
 
+// MARK: LiveToolExecutionContext
+
+extension ChatThreadViewModel: LiveToolExecutionContext {
+  func knownFileContent(for path: URL) -> String? {
+    knownFilesContent[path]
+  }
+
+  func set(knownFileContent: String, for path: URL) {
+    knownFilesContent[path] = knownFileContent
+  }
+
+  func pluginState<T>(for _: String) -> T? where T: Decodable, T: Encodable, T: Sendable {
+    nil
+  }
+
+  func set(pluginState _: some Decodable & Encodable & Sendable, for _: String) { }
+
+}
+
 // MARK: - DefaultChatContext
 
-struct DefaultChatContext: ChatContext {
-
+@ThreadSafe
+final class DefaultChatContext: ChatContext {
   init(
     project: URL?,
     projectRoot: URL?,
@@ -470,6 +498,13 @@ struct DefaultChatContext: ChatContext {
   let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
   let chatMode: ChatMode
   let threadId: String
+  var knownFiles: [URL: String] = [:]
+  var pluginsState: [String: any(Codable & Sendable)] = [:]
+
+  var toolExecutionContext: ToolExecutionContext {
+    ToolExecutionContext(threadId: threadId, project: project, projectRoot: projectRoot)
+  }
+
 }
 
 // MARK: - ChatEvent

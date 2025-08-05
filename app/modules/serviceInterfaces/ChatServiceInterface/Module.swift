@@ -1,9 +1,10 @@
 Target.module(
-  name: "ChatHistoryServiceInterface",
+  name: "ChatServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "ChatFeatureInterface",
     "ThreadSafe",
+    "ToolFoundation",
   ],
   testDependencies: [
     "AppFoundation",

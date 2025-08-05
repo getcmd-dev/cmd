@@ -86,8 +86,8 @@ targets.append(contentsOf: Target.module(
     "BuildTool",
     "ChatAppEvents",
     "ChatFeature",
-    "ChatHistoryService",
-    "ChatHistoryServiceInterface",
+    "ChatService",
+    "ChatServiceInterface",
     "CheckpointService",
     "CheckpointServiceInterface",
     "ClaudeCodeTools",
@@ -200,6 +200,7 @@ targets.append(contentsOf: Target.module(
   name: "ReadFileTool",
   dependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
@@ -366,7 +367,7 @@ targets.append(contentsOf: Target.module(
     "ChatAppEvents",
     "ChatFeatureInterface",
     "ChatFoundation",
-    "ChatHistoryServiceInterface",
+    "ChatServiceInterface",
     "CheckpointServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
@@ -383,6 +384,7 @@ targets.append(contentsOf: Target.module(
     "ServerServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
     "XcodeObserverServiceInterface",
   ],
@@ -393,7 +395,7 @@ targets.append(contentsOf: Target.module(
     "ChatAppEvents",
     "ChatFeatureInterface",
     "ChatFoundation",
-    "ChatHistoryServiceInterface",
+    "ChatServiceInterface",
     "CheckpointServiceInterface",
     "ConcurrencyFoundation",
     "FileSuggestionServiceInterface",
@@ -675,21 +677,6 @@ targets.append(contentsOf: Target.module(
   path: "./serviceInterfaces/PermissionsServiceInterface"))
 
 targets.append(contentsOf: Target.module(
-  name: "ChatHistoryServiceInterface",
-  dependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "ChatFeatureInterface",
-    "ThreadSafe",
-  ],
-  testDependencies: [
-    "AppFoundation",
-    "ChatFeatureInterface",
-    "ConcurrencyFoundation",
-    "SwiftTesting",
-  ],
-  path: "./serviceInterfaces/ChatHistoryServiceInterface"))
-
-targets.append(contentsOf: Target.module(
   name: "LLMServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -791,6 +778,22 @@ targets.append(contentsOf: Target.module(
   path: "./serviceInterfaces/XcodeObserverServiceInterface"))
 
 targets.append(contentsOf: Target.module(
+  name: "ChatServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ChatFeatureInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ChatFeatureInterface",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/ChatServiceInterface"))
+
+targets.append(contentsOf: Target.module(
   name: "ServerService",
   dependencies: [
     "AppEventServiceInterface",
@@ -828,6 +831,33 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [],
   path: "./services/CheckpointService"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatService",
+  dependencies: [
+    .product(name: "GRDB", package: "GRDB.swift"),
+    "AppFoundation",
+    "ChatFeatureInterface",
+    "ChatServiceInterface",
+    "CheckpointServiceInterface",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ChatFeatureInterface",
+    "ChatServiceInterface",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+    "ToolFoundation",
+  ],
+  path: "./services/ChatService"))
 
 targets.append(contentsOf: Target.module(
   name: "PermissionsService",
@@ -1031,31 +1061,6 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [],
   path: "./services/AppUpdateService"))
-
-targets.append(contentsOf: Target.module(
-  name: "ChatHistoryService",
-  dependencies: [
-    .product(name: "GRDB", package: "GRDB.swift"),
-    "ChatFeatureInterface",
-    "ChatHistoryServiceInterface",
-    "CheckpointServiceInterface",
-    "DependencyFoundation",
-    "FoundationInterfaces",
-    "LLMServiceInterface",
-    "LoggingServiceInterface",
-    "ServerServiceInterface",
-    "ToolFoundation",
-  ],
-  testDependencies: [
-    "ChatFeatureInterface",
-    "ChatHistoryServiceInterface",
-    "ConcurrencyFoundation",
-    "FoundationInterfaces",
-    "LLMServiceInterface",
-    "SwiftTesting",
-    "ToolFoundation",
-  ],
-  path: "./services/ChatHistoryService"))
 
 let package = Package(
   name: "Packages",

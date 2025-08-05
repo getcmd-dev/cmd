@@ -2,6 +2,7 @@ Target.module(
   name: "ReadFileTool",
   dependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",

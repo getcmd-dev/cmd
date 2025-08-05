@@ -19,6 +19,7 @@ extension ChatThreadModel: Codable {
       messages: container.decode([ChatMessageModel].self, forKey: .messages),
       events: container.decode([ChatEventModel].self, forKey: .events),
       projectInfo: container.decodeIfPresent(ChatThreadModel.SelectedProjectInfo.self, forKey: .projectInfo),
+      knownFilesContent: container.decodeIfPresent([URL: String].self, forKey: .knownFilesContent) ?? [:],
       createdAt: container.decode(Date.self, forKey: .createdAt))
   }
 
@@ -29,11 +30,12 @@ extension ChatThreadModel: Codable {
     try container.encode(messages, forKey: .messages)
     try container.encode(events, forKey: .events)
     try container.encodeIfPresent(projectInfo, forKey: .projectInfo)
+    try container.encode(knownFilesContent, forKey: .knownFilesContent)
     try container.encode(createdAt, forKey: .createdAt)
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, name, messages, events, projectInfo, createdAt
+    case id, name, messages, events, projectInfo, knownFilesContent, createdAt
   }
 }
 

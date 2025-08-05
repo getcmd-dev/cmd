@@ -13,6 +13,48 @@ extension Tool {
 
 }
 
+extension ToolUse {
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
+
+    let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
+    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    let input = try container.decode(Input.self, forKey: .input)
+    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
+    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
+    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
+
+    self.init(
+      callingTool: callingTool,
+      toolUseId: toolUseId,
+      input: input,
+      isInputComplete: isInputComplete,
+      context: context,
+      initialStatus: statusValue)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: ToolUseCodingKeys.self)
+
+    try container.encode(callingTool, forKey: .callingTool)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(input, forKey: .input)
+    try container.encode(context, forKey: .context)
+    try container.encode(status.value, forKey: .status)
+    try container.encode(isInputComplete, forKey: .isInputComplete)
+  }
+}
+
+private enum ToolUseCodingKeys: String, CodingKey {
+  case callingTool
+  case toolUseId
+  case input
+  case context
+  case status
+  case isInputComplete
+}
+
 extension KeyedDecodingContainer {
   /// Decodes an array, dropping values that failed to decode.
   /// This can be useful to decode streamed input, where the last value in the array was truncated in a way that makes decoding impossible.

@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -71,6 +72,10 @@ public final class ReadFileTool: NonStreamableTool {
 
       do {
         var content = try fileManager.read(contentsOf: filePath)
+        Task { @MainActor in
+          try? chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
+        }
+
         if let lineRange = input.lineRange {
           let lines = content.components(separatedBy: .newlines)
           let selectedLines = lines[safe: (lineRange.start - 1)..<(lineRange.end)]
@@ -87,6 +92,7 @@ public final class ReadFileTool: NonStreamableTool {
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
   }
 
