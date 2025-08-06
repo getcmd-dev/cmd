@@ -111,6 +111,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					: messages.map(mapMessage),
 				toolCallStreaming: true,
 				providerOptions: generalProviderOptions,
+				maxTokens: 16384,
 			})
 
 			let idx = await respondUsingResponseStream(mapStream(fullStream), res)

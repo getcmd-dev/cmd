@@ -36,11 +36,13 @@ final class ToolUseViewModel {
 
     handleUpdatedInput()
 
-    Task { [weak self] in
-      for await status in status {
-        self?.status = status
+      Task { [weak self] in
+        for await status in status {
+            print("ToolUseViewModel: status updated to \(status). Still alive? \(self != nil)")
+          self?.status = status
+        }
+          print("ToolUseViewModel: done updating status \(self?.status). Still alive? \(self != nil)")
       }
-    }
   }
 
   typealias Input = EditFilesTool.Use.Input
