@@ -4,10 +4,10 @@
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
-import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -23,7 +23,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState _: InternalState? = nil,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,9 +35,20 @@ public final class ClaudeCodeEditTool: ExternalTool {
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
+
+      // Set the baseline content using the last known value.
+      // Claude Code doesn't allow updates prior to a read, so this is safe.
+      let (mappedInput, err) = context.mappedInput(
+        persistedInput: internalState,
+        rawInput: input.mappedInput,
+        validateFileContent: false)
+      self.mappedInput = mappedInput
+      if let err {
+        defaultLogger.error("Claude Code edited a file with no known baseline content. This is unexpected.")
+      }
     }
 
-    public typealias InternalState = EmptyObject
+    public typealias InternalState = EditFilesTool.Use.InternalState
     public struct Input: Codable, Sendable {
       public let file_path: String
       public let old_string: String
@@ -55,14 +66,19 @@ public final class ClaudeCodeEditTool: ExternalTool {
     public let status: Status
 
     public let context: ToolExecutionContext
-
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public var internalState: InternalState? { mappedInput }
 
     public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = Output(result: JSON.object(["status": .string("Edit completed successfully")]))
+      // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
+      context.updateFilesContent(for: mappedInput)
     }
+
+    private let mappedInput: InternalState
 
   }
 
@@ -124,24 +140,26 @@ public final class ClaudeCodeEditTool: ExternalTool {
 
 // MARK: - ClaudeCodeEditTool.Use + DisplayableToolUse
 
-extension ClaudeCodeEditTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    // Create a compatible EditFilesTool.Use.Input for reusing the existing view
-    let editFilesInput = [
-      EditFilesTool.Use.FileChange(
-        path: input.file_path.asURLWithPath,
+extension ClaudeCodeEditTool.Use.Input {
+  var mappedInput: EditFilesTool.Use.Input {
+    EditFilesTool.Use.Input(files: [
+      EditFilesTool.Use.Input.FileChange(
+        path: file_path.asURLWithPath,
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
-            search: input.old_string,
-            replace: input.new_string),
-        ],
-        baseLineContent: nil),
-    ]
+            search: old_string,
+            replace: new_string),
+        ]),
+    ])
+  }
+}
 
+extension ClaudeCodeEditTool.Use: DisplayableToolUse {
+  public var body: AnyView {
     let viewModel = ToolUseViewModel(
       status: status,
-      input: editFilesInput,
+      input: mappedInput,
       isInputComplete: true,
       updateToolStatus: { _ in })
 

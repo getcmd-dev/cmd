@@ -48,7 +48,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     messages: [ChatMessageViewModel],
     events: [ChatEvent]? = nil,
     projectInfo: SelectedProjectInfo? = nil,
-    knownFilesContent: [URL: String] = [:],
+    knownFilesContent: [String: String] = [:],
     createdAt: Date = Date())
   {
     self.id = id
@@ -458,18 +458,18 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 @ThreadSafe
 final class ChatThreadContext: LiveToolExecutionContext {
 
-  init(knownFilesContent: [URL: String] = [:]) {
+  init(knownFilesContent: [String: String] = [:]) {
     self.knownFilesContent = knownFilesContent
   }
 
-  private(set) var knownFilesContent: [URL: String]
+  private(set) var knownFilesContent: [String: String]
 
   func knownFileContent(for path: URL) -> String? {
-    knownFilesContent[path]
+    knownFilesContent[path.absoluteString]
   }
 
   func set(knownFileContent: String, for path: URL) {
-    knownFilesContent[path] = knownFileContent
+    knownFilesContent[path.absoluteString] = knownFileContent
   }
 
   func pluginState<T>(for _: String) -> T? where T: Decodable, T: Encodable, T: Sendable {

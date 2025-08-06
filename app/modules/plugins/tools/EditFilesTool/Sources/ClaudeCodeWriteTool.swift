@@ -4,10 +4,10 @@
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
-import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -23,7 +23,7 @@ public final class ClaudeCodeWriteTool: ExternalTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState _: InternalState? = nil,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,9 +35,21 @@ public final class ClaudeCodeWriteTool: ExternalTool {
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
+
+      // Set the baseline content using the last known value.
+      // Claude Code doesn't allow updates prior to a read, so this is safe.
+
+      let (mappedInput, err) = context.mappedInput(
+        persistedInput: internalState,
+        rawInput: input.mappedInput,
+        validateFileContent: false)
+      self.mappedInput = mappedInput
+      if let err {
+        defaultLogger.error("Claude Code wrote a file with no known baseline content. This is unexpected.")
+      }
     }
 
-    public typealias InternalState = EmptyObject
+    public typealias InternalState = EditFilesTool.Use.InternalState
     public struct Input: Codable, Sendable {
       public let file_path: String
       public let content: String
@@ -46,7 +58,6 @@ public final class ClaudeCodeWriteTool: ExternalTool {
     public typealias Output = EditFilesTool.Use.Output
 
     public let isReadonly = false
-
     public let callingTool: ClaudeCodeWriteTool
     public let toolUseId: String
     public let input: Input
@@ -56,11 +67,17 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public var internalState: InternalState? { mappedInput }
+
     public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = Output(result: JSON.object(["status": .string("Write completed successfully")]))
+      // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
+      context.updateFilesContent(for: mappedInput)
     }
+
+    private let mappedInput: InternalState
 
   }
 
@@ -110,26 +127,28 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
 }
 
-// MARK: - ClaudeCodeWriteTool.Use + DisplayableToolUse
-
-extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    // Create a compatible EditFilesTool.Use.Input for reusing the existing view
-    let editFilesInput = [
-      EditFilesTool.Use.FileChange(
-        path: input.file_path.asURLWithPath,
+extension ClaudeCodeWriteTool.Use.Input {
+  var mappedInput: EditFilesTool.Use.Input {
+    EditFilesTool.Use.Input(files: [
+      EditFilesTool.Use.Input.FileChange(
+        path: file_path.asURLWithPath,
         isNewFile: true,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
             search: "",
-            replace: input.content),
-        ],
-        baseLineContent: nil),
-    ]
+            replace: content),
+        ]),
+    ])
+  }
+}
 
+// MARK: - ClaudeCodeWriteTool.Use + DisplayableToolUse
+
+extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
+  public var body: AnyView {
     let viewModel = ToolUseViewModel(
       status: status,
-      input: editFilesInput,
+      input: mappedInput,
       isInputComplete: true,
       updateToolStatus: { _ in })
 

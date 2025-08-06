@@ -10,6 +10,7 @@ Target.module(
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
+    "LoggingServiceInterface",
     "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",

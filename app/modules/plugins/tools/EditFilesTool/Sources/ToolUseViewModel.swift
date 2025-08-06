@@ -196,7 +196,7 @@ final class ToolUseViewModel {
       let baseLineContent = diffViewModel.baseLineContent
       let targetContent = await diffViewModel.targetContent
       let fileDiff = try FileDiff.getFileChange(changing: baseLineContent, to: targetContent)
-      try await xcodeController.apply(fileChange: FileChange(
+      try await xcodeController.apply(fileChange: .init(
         filePath: file,
         oldContent: baseLineContent,
         suggestedNewContent: fileDiff.newContent,
@@ -218,7 +218,7 @@ final class ToolUseViewModel {
       let baseLineContent = diffViewModel.baseLineContent
       let targetContent = await diffViewModel.targetContent
       let fileDiff = try FileDiff.getFileChange(changing: targetContent, to: baseLineContent)
-      try await xcodeController.apply(fileChange: FileChange(
+      try await xcodeController.apply(fileChange: .init(
         filePath: file,
         oldContent: targetContent,
         suggestedNewContent: fileDiff.newContent,

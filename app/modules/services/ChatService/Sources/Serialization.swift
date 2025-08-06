@@ -19,7 +19,7 @@ extension ChatThreadModel: Codable {
       messages: container.decode([ChatMessageModel].self, forKey: .messages),
       events: container.decode([ChatEventModel].self, forKey: .events),
       projectInfo: container.decodeIfPresent(ChatThreadModel.SelectedProjectInfo.self, forKey: .projectInfo),
-      knownFilesContent: container.decodeIfPresent([URL: String].self, forKey: .knownFilesContent) ?? [:],
+      knownFilesContent: container.decodeIfPresent([String: String].self, forKey: .knownFilesContent) ?? [:],
       createdAt: container.decode(Date.self, forKey: .createdAt))
   }
 
