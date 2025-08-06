@@ -185,10 +185,10 @@ public struct ToolExecutionContext: Sendable, Codable {
   }
 
   #if DEBUG
-  public init(threadId: String = "mock-thread-id") {
+  public init(threadId: String = "mock-thread-id", projectRoot: URL? = nil) {
     self.threadId = threadId
     project = nil
-    projectRoot = nil
+    self.projectRoot = projectRoot
   }
   #endif
 
@@ -203,18 +203,14 @@ public struct ToolExecutionContext: Sendable, Codable {
 }
 
 /// The current context in which the tool use exists. The tool can modify relevant properties.
-public protocol LiveToolExecutionContext: Sendable {
+public protocol LiveToolExecutionContext: Sendable, AnyObject {
   /// The files whose content has been read/modified during the conversation.
   ///
   /// To ensure correct execution, we enforce that a file has to be read before being modified. This properties helps keep track of this.
-  @MainActor
   func knownFileContent(for path: URL) -> String?
-  @MainActor
   func set(knownFileContent: String, for path: URL)
   /// A properties that allows chat plugins (e.g. tools) to store state relevant to them within the context of a conversation.
-  @MainActor
   func pluginState<T: Codable & Sendable>(for key: String) -> T?
-  @MainActor
   func set(pluginState: some Codable & Sendable, for key: String)
 }
 

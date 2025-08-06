@@ -26,12 +26,15 @@ struct ExecuteCommandToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "canModifyDerivedFiles": false,
           "canModifySourceFiles": false,
           "command": "pwd"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -53,13 +56,16 @@ struct ExecuteCommandToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "canModifyDerivedFiles": true,
           "canModifySourceFiles": false,
           "command": "git status",
           "cwd": "/path/to/project"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -81,13 +87,16 @@ struct ExecuteCommandToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "canModifyDerivedFiles": true,
           "canModifySourceFiles": true,
           "command": "swift build",
           "cwd": "/source"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -97,9 +106,7 @@ struct ExecuteCommandToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

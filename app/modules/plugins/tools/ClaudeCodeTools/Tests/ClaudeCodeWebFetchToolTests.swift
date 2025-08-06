@@ -18,7 +18,7 @@ struct ClaudeCodeWebFetchToolTests {
         url: "https://docs.anthropic.com/en/docs/claude-code",
         prompt: "What are the main features?"),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -50,7 +50,7 @@ struct ClaudeCodeWebFetchToolTests {
         url: "https://example.com/api/status",
         prompt: "What is the status?"),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -71,7 +71,7 @@ struct ClaudeCodeWebFetchToolTests {
         url: "https://example.com/docs",
         prompt: "Extract the main sections"),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 

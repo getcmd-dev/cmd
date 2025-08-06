@@ -9,6 +9,7 @@ Target.module(
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "JSONFoundation",
+    "LoggingServiceInterface",
     "ServerServiceInterface",
     "ToolFoundation",
   ],

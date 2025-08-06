@@ -3,6 +3,7 @@ Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AccessibilityFoundation",
+    "AppFoundation",
     "ConcurrencyFoundation",
   ],
   testDependencies: [])

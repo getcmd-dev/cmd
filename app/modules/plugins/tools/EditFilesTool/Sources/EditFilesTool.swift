@@ -2,11 +2,14 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Dependencies
 import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
+import XcodeObserverServiceInterface
 import JSONFoundation
 import SwiftUI
 import ThreadSafe
@@ -27,56 +30,69 @@ public final class EditFilesTool: Tool {
       toolUseId: String,
       input: Input,
       isInputComplete: Bool,
-      context: ToolFoundation.ToolExecutionContext,
+      context: ToolExecutionContext,
       initialStatus: Status.Element?)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       _isInputComplete = Atomic(isInputComplete)
       self.context = context
-      let input = input.withPathsResolved(from: context.projectRoot)
+      @Dependency(\.chatContextRegistry) var chatContextRegistry
+      let input = input
+        .withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
-    }
 
-    public convenience init(
-      callingTool: EditFilesTool,
-      toolUseId: String,
-      writeInput: WriteInput,
-      isInputComplete: Bool,
-      context: ToolFoundation.ToolExecutionContext,
-      initialStatus: Status.Element?)
-    {
-      // Convert Write input to EditFilesTool input format
-      let fileChange = Input.FileChange(
-        path: writeInput.file_path,
-        isNewFile: true,
-        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-        baseLineContent: nil)
-      let input = Input(files: [fileChange])
-
-      self.init(
-        callingTool: callingTool,
-        toolUseId: toolUseId,
-        input: input,
-        isInputComplete: isInputComplete,
-        context: context,
-        initialStatus: initialStatus)
-    }
-
-    public struct WriteInput: Codable, Sendable {
-      public let file_path: String
-      public let content: String
-
-      public init(file_path: String, content: String) {
-        self.file_path = file_path
-        self.content = content
+      // Validate that each file has been read before applying changes.
+      // TODO: also validate that the content matches the current one.
+      do {
+        try _input.set(to: input
+          .withBaselineContent(chatContext: chatContextRegistry.context(for: context.threadId),
+                               xcodeObserver: xcodeObserver))
+      } catch {
+        // TODO: ensure the correct description is sent to the LLM, and to the user.
+        updateStatus.complete(with: .failure(error))
       }
     }
+
+//    public convenience init(
+//      callingTool: EditFilesTool,
+//      toolUseId: String,
+//      writeInput: WriteInput,
+//      isInputComplete: Bool,
+//      context: ToolFoundation.ToolExecutionContext,
+//      initialStatus: Status.Element?)
+//    {
+//      // Convert Write input to EditFilesTool input format
+//      let fileChange = Input.FileChange(
+//        path: URL(fileURLWithPath: writeInput.file_path),
+//        isNewFile: true,
+//        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
+//        baseLineContent: nil)
+//      let input = Input(files: [fileChange])
+//
+//      self.init(
+//        callingTool: callingTool,
+//        toolUseId: toolUseId,
+//        input: input,
+//        isInputComplete: isInputComplete,
+//        context: context,
+//        initialStatus: initialStatus)
+//    }
+//
+//    public struct WriteInput: Codable, Sendable {
+//      public let file_path: String
+//      public let content: String
+//
+//      public init(file_path: String, content: String) {
+//        self.file_path = file_path
+//        self.content = content
+//      }
+//    }
 
     public struct Input: Codable, Sendable {
       init(files: [FileChange]) {
@@ -107,13 +123,12 @@ public final class EditFilesTool: Tool {
           }
         }
 
-        public let path: String
+        public let path: URL
         public let isNewFile: Bool?
         public let changes: [Change]
         /// Baseline content is a property set locally, not sent by the LLM.
         /// It is used to help persist the content of the file before applying changes, so that the change is correctly displayed even after the file has changed.
         public fileprivate(set) var baseLineContent: String?
-
       }
 
       public fileprivate(set) var files: [FileChange]
@@ -121,10 +136,35 @@ public final class EditFilesTool: Tool {
       func withPathsResolved(from root: URL?) -> Input {
         Input(files: files.map { fileChange in
           FileChange(
-            path: fileChange.path.resolvePath(from: root).path(),
+            path: fileChange.path.path.resolvePath(from: root),
             isNewFile: fileChange.isNewFile,
             changes: fileChange.changes,
             baseLineContent: fileChange.baseLineContent)
+        })
+      }
+
+      /// Load and validate the baseline content for each modified file.
+      func withBaselineContent(
+        chatContext: LiveToolExecutionContext,
+                               xcodeObserver: XcodeObserver) throws -> Input {
+        return try Input(files: files.map { fileChange in
+            if fileChange.baseLineContent != nil {
+                return fileChange
+            }
+            // The `LiveToolExecutionContext` should not be used during deserialization as the chat context has not yet been created.
+            // This call is fine, since when deserializing the baseline content has been serialized and is not loaded from the chat context.
+            guard let baseLineContent = chatContext.knownFileContent(for: fileChange.path) else {
+                throw AppError("The file \(fileChange.path.path) has not been read yet. Make sure to first read any file you want to modify.")
+            }
+            guard try baseLineContent == xcodeObserver.getContent(of: fileChange.path) else {
+                throw AppError("The content of \(fileChange.path.path) has changed since it was last read. Re-read the relevant sections first.")
+            }
+            
+          return FileChange(
+            path: fileChange.path,
+            isNewFile: fileChange.isNewFile,
+            changes: fileChange.changes,
+            baseLineContent: baseLineContent)
         })
       }
     }
@@ -149,32 +189,40 @@ public final class EditFilesTool: Tool {
     public var isInputComplete: Bool { _isInputComplete.value }
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
-      let input = try JSONDecoder().decode(Input.self, from: data).withPathsResolved(from: context.projectRoot)
-      _input.set(to: input)
-      _isInputComplete.set(to: isLast)
-
-      Task { @MainActor [weak self] in
-        self?._viewModel?.input = input
-        self?._viewModel?.isInputComplete = isLast
-      }
+      var input = try JSONDecoder().decode(Input.self, from: data)
+        do {
+            input = try input
+                .withPathsResolved(from: context.projectRoot)
+            .withBaselineContent(chatContext: chatContextRegistry.context(for: context.threadId),
+                                 xcodeObserver: xcodeObserver)
+            _input.set(to: input)
+            _isInputComplete.set(to: isLast)
+            
+            Task { @MainActor [weak self] in
+                self?._viewModel?.input = input
+                self?._viewModel?.isInputComplete = isLast
+            }
+        } catch {
+            updateStatus.complete(with: .failure(error))
+        }
     }
 
-    public func receiveWriteInput(inputUpdate data: Data, isLast: Bool) throws {
-      let writeInput = try JSONDecoder().decode(WriteInput.self, from: data)
-      let fileChange = Input.FileChange(
-        path: writeInput.file_path.resolvePath(from: context.projectRoot).path(),
-        isNewFile: true,
-        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-        baseLineContent: nil)
-      let input = Input(files: [fileChange])
-      _input.set(to: input)
-      _isInputComplete.set(to: isLast)
-
-      Task { @MainActor [weak self] in
-        self?._viewModel?.input = input
-        self?._viewModel?.isInputComplete = isLast
-      }
-    }
+//    public func receiveWriteInput(inputUpdate data: Data, isLast: Bool) throws {
+//      let writeInput = try JSONDecoder().decode(WriteInput.self, from: data)
+//      let fileChange = Input.FileChange(
+//        path: writeInput.file_path.resolvePath(from: context.projectRoot),
+//        isNewFile: true,
+//        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
+//        baseLineContent: nil)
+//      let input = Input(files: [fileChange])
+//      _input.set(to: input)
+//      _isInputComplete.set(to: isLast)
+//
+//      Task { @MainActor [weak self] in
+//        self?._viewModel?.input = input
+//        self?._viewModel?.isInputComplete = isLast
+//      }
+//    }
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -185,13 +233,15 @@ public final class EditFilesTool: Tool {
         return
       }
 
-      if callingTool.shouldAutoApply {
-        Task { @MainActor in
-          await viewModel.applyAllChanges()
-        }
-      } else {
-        Task { @MainActor in
-          viewModel.acknowledgeSuggestionReceived()
+      Task { @MainActor in
+        do {
+          if callingTool.shouldAutoApply {
+            // Apply the changes.
+            await viewModel.applyAllChanges()
+          } else {
+            // Wait for the user to accept the changes.
+            viewModel.acknowledgeSuggestionReceived()
+          }
         }
       }
     }
@@ -209,21 +259,13 @@ public final class EditFilesTool: Tool {
         isInputComplete: isInputComplete,
         updateToolStatus: { [weak self] newStatus in
           self?.updateStatus.yield(newStatus)
-        },
-        syncBaselineContent: { [weak self] filePath, content in
-          self?._input.mutate { input in
-            input.files = input.files.map { fileChange in
-              var fileChange = fileChange
-              if fileChange.path == filePath {
-                fileChange.baseLineContent = fileChange.baseLineContent ?? content
-              }
-              return fileChange
-            }
-          }
         })
       _viewModel = viewModel
       return viewModel
     }
+
+      @Dependency(\.xcodeObserver) private var xcodeObserver
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
     @MainActor private var _viewModel: ToolUseViewModel?
 
@@ -273,24 +315,24 @@ public final class EditFilesTool: Tool {
       }
       """.utf8Data)
 
-  public let writeInputSchema: JSON =
-    try! JSONDecoder().decode(JSON.self, from: """
-      {
-        "type": "object",
-        "properties": {
-          "file_path": {
-            "type": "string",
-            "description": "The absolute path to the file to write (must be absolute, not relative)"
-          },
-          "content": {
-            "type": "string",
-            "description": "The content to write to the file"
-          }
-        },
-        "required": ["file_path", "content"],
-        "additionalProperties": false
-      }
-      """.utf8Data)
+//  public let writeInputSchema: JSON =
+//    try! JSONDecoder().decode(JSON.self, from: """
+//      {
+//        "type": "object",
+//        "properties": {
+//          "file_path": {
+//            "type": "string",
+//            "description": "The absolute path to the file to write (must be absolute, not relative)"
+//          },
+//          "content": {
+//            "type": "string",
+//            "description": "The content to write to the file"
+//          }
+//        },
+//        "required": ["file_path", "content"],
+//        "additionalProperties": false
+//      }
+//      """.utf8Data)
 
   public let canInputBeStreamed = true
 
@@ -302,9 +344,9 @@ public final class EditFilesTool: Tool {
     }
   }
 
-  public var writeToolName: String {
-    "Write"
-  }
+//  public var writeToolName: String {
+//    "Write"
+//  }
 
   public var displayName: String {
     "Edit Files"
@@ -320,6 +362,7 @@ public final class EditFilesTool: Tool {
     When applying the diffs, be extra careful to remember to change any closing brackets or other syntax that may be affected by the diff farther down in the file.
     ALWAYS make as many changes in a single 'apply_diff' request as possible using multiple SEARCH/REPLACE blocks.
     ALWAYS try to minimize duplicate content in search/replace block and use several blocks instead when possible.
+    ONLY modify files that have already been read. If a file you want to modify has not been read yet, use the read_file tool first to read it.
 
     example:
 

@@ -44,7 +44,7 @@ struct ToolUseViewModelTests {
         input: input,
         isInputComplete: true,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == true)
@@ -76,7 +76,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -133,7 +133,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.changes.count == 1)
@@ -205,7 +205,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -273,7 +273,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -324,7 +324,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     // Wait for initialization
@@ -364,7 +364,7 @@ struct ToolUseViewModelTests {
         input: initialInput,
         isInputComplete: false,
         updateToolStatus: { _ in },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -427,7 +427,7 @@ struct ToolUseViewModelTests {
             toolStatusUpdated = true
           }
         },
-        syncBaselineContent: { _, _ in })
+        validateBaselineContent: { _, _ in })
     }
 
     viewModel.acknowledgeSuggestionReceived()
@@ -437,7 +437,7 @@ struct ToolUseViewModelTests {
 
   @MainActor
   @Test("Syncs baseline content when creating file diff models")
-  func test_syncBaselineContent() async throws {
+  func test_validateBaselineContent() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
         path: filePath.path,
@@ -461,7 +461,7 @@ struct ToolUseViewModelTests {
         input: input,
         isInputComplete: true,
         updateToolStatus: { _ in },
-        syncBaselineContent: { filePath, content in
+        validateBaselineContent: { filePath, content in
           syncedFilePath = filePath
           syncedContent = content
         })
@@ -476,7 +476,7 @@ struct ToolUseViewModelTests {
 
   @MainActor
   @Test("Syncs baseline content for new files with empty content")
-  func test_syncBaselineContentForNewFiles() async throws {
+  func test_validateBaselineContentForNewFiles() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
         path: filePath.path,
@@ -500,7 +500,7 @@ struct ToolUseViewModelTests {
         input: input,
         isInputComplete: true,
         updateToolStatus: { _ in },
-        syncBaselineContent: { filePath, content in
+        validateBaselineContent: { filePath, content in
           syncedFilePath = filePath
           syncedContent = content
         })
@@ -509,7 +509,7 @@ struct ToolUseViewModelTests {
     // Wait for initialization
     await waitForUpdate(of: viewModel)
 
-    // syncBaselineContent should be called for new files with empty baseline content
+    // validateBaselineContent should be called for new files with empty baseline content
     #expect(syncedFilePath == filePath.path)
     #expect(syncedContent == "")
   }

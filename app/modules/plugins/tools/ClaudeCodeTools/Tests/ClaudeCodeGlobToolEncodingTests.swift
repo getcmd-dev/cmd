@@ -24,7 +24,9 @@ struct ClaudeCodeGlobToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_Glob",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "pattern": "**/*.swift"
         },
@@ -48,7 +50,9 @@ struct ClaudeCodeGlobToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_Glob",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "pattern": "src/**/*.ts",
           "path": "/Users/user/project"
@@ -73,7 +77,9 @@ struct ClaudeCodeGlobToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_Glob",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "pattern": "**/*.{js,ts,jsx,tsx}",
           "path": "/project/frontend"
@@ -88,9 +94,7 @@ struct ClaudeCodeGlobToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

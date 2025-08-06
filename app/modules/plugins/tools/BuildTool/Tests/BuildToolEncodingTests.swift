@@ -23,10 +23,13 @@ struct BuildToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "for": "test"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -44,10 +47,13 @@ struct BuildToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "for": "run"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -57,9 +63,7 @@ struct BuildToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

@@ -24,11 +24,14 @@ struct LSToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/project",
           "recursive": false
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -48,11 +51,14 @@ struct LSToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/workspace/src",
           "recursive": true
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -72,10 +78,13 @@ struct LSToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/home/user/projects"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -85,9 +94,7 @@ struct LSToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

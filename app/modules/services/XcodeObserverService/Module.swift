@@ -8,6 +8,7 @@ Target.module(
     "FoundationInterfaces",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],

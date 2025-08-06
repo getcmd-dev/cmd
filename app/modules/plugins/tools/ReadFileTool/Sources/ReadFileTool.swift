@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -30,7 +31,7 @@ public final class ReadFileTool: NonStreamableTool {
       self.toolUseId = toolUseId
       self.context = context
       self.input = Input(
-        path: input.path.resolvePath(from: context.projectRoot).path(),
+        path: input.path.resolvePath(from: context.projectRoot).path,
         lineRange: input.lineRange)
       filePath = URL(fileURLWithPath: self.input.path)
 
@@ -72,8 +73,10 @@ public final class ReadFileTool: NonStreamableTool {
 
       do {
         var content = try fileManager.read(contentsOf: filePath)
-        Task { @MainActor in
-          try? chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
+        do {
+          try chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
+        } catch {
+          defaultLogger.error("Failed to register file content for path \(filePath)", error)
         }
 
         if let lineRange = input.lineRange {

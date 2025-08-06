@@ -6,8 +6,9 @@ import Foundation
 // MARK: - AppError
 
 public struct AppError: LocalizedError {
-  public init(message: String, debugDescription: String? = nil) {
+  public init(message: String, debugDescription: String? = nil, underlyingError: Error? = nil) {
     self.message = message
+    self.underlyingError = underlyingError
     _debugDescription = debugDescription
   }
 
@@ -20,6 +21,7 @@ public struct AppError: LocalizedError {
   }
 
   public let message: String
+  public let underlyingError: Error?
   private let _debugDescription: String?
 }
 

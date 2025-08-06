@@ -210,7 +210,8 @@ struct APIParamsEncodingTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools" : [],
-          "projectRoot" : "/test"
+          "projectRoot" : "/test",
+          "threadId" : "mock-thread-id"
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -225,6 +226,7 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: reasoningModel,
+      chatMode: .ask,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       handleUpdateStream: { _ in })
 
@@ -259,7 +261,8 @@ struct APIParamsEncodingTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools" : [],
-          "projectRoot" : "/test"
+          "projectRoot" : "/test",
+          "threadId" : "mock-thread-id"
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -274,6 +277,7 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: reasoningModel,
+      chatMode: .ask,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       handleUpdateStream: { _ in })
 
@@ -308,7 +312,8 @@ struct APIParamsEncodingTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools" : [],
-          "projectRoot" : "/test"
+          "projectRoot" : "/test",
+          "threadId" : "mock-thread-id"
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -323,6 +328,7 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: nonReasoningModel,
+      chatMode: .ask,
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       handleUpdateStream: { _ in })
 

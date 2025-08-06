@@ -41,7 +41,8 @@ final class SendOneMessageTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools" : [],
-          "projectRoot" : "/path/to/root"
+          "projectRoot" : "/path/to/root",
+          "threadId" : "mock-thread-id"
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -309,6 +310,7 @@ final class SendOneMessageTests {
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
         model: .claudeSonnet_4_0,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -364,6 +366,7 @@ final class SendOneMessageTests {
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
         model: .claudeSonnet_4_0,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {

@@ -2,6 +2,7 @@ Target.module(
   name: "EditFilesTool",
   dependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
@@ -13,6 +14,7 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   testDependencies: [
     "AppFoundation",

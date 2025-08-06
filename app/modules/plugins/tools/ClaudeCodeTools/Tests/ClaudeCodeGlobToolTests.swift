@@ -16,7 +16,7 @@ struct ClaudeCodeGlobToolTests {
       toolUseId: "123",
       input: .init(pattern: "**/*.swift", path: nil),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -41,7 +41,7 @@ struct ClaudeCodeGlobToolTests {
       toolUseId: "456",
       input: .init(pattern: "**/*.nonexistent", path: "/some/path"),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 

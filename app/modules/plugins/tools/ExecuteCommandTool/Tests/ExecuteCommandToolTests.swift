@@ -51,7 +51,7 @@ struct ExecuteCommandToolTests {
           canModifySourceFiles: false,
           canModifyDerivedFiles: false),
         isInputComplete: true,
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }
@@ -81,7 +81,7 @@ struct ExecuteCommandToolTests {
           canModifySourceFiles: false,
           canModifyDerivedFiles: false),
         isInputComplete: true,
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }

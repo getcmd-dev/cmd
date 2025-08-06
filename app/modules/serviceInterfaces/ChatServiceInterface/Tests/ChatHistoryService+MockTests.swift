@@ -366,6 +366,7 @@ struct MockChatHistoryServiceTests {
       messages: [],
       events: [],
       projectInfo: nil,
+      knownFilesContent: [:],
       createdAt: createdAt)
   }
 

@@ -126,7 +126,7 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
     // Create a compatible EditFilesTool.Use.Input for reusing the existing view
     let editFilesInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: input.file_path,
+        path: input.file_path.asURLWithPath,
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
@@ -140,8 +140,7 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
       status: status,
       input: editFilesInput,
       isInputComplete: true,
-      updateToolStatus: { _ in },
-      syncBaselineContent: { _, _ in })
+      updateToolStatus: { _ in })
 
     return AnyView(ToolUseView(toolUse: viewModel))
   }

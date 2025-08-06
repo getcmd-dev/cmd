@@ -29,7 +29,7 @@ struct ClaudeCodeTodoWriteToolTests {
       toolUseId: "123",
       input: .init(todos: todoItems),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -57,7 +57,7 @@ struct ClaudeCodeTodoWriteToolTests {
       toolUseId: "456",
       input: .init(todos: todoItems),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -77,7 +77,7 @@ struct ClaudeCodeTodoWriteToolTests {
       toolUseId: "789",
       input: .init(todos: []),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -105,7 +105,7 @@ struct ClaudeCodeTodoWriteToolTests {
       toolUseId: "large",
       input: .init(todos: todoItems),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
 
@@ -143,7 +143,7 @@ struct ClaudeCodeTodoWriteToolTests {
       toolUseId: "statuses",
       input: .init(todos: todoItems),
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     #expect(toolUse.input.todos.count == 3)
     #expect(toolUse.input.todos[0].status == "pending")

@@ -27,7 +27,8 @@ public final class FileDiffViewModel: Sendable {
   {
     let fileContent: String
     do {
-      fileContent = try Self.getCurrentContent(of: URL(fileURLWithPath: filePath))
+        @Dependency(\.xcodeObserver) var xcodeObserver
+      fileContent = try xcodeObserver.getContent(of: URL(fileURLWithPath: filePath))
     } catch {
       // New file
       fileContent = ""
@@ -59,7 +60,8 @@ public final class FileDiffViewModel: Sendable {
       fileContent = oldContent
     } else {
       do {
-        fileContent = try Self.getCurrentContent(of: path)
+          @Dependency(\.xcodeObserver) var xcodeObserver
+          fileContent = try xcodeObserver.getContent(of: path)
       } catch {
         // New file
         fileContent = ""
@@ -260,20 +262,5 @@ public final class FileDiffViewModel: Sendable {
   private let xcodeController: XcodeController
 
   private let diffingTasks = ReplaceableTaskQueue<SuggestionUpdate?>()
-
-  /// Get the current content of the file. It is possible that the editor has content that is not yet saved to disk.
-  private static func getCurrentContent(of file: URL) throws -> String {
-    @Dependency(\.fileManager) var fileManager
-    @Dependency(\.xcodeObserver) var xcodeObserver
-    let editorContent = xcodeObserver.state.wrapped?.xcodesState.compactMap { xc in
-      xc.workspaces.compactMap { ws in
-        ws.tabs.compactMap { tab in
-          tab.knownPath == file ? tab.lastKnownContent : nil
-        }.first
-      }.first
-    }.first
-    // TODO: is it fine to run on the main thread?
-    return try editorContent ?? fileManager.read(contentsOf: file, encoding: .utf8)
-  }
 
 }

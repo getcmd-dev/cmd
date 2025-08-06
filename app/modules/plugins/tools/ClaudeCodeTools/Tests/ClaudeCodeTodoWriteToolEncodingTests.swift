@@ -29,7 +29,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_TodoWrite",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "todos": [
             {
@@ -75,7 +77,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_TodoWrite",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "todos": [
             {
@@ -116,7 +120,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_TodoWrite",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "todos": []
         },
@@ -146,7 +152,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "claude_code_TodoWrite",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "todos": [
             {
@@ -167,9 +175,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

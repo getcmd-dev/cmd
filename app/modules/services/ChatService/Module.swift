@@ -6,6 +6,7 @@ Target.module(
     "ChatFeatureInterface",
     "ChatServiceInterface",
     "CheckpointServiceInterface",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LLMServiceInterface",

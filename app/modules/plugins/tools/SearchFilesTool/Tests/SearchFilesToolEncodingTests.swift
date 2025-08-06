@@ -25,11 +25,14 @@ struct SearchFilesToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "directoryPath": "/project",
           "regex": "FIXME"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -50,12 +53,15 @@ struct SearchFilesToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "directoryPath": "/codebase/src",
           "filePattern": "*.swift",
           "regex": "class\\\\s+\\\\w+Test"
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -76,12 +82,15 @@ struct SearchFilesToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "directoryPath": "/workspace/backend",
           "filePattern": "*.{py,js}",
           "regex": "api\\\\..*\\\\("
         },
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -91,9 +100,7 @@ struct SearchFilesToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

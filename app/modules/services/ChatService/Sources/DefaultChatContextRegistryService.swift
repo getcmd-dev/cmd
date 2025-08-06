@@ -4,6 +4,7 @@
 import ChatServiceInterface
 
 import AppFoundation
+import ConcurrencyFoundation
 import DependencyFoundation
 import ThreadSafe
 import ToolFoundation
@@ -16,6 +17,7 @@ final class DefaultChatContextRegistryService: ChatContextRegistryService {
 
   func context(for threadId: String) throws -> any LiveToolExecutionContext {
     guard let context = contexts[threadId] else {
+      contexts.removeValue(forKey: threadId) // Clean up dead reference
       throw AppError("Context not found for threadId: \(threadId)")
     }
 
@@ -24,6 +26,10 @@ final class DefaultChatContextRegistryService: ChatContextRegistryService {
 
   func register(context: any LiveToolExecutionContext, for threadId: String) {
     contexts[threadId] = context
+  }
+
+  func unregister(threadId: String) {
+    contexts.removeValue(forKey: threadId)
   }
 
   private var contexts: [String: any LiveToolExecutionContext] = [:]

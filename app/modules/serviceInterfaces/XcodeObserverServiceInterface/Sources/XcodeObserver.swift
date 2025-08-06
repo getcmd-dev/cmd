@@ -11,12 +11,27 @@ import Foundation
 public protocol XcodeObserver: Sendable {
   var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> { get }
   var axNotifications: AnyPublisher<AXNotification, Never> { get }
+    /// Return the content of the file.
+    /// The read strategy (IDE version / from disk) should match the write strategy defined in `fileEditMode`.
+  func getContent(of file: URL) throws -> String
 }
 
 extension XcodeObserver {
   public var state: AXState<XcodeState> {
     statePublisher.currentValue
   }
+    
+    /// The content of the file, as last observed in the IDE.
+    /// Note: if the file has not yet been opened in the IDE, or if the observation was started after the file was focussed, this content is unknown.
+      public func knownEditorContent(of file: URL) -> String? {
+          state.wrapped?.xcodesState.compactMap { xc in
+          xc.workspaces.compactMap { ws in
+            ws.tabs.compactMap { tab in
+              tab.knownPath == file ? tab.lastKnownContent : nil
+            }.first
+          }.first
+        }.first
+    }
 }
 
 extension AXState<XcodeState> {

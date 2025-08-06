@@ -35,9 +35,9 @@ struct EditFilesToolEncodingTests {
       {
         "callingTool" : "suggest_files_changes",
         "context" : {
-
+          "threadId": "mock-thread-id"
         },
-        "inputData" : {
+        "input" : {
           "files" : [
             {
               "changes" : [
@@ -81,9 +81,9 @@ struct EditFilesToolEncodingTests {
       {
         "callingTool" : "suggest_files_changes",
         "context" : {
-
+          "threadId": "mock-thread-id"
         },
-        "inputData" : {
+        "input" : {
           "files" : [
             {
               "changes" : [
@@ -137,9 +137,9 @@ struct EditFilesToolEncodingTests {
       {
         "callingTool" : "suggest_files_changes",
         "context" : {
-
+          "threadId": "mock-thread-id"
         },
-        "inputData" : {
+        "input" : {
           "files" : [
             {
               "changes" : [
@@ -173,9 +173,7 @@ struct EditFilesToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

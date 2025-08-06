@@ -53,6 +53,7 @@ extension DefaultLLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: .claudeSonnet_4_0,
+          chatMode: .ask,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
           handleUpdateStream: { stream in continuation
             .resume(returning: stream)
@@ -72,6 +73,7 @@ extension DefaultLLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: .claudeSonnet_4_0,
+          chatMode: .ask,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
           handleUpdateStream: { stream in continuation
             .resume(returning: stream)
@@ -117,20 +119,16 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
       self.callingTool = callingTool
       self.context = context
       self.input = input
-      output = input.output
-      isReadonly = input.isReadonly
-      status = .Just(.completed(input.output))
+      output = callingTool.output
+      isReadonly = callingTool.isReadonly
+      status = .Just(.completed(callingTool.output))
     }
 
     init(from _: Decoder) throws {
       fatalError("Decoding not implemented for TestTool.Use")
     }
 
-    struct Input: Codable, Sendable {
-      let isReadonly: Bool
-      let input: I
-      let output: Result<O, Error>
-    }
+    typealias Input = I
 
     let context: ToolExecutionContext
     let callingTool: TestTool<I, O>
@@ -353,6 +351,7 @@ struct TestChatContext: ChatContext {
     self.chatMode = chatMode
     self.prepareForWriteToolUse = prepareForWriteToolUse
     self.requestToolApproval = requestToolApproval
+    toolExecutionContext = ToolExecutionContext(projectRoot: projectRoot)
   }
 
   let requestToolApproval: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
@@ -360,6 +359,7 @@ struct TestChatContext: ChatContext {
   let project: URL?
   let projectRoot: URL?
   let chatMode: ChatMode
+  let toolExecutionContext: ToolExecutionContext
 
   let prepareForWriteToolUse: @Sendable () async -> Void
 }

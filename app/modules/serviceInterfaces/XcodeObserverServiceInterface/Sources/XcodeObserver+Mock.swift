@@ -5,13 +5,16 @@ import AccessibilityFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import AppFoundation
 
 public final class MockXcodeObserver: XcodeObserver {
 
   public init(
-    _ initialValue: AXState<XcodeState>)
+    _ initialValue: AXState<XcodeState>,
+    filesContentOnDisk: [URL: String] = [:])
   {
     mutableStatePublisher = .init(initialValue)
+      self.filesContentOnDisk = filesContentOnDisk
   }
 
   public let mutableStatePublisher: CurrentValueSubject<AXState<XcodeState>, Never>
@@ -23,5 +26,14 @@ public final class MockXcodeObserver: XcodeObserver {
   public var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> {
     mutableStatePublisher.readonly()
   }
+    
+    public func getContent(of file: URL) throws -> String {
+        guard let content = knownEditorContent(of: file) ?? filesContentOnDisk[file] else {
+            throw AppError("Could not read content of \(file.path)")
+        }
+        return content
+    }
+    
+    private let filesContentOnDisk: [URL: String]
 
 }

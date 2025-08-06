@@ -24,12 +24,16 @@ struct AskFollowUpToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
             "Follow up 1"
           ],
           "question": "Test question"
         },
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -49,6 +53,9 @@ struct AskFollowUpToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
             "Step 1",
@@ -57,6 +64,7 @@ struct AskFollowUpToolEncodingTests {
           ],
           "question": "Complex question"
         },
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -76,12 +84,16 @@ struct AskFollowUpToolEncodingTests {
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
 
           ],
           "question": "Simple question?"
         },
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -91,9 +103,7 @@ struct AskFollowUpToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

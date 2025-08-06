@@ -32,7 +32,7 @@ extension ChatThreadViewModel {
       messages: messages.map(\.persistentModel),
       events: events.map(\.persistentModel),
       projectInfo: projectInfo,
-      knownFilesContent: knownFilesContent,
+      knownFilesContent: context.knownFilesContent,
       createdAt: createdAt)
   }
 

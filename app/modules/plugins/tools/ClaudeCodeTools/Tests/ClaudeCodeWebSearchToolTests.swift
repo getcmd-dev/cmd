@@ -86,7 +86,7 @@ struct ClaudeCodeWebSearchToolTests {
       callingTool: tool,
       toolUseId: "test-id",
       input: .init(query: "MCP HTTP streaming specifications", allowed_domains: nil, blocked_domains: nil),
-      context: .init(project: nil, projectRoot: nil))
+      context: .init())
 
     // Test receiving the output
     try use.receive(output: output)
@@ -141,7 +141,7 @@ struct ClaudeCodeWebSearchToolTests {
       callingTool: tool,
       toolUseId: "test-id",
       input: .init(query: "test query", allowed_domains: nil, blocked_domains: nil),
-      context: .init(project: nil, projectRoot: nil))
+      context: .init())
 
     try use.receive(output: output)
 
@@ -171,7 +171,7 @@ struct ClaudeCodeWebSearchToolTests {
       callingTool: tool,
       toolUseId: "test-id",
       input: .init(query: "test", allowed_domains: nil, blocked_domains: nil),
-      context: .init(project: nil, projectRoot: nil))
+      context: .init())
 
     #expect(throws: (any Error).self) {
       try use.receive(output: output)

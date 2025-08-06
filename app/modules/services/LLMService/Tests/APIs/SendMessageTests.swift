@@ -168,7 +168,8 @@ final class SendMessageTests {
               "settings" : { "apiKey" : "anthropic-key" }
             },
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
-            "projectRoot" : "/path/to/root"
+            "projectRoot" : "/path/to/root",
+            "threadId" : "mock-thread-id"
           }
           """,
           ignoring: "system")
@@ -229,7 +230,7 @@ final class SendMessageTests {
             "messages":[
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
-                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{},"idx" : 0}
+                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{"errorDescription":"Missing tool UnknownTool"},"idx" : 0}
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
@@ -240,7 +241,8 @@ final class SendMessageTests {
               "settings" : { "apiKey" : "anthropic-key" }
             },
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
-            "projectRoot" : "/path/to/root"
+            "projectRoot" : "/path/to/root",
+            "threadId" : "mock-thread-id"
           }
           """,
           ignoring: "system")
@@ -295,6 +297,7 @@ final class SendMessageTests {
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
         model: .claudeSonnet_4_0,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -350,6 +353,7 @@ final class SendMessageTests {
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
         model: .claudeSonnet_4_0,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -382,6 +386,7 @@ final class SendMessageTests {
       _ = try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         model: .claudeSonnet_4_0,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { _ in })
       Issue.record("Expected sendMessage to throw error")
@@ -483,7 +488,8 @@ final class SendMessageTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools":[],
-          "projectRoot" : "/path/to/root"
+          "projectRoot" : "/path/to/root",
+          "threadId" : "mock-thread-id"
         }
         """,
         ignoring: "system")

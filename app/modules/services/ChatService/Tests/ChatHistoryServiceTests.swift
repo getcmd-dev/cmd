@@ -256,6 +256,7 @@ struct DefaultChatHistoryServiceTests {
       messages: updatedMessages,
       events: originalThread.events,
       projectInfo: originalThread.projectInfo,
+      knownFilesContent: originalThread.knownFilesContent,
       createdAt: originalThread.createdAt)
 
     // Save updated thread
@@ -330,6 +331,7 @@ private func createTestChatThread(
     messages: messages,
     events: [],
     projectInfo: projectInfo,
+    knownFilesContent: [:],
     createdAt: Date())
 }
 

@@ -26,7 +26,7 @@ struct GrepToolTests {
       toolUseId: "123",
       input: input,
       isInputComplete: true,
-      context: .init(project: nil, projectRoot: URL(filePath: "/Users/guigui/dev/cmd.git/cc-provider/app")))
+      context: .init(projectRoot: URL(filePath: "/Users/guigui/dev/cmd.git/cc-provider/app")))
 
     toolUse.startExecuting()
 

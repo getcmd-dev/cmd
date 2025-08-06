@@ -56,7 +56,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.messages = messages
     self.projectInfo = projectInfo
     self.createdAt = createdAt
-    self.knownFilesContent = knownFilesContent
+    context = ChatThreadContext(knownFilesContent: knownFilesContent)
     self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
@@ -83,7 +83,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }.store(in: &cancellables)
 
     @Dependency(\.chatContextRegistry) var chatContextRegistry
-    chatContextRegistry.register(context: self, for: id.uuidString)
+    chatContextRegistry.register(context: context, for: id.uuidString)
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -102,7 +102,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   private(set) var isShowingChatHistory = false
 
-  private(set) var knownFilesContent: [URL: String]
+  let context: ChatThreadContext
 
   private(set) var name: String? {
     didSet {
@@ -453,9 +453,17 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
 }
 
-// MARK: LiveToolExecutionContext
+// MARK: - ChatThreadContext
 
-extension ChatThreadViewModel: LiveToolExecutionContext {
+@ThreadSafe
+final class ChatThreadContext: LiveToolExecutionContext {
+
+  init(knownFilesContent: [URL: String] = [:]) {
+    self.knownFilesContent = knownFilesContent
+  }
+
+  private(set) var knownFilesContent: [URL: String]
+
   func knownFileContent(for path: URL) -> String? {
     knownFilesContent[path]
   }
@@ -474,7 +482,6 @@ extension ChatThreadViewModel: LiveToolExecutionContext {
 
 // MARK: - DefaultChatContext
 
-@ThreadSafe
 final class DefaultChatContext: ChatContext {
   init(
     project: URL?,
@@ -498,8 +505,6 @@ final class DefaultChatContext: ChatContext {
   let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
   let chatMode: ChatMode
   let threadId: String
-  var knownFiles: [URL: String] = [:]
-  var pluginsState: [String: any(Codable & Sendable)] = [:]
 
   var toolExecutionContext: ToolExecutionContext {
     ToolExecutionContext(threadId: threadId, project: project, projectRoot: projectRoot)

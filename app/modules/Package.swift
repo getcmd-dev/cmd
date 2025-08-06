@@ -207,6 +207,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "JSONFoundation",
+    "LoggingServiceInterface",
     "ServerServiceInterface",
     "ToolFoundation",
   ],
@@ -280,6 +281,7 @@ targets.append(contentsOf: Target.module(
   name: "EditFilesTool",
   dependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
@@ -291,6 +293,7 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   testDependencies: [
     "AppFoundation",
@@ -772,6 +775,7 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AccessibilityFoundation",
+    "AppFoundation",
     "ConcurrencyFoundation",
   ],
   testDependencies: [],
@@ -781,6 +785,7 @@ targets.append(contentsOf: Target.module(
   name: "ChatServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
     "ChatFeatureInterface",
     "ThreadSafe",
     "ToolFoundation",
@@ -840,6 +845,7 @@ targets.append(contentsOf: Target.module(
     "ChatFeatureInterface",
     "ChatServiceInterface",
     "CheckpointServiceInterface",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LLMServiceInterface",
@@ -1006,6 +1012,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],

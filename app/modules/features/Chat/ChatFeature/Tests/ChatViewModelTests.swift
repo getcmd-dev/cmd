@@ -418,6 +418,7 @@ struct ChatViewModelTests {
     viewModel.handleSelectChatThread(id: UUID())
 
     // Wait for async operation to complete
+    // TODO: remove this.
     try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
     // Should keep original tab and hide chat history
@@ -559,7 +560,7 @@ struct ChatViewModelTests {
       return expectedSummary
     }
 
-    mockLLMService.onSendMessage = { _, _, model, _, handleUpdateStream in
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
       let messageStream = MutableCurrentValueStream<AssistantMessage>(assistantMessage)
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
@@ -610,7 +611,7 @@ struct ChatViewModelTests {
       return "This should not be called"
     }
 
-    mockLLMService.onSendMessage = { _, _, model, _, handleUpdateStream in
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
@@ -662,7 +663,7 @@ struct ChatViewModelTests {
       return "Summary"
     }
 
-    mockLLMService.onSendMessage = { _, _, model, _, handleUpdateStream in
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Assistant response")
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
@@ -701,7 +702,7 @@ struct ChatViewModelTests {
       throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Summarization failed"])
     }
 
-    mockLLMService.onSendMessage = { _, _, model, _, handleUpdateStream in
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
@@ -760,7 +761,7 @@ struct ChatViewModelTests {
     }
 
     let sendMessageCallCount = Atomic(0)
-    mockLLMService.onSendMessage = { messageHistory, _, model, _, handleUpdateStream in
+    mockLLMService.onSendMessage = { messageHistory, _, model, _, _, handleUpdateStream in
       messagesSent.mutate { $0.append(messageHistory) }
 
       switch sendMessageCallCount.increment() {
