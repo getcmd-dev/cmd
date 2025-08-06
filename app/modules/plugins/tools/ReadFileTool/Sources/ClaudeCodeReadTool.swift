@@ -24,6 +24,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -38,6 +39,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = EmptyObject
     public struct Input: Codable, Sendable {
       public let file_path: String
       public let offset: Int?

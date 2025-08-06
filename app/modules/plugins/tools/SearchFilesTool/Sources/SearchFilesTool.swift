@@ -25,6 +25,7 @@ public final class SearchFilesTool: NonStreamableTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: EmptyObject? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -41,6 +42,8 @@ public final class SearchFilesTool: NonStreamableTool {
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let directoryPath: String

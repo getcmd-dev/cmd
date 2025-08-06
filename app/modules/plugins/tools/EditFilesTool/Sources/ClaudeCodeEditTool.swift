@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -22,6 +23,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,6 +37,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = EmptyObject
     public struct Input: Codable, Sendable {
       public let file_path: String
       public let old_string: String
@@ -124,8 +127,8 @@ public final class ClaudeCodeEditTool: ExternalTool {
 extension ClaudeCodeEditTool.Use: DisplayableToolUse {
   public var body: AnyView {
     // Create a compatible EditFilesTool.Use.Input for reusing the existing view
-    let editFilesInput = EditFilesTool.Use.Input(files: [
-      EditFilesTool.Use.Input.FileChange(
+    let editFilesInput = [
+      EditFilesTool.Use.FileChange(
         path: input.file_path.asURLWithPath,
         isNewFile: false,
         changes: [
@@ -134,7 +137,7 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
             replace: input.new_string),
         ],
         baseLineContent: nil),
-    ])
+    ]
 
     let viewModel = ToolUseViewModel(
       status: status,

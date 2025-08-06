@@ -17,12 +17,12 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
-
     public init(
       callingTool: AskFollowUpTool,
       toolUseId: String,
       input: Input,
       context: ToolFoundation.ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,6 +35,8 @@ public final class AskFollowUpTool: NonStreamableTool {
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let question: String

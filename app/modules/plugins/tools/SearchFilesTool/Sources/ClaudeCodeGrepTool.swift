@@ -18,12 +18,12 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ExternalToolUse, @unchecked Sendable {
-
     public init(
       callingTool: ClaudeCodeGrepTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -39,6 +39,8 @@ public final class ClaudeCodeGrepTool: ExternalTool {
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public typealias Input = ClaudeCodeGrepInput
 

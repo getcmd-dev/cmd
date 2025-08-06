@@ -209,6 +209,7 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LoggingServiceInterface",
     "ServerServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [
@@ -312,6 +313,7 @@ targets.append(contentsOf: Target.module(
   name: "ClaudeCodeTools",
   dependencies: [
     .product(name: "JSONScanner", package: "JSONScanner"),
+    "AppFoundation",
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DLS",

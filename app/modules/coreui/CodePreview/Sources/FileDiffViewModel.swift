@@ -27,7 +27,7 @@ public final class FileDiffViewModel: Sendable {
   {
     let fileContent: String
     do {
-        @Dependency(\.xcodeObserver) var xcodeObserver
+      @Dependency(\.xcodeObserver) var xcodeObserver
       fileContent = try xcodeObserver.getContent(of: URL(fileURLWithPath: filePath))
     } catch {
       // New file
@@ -60,8 +60,8 @@ public final class FileDiffViewModel: Sendable {
       fileContent = oldContent
     } else {
       do {
-          @Dependency(\.xcodeObserver) var xcodeObserver
-          fileContent = try xcodeObserver.getContent(of: path)
+        @Dependency(\.xcodeObserver) var xcodeObserver
+        fileContent = try xcodeObserver.getContent(of: path)
       } catch {
         // New file
         fileContent = ""

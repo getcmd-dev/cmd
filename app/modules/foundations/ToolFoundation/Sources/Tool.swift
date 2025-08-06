@@ -44,6 +44,7 @@ extension Tool {
       input: input,
       isInputComplete: isInputComplete,
       context: context,
+      internalState: nil,
       initialStatus: nil)
   }
 
@@ -59,6 +60,7 @@ extension Tool {
 public protocol ToolUse: Sendable, Codable {
   associatedtype Input: Codable & Sendable
   associatedtype Output: Codable & Sendable
+  associatedtype InternalState: Codable & Sendable
   associatedtype SomeTool: Tool where SomeTool.Use == Self
 
   typealias Status = CurrentValueStream<ToolUseExecutionStatus<Output>>
@@ -69,6 +71,7 @@ public protocol ToolUse: Sendable, Codable {
     input: Input,
     isInputComplete: Bool,
     context: ToolExecutionContext,
+    internalState: InternalState?,
     initialStatus: Status.Element?)
 
   /// The unique identifier of the tool use.
@@ -84,6 +87,8 @@ public protocol ToolUse: Sendable, Codable {
   var status: Status { get }
   /// The context in which the tool is executed.
   var context: ToolExecutionContext { get }
+  /// Some internal state that the tool use needs to persist. It is not used outside of the tool use.
+  var internalState: InternalState? { get }
   /// Whether the input has been entirely streamed.
   var isInputComplete: Bool { get }
   /// Update the input with the updated one.
@@ -128,6 +133,10 @@ extension ToolUse {
   }
 }
 
+extension ToolUse where InternalState == InternalState {
+  public var internalState: InternalState? { nil }
+}
+
 // MARK: - StreamableTool
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
@@ -143,6 +152,7 @@ public protocol NonStreamableToolUse: ToolUse where SomeTool: NonStreamableTool 
     toolUseId: String,
     input: Input,
     context: ToolExecutionContext,
+    internalState: InternalState?,
     initialStatus: Status.Element?)
 }
 
@@ -153,9 +163,16 @@ extension NonStreamableToolUse {
     input: Input,
     isInputComplete _: Bool,
     context: ToolExecutionContext,
+    internalState: InternalState?,
     initialStatus: CurrentValueStream<ToolUseExecutionStatus<Output>>.Element? = nil)
   {
-    self.init(callingTool: callingTool, toolUseId: toolUseId, input: input, context: context, initialStatus: initialStatus)
+    self.init(
+      callingTool: callingTool,
+      toolUseId: toolUseId,
+      input: input,
+      context: context,
+      internalState: internalState,
+      initialStatus: initialStatus)
   }
 
   public var isInputComplete: Bool { true }

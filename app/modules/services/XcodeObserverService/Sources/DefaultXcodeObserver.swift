@@ -8,8 +8,8 @@ import ConcurrencyFoundation
 import DependencyFoundation
 import FoundationInterfaces
 import LoggingServiceInterface
-import SettingsServiceInterface
 import PermissionsServiceInterface
+import SettingsServiceInterface
 import ThreadSafe
 import XcodeObserverServiceInterface
 
@@ -24,24 +24,14 @@ final class DefaultXcodeObserver: XcodeObserver {
     settingsService: SettingsService)
   {
     self.permissionsService = permissionsService
-      self.fileManager = fileManager
-      self.settingsService = settingsService
-      
+    self.fileManager = fileManager
+    self.settingsService = settingsService
+
     let accessibilityPermissionStatus = permissionsService.status(for: .accessibility)
     update(with: accessibilityPermissionStatus.currentValue)
     let accessibilitySubscription = accessibilityPermissionStatus.sink(receiveValue: update(with:))
     inLock { state in state.accessibilitySubscription = accessibilitySubscription }
   }
-    
-    func getContent(of file: URL) throws -> String {
-        let fileEditMode = settingsService.value(for: \.fileEditMode)
-        switch fileEditMode {
-        case .xcodeExtension:
-            return try knownEditorContent(of: file) ?? fileManager.read(contentsOf: file, encoding: .utf8)
-        case .directIO:
-            return try fileManager.read(contentsOf: file, encoding: .utf8)
-        }
-    }
 
   deinit {
     observationsCancellable?.cancel()
@@ -55,12 +45,22 @@ final class DefaultXcodeObserver: XcodeObserver {
     .init(internalState.value.normalized, publisher: internalState.map(\.normalized).eraseToAnyPublisher())
   }
 
+  func getContent(of file: URL) throws -> String {
+    let fileEditMode = settingsService.value(for: \.fileEditMode)
+    switch fileEditMode {
+    case .xcodeExtension:
+      return try knownEditorContent(of: file) ?? fileManager.read(contentsOf: file, encoding: .utf8)
+    case .directIO:
+      return try fileManager.read(contentsOf: file, encoding: .utf8)
+    }
+  }
+
   private var xcodeObservers: [Int32: XcodeAppInstanceObserver] = [:]
   private let internalState = CurrentValueSubject<AXState<InternalXcodeState>, Never>(.unknown)
   private let axNotificationPublisher = PassthroughSubject<AXNotification, Never>()
   private let permissionsService: PermissionsService
-    private let fileManager: FileManagerI
-    private let settingsService: SettingsService
+  private let fileManager: FileManagerI
+  private let settingsService: SettingsService
   private var accessibilitySubscription: AnyCancellable? = nil
 
   private var xcodeObserverSubscriptions = [Int32: AnyCancellable]()
@@ -340,17 +340,16 @@ final class DefaultXcodeObserver: XcodeObserver {
 }
 
 extension BaseProviding where
-Self: PermissionsServiceProviding,
-Self: FileManagerProviding,
-Self: SettingsServiceProviding
+  Self: PermissionsServiceProviding,
+  Self: FileManagerProviding,
+  Self: SettingsServiceProviding
 {
   public var xcodeObserver: XcodeObserver {
     shared {
       MainActor.assumeIsolated { DefaultXcodeObserver(
         permissionsService: permissionsService,
         fileManager: fileManager,
-        settingsService: settingsService
-      ) }
+        settingsService: settingsService) }
     }
   }
 }

@@ -35,12 +35,12 @@ extension URL {
 
 extension String {
   public var asURLWithPath: URL {
-    URL(fileURLWithPath: self.removingPercentEncoding ?? self)
+    URL(fileURLWithPath: removingPercentEncoding ?? self)
   }
 
   /// Given a path, that might be relative to the project root or absolute, resolve it to an absolute path.
   public func resolvePath(from base: URL?) -> URL {
-      let str = self.removingPercentEncoding ?? self
+    let str = removingPercentEncoding ?? self
     guard let base else {
       return URL(fileURLWithPath: str).standardized
     }

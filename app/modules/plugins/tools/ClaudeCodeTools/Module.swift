@@ -2,6 +2,7 @@ Target.module(
   name: "ClaudeCodeTools",
   dependencies: [
     .product(name: "JSONScanner", package: "JSONScanner"),
+    "AppFoundation",
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DLS",

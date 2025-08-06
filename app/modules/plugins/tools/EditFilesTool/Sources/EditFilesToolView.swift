@@ -21,26 +21,26 @@ struct ToolUseView: View {
     switch toolUse.status {
     case .notStarted:
       VStack { }
+
     case .pendingApproval:
       pendingApprovalView
+
     case .approvalRejected:
       rejectedView
-    case .running, .completed:
-      ScrollView {
-        VStack(spacing: 12) {
-          toolUseChanges
-          #if DEBUG
-          // TODO: remove this
-          if toolUse.changes.isEmpty {
-            Text("no change found???")
-          }
-          #endif
-        }
+
+    case .running, .completed(.success):
+      VStack(spacing: 12) {
+        toolUseChanges
       }
+
+    case .completed(.failure(let error)):
+      errorView(error)
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  @State private var isErrorViewHovered = false
 
   private var toolUseChanges: some View {
     ForEach(toolUse.changes, id: \.path) { fileChange in
@@ -82,6 +82,25 @@ struct ToolUseView: View {
       .padding(.vertical, 8)
     }
   }
+
+  private func errorView(_ error: Error) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+      toolUseChanges
+      VStack(alignment: .leading) {
+        HStack {
+          Text("Error editing file")
+            .foregroundColor(colorScheme.redError)
+          Spacer(minLength: 0)
+        }
+        if isErrorViewHovered {
+          Text(error.localizedDescription)
+            .foregroundColor(colorScheme.secondaryForeground)
+        }
+      }
+      .onHover { isErrorViewHovered = $0 }
+    }
+  }
+
 }
 
 // MARK: - FileDiffViewModel Extensions

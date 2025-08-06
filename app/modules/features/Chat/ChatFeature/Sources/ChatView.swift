@@ -47,7 +47,7 @@ public struct ChatView: View {
         if viewModel.tab.isStreamingResponse {
           HStack(spacing: 0) {
             ThreeDotsLoadingAnimation()
-                  .padding(.trailing, Constants.chatPadding)
+              .padding(.trailing, Constants.chatPadding)
             Spacer(minLength: 0)
           }
         }

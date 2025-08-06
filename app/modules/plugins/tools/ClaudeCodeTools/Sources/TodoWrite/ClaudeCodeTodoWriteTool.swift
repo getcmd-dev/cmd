@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -21,6 +22,7 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -34,6 +36,7 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = EmptyObject
     public struct TodoItem: Codable, Sendable {
       public let content: String
       public let status: String

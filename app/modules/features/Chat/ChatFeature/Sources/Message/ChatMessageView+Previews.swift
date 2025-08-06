@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import ChatFeatureInterface
 import ConcurrencyFoundation
 import Dependencies
@@ -21,6 +22,7 @@ struct TestTool: NonStreamableTool {
       toolUseId _: String,
       input _: String,
       context _: ToolFoundation.ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus _: Status.Element?)
     {
       fatalError("not implemented")
@@ -33,6 +35,8 @@ struct TestTool: NonStreamableTool {
         .Just(.completed(.success(input)))
       toolUseId = UUID().uuidString
     }
+
+    public typealias InternalState = EmptyObject
 
     public let isReadonly = true
 

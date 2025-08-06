@@ -6,10 +6,6 @@ import ConcurrencyFoundation
 import JSONFoundation
 import ToolFoundation
 
-// MARK: - EmptyObject
-
-struct EmptyObject: Codable, Sendable { }
-
 // MARK: - FailedToolUse
 
 struct FailedToolUse: NonStreamableToolUse {
@@ -18,6 +14,7 @@ struct FailedToolUse: NonStreamableToolUse {
     toolUseId: String,
     input: Input,
     context: ToolFoundation.ToolExecutionContext,
+    internalState _: InternalState? = nil,
     initialStatus _: Status.Element?)
   {
     self.callingTool = callingTool
@@ -35,6 +32,8 @@ struct FailedToolUse: NonStreamableToolUse {
       context: context,
       initialStatus: nil)
   }
+
+  public typealias InternalState = EmptyObject
 
   public let context: ToolFoundation.ToolExecutionContext
 

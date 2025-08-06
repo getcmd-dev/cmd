@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
@@ -10,6 +11,7 @@ import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import SwiftUI
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - ReadFileTool
@@ -25,15 +27,17 @@ public final class ReadFileTool: NonStreamableTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = Input(
+      self.input = input
+      self.internalState = internalState ?? Input(
         path: input.path.resolvePath(from: context.projectRoot).path,
         lineRange: input.lineRange)
-      filePath = URL(fileURLWithPath: self.input.path)
+      filePath = URL(fileURLWithPath: self.internalState.path)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       if case .completed = stream.value { updateStatus.finish() }
@@ -41,6 +45,7 @@ public final class ReadFileTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = Input
     public struct Input: Codable, Sendable {
       public let path: String
       public let lineRange: Range?
@@ -54,6 +59,8 @@ public final class ReadFileTool: NonStreamableTool {
       public let content: String
       public let uri: String
     }
+
+    public let internalState: InternalState
 
     public let isReadonly = true
 
@@ -92,6 +99,8 @@ public final class ReadFileTool: NonStreamableTool {
     }
 
     let filePath: URL
+
+    var mappedInput: Input { internalState }
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
@@ -157,7 +166,7 @@ public final class ReadFileTool: NonStreamableTool {
 extension ReadFileTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: input)))
+      status: status, input: mappedInput)))
   }
 }
 

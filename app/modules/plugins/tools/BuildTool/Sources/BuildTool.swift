@@ -21,12 +21,12 @@ public final class BuildTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
-
     public init(
       callingTool: BuildTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -39,6 +39,8 @@ public final class BuildTool: NonStreamableTool {
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let `for`: BuildType

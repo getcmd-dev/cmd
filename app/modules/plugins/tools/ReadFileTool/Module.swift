@@ -11,6 +11,7 @@ Target.module(
     "JSONFoundation",
     "LoggingServiceInterface",
     "ServerServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [

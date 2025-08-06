@@ -25,7 +25,7 @@ final class ToolUseViewModel {
   ///   - updateToolStatus: a hook that allows to set the tool status.
   init(
     status: EditFilesTool.Use.Status,
-    input: EditFilesTool.Use.Input,
+    input: [EditFilesTool.Use.FileChange],
     isInputComplete: Bool,
     updateToolStatus: @escaping (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void)
   {
@@ -54,7 +54,7 @@ final class ToolUseViewModel {
     }
   }
 
-  var input: EditFilesTool.Use.Input {
+  var input: [EditFilesTool.Use.FileChange] {
     didSet {
       handleUpdatedInput()
     }
@@ -69,7 +69,7 @@ final class ToolUseViewModel {
 
   /// Update the tool result status, acknowledging the suggestion received.
   func acknowledgeSuggestionReceived() {
-    toolResults = input.files.reduce(into: [String: JSON.Value]()) { acc, fileChange in
+    toolResults = input.reduce(into: [String: JSON.Value]()) { acc, fileChange in
       acc[fileChange.path.path] = "Changes suggested."
     }
   }
@@ -90,7 +90,7 @@ final class ToolUseViewModel {
   func applyAllChanges() async {
     var results: [String: JSON.Value] = [:]
 
-    for fileChange in input.files {
+    for fileChange in input {
       do {
         try await modifyOneFile(file: fileChange.path)
         results[fileChange.path.path] = "Changes applied."
@@ -118,7 +118,7 @@ final class ToolUseViewModel {
   func undoAllAppliedChanges() async {
     var results: [String: JSON.Value] = [:]
 
-    for fileChange in input.files {
+    for fileChange in input {
       do {
         try await undoModificationToOneFile(file: fileChange.path)
         results[fileChange.path.path] = "Changes rejected."
@@ -150,7 +150,7 @@ final class ToolUseViewModel {
     // Ensure changes to each given file are grouped together, in case the LLM would not do this well.
     var changes = [URL: [EditFilesTool.Use.Input.FileChange.Change]]()
     var filesEdit = filesEdit
-    for file in input.files {
+    for file in input {
       if var existingChanges = changes[file.path] {
         existingChanges.append(contentsOf: file.changes)
         changes[file.path] = existingChanges
@@ -178,7 +178,7 @@ final class ToolUseViewModel {
           changes: changes.map {
             FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
           },
-          oldContent: input.files.first(where: { $0.path == file })?.baseLineContent)
+          oldContent: input.first(where: { $0.path == file })?.baseLineContent)
       {
         filesEditModels[file] = model
       }

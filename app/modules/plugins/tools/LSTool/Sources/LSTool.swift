@@ -24,6 +24,7 @@ public final class LSTool: NonStreamableTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -40,6 +41,7 @@ public final class LSTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = EmptyObject
     public struct Input: Codable, Sendable {
       public let path: String
       public let recursive: Bool?

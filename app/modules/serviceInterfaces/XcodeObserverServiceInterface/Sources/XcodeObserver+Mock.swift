@@ -2,10 +2,10 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
-import AppFoundation
 
 public final class MockXcodeObserver: XcodeObserver {
 
@@ -14,7 +14,7 @@ public final class MockXcodeObserver: XcodeObserver {
     filesContentOnDisk: [URL: String] = [:])
   {
     mutableStatePublisher = .init(initialValue)
-      self.filesContentOnDisk = filesContentOnDisk
+    self.filesContentOnDisk = filesContentOnDisk
   }
 
   public let mutableStatePublisher: CurrentValueSubject<AXState<XcodeState>, Never>
@@ -26,14 +26,14 @@ public final class MockXcodeObserver: XcodeObserver {
   public var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> {
     mutableStatePublisher.readonly()
   }
-    
-    public func getContent(of file: URL) throws -> String {
-        guard let content = knownEditorContent(of: file) ?? filesContentOnDisk[file] else {
-            throw AppError("Could not read content of \(file.path)")
-        }
-        return content
+
+  public func getContent(of file: URL) throws -> String {
+    guard let content = knownEditorContent(of: file) ?? filesContentOnDisk[file] else {
+      throw AppError("Could not read content of \(file.path)")
     }
-    
-    private let filesContentOnDisk: [URL: String]
+    return content
+  }
+
+  private let filesContentOnDisk: [URL: String]
 
 }

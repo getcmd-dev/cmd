@@ -22,6 +22,7 @@ extension ToolUse {
     let toolUseId = try container.decode(String.self, forKey: .toolUseId)
     let input = try container.decode(Input.self, forKey: .input)
     let context = try container.decode(ToolExecutionContext.self, forKey: .context)
+    let internalState = try container.decodeIfPresent(InternalState.self, forKey: .internalState)
     let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
     let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
 
@@ -31,6 +32,7 @@ extension ToolUse {
       input: input,
       isInputComplete: isInputComplete,
       context: context,
+      internalState: internalState,
       initialStatus: statusValue)
   }
 
@@ -41,6 +43,7 @@ extension ToolUse {
     try container.encode(toolUseId, forKey: .toolUseId)
     try container.encode(input, forKey: .input)
     try container.encode(context, forKey: .context)
+    try container.encode(internalState, forKey: .internalState)
     try container.encode(status.value, forKey: .status)
     try container.encode(isInputComplete, forKey: .isInputComplete)
   }
@@ -51,6 +54,7 @@ private enum ToolUseCodingKeys: String, CodingKey {
   case toolUseId
   case input
   case context
+  case internalState
   case status
   case isInputComplete
 }

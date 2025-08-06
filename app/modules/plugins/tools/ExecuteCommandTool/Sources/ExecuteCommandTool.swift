@@ -20,12 +20,12 @@ public final class ExecuteCommandTool: NonStreamableTool {
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
   public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
-
     public init(
       callingTool: ExecuteCommandTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -49,6 +49,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
       stderrStream = stderr
       setStderrStream = { stream in setStderr(.success(stream)) }
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let command: String
