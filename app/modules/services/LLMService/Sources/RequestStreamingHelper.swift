@@ -16,8 +16,7 @@ import ToolFoundation
 
 /// Receives streamed data from the serevr, and processes it to update the `result` stream with the new content.
 /// Parse tool request, handle text and tool streaming.,
-@ThreadSafe
-final class RequestStreamingHelper: Sendable {
+actor RequestStreamingHelper: Sendable {
   #if DEBUG
   /// - Parameters:
   ///   - stream: The stream of data received from the server.
@@ -74,7 +73,6 @@ final class RequestStreamingHelper: Sendable {
   /// Handle all the streamed data, updating the `result` stream with the new content.
   ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
   func processStream() async throws -> Schema.ResponseUsage? {
-    var usage: Schema.ResponseUsage? = nil
     do {
       for try await chunk in stream {
         do {
@@ -91,43 +89,17 @@ final class RequestStreamingHelper: Sendable {
           let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
           if let idx = event.idx {
-            let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: idx)
-            if idx <= previousChunkIdx {
+            if lastChunkIdx == idx - 1 {
+              // events are ordered
+              await process(event: event)
+            } else {
+              print("queing event \(idx). Current idx: \(lastChunkIdx)")
+              // Events have been received out of order. Correct this.
+              pendingEvents.append(event)
               defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
             }
-          }
-
-          switch event {
-          case .ping:
-            break
-
-          case .textDelta(let textDelta):
-            handle(textDelta: textDelta)
-
-          case .toolUseDelta(let toolUseDelta):
-            await handle(toolUseDelta: toolUseDelta)
-
-          case .toolUseRequest(let toolUseRequest):
-            await handle(toolUseRequest: toolUseRequest)
-
-          case .toolResultMessage(let toolResult):
-            await handle(toolResult: toolResult)
-
-          case .responseError(let error):
-            // We received an error from the server.
-            err = err ?? AppError(message: error.message)
-
-          case .reasoningDelta(let reasoningDelta):
-            handle(reasoningDelta: reasoningDelta)
-
-          case .reasoningSignature(let reasoningSignature):
-            handle(reasoningSignature: reasoningSignature)
-
-          case .responseUsage(let value):
-            usage = value
-
-          case .internalContent(let message):
-            handle(internalMessage: message)
+          } else {
+            await process(event: event)
           }
         } catch {
           defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
@@ -146,6 +118,9 @@ final class RequestStreamingHelper: Sendable {
     }
     return usage
   }
+
+  private var usage: Schema.ResponseUsage? = nil
+  private var pendingEvents: [Schema.StreamedResponseChunk] = []
 
   private let isTaskCancelled: @Sendable () -> Bool
   private var lastChunkIdx = -1
@@ -166,6 +141,49 @@ final class RequestStreamingHelper: Sendable {
       domain: "ToolUseError",
       code: 1,
       userInfo: [NSLocalizedDescriptionKey: "Could not parse the input for tool \(name): \(error.localizedDescription)"])
+  }
+
+  private func process(event: Schema.StreamedResponseChunk) async {
+    lastChunkIdx = event.idx ?? lastChunkIdx
+
+    switch event {
+    case .ping:
+      break
+
+    case .textDelta(let textDelta):
+      handle(textDelta: textDelta)
+
+    case .toolUseDelta(let toolUseDelta):
+      await handle(toolUseDelta: toolUseDelta)
+
+    case .toolUseRequest(let toolUseRequest):
+      await handle(toolUseRequest: toolUseRequest)
+
+    case .toolResultMessage(let toolResult):
+      await handle(toolResult: toolResult)
+
+    case .responseError(let error):
+      // We received an error from the server.
+      err = err ?? AppError(message: error.message)
+
+    case .reasoningDelta(let reasoningDelta):
+      handle(reasoningDelta: reasoningDelta)
+
+    case .reasoningSignature(let reasoningSignature):
+      handle(reasoningSignature: reasoningSignature)
+
+    case .responseUsage(let value):
+      usage = value
+
+    case .internalContent(let message):
+      handle(internalMessage: message)
+    }
+
+    // Try to dequeue events received out of order.
+    if let nextEvent = pendingEvents.first(where: { $0.idx == self.lastChunkIdx + 1 }) {
+      pendingEvents.removeAll(where: { $0.idx == nextEvent.idx })
+      await process(event: nextEvent)
+    }
   }
 
   /// Wrap up the stream. When the stream is process without failure this is already called.

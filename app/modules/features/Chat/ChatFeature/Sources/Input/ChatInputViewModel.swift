@@ -205,7 +205,9 @@ final class ChatInputViewModel {
   /// Create a deep copy of the view model.
   func copy(
     didTapSendMessage: @escaping @MainActor () -> Void,
-    didCancelMessage: @escaping @MainActor () -> Void) -> ChatInputViewModel {
+    didCancelMessage: @escaping @MainActor () -> Void)
+    -> ChatInputViewModel
+  {
     let model = ChatInputViewModel(
       textInput: TextInput(textInput.string),
       selectedModel: selectedModel,
@@ -215,7 +217,7 @@ final class ChatInputViewModel {
       mode: mode,
       attachments: attachments)
     model.didTapSendMessage = didTapSendMessage
-      model.didCancelMessage = didCancelMessage
+    model.didCancelMessage = didCancelMessage
     return model
   }
 

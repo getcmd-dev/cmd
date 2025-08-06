@@ -39,13 +39,15 @@ final class ToolUseViewModel {
 
     handleUpdatedInput()
 
-      Task { [weak self] in
-        for await status in status {
-            print("ToolUseViewModel \(input.map { $0.path.lastPathComponent }.joined()): status updated to \(status). Still alive? \(self != nil)")
-          self?.status = status
-        }
-          print("ToolUseViewModel \(input.map { $0.path.lastPathComponent }.joined()): done updating status \(String(describing: self?.status)). Still alive? \(self != nil)")
+    Task { [weak self] in
+      for await status in status {
+        print(
+          "ToolUseViewModel \(input.map(\.path.lastPathComponent).joined()): status updated to \(status). Still alive? \(self != nil)")
+        self?.status = status
       }
+      print(
+        "ToolUseViewModel \(input.map(\.path.lastPathComponent).joined()): done updating status \(String(describing: self?.status)). Still alive? \(self != nil)")
+    }
   }
 
   typealias Input = EditFilesTool.Use.Input
@@ -55,7 +57,7 @@ final class ToolUseViewModel {
 
   @ObservationIgnored var toolUseResult: EditFilesTool.Use.FormattedOutput {
     didSet {
-        setResult(toolUseResult)
+      setResult(toolUseResult)
     }
   }
 
@@ -108,7 +110,9 @@ final class ToolUseViewModel {
       try await undoModificationToOneFile(file: file)
       updateToolUseResultForFile(file, status: .rejected)
     } catch {
-        updateToolUseResultForFile(file, status: .error(AppError("Error rejecting changes for \(file.path): \(error.localizedDescription)")))
+      updateToolUseResultForFile(
+        file,
+        status: .error(AppError("Error rejecting changes for \(file.path): \(error.localizedDescription)")))
     }
   }
 
@@ -120,7 +124,9 @@ final class ToolUseViewModel {
         try await undoModificationToOneFile(file: fileChange.path)
         updateToolUseResultForFile(fileChange.path, status: .rejected)
       } catch {
-        updateToolUseResultForFile(fileChange.path, status: .error(AppError("Error rejecting changes for \(fileChange.path): \(error.localizedDescription)")))
+        updateToolUseResultForFile(
+          fileChange.path,
+          status: .error(AppError("Error rejecting changes for \(fileChange.path): \(error.localizedDescription)")))
       }
     }
   }
@@ -139,7 +145,7 @@ final class ToolUseViewModel {
   private let setResult: (EditFilesTool.Use.FormattedOutput) -> Void
   private var filesEdit = [URL: FileEditState]()
   private var filesEditModels = [URL: FileDiffViewModel]()
-  
+
   /// Update the tool use result with a new status for all files
   private func updateToolUseResult(status: EditFilesTool.Use.FileChangeStatus) {
     let updatedFileChanges = toolUseResult.fileChanges.map { fileChange in
@@ -147,15 +153,13 @@ final class ToolUseViewModel {
         path: fileChange.path,
         isNewFile: fileChange.isNewFile,
         changeCount: fileChange.changeCount,
-        status: status
-      )
+        status: status)
     }
-    
+
     toolUseResult = EditFilesTool.Use.FormattedOutput(
-      fileChanges: updatedFileChanges
-    )
+      fileChanges: updatedFileChanges)
   }
-  
+
   /// Update the tool use result for a specific file
   private func updateToolUseResultForFile(_ file: URL, status: EditFilesTool.Use.FileChangeStatus) {
     let updatedFileChanges = toolUseResult.fileChanges.map { fileChange in
@@ -164,15 +168,13 @@ final class ToolUseViewModel {
           path: fileChange.path,
           isNewFile: fileChange.isNewFile,
           changeCount: fileChange.changeCount,
-          status: status
-        )
+          status: status)
       }
       return fileChange
     }
-    
+
     toolUseResult = EditFilesTool.Use.FormattedOutput(
-      fileChanges: updatedFileChanges
-    )
+      fileChanges: updatedFileChanges)
   }
 
   /// As the input can be streamed, its value can change. Handle an update to the input.

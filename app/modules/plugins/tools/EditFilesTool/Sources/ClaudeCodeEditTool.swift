@@ -44,7 +44,8 @@ public final class ClaudeCodeEditTool: ExternalTool {
         validateFileContent: false)
       self.mappedInput = mappedInput
       if let err {
-        defaultLogger.error("Claude Code edited a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
+        defaultLogger
+          .error("Claude Code edited a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
       }
     }
 

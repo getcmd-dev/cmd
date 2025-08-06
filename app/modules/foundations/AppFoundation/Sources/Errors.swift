@@ -56,23 +56,23 @@ extension CancellationError: @retroactive LocalizedError {
 }
 
 extension AppError: Codable {
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.init(
-            message: try container.decode(String.self, forKey: .message),
-            debugDescription: try container.decodeIfPresent(String.self, forKey: .debugDescription))
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      message: container.decode(String.self, forKey: .message),
+      debugDescription: container.decodeIfPresent(String.self, forKey: .debugDescription))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(message, forKey: .message)
+    if let debugDescription = _debugDescription {
+      try container.encode(debugDescription, forKey: .debugDescription)
     }
-    
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(message, forKey: .message)
-        if let debugDescription = self._debugDescription {
-            try container.encode(debugDescription, forKey: .debugDescription)
-        }
-    }
-    
-    private enum CodingKeys: String, CodingKey {
-        case message
-        case debugDescription
-    }
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case message
+    case debugDescription
+  }
 }

@@ -47,10 +47,10 @@ public final class EditFilesTool: Tool {
 
       let (mappedInput, error) = context.mappedInput(persistedInput: internalState?.convertedInput, rawInput: input)
       self.mappedInput = Atomic(mappedInput)
-      
+
       // Initialize or update formatted output
-      if let internalState = internalState {
-        self.formattedOutput = Atomic(internalState.formattedOutput)
+      if let internalState {
+        formattedOutput = Atomic(internalState.formattedOutput)
       } else {
         let initialOutput = FormattedOutput(
           fileChanges: mappedInput.map { fileChange in
@@ -58,11 +58,9 @@ public final class EditFilesTool: Tool {
               path: fileChange.path.path,
               isNewFile: fileChange.isNewFile ?? false,
               changeCount: fileChange.changes.count,
-              status: .pending
-            )
-          }
-        )
-        self.formattedOutput = Atomic(initialOutput)
+              status: .pending)
+          })
+        formattedOutput = Atomic(initialOutput)
       }
 
       if let error, isInputComplete {
@@ -73,34 +71,34 @@ public final class EditFilesTool: Tool {
     public struct InternalState: Codable, Sendable {
       let convertedInput: [FileChange]
       let formattedOutput: FormattedOutput
-      
+
       public init(convertedInput: [FileChange], formattedOutput: FormattedOutput) {
         self.convertedInput = convertedInput
         self.formattedOutput = formattedOutput
       }
     }
-    
+
     public struct FormattedOutput: Codable, Sendable {
       let fileChanges: [FileChangeInfo]
-      
+
       public init(fileChanges: [FileChangeInfo]) {
         self.fileChanges = fileChanges
       }
     }
-    
+
     public enum FileChangeStatus: Codable, Sendable {
       case pending
       case rejected
       case error(_ error: AppError)
-        case applied
+      case applied
     }
-    
+
     public struct FileChangeInfo: Codable, Sendable {
       let path: String
       let isNewFile: Bool
       let changeCount: Int
       let status: FileChangeStatus
-      
+
       public init(path: String, isNewFile: Bool, changeCount: Int, status: FileChangeStatus) {
         self.path = path
         self.isNewFile = isNewFile
@@ -173,6 +171,12 @@ public final class EditFilesTool: Tool {
 
     public var isInputComplete: Bool { _isInputComplete.value }
 
+    public var internalState: InternalState {
+      InternalState(
+        convertedInput: mappedInput.value,
+        formattedOutput: formattedOutput.value)
+    }
+
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
       let input = try JSONDecoder().decode(Input.self, from: data)
       _input.set(to: input)
@@ -180,7 +184,7 @@ public final class EditFilesTool: Tool {
 
       let (mappedInput, error) = context.mappedInput(persistedInput: nil, rawInput: input)
       self.mappedInput.set(to: mappedInput)
-      
+
       // Update formatted output with new input
       let updatedOutput = FormattedOutput(
         fileChanges: mappedInput.map { fileChange in
@@ -188,11 +192,9 @@ public final class EditFilesTool: Tool {
             path: fileChange.path.path,
             isNewFile: fileChange.isNewFile ?? false,
             changeCount: fileChange.changes.count,
-            status: .pending
-          )
-        }
-      )
-      self.formattedOutput.set(to: updatedOutput)
+            status: .pending)
+        })
+      formattedOutput.set(to: updatedOutput)
       if let error, isLast {
         updateStatus.complete(with: .failure(error))
       }
@@ -205,10 +207,10 @@ public final class EditFilesTool: Tool {
     }
 
     public func startExecuting() {
-        if case .completed = status.value {
-            // Already completed (likely failed due to bad input).
-            return
-        }
+      if case .completed = status.value {
+        // Already completed (likely failed due to bad input).
+        return
+      }
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard _isInputComplete.value else {
@@ -241,7 +243,7 @@ public final class EditFilesTool: Tool {
         input: mappedInput.value,
         isInputComplete: isInputComplete,
         setResult: { [weak self] toolUseResult in
-            self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+          self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
         },
         toolUseResult: formattedOutput.value)
       _viewModel = viewModel
@@ -253,13 +255,6 @@ public final class EditFilesTool: Tool {
     private let formattedOutput: Atomic<FormattedOutput>
 
     @MainActor private var _viewModel: ToolUseViewModel?
-    
-    public var internalState: InternalState {
-      InternalState(
-        convertedInput: mappedInput.value,
-        formattedOutput: formattedOutput.value
-      )
-    }
 
   }
 
