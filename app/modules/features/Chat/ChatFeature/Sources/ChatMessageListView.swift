@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 import CheckpointServiceInterface
 import DLS
 import SwiftUI
@@ -27,21 +28,33 @@ struct ChatMessageList: View {
   }
 
   var body: some View {
-    ScrollView {
-      AppUpdateWidget()
-      LazyVStack(spacing: 0) {
-        ForEach(events) { event in
-          switch event {
-          case .message(let message):
-            ChatMessageView(message: message)
-              .padding(.horizontal, ChatView.Constants.chatPadding)
+    ScrollViewReader { proxy in
+      ScrollView {
+        AppUpdateWidget()
+        LazyVStack(spacing: 0) {
+          ForEach(events) { event in
+            switch event {
+            case .message(let message):
+              ChatMessageView(message: message)
+                .padding(.horizontal, ChatView.Constants.chatPadding)
 
-          case .checkpoint(let checkpoint):
-            CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
+            case .checkpoint(let checkpoint):
+              CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
+            }
           }
+          
+          Color.clear
+            .frame(height: 1)
+            .id("bottom")
+        }
+        .padding(.vertical, ChatView.Constants.chatPadding)
+      }
+      .defaultScrollAnchor(.bottom)
+      .onAppear {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+          proxy.scrollTo("bottom", anchor: .bottom)
         }
       }
-      .padding(.vertical, ChatView.Constants.chatPadding)
     }
   }
 
