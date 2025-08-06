@@ -115,3 +115,33 @@ extension [FileChange] {
   }
 
 }
+
+extension EditFilesTool.Use.FormattedOutput {
+    var asToolUseResult: Result<EditFilesTool.Use.Output, Error> {
+        let errors = fileChanges.compactMap { fileChange in
+            if case .error(let error) = fileChange.status { return error }
+            return nil
+        }
+        if !errors.isEmpty {
+            return .failure(AppError(
+                message: errors.map { $0.message }.joined(separator: "\n"),
+                debugDescription: errors.map { $0.debugDescription }.joined(separator: "\n"),
+            ))
+        }
+        let resultDescription = fileChanges.map { fileChange in
+            switch fileChange.status {
+            case .pending:
+                "ℹ️ Pending: \(fileChange.path)"
+            
+            case .rejected:
+                "rejected"
+            case .applied:
+                "✅ Applied: \(fileChange.path)" // TODO: return a snippet of the changed lines.
+            case .error:
+                // This should not happen as already handled.
+                "🔴 Error"
+            }
+        }
+        return .success(resultDescription.joined(separator: "\n"))
+    }
+}

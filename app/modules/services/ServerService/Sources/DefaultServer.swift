@@ -39,6 +39,8 @@ final class DefaultServer: Server {
     let delegate = ServerDelegate()
     let configuration = URLSessionConfiguration.default
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+    configuration.timeoutIntervalForRequest = 10 // 10s between packets (the local server should send pings)
+    configuration.timeoutIntervalForResource = 600 // 10mn for an entire request
     session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     connectionStatus = .waitingOnConnection(.init { _ in })
 

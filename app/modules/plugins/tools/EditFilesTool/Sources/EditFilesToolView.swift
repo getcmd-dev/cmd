@@ -85,7 +85,6 @@ struct ToolUseView: View {
 
   private func errorView(_ error: Error) -> some View {
     VStack(alignment: .leading, spacing: 12) {
-      toolUseChanges
       VStack(alignment: .leading) {
         HStack {
           Text("Error editing file")

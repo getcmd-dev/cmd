@@ -23,25 +23,28 @@ final class ToolUseViewModel {
   ///   - input: The tool input.
   ///   - isInputComplete: Whether the tool has received all its input, or whether it is still streaming.
   ///   - updateToolStatus: a hook that allows to set the tool status.
+  ///   - toolUseResult: The structured result containing information about changes.
   init(
     status: EditFilesTool.Use.Status,
     input: [EditFilesTool.Use.FileChange],
     isInputComplete: Bool,
-    updateToolStatus: @escaping (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void)
+    setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
+    toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []))
   {
     self.status = status.value
     self.input = input
     self.isInputComplete = isInputComplete
-    self.updateToolStatus = updateToolStatus
+    self.setResult = setResult
+    self.toolUseResult = toolUseResult
 
     handleUpdatedInput()
 
       Task { [weak self] in
         for await status in status {
-            print("ToolUseViewModel: status updated to \(status). Still alive? \(self != nil)")
+            print("ToolUseViewModel \(input.map { $0.path.lastPathComponent }.joined()): status updated to \(status). Still alive? \(self != nil)")
           self?.status = status
         }
-          print("ToolUseViewModel: done updating status \(self?.status). Still alive? \(self != nil)")
+          print("ToolUseViewModel \(input.map { $0.path.lastPathComponent }.joined()): done updating status \(String(describing: self?.status)). Still alive? \(self != nil)")
       }
   }
 
@@ -50,9 +53,9 @@ final class ToolUseViewModel {
   var isInputComplete: Bool
   var status: ToolUseExecutionStatus<EditFilesTool.Output>
 
-  @ObservationIgnored var toolResults: [String: JSON.Value] = [:] {
+  @ObservationIgnored var toolUseResult: EditFilesTool.Use.FormattedOutput {
     didSet {
-      updateToolStatus(.completed(.success(.init(result: .object(toolResults)))))
+        setResult(toolUseResult)
     }
   }
 
@@ -71,9 +74,7 @@ final class ToolUseViewModel {
 
   /// Update the tool result status, acknowledging the suggestion received.
   func acknowledgeSuggestionReceived() {
-    toolResults = input.reduce(into: [String: JSON.Value]()) { acc, fileChange in
-      acc[fileChange.path.path] = "Changes suggested."
-    }
+    updateToolUseResult(status: .pending)
   }
 
   /// Apply the suggested change to one file and update the tool result status.
@@ -81,27 +82,23 @@ final class ToolUseViewModel {
   func applyChanges(to file: URL) async {
     do {
       try await modifyOneFile(file: file)
-      toolResults[file.path] = "Changes applied."
+      updateToolUseResultForFile(file, status: .applied)
     } catch {
-      updateToolStatus(.completed(.failure(AppError("Error applying changes to \(file.path): \(error.localizedDescription)"))))
+      updateToolUseResultForFile(file, status: .error(AppError(error)))
     }
   }
 
   /// Apply all the suggested change and update the tool result status.
   @MainActor
   func applyAllChanges() async {
-    var results: [String: JSON.Value] = [:]
-
     for fileChange in input {
       do {
         try await modifyOneFile(file: fileChange.path)
-        results[fileChange.path.path] = "Changes applied."
+        updateToolUseResultForFile(fileChange.path, status: .applied)
       } catch {
-        updateToolStatus(
-          .completed(.failure(AppError("Error applying changes to \(fileChange.path): \(error.localizedDescription)"))))
+        updateToolUseResultForFile(fileChange.path, status: .error(AppError(error)))
       }
     }
-    toolResults = results
   }
 
   /// Undo the changes applied to one file, and update the tool status.
@@ -109,27 +106,23 @@ final class ToolUseViewModel {
   func undoChangesApplied(to file: URL) async {
     do {
       try await undoModificationToOneFile(file: file)
-      toolResults[file.path] = "Changes rejected."
+      updateToolUseResultForFile(file, status: .rejected)
     } catch {
-      updateToolStatus(.completed(.failure(AppError("Error rejecting changes for \(file.path): \(error.localizedDescription)"))))
+        updateToolUseResultForFile(file, status: .error(AppError("Error rejecting changes for \(file.path): \(error.localizedDescription)")))
     }
   }
 
   /// Undo all the changes applied for this tool use, and update the tool status.
   @MainActor
   func undoAllAppliedChanges() async {
-    var results: [String: JSON.Value] = [:]
-
     for fileChange in input {
       do {
         try await undoModificationToOneFile(file: fileChange.path)
-        results[fileChange.path.path] = "Changes rejected."
+        updateToolUseResultForFile(fileChange.path, status: .rejected)
       } catch {
-        updateToolStatus(
-          .completed(.failure(AppError("Error rejecting changes for \(fileChange.path): \(error.localizedDescription)"))))
+        updateToolUseResultForFile(fileChange.path, status: .error(AppError("Error rejecting changes for \(fileChange.path): \(error.localizedDescription)")))
       }
     }
-    toolResults = results
   }
 
   func copyChanges(to file: URL) async {
@@ -143,9 +136,44 @@ final class ToolUseViewModel {
   @ObservationIgnored
   @Dependency(\.xcodeController) private var xcodeController
 
-  private let updateToolStatus: (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void
+  private let setResult: (EditFilesTool.Use.FormattedOutput) -> Void
   private var filesEdit = [URL: FileEditState]()
   private var filesEditModels = [URL: FileDiffViewModel]()
+  
+  /// Update the tool use result with a new status for all files
+  private func updateToolUseResult(status: EditFilesTool.Use.FileChangeStatus) {
+    let updatedFileChanges = toolUseResult.fileChanges.map { fileChange in
+      EditFilesTool.Use.FileChangeInfo(
+        path: fileChange.path,
+        isNewFile: fileChange.isNewFile,
+        changeCount: fileChange.changeCount,
+        status: status
+      )
+    }
+    
+    toolUseResult = EditFilesTool.Use.FormattedOutput(
+      fileChanges: updatedFileChanges
+    )
+  }
+  
+  /// Update the tool use result for a specific file
+  private func updateToolUseResultForFile(_ file: URL, status: EditFilesTool.Use.FileChangeStatus) {
+    let updatedFileChanges = toolUseResult.fileChanges.map { fileChange in
+      if fileChange.path == file.path {
+        return EditFilesTool.Use.FileChangeInfo(
+          path: fileChange.path,
+          isNewFile: fileChange.isNewFile,
+          changeCount: fileChange.changeCount,
+          status: status
+        )
+      }
+      return fileChange
+    }
+    
+    toolUseResult = EditFilesTool.Use.FormattedOutput(
+      fileChanges: updatedFileChanges
+    )
+  }
 
   /// As the input can be streamed, its value can change. Handle an update to the input.
   private func handleUpdatedInput() {

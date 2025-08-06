@@ -96,7 +96,9 @@ public class ChatViewModel {
     let currentTab = tab
     tab = newTab
     if copyingCurrentInput {
-      newTab.input = currentTab.input.copy(didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } })
+      newTab.input = currentTab.input.copy(
+        didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },
+      didCancelMessage: { newTab.cancelCurrentMessage() })
     }
   }
 

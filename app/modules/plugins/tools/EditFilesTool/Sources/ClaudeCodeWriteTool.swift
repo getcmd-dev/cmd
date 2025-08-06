@@ -45,11 +45,11 @@ public final class ClaudeCodeWriteTool: ExternalTool {
         validateFileContent: false)
       self.mappedInput = mappedInput
       if let err {
-        defaultLogger.error("Claude Code wrote a file with no known baseline content. This is unexpected.")
+        defaultLogger.error("Claude Code wrote a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
       }
     }
 
-    public typealias InternalState = EditFilesTool.Use.InternalState
+    public typealias InternalState = [EditFilesTool.Use.FileChange]
     public struct Input: Codable, Sendable {
       public let file_path: String
       public let content: String
@@ -71,13 +71,13 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
     public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
-      let placeholderOutput = Output(result: JSON.object(["status": .string("Write completed successfully")]))
+      let placeholderOutput = "Write completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
       context.updateFilesContent(for: mappedInput)
     }
 
-    private let mappedInput: InternalState
+    private let mappedInput: [FileChange]
 
   }
 
@@ -150,7 +150,7 @@ extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      updateToolStatus: { _ in })
+      setResult: { _ in })
 
     return AnyView(ToolUseView(toolUse: viewModel))
   }

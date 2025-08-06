@@ -45,49 +45,69 @@ public final class EditFilesTool: Tool {
       status = stream
       self.updateStatus = updateStatus
 
-      let (mappedInput, error) = context.mappedInput(persistedInput: internalState, rawInput: input)
+      let (mappedInput, error) = context.mappedInput(persistedInput: internalState?.convertedInput, rawInput: input)
       self.mappedInput = Atomic(mappedInput)
+      
+      // Initialize or update formatted output
+      if let internalState = internalState {
+        self.formattedOutput = Atomic(internalState.formattedOutput)
+      } else {
+        let initialOutput = FormattedOutput(
+          fileChanges: mappedInput.map { fileChange in
+            FileChangeInfo(
+              path: fileChange.path.path,
+              isNewFile: fileChange.isNewFile ?? false,
+              changeCount: fileChange.changes.count,
+              status: .pending
+            )
+          }
+        )
+        self.formattedOutput = Atomic(initialOutput)
+      }
 
       if let error, isInputComplete {
         updateStatus.complete(with: .failure(error))
       }
     }
 
-    public typealias InternalState = [FileChange]
-//    public convenience init(
-//      callingTool: EditFilesTool,
-//      toolUseId: String,
-//      writeInput: WriteInput,
-//      isInputComplete: Bool,
-//      context: ToolFoundation.ToolExecutionContext,
-//      initialStatus: Status.Element?)
-//    {
-//      // Convert Write input to EditFilesTool input format
-//      let fileChange = Input.FileChange(
-//        path: URL(fileURLWithPath: writeInput.file_path),
-//        isNewFile: true,
-//        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-//        baseLineContent: nil)
-//      let input = Input(files: [fileChange])
-//
-//      self.init(
-//        callingTool: callingTool,
-//        toolUseId: toolUseId,
-//        input: input,
-//        isInputComplete: isInputComplete,
-//        context: context,
-//        initialStatus: initialStatus)
-//    }
-//
-//    public struct WriteInput: Codable, Sendable {
-//      public let file_path: String
-//      public let content: String
-//
-//      public init(file_path: String, content: String) {
-//        self.file_path = file_path
-//        self.content = content
-//      }
-//    }
+    public struct InternalState: Codable, Sendable {
+      let convertedInput: [FileChange]
+      let formattedOutput: FormattedOutput
+      
+      public init(convertedInput: [FileChange], formattedOutput: FormattedOutput) {
+        self.convertedInput = convertedInput
+        self.formattedOutput = formattedOutput
+      }
+    }
+    
+    public struct FormattedOutput: Codable, Sendable {
+      let fileChanges: [FileChangeInfo]
+      
+      public init(fileChanges: [FileChangeInfo]) {
+        self.fileChanges = fileChanges
+      }
+    }
+    
+    public enum FileChangeStatus: Codable, Sendable {
+      case pending
+      case rejected
+      case error(_ error: AppError)
+        case applied
+    }
+    
+    public struct FileChangeInfo: Codable, Sendable {
+      let path: String
+      let isNewFile: Bool
+      let changeCount: Int
+      let status: FileChangeStatus
+      
+      public init(path: String, isNewFile: Bool, changeCount: Int, status: FileChangeStatus) {
+        self.path = path
+        self.isNewFile = isNewFile
+        self.changeCount = changeCount
+        self.status = status
+      }
+    }
 
     /// Similar to `Input.FileChange` but with added computed properties that need to be persisted.
     public struct FileChange: Codable, Sendable {
@@ -138,9 +158,7 @@ public final class EditFilesTool: Tool {
 
     }
 
-    public struct Output: Codable, Sendable {
-      public let result: JSON
-    }
+    public typealias Output = String
 
     public let isReadonly = false
 
@@ -162,6 +180,19 @@ public final class EditFilesTool: Tool {
 
       let (mappedInput, error) = context.mappedInput(persistedInput: nil, rawInput: input)
       self.mappedInput.set(to: mappedInput)
+      
+      // Update formatted output with new input
+      let updatedOutput = FormattedOutput(
+        fileChanges: mappedInput.map { fileChange in
+          FileChangeInfo(
+            path: fileChange.path.path,
+            isNewFile: fileChange.isNewFile ?? false,
+            changeCount: fileChange.changes.count,
+            status: .pending
+          )
+        }
+      )
+      self.formattedOutput.set(to: updatedOutput)
       if let error, isLast {
         updateStatus.complete(with: .failure(error))
       }
@@ -169,28 +200,15 @@ public final class EditFilesTool: Tool {
       Task { @MainActor in
         self._viewModel?.input = self.mappedInput.value
         self._viewModel?.isInputComplete = isLast
+        self._viewModel?.toolUseResult = self.formattedOutput.value
       }
     }
 
-//    public func receiveWriteInput(inputUpdate data: Data, isLast: Bool) throws {
-//      let writeInput = try JSONDecoder().decode(WriteInput.self, from: data)
-//      let fileChange = Input.FileChange(
-//        path: writeInput.file_path.resolvePath(from: context.projectRoot),
-//        isNewFile: true,
-//        changes: [Input.FileChange.Change(search: "", replace: writeInput.content)],
-//        baseLineContent: nil)
-//      let input = Input(files: [fileChange])
-//      _input.set(to: input)
-//      _isInputComplete.set(to: isLast)
-//
-//      Task { @MainActor [weak self] in
-//        self?._viewModel?.input = input
-//        self?._viewModel?.isInputComplete = isLast
-//      }
-//    }
-
     public func startExecuting() {
-      // Transition from pendingApproval to notStarted to running
+        if case .completed = status.value {
+            // Already completed (likely failed due to bad input).
+            return
+        }
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard _isInputComplete.value else {
@@ -222,17 +240,26 @@ public final class EditFilesTool: Tool {
         status: status,
         input: mappedInput.value,
         isInputComplete: isInputComplete,
-        updateToolStatus: { [weak self] newStatus in
-          self?.updateStatus.yield(newStatus)
-        })
+        setResult: { [weak self] toolUseResult in
+            self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+        },
+        toolUseResult: formattedOutput.value)
       _viewModel = viewModel
       return viewModel
     }
 
     private let _input: Atomic<Input>
     private let mappedInput: Atomic<[FileChange]>
+    private let formattedOutput: Atomic<FormattedOutput>
 
     @MainActor private var _viewModel: ToolUseViewModel?
+    
+    public var internalState: InternalState {
+      InternalState(
+        convertedInput: mappedInput.value,
+        formattedOutput: formattedOutput.value
+      )
+    }
 
   }
 
@@ -280,25 +307,6 @@ public final class EditFilesTool: Tool {
       }
       """.utf8Data)
 
-//  public let writeInputSchema: JSON =
-//    try! JSONDecoder().decode(JSON.self, from: """
-//      {
-//        "type": "object",
-//        "properties": {
-//          "file_path": {
-//            "type": "string",
-//            "description": "The absolute path to the file to write (must be absolute, not relative)"
-//          },
-//          "content": {
-//            "type": "string",
-//            "description": "The content to write to the file"
-//          }
-//        },
-//        "required": ["file_path", "content"],
-//        "additionalProperties": false
-//      }
-//      """.utf8Data)
-
   public let canInputBeStreamed = true
 
   public var name: String {
@@ -308,10 +316,6 @@ public final class EditFilesTool: Tool {
       "suggest_files_changes"
     }
   }
-
-//  public var writeToolName: String {
-//    "Write"
-//  }
 
   public var displayName: String {
     "Edit Files"
