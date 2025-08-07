@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LoggingServiceInterface
+import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -59,40 +60,25 @@ public final class ClaudeCodeGrepTool: ExternalTool {
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
     public func receive(output: String) throws {
-      updateStatus.complete(with: .success(parse(rawOutput: output)))
-    }
-
-    /// Parse the Grep output from Claude Code
-    /// The output is in a tree-like format showing directory structure and some optional comments, like:
-    /// ```
-    /// Found 8 files
-    /// /Users/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift
-    /// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
-    /// /Users/me/cmd/app/modules/foundations/JSONFoundation/Sources/JSON.swift
-    /// /Users/me/cmd/app/modules/foundations/LLMFoundation/Sources/LLMProvider.swift
-    /// /Users/me/cmd/app/modules/services/LLMService/Sources/JSON+partialParsing.swift
-    /// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/AttachmentSerializer.swift
-    /// /Users/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Tests/ErrorParsingTests.swift
-    /// /Users/me/cmd/app/modules/foundations/ToolFoundation/Sources/Encoding.swift
-    /// ```
-    private func parse(rawOutput: String) -> Output {
-      let lines = rawOutput.components(separatedBy: .newlines)
-      guard let firstLine = lines.first, firstLine.starts(with: "Found ") else {
-        // Not handled
-        defaultLogger.error("Count not parse output for Claude Code Grep: \(rawOutput)")
-        return Output(
-          outputForLLm: rawOutput,
-          results: [
-          ],
-          rootPath: input.projectRoot ?? "/",
-          hasMore: false)
+      // Try parsing with the simple format first
+      if let result = parseSimpleGrepOutput(rawOutput: output, projectRoot: input.projectRoot) {
+        updateStatus.complete(with: .success(result))
+        return
       }
-      let filePaths = lines.count > 1 ? Array(lines[1...]) : []
-      return Output(
-        outputForLLm: rawOutput,
-        results: filePaths.map { .init(path: $0, searchResults: []) },
+
+      // If that fails, try parsing with context format
+      if let result = parseGrepOutputWithContext(rawOutput: output, projectRoot: input.projectRoot) {
+        updateStatus.complete(with: .success(result))
+        return
+      }
+
+      // If both fail, return the raw output
+      defaultLogger.error("Could not parse output for Claude Code Grep: \(output)")
+      updateStatus.complete(with: .success(Output(
+        outputForLLm: output,
+        results: [],
         rootPath: input.projectRoot ?? "/",
-        hasMore: false)
+        hasMore: false)))
     }
 
   }
@@ -262,6 +248,94 @@ public struct ClaudeCodeGrepInput: Codable, Sendable {
   /// Additional property used internally for server request
   var projectRoot: String?
 
+}
+
+// MARK: - Parsing Functions
+
+/// Parse the simple Grep output from Claude Code
+/// The output is in a simple format showing file paths, like:
+/// ```
+/// Found 2 files
+/// /Users/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift
+/// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
+/// ```
+private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
+  // Check if output starts with "Found X files"
+  let foundFilesRegex = #/^Found \d+ files?\n/#
+  guard rawOutput.starts(with: foundFilesRegex) else {
+    return nil
+  }
+
+  // Extract file paths (each on its own line after the header)
+  let lines = rawOutput.split(separator: "\n").dropFirst() // Skip "Found X files" line
+  let filePaths = lines.compactMap { line -> String? in
+    guard !line.isEmpty else { return nil }
+    return String(line)
+  }
+
+  return Schema.SearchFilesToolOutput(
+    outputForLLm: rawOutput,
+    results: filePaths.map { .init(path: $0, searchResults: []) },
+    rootPath: projectRoot ?? "/",
+    hasMore: false)
+}
+
+/// Parse the Grep output with context from Claude Code
+/// The output is in a format showing file paths with line numbers and context, like:
+/// ```
+/// /path/to/file.swift-152-      input: mappedInput,
+/// /path/to/file.swift-153-      isInputComplete: true,
+/// /path/to/file.swift:154:      setResult: { _ in },
+/// /path/to/file.swift-155-      context: context)
+/// --
+/// /path/to/another.swift-30-    input: [EditFilesTool.Use.FileChange],
+/// ```
+private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
+  // Regex patterns for matched and context lines
+  let matchedLineRegex = #/^(?<path>.+):(?<lineNum>\d+):(?<text>.*)$/#
+  let contextLineRegex = #/^(?<path>.+)-(?<lineNum>\d+)-(?<text>.*)$/#
+
+  var fileResults: [String: [Schema.SearchResult]] = [:]
+  var fileOrder: [String] = []
+
+  for line in rawOutput.split(separator: "\n") {
+    // Skip separator lines
+    if line == "--" || line.isEmpty {
+      continue
+    }
+
+    // Try to match as a matched line (with colons)
+    if let match = try? matchedLineRegex.wholeMatch(in: line) {
+      let path = String(match.path)
+      if let lineNum = Int(match.lineNum) {
+        if fileResults[path] == nil {
+          fileOrder.append(path)
+          fileResults[path] = []
+        }
+        fileResults[path]?.append(Schema.SearchResult(
+          line: lineNum,
+          text: String(match.text),
+          isMatch: true))
+      }
+    }
+  }
+
+  if fileResults.isEmpty {
+    return nil
+  }
+
+  // Convert to output format
+  let results = fileOrder.map { path in
+    Schema.SearchFileResult(
+      path: path,
+      searchResults: fileResults[path] ?? [])
+  }
+
+  return Schema.SearchFilesToolOutput(
+    outputForLLm: rawOutput,
+    results: results,
+    rootPath: projectRoot ?? "/",
+    hasMore: false)
 }
 
 // MARK: - ClaudeCodeGrepTool.Use + DisplayableToolUse

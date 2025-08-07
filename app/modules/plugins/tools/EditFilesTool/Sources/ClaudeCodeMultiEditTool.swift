@@ -81,7 +81,6 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
       let placeholderOutput = "MultiEdit completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
-      context.updateFilesContent(for: mappedInput)
     }
 
     private let mappedInput: [EditFilesTool.Use.FileChange]

@@ -242,8 +242,22 @@ public final class EditFilesTool: Tool {
         status: status,
         input: mappedInput.value,
         isInputComplete: isInputComplete,
-        setResult: { [weak self] toolUseResult in
+        setResult: { [weak self, mappedInput, context] toolUseResult in
           self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+          // Update tracked content for successfully applied files
+          let appliedFiles = toolUseResult.fileChanges
+            .filter { fileChange in
+              switch fileChange.status {
+              case .applied:
+                true
+              default:
+                false
+              }
+            }
+            .compactMap { fileChange in
+              mappedInput.value.first { $0.path.path == fileChange.path }
+            }
+          context.updateFilesContent(for: appliedFiles)
         },
         toolUseResult: formattedOutput.value)
       _viewModel = viewModel

@@ -1,9 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import Foundation
 import CheckpointServiceInterface
 import DLS
+import Foundation
 import SwiftUI
 
 // MARK: - ChatMessageList
@@ -42,7 +42,7 @@ struct ChatMessageList: View {
               CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
             }
           }
-          
+
           Color.clear
             .frame(height: 1)
             .id("bottom")

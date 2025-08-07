@@ -39,7 +39,7 @@ final class DefaultServer: Server {
     let delegate = ServerDelegate()
     let configuration = URLSessionConfiguration.default
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-    configuration.timeoutIntervalForRequest = 10 // 10s between packets (the local server should send pings)
+    configuration.timeoutIntervalForRequest = 600 // 10mn for an entire request
     configuration.timeoutIntervalForResource = 600 // 10mn for an entire request
     session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     connectionStatus = .waitingOnConnection(.init { _ in })
@@ -63,6 +63,7 @@ final class DefaultServer: Server {
     }
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
+    request.timeoutInterval = 60
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
     try assertIsSuccess(response: response, data: data)
@@ -82,6 +83,7 @@ final class DefaultServer: Server {
     let port = try await connectionStatus.port
     var request = URLRequest(url: URL(string: "http://localhost:\(port)/\(path)")!)
     request.httpMethod = "POST"
+    request.timeoutInterval = 60
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
     request.httpBody = data

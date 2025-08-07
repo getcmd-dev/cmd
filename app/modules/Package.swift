@@ -341,6 +341,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "JSONFoundation",
     "ServerServiceInterface",
     "SwiftTesting",

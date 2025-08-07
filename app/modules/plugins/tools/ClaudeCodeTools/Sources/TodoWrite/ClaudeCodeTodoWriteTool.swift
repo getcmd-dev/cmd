@@ -40,7 +40,6 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
     public struct TodoItem: Codable, Sendable {
       public let content: String
       public let status: String
-      public let priority: String
       public let id: String
     }
 
@@ -152,14 +151,6 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
                   .string("completed"),
                 ]),
               ]),
-              "priority": .object([
-                "type": .string("string"),
-                "enum": .array([
-                  .string("high"),
-                  .string("medium"),
-                  .string("low"),
-                ]),
-              ]),
               "id": .object([
                 "type": .string("string"),
               ]),
@@ -167,7 +158,6 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
             "required": .array([
               .string("content"),
               .string("status"),
-              .string("priority"),
               .string("id"),
             ]),
             "additionalProperties": .bool(false),

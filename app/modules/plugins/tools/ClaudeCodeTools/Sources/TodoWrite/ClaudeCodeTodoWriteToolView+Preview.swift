@@ -13,12 +13,10 @@ import SwiftUI
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Implement user authentication system",
             status: "in_progress",
-            priority: "high",
             id: "1"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Add API endpoints for data fetching",
             status: "pending",
-            priority: "medium",
             id: "2"),
         ])))
 
@@ -30,22 +28,18 @@ import SwiftUI
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Implement user authentication system",
             status: "completed",
-            priority: "high",
             id: "1"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Add API endpoints for data fetching",
             status: "in_progress",
-            priority: "high",
             id: "2"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Write unit tests for core functionality",
             status: "pending",
-            priority: "medium",
             id: "3"),
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Update documentation with new features",
             status: "pending",
-            priority: "low",
             id: "4"),
         ])))
 
@@ -57,7 +51,6 @@ import SwiftUI
           ClaudeCodeTodoWriteTool.Use.TodoItem(
             content: "Task \(i): Lorem ipsum dolor sit amet, consectetur adipiscing elit",
             status: i <= 5 ? "completed" : i <= 8 ? "in_progress" : "pending",
-            priority: i <= 5 ? "high" : i <= 10 ? "medium" : "low",
             id: "\(i)")
         })))
     }

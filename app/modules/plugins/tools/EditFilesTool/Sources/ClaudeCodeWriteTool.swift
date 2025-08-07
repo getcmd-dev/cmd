@@ -75,7 +75,6 @@ public final class ClaudeCodeWriteTool: ExternalTool {
       let placeholderOutput = "Write completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
-      context.updateFilesContent(for: mappedInput)
     }
 
     private let mappedInput: [FileChange]

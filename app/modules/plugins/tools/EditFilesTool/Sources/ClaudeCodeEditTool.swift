@@ -76,7 +76,6 @@ public final class ClaudeCodeEditTool: ExternalTool {
       let placeholderOutput = "Edit completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
-      context.updateFilesContent(for: mappedInput)
     }
 
     private let mappedInput: [FileChange]

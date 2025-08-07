@@ -56,9 +56,6 @@ struct TodoWriteToolUseView: View {
                   statusIcon(for: todo.status)
                     .frame(width: 12, height: 12)
 
-                  priorityIndicator(for: todo.priority)
-                    .frame(width: 4, height: 12)
-
                   Text(todo.content)
                     .font(.caption)
                     .foregroundColor(foregroundColor)
@@ -132,25 +129,6 @@ struct TodoWriteToolUseView: View {
         Image(systemName: "circle")
           .foregroundColor(.gray)
       }
-    }
-  }
-
-  private func priorityIndicator(for priority: String) -> some View {
-    Rectangle()
-      .fill(priorityColor(for: priority))
-      .frame(width: 3)
-  }
-
-  private func priorityColor(for priority: String) -> Color {
-    switch priority {
-    case "high":
-      .red
-    case "medium":
-      .orange
-    case "low":
-      .blue
-    default:
-      .gray
     }
   }
 }
