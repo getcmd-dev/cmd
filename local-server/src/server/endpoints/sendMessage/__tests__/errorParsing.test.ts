@@ -78,4 +78,28 @@ describe("mapResponseError", () => {
 			})
 		})
 	})
+
+	describe("Anthropic error", () => {
+		describe("Anthopic provider", () => {
+			const result = mapResponseError(
+				{
+					responseBody: JSON.stringify({
+						type: "error",
+						error: {
+							type: "not_found_error",
+							message: "model: claude-opus-4-1-latest",
+						},
+					}),
+				},
+				mockIdx,
+			)
+
+			expect(result).toEqual({
+				type: "error",
+				message: "model: claude-opus-4-1-latest",
+				statusCode: 400,
+				idx: 42,
+			})
+		})
+	})
 })

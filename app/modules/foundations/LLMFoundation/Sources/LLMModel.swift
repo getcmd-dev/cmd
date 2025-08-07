@@ -25,6 +25,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: String,
     description: String? = nil,
     contextSize: Int,
+    maxOutputTokens: Int,
     defaultPricing: ModelPricing,
     documentationURL: URL? = nil,
     reasoning: LLMReasoning? = nil)
@@ -33,6 +34,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     self.name = name
     self.description = description
     self.contextSize = contextSize
+      self.maxOutputTokens = maxOutputTokens
     self.defaultPricing = defaultPricing
     self.documentationURL = documentationURL
     self.reasoning = reasoning
@@ -43,26 +45,22 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     name: "claude-3.5-haiku",
     id: "claude-haiku-35",
     contextSize: 200_000,
+    maxOutputTokens: 8_192,
     defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
-  public static let claudeSonnet_3_7 = LLMModel(
-    name: "claude-3.7-sonnet",
-    id: "claude-sonnet-37",
-    contextSize: 200_000,
-    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
-    reasoning: LLMReasoning())
-  public static let claudeSonnet_4_0 = LLMModel(
+  public static let claudeSonnet = LLMModel(
     name: "claude-4-sonnet",
     id: "claude-sonnet-4",
     contextSize: 200_000,
+    maxOutputTokens: 64_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
     reasoning: LLMReasoning())
-  public static let claudeOpus_4 = LLMModel(
-    name: "claude-4-opus",
+  public static let claudeOpus = LLMModel(
+    name: "claude-4.1-opus",
     id: "claude-opus-4",
     contextSize: 200_000,
+    maxOutputTokens: 32_000,
     defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
     reasoning: LLMReasoning())
@@ -71,68 +69,47 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     name: "Claude Code",
     id: "claude_code_default",
     contextSize: 200_000,
+    maxOutputTokens: 128_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
-    reasoning: LLMReasoning())
-  public static let claudeCode_claudeSonnet_4_0 = LLMModel(
-    name: "Claude Code (claude-4-sonnet)",
-    id: "claude_code_claude-sonnet-4",
-    // Somewhat random value, not used.
-    contextSize: 200_000,
-    // Somewhat random value, not used.
-    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
-    reasoning: LLMReasoning())
-  public static let claudeCode_claudeOpus_4 = LLMModel(
-    name: "Claude Code (claude-4-opus)",
-    id: "claude_code_claude-opus-4",
-    contextSize: 200_000,
-    defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
     reasoning: LLMReasoning())
 
   /// OpenAI
-  public static let gpt_4_1 = LLMModel(
-    name: "gpt-4.1",
-    id: "gpt-4.1",
-    contextSize: 1_047_576,
-    defaultPricing: .init(input: 2, output: 8, cacheWrite: 0, cachedInput: 0.5, inputImage: 2),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-4.1"))
-  public static let gpt_4o = LLMModel(
-    name: "gpt-4o",
-    id: "gpt-4o",
-    contextSize: 1_047_576,
-    defaultPricing: .init(input: 2.5, output: 10, cacheWrite: 0, cachedInput: 1.25, inputImage: 2.5),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-4o"))
-  public static let o3 = LLMModel(
-    name: "o3",
-    id: "o3",
-    contextSize: 200_000,
-    defaultPricing: .init(input: 2, output: 8, cacheWrite: 0, cachedInput: 0.5, inputImage: 1.53),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/o3"),
+  public static let gpt = LLMModel(
+    name: "gpt-5",
+    id: "gpt-latest",
+    contextSize: 400_000,
+    maxOutputTokens: 128_000,
+    defaultPricing: .init(input: 1.25, output: 10, cacheWrite: 0, cachedInput: 0.125, inputImage: 1.25),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5"),
     reasoning: LLMReasoning())
-  public static let o4_mini = LLMModel(
-    name: "o4-mini",
-    id: "o4-mini",
-    contextSize: 200_000,
-    defaultPricing: .init(input: 0.4, output: 1.6, cacheWrite: 0, cachedInput: 0.1, inputImage: 1.1),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"),
-    reasoning: LLMReasoning())
+    public static let gpt_mini = LLMModel(
+      name: "gpt-5-mini",
+      id: "gpt-mini-latest",
+      contextSize: 400_000,
+      maxOutputTokens: 128_000,
+      defaultPricing: .init(input: 0.25, output: 2, cacheWrite: 0, cachedInput: 0.025, inputImage: 0.25),
+      documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-mini"),
+      reasoning: LLMReasoning())
+    public static let gpt_nano = LLMModel(
+      name: "gpt-5-nano",
+      id: "gpt-nano-latest",
+      contextSize: 400_000,
+      maxOutputTokens: 128_000,
+      defaultPricing: .init(input: 0.05, output: 0.4, cacheWrite: 0, cachedInput: 0.005, inputImage: 0.05),
+      documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-nano"),
+      reasoning: LLMReasoning())
 
   public static var allCases: [LLMModel] {
     // Keep them ordered by most likely to be a good default.
     [
-      .claudeSonnet_4_0,
-      .claudeSonnet_3_7,
-      .claudeOpus_4,
+      .claudeSonnet,
+      .claudeOpus,
       .claudeCode_default,
-      .claudeCode_claudeSonnet_4_0,
-      .claudeCode_claudeOpus_4,
-      .gpt_4_1,
-      .gpt_4o,
+      .gpt,
       .claudeHaiku_3_5,
-      .o3,
-      .o4_mini,
+      .gpt_mini,
+      .gpt_nano,
     ]
   }
 
@@ -140,6 +117,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let id: String
   public let description: String?
   public let contextSize: Int
+    public let maxOutputTokens: Int
   public let defaultPricing: ModelPricing
   public let documentationURL: URL?
   public let reasoning: LLMReasoning?

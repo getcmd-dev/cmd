@@ -29,7 +29,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tab: tab,
-      currentModel: .claudeSonnet_4_0)
+      currentModel: .claudeSonnet)
   }
   #endif
 
@@ -37,7 +37,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tab: ChatThreadViewModel(),
-      currentModel: .claudeSonnet_4_0)
+      currentModel: .claudeSonnet)
   }
 
   private init(

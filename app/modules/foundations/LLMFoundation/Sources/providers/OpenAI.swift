@@ -10,17 +10,15 @@ extension LLMProvider {
     name: "OpenAI",
     keychainKey: "OPENAI_API_KEY",
     supportedModels: [
-      .gpt_4_1,
-      .gpt_4o,
-      .o3,
-      .o4_mini,
+      .gpt,
+      .gpt_mini,
+      .gpt_nano,
     ],
     idForModel: { model in
       switch model {
-      case .gpt_4_1: return "gpt-4.1"
-      case .gpt_4o: return "gpt-4o"
-      case .o3: return "o3"
-      case .o4_mini: return "o4-mini"
+      case .gpt: return "gpt-5"
+      case .gpt_mini: return "gpt-5-mini"
+      case .gpt_nano: return "gpt-5-nano"
       default: throw AppError(message: "Model \(model) is not supported by Anthropic provider.")
       }
     },

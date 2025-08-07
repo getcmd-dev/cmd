@@ -57,7 +57,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0)
+      model: .claudeSonnet)
 
     // Then
     #expect(summary == expectedSummary)
@@ -85,7 +85,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0)
+      model: .claudeSonnet)
 
     // Then
     #expect(summary == "")
@@ -114,7 +114,7 @@ final class SummarizeConversationTests {
     await #expect(throws: AppError.self) {
       _ = try await service.summarizeConversation(
         messageHistory: messageHistory,
-        model: .claudeSonnet_4_0)
+        model: .claudeSonnet)
     }
   }
 
@@ -145,7 +145,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0)
+      model: .claudeSonnet)
 
     // Then
     #expect(summary == expectedSummary)
@@ -191,7 +191,7 @@ final class SummarizeConversationTests {
     // When
     let summary = try await service.summarizeConversation(
       messageHistory: messageHistory,
-      model: .claudeSonnet_4_0)
+      model: .claudeSonnet)
 
     // Then
     #expect(summary == expectedSummary)

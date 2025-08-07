@@ -16,12 +16,10 @@ struct ClaudeCodeTodoWriteToolTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Implement authentication",
         status: "pending",
-        priority: "high",
         id: "1"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Add unit tests",
         status: "in_progress",
-        priority: "medium",
         id: "2"),
     ]
 
@@ -49,7 +47,6 @@ struct ClaudeCodeTodoWriteToolTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Invalid task",
         status: "invalid_status",
-        priority: "high",
         id: "1"),
     ]
 
@@ -97,7 +94,6 @@ struct ClaudeCodeTodoWriteToolTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Task \(i): Long description of what needs to be done",
         status: i <= 10 ? "completed" : i <= 20 ? "in_progress" : "pending",
-        priority: i <= 15 ? "high" : i <= 35 ? "medium" : "low",
         id: "\(i)")
     }
 
@@ -125,17 +121,14 @@ struct ClaudeCodeTodoWriteToolTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Pending task",
         status: "pending",
-        priority: "high",
         id: "1"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "In progress task",
         status: "in_progress",
-        priority: "medium",
         id: "2"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Completed task",
         status: "completed",
-        priority: "low",
         id: "3"),
     ]
 
@@ -149,8 +142,5 @@ struct ClaudeCodeTodoWriteToolTests {
     #expect(toolUse.input.todos[0].status == "pending")
     #expect(toolUse.input.todos[1].status == "in_progress")
     #expect(toolUse.input.todos[2].status == "completed")
-    #expect(toolUse.input.todos[0].priority == "high")
-    #expect(toolUse.input.todos[1].priority == "medium")
-    #expect(toolUse.input.todos[2].priority == "low")
   }
 }

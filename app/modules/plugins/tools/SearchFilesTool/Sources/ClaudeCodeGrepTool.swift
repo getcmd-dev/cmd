@@ -293,7 +293,6 @@ private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> S
 private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
   // Regex patterns for matched and context lines
   let matchedLineRegex = #/^(?<path>.+):(?<lineNum>\d+):(?<text>.*)$/#
-  let contextLineRegex = #/^(?<path>.+)-(?<lineNum>\d+)-(?<text>.*)$/#
 
   var fileResults: [String: [Schema.SearchResult]] = [:]
   var fileOrder: [String] = []

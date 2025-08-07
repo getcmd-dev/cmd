@@ -11,24 +11,20 @@ extension LLMProvider {
     keychainKey: "OPENROUTER_API_KEY",
     supportedModels: [
       .claudeHaiku_3_5,
-      .claudeSonnet_3_7,
-      .claudeSonnet_4_0,
-      .claudeOpus_4,
-      .gpt_4_1,
-      .gpt_4o,
-      .o3,
-      .o4_mini,
+      .claudeSonnet,
+      .claudeOpus,
+      .gpt,
+      .gpt_mini,
+      .gpt_nano,
     ],
     idForModel: { model in
       switch model {
       case .claudeHaiku_3_5: return "anthropic/claude-3.5-haiku"
-      case .claudeSonnet_3_7: return "anthropic/claude-3.7-sonnet"
-      case .claudeSonnet_4_0: return "anthropic/claude-sonnet-4"
-      case .claudeOpus_4: return "anthropic/claude-opus-4"
-      case .gpt_4_1: return "openai/gpt-4.1"
-      case .gpt_4o: return "openai/gpt-4o"
-      case .o3: return "openai/o3"
-      case .o4_mini: return "openai/o4-mini"
+      case .claudeSonnet: return "anthropic/claude-sonnet-4"
+      case .claudeOpus: return "anthropic/claude-opus-4.1"
+      case .gpt: return "openai/gpt-5"
+      case .gpt_mini: return "openai/gpt-5-mini"
+      case .gpt_nano: return "openai/gpt-5-nano"
       default: throw AppError(message: "Model \(model) is not supported by Anthropic provider.")
       }
     },

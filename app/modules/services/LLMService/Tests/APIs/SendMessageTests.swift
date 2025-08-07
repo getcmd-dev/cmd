@@ -296,7 +296,7 @@ final class SendMessageTests {
       try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet_4_0,
+        model: .claudeSonnet,
         chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
@@ -352,7 +352,7 @@ final class SendMessageTests {
       try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet_4_0,
+        model: .claudeSonnet,
         chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
@@ -385,7 +385,7 @@ final class SendMessageTests {
     do {
       _ = try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-        model: .claudeSonnet_4_0,
+        model: .claudeSonnet,
         chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { _ in })

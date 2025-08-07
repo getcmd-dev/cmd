@@ -11,14 +11,10 @@ extension LLMProvider {
     keychainKey: "CLAUDE_CODE_PATH",
     supportedModels: [
       .claudeCode_default,
-      .claudeCode_claudeSonnet_4_0,
-      .claudeCode_claudeOpus_4,
     ],
     idForModel: { model in
       switch model {
       case .claudeCode_default: return ""
-      case .claudeCode_claudeSonnet_4_0: return "claude-sonnet-4-20250514"
-      case .claudeCode_claudeOpus_4: return "claude-opus-4-20250514"
       default: throw AppError(message: "Model \(model) is not supported by Claude Code provider.")
       }
     },

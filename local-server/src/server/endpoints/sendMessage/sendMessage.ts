@@ -181,9 +181,15 @@ async function* mapStream(
 					signature: chunk.signature,
 				}
 				break
-			case "error":
-				yield mapResponseError(chunk.error, () => 0)
-				break
+			case "error": {
+				const error = mapResponseError(chunk.error, () => 0)
+				yield error
+				// Throw the error here to stop the stream immediately
+				throw new UserFacingError({
+					message: error.message,
+					statusCode: error.statusCode,
+				})
+			}
 			default:
 				logInfo(`skipping chunk: ${chunk.type}`)
 				break

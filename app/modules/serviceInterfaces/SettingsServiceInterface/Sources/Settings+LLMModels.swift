@@ -32,7 +32,7 @@ extension SettingsServiceInterface.Settings {
   public var lowTierModel: LLMModel? {
     let preferredLowTierModels: [LLMModel] = [
       .claudeHaiku_3_5,
-      .o4_mini,
+      .gpt_mini,
     ]
     return availableModels.sorted(by: { a, b in
       let i = preferredLowTierModels.firstIndex(of: a)

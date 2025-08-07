@@ -99,7 +99,7 @@ const createClaudeCodeEventStream = ({
 	// const mcpConfigFilePath = path.join(__dirname, "mcp.json")
 	const mcpConfigFilePath = path.join("/tmp/command", `mcp-${threadId}.json`)
 	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
-	registerMCPServerEndpoints(router, mcpEndpoint, (toolName, input) => {
+	registerMCPServerEndpoints(router, mcpEndpoint, async (toolName, input) => {
 		logInfo(
 			`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
 		)

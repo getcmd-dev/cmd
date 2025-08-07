@@ -34,7 +34,7 @@ struct ChatViewModelTests {
 
     #expect(viewModel.tab.messages == [])
     #expect(viewModel.defaultMode == .agent)
-    #expect(viewModel.currentModel == .claudeSonnet_4_0)
+    #expect(viewModel.currentModel == .claudeSonnet)
   }
 
   @MainActor
@@ -56,7 +56,7 @@ struct ChatViewModelTests {
 
     #expect(viewModel.tab == tab)
     #expect(viewModel.defaultMode == ChatMode.ask)
-    #expect(viewModel.currentModel == .claudeSonnet_4_0)
+    #expect(viewModel.currentModel == .claudeSonnet)
   }
 
   @MainActor
@@ -689,7 +689,7 @@ struct ChatViewModelTests {
     await viewModel.sendMessage()
 
     // Verify correct parameters were passed to summarization
-    #expect(capturedModel.value == .gpt_4o)
+    #expect(capturedModel.value == .gpt)
     #expect(capturedMessageHistory.value?.first?.role == .user)
   }
 

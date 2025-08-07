@@ -20,7 +20,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Implement authentication",
         status: "pending",
-        priority: "high",
         id: "1"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)
@@ -58,17 +57,14 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Implement authentication",
         status: "completed",
-        priority: "high",
         id: "1"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Add API endpoints",
         status: "in_progress",
-        priority: "medium",
         id: "2"),
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: "Write documentation",
         status: "pending",
-        priority: "low",
         id: "3"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)
@@ -143,7 +139,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
       ClaudeCodeTodoWriteTool.Use.TodoItem(
         content: longContent,
         status: "pending",
-        priority: "medium",
         id: "long-1"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)

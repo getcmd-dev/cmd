@@ -1,5 +1,5 @@
 import { describe, expect, it, jest, beforeEach, beforeAll } from "@jest/globals"
-import { Response } from "express"
+import { Response, Router } from "express"
 import { LocalExecutable, Message, StreamedResponseChunk } from "../../../../schemas/sendMessageSchema"
 import { MockedSpawn, mockSpawn } from "@/utils/tests/mockSpawn"
 import { MockedFs, mockFs } from "@/utils/tests/mockFs"
@@ -13,6 +13,8 @@ describe("sendMessageToClaudeCode", () => {
 	let spawnCommand: string
 	let spawnArgs: string[]
 	let mockedFs: MockedFs
+	const threadId = "test-thread-123"
+	const router = Router()
 
 	beforeAll(async () => {
 		// Mock child_process
@@ -96,7 +98,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Hello Claude")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -137,7 +141,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages,
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -174,7 +180,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: messagesWithSession,
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -207,7 +215,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Test error")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -225,7 +235,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Test exit code")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -245,7 +257,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Use a tool")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -296,7 +310,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Think about this")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -343,7 +359,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Tool result test")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -398,7 +416,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Test MCP config")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 4567,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -422,7 +442,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Test restore")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 8080,
+					router,
 				},
 				res as unknown as Response,
 			)
@@ -440,7 +462,9 @@ describe("sendMessageToClaudeCode", () => {
 				{
 					messages: [createTestMessage("Test usage limit")],
 					localExecutable: createTestLocalExecutable(),
+					threadId,
 					port: 3000,
+					router,
 				},
 				res as unknown as Response,
 			)

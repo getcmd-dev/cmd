@@ -11,16 +11,14 @@ extension LLMProvider {
     keychainKey: "ANTHROPIC_API_KEY",
     supportedModels: [
       .claudeHaiku_3_5,
-      .claudeSonnet_3_7,
-      .claudeSonnet_4_0,
-      .claudeOpus_4,
+      .claudeSonnet,
+      .claudeOpus,
     ],
     idForModel: { model in
       switch model {
       case .claudeHaiku_3_5: return "claude-3-5-haiku-latest"
-      case .claudeSonnet_3_7: return "claude-3-7-sonnet-latest"
-      case .claudeSonnet_4_0: return "claude-sonnet-4-20250514"
-      case .claudeOpus_4: return "claude-opus-4-20250514"
+      case .claudeSonnet: return "claude-sonnet-4-20250514"
+      case .claudeOpus: return "claude-opus-4-1-20250805"
       default: throw AppError(message: "Model \(model) is not supported by Anthropic provider.")
       }
     },
