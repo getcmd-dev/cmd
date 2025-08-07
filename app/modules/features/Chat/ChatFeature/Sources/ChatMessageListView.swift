@@ -28,7 +28,6 @@ struct ChatMessageList: View {
   }
 
   var body: some View {
-    ScrollViewReader { proxy in
       ScrollView {
         AppUpdateWidget()
         LazyVStack(spacing: 0) {
@@ -37,24 +36,14 @@ struct ChatMessageList: View {
             case .message(let message):
               ChatMessageView(message: message)
                 .padding(.horizontal, ChatView.Constants.chatPadding)
+                .padding(.top, 2)
 
             case .checkpoint(let checkpoint):
               CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
             }
           }
-
-          Color.clear
-            .frame(height: 1)
-            .id("bottom")
         }
         .padding(.vertical, ChatView.Constants.chatPadding)
-      }
-      .defaultScrollAnchor(.bottom)
-      .onAppear {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-          proxy.scrollTo("bottom", anchor: .bottom)
-        }
-      }
     }
   }
 

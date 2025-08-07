@@ -34,7 +34,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     self.name = name
     self.description = description
     self.contextSize = contextSize
-      self.maxOutputTokens = maxOutputTokens
+    self.maxOutputTokens = maxOutputTokens
     self.defaultPricing = defaultPricing
     self.documentationURL = documentationURL
     self.reasoning = reasoning
@@ -83,22 +83,22 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     defaultPricing: .init(input: 1.25, output: 10, cacheWrite: 0, cachedInput: 0.125, inputImage: 1.25),
     documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5"),
     reasoning: LLMReasoning())
-    public static let gpt_mini = LLMModel(
-      name: "gpt-5-mini",
-      id: "gpt-mini-latest",
-      contextSize: 400_000,
-      maxOutputTokens: 128_000,
-      defaultPricing: .init(input: 0.25, output: 2, cacheWrite: 0, cachedInput: 0.025, inputImage: 0.25),
-      documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-mini"),
-      reasoning: LLMReasoning())
-    public static let gpt_nano = LLMModel(
-      name: "gpt-5-nano",
-      id: "gpt-nano-latest",
-      contextSize: 400_000,
-      maxOutputTokens: 128_000,
-      defaultPricing: .init(input: 0.05, output: 0.4, cacheWrite: 0, cachedInput: 0.005, inputImage: 0.05),
-      documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-nano"),
-      reasoning: LLMReasoning())
+  public static let gpt_mini = LLMModel(
+    name: "gpt-5-mini",
+    id: "gpt-mini-latest",
+    contextSize: 400_000,
+    maxOutputTokens: 128_000,
+    defaultPricing: .init(input: 0.25, output: 2, cacheWrite: 0, cachedInput: 0.025, inputImage: 0.25),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-mini"),
+    reasoning: LLMReasoning())
+  public static let gpt_nano = LLMModel(
+    name: "gpt-5-nano",
+    id: "gpt-nano-latest",
+    contextSize: 400_000,
+    maxOutputTokens: 128_000,
+    defaultPricing: .init(input: 0.05, output: 0.4, cacheWrite: 0, cachedInput: 0.005, inputImage: 0.05),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-nano"),
+    reasoning: LLMReasoning())
 
   public static var allCases: [LLMModel] {
     // Keep them ordered by most likely to be a good default.
@@ -117,7 +117,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let id: String
   public let description: String?
   public let contextSize: Int
-    public let maxOutputTokens: Int
+  public let maxOutputTokens: Int
   public let defaultPricing: ModelPricing
   public let documentationURL: URL?
   public let reasoning: LLMReasoning?

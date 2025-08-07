@@ -93,17 +93,19 @@ public final class ExecuteCommandTool: NonStreamableTool {
             self.setStdoutStream(.init(stdout))
             self.setStderrStream(.init(stderr))
           }
+
+          let output = Output(
+            output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
+            exitCode: shellResult.exitCode)
           if shellResult.exitCode == 0 {
-            updateStatus.complete(with: .success(Output(
-              output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
-              exitCode: shellResult.exitCode)))
+            updateStatus.complete(with: .success(output))
           } else {
             try updateStatus
               .yield(
                 .completed(
                   .failure(
                     AppError(
-                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
+                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(output), encoding: .utf8) ?? "")"))))
           }
         } catch {
           updateStatus.complete(with: .failure(error))

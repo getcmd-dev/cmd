@@ -106,7 +106,7 @@ final class DefaultChatHistoryService: ChatHistoryService, Sendable {
       do {
         return try decoder.decode(ChatThreadModel.self, from: rawContent)
       } catch {
-        defaultLogger.error("Chat thread could not be loaded. Removing it.", error)
+          defaultLogger.error("Chat thread could not be loaded. Removing it. Raw content: \(String(data: rawContent, encoding: .utf8) ?? "<binary>")", error)
         try await self.deleteChatThread(id: id)
         return nil
       }

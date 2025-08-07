@@ -226,6 +226,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
+                        
+                        Task.detached {
+                            await self.persistThread()
+                        }
                     }
                   }
                 }

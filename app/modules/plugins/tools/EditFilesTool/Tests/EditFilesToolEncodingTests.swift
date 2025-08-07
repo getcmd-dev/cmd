@@ -19,7 +19,7 @@ struct EditFilesToolEncodingTests {
     let tool = EditFilesTool(shouldAutoApply: false)
 
     let fileChange = EditFilesTool.Use.Input.FileChange(
-      path: "/project/README.md",
+      path: URL(filePath: "/project/README.md"),
       isNewFile: false,
       changes: [
         EditFilesTool.Use.Input.FileChange.Change(
@@ -65,7 +65,7 @@ struct EditFilesToolEncodingTests {
     let tool = EditFilesTool(shouldAutoApply: false)
 
     let fileChange = EditFilesTool.Use.Input.FileChange(
-      path: "/config/settings.json",
+      path: URL(filePath: "/config/settings.json"),
       isNewFile: true,
       changes: [
         EditFilesTool.Use.Input.FileChange.Change(
@@ -112,7 +112,7 @@ struct EditFilesToolEncodingTests {
 
     let fileChanges = [
       EditFilesTool.Use.Input.FileChange(
-        path: "/src/constants.swift",
+        path: URL(filePath: "/src/constants.swift"),
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
@@ -120,7 +120,7 @@ struct EditFilesToolEncodingTests {
             replace: "let API_URL = \"api.example.com\""),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: "/tests/NewTest.swift",
+        path: URL(filePath: "/tests/NewTest.swift"),
         isNewFile: true,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(

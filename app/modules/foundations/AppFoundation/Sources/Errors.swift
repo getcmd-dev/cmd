@@ -6,13 +6,23 @@ import Foundation
 // MARK: - AppError
 
 public struct AppError: LocalizedError {
-  public init(message: String, debugDescription: String? = nil, underlyingError: Error? = nil) {
+  public init(
+    message: String,
+    llmMessage: String? = nil,
+    debugDescription: String? = nil,
+    underlyingError: Error? = nil)
+  {
     self.message = message
+    self.llmMessage = llmMessage ?? message
     self.underlyingError = underlyingError
     _debugDescription = debugDescription
   }
 
   public init(_ error: Error) {
+    if let appError = error as? AppError {
+      self = appError
+      return
+    }
     self.init(message: error.localizedDescription, debugDescription: (error as CustomDebugStringConvertible).debugDescription)
   }
 
@@ -20,8 +30,12 @@ public struct AppError: LocalizedError {
     self.init(message: message, debugDescription: nil)
   }
 
+  /// A user facing message describing the error.
   public let message: String
+  /// A message that can be sent to an LLM to help it understand/fix the error.
+  public let llmMessage: String
   public let underlyingError: Error?
+
   private let _debugDescription: String?
 }
 
@@ -44,6 +58,7 @@ extension AppError: CustomNSError {
 // MARK: CustomDebugStringConvertible
 
 extension AppError: CustomDebugStringConvertible {
+  /// A detailed description of the error.
   public var debugDescription: String {
     _debugDescription ?? ""
   }

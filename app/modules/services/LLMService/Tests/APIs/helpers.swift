@@ -107,15 +107,13 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
 
   @ThreadSafe
   struct Use: NonStreamableToolUse, Codable {
-      
-      typealias InternalState = EmptyObject
 
     init(
       callingTool: TestTool<I, O>,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState: EmptyObject? = nil,
+      internalState _: EmptyObject? = nil,
       initialStatus _: Status.Element?)
     {
       self.toolUseId = toolUseId
@@ -130,6 +128,8 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
     init(from _: Decoder) throws {
       fatalError("Decoding not implemented for TestTool.Use")
     }
+
+    typealias InternalState = EmptyObject
 
     typealias Input = I
 
@@ -179,14 +179,13 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
 
   @ThreadSafe
   final class Use: ToolUse, Codable {
-      typealias InternalState = EmptyObject
     init(
       callingTool: TestStreamingTool<I, O>,
       toolUseId: String,
       input: Input,
       isInputComplete: Bool,
       context: ToolExecutionContext,
-      internalState: EmptyObject? = nil,
+      internalState _: EmptyObject? = nil,
       initialStatus: CurrentValueStream<ToolUseExecutionStatus<Output>>.Element? = nil)
     {
       self.toolUseId = toolUseId
@@ -199,6 +198,7 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
       status = .Just(initialStatus ?? .notStarted)
     }
 
+    typealias InternalState = EmptyObject
     typealias Input = I
 
     private(set) var isInputComplete: Bool
@@ -277,13 +277,12 @@ struct TestExternalTool: ExternalTool {
 
   ///  @ThreadSafe
   struct Use: ExternalToolUse, Codable {
-      typealias InternalState = EmptyObject
     init(
       callingTool: TestExternalTool,
       toolUseId: String,
       input: EmptyObject,
       context: ToolExecutionContext,
-      internalState: EmptyObject? = nil,
+      internalState _: EmptyObject? = nil,
       initialStatus: Status.Element?)
     {
       self.toolUseId = toolUseId
@@ -297,6 +296,7 @@ struct TestExternalTool: ExternalTool {
       self.updateStatus = updateStatus
     }
 
+    typealias InternalState = EmptyObject
     typealias Input = EmptyObject
 
     var updateStatus: AsyncStream<ToolFoundation.ToolUseExecutionStatus<String>>.Continuation

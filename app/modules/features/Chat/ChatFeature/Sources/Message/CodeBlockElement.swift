@@ -35,14 +35,6 @@ class CodeBlockElement {
       }
     }.store(in: &cancellables)
 
-    diffingTasks.sink { @Sendable fileChange in
-      Task {
-        @MainActor [weak self] in
-        self?.fileChange = fileChange
-        self?.copyableContent = await fileChange?.targetContent ?? self?.content
-      }
-    }.store(in: &cancellables)
-
     handleIsCompletedChanged()
   }
 
@@ -96,7 +88,6 @@ class CodeBlockElement {
   @Dependency(\.highlighter) private var highlighter
 
   private let highlightingTasks = ReplaceableTaskQueue<AttributedString>()
-  private let diffingTasks = ReplaceableTaskQueue<FileDiffViewModel?>()
   private var cancellables = Set<AnyCancellable>()
 
   @MainActor
@@ -116,9 +107,15 @@ class CodeBlockElement {
       return
     }
     let diff = rawContent
-    // TODO: only one time called so no need for a task queue?. Look after refactor as we ight add other tasks
-    diffingTasks.queue {
-      await FileDiffViewModel(filePath: filePath, llmDiff: diff)
+    Task { [weak self] in
+      do {
+        let fileChange = try FileDiffViewModel(filePath: filePath, llmDiff: diff)
+
+        self?.fileChange = fileChange
+        self?.copyableContent = await fileChange.targetContent
+      } catch {
+        defaultLogger.error("Could not parse code change for CodeBlockElement", error)
+      }
     }
   }
 

@@ -204,15 +204,20 @@ final class ToolUseViewModel {
     if let model = filesEditModels[file] {
       model.handle(newChanges: changes.map { .init(search: $0.search, replace: $0.replace) })
     } else {
-      if
-        let model = FileDiffViewModel(
+      do {
+        let model = try FileDiffViewModel(
           filePath: file.path,
           changes: changes.map {
             FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
           },
           oldContent: input.first(where: { $0.path == file })?.baseLineContent)
-      {
         filesEditModels[file] = model
+      } catch {
+          if self.isInputComplete {
+              updateToolUseResultForFile(file, status: .error(AppError(error)))
+          } else {
+              // The input data might be incorrect until we have received all the input. Ignore errors for now.
+          }
       }
     }
   }

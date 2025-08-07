@@ -21,9 +21,10 @@ import XcodeObserverServiceInterface
 @Observable @MainActor
 public final class FileDiffViewModel: Sendable {
 
-  public convenience init?(
+  public convenience init(
     filePath: String,
     llmDiff: String)
+    throws
   {
     let fileContent: String
     do {
@@ -35,7 +36,7 @@ public final class FileDiffViewModel: Sendable {
     }
     do {
       let changes = try FileDiff.parse(searchReplacePattern: llmDiff, for: fileContent)
-      self.init(filePath: filePath, changes: changes, oldContent: fileContent)
+      try self.init(filePath: filePath, changes: changes, oldContent: fileContent)
     } catch {
       defaultLogger.error("""
         Could not format diff for \(filePath): \(error)
@@ -45,14 +46,15 @@ public final class FileDiffViewModel: Sendable {
         \(fileContent)
         --
         """)
-      return nil
+      throw error
     }
   }
 
-  public convenience init?(
+  public convenience init(
     filePath: String,
     changes: [FileDiff.SearchReplace],
     oldContent: String? = nil)
+    throws
   {
     let path = URL(fileURLWithPath: filePath)
     let fileContent: String
@@ -71,7 +73,14 @@ public final class FileDiffViewModel: Sendable {
     do {
       let newContent = try FileDiff.apply(changes: changes, to: fileContent)
       if newContent == fileContent {
-        return nil
+        throw AppError(
+          message: "No change found",
+          debugDescription: """
+            No change found when changing \(filePath) with
+            \(changes.map { ">>> search:\n\($0.search)\n=== replace:\n\($0.replace)\n<<<" }.joined(separator: "\n"))
+
+            Current file content: \(fileContent)
+            """)
       }
 
       let gitDiff = try FileDiff.getGitDiff(oldContent: fileContent, newContent: newContent)
@@ -100,7 +109,7 @@ public final class FileDiffViewModel: Sendable {
         \(fileContent)
         --
         """)
-      return nil
+      throw error
     }
   }
 

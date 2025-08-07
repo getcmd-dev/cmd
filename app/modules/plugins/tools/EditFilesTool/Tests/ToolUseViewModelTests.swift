@@ -26,7 +26,7 @@ struct ToolUseViewModelTests {
   func test_initialization() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -58,7 +58,7 @@ struct ToolUseViewModelTests {
   func test_streamingInputUpdates() async throws {
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -85,7 +85,7 @@ struct ToolUseViewModelTests {
     // Simulate streaming input with additional changes
     let updatedInput = EditFilesTool.Use.Input(files: [
       .init(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -112,7 +112,7 @@ struct ToolUseViewModelTests {
 
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path.path,
+        path: file1Path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -141,13 +141,13 @@ struct ToolUseViewModelTests {
     // Add a second file through streaming
     let updatedInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path.path,
+        path: file1Path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path.path,
+        path: file2Path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -172,7 +172,7 @@ struct ToolUseViewModelTests {
   func test_applySingleFileChanges() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -226,13 +226,13 @@ struct ToolUseViewModelTests {
 
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path.path,
+        path: file1Path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path.path,
+        path: file2Path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -291,7 +291,7 @@ struct ToolUseViewModelTests {
   func test_undoAppliedChanges() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -346,7 +346,7 @@ struct ToolUseViewModelTests {
   func test_streamingInputDuringProcessing() async throws {
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -372,7 +372,7 @@ struct ToolUseViewModelTests {
     // Add more input through streaming
     let updatedInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -395,13 +395,13 @@ struct ToolUseViewModelTests {
 
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path.path,
+        path: file1Path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path.path,
+        path: file2Path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -440,7 +440,7 @@ struct ToolUseViewModelTests {
   func test_validateBaselineContent() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -479,7 +479,7 @@ struct ToolUseViewModelTests {
   func test_validateBaselineContentForNewFiles() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath.path,
+        path: filePath,
         isNewFile: true,
         changes: [
           .init(search: "", replace: "Hello World"),
