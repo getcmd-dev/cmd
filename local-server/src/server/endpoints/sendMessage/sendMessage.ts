@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express"
-import { logError, logInfo } from "../../../logger"
+import { logError, logInfo, saveLogToFile } from "../../../logger"
 import { ModelProvider } from "../../providers/provider"
 import {
 	Message,
@@ -76,7 +76,11 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 						message: "Local executable is required for Claude Code provider.",
 					})
 				}
-				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort(), threadId, router }, res)
+				await sendMessageToClaudeCode(
+					{ messages, localExecutable, port: getPort(), threadId, router },
+					req,
+					res,
+				)
 				return
 			}
 
@@ -97,8 +101,21 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
 				})
 			}
+
+			// Cleanup when disconnected
+			const abortController = new AbortController()
+			res.on("close", () => {
+				logInfo("Response closed (client disconnected), aborting the request.")
+				abortController.abort()
+			})
+			res.on("error", (err) => {
+				logInfo(`Response error: ${err.message}, aborting the request.`)
+				abortController.abort()
+			})
+
 			const { fullStream, usage } = await streamText({
 				model,
+				abortSignal: abortController.signal,
 				tools: tools?.map(mapTool).reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool
@@ -127,7 +144,8 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			res.write(JSON.stringify(usageRes))
 			res.end()
 		} catch (error) {
-			logInfo("Request body that led to error:\n\n" + JSON.stringify(req.body, null, 2))
+			const logFile = saveLogToFile("failed_send_message.json", JSON.stringify(req.body, null, 2))
+			logInfo(`Request body that led to error saved to ${logFile}`)
 			logError(error)
 
 			throw addUserFacingError(error, "Failed to process message.")

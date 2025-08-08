@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync } from "fs"
+import { appendFileSync, mkdirSync, writeFileSync } from "fs"
 import { join } from "path"
 // Define log levels
 type LogLevel = "ERROR" | "INFO"
@@ -74,4 +74,16 @@ const logInfo = (info: string) => {
 	}
 }
 
-export { logError, logInfo }
+const saveLogToFile = (fileName: string, log: string): string | undefined => {
+	const filePath = join(__dirname, "logs", fileName)
+	try {
+		mkdirSync(join(__dirname, "logs"), { recursive: true })
+		writeFileSync(filePath, log)
+		return filePath
+	} catch (err) {
+		logError(`Failed to save log to file: ${fileName}. Error: ${err}`)
+		return undefined
+	}
+}
+
+export { logError, logInfo, saveLogToFile }

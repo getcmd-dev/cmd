@@ -5,8 +5,8 @@ import {
 	ToolResultFailureMessage,
 	ToolResultSuccessMessage,
 } from "@/server/schemas/sendMessageSchema"
-import { CoreMessage, CoreUserMessage, tool } from "ai"
-import { Response, Router } from "express"
+import { CoreMessage, CoreUserMessage } from "ai"
+import { Response, Request, Router } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
@@ -30,26 +30,31 @@ export const sendMessageToClaudeCode = async (
 		port: number
 		router: Router
 	},
+	req: Request,
 	res: Response,
 ) => {
-	const eventStream = createClaudeCodeEventStream({ messages, localExecutable, port, threadId, router })
+	const eventStream = createClaudeCodeEventStream(req, res, { messages, localExecutable, port, threadId, router })
 	await respondUsingResponseStream(mapStream(eventStream), res)
 	res.end()
 }
 
-const createClaudeCodeEventStream = ({
-	messages,
-	localExecutable,
-	port,
-	threadId,
-	router,
-}: {
-	messages: Message[]
-	localExecutable: LocalExecutable
-	port: number
-	threadId: string
-	router: Router
-}): AsyncStream<SDKMessage> => {
+const createClaudeCodeEventStream = (
+	req: Request,
+	res: Response,
+	{
+		messages,
+		localExecutable,
+		port,
+		threadId,
+		router,
+	}: {
+		messages: Message[]
+		localExecutable: LocalExecutable
+		port: number
+		threadId: string
+		router: Router
+	},
+): AsyncStream<SDKMessage> => {
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
@@ -169,6 +174,16 @@ const createClaudeCodeEventStream = ({
 	// Write to stdin instead of using -p flag, as for some reason this avoids hanging.
 	child.stdin.write(newUserMessagesText)
 	child.stdin.end()
+
+	res.on("close", () => {
+		logInfo("Response closed (client disconnected), killing Claude process.")
+		child.kill()
+	})
+
+	res.on("error", (err) => {
+		logInfo(`Response error: ${err.message}, killing Claude process.`)
+		child.kill()
+	})
 
 	return eventStream
 }
