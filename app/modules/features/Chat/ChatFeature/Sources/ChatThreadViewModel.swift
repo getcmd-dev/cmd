@@ -236,8 +236,16 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
 
+                      // Persistence
                       Task.detached {
                         await self.persistThread()
+                      }
+                      if let toolUse = newContent.asToolUse?.toolUse {
+                        Task.detached { [weak self] in
+                          for await _ in toolUse.updates {
+                            await self?.persistThread()
+                          }
+                        }
                       }
                     }
                   }

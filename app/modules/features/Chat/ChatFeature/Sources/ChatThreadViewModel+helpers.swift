@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatFeatureInterface
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
@@ -352,5 +353,21 @@ extension ToolUse {
       return true
     }
     return false
+  }
+
+  var updates: AsyncStream<ToolUseExecutionStatus<EmptyObject>> {
+    status.updates.map { event -> ToolUseExecutionStatus<EmptyObject> in
+      switch event {
+      case .notStarted: return .notStarted
+      case .running: return .running
+      case .pendingApproval: return .pendingApproval
+      case .approvalRejected(reason: let reason): return .approvalRejected(reason: reason)
+      case .completed(let result):
+        switch result {
+        case .success: return .completed(.success(EmptyObject()))
+        case .failure(let error): return .completed(.failure(error))
+        }
+      }
+    }.eraseToStream()
   }
 }
