@@ -36,9 +36,27 @@ export class MockResponse {
 	public end = () => {}
 
 	/**
+	 * Mock implementation of response.on() for event handling.
+	 * Stores event listeners but doesn't trigger them.
+	 * @param event - Event name (e.g., 'close', 'error')
+	 * @param listener - Event listener function
+	 */
+	public on = (event: string, listener: Function) => {
+		if (!this._eventListeners[event]) {
+			this._eventListeners[event] = []
+		}
+		this._eventListeners[event].push(listener)
+	}
+
+	/**
 	 * Internal storage for written data
 	 */
 	private _writtenData: string[] = []
+
+	/**
+	 * Internal storage for event listeners
+	 */
+	private _eventListeners: { [event: string]: Function[] } = {}
 
 	/**
 	 * Gets all data that has been written to this mock response.
@@ -82,11 +100,24 @@ export class MockResponse {
 	}
 
 	/**
-	 * Clears all written data and headers from this mock response.
+	 * Clears all written data, headers, and event listeners from this mock response.
 	 * Useful for resetting state between tests.
 	 */
 	public reset = () => {
 		this._writtenData = []
 		this._headers = {}
+		this._eventListeners = {}
+	}
+
+	/**
+	 * Triggers an event on this mock response.
+	 * Useful for testing event handling behavior.
+	 * @param event - Event name to trigger
+	 * @param args - Arguments to pass to event listeners
+	 */
+	public emit = (event: string, ...args: any[]) => {
+		if (this._eventListeners[event]) {
+			this._eventListeners[event].forEach(listener => listener(...args))
+		}
 	}
 }

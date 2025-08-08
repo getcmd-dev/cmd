@@ -31,6 +31,11 @@ describe("sendMessageToClaudeCode", () => {
 			}),
 		)
 
+		// Mock mcp module since it imports `@modelcontextprotocol`, and for some reason this causes the test to hang.
+		jest.unstable_mockModule("@/server/endpoints/sendMessage/claudeCode/mcp", () => ({
+			registerMCPServerEndpoints: jest.fn(),
+		}))
+
 		const { sendMessageToClaudeCode: sendMessageToClaudeCodeImpl } = await import("../sendMessageToClaudeCode")
 		sendMessageToClaudeCode = sendMessageToClaudeCodeImpl
 	})
@@ -114,14 +119,15 @@ describe("sendMessageToClaudeCode", () => {
 				"--max-turns",
 				"100",
 				"--mcp-config",
-				expect.stringContaining("mcp.json"),
-				"--dangerously-skip-permissions",
+				"/tmp/command/mcp-test-thread-123.json",
+				"--permission-prompt-tool",
+				"mcp__command__tool_approval",
 			])
 
 			expect(spawned?.stdin.read().toString()).toBe("Hello Claude")
 			expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-				expect.stringContaining("mcp.json"),
-				expect.stringContaining('"url": "http://localhost:3000/mcp"'),
+				"/tmp/command/mcp-test-thread-123.json",
+				expect.stringContaining('"url": "http://localhost:3000/mcp/test-thread-123"'),
 			)
 
 			simulateClaudeResponse("Hello to you too!")
@@ -195,8 +201,9 @@ describe("sendMessageToClaudeCode", () => {
 				"--max-turns",
 				"100",
 				"--mcp-config",
-				expect.stringContaining("mcp.json"),
-				"--dangerously-skip-permissions",
+				"/tmp/command/mcp-test-thread-123.json",
+				"--permission-prompt-tool",
+				"mcp__command__tool_approval",
 				"--resume",
 				"existing-session-456",
 			])
@@ -424,8 +431,8 @@ describe("sendMessageToClaudeCode", () => {
 			)
 
 			expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-				expect.stringContaining("mcp.json"),
-				expect.stringContaining('"url": "http://localhost:4567/mcp"'),
+				"/tmp/command/mcp-test-thread-123.json",
+				expect.stringContaining('"url": "http://localhost:4567/mcp/test-thread-123"'),
 			)
 
 			simulateClaudeResponse("MCP configured")
