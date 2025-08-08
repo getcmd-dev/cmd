@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express"
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
+import { McpServer, ToolCallback } from "@modelcontextprotocol/sdk/server/mcp.js"
 
 import { z } from "zod"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
@@ -29,43 +29,46 @@ export const registerMCPServerEndpoints = (
 		name: "Test permission prompt MCP Server",
 		version: "0.0.1",
 	})
+	const schema = {
+		tool_name: z.string().describe("The name of the tool requesting permission"),
+		input: z.object({}).passthrough().describe("The input for the tool"),
+		tool_use_id: z.string().optional().describe("The unique tool use request ID"),
+	}
 
+	const cb: ToolCallback<typeof schema> = async (args) => {
+		const { tool_name, input } = args
+		const { isAllowed, rejectionMessage } = await handleApproval(tool_name, input)
+		if (isAllowed) {
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							behavior: "allow",
+							updatedInput: input,
+						}),
+					},
+				],
+			}
+		} else {
+			return {
+				content: [
+					{
+						type: "text",
+						text: JSON.stringify({
+							behavior: "deny",
+							message: rejectionMessage,
+						}),
+					},
+				],
+			}
+		}
+	}
 	server.tool(
 		"tool_approval",
 		'Simulate a permission check - approve if the input contains "allow", otherwise deny',
-		{
-			tool_name: z.string().describe("The name of the tool requesting permission"),
-			input: z.object({}).passthrough().describe("The input for the tool"),
-			tool_use_id: z.string().optional().describe("The unique tool use request ID"),
-		},
-		async ({ tool_name, input }: { tool_name: string; input: unknown }) => {
-			const { isAllowed, rejectionMessage } = await handleApproval(tool_name, input)
-			if (isAllowed) {
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify({
-								behavior: "allow",
-								updatedInput: input,
-							}),
-						},
-					],
-				}
-			} else {
-				return {
-					content: [
-						{
-							type: "text",
-							text: JSON.stringify({
-								behavior: "deny",
-								message: rejectionMessage,
-							}),
-						},
-					],
-				}
-			}
-		},
+		schema,
+		cb,
 	)
 
 	// Handle POST requests for client-to-server communication

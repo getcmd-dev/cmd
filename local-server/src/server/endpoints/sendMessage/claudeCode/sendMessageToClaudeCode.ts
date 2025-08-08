@@ -6,7 +6,7 @@ import {
 	ToolResultSuccessMessage,
 } from "@/server/schemas/sendMessageSchema"
 import { CoreMessage, CoreUserMessage } from "ai"
-import { Response, Request, Router } from "express"
+import { Response, Router } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
@@ -30,16 +30,14 @@ export const sendMessageToClaudeCode = async (
 		port: number
 		router: Router
 	},
-	req: Request,
 	res: Response,
 ) => {
-	const eventStream = createClaudeCodeEventStream(req, res, { messages, localExecutable, port, threadId, router })
+	const eventStream = createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
 	await respondUsingResponseStream(mapStream(eventStream), res)
 	res.end()
 }
 
 const createClaudeCodeEventStream = (
-	req: Request,
 	res: Response,
 	{
 		messages,

@@ -76,11 +76,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 						message: "Local executable is required for Claude Code provider.",
 					})
 				}
-				await sendMessageToClaudeCode(
-					{ messages, localExecutable, port: getPort(), threadId, router },
-					req,
-					res,
-				)
+				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort(), threadId, router }, res)
 				return
 			}
 
