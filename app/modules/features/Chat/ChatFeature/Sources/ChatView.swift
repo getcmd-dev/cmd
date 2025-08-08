@@ -44,14 +44,6 @@ public struct ChatView: View {
         ChatMessageList(viewModel: viewModel.tab)
           .id("ChatMessageList-\(viewModel.tab.id)")
 
-        if viewModel.tab.isStreamingResponse {
-          HStack(spacing: 0) {
-            ThreeDotsLoadingAnimation()
-              .padding(.trailing, Constants.chatPadding)
-            Spacer(minLength: 0)
-          }
-        }
-
         ChatInputView(
           inputViewModel: viewModel.tab.input,
           isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")

@@ -66,6 +66,13 @@ enum ChatMessageContent: Identifiable {
     }
     return nil
   }
+
+  var asToolUse: ChatMessageToolUseContent? {
+    if case .toolUse(let content) = self {
+      return content
+    }
+    return nil
+  }
 }
 
 // MARK: - ChatMessageContentWithRole

@@ -41,12 +41,8 @@ final class ToolUseViewModel {
 
     Task { [weak self] in
       for await status in status {
-        print(
-          "ToolUseViewModel \(input.map(\.path.lastPathComponent).joined()): status updated to \(status). Still alive? \(self != nil)")
         self?.status = status
       }
-      print(
-        "ToolUseViewModel \(input.map(\.path.lastPathComponent).joined()): done updating status \(String(describing: self?.status)). Still alive? \(self != nil)")
     }
   }
 
@@ -213,11 +209,11 @@ final class ToolUseViewModel {
           oldContent: input.first(where: { $0.path == file })?.baseLineContent)
         filesEditModels[file] = model
       } catch {
-          if self.isInputComplete {
-              updateToolUseResultForFile(file, status: .error(AppError(error)))
-          } else {
-              // The input data might be incorrect until we have received all the input. Ignore errors for now.
-          }
+        if isInputComplete {
+          updateToolUseResultForFile(file, status: .error(AppError(error)))
+        } else {
+          // The input data might be incorrect until we have received all the input. Ignore errors for now.
+        }
       }
     }
   }

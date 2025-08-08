@@ -159,6 +159,10 @@ extension Subprocess.Execution: ShellServiceInterface.Execution {
   public func tearDown() async {
     await teardown(using: [])
   }
+
+  public func terminate() throws {
+    try send(signal: .terminate)
+  }
 }
 
 extension AsyncBufferSequence {

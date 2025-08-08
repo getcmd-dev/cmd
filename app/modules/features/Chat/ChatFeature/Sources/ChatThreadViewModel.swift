@@ -11,6 +11,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
+import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
@@ -127,6 +128,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     streamingTask?.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
+    // Cancel all existing tool calls.
+    for message in messages {
+      for content in message.content {
+        if let toolUse = content.asToolUse?.toolUse, !toolUse.hasCompleted {
+          toolUse.cancel()
+        }
+      }
+    }
   }
 
   func handleToggleChatHistory() {
@@ -226,10 +235,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
-                        
-                        Task.detached {
-                            await self.persistThread()
-                        }
+
+                      Task.detached {
+                        await self.persistThread()
+                      }
                     }
                   }
                 }
@@ -462,11 +471,13 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 @ThreadSafe
 final class ChatThreadContext: LiveToolExecutionContext {
 
-  init(knownFilesContent: [String: String] = [:]) {
+  init(knownFilesContent: [String: String] = [:], userInfo: [String: any Codable & Sendable] = [:]) {
     self.knownFilesContent = knownFilesContent
+    self.userInfo = userInfo
   }
 
   private(set) var knownFilesContent: [String: String]
+  private(set) var userInfo: [String: any Codable & Sendable]
 
   func knownFileContent(for path: URL) -> String? {
     knownFilesContent[path.absoluteString]
@@ -476,11 +487,25 @@ final class ChatThreadContext: LiveToolExecutionContext {
     knownFilesContent[path.absoluteString] = knownFileContent
   }
 
-  func pluginState<T>(for _: String) -> T? where T: Decodable, T: Encodable, T: Sendable {
-    nil
+  func pluginState<T>(for key: String) -> T? where T: Decodable, T: Encodable, T: Sendable {
+    if let decodedObject = userInfo[key] as? T {
+      return decodedObject
+    }
+    if let object = userInfo[key] as? JSON {
+      do {
+        let decodedObject = try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: object, options: []))
+        userInfo[key] = decodedObject
+        return decodedObject
+      } catch {
+        defaultLogger.error(error)
+      }
+    }
+    return nil
   }
 
-  func set(pluginState _: some Decodable & Encodable & Sendable, for _: String) { }
+  func set(pluginState value: some Decodable & Encodable & Sendable, for key: String) {
+    userInfo[key] = value
+  }
 
 }
 

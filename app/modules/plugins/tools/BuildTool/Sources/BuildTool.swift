@@ -91,6 +91,10 @@ public final class BuildTool: NonStreamableTool {
       }
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     @Dependency(\.xcodeController) private var xcodeController
 
   }

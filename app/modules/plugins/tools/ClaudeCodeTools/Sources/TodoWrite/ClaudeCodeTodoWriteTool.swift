@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -17,12 +18,13 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
   public init() { }
 
   public final class Use: ExternalToolUse, Sendable {
+
     public init(
       callingTool: ClaudeCodeTodoWriteTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState _: InternalState? = nil,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -34,9 +36,26 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
+
+      @Dependency(\.chatContextRegistry) var chatContextRegistry
+      if let internalState {
+        self.internalState = internalState
+      } else {
+        do {
+          if
+            let preExistingTodos: [TodoItem] = try chatContextRegistry.context(for: context.threadId)
+              .pluginState(for: Self.chatPluginName)
+          {
+            self.internalState = .init(preExistingTodos: preExistingTodos)
+          } else {
+            self.internalState = .init(preExistingTodos: [])
+          }
+        } catch {
+          self.internalState = .init(preExistingTodos: [])
+        }
+      }
     }
 
-    public typealias InternalState = EmptyObject
     public struct TodoItem: Codable, Sendable {
       public let content: String
       public let status: String
@@ -47,10 +66,17 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       public let todos: [TodoItem]
     }
 
+    public typealias InternalState = PreExistingTodos
+    public struct PreExistingTodos: Codable, Sendable {
+      let preExistingTodos: [TodoItem]
+    }
+
     public struct Output: Codable, Sendable {
       public let success: Bool
       public let message: String
     }
+
+    public let internalState: InternalState?
 
     public let isReadonly = true
 
@@ -69,8 +95,14 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       let message = success ? "Todo list updated successfully" : output
 
       updateStatus.complete(with: .success(.init(success: success, message: message)))
+
+      do {
+        @Dependency(\.chatContextRegistry) var chatContextRegistry
+        try chatContextRegistry.context(for: context.threadId).set(pluginState: input.todos, for: Self.chatPluginName)
+      } catch { }
     }
 
+    private static let chatPluginName = "current_todos"
   }
 
   public let name = "claude_code_TodoWrite"
@@ -183,9 +215,14 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
 @MainActor
 final class TodoWriteToolUseViewModel {
 
-  init(status: ClaudeCodeTodoWriteTool.Use.Status, input: ClaudeCodeTodoWriteTool.Use.Input) {
+  init(
+    status: ClaudeCodeTodoWriteTool.Use.Status,
+    input: ClaudeCodeTodoWriteTool.Use.Input,
+    preExistingTodos: [ClaudeCodeTodoWriteTool.Use.TodoItem]? = nil)
+  {
     self.status = status.value
     self.input = input
+    self.preExistingTodos = preExistingTodos
     Task { [weak self] in
       for await status in status {
         self?.status = status
@@ -193,6 +230,52 @@ final class TodoWriteToolUseViewModel {
     }
   }
 
+  enum TodoChange {
+    case new
+    case unchanged
+    case statusChanged(from: String, to: String)
+    case contentChanged
+
+    var isUnchanged: Bool {
+      switch self {
+      case .unchanged:
+        true
+      default:
+        false
+      }
+    }
+  }
+
   let input: ClaudeCodeTodoWriteTool.Use.Input
+  let preExistingTodos: [ClaudeCodeTodoWriteTool.Use.TodoItem]?
   var status: ToolUseExecutionStatus<ClaudeCodeTodoWriteTool.Use.Output>
+
+  var removedTodos: [ClaudeCodeTodoWriteTool.Use.TodoItem] {
+    guard let preExistingTodos else {
+      return []
+    }
+
+    let currentIds = Set(input.todos.map(\.id))
+    return preExistingTodos.filter { !currentIds.contains($0.id) }
+  }
+
+  func todoChange(for todo: ClaudeCodeTodoWriteTool.Use.TodoItem) -> TodoChange {
+    // Check if this todo existed before
+    guard let existingTodo = preExistingTodos?.first(where: { $0.id == todo.id }) else {
+      return .new
+    }
+
+    // Check if status changed
+    if existingTodo.status != todo.status {
+      return .statusChanged(from: existingTodo.status, to: todo.status)
+    }
+
+    // Check if content changed
+    if existingTodo.content != todo.content {
+      return .contentChanged
+    }
+
+    return .unchanged
+  }
+
 }

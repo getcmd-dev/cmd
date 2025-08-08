@@ -10,6 +10,7 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
 import ShellServiceInterface
+import ToolFoundation
 import XcodeObserverServiceInterface
 
 extension ChatThreadViewModel {
@@ -341,5 +342,15 @@ extension AssistantMessageContent {
     case .internalContent(let content):
       return .internalContent(.init(content))
     }
+  }
+}
+
+extension ToolUse {
+
+  var hasCompleted: Bool {
+    if case .completed = status.value {
+      return true
+    }
+    return false
   }
 }

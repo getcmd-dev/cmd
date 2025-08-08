@@ -4,6 +4,7 @@ Target.module(
     .product(name: "JSONScanner", package: "JSONScanner"),
     "AppFoundation",
     "ChatFoundation",
+    "ChatServiceInterface",
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",

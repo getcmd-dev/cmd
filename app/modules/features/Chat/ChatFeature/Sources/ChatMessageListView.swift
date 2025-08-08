@@ -28,22 +28,22 @@ struct ChatMessageList: View {
   }
 
   var body: some View {
-      ScrollView {
-        AppUpdateWidget()
-        LazyVStack(spacing: 0) {
-          ForEach(events) { event in
-            switch event {
-            case .message(let message):
-              ChatMessageView(message: message)
-                .padding(.horizontal, ChatView.Constants.chatPadding)
-                .padding(.top, 2)
+    ScrollView {
+      AppUpdateWidget()
+      LazyVStack(spacing: 0) {
+        ForEach(events) { event in
+          switch event {
+          case .message(let message):
+            ChatMessageView(message: message)
+              .padding(.horizontal, ChatView.Constants.chatPadding)
+              .padding(.top, 2)
 
-            case .checkpoint(let checkpoint):
-              CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
-            }
+          case .checkpoint(let checkpoint):
+            CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
           }
         }
-        .padding(.vertical, ChatView.Constants.chatPadding)
+      }
+      .padding(.vertical, ChatView.Constants.chatPadding)
     }
   }
 

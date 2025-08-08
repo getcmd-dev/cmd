@@ -24,6 +24,7 @@ public struct CommandExecutionResult: Equatable, Sendable, Encodable {
 
 public protocol Execution: Sendable {
   func tearDown() async
+  func terminate() throws
 }
 
 // MARK: - StandardInputWriter

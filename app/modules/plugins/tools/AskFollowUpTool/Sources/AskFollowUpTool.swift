@@ -65,6 +65,10 @@ public final class AskFollowUpTool: NonStreamableTool {
       updateStatus.yield(.running)
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     func select(followUp: String) {
       updateStatus.complete(with: .success(.init(response: followUp)))
     }

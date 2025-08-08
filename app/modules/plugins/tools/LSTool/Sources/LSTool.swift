@@ -98,6 +98,10 @@ public final class LSTool: NonStreamableTool {
       }
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     let directoryPath: URL
 
     @Dependency(\.server) private var server

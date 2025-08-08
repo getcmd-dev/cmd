@@ -77,6 +77,11 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+      try? runningProcess?.terminate()
+    }
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)

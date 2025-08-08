@@ -10,15 +10,15 @@ import JSONFoundation
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ClaudeCodeBash
+// MARK: - ClaudeCodeBashTool
 
-public final class ClaudeCodeBash: ExternalTool {
+public final class ClaudeCodeBashTool: ExternalTool {
 
   public init() { }
 
   public final class Use: ExternalToolUse, Sendable {
     public init(
-      callingTool: ClaudeCodeBash,
+      callingTool: ClaudeCodeBashTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
@@ -47,7 +47,7 @@ public final class ClaudeCodeBash: ExternalTool {
 
     public let isReadonly = false
 
-    public let callingTool: ClaudeCodeBash
+    public let callingTool: ClaudeCodeBashTool
     public let toolUseId: String
     public let input: Input
     public let status: Status
@@ -133,9 +133,9 @@ public final class ClaudeCodeBash: ExternalTool {
 
 }
 
-// MARK: - ClaudeCodeBash.Use + DisplayableToolUse
+// MARK: - ClaudeCodeBashTool.Use + DisplayableToolUse
 
-extension ClaudeCodeBash.Use: DisplayableToolUse {
+extension ClaudeCodeBashTool.Use: DisplayableToolUse {
   public var body: AnyView {
     let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream()
     Task {

@@ -98,6 +98,10 @@ public final class ReadFileTool: NonStreamableTool {
       }
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     let filePath: URL
 
     var mappedInput: Input { internalState }

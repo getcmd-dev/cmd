@@ -275,9 +275,6 @@ extension UpdatableToolUse {
     updateStatus.yield(.approvalRejected(reason: reason))
   }
 
-  public func cancel() {
-    updateStatus.complete(with: .failure(CancellationError()))
-  }
 }
 
 // MARK: - ExternalTool
@@ -306,6 +303,10 @@ extension ExternalToolUse {
     } else {
       updateStatus.complete(with: .failure(AppError(stringOutput)))
     }
+  }
+
+  public func cancel() {
+    updateStatus.complete(with: .failure(CancellationError()))
   }
 }
 

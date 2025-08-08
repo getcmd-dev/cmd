@@ -2,13 +2,16 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DLS
 import Foundation
+import FoundationInterfaces
 import HighlighterServiceInterface
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -18,7 +21,8 @@ public final class ClaudeCodeReadTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeReadTool,
       toolUseId: String,
@@ -68,9 +72,19 @@ public final class ClaudeCodeReadTool: ExternalTool {
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
       updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
+
+      let content = try fileManager.read(contentsOf: filePath)
+      do {
+        try chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
+      } catch {
+        defaultLogger.error("Failed to register file content for path \(filePath)", error)
+      }
     }
 
     let filePath: URL
+
+    @Dependency(\.fileManager) private var fileManager
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
   }
 

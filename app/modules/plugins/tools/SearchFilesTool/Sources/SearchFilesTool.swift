@@ -98,6 +98,10 @@ public final class SearchFilesTool: NonStreamableTool {
       }
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     @Dependency(\.server) private var server
 
   }

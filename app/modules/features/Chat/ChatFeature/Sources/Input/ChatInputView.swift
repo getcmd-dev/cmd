@@ -158,7 +158,9 @@ struct ChatInputView: View {
         ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
           .frame(width: 14, height: 14)
           .isHidden(!enableAttachments, remove: true)
-        if !isStreamingResponse || hasPendingToolApproval {
+        if isStreamingResponse, !hasPendingToolApproval {
+          stopButton
+        } else {
           sendButton
         }
       }
@@ -204,6 +206,19 @@ struct ChatInputView: View {
 
   private var scrollViewHeight: CGFloat {
     min(200, scrollViewContentSize.height)
+  }
+
+  private var stopButton: some View {
+    Button(action: {
+      inputViewModel.didCancelMessage()
+    }) {
+      Image(systemName: "stop.circle.fill")
+        .tappableTransparentBackground()
+    }
+    .acceptClickThrough()
+    .buttonStyle(.plain)
+    .foregroundColor(.primary)
+    .id("stop button")
   }
 
   private var sendButton: some View {

@@ -231,6 +231,10 @@ public final class EditFilesTool: Tool {
       }
     }
 
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
     let _isInputComplete: Atomic<Bool>
 
     @MainActor
@@ -269,7 +273,6 @@ public final class EditFilesTool: Tool {
     private let formattedOutput: Atomic<FormattedOutput>
 
     @MainActor private var _viewModel: ToolUseViewModel?
-
   }
 
   public let inputSchema: JSON =
