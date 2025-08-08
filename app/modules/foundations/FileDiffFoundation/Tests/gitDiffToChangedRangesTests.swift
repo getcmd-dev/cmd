@@ -419,8 +419,8 @@ struct GitDiffToChangedRangesTests {
         public let id: String
 
         public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
-        public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
+        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
+        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
         public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
       }
 
@@ -487,18 +487,18 @@ struct GitDiffToChangedRangesTests {
 
       <<<<<<< SEARCH
         public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
-        public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
+        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
+        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
         public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
       =======
         /// Claude 3.7 Sonnet model by Anthropic
         public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
 
-        /// GPT-4o model by OpenAI
-        public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
+        /// gpt-latest model by OpenAI
+        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
 
-        /// GPT-4o-mini model by OpenAI
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
+        /// gpt-latest-mini model by OpenAI
+        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
 
         /// o1 preview model by Deepmind
         public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")

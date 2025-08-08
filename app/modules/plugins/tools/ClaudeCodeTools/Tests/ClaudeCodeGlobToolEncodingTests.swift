@@ -30,6 +30,7 @@ struct ClaudeCodeGlobToolEncodingTests {
         "input": {
           "pattern": "**/*.swift"
         },
+        "internalState": null,
         "isInputComplete" : true,
         "status": {
           "status": "notStarted"
@@ -57,6 +58,7 @@ struct ClaudeCodeGlobToolEncodingTests {
           "pattern": "src/**/*.ts",
           "path": "/Users/user/project"
         },
+        "internalState": null,
         "isInputComplete" : true,
         "status": {
           "status": "notStarted"
@@ -84,6 +86,7 @@ struct ClaudeCodeGlobToolEncodingTests {
           "pattern": "**/*.{js,ts,jsx,tsx}",
           "path": "/project/frontend"
         },
+        "internalState": null,
         "isInputComplete" : true,
         "status": {
           "status": "notStarted"

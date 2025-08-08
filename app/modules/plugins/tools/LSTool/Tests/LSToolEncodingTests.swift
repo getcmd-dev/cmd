@@ -31,6 +31,7 @@ struct LSToolEncodingTests {
           "path": "/project",
           "recursive": false
         },
+      "internalState" : null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -58,6 +59,7 @@ struct LSToolEncodingTests {
           "path": "/workspace/src",
           "recursive": true
         },
+      "internalState" : null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -84,6 +86,7 @@ struct LSToolEncodingTests {
         "input": {
           "path": "/home/user/projects"
         },
+      "internalState" : null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"

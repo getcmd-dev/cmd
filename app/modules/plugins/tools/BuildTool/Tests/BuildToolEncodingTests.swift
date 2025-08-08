@@ -29,6 +29,7 @@ struct BuildToolEncodingTests {
         "input": {
           "for": "test"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -53,6 +54,7 @@ struct BuildToolEncodingTests {
         "input": {
           "for": "run"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"

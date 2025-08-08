@@ -6,18 +6,33 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import FoundationInterfaces
+import ThreadSafe
 
+@ThreadSafe
 public final class MockXcodeObserver: XcodeObserver {
 
   public init(
-    _ initialValue: AXState<XcodeState>,
-    filesContentOnDisk: [URL: String] = [:])
+    _ initialValue: AXState<XcodeState> = .unknown)
   {
     mutableStatePublisher = .init(initialValue)
-    self.filesContentOnDisk = filesContentOnDisk
+  }
+
+  public convenience init(
+    _ initialValue: AXState<XcodeState> = .unknown,
+    fileManager: FileManagerI)
+  {
+    self.init(initialValue)
+    onGetContent = { [weak self] file in
+      guard let content = self?.knownEditorContent(of: file) ?? (try? fileManager.read(contentsOf: file, encoding: .utf8)) else {
+        throw AppError("Could not read content of \(file.path)")
+      }
+      return content
+    }
   }
 
   public let mutableStatePublisher: CurrentValueSubject<AXState<XcodeState>, Never>
+  public var onGetContent: @Sendable (URL) throws -> String = { _ in throw AppError("Could not read content of file") }
 
   public var axNotifications: AnyPublisher<AXNotification, Never> {
     Just(AXNotification.applicationActivated).eraseToAnyPublisher()
@@ -28,12 +43,7 @@ public final class MockXcodeObserver: XcodeObserver {
   }
 
   public func getContent(of file: URL) throws -> String {
-    guard let content = knownEditorContent(of: file) ?? filesContentOnDisk[file] else {
-      throw AppError("Could not read content of \(file.path)")
-    }
-    return content
+    try onGetContent(file)
   }
-
-  private let filesContentOnDisk: [URL: String]
 
 }

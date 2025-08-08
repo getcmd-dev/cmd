@@ -177,7 +177,7 @@ final class SendMessageTests {
           {
             "type": "text_delta",
             "text": "got it!",
-            "idx": 2
+            "idx": 0
           }
           """.utf8Data)
         requestResponded.fulfill()
@@ -250,7 +250,7 @@ final class SendMessageTests {
           {
             "type": "text_delta",
             "text": "Let me fix this",
-            "idx": 1
+            "idx": 0
           }
           """.utf8Data)
         requestResponded.fulfill()
@@ -546,14 +546,14 @@ final class SendMessageTests {
         {
           "type": "text_delta",
           "text": "the solution",
-          "idx": 3
+          "idx": 2
         }
         """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
           "text": " is obvious",
-          "idx": 4
+          "idx": 3
         }
         """.utf8Data)
       return okServerResponse

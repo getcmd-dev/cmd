@@ -104,7 +104,7 @@ public final class FileDiffViewModel: Sendable {
       defaultLogger.error("""
         Could not format diff for \(filePath): \(error)
         -- Changes:
-        \(changes.map { "replace:\n\($0.replace)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
+        \(changes.map { "replace:\n\($0.search)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
         -- Previous Content:
         \(fileContent)
         --
@@ -126,11 +126,9 @@ public final class FileDiffViewModel: Sendable {
     self.canBeApplied = canBeApplied
     self.formattedDiff = formattedDiff
 
-    @Dependency(\.fileManager) var fileManager
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.xcodeController) var xcodeController
 
-    self.fileManager = fileManager
     self.xcodeObserver = xcodeObserver
     self.xcodeController = xcodeController
 
@@ -167,7 +165,6 @@ public final class FileDiffViewModel: Sendable {
     guard let formattedDiff else {
       throw AppError("Cannot apply changes before they has been prepared.")
     }
-    let fileManager = fileManager
     let filePath = filePath
     let xcodeObserver = xcodeObserver
     let xcodeController = xcodeController
@@ -183,7 +180,7 @@ public final class FileDiffViewModel: Sendable {
           }.first
         }.first
       }.first
-      let currentContent = try editorContent ?? fileManager.read(contentsOf: filePath, encoding: .utf8)
+      let currentContent = try editorContent ?? xcodeObserver.getContent(of: filePath)
       let targetContent = formattedDiff.changes.map(\.change).targetContent(applying: changes.map(\.change))
 
       let fileDiff = try FileDiff.getFileChange(changing: currentContent, to: targetContent)
@@ -266,7 +263,6 @@ public final class FileDiffViewModel: Sendable {
 
   private var cancellable: AnyCancellable?
 
-  private let fileManager: FileManagerI
   private let xcodeObserver: XcodeObserver
   private let xcodeController: XcodeController
 

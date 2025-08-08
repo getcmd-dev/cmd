@@ -175,6 +175,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "SwiftTesting",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   path: "./coreui/CodePreview"))
 
@@ -299,6 +300,7 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "FileDiffFoundation",
@@ -307,6 +309,7 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   path: "./plugins/tools/EditFilesTool"))
 
@@ -570,6 +573,7 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "JSONFoundation",
   ],
   path: "./foundations/SwiftTesting"))
 
@@ -782,6 +786,8 @@ targets.append(contentsOf: Target.module(
     "AccessibilityFoundation",
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "ThreadSafe",
   ],
   testDependencies: [],
   path: "./serviceInterfaces/XcodeObserverServiceInterface"))

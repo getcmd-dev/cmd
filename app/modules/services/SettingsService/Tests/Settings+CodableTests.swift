@@ -26,16 +26,16 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
         "customInstructions" : {},
-        "toolPreferences" : [],
+        "fileEditMode": "direct I/O",
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
-          "gpt-4o" : "openai"
+          "gpt-latest" : "openai"
         },
         "reasoningModels": {},
-        "fileEditMode": "direct I/O" 
+        "toolPreferences" : []
       }
       """
 
@@ -158,7 +158,7 @@ struct SettingsCodableTests {
       {
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "gpt-4o" : "openai"
+          "gpt-latest" : "openai"
         }
       }
       """
@@ -290,7 +290,7 @@ struct SettingsCodableTests {
           "claude-opus-4" : {
             "isEnabled" : true
           },
-          "gpt-4o" : {
+          "gpt-latest" : {
             "isEnabled" : false
           }
         },
@@ -360,9 +360,9 @@ struct SettingsCodableTests {
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-sonnet-37" : "anthropic",
-          "gpt-4o" : "openai",
-          "o4-mini" : "openai",
+          "claude-sonnet-4" : "anthropic",
+          "gpt-latest" : "openai",
+          "gpt-mini-latest" : "openai",
           "claude-haiku-35" : "anthropic"
         }
       }
@@ -516,7 +516,7 @@ struct SettingsCodableTests {
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "gpt-4o" : "openai"
+          "gpt-latest" : "openai"
         }
       }
       """

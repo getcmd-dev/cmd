@@ -63,6 +63,10 @@ test_swift_command() {
 	cd modules && swift test -Xswiftc -suppress-warnings --quiet
 }
 
+test_ts_command() {
+	cd local-server && yarn test
+}
+
 # Main command dispatcher
 command=$1
 shift
@@ -73,6 +77,9 @@ lint:swift)
 	;;
 test:swift)
 	test_swift_command "$@"
+	;;
+test:ts)
+	test_ts_command "$@"
 	;;
 sync:dependencies)
 	sync_dependencies_command "$@"

@@ -5,5 +5,7 @@ Target.module(
     "AccessibilityFoundation",
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "ThreadSafe",
   ],
   testDependencies: [])

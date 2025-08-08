@@ -62,7 +62,7 @@ extension RawInput {
   func withPathsResolved(from root: URL?) -> [EditFilesTool.Use.FileChange] {
     files.map { fileChange in
       EditFilesTool.Use.FileChange(
-        path: fileChange.path.path.resolvePath(from: root),
+        path: fileChange.path.resolvePath(from: root),
         isNewFile: fileChange.isNewFile,
         changes: fileChange.changes,
         baseLineContent: nil)

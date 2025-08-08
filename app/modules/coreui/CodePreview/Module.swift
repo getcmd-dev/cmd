@@ -22,4 +22,5 @@ Target.module(
     "LoggingServiceInterface",
     "SwiftTesting",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ])

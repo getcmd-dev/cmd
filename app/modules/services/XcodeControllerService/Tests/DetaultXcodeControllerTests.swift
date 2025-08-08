@@ -115,7 +115,7 @@ extension DefaultXcodeController {
     shellService: MockShellService = MockShellService(),
     xcodeObserver: MockXcodeObserver = MockXcodeObserver(.unknown),
     settingsService: MockSettingsService = MockSettingsService(Settings(pointReleaseXcodeExtensionToDebugApp: false)),
-    fileManager: MockFileManager = MockFileManager(files: [:]),
+    fileManager: MockFileManager = MockFileManager(),
     timeout: TimeInterval = 10,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void = { })
   {

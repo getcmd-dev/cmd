@@ -13,18 +13,20 @@ import LoggingServiceInterface
 import SwiftTesting
 import Testing
 import XcodeControllerServiceInterface
+import XcodeObserverServiceInterface
 @testable import CodePreview
 
 struct FileDiffViewModelTests {
-  var filePath: URL {
-    URL(filePath: "/dir/test.swift")
-  }
+  let filePath = URL(filePath: "/dir/test.swift")
 
   @MainActor
   @Test("Initializes with valid changes")
   func test_initialization() async throws {
-    let change = withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+    let mockFileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
+
+    let change = try withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       let llmDiff = """
         <<<<<<< SEARCH
@@ -34,43 +36,49 @@ struct FileDiffViewModelTests {
         >>>>>>> REPLACE
         """
 
-      return FileDiffViewModel(
+      return try FileDiffViewModel(
         filePath: filePath.path(),
         llmDiff: llmDiff)
     }
 
-    #expect(change != nil)
-    #expect(change?.baseLineContent == "Hello\nWorld")
-    #expect(await change?.targetContent == "Hi\nWorld")
-    #expect(change?.canBeApplied == true)
+    #expect(change.baseLineContent == "Hello\nWorld")
+    #expect(await change.targetContent == "Hi\nWorld")
+    #expect(change.canBeApplied == true)
   }
 
   @MainActor
-  @Test("Returns nil when changes don't modify content")
+  @Test("Fails when changes don't modify content")
   func test_noChanges() async throws {
-    withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
-    } operation: {
-      let llmDiff = """
-        <<<<<<< SEARCH
-        Hello
-        =======
-        Hello
-        >>>>>>> REPLACE
-        """
+    let mockFileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
-      let change = FileDiffViewModel(
-        filePath: filePath.path(),
-        llmDiff: llmDiff)
+    do {
+      try withDependencies {
+        $0.xcodeObserver = mockXcodeObserver
+      } operation: {
+        let llmDiff = """
+          <<<<<<< SEARCH
+          Hello
+          =======
+          Hello
+          >>>>>>> REPLACE
+          """
 
-      #expect(change == nil)
+        _ = try FileDiffViewModel(
+          filePath: filePath.path(),
+          llmDiff: llmDiff)
+      }
+      Issue.record("Expected failure when no changes are made, but initialization succeeded.")
+    } catch {
+      #expect(error.localizedDescription == "No change found")
     }
   }
 
   @MainActor
   @Test("Applies changes correctly")
   func test_applyChanges() async throws {
-    let mockFileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+    let mockFileManager = MockFileManager(files: [filePath.path: "Hello\nWorld"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     let applyExpectation = expectation(description: "Changes applied")
     let mockXcodeController = MockXcodeController()
@@ -82,7 +90,7 @@ struct FileDiffViewModelTests {
       applyExpectation.fulfill()
     }
     try await withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
       let llmDiff = """
@@ -93,14 +101,14 @@ struct FileDiffViewModelTests {
         >>>>>>> REPLACE
         """
 
-      let change = FileDiffViewModel(
-        filePath: filePath.path(),
+      let change = try FileDiffViewModel(
+        filePath: filePath.path,
         llmDiff: llmDiff)
 
       try await waitForInitialization(of: change)
 
-      try await change?.handleApplyAllChange()
-      try await fulfillment(of: [applyExpectation], timeout: 1.0)
+      try await change.handleApplyAllChange()
+      try await fulfillment(of: [applyExpectation])
 
       // Verify the file content was updated
       let updatedContent = try mockFileManager.read(contentsOf: filePath, encoding: .utf8)
@@ -111,8 +119,11 @@ struct FileDiffViewModelTests {
   @Test("Rejects changes correctly")
   @MainActor
   func test_rejectChanges() async throws {
+    let mockFileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
+
     let change = try await withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       let llmDiff = """
         <<<<<<< SEARCH
@@ -122,12 +133,12 @@ struct FileDiffViewModelTests {
         >>>>>>> REPLACE
         """
 
-      let suggestedChange = FileDiffViewModel(
+      let suggestedChange = try FileDiffViewModel(
         filePath: filePath.path(),
         llmDiff: llmDiff)
       try await waitForInitialization(of: suggestedChange)
 
-      return try #require(suggestedChange)
+      return suggestedChange
     }
     #expect(await change.targetContent == "Hi\nWorld")
     let formattedDiff = try #require(change.formattedDiff)
@@ -253,15 +264,17 @@ struct FileDiffViewModelTests {
   @MainActor
   @Test("Handles streaming input correctly")
   func test_streamingInput() async throws {
-    let change = withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "line1\nline2\nline3"])
+    let mockFileManager = MockFileManager(files: [filePath.path(): "line1\nline2\nline3"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
+
+    let initialChange = try withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      FileDiffViewModel(
+      try FileDiffViewModel(
         filePath: filePath.path(),
         changes: [FileDiff.SearchReplace(search: "line1", replace: "")])
     }
 
-    let initialChange = try #require(change)
     try await waitForInitialization(of: initialChange)
 
     #expect(await initialChange.targetContent == "line2\nline3")
@@ -286,15 +299,17 @@ struct FileDiffViewModelTests {
   @MainActor
   @Test("Processes multiple streaming updates")
   func test_multipleStreamingUpdates() async throws {
-    let change = withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld\nTest"])
+    let mockFileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld\nTest"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
+
+    let initialChange = try withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      FileDiffViewModel(
+      try FileDiffViewModel(
         filePath: filePath.path(),
         changes: [FileDiff.SearchReplace(search: "Hello", replace: "Hi")])
     }
 
-    let initialChange = try #require(change)
     try await waitForInitialization(of: initialChange)
 
     #expect(await initialChange.targetContent == "Hi\nWorld\nTest")
@@ -340,15 +355,17 @@ struct FileDiffViewModelTests {
   @MainActor
   @Test("Handles concurrent streaming updates safely")
   func test_concurrentStreamingUpdates() async throws {
-    let change = withDependencies {
-      $0.fileManager = MockFileManager(files: [filePath.path(): "A\nB\nC\nD"])
+    let mockFileManager = MockFileManager(files: [filePath.path(): "A\nB\nC\nD"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
+
+    let initialChange = try withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      FileDiffViewModel(
+      try FileDiffViewModel(
         filePath: filePath.path(),
         changes: [FileDiff.SearchReplace(search: "A", replace: "A1")])
     }
 
-    let initialChange = try #require(change)
     try await waitForInitialization(of: initialChange)
 
     let updateExpectation = expectation(description: "Concurrent updates processed")

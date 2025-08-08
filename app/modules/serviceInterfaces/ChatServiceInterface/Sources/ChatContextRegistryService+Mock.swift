@@ -10,7 +10,9 @@ import ToolFoundation
 @ThreadSafe
 public final class MockChatContextRegistryService: ChatContextRegistryService {
 
-  public init() { }
+  public init(_ contexts: [String: any LiveToolExecutionContext] = [:]) {
+    self.contexts = contexts
+  }
 
   public var onContext: (@Sendable (String) throws -> any LiveToolExecutionContext)?
 
@@ -47,5 +49,37 @@ public final class MockChatContextRegistryService: ChatContextRegistryService {
       contexts.removeValue(forKey: threadId)
     }
   }
+}
+
+@ThreadSafe
+public final class MockChatThreadContext: LiveToolExecutionContext {
+
+  public init(knownFilesContent: [String: String] = [:], userInfo: [String: any Codable & Sendable] = [:]) {
+    self.knownFilesContent = knownFilesContent
+    self.userInfo = userInfo
+  }
+
+  public func knownFileContent(for path: URL) -> String? {
+    knownFilesContent[path.absoluteString]
+  }
+
+  public func set(knownFileContent: String, for path: URL) {
+    knownFilesContent[path.absoluteString] = knownFileContent
+  }
+
+  public func pluginState<T>(for key: String) -> T? where T: Decodable, T: Encodable, T: Sendable {
+    if let decodedObject = userInfo[key] as? T {
+      return decodedObject
+    }
+    return nil
+  }
+
+  public func set(pluginState value: some Decodable & Encodable & Sendable, for key: String) {
+    userInfo[key] = value
+  }
+
+  private(set) var knownFilesContent: [String: String]
+  private(set) var userInfo: [String: any Codable & Sendable]
+
 }
 #endif

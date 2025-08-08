@@ -16,7 +16,7 @@ public final class MockFileManager: FileManagerI {
       directories: directories.map { URL(fileURLWithPath: $0) })
   }
 
-  public convenience init(files: [URL: String], directories: [URL]) {
+  public convenience init(files: [URL: String], directories: [URL] = []) {
     self.init(files: files.compactMapValues { $0.asData }, directories: directories)
   }
 

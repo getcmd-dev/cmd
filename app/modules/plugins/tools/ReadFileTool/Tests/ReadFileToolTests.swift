@@ -30,7 +30,7 @@ struct ReadFileToolTests {
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
-    let fileManager = MockFileManager(files: [:])
+    let fileManager = MockFileManager()
 
     let toolUse = withDependencies {
       $0.fileManager = fileManager

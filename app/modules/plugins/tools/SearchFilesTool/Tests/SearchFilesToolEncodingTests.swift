@@ -32,6 +32,7 @@ struct SearchFilesToolEncodingTests {
           "directoryPath": "/project",
           "regex": "FIXME"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -61,6 +62,7 @@ struct SearchFilesToolEncodingTests {
           "filePattern": "*.swift",
           "regex": "class\\\\s+\\\\w+Test"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -90,6 +92,7 @@ struct SearchFilesToolEncodingTests {
           "filePattern": "*.{py,js}",
           "regex": "api\\\\..*\\\\("
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"

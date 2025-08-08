@@ -144,7 +144,7 @@ extension ClaudeCodeEditTool.Use.Input {
   var mappedInput: EditFilesTool.Use.Input {
     EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file_path.asURLWithPath,
+        path: file_path.asURLWithPath.path,
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(

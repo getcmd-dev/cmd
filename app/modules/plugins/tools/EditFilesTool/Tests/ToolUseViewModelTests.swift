@@ -14,19 +14,20 @@ import SwiftTesting
 import Testing
 import ToolFoundation
 import XcodeControllerServiceInterface
+import XcodeObserverServiceInterface
 @testable import EditFilesTool
 
+// MARK: - ToolUseViewModelTests
+
 struct ToolUseViewModelTests {
-  var filePath: URL {
-    URL(filePath: "/test/example.swift")
-  }
+  let testFile = URL(filePath: "/test/example.swift")
 
   @MainActor
   @Test("Initializes with tool input and creates file diff models")
   func test_initialization() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -34,23 +35,23 @@ struct ToolUseViewModelTests {
     ])
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
+    let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: input,
+        input: input.withPathsResolved(from: nil),
         isInputComplete: true,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { _, _ in })
+        setResult: { _ in })
     }
 
     #expect(viewModel.isInputComplete == true)
-    #expect(viewModel.input.files.count == 1)
+    #expect(viewModel.input.count == 1)
     #expect(viewModel.changes.count == 1)
-    #expect(viewModel.changes.first?.path.path == filePath.path)
+    #expect(viewModel.changes.first?.path.path == testFile.path)
   }
 
   @MainActor
@@ -58,7 +59,7 @@ struct ToolUseViewModelTests {
   func test_streamingInputUpdates() async throws {
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -66,17 +67,17 @@ struct ToolUseViewModelTests {
     ])
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World Test"])
+    let mockFileManager = MockFileManager(files: [testFile.path: "Hello World Test"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: initialInput,
+        input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { _, _ in })
+        setResult: { _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -85,7 +86,7 @@ struct ToolUseViewModelTests {
     // Simulate streaming input with additional changes
     let updatedInput = EditFilesTool.Use.Input(files: [
       .init(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -94,7 +95,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    viewModel.input = updatedInput
+    viewModel.input = updatedInput.withPathsResolved(from: nil)
     viewModel.isInputComplete = true
 
     #expect(viewModel.isInputComplete == true)
@@ -112,7 +113,7 @@ struct ToolUseViewModelTests {
 
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path,
+        path: file1Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -124,16 +125,16 @@ struct ToolUseViewModelTests {
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",
     ])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: initialInput,
+        input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { _, _ in })
+        setResult: { _ in })
     }
 
     #expect(viewModel.changes.count == 1)
@@ -141,13 +142,13 @@ struct ToolUseViewModelTests {
     // Add a second file through streaming
     let updatedInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path,
+        path: file1Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path,
+        path: file2Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -155,9 +156,9 @@ struct ToolUseViewModelTests {
     ])
 
     withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      viewModel.input = updatedInput
+      viewModel.input = updatedInput.withPathsResolved(from: nil)
     }
 
     // Wait for the view model to process the new input
@@ -172,7 +173,7 @@ struct ToolUseViewModelTests {
   func test_applySingleFileChanges() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -180,12 +181,13 @@ struct ToolUseViewModelTests {
     ])
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
+    let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
     let mockXcodeController = MockXcodeController()
 
     let applyExpectation = expectation(description: "File change applied")
     mockXcodeController.onApplyFileChange = { fileChange in
-      #expect(fileChange.filePath.path == filePath.path)
+      #expect(fileChange.filePath.path == testFile.path)
       #expect(fileChange.oldContent == "Hello World")
       #expect(fileChange.suggestedNewContent == "Hi World")
       applyExpectation.fulfill()
@@ -193,25 +195,24 @@ struct ToolUseViewModelTests {
 
     var toolStatusUpdated = false
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: input,
+        input: input.withPathsResolved(from: nil),
         isInputComplete: true,
-        updateToolStatus: { status in
-          if case .completed(.success) = status {
+        setResult: { status in
+          if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
           }
-        },
-        validateBaselineContent: { _, _ in })
+        })
     }
 
     // Wait for initialization
     await waitForUpdate(of: viewModel)
 
-    await viewModel.applyChanges(to: filePath)
+    await viewModel.applyChanges(to: testFile)
 
     try await fulfillment(of: [applyExpectation])
 
@@ -226,13 +227,13 @@ struct ToolUseViewModelTests {
 
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path,
+        path: file1Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path,
+        path: file2Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -244,6 +245,7 @@ struct ToolUseViewModelTests {
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",
     ])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
     let mockXcodeController = MockXcodeController()
 
     let file1ApplyExpectation = expectation(description: "File1 change applied")
@@ -261,19 +263,18 @@ struct ToolUseViewModelTests {
 
     var toolStatusUpdated = false
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: input,
+        input: input.withPathsResolved(from: nil),
         isInputComplete: true,
-        updateToolStatus: { status in
-          if case .completed(.success) = status {
+        setResult: { status in
+          if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
           }
-        },
-        validateBaselineContent: { _, _ in })
+        })
     }
 
     // Wait for initialization
@@ -291,7 +292,7 @@ struct ToolUseViewModelTests {
   func test_undoAppliedChanges() async throws {
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -299,7 +300,8 @@ struct ToolUseViewModelTests {
     ])
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
+    let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
     let mockXcodeController = MockXcodeController()
 
     let undoExpectation = expectation(description: "Changes undone")
@@ -312,29 +314,28 @@ struct ToolUseViewModelTests {
 
     var toolStatusUpdated = false
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: input,
+        input: input.withPathsResolved(from: nil),
         isInputComplete: true,
-        updateToolStatus: { status in
-          if case .completed(.success) = status {
+        setResult: { status in
+          if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
           }
-        },
-        validateBaselineContent: { _, _ in })
+        })
     }
 
     // Wait for initialization
     await waitForUpdate(of: viewModel)
 
     // First apply changes
-    await viewModel.applyChanges(to: filePath)
+    await viewModel.applyChanges(to: testFile)
 
     // Then undo changes
-    await viewModel.undoChangesApplied(to: filePath)
+    await viewModel.undoChangesApplied(to: testFile)
 
     try await fulfillment(of: [undoExpectation])
 
@@ -346,7 +347,7 @@ struct ToolUseViewModelTests {
   func test_streamingInputDuringProcessing() async throws {
     let initialInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -354,17 +355,17 @@ struct ToolUseViewModelTests {
     ])
 
     let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World Test"])
+    let mockFileManager = MockFileManager(files: [testFile.path: "Hello World Test"])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: initialInput,
+        input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { _, _ in })
+        setResult: { _ in })
     }
 
     #expect(viewModel.isInputComplete == false)
@@ -372,7 +373,7 @@ struct ToolUseViewModelTests {
     // Add more input through streaming
     let updatedInput = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: filePath,
+        path: testFile.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
@@ -380,7 +381,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    viewModel.input = updatedInput
+    viewModel.input = updatedInput.withPathsResolved(from: nil)
     viewModel.isInputComplete = true
 
     #expect(viewModel.isInputComplete == true)
@@ -395,13 +396,13 @@ struct ToolUseViewModelTests {
 
     let input = EditFilesTool.Use.Input(files: [
       EditFilesTool.Use.Input.FileChange(
-        path: file1Path,
+        path: file1Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Hello", replace: "Hi"),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: file2Path,
+        path: file2Path.path,
         isNewFile: nil,
         changes: [
           .init(search: "Test", replace: "Example"),
@@ -413,21 +414,21 @@ struct ToolUseViewModelTests {
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",
     ])
+    let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
     var toolStatusUpdated = false
     let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
+      $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ToolUseViewModel(
         status: status,
-        input: input,
+        input: input.withPathsResolved(from: nil),
         isInputComplete: true,
-        updateToolStatus: { status in
-          if case .completed(.success) = status {
+        setResult: { status in
+          if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
           }
-        },
-        validateBaselineContent: { _, _ in })
+        })
     }
 
     viewModel.acknowledgeSuggestionReceived()
@@ -435,87 +436,17 @@ struct ToolUseViewModelTests {
     #expect(toolStatusUpdated == true)
   }
 
-  @MainActor
-  @Test("Syncs baseline content when creating file diff models")
-  func test_validateBaselineContent() async throws {
-    let input = EditFilesTool.Use.Input(files: [
-      EditFilesTool.Use.Input.FileChange(
-        path: filePath,
-        isNewFile: nil,
-        changes: [
-          .init(search: "Hello", replace: "Hi"),
-        ]),
-    ])
-
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [filePath.path: "Hello World"])
-
-    var syncedFilePath: String?
-    var syncedContent: String?
-
-    let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
-    } operation: {
-      ToolUseViewModel(
-        status: status,
-        input: input,
-        isInputComplete: true,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { filePath, content in
-          syncedFilePath = filePath
-          syncedContent = content
-        })
-    }
-
-    // Wait for initialization
-    await waitForUpdate(of: viewModel)
-
-    #expect(syncedFilePath == filePath.path)
-    #expect(syncedContent == "Hello World")
-  }
-
-  @MainActor
-  @Test("Syncs baseline content for new files with empty content")
-  func test_validateBaselineContentForNewFiles() async throws {
-    let input = EditFilesTool.Use.Input(files: [
-      EditFilesTool.Use.Input.FileChange(
-        path: filePath,
-        isNewFile: true,
-        changes: [
-          .init(search: "", replace: "Hello World"),
-        ]),
-    ])
-
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
-    let mockFileManager = MockFileManager(files: [:])
-
-    var syncedFilePath: String?
-    var syncedContent: String?
-
-    let viewModel = withDependencies {
-      $0.fileManager = mockFileManager
-    } operation: {
-      ToolUseViewModel(
-        status: status,
-        input: input,
-        isInputComplete: true,
-        updateToolStatus: { _ in },
-        validateBaselineContent: { filePath, content in
-          syncedFilePath = filePath
-          syncedContent = content
-        })
-    }
-
-    // Wait for initialization
-    await waitForUpdate(of: viewModel)
-
-    // validateBaselineContent should be called for new files with empty baseline content
-    #expect(syncedFilePath == filePath.path)
-    #expect(syncedContent == "")
-  }
-
   private func waitForUpdate(of viewModel: ToolUseViewModel) async {
     _ = await viewModel.changes.last?.change.targetContent
   }
 
+}
+
+extension EditFilesTool.Use.FileChangeStatus {
+  var isApplied: Bool {
+    if case .applied = self {
+      return true
+    }
+    return false
+  }
 }

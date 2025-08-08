@@ -147,7 +147,7 @@ public final class EditFilesTool: Tool {
           }
         }
 
-        public let path: URL
+        public let path: String
         public let isNewFile: Bool?
         public let changes: [Change]
       }

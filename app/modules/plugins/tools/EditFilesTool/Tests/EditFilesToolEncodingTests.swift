@@ -1,11 +1,15 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatServiceInterface
+import Dependencies
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import SwiftTesting
 import Testing
 import ToolFoundation
+import XcodeObserverServiceInterface
 @testable import EditFilesTool
 
 // MARK: - EditFilesToolEncodingTests
@@ -19,7 +23,7 @@ struct EditFilesToolEncodingTests {
     let tool = EditFilesTool(shouldAutoApply: false)
 
     let fileChange = EditFilesTool.Use.Input.FileChange(
-      path: URL(filePath: "/project/README.md"),
+      path: "/project/README.md",
       isNewFile: false,
       changes: [
         EditFilesTool.Use.Input.FileChange.Change(
@@ -29,35 +33,47 @@ struct EditFilesToolEncodingTests {
 
     let input = EditFilesTool.Use.Input(files: [fileChange])
     let data = try JSONEncoder().encode(input)
-    let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
+    let files = [
+      fileChange.path: "# Old Title",
+    ]
 
-    try testDecodingEncodingWithTool(of: use, tool: tool, """
-      {
-        "callingTool" : "suggest_files_changes",
-        "context" : {
-          "threadId": "mock-thread-id"
-        },
-        "input" : {
-          "files" : [
-            {
-              "changes" : [
-                {
-                  "replace" : "# New Title",
-                  "search" : "# Old Title"
-                }
-              ],
-              "isNewFile" : false,
-              "path" : "\\/project\\/README.md"
-            }
-          ]
-        },
-        "isInputComplete" : true,
-        "status" : {
-          "status" : "pendingApproval"
-        },
-        "toolUseId" : "edit-123"
-      }
-      """)
+    try withDependencies {
+      $0.chatContextRegistry = MockChatContextRegistryService([
+        "mock-thread-id": MockChatThreadContext(knownFilesContent: files),
+      ])
+      $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
+    } operation: {
+      let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
+
+      try testDecodingEncodingWithTool(of: use, tool: tool, """
+        {
+          "callingTool" : "suggest_files_changes",
+          "context" : {
+            "threadId": "mock-thread-id"
+          },
+          "input" : {
+            "files" : [
+              {
+                "changes" : [
+                  {
+                    "replace" : "# New Title",
+                    "search" : "# Old Title"
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "\\/project\\/README.md"
+              }
+            ]
+          },
+          "internalState" : null,
+          "isInputComplete" : true,
+          "status" : {
+            "status" : "pendingApproval"
+          },
+          "toolUseId" : "edit-123"
+        }
+        """)
+    }
   }
 
   @Test("Tool Use encoding/decoding - new file creation")
@@ -65,7 +81,7 @@ struct EditFilesToolEncodingTests {
     let tool = EditFilesTool(shouldAutoApply: false)
 
     let fileChange = EditFilesTool.Use.Input.FileChange(
-      path: URL(filePath: "/config/settings.json"),
+      path: "/config/settings.json",
       isNewFile: true,
       changes: [
         EditFilesTool.Use.Input.FileChange.Change(
@@ -97,6 +113,7 @@ struct EditFilesToolEncodingTests {
             }
           ]
         },
+        "internalState" : null,
         "isInputComplete" : true,
         "status" : {
           "status" : "pendingApproval"
@@ -112,7 +129,7 @@ struct EditFilesToolEncodingTests {
 
     let fileChanges = [
       EditFilesTool.Use.Input.FileChange(
-        path: URL(filePath: "/src/constants.swift"),
+        path: "/src/constants.swift",
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
@@ -120,7 +137,7 @@ struct EditFilesToolEncodingTests {
             replace: "let API_URL = \"api.example.com\""),
         ]),
       EditFilesTool.Use.Input.FileChange(
-        path: URL(filePath: "/tests/NewTest.swift"),
+        path: "/tests/NewTest.swift",
         isNewFile: true,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
@@ -163,6 +180,7 @@ struct EditFilesToolEncodingTests {
             }
           ]
         },
+        "internalState" : null,
         "isInputComplete" : true,
         "status" : {
           "status" : "pendingApproval"

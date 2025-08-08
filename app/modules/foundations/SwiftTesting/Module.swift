@@ -3,4 +3,5 @@ Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "JSONFoundation",
   ])

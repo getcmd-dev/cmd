@@ -831,7 +831,7 @@ struct ChatViewModelTests {
   {
     let settingsService = MockSettingsService.allConfigured
     let mockUserDefaults = MockUserDefaults(initialValues: [
-      "selectedLLMModel": "gpt-4o",
+      "selectedLLMModel": "gpt-latest",
     ])
     return withDependencies({
       $0.settingsService = settingsService

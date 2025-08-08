@@ -3,6 +3,7 @@
 
 import AppFoundation
 import Foundation
+import JSONFoundation
 import Testing
 
 extension Data {
@@ -59,7 +60,7 @@ public func testDecodingEncoding<T: Codable>(
   throws
 {
   // Validate that encoding the value gives the expected json
-  try testEncoding(value, json)
+  try testEncoding(value, json, encoder: encoder)
 
   // Validate that decoding the json and re-encoding it gives the same json
   let decoded = try decoder.decode(T.self, from: json.utf8Data)
@@ -72,15 +73,35 @@ public func testDecodingEncoding<T: Codable>(
 }
 
 /// Test that encoding the value gives the expected json.
-public func testEncoding(_ value: some Encodable, _ json: String) throws {
-  let encoded = try JSONEncoder().encode(value)
+public func testEncoding(_ value: some Encodable, _ json: String, encoder: JSONEncoder = JSONEncoder()) throws {
+  let encoded = try encoder.encode(value)
   let encodedString = encoded.jsonString()
 
   // Reformat the json expectation (pretty print, sort keys)
   let jsonData = json.utf8Data
   let expected = jsonData.jsonString()
 
-  #expect(expected == encodedString)
+  if expected != encodedString {
+    // Help narrow the difference by removing top level keys that are equivalent.
+    do {
+      let receivedJSON = try JSONDecoder().decode(JSON.self, from: encoded)
+      let exectedJSON = try JSONDecoder().decode(JSON.self, from: jsonData)
+
+      switch (receivedJSON, exectedJSON) {
+      case (.object(let received), .object(let expected)):
+        let ignoredKeys = received.keys.filter { key in received[key] == expected[key] }
+        print("Matching keys: \(ignoredKeys)")
+        #expect(jsonData.jsonString(ignoring: ignoredKeys) == encoded.jsonString(ignoring: ignoredKeys))
+        return
+
+      default:
+        break
+      }
+    } catch {
+      // Ignored
+    }
+    #expect(expected == encodedString)
+  }
 }
 
 /// Test that decoding the json gives the expected value.

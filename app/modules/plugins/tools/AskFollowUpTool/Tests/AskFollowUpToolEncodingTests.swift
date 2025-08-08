@@ -33,6 +33,7 @@ struct AskFollowUpToolEncodingTests {
           ],
           "question": "Test question"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "notStarted"
@@ -64,6 +65,7 @@ struct AskFollowUpToolEncodingTests {
           ],
           "question": "Complex question"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "notStarted"
@@ -93,6 +95,7 @@ struct AskFollowUpToolEncodingTests {
           ],
           "question": "Simple question?"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "notStarted"

@@ -40,7 +40,7 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
-    let selectedModel = LLMModel.o3
+    let selectedModel = LLMModel.claudeOpus
     let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
@@ -155,7 +155,7 @@ struct ChatInputViewModelTests {
     newSettings[.anthropic] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.selectedModel == .gpt_4_1)
+    #expect(viewModel.selectedModel == .gpt)
   }
 
   @MainActor
@@ -192,9 +192,11 @@ struct ChatInputViewModelTests {
     newSettings[.openAI] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.activeModels.count == 4)
-    #expect(viewModel.activeModels.contains(.claudeSonnet))
-    #expect(!viewModel.activeModels.contains(.gpt))
+    #expect(viewModel.activeModels.sorted(by: { $0.id < $1.id }) == [
+      .claudeHaiku_3_5,
+      .claudeOpus,
+      .claudeSonnet,
+    ])
     #expect(viewModel.selectedModel == .claudeSonnet)
 
     newSettings[.anthropic] = nil

@@ -36,10 +36,12 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             {
               "content": "Implement authentication",
               "status": "pending",
-              "priority": "high",
               "id": "1"
             }
           ]
+        },
+        "internalState": {
+          "preExistingTodos" : []
         },
         "isInputComplete" : true,
         "status": {
@@ -81,22 +83,22 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             {
               "content": "Implement authentication",
               "status": "completed",
-              "priority": "high",
               "id": "1"
             },
             {
               "content": "Add API endpoints",
               "status": "in_progress",
-              "priority": "medium",
               "id": "2"
             },
             {
               "content": "Write documentation",
               "status": "pending",
-              "priority": "low",
               "id": "3"
             }
           ]
+        },
+        "internalState": {
+          "preExistingTodos" : []
         },
         "isInputComplete" : true,
         "status": {
@@ -121,6 +123,9 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         },
         "input": {
           "todos": []
+        },
+        "internalState": {
+          "preExistingTodos" : []
         },
         "isInputComplete" : true,
         "status": {
@@ -155,10 +160,12 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
             {
               "content": "\(longContent)",
               "status": "pending",
-              "priority": "medium",
               "id": "long-1"
             }
           ]
+        },
+        "internalState": {
+          "preExistingTodos" : []
         },
         "isInputComplete" : true,
         "status": {

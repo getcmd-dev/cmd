@@ -3,6 +3,7 @@
 
 import Dependencies
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import SwiftTesting
 import Testing
@@ -12,6 +13,9 @@ struct ClaudeCodeReadToolTests {
 
   @Test
   func handlesExternalOutputCorrectly() async throws {
+    let fileManager = MockFileManager(files: [
+      "path/to/file.txt": testOutput,
+    ])
     let toolUse = ClaudeCodeReadTool().use(
       toolUseId: "123",
       input: .init(file_path: "path/to/file.txt", offset: nil, limit: nil),
@@ -23,7 +27,11 @@ struct ClaudeCodeReadToolTests {
     // Simulate invalid external output
     let invalidOutput = testOutput
 
-    try toolUse.receive(output: invalidOutput)
+    try withDependencies {
+      $0.fileManager = fileManager
+    } operation: {
+      try toolUse.receive(output: invalidOutput)
+    }
     let result = try await toolUse.output
     #expect(result.content.hasPrefix("# MacOS App development"))
     #expect(result.content.hasSuffix("file hierarchy anymore.\n"))

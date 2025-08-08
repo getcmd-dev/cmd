@@ -19,6 +19,7 @@ Target.module(
   ],
   testDependencies: [
     "AppFoundation",
+    "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
     "FileDiffFoundation",
@@ -27,4 +28,5 @@ Target.module(
     "SwiftTesting",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ])

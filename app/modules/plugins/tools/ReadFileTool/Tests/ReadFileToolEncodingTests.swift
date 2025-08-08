@@ -30,6 +30,7 @@ struct ReadFileToolEncodingTests {
         "input": {
           "path": "/src/main.swift"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -61,6 +62,7 @@ struct ReadFileToolEncodingTests {
           },
           "path": "/test/file.py"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -92,6 +94,7 @@ struct ReadFileToolEncodingTests {
           },
           "path": "/config/settings.json"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"

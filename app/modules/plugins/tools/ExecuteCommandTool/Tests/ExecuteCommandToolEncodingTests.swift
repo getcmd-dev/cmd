@@ -34,6 +34,7 @@ struct ExecuteCommandToolEncodingTests {
           "canModifySourceFiles": false,
           "command": "pwd"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -65,6 +66,7 @@ struct ExecuteCommandToolEncodingTests {
           "command": "git status",
           "cwd": "/path/to/project"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
@@ -96,6 +98,7 @@ struct ExecuteCommandToolEncodingTests {
           "command": "swift build",
           "cwd": "/source"
         },
+        "internalState": null,
         "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
