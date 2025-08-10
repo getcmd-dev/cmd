@@ -34,7 +34,8 @@ export const registerMCPServerEndpoints = (
 		input: z.object({}).passthrough().describe("The input for the tool"),
 		tool_use_id: z.string().optional().describe("The unique tool use request ID"),
 	}
-
+	// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+	// @ts-ignore: Type instantiation is excessively deep and possibly infinite.
 	const cb: ToolCallback<typeof schema> = async (args) => {
 		const { tool_name, input } = args
 		const { isAllowed, rejectionMessage } = await handleApproval(tool_name, input)

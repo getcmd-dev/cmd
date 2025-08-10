@@ -41,7 +41,7 @@ export class MockResponse {
 	 * @param event - Event name (e.g., 'close', 'error')
 	 * @param listener - Event listener function
 	 */
-	public on = (event: string, listener: Function) => {
+	public on = (event: string, listener: (value: unknown | undefined) => void) => {
 		if (!this._eventListeners[event]) {
 			this._eventListeners[event] = []
 		}
@@ -56,7 +56,7 @@ export class MockResponse {
 	/**
 	 * Internal storage for event listeners
 	 */
-	private _eventListeners: { [event: string]: Function[] } = {}
+	private _eventListeners: { [event: string]: ((value: unknown | undefined) => void)[] } = {}
 
 	/**
 	 * Gets all data that has been written to this mock response.
@@ -115,9 +115,9 @@ export class MockResponse {
 	 * @param event - Event name to trigger
 	 * @param args - Arguments to pass to event listeners
 	 */
-	public emit = (event: string, ...args: any[]) => {
+	public emit = (event: string, ...args: unknown[]) => {
 		if (this._eventListeners[event]) {
-			this._eventListeners[event].forEach(listener => listener(...args))
+			this._eventListeners[event].forEach((listener) => listener(...(args as [unknown | undefined])))
 		}
 	}
 }

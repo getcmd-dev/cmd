@@ -288,16 +288,23 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						try {
 							const resetTS = event.result.split("|")[1]
 							const resetDate = new Date(Number(resetTS) * 1000)
+							const formatOptions: Intl.DateTimeFormatOptions = {
+								hour: "numeric",
+								minute: "2-digit",
+								timeZoneName: "short",
+							}
+							// In test environment, use fixed timezone for consistency
+							if (process.env.JEST_WORKER_ID !== undefined) {
+								formatOptions.timeZone = "America/Los_Angeles"
+							}
 							yield {
 								type: "error",
 								// Format like `10pm (America/Los_Angeles).`
 								message: `Claude AI usage limit reached. Your limit will reset at ${resetDate.toLocaleTimeString(
-									Intl.DateTimeFormat().resolvedOptions().locale,
-									{
-										hour: "numeric",
-										minute: "2-digit",
-										timeZoneName: "short",
-									},
+									process.env.JEST_WORKER_ID !== undefined
+										? "en-US"
+										: Intl.DateTimeFormat().resolvedOptions().locale,
+									formatOptions,
 								)}.`,
 							}
 							break

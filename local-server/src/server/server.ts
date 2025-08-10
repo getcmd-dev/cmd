@@ -14,7 +14,6 @@ import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterModelProvider } from "./providers/open-router"
-import { debug } from "./endpoints/sendMessage/debug_helper"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -80,10 +79,6 @@ const findAvailablePort = async (startPort: number): Promise<number> => {
 }
 
 export const startServer = async () => {
-	if (process.env.DEBUG) {
-		await debug()
-	}
-
 	const port = await (async () => {
 		const portArg = process.argv.findIndex((arg) => arg === "--port")
 		if (portArg >= 0 && process.argv[portArg + 1]) {

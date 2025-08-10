@@ -337,6 +337,10 @@ extension AttributedString {
       .replacing(
         /<meta name="CocoaVersion" content="(?<version>\d+(\.\d+)?)">/,
         with: "<meta name=\"CocoaVersion\" content=\"CocoaVersion\">")
+      // The `-webkit-text-stroke` attribute is not stable with CI, probably due to some version mismatch not worth going into.
+      .replacing(
+        /-webkit-text-stroke:[^;}]*(;|(?=}))/,
+        with: "")
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }

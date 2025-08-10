@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"target": "esnext",
 		"module": "esnext",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"declaration": true,
 		"strict": true,
 		"noImplicitAny": false /* Raise error on expressions and declarations with an implied 'any' type. */,
@@ -20,12 +20,14 @@
 		"sourceMap": true,
 		"outDir": "./dist/tsc/",
 		"types": ["node", "jest"],
-		"lib": ["ES6", "DOM"],
+		"lib": ["ES2024", "DOM"],
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"]
-		}
+		},
+		"incremental": true,
+		"tsBuildInfoFile": "./dist/tsc/.tsbuildinfo"
 	},
-	"include": ["src/**/*.ts", "tools/**/*.ts", "src/**/__tests__/**/*.ts"],
-	"exclude": ["node_modules/", "dist/", "**/__snapshots__/**"]
+	"include": ["src/**/*.ts", "tools/**/*.ts"],
+	"exclude": ["node_modules", "dist", "coverage", "**/__snapshots__/**"]
 }

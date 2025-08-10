@@ -16,7 +16,7 @@ export interface MockedFs {
 	/** Mock function for fs.unlinkSync - removes file from the in-memory file store */
 	unlinkSync: jest.MockedFunction<(path: string) => void>
 	/** Mock function for fs.mkdirSync - creates directories in the in-memory file store */
-	mkdirSync: jest.MockedFunction<(path: string, options?: any) => void>
+	mkdirSync: jest.MockedFunction<(path: string, options?: unknown) => void>
 	/** In-memory file store mapping file paths to their content */
 	files: { [path: string]: string }
 	/** Clears all files from the in-memory store and resets all mock call history */
@@ -70,7 +70,7 @@ export const mockFs = (onMock?: (mockedFs: MockedFs) => void) => {
 		}
 	})
 
-	const readFileSync = jest.fn<(path: string, encoding?: string) => string>((path, encoding) => {
+	const readFileSync = jest.fn<(path: string, encoding?: string) => string>((path) => {
 		if (!(path in files)) {
 			throw new Error(`ENOENT: no such file or directory, open '${path}'`)
 		}
@@ -88,7 +88,7 @@ export const mockFs = (onMock?: (mockedFs: MockedFs) => void) => {
 		delete files[path]
 	})
 
-	const mkdirSync = jest.fn<(path: string, options?: any) => void>((path, options) => {
+	const mkdirSync = jest.fn<(path: string, options?: unknown) => void>(() => {
 		// Simple mock implementation - just track that it was called
 		// In real usage, directories would be created, but for our mock we just track the call
 	})

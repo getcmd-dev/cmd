@@ -19,6 +19,7 @@ globalThis.TextDecoder = TextDecoder
 if (typeof ReadableStream === "undefined") {
 	globalThis.ReadableStream = ReadableStream
 }
+process.env.JEST_WORKER_ID = process.env.JEST_WORKER_ID || "0"
 
 // Mock fetch globally
 globalThis.fetch = jest.fn()

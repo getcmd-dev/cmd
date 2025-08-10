@@ -1,0 +1,16 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"disableSourceOfProjectReferenceRedirect": true,
+		"disableSolutionSearching": true,
+		"disableReferencedProjectLoad": true
+	},
+	"exclude": [
+		"node_modules",
+		"dist",
+		"coverage",
+		"**/__snapshots__/**",
+	]
+}
