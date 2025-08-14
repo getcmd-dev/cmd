@@ -50,6 +50,7 @@ public struct Settings: Sendable, Equatable {
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
     fileEditMode: FileEditMode = .directIO,
+    automaticallyUpdateXcodeSettings: Bool = false,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
@@ -61,6 +62,7 @@ public struct Settings: Sendable, Equatable {
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.fileEditMode = fileEditMode
+    self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
@@ -114,6 +116,8 @@ public struct Settings: Sendable, Equatable {
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var automaticallyCheckForUpdates: Bool
   public var fileEditMode: FileEditMode
+  /// Whether to automatically update Xcode settings to configure `cmd` as an AI backend.
+  public var automaticallyUpdateXcodeSettings: Bool
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]

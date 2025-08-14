@@ -830,6 +830,7 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "ThreadSafe",
   ],
   path: "./services/ChatCompletionService"))
 

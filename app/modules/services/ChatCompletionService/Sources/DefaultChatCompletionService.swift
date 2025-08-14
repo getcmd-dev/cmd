@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatCompletionServiceInterface
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -10,10 +11,12 @@ import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
+import ThreadSafe
 import Vapor
 
 // MARK: - DefaultChatCompletionService
 
+@ThreadSafe
 final class DefaultChatCompletionService: ChatCompletionService {
 
   // MARK: - Initialization
@@ -30,6 +33,13 @@ final class DefaultChatCompletionService: ChatCompletionService {
     Task {
       try await startServer()
     }
+
+    /// When the setting to automatically sync Xcode settings is changed, do the sync if needed.
+    settingsService.liveValue(for: \.automaticallyUpdateXcodeSettings).sink { @Sendable [weak self] value in
+      if value, let port = self?.port {
+        try? self?.updateXcodeSettings(port: port)
+      }
+    }.store(in: &cancellables)
   }
 
   func configure(_ app: Application, port: Int) throws {
@@ -42,9 +52,18 @@ final class DefaultChatCompletionService: ChatCompletionService {
     app.post("v1", "chat", "completions", use: chatCompletion(req:))
   }
 
+  func updateXcodeSettings() {
+    if let port {
+      try? updateXcodeSettings(port: port)
+    }
+  }
+
+  private var cancellables = Set<AnyCancellable>()
+  private var port: Int?
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
 
+  /// Find an available port where to start the HTTP server.
   private func findAvailablePort() async throws -> Int {
     var port = 10101
 
@@ -68,48 +87,6 @@ final class DefaultChatCompletionService: ChatCompletionService {
     return port
   }
 
-  // TODO: make this opt-in
-  private func updateXcodeSettings(port: Int) throws {
-    guard let xcodeSettings = UserDefaults(suiteName: "com.apple.dt.Xcode") else {
-      defaultLogger.error("Could not find Xcode settings")
-      return
-    }
-
-    let providerId = {
-      let key = "cmd_xcode_provider_id"
-      if let providerId = userDefaults.string(forKey: key) {
-        return providerId
-      } else {
-        let providerId = UUID().uuidString
-        userDefaults.set(providerId, forKey: key)
-        return providerId
-      }
-    }()
-
-    let connectionDetails = XcodeIDEChatUserChatModelProvider(
-      isEnabled: true,
-      identifierUUID: providerId,
-      userDescription: "cmd",
-      connectionDetails: ["localhost": ["port": .number(Double(port))]])
-    let xcodeSettingsKey = "IDEChatUserChatModelProviders"
-    if let data = xcodeSettings.data(forKey: xcodeSettingsKey) {
-      // Ensures that the provider for cmd points to the correct port
-      var settings = try JSONDecoder().decode([XcodeIDEChatUserChatModelProvider].self, from: data)
-      let cmdSettings = settings.first(where: { $0.userDescription == "cmd" })
-      if cmdSettings == nil {
-        settings.append(connectionDetails)
-        try xcodeSettings.set(JSONEncoder().encode(settings), forKey: xcodeSettingsKey)
-      } else if cmdSettings?.connectionDetails.asObject?["localhost"]?.asObject?["port"]?.asNumber != Double(port) {
-        settings = settings.filter { $0.identifierUUID != cmdSettings?.identifierUUID }
-        settings.append(connectionDetails)
-        try xcodeSettings.set(JSONEncoder().encode(settings), forKey: xcodeSettingsKey)
-      }
-    } else {
-      // Add a new entry in Xcode settings to support cmd as an AI backend
-      try xcodeSettings.set(JSONEncoder().encode([connectionDetails]), forKey: xcodeSettingsKey)
-    }
-  }
-
   private func startServer() async throws {
     var env = try Environment.detect()
     try LoggingSystem.bootstrap(from: &env)
@@ -121,10 +98,13 @@ final class DefaultChatCompletionService: ChatCompletionService {
         app.shutdown()
       }
       let port = try await findAvailablePort()
+      self.port = port
       try configure(app, port: port)
       try app.start()
 
-      try? updateXcodeSettings(port: port)
+      if settingsService.value(for: \.automaticallyUpdateXcodeSettings) == true {
+        try? updateXcodeSettings(port: port)
+      }
 
       defaultLogger.log("HTTP server for Chat completino started on port \(port)")
 
@@ -176,22 +156,51 @@ final class DefaultChatCompletionService: ChatCompletionService {
     return stream
   }
 
-}
+  // TODO: make this opt-in
+  private func updateXcodeSettings(port: Int) throws {
+    guard let xcodeSettings = UserDefaults(suiteName: "com.apple.dt.Xcode") else {
+      defaultLogger.error("Could not find Xcode settings")
+      return
+    }
 
-// MARK: - Dependency Registration
+    let providerId = {
+      let key = "cmd_xcode_provider_id"
+      if let providerId = userDefaults.string(forKey: key) {
+        return providerId
+      } else {
+        let providerId = UUID().uuidString
+        userDefaults.set(providerId, forKey: key)
+        return providerId
+      }
+    }()
 
-extension BaseProviding where
-  Self: SettingsServiceProviding,
-  Self: UserDefaultsProviding
-{
-  public var chatCompletionService: ChatCompletionService {
-    shared {
-      DefaultChatCompletionService(
-        settingsService: settingsService,
-        userDefaults: sharedUserDefaults)
+    let connectionDetails = XcodeIDEChatUserChatModelProvider(
+      isEnabled: true,
+      identifierUUID: providerId,
+      userDescription: "cmd",
+      connectionDetails: ["localhost": ["port": .number(Double(port))]])
+    let xcodeSettingsKey = "IDEChatUserChatModelProviders"
+    if let data = xcodeSettings.data(forKey: xcodeSettingsKey) {
+      // Ensures that the provider for cmd points to the correct port
+      var settings = try JSONDecoder().decode([XcodeIDEChatUserChatModelProvider].self, from: data)
+      let cmdSettings = settings.first(where: { $0.userDescription == "cmd" })
+      if cmdSettings == nil {
+        settings.append(connectionDetails)
+        try xcodeSettings.set(JSONEncoder().encode(settings), forKey: xcodeSettingsKey)
+      } else if cmdSettings?.connectionDetails.asObject?["localhost"]?.asObject?["port"]?.asNumber != Double(port) {
+        settings = settings.filter { $0.identifierUUID != cmdSettings?.identifierUUID }
+        settings.append(connectionDetails)
+        try xcodeSettings.set(JSONEncoder().encode(settings), forKey: xcodeSettingsKey)
+      }
+    } else {
+      // Add a new entry in Xcode settings to support cmd as an AI backend
+      try xcodeSettings.set(JSONEncoder().encode([connectionDetails]), forKey: xcodeSettingsKey)
     }
   }
+
 }
+
+// MARK: - BroadcastedStream + AsyncResponseEncodable
 
 extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
   public func encodeResponse(for _: Request) async throws -> Response {
@@ -203,27 +212,25 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
             let data = try JSONEncoder().encode(element)
             _ = writer.write(.buffer(.init(data: data)))
           }
-
-          _ = writer.write(.end)
         } catch {
           defaultLogger.error("An error occured while responding to the chat completion", error)
-          // TODO: check the reponse format for both cases.
-          do {
-            let data = try JSONEncoder().encode(JSON.object([
-              "error": .string("An error occured while responding to the chat completion: \(error.localizedDescription)"),
-            ]))
-            _ = writer.write(.buffer(.init(data: data)))
-          } catch {
-            _ = writer.write(.buffer(.init(data: "An error occured".utf8Data)))
-          }
-          _ = writer.write(.end)
-          // Handle errors as needed
+          let data = Data(chunkWithError: error.localizedDescription)
+          _ = writer.write(.buffer(ByteBuffer(data: data)))
         }
+        _ = writer.write(.buffer(ByteBuffer(string: "data: [DONE]")))
+        _ = writer.write(.end)
       }
     })
 
     response.body = body
     return response
+  }
+}
+
+extension Data {
+  /// A chunk that can be stream to the client to describe an error in the expected format.
+  init(chunkWithError error: String) {
+    self = "data: {\"error\": {\"message\": \"\(error)\" }}\n\n".utf8Data
   }
 }
 
@@ -246,4 +253,19 @@ private struct XcodeIDEChatUserChatModelProvider: Codable {
   let identifierUUID: String
   let userDescription: String
   let connectionDetails: JSON
+}
+
+// MARK: - Dependency Registration
+
+extension BaseProviding where
+  Self: SettingsServiceProviding,
+  Self: UserDefaultsProviding
+{
+  public var chatCompletionService: ChatCompletionService {
+    shared {
+      DefaultChatCompletionService(
+        settingsService: settingsService,
+        userDefaults: sharedUserDefaults)
+    }
+  }
 }

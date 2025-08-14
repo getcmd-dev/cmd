@@ -10,4 +10,5 @@ Target.module(
     "JSONFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "ThreadSafe",
   ])
