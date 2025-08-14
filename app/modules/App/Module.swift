@@ -12,6 +12,8 @@ Target.module(
     "AskFollowUpTool",
     "BuildTool",
     "ChatAppEvents",
+    "ChatCompletionService",
+    "ChatCompletionServiceInterface",
     "ChatFeature",
     "ChatService",
     "ChatServiceInterface",

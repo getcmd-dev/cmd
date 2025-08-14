@@ -20,6 +20,8 @@ import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
 import LoggingServiceInterface
+import ChatCompletionServiceInterface
+import ChatCompletionService
 import PermissionsService
 import PermissionsServiceInterface
 import LocalServerService
@@ -66,6 +68,12 @@ extension ChatHistoryServiceDependencyKey: DependencyKey {
 
 extension ChatContextRegistryServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatContextRegistryService { AppScope.shared.chatContextRegistry }
+}
+
+// MARK: - ChatContextRegistryServiceDependencyKey + DependencyKey
+
+extension ChatCompletionServiceDependencyKey: DependencyKey {
+  public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }
 }
 
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
@@ -167,6 +175,10 @@ extension AppScope: ChatHistoryServiceProviding { }
 // MARK: - AppScope + ChatContextRegistryServiceProviding
 
 extension AppScope: ChatContextRegistryServiceProviding { }
+
+// MARK: - AppScope + ChatCompletionServiceProviding
+
+extension AppScope: ChatCompletionServiceProviding { }
 
 // MARK: - AppScope + CheckpointServiceProviding
 

@@ -85,6 +85,8 @@ targets.append(contentsOf: Target.module(
     "AskFollowUpTool",
     "BuildTool",
     "ChatAppEvents",
+    "ChatCompletionService",
+    "ChatCompletionServiceInterface",
     "ChatFeature",
     "ChatService",
     "ChatServiceInterface",
@@ -704,6 +706,13 @@ targets.append(contentsOf: Target.module(
   path: "./serviceInterfaces/LLMServiceInterface"))
 
 targets.append(contentsOf: Target.module(
+  name: "ChatCompletionServiceInterface",
+  dependencies: [
+    "LocalServerServiceInterface",
+  ],
+  path: "./serviceInterfaces/ChatCompletionServiceInterface"))
+
+targets.append(contentsOf: Target.module(
   name: "LocalServerServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -808,6 +817,16 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./serviceInterfaces/ChatServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatCompletionService",
+  dependencies: [
+    "ChatCompletionServiceInterface",
+    "DependencyFoundation",
+    "SettingsServiceInterface",
+    "ThreadSafe",
+  ],
+  path: "./services/ChatCompletionService"))
 
 targets.append(contentsOf: Target.module(
   name: "CheckpointService",
