@@ -7,13 +7,13 @@ import Foundation
 
 // MARK: - JSON
 
-public enum JSON: Codable, Equatable, Sendable {
+public enum JSON: Codable, Equatable, Hashable, Sendable {
   case object(_ value: [String: JSON.Value])
   case array(_ value: [JSON.Value])
 
   // MARK: - JSONValue
 
-  public enum Value: Codable, Equatable, Sendable {
+  public enum Value: Codable, Equatable, Hashable, Sendable {
     case string(_ value: String)
     case object(_ value: [String: JSON.Value])
     case array(_ value: [JSON.Value])

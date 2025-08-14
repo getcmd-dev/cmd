@@ -106,7 +106,6 @@ public final class ReadFileTool: NonStreamableTool {
 
     var mappedInput: Input { internalState }
 
-    @Dependency(\.localServer) private var server
     @Dependency(\.fileManager) private var fileManager
     @Dependency(\.chatContextRegistry) private var chatContextRegistry
 

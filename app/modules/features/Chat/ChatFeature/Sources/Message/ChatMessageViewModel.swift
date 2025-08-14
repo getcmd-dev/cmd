@@ -4,8 +4,8 @@
 import ChatFeatureInterface
 import Foundation
 import LLMServiceInterface
-import Observation
 import LocalServerServiceInterface
+import Observation
 import ToolFoundation
 
 // MARK: - ChatMessageViewModel

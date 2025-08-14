@@ -8,8 +8,8 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import LLMServiceInterface
-import LoggingServiceInterface
 import LocalServerServiceInterface
+import LoggingServiceInterface
 import ShellServiceInterface
 import ToolFoundation
 import XcodeObserverServiceInterface

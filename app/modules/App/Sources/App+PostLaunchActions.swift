@@ -8,6 +8,7 @@
 //  Created by Guigui on 6/4/25.
 //
 import AppUpdateServiceInterface
+import ChatCompletionServiceInterface
 import Dependencies
 import XcodeObserverServiceInterface
 
@@ -21,5 +22,8 @@ extension commandApp {
     // Initiate the service to start automatic updates
     @Dependency(\.appUpdateService) var appUpdateService
     _ = appUpdateService
+    // Initiate the local HTTP server to support chat completion
+    @Dependency(\.chatCompletion) var chatCompletion
+    chatCompletion.start()
   }
 }

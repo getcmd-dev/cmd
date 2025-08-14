@@ -10,8 +10,8 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
-import LoggingServiceInterface
 import LocalServerServiceInterface
+import LoggingServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import ToolFoundation

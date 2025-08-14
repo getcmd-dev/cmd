@@ -8,8 +8,8 @@ import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
-import LoggingServiceInterface
 import LocalServerServiceInterface
+import LoggingServiceInterface
 
 // MARK: - DefaultLocalServer
 

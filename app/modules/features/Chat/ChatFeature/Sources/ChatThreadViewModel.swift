@@ -14,9 +14,9 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
+import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
-import LocalServerServiceInterface
 import SettingsServiceInterface
 import ThreadSafe
 import ToolFoundation

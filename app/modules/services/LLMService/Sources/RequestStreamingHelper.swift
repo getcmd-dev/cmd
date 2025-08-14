@@ -7,8 +7,8 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LLMServiceInterface
-import LoggingServiceInterface
 import LocalServerServiceInterface
+import LoggingServiceInterface
 import ThreadSafe
 import ToolFoundation
 

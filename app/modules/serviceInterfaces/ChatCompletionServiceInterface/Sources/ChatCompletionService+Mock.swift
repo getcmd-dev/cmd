@@ -7,16 +7,8 @@ import LocalServerServiceInterface
 #if DEBUG
 public final class MockChatCompletionService: ChatCompletionService {
 
-  public init() {}
+  public init() { }
 
-  public func respond(to request: ChatCompletionRequest) throws -> AsyncStream<CompletionResponseChunk> {
-    AsyncStream { continuation in
-      continuation.finish()
-    }
-  }
-
-  public func respond(to request: ListModelsRequest) async throws -> ListModelsResponse {
-    ListModelsResponse(models: [])
-  }
+  public func start() { }
 }
 #endif

@@ -6,6 +6,8 @@ import AppEventServiceInterface
 import AppKit
 import AppUpdateService
 import AppUpdateServiceInterface
+import ChatCompletionService
+import ChatCompletionServiceInterface
 import ChatService
 import ChatServiceInterface
 import CheckpointService
@@ -19,13 +21,11 @@ import FoundationInterfaces
 import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
-import LoggingServiceInterface
-import ChatCompletionServiceInterface
-import ChatCompletionService
-import PermissionsService
-import PermissionsServiceInterface
 import LocalServerService
 import LocalServerServiceInterface
+import LoggingServiceInterface
+import PermissionsService
+import PermissionsServiceInterface
 import SettingsService
 import SettingsServiceInterface
 import ShellService
@@ -70,7 +70,7 @@ extension ChatContextRegistryServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatContextRegistryService { AppScope.shared.chatContextRegistry }
 }
 
-// MARK: - ChatContextRegistryServiceDependencyKey + DependencyKey
+// MARK: - ChatCompletionServiceDependencyKey + DependencyKey
 
 extension ChatCompletionServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }

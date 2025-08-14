@@ -28,7 +28,7 @@ final class AppScope: Sendable, BaseProviding {
   @MainActor
   func create(isAppActive: AnyPublisher<Bool, Never>) {
     let initialDependencies = InitialDependencies(isAppActive: isAppActive)
-    inLock { $0.sharedDependencies = AppScopeStorage(initial: initialDependencies) }
+    sharedDependencies = AppScopeStorage(initial: initialDependencies)
 
     setupLogging()
   }

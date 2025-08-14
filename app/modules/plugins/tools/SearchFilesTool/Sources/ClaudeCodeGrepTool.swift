@@ -6,8 +6,8 @@ import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
-import LoggingServiceInterface
 import LocalServerServiceInterface
+import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
 
