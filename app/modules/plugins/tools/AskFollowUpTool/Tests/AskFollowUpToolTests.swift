@@ -3,7 +3,7 @@
 
 import Dependencies
 import Foundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftTesting
 import Testing
 @testable import LSTool
@@ -11,7 +11,7 @@ import Testing
 struct LSToolTests {
   @Test
   func completesWithTheExpectedOutcome() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     server.onPostRequest = { path, data, _ in
       #expect(path == "listFiles")
       data.expectToMatch("""
@@ -35,7 +35,7 @@ struct LSToolTests {
     }
 
     let toolUse = withDependencies {
-      $0.server = server
+      $0.localServer = server
     } operation: {
       let toolUse = LSTool().use(
         toolUseId: "123",
@@ -55,13 +55,13 @@ struct LSToolTests {
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     server.onPostRequest = { _, _, _ in
       throw APIError("unavailable")
     }
 
     let toolUse = withDependencies {
-      $0.server = server
+      $0.localServer = server
     } operation: {
       let toolUse = LSTool().use(
         toolUseId: "123",

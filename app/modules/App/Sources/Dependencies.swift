@@ -22,8 +22,8 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import PermissionsService
 import PermissionsServiceInterface
-import ServerService
-import ServerServiceInterface
+import LocalServerService
+import LocalServerServiceInterface
 import SettingsService
 import SettingsServiceInterface
 import ShellService
@@ -106,10 +106,10 @@ extension PermissionsServiceDependencyKey: DependencyKey {
   public static var liveValue: PermissionsService { AppScope.shared.permissionsService }
 }
 
-// MARK: - ServerDependencyKey + DependencyKey
+// MARK: - LocalServerDependencyKey + DependencyKey
 
-extension ServerDependencyKey: DependencyKey {
-  public static var liveValue: Server { AppScope.shared.server }
+extension LocalServerDependencyKey: DependencyKey {
+  public static var liveValue: LocalServer { AppScope.shared.localServer }
 }
 
 // MARK: - SettingsServiceDependencyKey + DependencyKey
@@ -196,9 +196,9 @@ extension AppScope: LLMServiceProviding { }
 
 extension AppScope: PermissionsServiceProviding { }
 
-// MARK: - AppScope + ServerProviding
+// MARK: - AppScope + LocalServerProviding
 
-extension AppScope: ServerProviding { }
+extension AppScope: LocalServerProviding { }
 
 // MARK: - AppScope + SettingsServiceProviding
 

@@ -27,7 +27,7 @@ cd "$file_directory"
 repo_root=$(git rev-parse --show-toplevel)
 
 PROXY_HASH_FILE="$repo_root/local-server/build.sha256"
-APP_HASH_FILE="$repo_root/app/modules/services/ServerService/Sources/Resources/build.sha256"
+APP_HASH_FILE="$repo_root/app/modules/services/LocalServerService/Sources/Resources/build.sha256"
 
 copy_one_file() {
 	local file_path="$1"
@@ -47,7 +47,7 @@ build_and_copy() {
 		"$repo_root/local-server/build.sha256"
 	)
 	destination_dir=(
-		"$repo_root/app/modules/services/ServerService/Sources/Resources"
+		"$repo_root/app/modules/services/LocalServerService/Sources/Resources"
 		"$HOME/Library/Application\ Support/command"
 	)
 	for file in "${files_to_copy[@]}"; do

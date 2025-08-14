@@ -8,7 +8,7 @@ import Foundation
 import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ThreadSafe
 import ToolFoundation
 

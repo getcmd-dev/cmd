@@ -6,15 +6,15 @@ import ConcurrencyFoundation
 import Foundation
 import SwiftTesting
 import Testing
-@testable import ServerServiceInterface
+@testable import LocalServerServiceInterface
 
-struct MockServerTests {
+struct MockLocalServerTests {
 
   // MARK: - GET Request Tests
 
   @Test
   func testGetRequestSuccess() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let expectedData = "Hello World".utf8Data
     let receivedData = Atomic<Data?>(nil)
 
@@ -33,7 +33,7 @@ struct MockServerTests {
 
   @Test
   func testGetRequestFailure() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
 
     // Default behavior should throw badServerResponse
     do {
@@ -46,7 +46,7 @@ struct MockServerTests {
 
   @Test
   func testGetRequestCancellation() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let expectation = expectation(description: "Request should be cancelled")
 
     server.onGetRequest = { _, _ in
@@ -72,8 +72,8 @@ struct MockServerTests {
 
   @Test
   func testPostRequestSuccess() async throws {
-    let server = MockServer()
-    let sentData = "Hello Server".utf8Data
+    let server = MockLocalServer()
+    let sentData = "Hello LocalServer".utf8Data
     let responseData = "Hello Client".utf8Data
     let receivedData = Atomic<Data?>(nil)
 
@@ -93,7 +93,7 @@ struct MockServerTests {
 
   @Test
   func testPostRequestFailure() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let testData = "Test".utf8Data
 
     // Default behavior should throw badServerResponse
@@ -107,7 +107,7 @@ struct MockServerTests {
 
   @Test
   func testPostRequestCancellation() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let testData = "Test".utf8Data
     let expectation = expectation(description: "Request should be cancelled")
 
@@ -132,7 +132,7 @@ struct MockServerTests {
 
   @Test
   func testStreamingDataAfterCompletion() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let dataReceived = Atomic<Bool>(false)
 
     server.onGetRequest = { _, onReceiveJSONData in

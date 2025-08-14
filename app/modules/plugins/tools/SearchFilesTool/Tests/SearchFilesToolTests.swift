@@ -3,7 +3,7 @@
 
 import Dependencies
 import Foundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftTesting
 import Testing
 @testable import SearchFilesTool
@@ -11,7 +11,7 @@ import Testing
 struct SearchFilesToolTests {
   @Test
   func completesWithTheExpectedOutcome() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     server.onPostRequest = { path, data, _ in
       #expect(path == "searchFiles")
       data.expectToMatch("""
@@ -34,7 +34,7 @@ struct SearchFilesToolTests {
     }
 
     let toolUse = withDependencies {
-      $0.server = server
+      $0.localServer = server
     } operation: {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",
@@ -53,13 +53,13 @@ struct SearchFilesToolTests {
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     server.onPostRequest = { _, _, _ in
       throw APIError("unavailable")
     }
 
     let toolUse = withDependencies {
-      $0.server = server
+      $0.localServer = server
     } operation: {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",

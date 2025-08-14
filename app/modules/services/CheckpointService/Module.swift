@@ -5,6 +5,6 @@ Target.module(
     "CheckpointServiceInterface",
     "DependencyFoundation",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
   ],
   testDependencies: [])

@@ -11,7 +11,7 @@ import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import ToolFoundation
@@ -20,7 +20,7 @@ import ToolFoundation
 
 final class DefaultLLMService: LLMService {
 
-  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
+  init(server: LocalServer, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
     self.server = server
     self.settingsService = settingsService
     self.shellService = shellService
@@ -195,7 +195,7 @@ final class DefaultLLMService: LLMService {
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
   #endif
-  private let server: Server
+  private let server: LocalServer
 
   /// Wait for the result of a tool use request.
   /// This returns a message representing the result of the tool use, and broadcast the execution status to the update stream.
@@ -325,7 +325,7 @@ final class DefaultLLMService: LLMService {
 }
 
 extension BaseProviding where
-  Self: ServerProviding,
+  Self: LocalServerProviding,
   Self: SettingsServiceProviding,
   Self: UserDefaultsProviding,
   Self: ShellServiceProviding
@@ -333,7 +333,7 @@ extension BaseProviding where
   public var llmService: LLMService {
     shared {
       DefaultLLMService(
-        server: server,
+        server: localServer,
         settingsService: settingsService,
         userDefaults: sharedUserDefaults,
         shellService: shellService)

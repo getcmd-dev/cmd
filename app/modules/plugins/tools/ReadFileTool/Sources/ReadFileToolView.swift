@@ -3,7 +3,7 @@
 
 import CodePreview
 import DLS
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 

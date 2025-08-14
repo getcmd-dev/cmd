@@ -3,7 +3,7 @@
 
 import Foundation
 import LLMFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
 import Testing
@@ -175,7 +175,7 @@ struct APIParamsEncodingTests {
   @Test("EnableReasoning parameter set to true for enabled reasoning-capable models")
   func testEnableReasoningTrueForEnableReasoningModels() async throws {
     let requestCompleted = expectation(description: "Request completed")
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let settingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
@@ -236,7 +236,7 @@ struct APIParamsEncodingTests {
   @Test("EnableReasoning parameter set to true for non-enabled reasoning-capable models")
   func testEnableReasoningTrueForNonEnableReasoningModels() async throws {
     let requestCompleted = expectation(description: "Request completed")
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     mockServer.onPostRequest = { path, data, _ in
@@ -287,7 +287,7 @@ struct APIParamsEncodingTests {
   @Test("EnableReasoning parameter set to false for non-reasoning models")
   func testEnableReasoningFalseForNonReasoningModels() async throws {
     let requestCompleted = expectation(description: "Request completed")
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     mockServer.onPostRequest = { path, data, _ in

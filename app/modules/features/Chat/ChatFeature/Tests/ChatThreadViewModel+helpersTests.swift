@@ -7,7 +7,7 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftTesting
 import Testing
 import XcodeObserverServiceInterface
@@ -26,7 +26,7 @@ struct ChatThreadViewModelHelpersTests {
     let workspaceURL = URL(fileURLWithPath: "/test/workspace")
     let mockXcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL)
     let mockFileManager = MockFileManager()
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     mockServer.onPostRequest = { path, _, _ in
       if path == "listFiles" {
         // Create a mock response for the listFiles endpoint
@@ -54,7 +54,7 @@ struct ChatThreadViewModelHelpersTests {
     let sut = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
       $0.fileManager = mockFileManager
-      $0.server = mockServer
+      $0.localServer = mockServer
       $0.llmService = mockLLMService
       $0.checkpointService = mockCheckpointService
     } operation: {

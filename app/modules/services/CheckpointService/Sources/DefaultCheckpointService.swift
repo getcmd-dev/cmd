@@ -6,7 +6,7 @@ import CheckpointServiceInterface
 import DependencyFoundation
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 
 // MARK: - DefaultCheckpointService
 
@@ -14,7 +14,7 @@ final class DefaultCheckpointService: CheckpointService {
 
   // MARK: - Initialization
 
-  init(server: Server) {
+  init(server: LocalServer) {
     self.server = server
   }
 
@@ -45,15 +45,15 @@ final class DefaultCheckpointService: CheckpointService {
       data: requestData)
   }
 
-  private let server: Server
+  private let server: LocalServer
 }
 
 // MARK: - Dependency Injection
 
-extension BaseProviding where Self: ServerProviding {
+extension BaseProviding where Self: LocalServerProviding {
   public var checkpointService: CheckpointService {
     shared {
-      DefaultCheckpointService(server: server)
+      DefaultCheckpointService(server: localServer)
     }
   }
 }

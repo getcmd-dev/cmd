@@ -7,7 +7,7 @@ import Foundation
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
 import Testing
@@ -24,7 +24,7 @@ final class SummarizeConversationTests {
   @Test
   func test_summarizeConversation_withSuccessfulResponse() async throws {
     // Given
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     let messageHistory: [Schema.Message] = [
@@ -68,7 +68,7 @@ final class SummarizeConversationTests {
   @Test
   func test_summarizeConversation_withEmptyResponse() async throws {
     // Given
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     let messageHistory: [Schema.Message] = [
@@ -96,7 +96,7 @@ final class SummarizeConversationTests {
   @Test
   func test_summarizeConversation_withServerError() async throws {
     // Given
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     let messageHistory: [Schema.Message] = [
@@ -123,7 +123,7 @@ final class SummarizeConversationTests {
   @Test
   func test_summarizeConversation_withEmptyMessageHistory() async throws {
     // Given
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     let messageHistory: [Schema.Message] = []
@@ -156,7 +156,7 @@ final class SummarizeConversationTests {
   @Test
   func test_summarizeConversation_withLongConversation() async throws {
     // Given
-    let mockServer = MockServer()
+    let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
     // Create a longer conversation history

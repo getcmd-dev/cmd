@@ -4,7 +4,7 @@
 import AppFoundation
 import Foundation
 import Testing
-@testable import ServerServiceInterface
+@testable import LocalServerServiceInterface
 
 // MARK: - ErrorParsingTests
 
@@ -14,7 +14,7 @@ struct ErrorParsingTests {
   @Test("Test successful decoding")
   func testSuccessfulDecoding() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let responseData = "{ \"name\": \"Test User\", \"age\": 30 }".utf8Data
 
     server.onPostRequest = { _, _, _ in
@@ -32,7 +32,7 @@ struct ErrorParsingTests {
   @Test("Test error parsing with complete error object")
   func testErrorParsingComplete() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let errorResponse = """
       {
           "type": "error",
@@ -62,7 +62,7 @@ struct ErrorParsingTests {
   @Test("Test error parsing without stack trace")
   func testErrorParsingWithoutStack() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let errorResponse = """
       {
           "type": "error",
@@ -91,7 +91,7 @@ struct ErrorParsingTests {
   @Test("Test invalid error type")
   func testInvalidErrorType() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let errorResponse = """
       {
           "type": "not_an_error",
@@ -120,7 +120,7 @@ struct ErrorParsingTests {
   @Test("Test regular decoding error")
   func testRegularDecodingError() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let responseData = "{ \"invalid\": \"json\" }".utf8Data
 
     server.onPostRequest = { _, _, _ in
@@ -139,7 +139,7 @@ struct ErrorParsingTests {
   @Test("Test no data response")
   func testNoDataResponse() async throws {
     // Setup
-    let server = MockServer()
+    let server = MockLocalServer()
     let emptyData = Data()
 
     server.onPostRequest = { _, _, _ in

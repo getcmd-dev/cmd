@@ -4,14 +4,14 @@
 import ConcurrencyFoundation
 import Foundation
 #if DEBUG
-public typealias ServerResponse = Data
+public typealias LocalServerResponse = Data
 
-public final class MockServer: Server {
+public final class MockLocalServer: LocalServer {
 
   public init() { }
 
   public var onGetRequest: @Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws
-    -> ServerResponse
+    -> LocalServerResponse
   {
     get { _onGetRequest.value }
     set { _onGetRequest.mutate { $0 = newValue } }
@@ -21,13 +21,13 @@ public final class MockServer: Server {
     _ path: String,
     _ data: Data,
     _ onReceiveJSONData: (@Sendable (Data) -> Void)?)
-    async throws -> ServerResponse
+    async throws -> LocalServerResponse
   {
     get { _onPostRequest.value }
     set { _onPostRequest.mutate { $0 = newValue } }
   }
 
-  public func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse {
+  public func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> LocalServerResponse {
     try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
       try await self.onGetRequest(path, onReceiveJSONData)
     }
@@ -37,7 +37,7 @@ public final class MockServer: Server {
     path: String,
     data: Data,
     onReceiveJSONData: (@Sendable (Data) -> Void)?)
-    async throws -> ServerResponse
+    async throws -> LocalServerResponse
   {
     try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
       try await self.onPostRequest(path, data, onReceiveJSONData)
@@ -45,7 +45,7 @@ public final class MockServer: Server {
   }
 
   private let _onGetRequest =
-    Atomic<@Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse>
+    Atomic<@Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> LocalServerResponse>
       .init { _, _ in
         throw URLError(.badServerResponse)
       }
@@ -53,7 +53,7 @@ public final class MockServer: Server {
   private let _onPostRequest =
     Atomic<
       @Sendable (_ path: String, _ data: Data, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws
-        -> ServerResponse
+        -> LocalServerResponse
     >
     .init { _, _, _ in
       throw URLError(.badServerResponse)
@@ -62,19 +62,19 @@ public final class MockServer: Server {
   /// Wraps the provided stub in one that will throw and stop send data chunk if the task is cancelled.
   private func throwingWhenCancelled(
     _ onReceiveJSONData: (@Sendable (Data) -> Void)?,
-    _ sendRequest: @escaping @Sendable (_ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse)
-    async throws -> ServerResponse
+    _ sendRequest: @escaping @Sendable (_ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> LocalServerResponse)
+    async throws -> LocalServerResponse
   {
     enum State {
       case initial
-      case pending(CheckedContinuation<ServerResponse, Error>)
-      case completed(Result<ServerResponse, Error>)
+      case pending(CheckedContinuation<LocalServerResponse, Error>)
+      case completed(Result<LocalServerResponse, Error>)
     }
 
     let state = Atomic<State>(.initial)
     // Resume the continuation if this has not been done already.
-    let resume: @Sendable (Result<ServerResponse, Error>) -> Void = { result in
-      let continuation: CheckedContinuation<ServerResponse, Error>? = state.mutate { state in
+    let resume: @Sendable (Result<LocalServerResponse, Error>) -> Void = { result in
+      let continuation: CheckedContinuation<LocalServerResponse, Error>? = state.mutate { state in
         switch state {
         case .initial:
           state = .completed(result)
@@ -93,7 +93,7 @@ public final class MockServer: Server {
 
     return try await withTaskCancellationHandler(operation: {
       try await withCheckedThrowingContinuation { continuation in
-        let result: Result<ServerResponse, Error>? = state.mutate { state in
+        let result: Result<LocalServerResponse, Error>? = state.mutate { state in
           switch state {
           case .initial:
             state = .pending(continuation)

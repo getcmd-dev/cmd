@@ -5,7 +5,7 @@ import ChatFeatureInterface
 import CheckpointServiceInterface
 import Foundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ToolFoundation
 
 // MARK: - ChatThreadModel + Codable

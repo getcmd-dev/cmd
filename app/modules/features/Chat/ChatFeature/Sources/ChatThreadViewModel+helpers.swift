@@ -9,7 +9,7 @@ import Foundation
 import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ShellServiceInterface
 import ToolFoundation
 import XcodeObserverServiceInterface
@@ -109,7 +109,7 @@ extension ChatThreadViewModel {
   }
 
   func createContextMessage(for workspace: XcodeWorkspaceState, projectRoot: URL) async throws -> ChatMessageTextContent {
-    @Dependency(\.server) var server
+    @Dependency(\.localServer) var server
     @Dependency(\.shellService) var _shellService
     let shellService: ShellService = _shellService // Necessary to deal with Swift concurrency errors.
 

@@ -6,7 +6,7 @@ import DLS
 import FileDiffFoundation
 import FileDiffTypesFoundation
 import Foundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 

@@ -102,6 +102,8 @@ targets.append(contentsOf: Target.module(
     "HighlighterServiceInterface",
     "LLMService",
     "LLMServiceInterface",
+    "LocalServerService",
+    "LocalServerServiceInterface",
     "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
@@ -110,8 +112,6 @@ targets.append(contentsOf: Target.module(
     "PermissionsServiceInterface",
     "ReadFileTool",
     "SearchFilesTool",
-    "ServerService",
-    "ServerServiceInterface",
     "SettingsFeature",
     "SettingsService",
     "SettingsServiceInterface",
@@ -141,8 +141,8 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
   ],
   resources: [
     .process("Resources/fileIcons"),
@@ -186,12 +186,12 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
+    "LocalServerServiceInterface",
     "LSTool",
-    "ServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -208,8 +208,8 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "JSONFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],
@@ -229,7 +229,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
   ],
@@ -247,12 +247,12 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -266,13 +266,13 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
@@ -291,8 +291,8 @@ targets.append(contentsOf: Target.module(
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
@@ -340,14 +340,14 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
     "AppFoundation",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -391,8 +391,8 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "ThreadSafe",
@@ -413,7 +413,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMFoundation",
     "LLMServiceInterface",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SettingsServiceInterface",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
@@ -426,8 +426,8 @@ targets.append(contentsOf: Target.module(
     "AppFoundation",
     "CheckpointServiceInterface",
     "LLMServiceInterface",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ToolFoundation",
   ],
   path: "./features/Chat/ChatFeatureInterface"))
@@ -696,12 +696,27 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "JSONFoundation",
     "LLMFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [],
   path: "./serviceInterfaces/LLMServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "LocalServerServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/LocalServerServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "ExtensionEventsInterface",
@@ -743,21 +758,6 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [],
   path: "./serviceInterfaces/ShellServiceInterface"))
-
-targets.append(contentsOf: Target.module(
-  name: "ServerServiceInterface",
-  dependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "JSONFoundation",
-  ],
-  testDependencies: [
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "SwiftTesting",
-  ],
-  path: "./serviceInterfaces/ServerServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "HighlighterServiceInterface",
@@ -810,40 +810,13 @@ targets.append(contentsOf: Target.module(
   path: "./serviceInterfaces/ChatServiceInterface"))
 
 targets.append(contentsOf: Target.module(
-  name: "ServerService",
-  dependencies: [
-    "AppEventServiceInterface",
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "DependencyFoundation",
-    "ExtensionEventsInterface",
-    "FoundationInterfaces",
-    "LoggingServiceInterface",
-    "ServerServiceInterface",
-    "ThreadSafe",
-  ],
-  resources: [
-    .process("Resources/build.sha256"),
-    .process("Resources/launch-server.sh"),
-    .process("Resources/main.bundle.cjs"),
-    .process("Resources/main.bundle.cjs.map"),
-  ],
-  testDependencies: [
-    "AppFoundation",
-    "JSONFoundation",
-    "ServerServiceInterface",
-    "SwiftTesting",
-  ],
-  path: "./services/ServerService"))
-
-targets.append(contentsOf: Target.module(
   name: "CheckpointService",
   dependencies: [
     "AppFoundation",
     "CheckpointServiceInterface",
     "DependencyFoundation",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
   ],
   testDependencies: [],
   path: "./services/CheckpointService"))
@@ -860,8 +833,8 @@ targets.append(contentsOf: Target.module(
     "DependencyFoundation",
     "FoundationInterfaces",
     "LLMServiceInterface",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],
@@ -919,6 +892,33 @@ targets.append(contentsOf: Target.module(
   ],
   testDependencies: [],
   path: "./services/ShellService"))
+
+targets.append(contentsOf: Target.module(
+  name: "LocalServerService",
+  dependencies: [
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "ExtensionEventsInterface",
+    "FoundationInterfaces",
+    "LocalServerServiceInterface",
+    "LoggingServiceInterface",
+    "ThreadSafe",
+  ],
+  resources: [
+    .process("Resources/build.sha256"),
+    .process("Resources/launch-server.sh"),
+    .process("Resources/main.bundle.cjs"),
+    .process("Resources/main.bundle.cjs.map"),
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "JSONFoundation",
+    "LocalServerServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./services/LocalServerService"))
 
 targets.append(contentsOf: Target.module(
   name: "XcodeControllerService",
@@ -1042,8 +1042,8 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "ThreadSafe",
@@ -1056,7 +1056,7 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",

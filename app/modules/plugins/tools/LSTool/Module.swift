@@ -5,12 +5,12 @@ Target.module(
     "ConcurrencyFoundation",
     "DLS",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ToolFoundation",
   ],
   testDependencies: [
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SwiftTesting",
     "ToolFoundation",
   ])

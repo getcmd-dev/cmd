@@ -3,7 +3,7 @@
 
 import Foundation
 import LLMFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ThreadSafe
 import ToolFoundation
 

@@ -5,7 +5,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ToolFoundation
 
 extension AssistantMessageContent {

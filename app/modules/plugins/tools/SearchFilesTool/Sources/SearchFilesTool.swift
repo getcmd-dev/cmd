@@ -7,7 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -102,7 +102,7 @@ public final class SearchFilesTool: NonStreamableTool {
       updateStatus.complete(with: .failure(CancellationError()))
     }
 
-    @Dependency(\.server) private var server
+    @Dependency(\.localServer) private var server
 
   }
 

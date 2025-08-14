@@ -7,7 +7,7 @@ import Foundation
 import FoundationInterfaces
 import JSONFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import Testing
 import ToolFoundation
 @testable import LLMService

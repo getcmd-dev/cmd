@@ -6,7 +6,7 @@ Target.module(
     "ConcurrencyFoundation",
     "JSONFoundation",
     "LLMFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],

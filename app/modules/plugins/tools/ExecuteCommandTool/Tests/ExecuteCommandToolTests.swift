@@ -3,7 +3,7 @@
 
 import Dependencies
 import Foundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ShellServiceInterface
 import SwiftTesting
 import Testing

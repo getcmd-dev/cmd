@@ -5,7 +5,7 @@ import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
 import LLMFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ToolFoundation
 
 public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<AssistantMessage>]>

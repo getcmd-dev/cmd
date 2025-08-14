@@ -16,7 +16,7 @@ import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import ThreadSafe
 import ToolFoundation

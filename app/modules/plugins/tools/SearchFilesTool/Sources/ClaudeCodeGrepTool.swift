@@ -7,7 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LoggingServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -256,7 +256,7 @@ public struct ClaudeCodeGrepInput: Codable, Sendable {
 /// The output is in a simple format showing file paths, like:
 /// ```
 /// Found 2 files
-/// /Users/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift
+/// /Users/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
 /// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
 /// ```
 private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {

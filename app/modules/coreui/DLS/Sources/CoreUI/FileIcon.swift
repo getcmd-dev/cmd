@@ -6,7 +6,7 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import Foundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 
 // MARK: - FileIcon
@@ -57,7 +57,7 @@ public struct FileIcon: View {
 
   @Bindable private var image: ObservableValue<NSImage?>
 
-  @Dependency(\.server) private var server
+  @Dependency(\.localServer) private var server
 }
 
 extension FileIcon {
@@ -68,7 +68,7 @@ extension FileIcon {
   }
 
   /// Fetches the image for the given language from the internet.
-  fileprivate static func fetchImage(for language: String, filePath: URL, server: Server) async throws -> NSImage {
+  fileprivate static func fetchImage(for language: String, filePath: URL, server: LocalServer) async throws -> NSImage {
     if let image = bundleImage(for: language) {
       cachedImages[language] = image
       return image

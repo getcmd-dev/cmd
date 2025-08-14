@@ -32,13 +32,13 @@ struct ClaudeCodeGrepToolTests {
     try toolUse.receive(output: testOutput)
     let result = try await toolUse.output.results.map(\.path)
     #expect(result == [
-      "/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift",
+      "/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift",
       "/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift",
       "/me/cmd/app/modules/foundations/JSONFoundation/Sources/JSON.swift",
       "/me/cmd/app/modules/foundations/LLMFoundation/Sources/LLMProvider.swift",
       "/me/cmd/app/modules/services/LLMService/Sources/JSON+partialParsing.swift",
       "/me/cmd/app/modules/services/ChatHistoryService/Sources/AttachmentSerializer.swift",
-      "/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Tests/ErrorParsingTests.swift",
+      "/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift",
       "/me/cmd/app/modules/foundations/ToolFoundation/Sources/Encoding.swift",
     ])
   }
@@ -84,13 +84,13 @@ struct ClaudeCodeGrepToolTests {
 
   private let testOutput = """
     Found 8 files
-    /me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift
+    /me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
     /me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
     /me/cmd/app/modules/foundations/JSONFoundation/Sources/JSON.swift
     /me/cmd/app/modules/foundations/LLMFoundation/Sources/LLMProvider.swift
     /me/cmd/app/modules/services/LLMService/Sources/JSON+partialParsing.swift
     /me/cmd/app/modules/services/ChatHistoryService/Sources/AttachmentSerializer.swift
-    /me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Tests/ErrorParsingTests.swift
+    /me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift
     /me/cmd/app/modules/foundations/ToolFoundation/Sources/Encoding.swift
     """
 

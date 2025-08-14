@@ -9,18 +9,18 @@ import DependencyFoundation
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 
-// MARK: - DefaultServer
+// MARK: - DefaultLocalServer
 
 import ThreadSafe
 
-// MARK: - DefaultServer
+// MARK: - DefaultLocalServer
 
 // TODO: convert bad status code to error and throw.
 
 @ThreadSafe
-final class DefaultServer: Server {
+final class DefaultLocalServer: LocalServer {
 
   init(
     sharedUserDefaults: UserDefaultsI,
@@ -36,7 +36,7 @@ final class DefaultServer: Server {
       return paths[0].appendingPathComponent("command").path
     }()
 
-    let delegate = ServerDelegate()
+    let delegate = LocalServerDelegate()
     let configuration = URLSessionConfiguration.default
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
     configuration.timeoutIntervalForRequest = 600 // 10mn for an entire request
@@ -174,7 +174,7 @@ final class DefaultServer: Server {
 
   private var inflightTasks: [URLSessionTask: TaskHandler] = [:]
 
-  private let delegate: ServerDelegate
+  private let delegate: LocalServerDelegate
 
   private var connectionStatus: ConnectionStatus
 
@@ -332,10 +332,10 @@ extension FileHandle {
   }
 }
 
-// MARK: - ServerDelegate
+// MARK: - LocalServerDelegate
 
-private final class ServerDelegate: NSObject, URLSessionDataDelegate, @unchecked Sendable {
-  weak var owner: DefaultServer?
+private final class LocalServerDelegate: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+  weak var owner: DefaultLocalServer?
 
   func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
     Task {
@@ -361,9 +361,9 @@ extension BaseProviding where
   Self: AppEventHandlerRegistryProviding,
   Self: FileManagerProviding
 {
-  public var server: Server {
+  public var localServer: LocalServer {
     shared {
-      DefaultServer(
+      DefaultLocalServer(
         sharedUserDefaults: sharedUserDefaults,
         appEventHandlerRegistry: appEventHandlerRegistry,
         fileManager: fileManager)

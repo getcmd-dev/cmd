@@ -4,10 +4,10 @@
 import AppFoundation
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftTesting
 import Testing
-@testable import ServerService
+@testable import LocalServerService
 
 // MARK: - DataExtensionTests
 

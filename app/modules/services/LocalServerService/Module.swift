@@ -1,5 +1,5 @@
 Target.module(
-  name: "ServerService",
+  name: "LocalServerService",
   dependencies: [
     "AppEventServiceInterface",
     "AppFoundation",
@@ -7,8 +7,8 @@ Target.module(
     "DependencyFoundation",
     "ExtensionEventsInterface",
     "FoundationInterfaces",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ThreadSafe",
   ],
   resources: [
@@ -20,6 +20,6 @@ Target.module(
   testDependencies: [
     "AppFoundation",
     "JSONFoundation",
-    "ServerServiceInterface",
+    "LocalServerServiceInterface",
     "SwiftTesting",
   ])

@@ -26,7 +26,7 @@ export const registerMCPServerEndpoints = (
 	})
 
 	const server = new McpServer({
-		name: "Test permission prompt MCP Server",
+		name: "Test permission prompt MCP LocalServer",
 		version: "0.0.1",
 	})
 	const schema = {

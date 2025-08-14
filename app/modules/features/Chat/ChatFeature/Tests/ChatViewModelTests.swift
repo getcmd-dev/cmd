@@ -15,7 +15,7 @@ import Foundation
 import FoundationInterfaces
 import LLMFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
 import Testing

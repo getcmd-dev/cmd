@@ -7,7 +7,7 @@ import Foundation
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
 import Testing
@@ -23,7 +23,7 @@ final class SendMessageTests {
     let chunksReceived = expectation(description: "All chunk received")
     let messagesUpdatesReceived = expectation(description: "All messages update received")
     let firstMessageUpdatesReceived = expectation(description: "All updates for the first message received")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       sendChunk?("""
@@ -90,7 +90,7 @@ final class SendMessageTests {
   @Test("SendMessage with long message history")
   func test_sendMessage_withLongMessageHistory() async throws {
     let requestResponded = expectation(description: "The request was responded to")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       sendChunk?("""
@@ -126,7 +126,7 @@ final class SendMessageTests {
   @Test("SendMessage with tool use")
   func test_sendMessage_withToolUse() async throws {
     let requestResponded = expectation(description: "The request was responded to")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
 
     let requestCount = Atomic(0)
@@ -207,7 +207,7 @@ final class SendMessageTests {
   @Test("SendMessage with failed tool use")
   func test_sendMessage_withFailedToolUse() async throws {
     let requestResponded = expectation(description: "The request was responded to")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
 
     let requestCount = Atomic(0)
@@ -278,7 +278,7 @@ final class SendMessageTests {
 
   @Test("SendMessage fails with CancellationError when cancelled")
   func test_sendMessage_isCancelled() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     let requestStarted = expectation(description: "Request started")
     let requestCancelled = expectation(description: "Request cancelled")
@@ -288,7 +288,7 @@ final class SendMessageTests {
       requestStarted.fulfill()
 
       try await fulfillment(of: requestCancelled)
-      // This will be ignored by the ServerMock as we've already returned a cancellation error.
+      // This will be ignored by the LocalServerMock as we've already returned a cancellation error.
       return okServerResponse
     }
 
@@ -323,7 +323,7 @@ final class SendMessageTests {
 
   @Test("SendMessage stops streaming when cancelled")
   func test_sendMessage_stopsStreamingWhenCancelled() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     let requestStarted = expectation(description: "Request started")
     let requestCancelled = expectation(description: "Request cancelled")
@@ -344,7 +344,7 @@ final class SendMessageTests {
         }
         """.utf8Data)
 
-      // This will be ignored by the ServerMock as we've already returned a cancellation error.
+      // This will be ignored by the LocalServerMock as we've already returned a cancellation error.
       return okServerResponse
     }
 
@@ -400,7 +400,7 @@ final class SendMessageTests {
     let chunksReceived = expectation(description: "All chunk received")
     let messagesUpdatesReceived = expectation(description: "All messages update received")
     let firstMessageUpdatesReceived = expectation(description: "All updates for the first message received")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       sendChunk?("""
@@ -467,7 +467,7 @@ final class SendMessageTests {
   @Test("SendMessage with message history containing reasoning")
   func test_sendMessage_withReasoningInHistory() async throws {
     let requestResponded = expectation(description: "The request was responded to")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, data, sendChunk in
       data.expectToMatch(
@@ -525,7 +525,7 @@ final class SendMessageTests {
     let firstMessageUpdatesReceived = expectation(description: "All updates for the first message received")
     let firstContentChunksReceived = expectation(description: "All chunk received")
     let secondContentChunksReceived = expectation(description: "All chunk received")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       sendChunk?("""

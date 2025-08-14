@@ -4,14 +4,14 @@
 import AppFoundation
 import Foundation
 
-// MARK: - Server
+// MARK: - LocalServer
 
-public protocol Server: Sendable {
+public protocol LocalServer: Sendable {
   func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> Data
   func postRequest(path: String, data: Data, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> Data
 }
 
-extension Server {
+extension LocalServer {
 
   public func getRequest(path: String) async throws -> Data? {
     try await getRequest(path: path, onReceiveJSONData: nil)
@@ -63,10 +63,10 @@ extension Server {
   }
 }
 
-// MARK: - ServerProviding
+// MARK: - LocalServerProviding
 
-public protocol ServerProviding {
-  var server: Server { get }
+public protocol LocalServerProviding {
+  var localServer: LocalServer { get }
 }
 
 // MARK: - APIError

@@ -49,8 +49,8 @@ clean_command() {
 	cd "$(git rev-parse --show-toplevel)/app/modules" &&
 		swift package clean &&
 		find . -not -path './.git/*' 2>/dev/null |
-		# Don't remove files in ./services/ServerService/Sources/Resources
-		grep -v 'services/ServerService/Sources/Resources' |
+		# Don't remove files in ./services/LocalServerService/Sources/Resources
+		grep -v 'services/LocalServerService/Sources/Resources' |
 			# Remove all git-ignored files
 			git check-ignore --stdin |
 			while read file; do rm -rf "$file"; done

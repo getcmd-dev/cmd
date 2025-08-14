@@ -7,7 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -104,7 +104,7 @@ public final class LSTool: NonStreamableTool {
 
     let directoryPath: URL
 
-    @Dependency(\.server) private var server
+    @Dependency(\.localServer) private var server
 
   }
 

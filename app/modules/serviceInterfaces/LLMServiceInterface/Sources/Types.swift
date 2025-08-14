@@ -4,7 +4,7 @@
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ToolFoundation
 
 // MARK: - AssistantMessage

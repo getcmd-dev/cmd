@@ -4,7 +4,7 @@ Target.module(
     "AppFoundation",
     "CheckpointServiceInterface",
     "LLMServiceInterface",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
-    "ServerServiceInterface",
     "ToolFoundation",
   ])

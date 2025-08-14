@@ -6,7 +6,7 @@ import ExtensionEventsInterface
 import Foundation
 import LoggingServiceInterface
 
-extension DefaultServer {
+extension DefaultLocalServer {
 
   func listenToExtension(port: Int) {
     serverConnection?.cancel()

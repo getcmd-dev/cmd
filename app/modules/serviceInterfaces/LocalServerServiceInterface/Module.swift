@@ -1,5 +1,5 @@
 Target.module(
-  name: "ServerServiceInterface",
+  name: "LocalServerServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",

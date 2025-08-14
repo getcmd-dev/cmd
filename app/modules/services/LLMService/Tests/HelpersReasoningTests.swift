@@ -4,7 +4,7 @@
 import ConcurrencyFoundation
 import Foundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import Testing
 @testable import LLMService
 
