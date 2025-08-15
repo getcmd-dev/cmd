@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatCompletionServiceInterface
+import ChatFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -62,24 +63,48 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
 extension [ChatEvent] {
   @MainActor
   func newEvents(after preExistingEventIds: Set<String>) -> [ChatCompletionServiceInterface.ChatEvent] {
-    self.filter { !preExistingEventIds.contains($0.id) }
+    filter { !preExistingEventIds.contains($0.id) }
       .compactMap { event in
         switch event {
         case .checkpoint:
           break
         case .message(let message):
-          switch message.content {
-          case .text(let text):
-            if text.isStreaming {
-              return nil
-            }
-            return .init(id: event.id, content: text.text)
-
-          default:
-            break
+          if let streamRepresentation = message.content.streamRepresentation {
+            return .init(id: event.id, content: streamRepresentation)
           }
         }
         return nil
       }
+  }
+}
+
+extension ChatMessageContent: StreamRepresentable {
+  @MainActor
+  var streamRepresentation: String? {
+    switch self {
+    case .conversationSummary:
+      return nil
+
+    case .internalContent:
+      return nil
+
+    case .nonUserFacingText:
+      return nil
+
+    case .reasoning(let reasoning):
+      if reasoning.isStreaming { return nil }
+      return reasoning.text
+
+    case .text(let text):
+      if text.isStreaming { return nil }
+      return text.text
+
+    case .toolUse(let toolUse):
+      if let streamableToolUse = toolUse as? (any StreamRepresentable) {
+        return streamableToolUse.streamRepresentation
+      } else {
+        return nil
+      }
+    }
   }
 }

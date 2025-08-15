@@ -250,6 +250,9 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
   public func encodeResponse(for _: Request) async throws -> Response {
     let response = Response(status: .ok)
     let body = Response.Body(stream: { writer in
+      writer.eventLoop.makePromise(of: Void.self).futureResult.whenComplete { result in
+        print(result)
+      }
       Task {
         do {
           for try await element in self {

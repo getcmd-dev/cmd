@@ -34,7 +34,7 @@ final class ChatMessageViewModel: EquatableByIdentifier {
 
 // MARK: - ChatMessageContent
 
-enum ChatMessageContent: Identifiable {
+enum ChatMessageContent: Identifiable, Sendable {
   case text(ChatMessageTextContent)
   case reasoning(ChatMessageReasoningContent)
   /// Messages that are relevant for the LLM but should not be shown to the user.
@@ -176,7 +176,7 @@ final class ChatMessageTextContent: EquatableByIdentifier {
 // MARK: - ChatMessageToolUseContent
 
 @Observable
-final class ChatMessageToolUseContent: EquatableByIdentifier {
+final class ChatMessageToolUseContent: EquatableByIdentifier, Sendable {
 
   init(id: UUID = UUID(), toolUse: any ToolUse) {
     self.id = id
