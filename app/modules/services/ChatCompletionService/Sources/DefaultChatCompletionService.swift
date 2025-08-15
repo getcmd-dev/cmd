@@ -23,10 +23,12 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
   init(
     settingsService: SettingsService,
-    userDefaults: UserDefaultsI)
+    userDefaults: UserDefaultsI,
+    xcodeUserDefaults: UserDefaultsI? = UserDefaults(suiteName: "com.apple.dt.Xcode"))
   {
     self.settingsService = settingsService
     self.userDefaults = userDefaults
+    self.xcodeUserDefaults = xcodeUserDefaults
   }
 
   func start() {
@@ -40,6 +42,10 @@ final class DefaultChatCompletionService: ChatCompletionService {
         try? self?.updateXcodeSettings(port: port)
       }
     }.store(in: &cancellables)
+  }
+
+  func register(completionHandler: @escaping ChatCompletionHandler) {
+    chatCompletionHandler = completionHandler
   }
 
   func configure(_ app: Application, port: Int) throws {
@@ -58,10 +64,13 @@ final class DefaultChatCompletionService: ChatCompletionService {
     }
   }
 
+  private var chatCompletionHandler: ChatCompletionHandler?
+
   private var cancellables = Set<AnyCancellable>()
   private var port: Int?
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
+  private let xcodeUserDefaults: UserDefaultsI?
 
   /// Find an available port where to start the HTTP server.
   private func findAvailablePort() async throws -> Int {
@@ -106,7 +115,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
         try? updateXcodeSettings(port: port)
       }
 
-      defaultLogger.log("HTTP server for Chat completino started on port \(port)")
+      defaultLogger.log("HTTP server for Chat completion started on port \(port)")
 
       // Keep the server running
       try await app.running?.onStop.get()
@@ -124,55 +133,64 @@ final class DefaultChatCompletionService: ChatCompletionService {
       object: "list")
   }
 
-  private func chatCompletion(req _: Request) async throws -> BroadcastedStream<ChatStreamResult> {
+  private func chatCompletion(req: Request) async throws -> BroadcastedStream<ChatStreamResult> {
     let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream()
-
-    let completionId = UUID().uuidString
-
-    Task.detached {
-      continuation.yield(ChatStreamResult(
-        id: completionId,
-        created: Date().timeIntervalSince1970,
-        model: "claude_code_default",
-        choices: [
-          ChatStreamResult.Choice(
-            index: 0,
-            delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
-            finishReason: nil,
-            logprobs: nil),
-        ]))
-      try await Task.sleep(nanoseconds: 1_000_000_000)
-      continuation.yield(ChatStreamResult(
-        id: completionId,
-        created: Date().timeIntervalSince1970,
-        model: "claude_code_default",
-        choices: [
-          ChatStreamResult.Choice(
-            index: 0,
-            delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
-            finishReason: nil,
-            logprobs: nil),
-        ]))
-
-      continuation.yield(ChatStreamResult(
-        id: completionId,
-        created: Date().timeIntervalSince1970,
-        model: "claude_code_default",
-        choices: [
-          ChatStreamResult.Choice(
-            index: 0,
-            delta: .init(content: nil, audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
-            finishReason: .stop,
-            logprobs: nil),
-        ]))
-      continuation.finish()
+    guard let data = req.body.data else {
+      throw AppError("Missing request body")
     }
+    let request = try JSONDecoder().decode(ChatQuery.self, from: data)
+    let completionId = UUID().uuidString
+    let model = "claude_code_default"
+
+    let threadId = {
+      if let id = request.messages.threadId {
+        return id
+      } else {
+        let id = UUID().uuidString
+
+        continuation.yield(ChatStreamResult(
+          completionId: completionId,
+          model: model,
+          content: "thread_id: \(id)\n\n"))
+        return id
+      }
+    }()
+
+    let newUserMessages = request.messages.newUserMessages
+
+    if newUserMessages.isEmpty {
+      throw AppError("No new message found")
+    }
+    guard let chatCompletionHandler else {
+      throw AppError("No chat completion handler configured")
+    }
+
+    let chatEventsStream = await chatCompletionHandler(ChatCompletionInput(
+      threadId: threadId,
+      newUserMessages: newUserMessages.flatMap(\.textContentParts)))
+
+    var sentEventIds: Set<String> = []
+
+    for await chatEvents in chatEventsStream {
+      let newEvents = chatEvents.filter { !sentEventIds.contains($0.id) }
+      for newEvent in newEvents {
+        sentEventIds.insert(newEvent.id)
+
+        continuation.yield(ChatStreamResult(
+          completionId: completionId,
+          model: model,
+          content: "\(newEvent.content)\n"))
+      }
+    }
+
+    continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model))
+    continuation.finish()
     return stream
   }
 
-  // TODO: make this opt-in
+  /// Directly modify Xcode settings to setup `cmd` as an AI backend or to sync its port.
   private func updateXcodeSettings(port: Int) throws {
-    guard let xcodeSettings = UserDefaults(suiteName: "com.apple.dt.Xcode") else {
+    guard let xcodeSettings = xcodeUserDefaults else {
       defaultLogger.error("Could not find Xcode settings")
       return
     }
@@ -253,12 +271,45 @@ extension Data {
 }
 
 extension ChatStreamResult {
-  init(id: String, created: TimeInterval, model: String, choices: [ChatStreamResult.Choice]) {
-    self.id = id
+  init(
+    completionId: String,
+    created: TimeInterval = Date().timeIntervalSince1970,
+    model: String,
+    choices: [ChatStreamResult.Choice])
+  {
+    id = completionId
     object = "chat.completion.chunk"
     self.created = created
     self.model = model
     self.choices = choices
+    citations = nil
+    systemFingerprint = nil
+  }
+
+  init(completionId: String, created: TimeInterval = Date().timeIntervalSince1970, model: String, content: String) {
+    id = completionId
+    object = "chat.completion.chunk"
+    self.created = created
+    self.model = model
+    choices = [ChatStreamResult.Choice(
+      index: 0,
+      delta: .init(content: content, audio: nil, role: .assistant, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
+      finishReason: nil,
+      logprobs: nil)]
+    citations = nil
+    systemFingerprint = nil
+  }
+
+  init(stoppingCompletionWithId completionId: String, created: TimeInterval = Date().timeIntervalSince1970, model: String) {
+    id = completionId
+    object = "chat.completion.chunk"
+    self.created = created
+    self.model = model
+    choices = [ChatStreamResult.Choice(
+      index: 0,
+      delta: .init(content: nil, audio: nil, role: .assistant, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
+      finishReason: .stop,
+      logprobs: nil)]
     citations = nil
     systemFingerprint = nil
   }

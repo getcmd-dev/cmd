@@ -832,6 +832,7 @@ targets.append(contentsOf: Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
+  testDependencies: [],
   path: "./services/ChatCompletionService"))
 
 targets.append(contentsOf: Target.module(

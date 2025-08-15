@@ -11,4 +11,5 @@ Target.module(
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ThreadSafe",
-  ])
+  ],
+  testDependencies: [])
