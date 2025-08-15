@@ -89,7 +89,7 @@ public final class LSTool: NonStreamableTool {
             path: input.path,
             recursive: input.recursive)
 
-          let data = try JSONEncoder().encode(fullInput)
+          let data = try JSONEncoder.sortingKeys.encode(fullInput)
           let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
           updateStatus.complete(with: .success(response.transformed(with: context)))
         } catch {

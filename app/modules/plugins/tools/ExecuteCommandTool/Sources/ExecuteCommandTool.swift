@@ -112,7 +112,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
                 .completed(
                   .failure(
                     AppError(
-                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(output), encoding: .utf8) ?? "")"))))
+                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder.sortingKeys.encode(output), encoding: .utf8) ?? "")"))))
           }
         } catch {
           updateStatus.complete(with: .failure(error))

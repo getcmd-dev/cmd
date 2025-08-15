@@ -12,4 +12,6 @@ Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "AppFoundation",
+  ])

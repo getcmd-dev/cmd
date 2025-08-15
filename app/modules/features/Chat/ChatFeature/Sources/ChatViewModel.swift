@@ -15,6 +15,7 @@ import LoggingServiceInterface
 import Observation
 import SwiftUI
 import XcodeObserverServiceInterface
+import ChatCompletionServiceInterface
 
 // MARK: - ChatViewModel
 
@@ -59,6 +60,8 @@ public class ChatViewModel {
 
     Task {
       await loadPersistedChatThreads()
+        @Dependency(\.chatCompletion) var chatCompletion
+        chatCompletion.register(delegate: self)
     }
   }
 

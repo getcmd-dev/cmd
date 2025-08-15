@@ -40,6 +40,10 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
 
     Task { [weak self] in
       for await element in internalStream {
+          if self == nil {
+             os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
+                  .warning("The BroadcastedStream received an event after being deallocated. It will not be forwarded to its subscribers.")
+          }
         self?.broadcast(element)
       }
       self?.finish()

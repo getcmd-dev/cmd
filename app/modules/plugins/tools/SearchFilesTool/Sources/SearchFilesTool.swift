@@ -81,7 +81,7 @@ public final class SearchFilesTool: NonStreamableTool {
             directoryPath: input.directoryPath,
             regex: input.regex,
             filePattern: input.filePattern)
-          let data = try JSONEncoder().encode(fullInput)
+          let data = try JSONEncoder.sortingKeys.encode(fullInput)
           let response: Schema.SearchFilesToolOutput = try await server.postRequest(path: "searchFiles", data: data)
           updateStatus.complete(with: .success(Schema.SearchFilesToolOutput(
             outputForLLm: response.outputForLLm,

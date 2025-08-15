@@ -8,6 +8,7 @@ Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatAppEvents",
+    "ChatCompletionServiceInterface",
     "ChatFeatureInterface",
     "ChatFoundation",
     "ChatServiceInterface",

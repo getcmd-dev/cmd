@@ -141,6 +141,27 @@ public struct ChatQuery: Equatable, Codable, Sendable {
         }
       }
     }
+      
+      public init(from decoder: Decoder) throws {
+          let container = try decoder.container(keyedBy: CodingKeys.self)
+          let role = try container.decode(Role.self, forKey: .role)
+          switch role {
+          case .system:
+              self = try .system(.init(from: decoder))
+          case .developer:
+            self = try .developer(.init(from: decoder))
+          case .user:
+            self = try .user(.init(from: decoder))
+          case .assistant:
+            self = try .assistant(.init(from: decoder))
+          case .tool:
+            self = try .tool(.init(from: decoder))
+          }
+      }
+      
+      private enum CodingKeys: String, CodingKey {
+          case role
+      }
 
     private init?(
       content: String,
@@ -261,6 +282,14 @@ public struct ChatQuery: Equatable, Codable, Sendable {
       public enum Content: Codable, Equatable, Sendable {
         case string(String)
         case contentParts([ContentPart])
+          
+          public init(from decoder: Decoder) throws {
+              if let string = try? String.init(from: decoder) {
+                  self = .string(string)
+              } else {
+                  self = try .contentParts([ContentPart].init(from: decoder))
+              }
+          }
 
         public enum ContentPart: Codable, Hashable, Sendable {
           /// Learn about [text inputs](https://platform.openai.com/docs/guides/text-generation).
@@ -362,11 +391,29 @@ public struct ChatQuery: Equatable, Codable, Sendable {
           try container.encode(parts)
         }
       }
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            if let value = try? container.decode(String.self) {
+                self = .textContent(value)
+                return
+            }
+            let parts = try container.decode([ContentPartTextParam].self)
+            self = .contentParts(parts)
+        }
     }
 
     public enum TextOrRefusalContent: Codable, Equatable, Sendable {
       case textContent(String)
       case contentParts([ContentPart])
+        
+        public init(from decoder: any Decoder) throws {
+            if let string = try? String(from: decoder) {
+                self = .textContent(string)
+            } else {
+                self = try .contentParts([ContentPart](from: decoder))
+            }
+        }
 
       public enum ContentPart: Codable, Hashable, Sendable {
         /// Learn about [text inputs](https://platform.openai.com/docs/guides/text-generation).
@@ -745,13 +792,13 @@ public struct ChatQuery: Equatable, Codable, Sendable {
       }
     }
 
-    enum CodingKeys: CodingKey {
-      case system
-      case developer
-      case user
-      case assistant
-      case tool
-    }
+//    enum CodingKeys: CodingKey {
+//      case system
+//      case developer
+//      case user
+//      case assistant
+//      case tool
+//    }
 
     struct ChatCompletionMessageParam: Codable, Equatable {
       typealias Role = ChatQuery.ChatCompletionMessageParam.Role
@@ -776,6 +823,14 @@ public struct ChatQuery: Equatable, Codable, Sendable {
     public init(stringList: [String]) {
       self = .stringList(stringList)
     }
+      
+      public init(from decoder: any Decoder) throws {
+          if let string = try? String(from: decoder) {
+              self = .string(string)
+          } else {
+              self = try .stringList([String](from: decoder))
+          }
+      }
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.singleValueContainer()
@@ -839,10 +894,20 @@ public struct ChatQuery: Equatable, Codable, Sendable {
     /// JSON Schema response format. Used to generate structured JSON responses. Learn more about [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs).
     case jsonSchema(StructuredOutputConfigurationOptions)
 
-    /// A formal initializer reqluired for the inherited Decodable conformance.
-    /// This type is never returned from the server and is never decoded into.
-    public init(from _: any Decoder) throws {
-      self = .text
+    public init(from decoder: any Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: .type)
+        switch type {
+            case "text":
+            self = .text
+        case "json_object":
+            self = .jsonObject
+        case "json_schema":
+            let jsonSchema = try container.decode(StructuredOutputConfigurationOptions.self, forKey: .jsonSchema)
+            self = .jsonSchema(jsonSchema)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unsupported response format type `\(type)`")
+        }
     }
 
     public static func ==(lhs: ResponseFormat, rhs: ResponseFormat) -> Bool {
@@ -945,6 +1010,7 @@ public struct ChatQuery: Equatable, Codable, Sendable {
   }
 
   public enum ChatCompletionFunctionCallOptionParam: Codable, Equatable, Sendable {
+      // Note: there are several other types that are not supported here: https://platform.openai.com/docs/api-reference/responses/object#responses/object-tool_choice
     case none
     case auto
     case function(String)
@@ -953,6 +1019,21 @@ public struct ChatQuery: Equatable, Codable, Sendable {
     public init(function: String) {
       self = .function(function)
     }
+      
+      
+      public init(from decoder: any Decoder) throws {
+          if let string = try? String(from: decoder) {
+              switch string {
+                  case "none": self = .none
+                  case "auto": self = .auto
+                  case "required": self = .required
+              default:
+                  throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Invalid value for ChatCompletionFunctionCallOptionParam: \(string)"))
+              }
+          } else {
+              throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unsupported tool_choice type"))
+          }
+      }
 
     public func encode(to encoder: Encoder) throws {
       switch self {
@@ -983,6 +1064,7 @@ public struct ChatQuery: Equatable, Codable, Sendable {
     }
 
     private enum ChatCompletionFunctionCallNameParam: Codable, Equatable {
+        // unused?
       case type
       case function
 
@@ -1132,21 +1214,12 @@ public struct ChatQuery: Equatable, Codable, Sendable {
         case contentParts([ContentPart])
 
         public init(from decoder: Decoder) throws {
-          let container = try decoder.singleValueContainer()
-
-          if let textValue = try? container.decode(String.self) {
-            self = .textContent(textValue)
-            return
-          }
-
-          if let parts = try? container.decode([ContentPart].self) {
-            self = .contentParts(parts)
-            return
-          }
-
-          throw DecodingError.dataCorruptedError(
-            in: container,
-            debugDescription: "Unable to decode Content as either textContent or contentParts")
+            
+            if let string = try? String(from: decoder) {
+                self = .textContent(string)
+            } else {
+                self = try .contentParts([ContentPart](from: decoder))
+            }
         }
 
         public struct ContentPart: Codable, Hashable, Sendable {

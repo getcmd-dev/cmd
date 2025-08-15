@@ -378,6 +378,7 @@ targets.append(contentsOf: Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatAppEvents",
+    "ChatCompletionServiceInterface",
     "ChatFeatureInterface",
     "ChatFoundation",
     "ChatServiceInterface",
@@ -832,7 +833,9 @@ targets.append(contentsOf: Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppFoundation",
+  ],
   path: "./services/ChatCompletionService"))
 
 targets.append(contentsOf: Target.module(
@@ -858,6 +861,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "JSONFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
@@ -1023,6 +1027,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "JSONFoundation",
     "LLMFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",

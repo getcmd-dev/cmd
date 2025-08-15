@@ -11,6 +11,6 @@ public final class MockChatCompletionService: ChatCompletionService {
 
   public func start() { }
 
-  public func register(completionHandler _: ChatCompletionHandler) { }
+  public func register(delegate: ChatCompletionServiceDelegate) { }
 }
 #endif

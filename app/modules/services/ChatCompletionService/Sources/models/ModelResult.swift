@@ -1,6 +1,7 @@
 // swiftformat:disable all
 // Copied from https://github.com/MacPaw/OpenAI/blob/main/Sources/OpenAI/Public/Models/Models/ModelResult.swift
 
+
 //  Model.swift
 //
 //
