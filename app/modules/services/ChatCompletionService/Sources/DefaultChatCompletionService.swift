@@ -210,7 +210,10 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
         do {
           for try await element in self {
             let data = try JSONEncoder().encode(element)
-            _ = writer.write(.buffer(.init(data: data)))
+              guard let string = String(data: data, encoding: .utf8) else {
+                  throw AppError("Could not convert Data to String in DefaultChatCompletionService")
+              }
+            _ = writer.write(.buffer(ByteBuffer(string: "data: \(string)\n\n")))
           }
         } catch {
           defaultLogger.error("An error occured while responding to the chat completion", error)
