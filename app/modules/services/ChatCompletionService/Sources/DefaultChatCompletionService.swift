@@ -225,6 +225,7 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
       }
     })
 
+      response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
     response.body = body
     return response
   }
