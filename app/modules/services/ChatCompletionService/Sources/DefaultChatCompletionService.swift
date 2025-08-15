@@ -138,6 +138,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
           ChatStreamResult.Choice(
             index: 0,
             delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
+            finishReason: nil,
             logprobs: nil),
         ]))
       try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -149,6 +150,19 @@ final class DefaultChatCompletionService: ChatCompletionService {
           ChatStreamResult.Choice(
             index: 1,
             delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
+            finishReason: nil,
+            logprobs: nil),
+        ]))
+
+      continuation.yield(ChatStreamResult(
+        id: completionId,
+        created: Date().timeIntervalSince1970,
+        model: "claude_code_default",
+        choices: [
+          ChatStreamResult.Choice(
+            index: 2,
+            delta: .init(content: nil, audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
+            finishReason: .stop,
             logprobs: nil),
         ]))
       continuation.finish()
@@ -210,9 +224,9 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
         do {
           for try await element in self {
             let data = try JSONEncoder().encode(element)
-              guard let string = String(data: data, encoding: .utf8) else {
-                  throw AppError("Could not convert Data to String in DefaultChatCompletionService")
-              }
+            guard let string = String(data: data, encoding: .utf8) else {
+              throw AppError("Could not convert Data to String in DefaultChatCompletionService")
+            }
             _ = writer.write(.buffer(ByteBuffer(string: "data: \(string)\n\n")))
           }
         } catch {
@@ -225,7 +239,7 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
       }
     })
 
-      response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
+    response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
     response.body = body
     return response
   }

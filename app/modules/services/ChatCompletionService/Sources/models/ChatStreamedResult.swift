@@ -1,5 +1,5 @@
-// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
-// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// swiftformat:disable all
+// Copied from https://github.com/MacPaw/OpenAI/blob/main/Tests/OpenAITests/ChatStreamResultTests.swift
 
 //
 //  ChatStreamResult.swift
@@ -40,6 +40,14 @@ public struct ChatStreamResult: Codable, Equatable, Sendable {
 
   public struct Choice: Codable, Equatable, Sendable {
 //        public typealias FinishReason = ChatResult.Choice.FinishReason
+      public enum FinishReason: String, Codable, Equatable, Sendable {
+          case stop
+          case length
+          case toolCalls = "tool_calls"
+          case contentFilter = "content_filter"
+          case functionCall = "function_call"
+          case error
+      }
 
     public struct ChoiceDelta: Codable, Equatable, Sendable {
       public typealias Role = ChatQuery.ChatCompletionMessageParam.Role
@@ -183,7 +191,7 @@ public struct ChatStreamResult: Codable, Equatable, Sendable {
     public enum CodingKeys: String, CodingKey {
       case index
       case delta
-      ///            case finishReason = "finish_reason"
+      case finishReason = "finish_reason"
       case logprobs
     }
 
@@ -193,7 +201,7 @@ public struct ChatStreamResult: Codable, Equatable, Sendable {
     public let delta: Self.ChoiceDelta
     /// The reason the model stopped generating tokens.
     /// This will be `stop` if the model hit a natural stop point or a provided stop sequence, `length` if the maximum number of tokens specified in the request was reached, `content_filter` if content was omitted due to a flag from our content filters, `tool_calls` if the model called a tool, or `function_call` (deprecated) if the model called a function.
-    ///        public let finishReason: FinishReason?
+    public let finishReason: FinishReason?
     /// Log probability information for the choice.
     public let logprobs: Self.ChoiceLogprobs?
 
