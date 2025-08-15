@@ -8,9 +8,8 @@ import ToolFoundation
 // MARK: - ClaudeCodeWebSearchTool.Use + DisplayableToolUse
 
 extension ClaudeCodeWebSearchTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(WebSearchToolUseView(toolUse: WebSearchToolUseViewModel(
-      status: status, input: input)))
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(WebSearchToolUseViewModel(status: status, input: input))
   }
 }
 

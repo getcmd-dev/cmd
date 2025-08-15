@@ -8,11 +8,11 @@ import ToolFoundation
 // MARK: - ClaudeCodeTodoWriteTool.Use + DisplayableToolUse
 
 extension ClaudeCodeTodoWriteTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(TodoWriteToolUseView(toolUse: TodoWriteToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(TodoWriteToolUseViewModel(
       status: status,
       input: input,
-      preExistingTodos: internalState?.preExistingTodos)))
+      preExistingTodos: internalState?.preExistingTodos))
   }
 }
 

@@ -206,13 +206,11 @@ extension ClaudeCodeMultiEditTool.Use.Input {
 // MARK: - ClaudeCodeMultiEditTool.Use + DisplayableToolUse
 
 extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let viewModel = ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      setResult: { _ in })
-
-    return AnyView(ToolUseView(toolUse: viewModel))
+      setResult: { _ in }))
   }
 }

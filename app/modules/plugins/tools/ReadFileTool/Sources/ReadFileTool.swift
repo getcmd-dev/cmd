@@ -167,9 +167,8 @@ public final class ReadFileTool: NonStreamableTool {
 // MARK: - ReadFileTool.Use + DisplayableToolUse
 
 extension ReadFileTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: mappedInput)))
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput))
   }
 }
 

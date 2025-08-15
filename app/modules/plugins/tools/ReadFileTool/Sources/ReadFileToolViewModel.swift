@@ -6,6 +6,7 @@ import DLS
 import Foundation
 import HighlighterServiceInterface
 import Observation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ToolUseViewModel
@@ -40,4 +41,14 @@ final class ToolUseViewModel {
 
   @ObservationIgnored
   @Dependency(\.highlighter) private var highlighter
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }

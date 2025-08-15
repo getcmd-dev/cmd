@@ -3,6 +3,7 @@
 
 import Foundation
 import Observation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ToolUseViewModel
@@ -23,4 +24,14 @@ final class ToolUseViewModel {
 
   let directoryPath: URL
   var status: ToolUseExecutionStatus<LSTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(viewModel: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }

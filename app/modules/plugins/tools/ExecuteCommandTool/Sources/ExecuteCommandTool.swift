@@ -239,6 +239,16 @@ final class ToolUseViewModel {
   let kill: () async -> Void
 }
 
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
+}
+
 extension String {
   /// Truncate the string to a specified limit, removing from the middle if needed.
   func trimmed(toNotExceed limit: Int) -> String {
@@ -254,12 +264,12 @@ extension String {
 // MARK: - ExecuteCommandTool.Use + DisplayableToolUse
 
 extension ExecuteCommandTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       command: input.command,
       status: status,
       stdout: stdoutStream,
       stderr: stderrStream,
-      kill: killRunningProcess)))
+      kill: killRunningProcess))
   }
 }

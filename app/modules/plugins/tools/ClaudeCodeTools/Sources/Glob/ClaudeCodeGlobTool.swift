@@ -8,6 +8,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeGlobTool
@@ -133,4 +134,14 @@ final class GlobToolUseViewModel {
 
   let input: ClaudeCodeGlobTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeGlobTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension GlobToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(GlobToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }

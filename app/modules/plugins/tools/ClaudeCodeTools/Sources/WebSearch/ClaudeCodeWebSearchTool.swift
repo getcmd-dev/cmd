@@ -10,6 +10,7 @@ import DLS
 import Foundation
 import JSONFoundation
 import JSONScanner
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeWebSearchTool
@@ -187,6 +188,16 @@ final class WebSearchToolUseViewModel {
 
   let input: ClaudeCodeWebSearchTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension WebSearchToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(WebSearchToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }
 
 // MARK: - ToolError

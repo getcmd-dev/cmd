@@ -9,6 +9,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeTodoWriteTool
@@ -278,4 +279,14 @@ final class TodoWriteToolUseViewModel {
     return .unchanged
   }
 
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(TodoWriteToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }

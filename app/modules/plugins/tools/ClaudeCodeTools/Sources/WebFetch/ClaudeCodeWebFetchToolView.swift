@@ -8,9 +8,8 @@ import ToolFoundation
 // MARK: - ClaudeCodeWebFetchTool.Use + DisplayableToolUse
 
 extension ClaudeCodeWebFetchTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(WebFetchToolUseView(toolUse: WebFetchToolUseViewModel(
-      status: status, input: input)))
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(WebFetchToolUseViewModel(status: status, input: input))
   }
 }
 

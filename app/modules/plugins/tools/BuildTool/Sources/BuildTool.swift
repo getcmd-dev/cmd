@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 import XcodeControllerServiceInterface
 
@@ -156,6 +157,16 @@ final class ToolUseViewModel {
 
   let buildType: BuildType
   var status: ToolUseExecutionStatus<BuildTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }
 
 extension BuildMessage {

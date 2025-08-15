@@ -265,6 +265,16 @@ final class ToolUseViewModel {
 
 }
 
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
+}
+
 // MARK: - FileEditState
 
 enum FileEditState {

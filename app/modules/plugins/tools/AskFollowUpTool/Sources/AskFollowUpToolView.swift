@@ -9,11 +9,11 @@ import ToolFoundation
 // MARK: - AskFollowUpTool.Use + DisplayableToolUse
 
 extension AskFollowUpTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       input: input,
-      selectFollowUp: select(followUp:))))
+      selectFollowUp: select(followUp:)))
   }
 }
 

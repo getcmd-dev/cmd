@@ -222,10 +222,10 @@ public final class EditFilesTool: Tool {
         do {
           if callingTool.shouldAutoApply {
             // Apply the changes.
-            await viewModel.applyAllChanges()
+            await editViewModel.applyAllChanges()
           } else {
             // Wait for the user to accept the changes.
-            viewModel.acknowledgeSuggestionReceived()
+            editViewModel.acknowledgeSuggestionReceived()
           }
         }
       }
@@ -238,7 +238,7 @@ public final class EditFilesTool: Tool {
     let _isInputComplete: Atomic<Bool>
 
     @MainActor
-    var viewModel: ToolUseViewModel {
+    var editViewModel: ToolUseViewModel {
       if let _viewModel {
         return _viewModel
       }
@@ -405,7 +405,9 @@ public final class EditFilesTool: Tool {
 // MARK: - EditFilesTool.Use + DisplayableToolUse
 
 extension EditFilesTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: viewModel))
+
+  @MainActor
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(editViewModel)
   }
 }

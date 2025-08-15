@@ -134,7 +134,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
 // MARK: - ClaudeCodeReadTool.Use + DisplayableToolUse
 
 extension ClaudeCodeReadTool.Use: DisplayableToolUse {
-  public var body: AnyView {
+  public var viewModel: AnyToolUseViewModel {
     let lineRange: ReadFileTool.Use.Input.Range? = {
       if let limit = input.limit {
         if let offset = input.offset {
@@ -149,7 +149,7 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
       return nil
     }()
 
-    return AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: .init(path: input.file_path, lineRange: lineRange))))
+    return AnyToolUseViewModel(ToolUseViewModel(
+      status: status, input: .init(path: input.file_path, lineRange: lineRange)))
   }
 }

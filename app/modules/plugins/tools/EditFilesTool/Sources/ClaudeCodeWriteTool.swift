@@ -145,13 +145,11 @@ extension ClaudeCodeWriteTool.Use.Input {
 // MARK: - ClaudeCodeWriteTool.Use + DisplayableToolUse
 
 extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let viewModel = ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      setResult: { _ in })
-
-    return AnyView(ToolUseView(toolUse: viewModel))
+      setResult: { _ in }))
   }
 }

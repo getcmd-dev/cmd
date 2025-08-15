@@ -8,6 +8,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeWebFetchTool
@@ -137,4 +138,14 @@ final class WebFetchToolUseViewModel {
 
   let input: ClaudeCodeWebFetchTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeWebFetchTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension WebFetchToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(WebFetchToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? { nil }
 }

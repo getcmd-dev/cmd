@@ -161,10 +161,9 @@ extension Schema.ListFilesToolOutput {
 // MARK: - LSTool.Use + DisplayableToolUse
 
 extension LSTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let viewModel = ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      directoryPath: directoryPath)
-    return AnyView(ToolUseView(viewModel: viewModel))
+      directoryPath: directoryPath))
   }
 }
