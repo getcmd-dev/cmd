@@ -148,7 +148,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
         model: "claude_code_default",
         choices: [
           ChatStreamResult.Choice(
-            index: 1,
+            index: 0,
             delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
             finishReason: nil,
             logprobs: nil),
@@ -160,7 +160,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
         model: "claude_code_default",
         choices: [
           ChatStreamResult.Choice(
-            index: 2,
+            index: 0,
             delta: .init(content: nil, audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
             finishReason: .stop,
             logprobs: nil),
