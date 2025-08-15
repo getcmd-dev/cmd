@@ -11,7 +11,7 @@ import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
-import { writeFileSync } from "fs"
+import { writeFileSync, existsSync, mkdirSync } from "fs"
 import path from "path"
 import { StreamingJsonParser } from "@/utils/streamingJSONParser"
 import { registerMCPServerEndpoints } from "./mcp"
@@ -99,8 +99,14 @@ const createClaudeCodeEventStream = (
 			},
 		},
 	}
-	// const mcpConfigFilePath = path.join(__dirname, "mcp.json")
-	const mcpConfigFilePath = path.join("/tmp/command", `mcp-${threadId}.json`)
+	const dir = "/tmp/command"
+	const mcpConfigFilePath = path.join(dir, `mcp-${threadId}.json`)
+	if (!existsSync(dir)) {
+		mkdirSync(dir, {
+			mode: 0o744,
+		})
+	}
+
 	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
 	registerMCPServerEndpoints(router, mcpEndpoint, async (toolName, input) => {
 		logInfo(
