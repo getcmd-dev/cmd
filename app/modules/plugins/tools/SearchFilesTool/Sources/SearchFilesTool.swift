@@ -149,29 +149,6 @@ public final class SearchFilesTool: NonStreamableTool {
 
 }
 
-// MARK: - ToolUseViewModel
-
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(
-    status: SearchFilesTool.Use.Status,
-    input: SearchFilesTool.Use.Input)
-  {
-    self.status = status.value
-    self.input = input
-    Task {
-      for await status in status {
-        self.status = status
-      }
-    }
-  }
-
-  let input: SearchFilesTool.Use.Input
-  var status: ToolUseExecutionStatus<SearchFilesTool.Use.Output>
-}
-
 extension SearchFilesTool.Use.Output {
   // TODO: deal with this properly, to allow for serialization for message history.
   /// Only encode the output for LLM
@@ -184,8 +161,8 @@ extension SearchFilesTool.Use.Output {
 // MARK: - SearchFilesTool.Use + DisplayableToolUse
 
 extension SearchFilesTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: input)))
+  @MainActor
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(status: status, input: input))
   }
 }

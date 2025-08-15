@@ -340,12 +340,11 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
 // MARK: - ClaudeCodeGrepTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
-  public var body: AnyView {
+  public var viewModel: AnyToolUseViewModel {
     let mappedInput = SearchFilesTool.Use.Input(
       directoryPath: input.path ?? input.projectRoot ?? "/",
       regex: input.pattern,
       filePattern: input.glob)
-    return AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: mappedInput)))
+    return AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput))
   }
 }

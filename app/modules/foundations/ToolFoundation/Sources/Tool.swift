@@ -182,13 +182,44 @@ extension ToolUse where SomeTool: NonStreamableTool {
   public func receive(inputUpdate _: Data, isLast _: Bool) throws { }
 }
 
-// MARK: - DisplayableToolUse
-
-/// A tool that can be displayed in th UI.
-public protocol DisplayableToolUse: ToolUse {
+/// An object that can be represented as a view
+public protocol ViewRepresentable {
   associatedtype SomeView: View
   @MainActor
   var body: SomeView { get }
+}
+
+public final class AnyToolUseViewModel: Sendable, ViewRepresentable, StreamRepresentable {
+  public init(_ viewModel: some Sendable & ViewRepresentable & StreamRepresentable) {
+    _body = { AnyView(viewModel.body) }
+    _streamRepresentation = { viewModel.streamRepresentation }
+  }
+
+  @MainActor
+  public var body: some View { _body() }
+  @MainActor
+  public var streamRepresentation: String? { _streamRepresentation() }
+
+  private let _body: @MainActor () -> AnyView
+  private let _streamRepresentation: @MainActor () -> String?
+
+}
+
+// MARK: - DisplayableToolUse
+
+/// A tool that can be displayed in th UI.
+public protocol DisplayableToolUse: ToolUse, StreamRepresentable, ViewRepresentable where SomeView == ViewModel.SomeView {
+  associatedtype ViewModel: ViewRepresentable & StreamRepresentable
+  @MainActor
+  var viewModel: ViewModel { get }
+}
+
+extension DisplayableToolUse {
+  @MainActor
+  public var body: ViewModel.SomeView { viewModel.body }
+
+  @MainActor
+  public var streamRepresentation: String? { viewModel.streamRepresentation }
 }
 
 // MARK: - ToolExecutionContext
