@@ -133,7 +133,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
       continuation.yield(ChatStreamResult(
         id: completionId,
         created: Date().timeIntervalSince1970,
-        model: "",
+        model: "claude_code_default",
         choices: [
           ChatStreamResult.Choice(
             index: 0,
@@ -144,10 +144,10 @@ final class DefaultChatCompletionService: ChatCompletionService {
       continuation.yield(ChatStreamResult(
         id: completionId,
         created: Date().timeIntervalSince1970,
-        model: "",
+        model: "claude_code_default",
         choices: [
           ChatStreamResult.Choice(
-            index: 0,
+            index: 1,
             delta: .init(content: "Hi", audio: nil, role: nil, toolCalls: nil, _reasoning: nil, _reasoningContent: nil),
             logprobs: nil),
         ]))
