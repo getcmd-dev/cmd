@@ -44,8 +44,8 @@ final class DefaultChatCompletionService: ChatCompletionService {
     }.store(in: &cancellables)
   }
 
-    func register(delegate: ChatCompletionServiceDelegate) {
-        self.delegate = delegate
+  func register(delegate: ChatCompletionServiceDelegate) {
+    self.delegate = delegate
   }
 
   func configure(_ app: Application, port: Int) throws {
@@ -135,68 +135,68 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
   private func chatCompletion(req: Request) async throws -> BroadcastedStream<ChatStreamResult> {
     let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream()
-      Task {
-          let completionId = UUID().uuidString
-          var model = "unknown"
-          do {
-              guard let data = req.body.data else {
-                  throw AppError("Missing request body")
-              }
-              
-              let request = try JSONDecoder().decode(ChatQuery.self, from: data)
-              model = request.model
-              
-              let threadId = {
-                  if let id = request.messages.threadId {
-                      return id
-                  } else {
-                      let id = UUID().uuidString
-                      
-                      continuation.yield(ChatStreamResult(
-                        completionId: completionId,
-                        model: model,
-                        content: "thread_id: \(id)\n\n"))
-                      return id
-                  }
-              }()
-              
-              let newUserMessages = request.messages.newUserMessages
-              
-              if newUserMessages.isEmpty {
-                  throw AppError("No new message found")
-              }
-              guard let delegate else {
-                  throw AppError("No chat completion handler configured")
-              }
-              
-              let chatEventsStream = await delegate.handle(chatCompletion: ChatCompletionInput(
-                threadId: threadId,
-                newUserMessages: newUserMessages.flatMap(\.textContentParts),
-                modelName: model))
-              
-              var sentEventIds: Set<String> = []
-              
-              for await chatEvents in chatEventsStream {
-                  print("received chatEvents: \(chatEvents)")
-                  let newEvents = chatEvents.filter { !sentEventIds.contains($0.id) }
-                  for newEvent in newEvents {
-                      sentEventIds.insert(newEvent.id)
-                      
-                      continuation.yield(ChatStreamResult(
-                        completionId: completionId,
-                        model: model,
-                        content: newEvent.content))
-                  }
-              }
-          } catch {
-              continuation.yield(ChatStreamResult(
-                completionId: completionId,
-                model: model,
-                content: "\(error.localizedDescription)\n"))
+    Task {
+      let completionId = UUID().uuidString
+      var model = "unknown"
+      do {
+        guard let data = req.body.data else {
+          throw AppError("Missing request body")
+        }
+
+        let request = try JSONDecoder().decode(ChatQuery.self, from: data)
+        model = request.model
+
+        let threadId = {
+          if let id = request.messages.threadId {
+            return id
+          } else {
+            let id = UUID().uuidString
+
+            continuation.yield(ChatStreamResult(
+              completionId: completionId,
+              model: model,
+              content: "thread_id: \(id)\n\n"))
+            return id
           }
-          continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model))
-          continuation.finish()
+        }()
+
+        let newUserMessages = request.messages.newUserMessages
+
+        if newUserMessages.isEmpty {
+          throw AppError("No new message found")
+        }
+        guard let delegate else {
+          throw AppError("No chat completion handler configured")
+        }
+
+        let chatEventsStream = try await delegate.handle(chatCompletion: ChatCompletionInput(
+          threadId: threadId,
+          newUserMessages: newUserMessages.flatMap(\.textContentParts),
+          modelName: model))
+
+        var sentEventIds: Set<String> = []
+
+        for await chatEvents in chatEventsStream {
+          print("received chatEvents: \(chatEvents)")
+          let newEvents = chatEvents.filter { !sentEventIds.contains($0.id) }
+          for newEvent in newEvents {
+            sentEventIds.insert(newEvent.id)
+
+            continuation.yield(ChatStreamResult(
+              completionId: completionId,
+              model: model,
+              content: newEvent.content))
+          }
+        }
+      } catch {
+        continuation.yield(ChatStreamResult(
+          completionId: completionId,
+          model: model,
+          content: "\(error.localizedDescription)\n"))
       }
+      continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model))
+      continuation.finish()
+    }
     return stream
   }
 
@@ -230,11 +230,11 @@ final class DefaultChatCompletionService: ChatCompletionService {
       let cmdSettings = settings.first(where: { $0.userDescription == "cmd" })
       if cmdSettings == nil {
         settings.append(connectionDetails)
-          try xcodeSettings.set(JSONEncoder.sortingKeys.encode(settings), forKey: xcodeSettingsKey)
+        try xcodeSettings.set(JSONEncoder.sortingKeys.encode(settings), forKey: xcodeSettingsKey)
       } else if cmdSettings?.connectionDetails.asObject?["localhost"]?.asObject?["port"]?.asNumber != Double(port) {
         settings = settings.filter { $0.identifierUUID != cmdSettings?.identifierUUID }
         settings.append(connectionDetails)
-          try xcodeSettings.set(JSONEncoder.sortingKeys.encode(settings), forKey: xcodeSettingsKey)
+        try xcodeSettings.set(JSONEncoder.sortingKeys.encode(settings), forKey: xcodeSettingsKey)
       }
     } else {
       // Add a new entry in Xcode settings to support cmd as an AI backend

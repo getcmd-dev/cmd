@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import AppFoundation
 import ChatAppEvents
+import ChatCompletionServiceInterface
 import ChatFoundation
 import ChatServiceInterface
 import Combine
@@ -15,7 +16,6 @@ import LoggingServiceInterface
 import Observation
 import SwiftUI
 import XcodeObserverServiceInterface
-import ChatCompletionServiceInterface
 
 // MARK: - ChatViewModel
 
@@ -60,12 +60,12 @@ public class ChatViewModel {
 
     Task {
       await loadPersistedChatThreads()
-        @Dependency(\.chatCompletion) var chatCompletion
-        chatCompletion.register(delegate: self)
+      @Dependency(\.chatCompletion) var chatCompletion
+      chatCompletion.register(delegate: self)
     }
   }
 
-  private(set) var tab: ChatThreadViewModel
+  var tab: ChatThreadViewModel
   var currentModel: LLMModel
   var selectedFile: URL?
 
@@ -94,8 +94,8 @@ public class ChatViewModel {
 
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
-  func addTab(copyingCurrentInput: Bool = false) {
-    let newTab = ChatThreadViewModel()
+  func addTab(copyingCurrentInput: Bool = false, threadId: UUID? = nil) {
+    let newTab = ChatThreadViewModel(id: threadId)
     let currentTab = tab
     tab = newTab
     if copyingCurrentInput {

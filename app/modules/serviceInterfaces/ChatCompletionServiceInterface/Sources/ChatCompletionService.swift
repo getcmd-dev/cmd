@@ -13,26 +13,28 @@ public protocol ChatCompletionService: Sendable {
   func register(delegate: ChatCompletionServiceDelegate)
 }
 
+// MARK: - ChatCompletionServiceDelegate
+
 public protocol ChatCompletionServiceDelegate: Sendable, AnyObject {
-    
-    /// Handle a new request for chat completion.
-    ///
-    /// Each new value in the stream is expected to contain all the chat events that happened since processing the last user messages.
-    /// If the order is not consistent between streamed values, the receiver will take care of appending to its streamed content events not yet seen.
-    /// ie the sender doesn't need to care too much about events ordering. However events cannot be updated, ie each event should only be sent
-    /// once it has reached a final state. ex:
-    ///
-    ///   Chat thread state                |  Events sent to handler                             |  Serialized result
-    ///   - tool use 1 pending             |  [                                                  |
-    ///   - tool use 2 pending             |   ]                                                 |
-    ///
-    ///   - tool use 1 pending             | [                                                   |  run command B
-    ///   - tool use 2 done                |  { id: 2, content: "run command B" }]               |
-    ///
-    ///   - tool use 1 done                | [{ id: 1, content: "run command A" }                |  run command B \n run command A
-    ///   - tool use 2 done                |  { id: 2, content: "run command B" }]               |
-    ///
-    func handle(chatCompletion: (ChatCompletionInput)) async -> AsyncStream<[ChatEvent]>
+
+  /// Handle a new request for chat completion.
+  ///
+  /// Each new value in the stream is expected to contain all the chat events that happened since processing the last user messages.
+  /// If the order is not consistent between streamed values, the receiver will take care of appending to its streamed content events not yet seen.
+  /// ie the sender doesn't need to care too much about events ordering. However events cannot be updated, ie each event should only be sent
+  /// once it has reached a final state. ex:
+  ///
+  ///   Chat thread state                |  Events sent to handler                             |  Serialized result
+  ///   - tool use 1 pending             |  [                                                  |
+  ///   - tool use 2 pending             |   ]                                                 |
+  ///
+  ///   - tool use 1 pending             | [                                                   |  run command B
+  ///   - tool use 2 done                |  { id: 2, content: "run command B" }]               |
+  ///
+  ///   - tool use 1 done                | [{ id: 1, content: "run command A" }                |  run command B \n run command A
+  ///   - tool use 2 done                |  { id: 2, content: "run command B" }]               |
+  ///
+  func handle(chatCompletion: ChatCompletionInput) async throws -> AsyncStream<[ChatEvent]>
 }
 
 // MARK: - ChatCompletionInput
@@ -42,10 +44,10 @@ public struct ChatCompletionInput: Sendable {
   public let threadId: String
   /// The messages sent by the user since the last assistant message. They should be added to the thread.
   public let newUserMessages: [String]
-    
-    public let modelName: String
 
-    public init(threadId: String, newUserMessages: [String], modelName: String) {
+  public let modelName: String
+
+  public init(threadId: String, newUserMessages: [String], modelName: String) {
     self.threadId = threadId
     self.newUserMessages = newUserMessages
     self.modelName = modelName

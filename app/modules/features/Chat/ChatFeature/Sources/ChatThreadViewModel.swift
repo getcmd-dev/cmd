@@ -36,9 +36,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   }
   #endif
 
-  convenience init() {
+  convenience init(id: UUID? = nil) {
     self.init(
-      id: UUID(),
+      id: id ?? UUID(),
       name: nil,
       messages: [])
   }
@@ -142,7 +142,18 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     isShowingChatHistory.toggle()
   }
 
-  /// Are we queing too much on the main thread?
+  /// Add new message content to the chat thread. Usually this is done automatically by sending the content of the input in `sendMessage`.
+  /// This method can be used when sending messages received from an external source, like from Xcode AI chat.
+  func add(messageContents: [ChatMessageContent], role: MessageRole) {
+    let message = ChatMessageViewModel(
+      content: messageContents,
+      role: role)
+    messages.append(message)
+    for content in messageContents {
+      events.append(.message(.init(content: content, role: role)))
+    }
+  }
+
   @MainActor
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
@@ -170,17 +181,19 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.textInput = TextInput()
     input.attachments = []
 
-    // TODO: reformat the string sent to the LLM
-    let messageContent = ChatMessageContent.text(ChatMessageTextContent(
-      projectRoot: projectInfo?.dirPath,
-      text: textInput.string.string,
-      attachments: attachments))
-    let userMessage = ChatMessageViewModel(
-      content: [messageContent],
-      role: .user)
+    if !textInput.string.string.isEmpty {
+      // TODO: reformat the string sent to the LLM
+      let messageContent = ChatMessageContent.text(ChatMessageTextContent(
+        projectRoot: projectInfo?.dirPath,
+        text: textInput.string.string,
+        attachments: attachments))
+      let userMessage = ChatMessageViewModel(
+        content: [messageContent],
+        role: .user)
 
-    events.append(.message(.init(content: messageContent, role: .user)))
-    messages.append(userMessage)
+      events.append(.message(.init(content: messageContent, role: .user)))
+      messages.append(userMessage)
+    }
     let messages = messages.apiFormat
 
     if !textInput.string.string.isEmpty, name == nil {

@@ -7,7 +7,7 @@ import Observation
 import Testing
 
 extension Observable where Self: Sendable {
-  /// When the value of a at a given key path changes, this function will be called.
+  /// When the value of a given key path changes, this function will be called.
   public func didSet<Value: Sendable>(
     _ keyPath: KeyPath<Self, Value>,
     perform action: @Sendable @escaping (Value) -> Void)

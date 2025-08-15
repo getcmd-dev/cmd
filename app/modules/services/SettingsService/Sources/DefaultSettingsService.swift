@@ -7,10 +7,10 @@ import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
+import JSONFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
-import JSONFoundation
 import ThreadSafe
 
 // MARK: - DefaultSettingsService

@@ -1,0 +1,131 @@
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+@preconcurrency import Combine
+import Foundation
+import Observation
+
+extension Observable where Self: Sendable {
+  /// When the value of a given key path changes, this function will be called once.
+  public func didSet<Value: Sendable>(
+    _ keyPath: KeyPath<Self, Value>,
+    perform action: @Sendable @escaping (Value) -> Void)
+    -> AnyCancellable
+  {
+    let cancellable = AnyCancellable { }
+    withObservationTracking(
+      {
+        _ = self[keyPath: keyPath]
+      },
+      token: { [weak cancellable] in
+        guard let cancellable else { return nil }
+        _ = cancellable
+        return ""
+      },
+      willChange: nil,
+      didChange: {
+        action(self[keyPath: keyPath])
+      })
+    return cancellable
+  }
+
+  public func observeChanges<Value: Sendable>(to keyPath: KeyPath<Self, Value>) -> AnyPublisher<Value, Never> {
+    ObservablePublisher(observable: self, computedValue: { $0[keyPath: keyPath] }).eraseToAnyPublisher()
+  }
+
+  public func observeChanges<Value: Sendable>(of computedValue: @Sendable @escaping (Self) -> Value)
+    -> AnyPublisher<Value, Never>
+  {
+    ObservablePublisher(observable: self, computedValue: computedValue).eraseToAnyPublisher()
+  }
+
+  /// Get notified each time the value of a given key path changes, until cancelled.
+  public func observeChanges<Value: Sendable>(
+    to keyPath: KeyPath<Self, Value>,
+    perform action: @Sendable @escaping (Value) -> Void)
+    -> AnyCancellable
+  {
+    observeChanges(of: { $0[keyPath: keyPath] }, perform: action)
+  }
+
+  /// Get notified each time the value of a given key path changes, until cancelled.
+  public func observeChanges<Value: Sendable>(
+    of computedValue: @Sendable @escaping (Self) -> Value,
+    perform action: @Sendable @escaping (Value) -> Void)
+    -> AnyCancellable
+  {
+    let cancellables = Atomic<[any Cancellable]?>([any Cancellable]())
+    let result = AnyCancellable {
+      cancellables.set(to: nil)
+    }
+    let isFirstObservation = Atomic<Bool>(true)
+
+    let cancellable = AnyCancellable { }
+    cancellables.mutate { $0?.append(cancellable) }
+
+    withObservationTracking(
+      {
+        let value = computedValue(self)
+        let wasFirstObservation = isFirstObservation.set(to: false)
+        if !wasFirstObservation {
+          action(value)
+        }
+      },
+      token: { [weak cancellable] in
+        guard let cancellable else { return nil }
+        _ = cancellable
+        return ""
+      },
+      willChange: nil,
+      didChange: {
+        let newObservation = observeChanges(of: computedValue, perform: action)
+        cancellables.mutate { $0?.append(newObservation) }
+      })
+    return result
+  }
+}
+
+func withObservationTracking(
+  _ apply: @Sendable @escaping () -> Void,
+  token: @Sendable @escaping () -> String?,
+  willChange: (@Sendable () -> Void)? = nil,
+  didChange: @escaping @Sendable () -> Void)
+{
+  withObservationTracking(apply) {
+    guard token() != nil else { return }
+    willChange?()
+    RunLoop.current.perform {
+      didChange()
+      withObservationTracking(
+        apply,
+        token: token,
+        willChange: willChange,
+        didChange: didChange)
+    }
+  }
+}
+
+public final class ObservablePublisher<Object: Observable, Output>: Publisher, Sendable {
+  init(observable: Object, computedValue: @Sendable @escaping (Object) -> Output) {
+    let internalPublisher = PassthroughSubject<Output, Never>()
+    self.internalPublisher = internalPublisher
+    cancellable = observable.observeChanges(of: computedValue) { newValue in
+      internalPublisher.send(newValue)
+    }
+  }
+
+  public typealias Failure = Never
+
+  public func receive<S>(subscriber: S) where S: Subscriber, Never == S.Failure, Output == S.Input {
+    let subscription = RetainingPublisherSubscription(
+      retained: self,
+      publisher: internalPublisher,
+      subscriber: subscriber)
+    subscriber.receive(subscription: subscription)
+  }
+
+  private let internalPublisher: PassthroughSubject<Output, Never>
+
+  private let cancellable: AnyCancellable
+
+}

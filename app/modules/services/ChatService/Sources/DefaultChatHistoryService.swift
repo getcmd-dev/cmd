@@ -7,9 +7,9 @@ import ChatServiceInterface
 import CryptoKit
 import DependencyFoundation
 import Foundation
-import JSONFoundation
 import FoundationInterfaces
 import GRDB
+import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ToolFoundation
