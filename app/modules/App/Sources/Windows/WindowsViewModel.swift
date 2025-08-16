@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import AppKit
 import ChatAppEvents
+import ChatFeature
 import Combine
 import Dependencies
 import FoundationInterfaces
@@ -19,6 +20,9 @@ final class WindowsViewModel {
 
   init() {
     state = .init(isSidePanelVisible: false, isOnboardingVisible: false)
+    // Initialize the chat VM before displaying as it can be used without being visible.
+    // For instance to respond to chat completion requests by an external client.
+    chat = ChatViewModel()
 
     appEventHandlerRegistry.registerHandler { [weak self] event in
       await self?.handle(appEvent: event) ?? false
@@ -51,6 +55,7 @@ final class WindowsViewModel {
   }
 
   private(set) var state: State
+  let chat: ChatViewModel
 
   /// Whether the onboarding should be visible.
   var isOnboardingVisible: Bool {

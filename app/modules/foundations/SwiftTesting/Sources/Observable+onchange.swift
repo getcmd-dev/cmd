@@ -2,9 +2,9 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import Observation
-import ConcurrencyFoundation
 import Testing
 
 extension Observable where Self: Sendable {

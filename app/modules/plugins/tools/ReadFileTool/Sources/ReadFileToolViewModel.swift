@@ -50,5 +50,20 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        ⏺ Read(\(input.path))
+          ⎿  Read \(output.content.split(separator: "\n").count) lines
+        """
+
+    case .failure(let error):
+      return """
+          ⏺ Read(\(input.path))
+            ⎿  Failed: \(error.localizedDescription)
+        """
+    }
+  }
 }

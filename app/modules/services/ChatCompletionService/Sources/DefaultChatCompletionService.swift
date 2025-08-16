@@ -249,31 +249,27 @@ final class DefaultChatCompletionService: ChatCompletionService {
 extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
   public func encodeResponse(for _: Request) async throws -> Response {
     let response = Response(status: .ok)
-    let body = Response.Body(stream: { writer in
-      writer.eventLoop.makePromise(of: Void.self).futureResult.whenComplete { result in
-        print(result)
-      }
-      Task {
-        do {
-          for try await element in self {
-            let data = try JSONEncoder.sortingKeys.encode(element)
-            guard let string = String(data: data, encoding: .utf8) else {
-              throw AppError("Could not convert Data to String in DefaultChatCompletionService")
-            }
-            _ = writer.write(.buffer(ByteBuffer(string: "data: \(string)\n\n")))
+    response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
+    response.body = Response.Body(managedAsyncStream: { writer in
+      do {
+        for try await element in self {
+          if Task.isCancelled {
+            print("cancelled")
           }
-        } catch {
-          defaultLogger.error("An error occured while responding to the chat completion", error)
-          let data = Data(chunkWithError: error.localizedDescription)
-          _ = writer.write(.buffer(ByteBuffer(data: data)))
+          let data = try JSONEncoder.sortingKeys.encode(element)
+          guard let string = String(data: data, encoding: .utf8) else {
+            throw AppError("Could not convert Data to String in DefaultChatCompletionService")
+          }
+          _ = try await writer.write(.buffer(ByteBuffer(string: "data: \(string)\n\n")))
         }
-        _ = writer.write(.buffer(ByteBuffer(string: "data: [DONE]")))
-        _ = writer.write(.end)
+      } catch {
+        defaultLogger.error("An error occured while responding to the chat completion", error)
+        let data = Data(chunkWithError: error.localizedDescription)
+        _ = try await writer.write(.buffer(ByteBuffer(data: data)))
       }
+      _ = try await writer.write(.buffer(ByteBuffer(string: "data: [DONE]")))
     })
 
-    response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
-    response.body = body
     return response
   }
 }

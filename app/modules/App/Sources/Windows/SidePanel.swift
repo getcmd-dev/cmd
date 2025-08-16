@@ -59,7 +59,7 @@ final class SidePanel: XcodeWindow {
     backgroundColor = .clear
 
     let root = ChatView(
-      viewModel: ChatViewModel(),
+      viewModel: windowsViewModel.chat,
       SettingsView: { onDismiss in
         AnyView(SettingsView(
           viewModel: SettingsViewModel(),

@@ -33,5 +33,20 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(viewModel: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        🟢 List(\(directoryPath.path))
+          ⎿  Listed \(output.files.count) paths
+        """
+
+    case .failure(let error):
+      return """
+          ⭕ List(\(directoryPath.path))
+            ⎿  Failed: \(error.localizedDescription)
+        """
+    }
+  }
 }
