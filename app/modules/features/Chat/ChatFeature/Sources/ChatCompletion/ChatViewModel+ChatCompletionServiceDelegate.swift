@@ -100,7 +100,7 @@ extension ChatMessageContent: StreamRepresentable {
       return text.text
 
     case .toolUse(let toolUse):
-      if let streamableToolUse = toolUse as? (any StreamRepresentable) {
+      if let streamableToolUse = toolUse.toolUse as? (any StreamRepresentable) {
         return streamableToolUse.streamRepresentation
       } else {
         return nil
