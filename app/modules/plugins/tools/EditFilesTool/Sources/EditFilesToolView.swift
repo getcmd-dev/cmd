@@ -15,7 +15,7 @@ import XcodeControllerServiceInterface
 
 struct ToolUseView: View {
 
-  @Bindable var toolUse: ToolUseViewModel
+  @Bindable var toolUse: EditFilesToolUseViewModel
 
   var body: some View {
     switch toolUse.status {
