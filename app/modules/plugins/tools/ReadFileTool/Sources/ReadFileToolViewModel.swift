@@ -15,10 +15,10 @@ import ToolFoundation
 @MainActor
 final class ToolUseViewModel {
 
-    init(status: ReadFileTool.Use.Status, input: ReadFileTool.Use.Input, projectRoot: URL?) {
+  init(status: ReadFileTool.Use.Status, input: ReadFileTool.Use.Input, projectRoot: URL?) {
     self.status = status.value
     self.input = input
-        self.displayFilePath = projectRoot.map { URL(filePath: input.path).pathRelative(to: $0) } ?? input.path
+    displayFilePath = projectRoot.map { URL(filePath: input.path).pathRelative(to: $0) } ?? input.path
     Task { [weak self] in
       for await status in status.futureUpdates {
         self?.status = status
@@ -37,7 +37,7 @@ final class ToolUseViewModel {
   }
 
   let input: ReadFileTool.Use.Input
-    let displayFilePath: String
+  let displayFilePath: String
   var status: ToolUseExecutionStatus<ReadFileTool.Use.Output>
   var highlightedContent: AttributedString?
 

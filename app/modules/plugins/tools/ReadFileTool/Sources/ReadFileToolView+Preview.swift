@@ -10,8 +10,11 @@ let path = "/path/to/some-file.txt"
     VStack(alignment: .leading, spacing: 10) {
       ToolUseView(toolUse: ToolUseViewModel(
         status: .Just(.running),
-        input: .init(path: path, lineRange: .init(start: 1, end: 10))))
-      ToolUseView(toolUse: ToolUseViewModel(status: .Just(.notStarted), input: .init(path: path, lineRange: nil)))
+        input: .init(path: path, lineRange: .init(start: 1, end: 10)), projectRoot: nil))
+      ToolUseView(toolUse: ToolUseViewModel(
+        status: .Just(.notStarted),
+        input: .init(path: path, lineRange: nil),
+        projectRoot: nil))
       ToolUseView(toolUse: ToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: """
@@ -25,13 +28,13 @@ let path = "/path/to/some-file.txt"
             // for the ReadFileTool preview
             """,
           uri: "/path/to/some-file.txt")))),
-        input: .init(path: path, lineRange: nil)))
+        input: .init(path: path, lineRange: nil), projectRoot: nil))
 
       ToolUseView(toolUse: ToolUseViewModel(
         status: .Just(.completed(.success(.init(
           content: longContent,
           uri: "/path/to/some-file.swift")))),
-        input: .init(path: path, lineRange: nil)))
+        input: .init(path: path, lineRange: nil), projectRoot: nil))
     }
   }
   .frame(minWidth: 500, minHeight: 500)

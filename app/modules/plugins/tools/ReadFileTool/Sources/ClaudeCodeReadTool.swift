@@ -150,6 +150,6 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
     }()
 
     return AnyToolUseViewModel(ToolUseViewModel(
-      status: status, input: .init(path: input.file_path, lineRange: lineRange)))
+      status: status, input: .init(path: input.file_path, lineRange: lineRange), projectRoot: context.projectRoot))
   }
 }

@@ -168,7 +168,7 @@ public final class ReadFileTool: NonStreamableTool {
 
 extension ReadFileTool.Use: DisplayableToolUse {
   public var viewModel: AnyToolUseViewModel {
-    AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput))
+    AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput, projectRoot: context.projectRoot))
   }
 }
 
