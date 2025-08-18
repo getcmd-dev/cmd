@@ -25,6 +25,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
@@ -61,6 +62,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
@@ -109,6 +111,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
@@ -249,6 +252,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
@@ -279,6 +283,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
@@ -429,6 +434,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : false,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
@@ -460,6 +466,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "toolPreferences" : [],
         "customInstructions" : {
           "agentMode" : "Focus on code quality and best practices",
@@ -552,6 +559,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},

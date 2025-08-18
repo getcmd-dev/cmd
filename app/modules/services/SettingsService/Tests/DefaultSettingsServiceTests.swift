@@ -262,6 +262,7 @@ struct DefaultSettingsServiceTests {
         "customInstructions" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "automaticallyCheckForUpdates": true,
+        "automaticallyUpdateXcodeSettings" : false,
         "preferedProviders" : {},
         "reasoningModels" : {},
         "inactiveModels" : [],

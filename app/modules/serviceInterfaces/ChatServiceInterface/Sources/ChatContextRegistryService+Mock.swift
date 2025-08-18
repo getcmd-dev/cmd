@@ -60,11 +60,11 @@ public final class MockChatThreadContext: LiveToolExecutionContext {
   }
 
   public func knownFileContent(for path: URL) -> String? {
-    knownFilesContent[path.absoluteString]
+    knownFilesContent[path.path]
   }
 
   public func set(knownFileContent: String, for path: URL) {
-    knownFilesContent[path.absoluteString] = knownFileContent
+    knownFilesContent[path.path] = knownFileContent
   }
 
   public func pluginState<T>(for key: String) -> T? where T: Decodable, T: Encodable, T: Sendable {

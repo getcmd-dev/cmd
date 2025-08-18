@@ -12,6 +12,8 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
     "LocalServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",

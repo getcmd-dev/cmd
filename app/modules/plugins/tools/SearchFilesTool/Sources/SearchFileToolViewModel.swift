@@ -35,5 +35,22 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        🔍 Search(\(input.regex))
+          ⎿ Found \(output.results.count) matches\(output.hasMore ? " (truncated)" : "")
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ Search(\(input.regex))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }

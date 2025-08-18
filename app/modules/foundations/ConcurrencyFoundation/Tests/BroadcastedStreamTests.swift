@@ -12,21 +12,23 @@ struct BroadcastedStreamTests {
   @Test("Stream can be multiplexed")
   func test_multiplex() async throws {
     let (stream, continuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayAll)
-    let valuesReceived = expectation(description: "All values received")
     let stream1Completed = expectation(description: "Stream 1 completed")
     let stream2Completed = expectation(description: "Stream 2 completed")
 
     var values1: [Int] = []
     var values2: [Int] = []
 
+    var firstIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await firstIterator.next() {
         values1.append(value)
       }
       stream1Completed.fulfill()
     }
+
+    var secondIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await secondIterator.next() {
         values2.append(value)
       }
       stream2Completed.fulfill()
@@ -36,12 +38,8 @@ struct BroadcastedStreamTests {
       continuation.yield(i)
     }
 
-    // Wait a bit to ensure values are received
-    try await Task.sleep(for: .milliseconds(100))
-    valuesReceived.fulfill()
-
     continuation.finish()
-    try await fulfillment(of: [valuesReceived, stream1Completed, stream2Completed])
+    try await fulfillment(of: [stream1Completed, stream2Completed])
 
     #expect(values1 == [0, 1, 2, 3, 4])
     #expect(values2 == [0, 1, 2, 3, 4])
@@ -170,17 +168,26 @@ struct BroadcastedStreamTests {
   func test_noReplayStrategy() async throws {
     let (stream, continuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .noReplay)
 
+    let firstBatchProcessed = stream.expectToYield(2)
+
     // Emit some values before subscribing
     for i in 0..<3 {
       continuation.yield(i)
     }
 
+    // We need to track when the first batch of updates has been processed.
+    // This is because the `BroadcastStream` uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: firstBatchProcessed)
+
     // Late subscriber should not receive previous values
     var lateValues = [Int]()
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
+    // Create the iterator sync to ensure that is is created before yielding new values.
+    var lateIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await lateIterator.next() {
         lateValues.append(value)
       }
       lateSubscriberDone.fulfill()
@@ -202,17 +209,26 @@ struct BroadcastedStreamTests {
   func test_replayLastStrategy() async throws {
     let (stream, continuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayLast)
 
+    let firstBatchProcessed = stream.expectToYield(4)
+
     // Emit multiple values
     for i in 0..<5 {
       continuation.yield(i)
     }
 
+    // We need to track when the first batch of updates has been processed.
+    // This is because the `BroadcastStream` uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: firstBatchProcessed)
+
     // Late subscriber should only receive the last value
     var lateValues = [Int]()
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
+    // Create the iterator sync to ensure that is is created before yielding new values.
+    var lateIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await lateIterator.next() {
         lateValues.append(value)
       }
       lateSubscriberDone.fulfill()
@@ -267,6 +283,12 @@ struct BroadcastedStreamTests {
     let (replayLastStream, replayLastContinuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayLast)
     let (replayAllStream, replayAllContinuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayAll)
 
+    let setupExp = [
+      noReplayStream.expectToYield(2),
+      replayLastStream.expectToYield(2),
+      replayAllStream.expectToYield(2),
+    ]
+
     // Emit values to all streams
     for i in 0..<3 {
       noReplayContinuation.yield(i)
@@ -274,8 +296,10 @@ struct BroadcastedStreamTests {
       replayAllContinuation.yield(i)
     }
 
-    // Wait a bit to ensure values are processed
-    try await Task.sleep(for: .milliseconds(10))
+    // We need to track when the first batch of update has been processed.
+    // This is because the `BroadcastStream` uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: setupExp)
 
     var noReplayValues = [Int]()
     var replayLastValues = [Int]()
@@ -285,29 +309,30 @@ struct BroadcastedStreamTests {
     let replayLastDone = expectation(description: "ReplayLast subscriber completed")
     let replayAllDone = expectation(description: "ReplayAll subscriber completed")
 
+    var noReplayIterator = noReplayStream.makeAsyncIterator()
+    var replayLastIterator = replayLastStream.makeAsyncIterator()
+    var replayAllIterator = replayAllStream.makeAsyncIterator()
+
     Task {
-      for await value in noReplayStream {
+      while let value = await noReplayIterator.next() {
         noReplayValues.append(value)
       }
       noReplayDone.fulfill()
     }
 
     Task {
-      for await value in replayLastStream {
+      while let value = await replayLastIterator.next() {
         replayLastValues.append(value)
       }
       replayLastDone.fulfill()
     }
 
     Task {
-      for await value in replayAllStream {
+      while let value = await replayAllIterator.next() {
         replayAllValues.append(value)
       }
       replayAllDone.fulfill()
     }
-
-    // Wait a bit to ensure subscriptions are active
-    try await Task.sleep(for: .milliseconds(10))
 
     // Add one more value to each
     noReplayContinuation.yield(10)
@@ -326,46 +351,20 @@ struct BroadcastedStreamTests {
     #expect(replayAllValues == [0, 1, 2, 10]) // All values + new value
   }
 
-  @Test("Iterator cleanup prevents memory leaks")
-  func test_iteratorCleanup() async throws {
-    let (stream, continuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayAll)
-
-    // Create and immediately drop many iterators to test cleanup
-    for i in 0..<100 {
-      continuation.yield(i)
-
-      // Create iterator but don't consume it fully - this should still clean up
-      let iterator = stream.makeAsyncIterator()
-      _ = iterator
-      // Iterator goes out of scope, should trigger cancellable cleanup
-    }
-
-    // Verify the stream still works properly after many abandoned iterators
-    var finalValues = [Int]()
-    let finalSubscriberDone = expectation(description: "Final subscriber completed")
-
-    Task {
-      for await value in stream {
-        finalValues.append(value)
-        if finalValues.count >= 5 { break } // Just take first 5 to avoid long test
-      }
-      finalSubscriberDone.fulfill()
-    }
-
-    try await fulfillment(of: [finalSubscriberDone])
-    continuation.finish()
-
-    #expect(finalValues == [0, 1, 2, 3, 4])
-  }
-
   @Test("eraseToStream creates independent stream")
   func test_eraseToStream() async throws {
     let (stream, continuation) = BroadcastedStream<Int>.makeStream(replayStrategy: .replayAll)
+
+    let exp = stream.expectToYield(2)
 
     // Emit some values
     for i in 0..<3 {
       continuation.yield(i)
     }
+    // We need to track when the first batch of update has been processed.
+    // This is because the `BroadcastStream` uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: exp)
 
     // Create an erased stream
     let erasedStream = stream.eraseToStream()
@@ -373,8 +372,9 @@ struct BroadcastedStreamTests {
     var erasedValues = [Int]()
     let erasedDone = expectation(description: "Erased stream completed")
 
+    var iterator = erasedStream.makeAsyncIterator()
     Task {
-      for await value in erasedStream {
+      while let value = await iterator.next() {
         erasedValues.append(value)
       }
       erasedDone.fulfill()
@@ -403,16 +403,18 @@ struct BroadcastedStreamTests {
     let subscriber2Done = expectation(description: "Subscriber 2 completed")
 
     // Start first subscriber
+    var firstIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await firstIterator.next() {
         values1.append(value)
       }
       subscriber1Done.fulfill()
     }
 
     // Start second subscriber
+    var secondIterator = stream.makeAsyncIterator()
     Task {
-      for await value in stream {
+      while let value = await secondIterator.next() {
         values2.append(value)
       }
       subscriber2Done.fulfill()

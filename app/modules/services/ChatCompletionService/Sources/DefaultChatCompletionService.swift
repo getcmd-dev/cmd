@@ -171,7 +171,13 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
         let chatEventsStream = try await delegate.handle(chatCompletion: ChatCompletionInput(
           threadId: threadId,
-          newUserMessages: newUserMessages.flatMap(\.textContentParts),
+          newUserMessages: newUserMessages
+            .flatMap(\.textContentParts)
+            .map { text in
+              // Remove the context provided by Xcode. It is not good and we are able to build our own context much better.
+              let spl = text.split(separator: "The user has asked:")
+              return (spl.last.map { String($0) } ?? text).trimmingCharacters(in: .whitespacesAndNewlines)
+            },
           modelName: model))
 
         var sentEventIds: Set<String> = []

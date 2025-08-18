@@ -263,7 +263,8 @@ public final class EditFilesTool: Tool {
             }
           context.updateFilesContent(for: appliedFiles)
         },
-        toolUseResult: formattedOutput.value)
+        toolUseResult: formattedOutput.value,
+        projectRoot: context.projectRoot)
       _viewModel = viewModel
       return viewModel
     }

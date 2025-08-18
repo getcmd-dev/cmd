@@ -143,5 +143,22 @@ extension GlobToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(GlobToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        🔍 Glob(\(input.pattern))
+          ⎿ Found \(output.files.count) files
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ Glob(\(input.pattern))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }

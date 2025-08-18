@@ -113,9 +113,6 @@ struct ObservableValueTests {
     weak var weakObservable = observable
     #expect(weakObservable != nil)
 
-    // Wait for potential async operations
-    try await Task.sleep(for: .milliseconds(100))
-
     observable = nil
     #expect(weakObservable == nil)
   }

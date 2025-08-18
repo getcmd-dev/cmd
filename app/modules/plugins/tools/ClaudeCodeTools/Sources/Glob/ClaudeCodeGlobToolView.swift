@@ -40,7 +40,7 @@ struct GlobToolUseView: View {
               .fill(Color.clear)
               .frame(width: 8, height: 8)
 
-            Text(" ⎿  Found \(output.files.count) files")
+            Text(" ⎿ Found \(output.files.count) files")
               .foregroundColor(foregroundColor)
           }
 

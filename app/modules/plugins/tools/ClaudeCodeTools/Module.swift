@@ -11,6 +11,7 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "ChatFoundation",
     "JSONFoundation",
     "SwiftTesting",

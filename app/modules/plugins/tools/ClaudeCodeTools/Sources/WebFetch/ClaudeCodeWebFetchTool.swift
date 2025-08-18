@@ -147,5 +147,22 @@ extension WebFetchToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(WebFetchToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success:
+      return """
+        🌐 WebFetch(\(input.url))
+          ⎿ Content fetched and processed
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ WebFetch(\(input.url))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }

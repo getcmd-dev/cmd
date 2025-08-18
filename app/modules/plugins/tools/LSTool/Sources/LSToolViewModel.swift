@@ -12,9 +12,10 @@ import ToolFoundation
 @MainActor
 final class ToolUseViewModel {
 
-  init(status: LSTool.Use.Status, directoryPath: URL) {
+  init(status: LSTool.Use.Status, directoryPath: URL, projectRoot: URL?) {
     self.status = status.value
     self.directoryPath = directoryPath
+    directoryDisplayPath = projectRoot.map { directoryPath.pathRelative(to: $0) } ?? directoryPath.path
     Task {
       for await status in status.futureUpdates {
         self.status = status
@@ -23,6 +24,7 @@ final class ToolUseViewModel {
   }
 
   let directoryPath: URL
+  let directoryDisplayPath: String
   var status: ToolUseExecutionStatus<LSTool.Use.Output>
 }
 
@@ -38,15 +40,15 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        🟢 List(\(directoryPath.path))
-          ⎿  Listed \(output.files.count) paths
+        🟢 List(\(directoryDisplayPath))
+          ⎿ Listed \(output.files.count) paths
 
         """
 
     case .failure(let error):
       return """
-          ⭕ List(\(directoryPath.path))
-            ⎿  Failed: \(error.localizedDescription)
+          ⭕ List(\(directoryDisplayPath))
+            ⎿ Failed: \(error.localizedDescription)
 
         """
     }

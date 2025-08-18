@@ -46,8 +46,9 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
     self.replayStrategy = replayStrategy
     self.internalStream = internalStream
 
+    var iterator = internalStream.makeAsyncIterator()
     Task { [weak self] in
-      for await element in internalStream {
+      while let element = await iterator.next() {
         if self == nil {
           os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
             .warning(
@@ -105,9 +106,9 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
       }
     }
 
-    let cancellable = AnyCancellable { [weak self] in
-      guard let self else { return }
-      _ = lock.withLock { state in
+    let cancellable = AnyCancellable {
+      // It is intentional to retain self here, as we don't want to re-reference while being iterated over.
+      _ = self.lock.withLock { state in
         state.subscribers.removeValue(forKey: id)
       }
     }

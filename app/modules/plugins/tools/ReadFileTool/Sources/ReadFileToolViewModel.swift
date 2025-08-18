@@ -56,13 +56,15 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     case .success(let output):
       return """
         ⏺ Read(\(input.path))
-          ⎿  Read \(output.content.split(separator: "\n").count) lines
+          ⎿ Read \(output.content.split(separator: "\n", omittingEmptySubsequences: false).count) lines
+
         """
 
     case .failure(let error):
       return """
           ⏺ Read(\(input.path))
-            ⎿  Failed: \(error.localizedDescription)
+            ⎿ Failed: \(error.localizedDescription)
+
         """
     }
   }

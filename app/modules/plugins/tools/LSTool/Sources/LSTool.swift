@@ -164,6 +164,7 @@ extension LSTool.Use: DisplayableToolUse {
   public var viewModel: AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      directoryPath: directoryPath))
+      directoryPath: directoryPath,
+      projectRoot: context.projectRoot))
   }
 }

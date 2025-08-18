@@ -93,7 +93,7 @@ struct ClaudeCodeWebSearchToolTests {
 
     // Wait for the status to be updated
     var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
-    for await status in use.status {
+    for await status in use.status.futureUpdates {
       finalStatus = status
       if case .completed = status {
         break
@@ -146,7 +146,7 @@ struct ClaudeCodeWebSearchToolTests {
     try use.receive(output: output)
 
     var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
-    for await status in use.status {
+    for await status in use.status.futureUpdates {
       finalStatus = status
       if case .completed = status {
         break

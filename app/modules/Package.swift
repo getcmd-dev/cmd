@@ -192,8 +192,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
-    "LocalServerServiceInterface",
-    "LSTool",
+    "AppFoundation",
     "SwiftTesting",
     "ToolFoundation",
   ],
@@ -216,6 +215,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
     "SwiftTesting",
@@ -236,6 +236,7 @@ targets.append(contentsOf: Target.module(
     "XcodeControllerServiceInterface",
   ],
   testDependencies: [
+    "AppFoundation",
     "SwiftTesting",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
@@ -253,6 +254,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "JSONFoundation",
     "LocalServerServiceInterface",
     "SwiftTesting",
@@ -274,6 +276,8 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
     "LocalServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
@@ -328,6 +332,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "ChatFoundation",
     "JSONFoundation",
     "SwiftTesting",

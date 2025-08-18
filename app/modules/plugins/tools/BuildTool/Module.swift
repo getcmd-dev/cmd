@@ -11,6 +11,7 @@ Target.module(
     "XcodeControllerServiceInterface",
   ],
   testDependencies: [
+    "AppFoundation",
     "SwiftTesting",
     "ToolFoundation",
     "XcodeControllerServiceInterface",

@@ -29,13 +29,15 @@ final class ToolUseViewModel {
     input: [EditFilesTool.Use.FileChange],
     isInputComplete: Bool,
     setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
-    toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []))
+    toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []),
+    projectRoot: URL? = nil)
   {
     self.status = status.value
     self.input = input
     self.isInputComplete = isInputComplete
     self.setResult = setResult
     self.toolUseResult = toolUseResult
+    self.projectRoot = projectRoot
 
     handleUpdatedInput()
 
@@ -50,6 +52,7 @@ final class ToolUseViewModel {
 
   var isInputComplete: Bool
   var status: ToolUseExecutionStatus<EditFilesTool.Output>
+  let projectRoot: URL?
 
   @ObservationIgnored var toolUseResult: EditFilesTool.Use.FormattedOutput {
     didSet {
@@ -272,7 +275,38 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed = status else { return nil }
+    var representation = ""
+    for change in toolUseResult.fileChanges {
+      let toolName = change.isNewFile ? "Write" : "Update"
+      let displayPath: String =
+        if let projectRoot {
+          URL(fileURLWithPath: change.path).pathRelative(to: projectRoot)
+        } else {
+          change.path
+        }
+
+      switch change.status {
+      case .applied:
+        representation += """
+          ✏️ \(toolName)(\(displayPath))
+            ⎿ Updated
+
+          """
+
+      case .error:
+        representation += """
+          ❌ \(toolName)(\(displayPath))
+            ⎿ Error editing file
+
+          """
+
+      default: break
+      }
+    }
+    return representation
+  }
 }
 
 // MARK: - FileEditState

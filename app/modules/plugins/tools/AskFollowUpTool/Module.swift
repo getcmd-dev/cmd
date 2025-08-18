@@ -9,8 +9,7 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
-    "LocalServerServiceInterface",
-    "LSTool",
+    "AppFoundation",
     "SwiftTesting",
     "ToolFoundation",
   ])

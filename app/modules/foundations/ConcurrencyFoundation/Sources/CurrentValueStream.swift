@@ -36,8 +36,9 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
     self.internalStream = internalStream
     lock = .init(initialState: InternalState(value: initial))
 
+    var iterator = stream.makeAsyncIterator()
     Task { [weak self] in
-      for await value in stream {
+      while let value = await iterator.next() {
         self?.updateFrom(streamedValue: value)
         continuation.yield(value)
       }
@@ -61,7 +62,10 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
 
   /// A stream
   public var futureUpdates: AsyncStream<Element> {
-    var iterator = Iterator(iterator: self.makeAsyncIterator(), cancellable: AnyCancellable { })
+    var iterator = Iterator(iterator: self.makeAsyncIterator(), cancellable: AnyCancellable {
+      // Retain self while being iterated over.
+      _ = self
+    })
     return iterator.stream()
   }
 
@@ -87,13 +91,6 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
   public subscript<T>(dynamicMember keyPath: KeyPath<Element, T>) -> T {
     value[keyPath: keyPath]
   }
-
-//  /// The events as an async stream.
-//  /// Creating a stream doesn't interfer with other subscribers
-//  public func eraseToStream() -> AsyncStream<Element> {
-//    var iterator = Iterator<Element>(iterator: makeAsyncIterator(), cancellable: AnyCancellable { })
-//    return iterator.stream()
-//  }
 
   let internalStream: BroadcastedStream<Element>
 

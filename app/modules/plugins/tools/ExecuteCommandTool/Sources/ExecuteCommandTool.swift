@@ -248,7 +248,24 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        \(output.exitCode == 0 ? "🟢" : "🔴") Bash(\(command))
+          ⎿ Exit code: \(output.exitCode)
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ Bash(\(command))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }
 
 extension String {

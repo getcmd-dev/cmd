@@ -19,8 +19,10 @@ struct CurrentValueStreamTests {
     let valuesReceived = expectation(description: "Values received")
     var receivedValues = [Int]()
 
+    // Create the iterator sync to ensure that is is created before yielding new values.
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await value in stream.futureUpdates {
+      while let value = await iterator.next() {
         receivedValues.append(value)
         if receivedValues.count == 3 {
           valuesReceived.fulfill()
@@ -51,14 +53,17 @@ struct CurrentValueStreamTests {
       }
     }
 
+    // Create the iterators sync to ensure that is is created before yielding new values.
+    var iterator1 = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await _ in stream.futureUpdates {
+      while await iterator1.next() != nil {
         inc()
       }
     }
 
+    var iterator2 = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await _ in stream.futureUpdates {
+      while await iterator2.next() != nil {
         inc()
       }
     }
@@ -123,26 +128,28 @@ struct CurrentValueStreamTests {
     let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0)
 
     // Emit some updates
+    let exp = stream.futureUpdates.expectToYield(3)
     continuation.yield(1)
     continuation.yield(2)
     continuation.yield(3)
 
-    // Wait a bit to ensure values are processed
-    try await Task.sleep(for: .milliseconds(10))
+    // We need to track when the first batch of updates has been processed.
+    // This is because the stream uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: exp)
 
     // Late subscriber should receive current value and new updates
     var lateValues = [Int]()
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
+    // Create the iterator sync to ensure that is is created before yielding new values.
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await value in stream.futureUpdates {
+      while let value = await iterator.next() {
         lateValues.append(value)
       }
       lateSubscriberDone.fulfill()
     }
-
-    // Wait a bit to ensure subscription is active
-    try await Task.sleep(for: .milliseconds(10))
 
     // Emit one more update
     continuation.yield(4)
@@ -154,31 +161,33 @@ struct CurrentValueStreamTests {
     #expect(lateValues == [3, 4])
   }
 
+  @MainActor
   @Test("CurrentValueStream with ReplayStrategy.noReplay")
   func test_replayStrategyNoReplay() async throws {
     let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0, replayStrategy: .noReplay)
 
     // Emit some updates
+    let exp = stream.futureUpdates.expectToYield(3)
     continuation.yield(1)
     continuation.yield(2)
     continuation.yield(3)
 
-    // Wait a bit to ensure values are processed
-    try await Task.sleep(for: .milliseconds(10))
+    // We need to track when the first batch of updates has been processed.
+    // This is because the stream uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: exp)
 
     // Late subscriber should not receive past values
     var lateValues = [Int]()
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await value in stream.futureUpdates {
+      while let value = await iterator.next() {
         lateValues.append(value)
       }
       lateSubscriberDone.fulfill()
     }
-
-    // Wait a bit to ensure subscription is active
-    try await Task.sleep(for: .milliseconds(10))
 
     // Emit one more update
     continuation.yield(4)
@@ -195,26 +204,27 @@ struct CurrentValueStreamTests {
     let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0, replayStrategy: .replayAll)
 
     // Emit some updates
+    let exp = stream.futureUpdates.expectToYield(3)
     continuation.yield(1)
     continuation.yield(2)
     continuation.yield(3)
 
-    // Wait a bit to ensure values are processed
-    try await Task.sleep(for: .milliseconds(10))
+    // We need to track when the first batch of updates has been processed.
+    // This is because the stream uses an internal `AsyncStream` and events sent to its continuation are not synchronously
+    // sent to its listener. i.e. immediately after calling `continuation.yield(i)` the `BroadcastStream` might not yet have received the event.
+    try await fulfillment(of: exp)
 
     // Late subscriber should receive all past values
     var lateValues = [Int]()
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await value in stream.futureUpdates {
+      while let value = await iterator.next() {
         lateValues.append(value)
       }
       lateSubscriberDone.fulfill()
     }
-
-    // Wait a bit to ensure subscription is active
-    try await Task.sleep(for: .milliseconds(10))
 
     // Emit one more update
     continuation.yield(4)
@@ -223,7 +233,7 @@ struct CurrentValueStreamTests {
     try await fulfillment(of: [lateSubscriberDone])
 
     // Should receive all values including initial value
-    #expect(lateValues == [0, 1, 2, 3, 4])
+    #expect(lateValues == [1, 2, 3, 4])
   }
 }
 
@@ -238,8 +248,9 @@ struct MutableCurrentValueStreamTests {
     let updates = expectation(description: "Updates received")
     var receivedValues = [Int]()
 
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
-      for await value in stream.futureUpdates {
+      while let value = await iterator.next() {
         receivedValues.append(value)
         if receivedValues.count == 3 {
           updates.fulfill()
@@ -261,9 +272,10 @@ struct MutableCurrentValueStreamTests {
     let stream = MutableCurrentValueStream(0)
     let completion = expectation(description: "Stream completed")
 
+    var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
       var count = 0
-      for await _ in stream.futureUpdates {
+      while await iterator.next() != nil {
         count += 1
       }
       #expect(count == 2)

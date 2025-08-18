@@ -37,43 +37,43 @@ struct EditFilesToolEncodingTests {
       fileChange.path: "# Old Title",
     ]
 
-    try withDependencies {
+    let use = try withDependencies {
       $0.chatContextRegistry = MockChatContextRegistryService([
         "mock-thread-id": MockChatThreadContext(knownFilesContent: files),
       ])
       $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
     } operation: {
-      let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
-
-      try testDecodingEncodingWithTool(of: use, tool: tool, """
-        {
-          "callingTool" : "suggest_files_changes",
-          "context" : {
-            "threadId": "mock-thread-id"
-          },
-          "input" : {
-            "files" : [
-              {
-                "changes" : [
-                  {
-                    "replace" : "# New Title",
-                    "search" : "# Old Title"
-                  }
-                ],
-                "isNewFile" : false,
-                "path" : "\\/project\\/README.md"
-              }
-            ]
-          },
-          "internalState" : null,
-          "isInputComplete" : true,
-          "status" : {
-            "status" : "pendingApproval"
-          },
-          "toolUseId" : "edit-123"
-        }
-        """)
+      try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
     }
+
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
+      {
+        "callingTool" : "suggest_files_changes",
+        "context" : {
+          "threadId": "mock-thread-id"
+        },
+        "input" : {
+          "files" : [
+            {
+              "changes" : [
+                {
+                  "replace" : "# New Title",
+                  "search" : "# Old Title"
+                }
+              ],
+              "isNewFile" : false,
+              "path" : "\\/project\\/README.md"
+            }
+          ]
+        },
+        "internalState" : null,
+        "isInputComplete" : true,
+        "status" : {
+          "status" : "pendingApproval"
+        },
+        "toolUseId" : "edit-123"
+      }
+      """)
   }
 
   @Test("Tool Use encoding/decoding - new file creation")
@@ -91,6 +91,7 @@ struct EditFilesToolEncodingTests {
 
     let input = EditFilesTool.Use.Input(files: [fileChange])
     let data = try JSONEncoder().encode(input)
+
     let use = try tool.use(toolUseId: "edit-new-456", input: data, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """

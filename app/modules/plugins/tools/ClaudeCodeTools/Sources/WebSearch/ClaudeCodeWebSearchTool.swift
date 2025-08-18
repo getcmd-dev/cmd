@@ -197,7 +197,24 @@ extension WebSearchToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(WebSearchToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        🔍 WebSearch(\(input.query))
+          ⎿ Found \(output.links.count) results
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ WebSearch(\(input.query))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }
 
 // MARK: - ToolError

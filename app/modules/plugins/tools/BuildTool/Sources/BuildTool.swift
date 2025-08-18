@@ -166,7 +166,24 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? { nil }
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        \(output.isSuccess ? "✅" : "❌") Build(\(buildType.rawValue))
+          ⎿ \(output.isSuccess ? "Succeeded" : "Failed")
+
+        """
+
+    case .failure(let error):
+      return """
+          ❌ Build(\(buildType.rawValue))
+            ⎿ Failed: \(error.localizedDescription)
+
+        """
+    }
+  }
 }
 
 extension BuildMessage {

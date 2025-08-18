@@ -33,7 +33,7 @@ extension ToolExecutionContext {
         @Dependency(\.chatContextRegistry) var chatContextRegistry
         @Dependency(\.xcodeObserver) var xcodeObserver
         let mappedInput = try mappedInput.withBaselineContent(
-          chatContext: chatContextRegistry.context(for: threadId),
+          chatContext: { try chatContextRegistry.context(for: threadId) },
           xcodeObserver: validateFileContent ? xcodeObserver : nil)
         return (mappedInput, nil)
       } catch {
@@ -78,7 +78,7 @@ extension [FileChange] {
   ///   - chatContext: The chat context to use for loading the last known content of the files.
   ///   - xcodeObserver: Used to load the current content of the files. When `nil`, the content is not validated.
   func withBaselineContent(
-    chatContext: LiveToolExecutionContext,
+    chatContext: () throws -> LiveToolExecutionContext,
     xcodeObserver: XcodeObserver?)
     throws -> Self
   {
@@ -95,7 +95,7 @@ extension [FileChange] {
       }
       // The `LiveToolExecutionContext` should not be used during deserialization as the chat context has not yet been created.
       // This call is fine, since when deserializing the baseline content has been serialized and is not loaded from the chat context.
-      guard let baseLineContent = chatContext.knownFileContent(for: fileChange.path) else {
+      guard let baseLineContent = try chatContext().knownFileContent(for: fileChange.path) else {
         throw AppError(
           "The file \(fileChange.path.path) has not been read yet. Make sure to first read any file you want to modify.")
       }

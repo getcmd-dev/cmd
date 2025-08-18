@@ -68,7 +68,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
       // The ouput is in the format (line number)→... and can contain extra XML like info.
 
       let parsedOutput = output
-        .split(separator: "\n")
+        .split(separator: "\n", omittingEmptySubsequences: false)
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
       updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
