@@ -238,11 +238,11 @@ public final class EditFilesTool: Tool {
     let _isInputComplete: Atomic<Bool>
 
     @MainActor
-    var editViewModel: ToolUseViewModel {
+    var editViewModel: EditFilesToolUseViewModel {
       if let _viewModel {
         return _viewModel
       }
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: mappedInput.value,
         isInputComplete: isInputComplete,
@@ -273,7 +273,7 @@ public final class EditFilesTool: Tool {
     private let mappedInput: Atomic<[FileChange]>
     private let formattedOutput: Atomic<FormattedOutput>
 
-    @MainActor private var _viewModel: ToolUseViewModel?
+    @MainActor private var _viewModel: EditFilesToolUseViewModel?
   }
 
   public let inputSchema: JSON =

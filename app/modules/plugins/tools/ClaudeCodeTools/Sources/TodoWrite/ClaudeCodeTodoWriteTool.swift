@@ -294,7 +294,6 @@ extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
     case .success:
       var representation = """
         ⏺ Update Todos
-          ⎿ 
         """
 
       for todo in input.todos.filter({ !todoChange(for: $0).isUnchanged }) {
@@ -309,15 +308,16 @@ extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
           default:
             "○"
           }
-        representation += "\(statusIcon) \(todo.content)\n    "
+        representation += "  ⎿ \(statusIcon) \(todo.content)\n"
       }
 
-      return representation.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
+      return representation + "\n"
 
     case .failure(let error):
       return """
-          ❌ TodoWrite(\(input.todos.count) items)
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ TodoWrite(\(input.todos.count) items)
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

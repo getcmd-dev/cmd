@@ -146,7 +146,7 @@ extension ClaudeCodeWriteTool.Use.Input {
 
 extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
   public var viewModel: AnyToolUseViewModel {
-    AnyToolUseViewModel(ToolUseViewModel(
+    AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
       isInputComplete: true,

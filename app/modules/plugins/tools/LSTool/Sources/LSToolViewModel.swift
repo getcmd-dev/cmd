@@ -40,15 +40,17 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        🟢 List(\(directoryDisplayPath))
+        ⏺ List(\(directoryDisplayPath))
           ⎿ Listed \(output.files.count) paths
+
 
         """
 
     case .failure(let error):
       return """
-          ⭕ List(\(directoryDisplayPath))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ List(\(directoryDisplayPath))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

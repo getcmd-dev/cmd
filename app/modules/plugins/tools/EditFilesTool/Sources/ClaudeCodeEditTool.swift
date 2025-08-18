@@ -159,7 +159,7 @@ extension ClaudeCodeEditTool.Use.Input {
 
 extension ClaudeCodeEditTool.Use: DisplayableToolUse {
   public var viewModel: AnyToolUseViewModel {
-    AnyToolUseViewModel(ToolUseViewModel(
+    AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
       isInputComplete: true,

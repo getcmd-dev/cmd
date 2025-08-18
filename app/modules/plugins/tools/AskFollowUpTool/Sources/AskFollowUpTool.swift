@@ -156,17 +156,19 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
   var streamRepresentation: String? {
     guard case .completed(let result) = status else { return nil }
     switch result {
-    case .success(let output):
+    case .success:
       return """
-        ❓ Ask(\(input.question))
+        ⏺ Ask(\(input.question))
           ⎿ \(input.followUp.count) follow-up options provided
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ Ask(\(input.question))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ Ask(\(input.question))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

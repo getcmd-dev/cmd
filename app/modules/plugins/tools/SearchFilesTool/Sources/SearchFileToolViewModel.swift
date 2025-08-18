@@ -40,15 +40,17 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        🔍 Search(\(input.regex))
+        ⏺ Search(\(input.regex))
           ⎿ Found \(output.results.count) matches\(output.hasMore ? " (truncated)" : "")
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ Search(\(input.regex))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ Search(\(input.regex))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

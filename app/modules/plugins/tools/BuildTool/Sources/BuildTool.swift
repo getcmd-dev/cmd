@@ -171,15 +171,17 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        \(output.isSuccess ? "✅" : "❌") Build(\(buildType.rawValue))
+        ⏺ Build(\(buildType.rawValue))
           ⎿ \(output.isSuccess ? "Succeeded" : "Failed")
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ Build(\(buildType.rawValue))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ Build(\(buildType.rawValue))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

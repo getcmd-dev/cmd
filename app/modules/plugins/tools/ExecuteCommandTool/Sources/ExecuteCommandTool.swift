@@ -8,7 +8,6 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ShellServiceInterface
-import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -193,79 +192,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   static let truncationLimit = 30000
 
-}
-
-// MARK: - ToolUseViewModel
-
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(
-    command: String,
-    status: ExecuteCommandTool.Use.Status,
-    stdout: Future<BroadcastedStream<Data>, Never>,
-    stderr: Future<BroadcastedStream<Data>, Never>,
-    kill: @escaping () async -> Void)
-  {
-    self.command = command
-    self.status = status.value
-    self.kill = kill
-    Task { [weak self] in
-      for await status in status.futureUpdates {
-        self?.status = status
-      }
-    }
-    Task { [weak self] in
-      let stdoutStream = await stdout.value
-      for await data in stdoutStream {
-        guard let self else { return }
-        stdData += data
-        std = String(data: stdData, encoding: .utf8)
-      }
-    }
-    Task { [weak self] in
-      let stderrStream = await stderr.value
-      for await data in stderrStream {
-        guard let self else { return }
-        stdData += data
-        std = String(data: stdData, encoding: .utf8)
-      }
-    }
-  }
-
-  let command: String
-  var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Output>
-  var std: String?
-  var stdData = Data()
-  let kill: () async -> Void
-}
-
-// MARK: ViewRepresentable, StreamRepresentable
-
-extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
-  @MainActor
-  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
-
-  @MainActor
-  var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
-    switch result {
-    case .success(let output):
-      return """
-        \(output.exitCode == 0 ? "🟢" : "🔴") Bash(\(command))
-          ⎿ Exit code: \(output.exitCode)
-
-        """
-
-    case .failure(let error):
-      return """
-          ❌ Bash(\(command))
-            ⎿ Failed: \(error.localizedDescription)
-
-        """
-    }
-  }
 }
 
 extension String {

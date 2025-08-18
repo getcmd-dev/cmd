@@ -202,15 +202,17 @@ extension WebSearchToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        🔍 WebSearch(\(input.query))
+        ⏺ WebSearch(\(input.query))
           ⎿ Found \(output.links.count) results
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ WebSearch(\(input.query))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ WebSearch(\(input.query))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

@@ -152,15 +152,17 @@ extension WebFetchToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success:
       return """
-        🌐 WebFetch(\(input.url))
+        ⏺ WebFetch(\(input.url))
           ⎿ Content fetched and processed
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ WebFetch(\(input.url))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ WebFetch(\(input.url))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }

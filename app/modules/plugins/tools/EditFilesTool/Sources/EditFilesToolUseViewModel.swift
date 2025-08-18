@@ -13,11 +13,11 @@ import SwiftUI
 import ToolFoundation
 import XcodeControllerServiceInterface
 
-// MARK: - ToolUseViewModel
+// MARK: - EditFilesToolUseViewModel
 
 @Observable
 @MainActor
-final class ToolUseViewModel {
+final class EditFilesToolUseViewModel {
   /// - Parameters:
   ///   - status: The status of tool, which can be observed.
   ///   - input: The tool input.
@@ -270,7 +270,7 @@ final class ToolUseViewModel {
 
 // MARK: ViewRepresentable, StreamRepresentable
 
-extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+extension EditFilesToolUseViewModel: ViewRepresentable, StreamRepresentable {
   @MainActor
   var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
 
@@ -290,15 +290,17 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
       switch change.status {
       case .applied:
         representation += """
-          ✏️ \(toolName)(\(displayPath))
+          ⏺ \(toolName)(\(displayPath))
             ⎿ Updated
+
 
           """
 
       case .error:
         representation += """
-          ❌ \(toolName)(\(displayPath))
+          ⏺ \(toolName)(\(displayPath))
             ⎿ Error editing file
+
 
           """
 

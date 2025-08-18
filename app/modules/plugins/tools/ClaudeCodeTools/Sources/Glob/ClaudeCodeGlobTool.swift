@@ -148,15 +148,17 @@ extension GlobToolUseViewModel: ViewRepresentable, StreamRepresentable {
     switch result {
     case .success(let output):
       return """
-        🔍 Glob(\(input.pattern))
+        ⏺ Glob(\(input.pattern))
           ⎿ Found \(output.files.count) files
+
 
         """
 
     case .failure(let error):
       return """
-          ❌ Glob(\(input.pattern))
-            ⎿ Failed: \(error.localizedDescription)
+        ⏺ Glob(\(input.pattern))
+          ⎿ Failed: \(error.localizedDescription)
+
 
         """
     }
