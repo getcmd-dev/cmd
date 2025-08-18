@@ -180,8 +180,10 @@ platform :mac do
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do
     setup_ci if ENV['CI']
+
+    version = rand(1000)
     app_config_path = File.absolute_path("../command.shared.xcconfig")
-    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+    # version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
     if existing_version.empty?
@@ -196,39 +198,39 @@ platform :mac do
       version = new_version
     end
 
-    result = create_and_sign_release(remove_zip: false, version: version)
-    version = result[:version]
-    app_zip_path = result[:app_zip_path]
-    build_path = result[:build_path]
+    # result = create_and_sign_release(remove_zip: false, version: version)
+    # version = result[:version]
+    # app_zip_path = result[:app_zip_path]
+    # build_path = result[:build_path]
 
-    gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+    # gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
-    set_github_release(
-      api_token: gh_personal_access_token_cmd,
-      server_url: "https://api.github.com",
-      repository_name: "getcmd-dev/cmd",
-      name: "v#{version}",
-      tag_name: "v#{version}",
-      description: "v#{version}",
-      commitish: "main",
-      upload_assets: app_zip_path
-    )
+    # set_github_release(
+    #   api_token: gh_personal_access_token_cmd,
+    #   server_url: "https://api.github.com",
+    #   repository_name: "getcmd-dev/cmd",
+    #   name: "v#{version}",
+    #   tag_name: "v#{version}",
+    #   description: "v#{version}",
+    #   commitish: "main",
+    #   upload_assets: app_zip_path
+    # )
 
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
-    new_branch_name = "release-v#{version}"
+    new_branch_name = "test_release-v#{version}"
     if ENV['CI']
       sh("git config --global user.name 'cmd-bot'")
       sh("git config --global user.email 'cmd@get-cmd.dev'")
       # sh("git remote set-url --push origin https://gsabran:#{gh_personal_access_token_cmd}@github.com/getcmd-dev/cmd.git")
     end
     sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' && git push origin #{new_branch_name}")
-    create_pull_request(
-      api_token: gh_personal_access_token_cmd,
-      title: "Release v#{version}",
-      repo: "getcmd-dev/cmd",
-      head: new_branch_name,
-      base: "main"
-    )
+    # create_pull_request(
+    #   api_token: gh_personal_access_token_cmd,
+    #   title: "Release v#{version}",
+    #   repo: "getcmd-dev/cmd",
+    #   head: new_branch_name,
+    #   base: "main"
+    # )
   end
 end
