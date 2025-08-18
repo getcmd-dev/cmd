@@ -45,15 +45,23 @@ build_release_command() {
 
 clean_command() {
 	close_xcode
+
+	cd "$(git rev-parse --show-toplevel)/app/modules"
+
+	# Remove derived Package.swift first
+	find . -name Package.swift 2>/dev/null |
+		# Remove all git-ignored files
+		git check-ignore --stdin |
+		while read file; do rm -rf "$file"; done
+
 	# Remove derived files from swift packages
-	cd "$(git rev-parse --show-toplevel)/app/modules" &&
-		swift package clean &&
-		find . -not -path './.git/*' 2>/dev/null |
-		# Don't remove files in ./services/LocalServerService/Sources/Resources
-		grep -v 'services/LocalServerService/Sources/Resources' |
-			# Remove all git-ignored files
-			git check-ignore --stdin |
-			while read file; do rm -rf "$file"; done
+	swift package clean &&
+	find . -not -path './.git/*' 2>/dev/null |
+	# Don't remove files in ./services/LocalServerService/Sources/Resources
+	grep -v 'services/LocalServerService/Sources/Resources' |
+		# Remove all git-ignored files
+		git check-ignore --stdin |
+		while read file; do rm -rf "$file"; done
 	# Reset xcode state
 	cd "$(git rev-parse --show-toplevel)/app" &&
 		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
