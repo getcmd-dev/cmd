@@ -224,6 +224,7 @@ platform :mac do
       sh("git config --global user.email 'cmd@get-cmd.dev'")
       # sh("git remote set-url --push origin https://gsabran:#{gh_personal_access_token_cmd}@github.com/getcmd-dev/cmd.git")
     end
+    sh("touch '#{version}.txt'")
     sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' && git push origin #{new_branch_name}")
     # create_pull_request(
     #   api_token: gh_personal_access_token_cmd,
