@@ -40,7 +40,7 @@ final class ToolUseViewModel {
     handleUpdatedInput()
 
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }

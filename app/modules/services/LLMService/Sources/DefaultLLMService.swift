@@ -268,7 +268,7 @@ final class DefaultLLMService: LLMService {
       threadId: context?.threadId)
     let data = try JSONEncoder().encode(params)
 
-    let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
+    let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []), replayStrategy: .replayAll)
     handleUpdateStream(result)
 
     let isTaskCancelled = Atomic(false)

@@ -23,8 +23,9 @@ extension Observable where Self: Sendable {
         return ""
       },
       willChange: nil,
-      didChange: {
+      didChange: { [weak cancellable] in
         action(self[keyPath: keyPath])
+        cancellable?.cancel()
       })
     return cancellable
   }
@@ -54,14 +55,9 @@ extension Observable where Self: Sendable {
     perform action: @Sendable @escaping (Value) -> Void)
     -> AnyCancellable
   {
-    let cancellables = Atomic<[any Cancellable]?>([any Cancellable]())
-    let result = AnyCancellable {
-      cancellables.set(to: nil)
-    }
     let isFirstObservation = Atomic<Bool>(true)
 
     let cancellable = AnyCancellable { }
-    cancellables.mutate { $0?.append(cancellable) }
 
     withObservationTracking(
       {
@@ -78,10 +74,9 @@ extension Observable where Self: Sendable {
       },
       willChange: nil,
       didChange: {
-        let newObservation = observeChanges(of: computedValue, perform: action)
-        cancellables.mutate { $0?.append(newObservation) }
+        // apply will be called immediately after.
       })
-    return result
+    return cancellable
   }
 }
 
@@ -89,7 +84,8 @@ func withObservationTracking(
   _ apply: @Sendable @escaping () -> Void,
   token: @Sendable @escaping () -> String?,
   willChange: (@Sendable () -> Void)? = nil,
-  didChange: @escaping @Sendable () -> Void)
+  didChange: @escaping @Sendable () -> Void,
+  counter: Int = 0)
 {
   withObservationTracking(apply) {
     guard token() != nil else { return }
@@ -100,7 +96,8 @@ func withObservationTracking(
         apply,
         token: token,
         willChange: willChange,
-        didChange: didChange)
+        didChange: didChange,
+        counter: counter + 1)
     }
   }
 }

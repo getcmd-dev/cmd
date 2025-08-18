@@ -3,7 +3,8 @@
 
 // MARK: - UncheckedSendable
 
-/// A helper to send non Sendable variables, as the variables cannot be directly annotated with @unchecked Sendable.
+/// A  wrapper that conforms to `Sendable`. This is particularly useful over `@unchecked Sendable` for types such
+/// as closures that cannot be annotated with `@unchecked`.
 public final class UncheckedSendable<Value>: @unchecked Sendable {
 
   public init(_ value: Value) {

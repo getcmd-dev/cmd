@@ -20,7 +20,7 @@ struct CurrentValueStreamTests {
     var receivedValues = [Int]()
 
     Task {
-      for await value in stream {
+      for await value in stream.futureUpdates {
         receivedValues.append(value)
         if receivedValues.count == 3 {
           valuesReceived.fulfill()
@@ -52,13 +52,13 @@ struct CurrentValueStreamTests {
     }
 
     Task {
-      for await _ in stream {
+      for await _ in stream.futureUpdates {
         inc()
       }
     }
 
     Task {
-      for await _ in stream {
+      for await _ in stream.futureUpdates {
         inc()
       }
     }
@@ -112,10 +112,118 @@ struct CurrentValueStreamTests {
   func test_justStream_hasNoUpdates() async throws {
     let stream = CurrentValueStream<Int>.Just(1)
     var updatesCount = 0
-    for await _ in stream.updates {
+    for await _ in stream.futureUpdates {
       updatesCount += 1
     }
     #expect(updatesCount == 1)
+  }
+
+  @Test("CurrentValueStream with configurable ReplayStrategy - replayLast (default)")
+  func test_replayStrategyReplayLast() async throws {
+    let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0)
+
+    // Emit some updates
+    continuation.yield(1)
+    continuation.yield(2)
+    continuation.yield(3)
+
+    // Wait a bit to ensure values are processed
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Late subscriber should receive current value and new updates
+    var lateValues = [Int]()
+    let lateSubscriberDone = expectation(description: "Late subscriber completed")
+
+    Task {
+      for await value in stream.futureUpdates {
+        lateValues.append(value)
+      }
+      lateSubscriberDone.fulfill()
+    }
+
+    // Wait a bit to ensure subscription is active
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Emit one more update
+    continuation.yield(4)
+    continuation.finish()
+
+    try await fulfillment(of: [lateSubscriberDone])
+
+    // Should receive the last value (3) and the new value (4)
+    #expect(lateValues == [3, 4])
+  }
+
+  @Test("CurrentValueStream with ReplayStrategy.noReplay")
+  func test_replayStrategyNoReplay() async throws {
+    let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0, replayStrategy: .noReplay)
+
+    // Emit some updates
+    continuation.yield(1)
+    continuation.yield(2)
+    continuation.yield(3)
+
+    // Wait a bit to ensure values are processed
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Late subscriber should not receive past values
+    var lateValues = [Int]()
+    let lateSubscriberDone = expectation(description: "Late subscriber completed")
+
+    Task {
+      for await value in stream.futureUpdates {
+        lateValues.append(value)
+      }
+      lateSubscriberDone.fulfill()
+    }
+
+    // Wait a bit to ensure subscription is active
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Emit one more update
+    continuation.yield(4)
+    continuation.finish()
+
+    try await fulfillment(of: [lateSubscriberDone])
+
+    // Should only receive new values after subscription
+    #expect(lateValues == [4])
+  }
+
+  @Test("CurrentValueStream with ReplayStrategy.replayAll")
+  func test_replayStrategyReplayAll() async throws {
+    let (stream, continuation) = CurrentValueStream<Int>.makeStream(initial: 0, replayStrategy: .replayAll)
+
+    // Emit some updates
+    continuation.yield(1)
+    continuation.yield(2)
+    continuation.yield(3)
+
+    // Wait a bit to ensure values are processed
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Late subscriber should receive all past values
+    var lateValues = [Int]()
+    let lateSubscriberDone = expectation(description: "Late subscriber completed")
+
+    Task {
+      for await value in stream.futureUpdates {
+        lateValues.append(value)
+      }
+      lateSubscriberDone.fulfill()
+    }
+
+    // Wait a bit to ensure subscription is active
+    try await Task.sleep(for: .milliseconds(10))
+
+    // Emit one more update
+    continuation.yield(4)
+    continuation.finish()
+
+    try await fulfillment(of: [lateSubscriberDone])
+
+    // Should receive all values including initial value
+    #expect(lateValues == [0, 1, 2, 3, 4])
   }
 }
 
@@ -131,7 +239,7 @@ struct MutableCurrentValueStreamTests {
     var receivedValues = [Int]()
 
     Task {
-      for await value in stream {
+      for await value in stream.futureUpdates {
         receivedValues.append(value)
         if receivedValues.count == 3 {
           updates.fulfill()
@@ -155,7 +263,7 @@ struct MutableCurrentValueStreamTests {
 
     Task {
       var count = 0
-      for await _ in stream {
+      for await _ in stream.futureUpdates {
         count += 1
       }
       #expect(count == 2)

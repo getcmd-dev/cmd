@@ -134,7 +134,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
   }
 
   private func chatCompletion(req: Request) async throws -> BroadcastedStream<ChatStreamResult> {
-    let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream()
+    let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream(replayStrategy: .replayAll)
     Task {
       let completionId = UUID().uuidString
       var model = "unknown"

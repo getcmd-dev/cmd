@@ -19,7 +19,7 @@ final class ToolUseViewModel {
     self.status = status.value
     self.input = input
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
         if case .completed(.success(let output)) = status {
           Task {

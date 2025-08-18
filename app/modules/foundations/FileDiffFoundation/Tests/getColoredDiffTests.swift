@@ -341,6 +341,7 @@ extension AttributedString {
       .replacing(
         /-webkit-text-stroke:[^;}]*(;|(?=}))/,
         with: "")
+      .replacingOccurrences(of: "; }", with: "}")
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }

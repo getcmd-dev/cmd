@@ -90,14 +90,14 @@ final class SendOneMessageTests {
     var messageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
-          for await textContent in updatingTextContent.updates {
+          for await textContent in updatingTextContent.futureUpdates {
             contentUpdateCount += 1
             if contentUpdateCount == 1 {
               #expect(textContent.content == "hi what can I do?")
@@ -149,14 +149,14 @@ final class SendOneMessageTests {
     var messageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
-          for await textContent in updatingTextContent.updates {
+          for await textContent in updatingTextContent.futureUpdates {
             contentUpdateCount += 1
             if contentUpdateCount == 1 {
               #expect(textContent.content == "hi")
@@ -219,7 +219,7 @@ final class SendOneMessageTests {
 
     var messageUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
@@ -272,7 +272,7 @@ final class SendOneMessageTests {
     initialStreamExpectationValidated.fulfill()
 
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolCall = try #require(message.content.last?.asToolUseRequest)
@@ -370,7 +370,7 @@ final class SendOneMessageTests {
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
-            for await _ in updateStream {
+            for await _ in updateStream.futureUpdates {
               Issue.record("Expected no updates")
             }
             updateStreamFinished.fulfill()
@@ -476,7 +476,7 @@ final class SendOneMessageTests {
 
     var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<
@@ -588,7 +588,7 @@ final class SendOneMessageTests {
 
     var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<

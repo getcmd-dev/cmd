@@ -180,7 +180,7 @@ final class WebSearchToolUseViewModel {
     self.status = status.value
     self.input = input
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }

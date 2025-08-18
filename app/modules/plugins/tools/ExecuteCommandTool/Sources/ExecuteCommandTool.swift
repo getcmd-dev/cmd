@@ -97,8 +97,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
             useInteractiveShell: true)
           { execution, _, stdout, stderr in
             self.runningProcess = execution
-            self.setStdoutStream(.init(stdout))
-            self.setStderrStream(.init(stderr))
+            self.setStdoutStream(.init(replayStrategy: .replayAll, stdout))
+            self.setStderrStream(.init(replayStrategy: .replayAll, stderr))
           }
 
           let output = Output(
@@ -211,23 +211,25 @@ final class ToolUseViewModel {
     self.command = command
     self.status = status.value
     self.kill = kill
-    Task {
-      for await status in status {
-        self.status = status
+    Task { [weak self] in
+      for await status in status.futureUpdates {
+        self?.status = status
       }
     }
-    Task {
+    Task { [weak self] in
       let stdoutStream = await stdout.value
       for await data in stdoutStream {
-        self.stdData += data
-        self.std = String(data: stdData, encoding: .utf8)
+        guard let self else { return }
+        stdData += data
+        std = String(data: stdData, encoding: .utf8)
       }
     }
-    Task {
+    Task { [weak self] in
       let stderrStream = await stderr.value
       for await data in stderrStream {
-        self.stdData += data
-        self.std = String(data: stdData, encoding: .utf8)
+        guard let self else { return }
+        stdData += data
+        std = String(data: stdData, encoding: .utf8)
       }
     }
   }

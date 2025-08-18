@@ -318,7 +318,7 @@ extension AssistantMessageContent {
     case .text(let value):
       let content = ChatMessageTextContent(projectRoot: projectRoot, deltas: value.deltas, attachments: [])
       Task {
-        for await update in value.updates {
+        for await update in value.futureUpdates {
           content.catchUp(deltas: update.deltas)
         }
         content.finishStreaming()
@@ -332,7 +332,7 @@ extension AssistantMessageContent {
     case .reasoning(let value):
       let content = ChatMessageReasoningContent(deltas: value.deltas, signature: value.signature)
       Task {
-        for await update in value.updates {
+        for await update in value.futureUpdates {
           content.catchUp(deltas: update.deltas)
           content.signature = update.signature
         }
@@ -355,8 +355,8 @@ extension ToolUse {
     return false
   }
 
-  var updates: AsyncStream<ToolUseExecutionStatus<EmptyObject>> {
-    status.updates.map { event -> ToolUseExecutionStatus<EmptyObject> in
+  var futureUpdates: AsyncStream<ToolUseExecutionStatus<EmptyObject>> {
+    status.futureUpdates.map { event -> ToolUseExecutionStatus<EmptyObject> in
       switch event {
       case .notStarted: return .notStarted
       case .running: return .running

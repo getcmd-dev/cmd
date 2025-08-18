@@ -117,7 +117,7 @@ extension ToolUse {
       if let result = try status.value.asOutput {
         return result
       }
-      for await value in status {
+      for await value in status.futureUpdates {
         if let result = try value.asOutput {
           return result
         }

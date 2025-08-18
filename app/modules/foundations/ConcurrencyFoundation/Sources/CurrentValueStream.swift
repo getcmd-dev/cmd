@@ -9,40 +9,43 @@ import os
 
 /// Similar to `CurrentValueSubject`, but it's a stream so it supports completion.
 ///
-/// This stream can be subscribed to by several subscribers, concurrently or not. Each subscribers will receive all updates since the beginning of the stream.
+/// This stream can be subscribed to by several subscribers independently.
 @dynamicMemberLookup
-public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identifiable, AsyncSequence {
-
+public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identifiable {
   /// Initialize with a publisher that emits updates.
   public convenience init(
     initial: Element,
     publisher: AnyPublisher<Element, Never>,
+    replayStrategy: ReplayStrategy = .replayLast,
     _ finish: (() -> Void) -> Void)
   {
-    self.init(initial, stream: .init(publisher, finish))
+    self.init(initial, stream: .init(replayStrategy: replayStrategy, publisher, finish))
   }
 
   /// Initialize with a stream that emits updates, and signal when the updates are done.
-  public convenience init(initial: Element, stream: AsyncStream<Element>) {
-    self.init(initial, stream: .init(stream))
+  public convenience init(initial: Element, stream: AsyncStream<Element>, replayStrategy: ReplayStrategy = .replayLast) {
+    self.init(initial, stream: .init(replayStrategy: replayStrategy, stream))
   }
 
-  public convenience init(value: CurrentValueSubject<Element, Never>) {
-    self.init(initial: value.value, publisher: value.eraseToAnyPublisher()) { _ in }
+  public convenience init(value: CurrentValueSubject<Element, Never>, replayStrategy: ReplayStrategy = .replayLast) {
+    self.init(initial: value.value, publisher: value.eraseToAnyPublisher(), replayStrategy: replayStrategy) { _ in }
   }
 
-  init(_ initial: Element, stream: BroadcastedStream<Element>) {
-    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream()
+  init(_ initial: Element, stream: BroadcastedStream<Element>, replayStrategy: ReplayStrategy = .replayLast) {
+    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
     self.internalStream = internalStream
     lock = .init(initialState: InternalState(value: initial))
+
     Task { [weak self] in
-      for try await value in stream {
+      for await value in stream {
         self?.updateFrom(streamedValue: value)
         continuation.yield(value)
       }
       continuation.finish()
     }
   }
+
+  public typealias Element = Element
 
   public typealias AsyncIterator = AsyncStream<Element>.Iterator
   public typealias Failure = Never
@@ -56,15 +59,17 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
     lock.withLock { $0.value }
   }
 
-  public var updates: CurrentValueStream<Element> {
-    self
+  /// A stream
+  public var futureUpdates: AsyncStream<Element> {
+    var iterator = Iterator(iterator: self.makeAsyncIterator(), cancellable: AnyCancellable { })
+    return iterator.stream()
   }
 
   /// Return the last value of the stream. If the stream is not yet finished, wait for it to finish.
   public var lastValue: Element {
     get async {
       var result = self.value
-      for await value in self.updates {
+      for await value in self.futureUpdates {
         result = value
       }
       return result
@@ -82,6 +87,13 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
   public subscript<T>(dynamicMember keyPath: KeyPath<Element, T>) -> T {
     value[keyPath: keyPath]
   }
+
+//  /// The events as an async stream.
+//  /// Creating a stream doesn't interfer with other subscribers
+//  public func eraseToStream() -> AsyncStream<Element> {
+//    var iterator = Iterator<Element>(iterator: makeAsyncIterator(), cancellable: AnyCancellable { })
+//    return iterator.stream()
+//  }
 
   let internalStream: BroadcastedStream<Element>
 
@@ -104,12 +116,12 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
 }
 
 extension CurrentValueStream {
-  public static func makeStream(initial: Element)
+  public static func makeStream(initial: Element, replayStrategy: ReplayStrategy = .replayLast)
     -> (stream: CurrentValueStream<Element>, continuation: AsyncStream<Element>.Continuation)
   {
-    let (stream, continuation) = AsyncStream<Element>.makeStream()
-    let broadcastedStream = CurrentValueStream<Element>(initial: initial, stream: stream)
-    return (broadcastedStream, continuation)
+    let (broadcastedStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
+    let currentValueStream = CurrentValueStream<Element>(initial, stream: broadcastedStream, replayStrategy: replayStrategy)
+    return (currentValueStream, continuation)
   }
 }
 
@@ -118,10 +130,10 @@ extension CurrentValueStream {
 /// A value that can be observed for changes. The owner of this value can modify it. It can be shared in a read-only mode through its super class `CurrentValueStream`.
 public final class MutableCurrentValueStream<Element: Sendable>: CurrentValueStream<Element>, @unchecked Sendable {
 
-  public init(_ initial: Element) {
-    let (stream, continuation) = CurrentValueStream<Element>.makeStream(initial: initial)
+  public init(_ initial: Element, replayStrategy: ReplayStrategy = .replayLast) {
+    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
     self.continuation = continuation
-    super.init(initial, stream: stream.internalStream)
+    super.init(initial, stream: internalStream, replayStrategy: replayStrategy)
   }
 
   public func update(with value: Element) {

@@ -1,6 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+// TODO: if the diff fails, create a new diff between last know content and the one compared to that should always work.
+
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation

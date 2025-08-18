@@ -227,11 +227,11 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             },
             chatMode: input.mode,
             threadId: self.id.uuidString),
-          handleUpdateStream: { newMessages in
+          handleUpdateStream: { newMessagesUpdates in
             Task { @MainActor [weak self] in
               guard let self else { return }
               var trackedMessages = Set<UUID>()
-              for await update in newMessages.updates {
+              for await update in newMessagesUpdates.futureUpdates {
                 for newMessage in update.filter({ !trackedMessages.contains($0.id) }) {
                   trackedMessages.insert(newMessage.id)
 
@@ -240,7 +240,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                     role: .assistant)
                   self.messages.append(newMessageState)
 
-                  for await update in newMessage.updates {
+                  for await update in newMessage.futureUpdates {
                     // new message content was received
                     if let newContent = update.content.last {
                       var content = newMessageState.content
@@ -255,7 +255,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       }
                       if let toolUse = newContent.asToolUse?.toolUse {
                         Task.detached { [weak self] in
-                          for await _ in toolUse.updates {
+                          for await _ in toolUse.futureUpdates {
                             await self?.persistThread()
                           }
                         }

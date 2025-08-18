@@ -57,7 +57,7 @@ final class DefaultShellService: ShellService {
     { execution, inputIO, outputIO, errorIO in
       let outputStream = outputIO.toDataStream
       let errorStream = errorIO.toDataStream
-      body?(execution, inputIO, outputStream.updates, errorStream.updates)
+      body?(execution, inputIO, outputStream.eraseToStream(), errorStream.eraseToStream())
 
       Task {
         for await data in outputStream {
@@ -182,7 +182,7 @@ extension AsyncBufferSequence {
       }
     }
 
-    return BroadcastedStream(stream)
+    return BroadcastedStream(replayStrategy: .replayAll, stream)
   }
 }
 

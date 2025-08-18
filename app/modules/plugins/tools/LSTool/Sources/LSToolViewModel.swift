@@ -16,7 +16,7 @@ final class ToolUseViewModel {
     self.status = status.value
     self.directoryPath = directoryPath
     Task {
-      for await status in status {
+      for await status in status.futureUpdates {
         self.status = status
       }
     }
@@ -40,12 +40,14 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
       return """
         🟢 List(\(directoryPath.path))
           ⎿  Listed \(output.files.count) paths
+
         """
 
     case .failure(let error):
       return """
           ⭕ List(\(directoryPath.path))
             ⎿  Failed: \(error.localizedDescription)
+
         """
     }
   }

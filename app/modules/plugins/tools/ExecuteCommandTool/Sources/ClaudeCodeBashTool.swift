@@ -137,7 +137,7 @@ public final class ClaudeCodeBashTool: ExternalTool {
 
 extension ClaudeCodeBashTool.Use: DisplayableToolUse {
   public var viewModel: AnyToolUseViewModel {
-    let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream()
+    let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)
     Task {
       let output = await self.status.lastValue
       if
@@ -150,7 +150,7 @@ extension ClaudeCodeBashTool.Use: DisplayableToolUse {
       stdoutContinuation.finish()
     }
 
-    let (stderrStream, stderrContinuation) = BroadcastedStream<Data>.makeStream()
+    let (stderrStream, stderrContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)
     Task {
       _ = await self.status.lastValue
       stderrContinuation.finish()

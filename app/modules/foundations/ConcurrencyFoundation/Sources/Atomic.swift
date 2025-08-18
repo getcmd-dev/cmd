@@ -5,6 +5,7 @@ import os
 
 // MARK: - Atomic
 
+@dynamicMemberLookup
 public final class Atomic<Value: Sendable>: Sendable {
 
   public init(_ value: Value) {
@@ -40,13 +41,22 @@ public final class Atomic<Value: Sendable>: Sendable {
     }
   }
 
+  public subscript<T: Sendable>(dynamicMember keyPath: WritableKeyPath<Value, T>) -> T {
+    get { value[keyPath: keyPath] }
+    set { lock.withLock { value in value[keyPath: keyPath] = newValue } }
+  }
+
+  public subscript<T>(dynamicMember keyPath: KeyPath<Value, T>) -> T {
+    value[keyPath: keyPath]
+  }
+
   private let lock: OSAllocatedUnfairLock<Value>
 
 }
 
-// MARK: - KeyPath + @unchecked Sendable
+// MARK: - KeyPath + @unchecked @retroactive Sendable
 
-extension KeyPath: @unchecked Sendable where Root: Sendable, Value: Sendable { }
+extension KeyPath: @unchecked @retroactive Sendable where Root: Sendable, Value: Sendable { }
 
 extension Atomic where Value == Int {
   @discardableResult

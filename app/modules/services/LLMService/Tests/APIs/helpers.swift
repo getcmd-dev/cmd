@@ -75,8 +75,8 @@ extension DefaultLLMService {
           model: .claudeSonnet,
           chatMode: .ask,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
-          handleUpdateStream: { stream in continuation
-            .resume(returning: stream)
+          handleUpdateStream: { stream in
+            continuation.resume(returning: stream)
           },
           handleUsageInfo: { _ in })
       }

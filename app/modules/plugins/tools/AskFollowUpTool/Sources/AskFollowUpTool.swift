@@ -135,7 +135,7 @@ final class ToolUseViewModel {
     self.input = input
     self.selectFollowUp = selectFollowUp
     Task {
-      for await status in status {
+      for await status in status.futureUpdates {
         self.status = status
       }
     }

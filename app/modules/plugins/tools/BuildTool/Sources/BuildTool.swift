@@ -148,9 +148,9 @@ final class ToolUseViewModel {
   {
     self.buildType = buildType
     self.status = status.value
-    Task {
-      for await status in status {
-        self.status = status
+    Task { [weak self] in
+      for await status in status.futureUpdates {
+        self?.status = status
       }
     }
   }

@@ -50,7 +50,7 @@ final class SendMessageTests {
     var firstMessageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await messages in updatingMessages.updates {
+      for await messages in updatingMessages.futureUpdates {
         messagesUpdateCount += 1
         if messagesUpdateCount == 1 {
           // First update has one message
@@ -58,14 +58,14 @@ final class SendMessageTests {
 
           let updatingMessage = try #require(messages.first)
 
-          for await message in updatingMessage.updates {
+          for await message in updatingMessage.futureUpdates {
             firstMessageUpdateCount += 1
             if firstMessageUpdateCount == 1 {
               // First update has one piece of text content
               #expect(message.content.count == 1)
               let updatingTextContent = try #require(message.content.first?.asText)
 
-              for await textContent in updatingTextContent.updates {
+              for await textContent in updatingTextContent.futureUpdates {
                 contentUpdateCount += 1
                 if contentUpdateCount == 1 {
                   #expect(textContent.content == "hi what can I do?")
@@ -427,7 +427,7 @@ final class SendMessageTests {
     var firstMessageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await messages in updatingMessages.updates {
+      for await messages in updatingMessages.futureUpdates {
         messagesUpdateCount += 1
         if messagesUpdateCount == 1 {
           // First update has one message
@@ -435,14 +435,14 @@ final class SendMessageTests {
 
           let updatingMessage = try #require(messages.first)
 
-          for await message in updatingMessage.updates {
+          for await message in updatingMessage.futureUpdates {
             firstMessageUpdateCount += 1
             if firstMessageUpdateCount == 1 {
               // First update has one piece of text content
               #expect(message.content.count == 1)
               let updatingTextContent = try #require(message.content.first?.asReasoning)
 
-              for await textContent in updatingTextContent.updates {
+              for await textContent in updatingTextContent.futureUpdates {
                 contentUpdateCount += 1
                 if contentUpdateCount == 1 {
                   #expect(textContent.content == "hi what can I do?")
@@ -565,7 +565,7 @@ final class SendMessageTests {
     var messagesUpdateCount = 0
     var firstMessageUpdateCount = 0
     Task {
-      for await messages in updatingMessages.updates {
+      for await messages in updatingMessages.futureUpdates {
         messagesUpdateCount += 1
         if messagesUpdateCount == 1 {
           // First update has one message
@@ -573,7 +573,7 @@ final class SendMessageTests {
 
           let updatingMessage = try #require(messages.first)
 
-          for await message in updatingMessage.updates {
+          for await message in updatingMessage.futureUpdates {
             firstMessageUpdateCount += 1
             if firstMessageUpdateCount == 1 {
               var contentUpdateCount = 0
@@ -581,7 +581,7 @@ final class SendMessageTests {
               #expect(message.content.count == 1)
               let updatingTextContent = try #require(message.content.first?.asReasoning)
 
-              for await textContent in updatingTextContent.updates {
+              for await textContent in updatingTextContent.futureUpdates {
                 contentUpdateCount += 1
                 if contentUpdateCount == 1 {
                   #expect(textContent.content == "let's ultrathink")
@@ -595,7 +595,7 @@ final class SendMessageTests {
               #expect(message.content.count == 2)
               let updatingTextContent = try #require(message.content.last?.asText)
 
-              for await textContent in updatingTextContent.updates {
+              for await textContent in updatingTextContent.futureUpdates {
                 contentUpdateCount += 1
                 if contentUpdateCount == 1 {
                   #expect(textContent.content == "the solution is obvious")

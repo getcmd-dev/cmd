@@ -225,7 +225,7 @@ final class TodoWriteToolUseViewModel {
     self.input = input
     self.preExistingTodos = preExistingTodos
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }

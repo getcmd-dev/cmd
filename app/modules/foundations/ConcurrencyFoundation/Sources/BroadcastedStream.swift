@@ -7,20 +7,27 @@ import os
 
 // MARK: - BroadcastedStream
 
-/// Like AsyncStream, but can be observed by multiple subscribers, concurrently or not.
+/// An `AsyncSequence` that can be independently consummed by several iterators.
+/// (In contrast, an `AsyncStream` behaves more like an iterator and can only be iterated over once. In certain cases this can be limiting and even error-prone)
+/// The `BroadcastedStream` can be configured during initialization to send all past values, only the last one or none of them when
+/// making an iterator. Future values are always sent to the iterator.
 public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable {
 
-  public convenience init(_: Element.Type = Element.self, _ build: (Continuation) -> Void) {
+  public convenience init(replayStrategy: ReplayStrategy, _: Element.Type = Element.self, _ build: (Continuation) -> Void) {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
-    self.init(internalStream: stream)
+    self.init(replayStrategy: replayStrategy, internalStream: stream)
 
     build(continuation)
   }
 
   /// Initialize with a publisher that emits updates.
-  public convenience init(_ publisher: AnyPublisher<Element, Never>, _ finish: (@escaping () -> Void) -> Void) {
+  public convenience init(
+    replayStrategy: ReplayStrategy,
+    _ publisher: AnyPublisher<Element, Never>,
+    _ finish: (@escaping () -> Void) -> Void)
+  {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
-    self.init(internalStream: stream)
+    self.init(replayStrategy: replayStrategy, internalStream: stream)
 
     let cancellable = publisher.sink { element in
       continuation.yield(element)
@@ -31,11 +38,12 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
   }
 
   /// Initialize with a stream that emits updates, and signal when the updates are done.
-  public convenience init(_ stream: AsyncStream<Element>) {
-    self.init(internalStream: stream)
+  public convenience init(replayStrategy: ReplayStrategy, _ stream: AsyncStream<Element>) {
+    self.init(replayStrategy: replayStrategy, internalStream: stream)
   }
 
-  private init(internalStream: AsyncStream<Element>) {
+  private init(replayStrategy: ReplayStrategy, internalStream: AsyncStream<Element>) {
+    self.replayStrategy = replayStrategy
     self.internalStream = internalStream
 
     Task { [weak self] in
@@ -51,25 +59,45 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
     }
   }
 
-  public typealias AsyncIterator = AsyncStream<Element>.Iterator
+  public typealias AsyncIterator = AsyncStream<Element>.AsyncIterator
   public typealias Failure = Never
   public typealias Continuation = AsyncStream<Element>.Continuation
 
-  /// A stream of updates.
-  /// It will broadcast all updates already received, and future ones.
-  /// It will complete if the underlying stream is finished.
-  public var updates: AsyncStream<Element> {
+  public let replayStrategy: ReplayStrategy
+
+  public static func Just(_ element: Element) -> BroadcastedStream<Element> {
+    BroadcastedStream(replayStrategy: .replayAll, Combine.Just(element).eraseToAnyPublisher()) { finish
+      in finish()
+    }
+  }
+
+  /// The events as an async stream.
+  /// Creating a stream doesn't interfer with other subscribers
+  public func eraseToStream() -> AsyncStream<Element> {
+    var iterator = Iterator<Element>(iterator: makeAsyncIterator(), cancellable: AnyCancellable { })
+    return iterator.stream()
+  }
+
+  public func makeAsyncIterator() -> AsyncStream<Element>.Iterator {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
+    let id = UUID()
 
     lock.withLock { state in
-      state.subscribers.append(continuation)
+      state.subscribers[id] = continuation
+
+      let pastUpdatesToReplay: [Element] =
+        switch replayStrategy {
+        case .noReplay: []
+        case .replayAll: state.pastUpdates
+        case .replayLast: state.pastUpdates.last.map { [$0] } ?? []
+        }
 
       // We update the continuation from within the lock.
       // This is to ensure that there is not a race condition where the continuation is updated from another thread (new element yielded, finished)
       // before we had time to caught up with the past updates.
       //
       // While it doesn't feel great to call into external code from within a lock, this seems to have no side effect.
-      for element in state.pastUpdates {
+      for element in pastUpdatesToReplay {
         continuation.yield(element)
       }
       if state.isFinished {
@@ -77,21 +105,18 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
       }
     }
 
-    return stream
-  }
-
-  public static func Just(_ element: Element) -> BroadcastedStream<Element> {
-    BroadcastedStream(Combine.Just(element).eraseToAnyPublisher()) { finish
-      in finish()
+    let cancellable = AnyCancellable { [weak self] in
+      guard let self else { return }
+      _ = lock.withLock { state in
+        state.subscribers.removeValue(forKey: id)
+      }
     }
-  }
-
-  public func makeAsyncIterator() -> AsyncIterator {
-    updates.makeAsyncIterator()
+    var iterator = Iterator<Element>(iterator: stream.makeAsyncIterator(), cancellable: cancellable)
+    return iterator.stream().makeAsyncIterator()
   }
 
   private struct InternalState: Sendable {
-    var subscribers: [AsyncStream<Element>.Continuation] = []
+    var subscribers: [UUID: AsyncStream<Element>.Continuation] = [:]
     var pastUpdates: [Element] = []
     var isFinished = false
   }
@@ -109,7 +134,7 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
         return []
       }
       state.isFinished = true
-      return state.subscribers
+      return Array(state.subscribers.values)
     }
     for subscriber in subscribers { subscriber.finish() }
   }
@@ -121,8 +146,15 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
         assertionFailure("Cannot update a finished BroadcastedStream")
         return []
       }
-      state.pastUpdates.append(element)
-      return state.subscribers
+      switch replayStrategy {
+      case .noReplay:
+        break
+      case .replayAll:
+        state.pastUpdates.append(element)
+      case .replayLast:
+        state.pastUpdates = [element]
+      }
+      return Array(state.subscribers.values)
     }
     for subscriber in subscribers { subscriber.yield(element) }
   }
@@ -131,12 +163,36 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
 
 extension BroadcastedStream {
   public static func makeStream(
-    of _: Element.Type = Element
-      .self)
+    of _: Element.Type = Element.self,
+    replayStrategy: ReplayStrategy)
     -> (stream: BroadcastedStream<Element>, continuation: AsyncStream<Element>.Continuation)
   {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
-    let broadcastedStream = BroadcastedStream<Element>(internalStream: stream)
+    let broadcastedStream = BroadcastedStream<Element>(replayStrategy: replayStrategy, internalStream: stream)
     return (broadcastedStream, continuation)
+  }
+}
+
+/// An iterator that will cancel the attached cancellabled when re-referenced.
+public struct Iterator<Element: Sendable>: AsyncIteratorProtocol {
+  var iterator: AsyncStream<Element>.AsyncIterator
+  let cancellable: AnyCancellable
+
+  public mutating func next() async -> Element? {
+    await iterator.next()
+  }
+}
+
+extension Iterator {
+  mutating func stream() -> AsyncStream<Self.Element> {
+    var iterator = self
+    return AsyncStream<Self.Element> { continuation in
+      Task {
+        while let nextValue = await iterator.next() {
+          continuation.yield(nextValue)
+        }
+        continuation.finish()
+      }
+    }
   }
 }
