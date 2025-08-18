@@ -142,11 +142,8 @@ final class DefaultChatCompletionService: ChatCompletionService {
         guard let data = req.body.data else {
           throw AppError("Missing request body")
         }
-        let ddata = data.getData(at: data.readerIndex, length: data.readableBytes, byteTransferStrategy: .noCopy)!
 
-        print("received request \(String(data: ddata, encoding: .utf8)!)")
-
-        let request = try JSONDecoder().decode(ChatQuery.self, from: ddata)
+        let request = try JSONDecoder().decode(ChatQuery.self, from: data)
         model = request.model
 
         let threadId = {
@@ -158,12 +155,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
             continuation.yield(ChatStreamResult(
               completionId: completionId,
               model: model,
-              content: """
-                thread_id: \(id)
-
-                ```thread_id\(id)
-                ```
-                """))
+              content: "thread_id: \(id)\n\n"))
             return id
           }
         }()
