@@ -1,8 +1,6 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-// TODO: if the diff fails, create a new diff between last know content and the one compared to that should always work.
-
 import AppFoundation
 import ChatServiceInterface
 @preconcurrency import Combine
@@ -81,7 +79,6 @@ public final class ClaudeCodeEditTool: ExternalTool {
     public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "Edit completed successfully"
-
       updateStatus.complete(with: .success(placeholderOutput))
       updateTrackedFileContent()
       Task { [weak self] in
@@ -177,7 +174,7 @@ extension ClaudeCodeEditTool.Use.Input {
         isNewFile: false,
         changes: [
           EditFilesTool.Use.Input.FileChange.Change(
-            search: old_string.replacingOccurrences(of: "TODO", with: "TADA"),
+            search: old_string,
             replace: new_string),
         ]),
     ])
