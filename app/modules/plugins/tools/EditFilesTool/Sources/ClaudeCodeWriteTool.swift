@@ -4,8 +4,10 @@
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import SwiftUI
@@ -17,7 +19,7 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWriteTool,
       toolUseId: String,
@@ -75,9 +77,32 @@ public final class ClaudeCodeWriteTool: ExternalTool {
       let placeholderOutput = "Write completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
+
+      updateTrackedFileContent()
+      Task { [weak self] in
+        // It seems that Claude Code can send the result of the file edit before the file has been updated on disk,
+        // which is surprising.
+        // We re-update the file content 1s later to work around this.
+        try await Task.sleep(nanoseconds: 1_000_000)
+        self?.updateTrackedFileContent()
+      }
     }
 
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
+    @Dependency(\.fileManager) private var fileManager
     private let mappedInput: [FileChange]
+
+    private func updateTrackedFileContent() {
+      do {
+        let context = try chatContextRegistry.context(for: context.threadId)
+        try mappedInput.forEach { change in
+          let fileContent = try fileManager.read(contentsOf: change.path)
+          context.set(knownFileContent: fileContent, for: change.path)
+        }
+      } catch {
+        defaultLogger.error("Failed to update tracked file content", error)
+      }
+    }
 
   }
 
@@ -150,6 +175,10 @@ extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      setResult: { _ in }))
+      setResult: { [weak self] toolUseResult in
+        guard let self else { return }
+        // Update tracked content for successfully applied files
+        context.updateFilesContent(changes: toolUseResult.fileChanges, input: mappedInput)
+      }))
   }
 }

@@ -4,11 +4,14 @@
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import SwiftUI
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - ClaudeCodeMultiEditTool
@@ -17,7 +20,8 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  @ThreadSafe
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeMultiEditTool,
       toolUseId: String,
@@ -81,9 +85,32 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
       let placeholderOutput = "MultiEdit completed successfully"
       // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
+
+      updateTrackedFileContent()
+      Task { [weak self] in
+        // It seems that Claude Code can send the result of the file edit before the file has been updated on disk,
+        // which is surprising.
+        // We re-update the file content 1s later to work around this.
+        try await Task.sleep(nanoseconds: 1_000_000)
+        self?.updateTrackedFileContent()
+      }
     }
 
-    private let mappedInput: [EditFilesTool.Use.FileChange]
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
+    @Dependency(\.fileManager) private var fileManager
+    private var mappedInput: [EditFilesTool.Use.FileChange]
+
+    private func updateTrackedFileContent() {
+      do {
+        let context = try chatContextRegistry.context(for: context.threadId)
+        try mappedInput.forEach { change in
+          let fileContent = try fileManager.read(contentsOf: change.path)
+          context.set(knownFileContent: fileContent, for: change.path)
+        }
+      } catch {
+        defaultLogger.error("Failed to update tracked file content", error)
+      }
+    }
 
   }
 
@@ -211,6 +238,21 @@ extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      setResult: { _ in }))
+      setResult: { [weak self] toolUseResult in
+        guard let self else { return }
+        // Update tracked content for successfully applied files
+        context.updateFilesContent(changes: toolUseResult.fileChanges, input: mappedInput)
+      },
+      correctInput: { [weak self] file, fixedInput in
+        guard let self else { return }
+        mappedInput = mappedInput.correcting(file: file, with: fixedInput)
+        updateTrackedFileContent()
+
+        do {
+          try chatContextRegistry.context(for: context.threadId).requestPersistence()
+        } catch {
+          defaultLogger.error("Failed to persist thread")
+        }
+      }))
   }
 }

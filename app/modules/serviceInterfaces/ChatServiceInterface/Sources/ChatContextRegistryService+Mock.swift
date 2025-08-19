@@ -78,6 +78,8 @@ public final class MockChatThreadContext: LiveToolExecutionContext {
     userInfo[key] = value
   }
 
+  public func requestPersistence() { }
+
   private(set) var knownFilesContent: [String: String]
   private(set) var userInfo: [String: any Codable & Sendable]
 

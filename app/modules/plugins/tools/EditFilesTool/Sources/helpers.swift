@@ -43,7 +43,21 @@ extension ToolExecutionContext {
   }
 
   /// Update the tracked content of the files that have changed.
-  func updateFilesContent(for changedFiles: [FileChange]) {
+  func updateFilesContent(changes: [EditFilesTool.Use.FileChangeInfo], input: [FileChange]) {
+    // Update tracked content for successfully applied files
+    let changedFiles = changes
+      .filter { fileChange in
+        switch fileChange.status {
+        case .applied:
+          true
+        default:
+          false
+        }
+      }
+      .compactMap { fileChange in
+        input.first { $0.path.path == fileChange.path }
+      }
+
     @Dependency(\.chatContextRegistry) var chatContextRegistry
     @Dependency(\.xcodeObserver) var xcodeObserver
     for fileChange in changedFiles {
@@ -111,6 +125,25 @@ extension [FileChange] {
         isNewFile: fileChange.isNewFile,
         changes: fileChange.changes,
         baseLineContent: baseLineContent)
+    }
+  }
+
+  func correcting(file: URL, with fixedInput: [EditFilesTool.Use.Input.FileChange.Change]) -> Self {
+    var hasUpdatedFileChange = false
+    return compactMap { fileChange in
+      if fileChange.path.path == file.path {
+        if hasUpdatedFileChange {
+          // the corrected input is expected to contain a search/replace describing
+          // all the file change at once. So we only keep one change to represent changes
+          // to this file.
+          return nil
+        }
+        hasUpdatedFileChange = true
+        var change = fileChange
+        change.correctedChanges = fixedInput
+        return change
+      }
+      return fileChange
     }
   }
 

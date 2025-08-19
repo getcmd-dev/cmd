@@ -7,6 +7,7 @@ import Combine
 import Dependencies
 import FileDiffFoundation
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import Observation
 import SwiftUI
@@ -29,6 +30,7 @@ final class EditFilesToolUseViewModel {
     input: [EditFilesTool.Use.FileChange],
     isInputComplete: Bool,
     setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
+    correctInput: ((URL, [EditFilesTool.Use.Input.FileChange.Change]) -> Void)? = nil,
     toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []),
     projectRoot: URL? = nil)
   {
@@ -36,6 +38,7 @@ final class EditFilesToolUseViewModel {
     self.input = input
     self.isInputComplete = isInputComplete
     self.setResult = setResult
+    self.correctInput = correctInput
     self.toolUseResult = toolUseResult
     self.projectRoot = projectRoot
 
@@ -142,8 +145,12 @@ final class EditFilesToolUseViewModel {
   @Dependency(\.xcodeController) private var xcodeController
 
   private let setResult: (EditFilesTool.Use.FormattedOutput) -> Void
+  private let correctInput: ((URL, [EditFilesTool.Use.Input.FileChange.Change]) -> Void)?
   private var filesEdit = [URL: FileEditState]()
   private var filesEditModels = [URL: FileDiffViewModel]()
+
+  @ObservationIgnored
+  @Dependency(\.fileManager) private var fileManager
 
   /// Update the tool use result with a new status for all files
   private func updateToolUseResult(status: EditFilesTool.Use.FileChangeStatus) {
@@ -183,10 +190,10 @@ final class EditFilesToolUseViewModel {
     var filesEdit = filesEdit
     for file in input {
       if var existingChanges = changes[file.path] {
-        existingChanges.append(contentsOf: file.changes)
+        existingChanges.append(contentsOf: file.correctedChanges ?? file.changes)
         changes[file.path] = existingChanges
       } else {
-        changes[file.path] = file.changes
+        changes[file.path] = file.correctedChanges ?? file.changes
         filesEdit[file.path] = .suggested
       }
     }
@@ -203,21 +210,59 @@ final class EditFilesToolUseViewModel {
     if let model = filesEditModels[file] {
       model.handle(newChanges: changes.map { .init(search: $0.search, replace: $0.replace) })
     } else {
+      let baselineContent = input.first(where: { $0.path == file })?.baseLineContent
       do {
         let model = try FileDiffViewModel(
           filePath: file.path,
           changes: changes.map {
             FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
           },
-          oldContent: input.first(where: { $0.path == file })?.baseLineContent)
+          oldContent: baselineContent)
         filesEditModels[file] = model
       } catch {
         if isInputComplete {
-          updateToolUseResultForFile(file, status: .error(AppError(error)))
+          Task {
+            await attemptToFixCorruptedInput(file: file, baselineContent: baselineContent)
+            if filesEditModels[file] == nil {
+              updateToolUseResultForFile(file, status: .error(AppError(error)))
+            }
+          }
         } else {
           // The input data might be incorrect until we have received all the input. Ignore errors for now.
         }
       }
+    }
+  }
+
+  /// When the described file changes cannot be applied (i.e. they are inconsistent with the file content)
+  /// and the tool allows local modification of the input, try to fix the input.
+  /// Note: This method runs with the assumption that is is called in the context of an external tools, where `cmd` only displayes the tool use but don't run it.
+  /// In such case, the file edit has already happened and we are changing the input to be able to display something meaningful to the user.
+  private func attemptToFixCorruptedInput(
+    file: URL,
+    baselineContent: String?,
+    retryCount: Int = 0)
+    async
+  {
+    guard let baselineContent, let correctInput, retryCount < 5 else { return }
+    guard let newContent = try? fileManager.read(contentsOf: file) else {
+      return
+    }
+    do {
+      let model = try FileDiffViewModel(
+        filePath: file.path,
+        changes: [
+          FileDiff.SearchReplace(search: baselineContent, replace: newContent),
+        ],
+        oldContent: baselineContent)
+      filesEditModels[file] = model
+      correctInput(file, [.init(search: baselineContent, replace: newContent)])
+    } catch {
+      // Empirically, it seems that Claude Code can send a result for a file edit before the file has changed on disk.
+      // In such case, the most likely outcome is that the baseline and the new content are identical, which would lead to
+      // an error. So we allow a few retries with delay to work around this situation.
+      try? await Task.sleep(nanoseconds: 100_000_000)
+      await attemptToFixCorruptedInput(file: file, baselineContent: baselineContent, retryCount: retryCount + 1)
     }
   }
 

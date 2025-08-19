@@ -260,6 +260,11 @@ public protocol LiveToolExecutionContext: Sendable, AnyObject {
   /// A properties that allows chat plugins (e.g. tools) to store state relevant to them within the context of a conversation.
   func pluginState<T: Codable & Sendable>(for key: String) -> T?
   func set(pluginState: some Codable & Sendable, for key: String)
+
+  /// Note: `persist` is usually called when the tool knows that the state is not persisted otherwise,
+  /// which means that implementation details are leaking between independent modules...
+  /// Signals that the state has changed and should be persisted.
+  func requestPersistence()
 }
 
 // MARK: - ToolUseExecutionStatus

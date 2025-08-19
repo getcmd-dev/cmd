@@ -83,6 +83,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
     }.store(in: &cancellables)
 
+    context.handle(requestPersistence: { [weak self] in
+      Task { await self?.persistThread() }
+    })
+
     @Dependency(\.chatContextRegistry) var chatContextRegistry
     chatContextRegistry.register(context: context, for: id.uuidString)
   }
@@ -103,7 +107,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   private(set) var isShowingChatHistory = false
 
-  let context: ChatThreadContext
+  private(set) var context: ChatThreadContext
 
   private(set) var name: String? {
     didSet {
@@ -492,13 +496,22 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 @ThreadSafe
 final class ChatThreadContext: LiveToolExecutionContext {
 
-  init(knownFilesContent: [String: String] = [:], userInfo: [String: any Codable & Sendable] = [:]) {
+  init(
+    knownFilesContent: [String: String] = [:],
+    userInfo: [String: any Codable & Sendable] = [:],
+    requestPersistence: @escaping @Sendable () -> Void = { })
+  {
     self.knownFilesContent = knownFilesContent
     self.userInfo = userInfo
+    _requestPersistence = requestPersistence
   }
 
   private(set) var knownFilesContent: [String: String]
   private(set) var userInfo: [String: any Codable & Sendable]
+
+  func handle(requestPersistence: @escaping @Sendable () -> Void) {
+    _requestPersistence = requestPersistence
+  }
 
   func knownFileContent(for path: URL) -> String? {
     knownFilesContent[path.absoluteString]
@@ -527,6 +540,12 @@ final class ChatThreadContext: LiveToolExecutionContext {
   func set(pluginState value: some Decodable & Encodable & Sendable, for key: String) {
     userInfo[key] = value
   }
+
+  func requestPersistence() {
+    _requestPersistence()
+  }
+
+  private var _requestPersistence: @Sendable () -> Void
 
 }
 
