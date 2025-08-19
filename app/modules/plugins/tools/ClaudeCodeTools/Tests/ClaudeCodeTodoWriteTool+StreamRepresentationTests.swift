@@ -42,8 +42,9 @@ extension ClaudeCodeTodoWriteToolTests {
     #expect(viewModel.streamRepresentation == """
       ⏺ Update Todos
         ⎿ ☒ Implement feature A
-          → Add unit tests
-          ☐ Write documentation
+        ⎿ → Add unit tests
+        ⎿ ☐ Write documentation
+
 
       """)
   }
@@ -63,8 +64,9 @@ extension ClaudeCodeTodoWriteToolTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ TodoWrite(1 items)
-          ⎿ Failed: Invalid todo status
+      ⏺ TodoWrite(1 items)
+        ⎿ Failed: Invalid todo status
+
 
       """)
   }

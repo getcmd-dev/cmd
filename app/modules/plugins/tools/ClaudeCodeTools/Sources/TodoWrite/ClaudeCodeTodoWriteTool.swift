@@ -294,6 +294,7 @@ extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
     case .success:
       var representation = """
         ⏺ Update Todos
+
         """
 
       for todo in input.todos.filter({ !todoChange(for: $0).isUnchanged }) {

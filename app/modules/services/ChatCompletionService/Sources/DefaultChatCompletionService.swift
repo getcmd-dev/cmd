@@ -133,6 +133,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
       object: "list")
   }
 
+  // TODO: find how to detect request cancellation by the client.
   private func chatCompletion(req: Request) async throws -> BroadcastedStream<ChatStreamResult> {
     let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream(replayStrategy: .replayAll)
     Task {
@@ -183,7 +184,6 @@ final class DefaultChatCompletionService: ChatCompletionService {
         var sentEventIds: Set<String> = []
 
         for await chatEvents in chatEventsStream {
-          print("received chatEvents: \(chatEvents)")
           let newEvents = chatEvents.filter { !sentEventIds.contains($0.id) }
           for newEvent in newEvents {
             sentEventIds.insert(newEvent.id)
@@ -259,9 +259,6 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
     response.body = Response.Body(managedAsyncStream: { writer in
       do {
         for try await element in self {
-          if Task.isCancelled {
-            print("cancelled")
-          }
           let data = try JSONEncoder.sortingKeys.encode(element)
           guard let string = String(data: data, encoding: .utf8) else {
             throw AppError("Could not convert Data to String in DefaultChatCompletionService")

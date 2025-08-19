@@ -41,8 +41,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Glob(**/*.swift)
+      ⏺ Glob(**/*.swift)
         ⎿ Found 5 files
+
 
       """)
   }
@@ -61,8 +62,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Glob(main.swift)
+      ⏺ Glob(main.swift)
         ⎿ Found 1 files
+
 
       """)
   }
@@ -80,8 +82,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Glob(*.nonexistent)
+      ⏺ Glob(*.nonexistent)
         ⎿ Found 0 files
+
 
       """)
   }
@@ -99,8 +102,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ Glob(invalid[pattern)
-          ⎿ Failed: Invalid glob pattern
+      ⏺ Glob(invalid[pattern)
+        ⎿ Failed: Invalid glob pattern
+
 
       """)
   }
@@ -130,8 +134,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🔍 Glob(\(pattern))
+        ⏺ Glob(\(pattern))
           ⎿ Found 2 files
+
 
         """)
     }
@@ -150,8 +155,9 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ Glob(/restricted/directory/*.swift)
-          ⎿ Failed: Permission denied
+      ⏺ Glob(/restricted/directory/*.swift)
+        ⎿ Failed: Permission denied
+
 
       """)
   }

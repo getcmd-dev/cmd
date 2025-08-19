@@ -38,8 +38,9 @@ extension AskFollowUpToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        ❓ Ask(What should we do next?)
+        ⏺ Ask(What should we do next?)
           ⎿ 3 follow-up options provided
+
 
         """)
     }
@@ -58,8 +59,9 @@ extension AskFollowUpToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        ❓ Ask(Simple question?)
+        ⏺ Ask(Simple question?)
           ⎿ 0 follow-up options provided
+
 
         """)
     }
@@ -78,8 +80,9 @@ extension AskFollowUpToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-          ❌ Ask(Complex question?)
-            ⎿ Failed: Unable to process question
+        ⏺ Ask(Complex question?)
+          ⎿ Failed: Unable to process question
+
 
         """)
     }
@@ -99,8 +102,9 @@ extension AskFollowUpToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        ❓ Ask(\(longQuestion))
+        ⏺ Ask(\(longQuestion))
           ⎿ 3 follow-up options provided
+
 
         """)
     }

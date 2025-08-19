@@ -40,8 +40,9 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 WebSearch(SwiftUI best practices)
+      ⏺ WebSearch(SwiftUI best practices)
         ⎿ Found 3 results
+
 
       """)
   }
@@ -61,8 +62,9 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 WebSearch(very specific obscure query)
+      ⏺ WebSearch(very specific obscure query)
         ⎿ Found 0 results
+
 
       """)
   }
@@ -80,8 +82,9 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ WebSearch(network error test)
-          ⎿ Failed: Network connection failed
+      ⏺ WebSearch(network error test)
+        ⎿ Failed: Network connection failed
+
 
       """)
   }
@@ -103,8 +106,9 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 WebSearch(specific documentation page)
+      ⏺ WebSearch(specific documentation page)
         ⎿ Found 1 results
+
 
       """)
   }
@@ -128,8 +132,9 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 WebSearch(\(complexQuery))
+      ⏺ WebSearch(\(complexQuery))
         ⎿ Found 2 results
+
 
       """)
   }

@@ -43,8 +43,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 List(directory)
+        ⏺ List(directory)
           ⎿ Listed 4 paths
+
 
         """)
     }
@@ -67,8 +68,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 List(directory)
+        ⏺ List(directory)
           ⎿ Listed 1 paths
+
 
         """)
     }
@@ -87,8 +89,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 List(empty)
+        ⏺ List(empty)
           ⎿ Listed 0 paths
+
 
         """)
     }
@@ -107,8 +110,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-          ⭕ List(nonexistent)
-            ⎿ Failed: Directory not found
+        ⏺ List(nonexistent)
+          ⎿ Failed: Directory not found
+
 
         """)
     }
@@ -127,8 +131,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-          ⭕ List(restricted/directory)
-            ⎿ Failed: Permission denied
+        ⏺ List(restricted/directory)
+          ⎿ Failed: Permission denied
+
 
         """)
     }
@@ -151,8 +156,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 List(/usr/bin)
+        ⏺ List(/usr/bin)
           ⎿ Listed 1 paths
+
 
         """)
     }
@@ -174,8 +180,9 @@ extension LSToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 List(large)
+        ⏺ List(large)
           ⎿ Listed 50 paths
+
 
         """)
     }

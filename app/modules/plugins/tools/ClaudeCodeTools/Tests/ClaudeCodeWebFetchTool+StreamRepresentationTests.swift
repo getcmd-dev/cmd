@@ -40,8 +40,9 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🌐 WebFetch(\(testUrl))
+      ⏺ WebFetch(\(testUrl))
         ⎿ Content fetched and processed
+
 
       """)
   }
@@ -62,8 +63,9 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ WebFetch(\(testUrl))
-          ⎿ Failed: URL not found
+      ⏺ WebFetch(\(testUrl))
+        ⎿ Failed: URL not found
+
 
       """)
   }
@@ -90,8 +92,9 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🌐 WebFetch(\(testUrl))
+        ⏺ WebFetch(\(testUrl))
           ⎿ Content fetched and processed
+
 
         """)
     }
@@ -113,8 +116,9 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ WebFetch(\(testUrl))
-          ⎿ Failed: Request timed out
+      ⏺ WebFetch(\(testUrl))
+        ⎿ Failed: Request timed out
+
 
       """)
   }
@@ -137,8 +141,9 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🌐 WebFetch(\(testUrl))
+      ⏺ WebFetch(\(testUrl))
         ⎿ Content fetched and processed
+
 
       """)
   }

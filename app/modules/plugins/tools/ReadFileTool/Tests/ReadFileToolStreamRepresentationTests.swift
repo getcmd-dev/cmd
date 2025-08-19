@@ -17,7 +17,7 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/file.swift", lineRange: nil))
+        input: .init(path: "/test/file.swift", lineRange: nil), projectRoot: nil)
 
       #expect(viewModel.streamRepresentation == nil)
     }
@@ -42,12 +42,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/file.swift", lineRange: nil))
+        input: .init(path: "/test/file.swift", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
         ⏺ Read(/test/file.swift)
           ⎿ Read 7 lines
+
 
         """)
     }
@@ -64,12 +65,36 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/simple.py", lineRange: nil))
+        input: .init(path: "/test/simple.py", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
         ⏺ Read(/test/simple.py)
           ⎿ Read 1 lines
+
+
+        """)
+    }
+
+    @MainActor
+    @Test("streamRepresentation uses relative path when project root is provided")
+    func test_streamRepresentationUseRelativePath() {
+      // given
+      let content = "print('Hello, World!')"
+      let output = ReadFileTool.Use.Output(
+        content: content,
+        uri: "/test/simple.py")
+      let (status, _) = ReadFileTool.Use.Status.makeStream(initial: .completed(.success(output)))
+
+      let viewModel = ToolUseViewModel(
+        status: status,
+        input: .init(path: "/test/simple.py", lineRange: nil), projectRoot: URL(filePath: "/test"))
+
+      // then
+      #expect(viewModel.streamRepresentation == """
+        ⏺ Read(simple.py)
+          ⎿ Read 1 lines
+
 
         """)
     }
@@ -85,12 +110,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/empty.txt", lineRange: nil))
+        input: .init(path: "/test/empty.txt", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
         ⏺ Read(/test/empty.txt)
           ⎿ Read 1 lines
+
 
         """)
     }
@@ -115,12 +141,13 @@ extension ReadFileToolTests {
         status: status,
         input: .init(
           path: "/test/range.txt",
-          lineRange: .init(start: 2, end: 4)))
+          lineRange: .init(start: 2, end: 4)), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
         ⏺ Read(/test/range.txt)
           ⎿ Read 5 lines
+
 
         """)
     }
@@ -134,12 +161,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/nonexistent.swift", lineRange: nil))
+        input: .init(path: "/test/nonexistent.swift", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
           ⏺ Read(/test/nonexistent.swift)
             ⎿ Failed: File not found
+
 
         """)
     }
@@ -153,12 +181,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/root/secret.txt", lineRange: nil))
+        input: .init(path: "/root/secret.txt", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
           ⏺ Read(/root/secret.txt)
             ⎿ Failed: Permission denied
+
 
         """)
     }
@@ -180,13 +209,14 @@ extension ReadFileToolTests {
 
         let viewModel = ToolUseViewModel(
           status: status,
-          input: .init(path: filePath, lineRange: nil))
+          input: .init(path: filePath, lineRange: nil), projectRoot: nil)
 
         // then
         let expectedLines = content.split(separator: "\n", omittingEmptySubsequences: false).count
         #expect(viewModel.streamRepresentation == """
           ⏺ Read(\(filePath))
             ⎿ Read \(expectedLines) lines
+
 
           """)
       }
@@ -201,12 +231,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/image.png", lineRange: nil))
+        input: .init(path: "/test/image.png", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
           ⏺ Read(/test/image.png)
             ⎿ Failed: Cannot read binary file
+
 
         """)
     }
@@ -224,12 +255,13 @@ extension ReadFileToolTests {
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(path: "/test/large.txt", lineRange: nil))
+        input: .init(path: "/test/large.txt", lineRange: nil), projectRoot: nil)
 
       // then
       #expect(viewModel.streamRepresentation == """
         ⏺ Read(/test/large.txt)
           ⎿ Read 100 lines
+
 
         """)
     }

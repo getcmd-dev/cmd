@@ -46,8 +46,9 @@ struct SearchFilesToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Search(pattern)
+      ⏺ Search(pattern)
         ⎿ Found 2 matches
+
 
       """)
   }
@@ -73,8 +74,9 @@ struct SearchFilesToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Search(test.*pattern)
+      ⏺ Search(test.*pattern)
         ⎿ Found 1 matches (truncated)
+
 
       """)
   }
@@ -92,8 +94,9 @@ struct SearchFilesToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ Search(pattern)
-          ⎿ Failed: Directory not found
+      ⏺ Search(pattern)
+        ⎿ Failed: Directory not found
+
 
       """)
   }
@@ -115,8 +118,9 @@ struct SearchFilesToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      🔍 Search(nonexistent)
+      ⏺ Search(nonexistent)
         ⎿ Found 0 matches
+
 
       """)
   }

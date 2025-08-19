@@ -14,7 +14,7 @@ extension EditFileToolTests {
     func test_streamRepresentationNilWhenNotCompleted() async throws {
       let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running)
 
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: [],
         isInputComplete: true,
@@ -29,7 +29,7 @@ extension EditFileToolTests {
       let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
       let projectRoot = URL(filePath: "/project")
 
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: [],
         isInputComplete: true,
@@ -44,10 +44,12 @@ extension EditFileToolTests {
 
       let representation = viewModel.streamRepresentation
       #expect(representation == """
-        ✏️ Update(src/file1.swift)
+        ⏺ Update(src/file1.swift)
           ⎿ Updated
-        ✏️ Write(docs/readme.md)
+
+        ⏺ Write(docs/readme.md)
           ⎿ Updated
+
 
         """)
     }
@@ -57,7 +59,7 @@ extension EditFileToolTests {
     func test_streamRepresentationWithErrorChanges() async throws {
       let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
 
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: [],
         isInputComplete: true,
@@ -70,8 +72,9 @@ extension EditFileToolTests {
 
       let representation = viewModel.streamRepresentation
       #expect(representation == """
-        ❌ Update(/test/file1.swift)
+        ⏺ Update(/test/file1.swift)
           ⎿ Error editing file
+
 
         """)
     }
@@ -81,7 +84,7 @@ extension EditFileToolTests {
     func test_streamRepresentationWithAbsolutePaths() async throws {
       let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
 
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: [],
         isInputComplete: true,
@@ -95,8 +98,9 @@ extension EditFileToolTests {
 
       let representation = viewModel.streamRepresentation
       #expect(representation == """
-        ✏️ Update(/absolute/path/file.swift)
+        ⏺ Update(/absolute/path/file.swift)
           ⎿ Updated
+
 
         """)
     }
@@ -106,7 +110,7 @@ extension EditFileToolTests {
     func test_streamRepresentationIgnoresPendingChanges() async throws {
       let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
 
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: [],
         isInputComplete: true,
@@ -120,8 +124,9 @@ extension EditFileToolTests {
 
       let representation = viewModel.streamRepresentation
       #expect(representation == """
-        ✏️ Update(/test/file2.swift)
+        ⏺ Update(/test/file2.swift)
           ⎿ Updated
+
 
         """)
     }

@@ -44,8 +44,9 @@ extension ExecuteCommandToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 Bash(echo 'Hello World')
+        ⏺ Bash(echo 'Hello World')
           ⎿ Exit code: 0
+
 
         """)
     }
@@ -68,8 +69,9 @@ extension ExecuteCommandToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🔴 Bash(invalid-command)
+        ⏺ Bash(invalid-command)
           ⎿ Exit code: 127
+
 
         """)
     }
@@ -90,8 +92,9 @@ extension ExecuteCommandToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-          ❌ Bash(test command)
-            ⎿ Failed: Command execution failed
+        ⏺ Bash(test command)
+          ⎿ Failed: Command execution failed
+
 
         """)
     }
@@ -120,14 +123,16 @@ extension ExecuteCommandToolTests {
 
       // then
       #expect(viewModel1.streamRepresentation == """
-        🟢 Bash(exit 0)
+        ⏺ Bash(exit 0)
           ⎿ Exit code: 0
+
 
         """)
 
       #expect(viewModel2.streamRepresentation == """
-        🔴 Bash(exit 1)
+        ⏺ Bash(exit 1)
           ⎿ Exit code: 1
+
 
         """)
     }
@@ -151,8 +156,9 @@ extension ExecuteCommandToolTests {
 
       // then
       #expect(viewModel.streamRepresentation == """
-        🟢 Bash(\(complexCommand))
+        ⏺ Bash(\(complexCommand))
           ⎿ Exit code: 0
+
 
         """)
     }

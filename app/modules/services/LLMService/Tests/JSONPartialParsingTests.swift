@@ -355,8 +355,6 @@ struct JSONPartialParsingTests {
       """
 
     let (result, isValid) = try deeplyNested.extractPartialJSON()
-    print(result)
-
     #expect(isValid == false)
     #expect(String(data: result, encoding: .utf8) == expectation)
   }

@@ -41,8 +41,9 @@ struct BuildToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      ✅ Build(test)
+      ⏺ Build(test)
         ⎿ Succeeded
+
 
       """)
   }
@@ -68,8 +69,9 @@ struct BuildToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-      ❌ Build(run)
+      ⏺ Build(run)
         ⎿ Failed
+
 
       """)
   }
@@ -87,8 +89,9 @@ struct BuildToolStreamRepresentationTests {
 
     // then
     #expect(viewModel.streamRepresentation == """
-        ❌ Build(test)
-          ⎿ Failed: Xcode not found
+      ⏺ Build(test)
+        ⎿ Failed: Xcode not found
+
 
       """)
   }
@@ -111,14 +114,16 @@ struct BuildToolStreamRepresentationTests {
 
     // then
     #expect(testViewModel.streamRepresentation == """
-      ✅ Build(test)
+      ⏺ Build(test)
         ⎿ Succeeded
+
 
       """)
 
     #expect(runViewModel.streamRepresentation == """
-      ✅ Build(run)
+      ⏺ Build(run)
         ⎿ Succeeded
+
 
       """)
   }

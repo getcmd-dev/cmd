@@ -41,7 +41,7 @@ struct ToolUseViewModelTests {
     let viewModel = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
         isInputComplete: true,
@@ -73,7 +73,7 @@ struct ToolUseViewModelTests {
     let viewModel = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
@@ -130,7 +130,7 @@ struct ToolUseViewModelTests {
     let viewModel = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
@@ -198,7 +198,7 @@ struct ToolUseViewModelTests {
       $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
         isInputComplete: true,
@@ -266,7 +266,7 @@ struct ToolUseViewModelTests {
       $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
         isInputComplete: true,
@@ -317,7 +317,7 @@ struct ToolUseViewModelTests {
       $0.xcodeObserver = mockXcodeObserver
       $0.xcodeController = mockXcodeController
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
         isInputComplete: true,
@@ -361,7 +361,7 @@ struct ToolUseViewModelTests {
     let viewModel = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
         isInputComplete: false,
@@ -420,7 +420,7 @@ struct ToolUseViewModelTests {
     let viewModel = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
-      ToolUseViewModel(
+      EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
         isInputComplete: true,
@@ -436,7 +436,7 @@ struct ToolUseViewModelTests {
     #expect(toolStatusUpdated == true)
   }
 
-  private func waitForUpdate(of viewModel: ToolUseViewModel) async {
+  private func waitForUpdate(of viewModel: EditFilesToolUseViewModel) async {
     _ = await viewModel.changes.last?.change.targetContent
   }
 

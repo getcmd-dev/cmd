@@ -336,7 +336,7 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("handleSelectChatThread loads and switches to selected thread")
-  func test_handleSelectChatThread_loadsAndSwitches() async {
+  func test_handleSelectChatThread_loadsAndSwitches() async throws {
     let threadId = UUID()
     let testThread = ChatThreadModel(
       id: threadId,
@@ -357,10 +357,19 @@ struct ChatViewModelTests {
     viewModel.handleShowChatHistory()
     #expect(viewModel.showChatHistory == true)
 
+    let exp = expectation(description: "tab changed")
+    let cancellable = viewModel.didSet(\.tab) { tab in
+      Task { @MainActor in
+        if tab.id == threadId {
+          exp.fulfillAtMostOnce()
+        }
+      }
+    }
     viewModel.handleSelectChatThread(id: threadId)
 
     // Wait for async operation to complete
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    try await fulfillment(of: exp)
+    _ = cancellable
 
     #expect(viewModel.tab.id == threadId)
     #expect(viewModel.tab.name == "Selected Thread")
@@ -399,7 +408,7 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("handleSelectChatThread handles service errors gracefully")
-  func test_handleSelectChatThread_handlesErrors() async {
+  func test_handleSelectChatThread_handlesErrors() async throws {
     let mockChatHistoryService = MockChatHistoryService()
     mockChatHistoryService.onLoadChatThread = { _ in
       throw NSError(domain: "TestError", code: 1, userInfo: nil)
@@ -415,11 +424,19 @@ struct ChatViewModelTests {
     viewModel.handleShowChatHistory()
     #expect(viewModel.showChatHistory == true)
 
+    let exp = expectation(description: "tab changed")
+    let cancellable = viewModel.didSet(\.showChatHistory) { showChatHistory in
+      Task { @MainActor in
+        if showChatHistory == false {
+          exp.fulfillAtMostOnce()
+        }
+      }
+    }
     viewModel.handleSelectChatThread(id: UUID())
 
     // Wait for async operation to complete
-    // TODO: remove this.
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    try await fulfillment(of: exp)
+    _ = cancellable
 
     // Should keep original tab and hide chat history
     #expect(viewModel.tab.id == originalTabId)
@@ -812,7 +829,6 @@ struct ChatViewModelTests {
 
     let messages = messagesSent.value.map { $0.flatMap { $0.content.map(\.text) } }
     #expect(messages.count == 2)
-    print(messages)
     #expect(messages == [
       [
         "First message",
