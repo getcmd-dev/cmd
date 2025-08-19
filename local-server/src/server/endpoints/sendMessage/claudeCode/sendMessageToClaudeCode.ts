@@ -103,7 +103,7 @@ const createClaudeCodeEventStream = (
 	const mcpConfigFilePath = path.join(dir, `mcp-${threadId}.json`)
 	if (!existsSync(dir)) {
 		mkdirSync(dir, {
-			mode: 0o744,
+			mode: 0o700,
 		})
 	}
 
