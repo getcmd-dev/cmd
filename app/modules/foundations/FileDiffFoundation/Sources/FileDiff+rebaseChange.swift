@@ -18,27 +18,22 @@ extension FileDiff {
     targetContent: String)
     throws -> String
   {
-    let uuid = UUID().uuidString
-    let tmpDir = "/tmp/\(uuid)"
-    try FileManager.default.createDirectory(atPath: tmpDir, withIntermediateDirectories: true)
+    let tmpDir = try shell("mktemp -d")
 
-    let tmpFileV0Path = "/tmp/file-0-\(uuid).txt"
-    let tmpFileV1Path = "/tmp/file-1-\(uuid).txt"
-    let tmpFileV2Path = "/tmp/file-2-\(uuid).txt"
+    let tmpFileV0Path = try shell("mktemp")
+    let tmpFileV1Path = try shell("mktemp")
+    let tmpFileV2Path = try shell("mktemp")
     let filePath = "\(tmpDir)/file"
 
-    FileManager.default.createFile(
-      atPath: tmpFileV0Path,
-      contents: baselineContent.formattedToApplyGitDiff.utf8Data,
-      attributes: nil)
-    FileManager.default.createFile(
-      atPath: tmpFileV1Path,
-      contents: currentContent.formattedToApplyGitDiff.utf8Data,
-      attributes: nil)
-    FileManager.default.createFile(
-      atPath: tmpFileV2Path,
-      contents: targetContent.formattedToApplyGitDiff.utf8Data,
-      attributes: nil)
+    try FileManager.default.write(
+      data: baselineContent.formattedToApplyGitDiff.utf8Data,
+      to: URL(filePath: tmpFileV0Path))
+    try FileManager.default.write(
+      data: currentContent.formattedToApplyGitDiff.utf8Data,
+      to: URL(filePath: tmpFileV1Path))
+    try FileManager.default.write(
+      data: targetContent.formattedToApplyGitDiff.utf8Data,
+      to: URL(filePath: tmpFileV2Path))
 
     defer {
       try? FileManager.default.removeItem(atPath: tmpFileV0Path)
@@ -49,7 +44,7 @@ extension FileDiff {
     }
 
     let command = """
-      cd \(tmpDir) && git init && git add . && git commit -m 'Initial commit' --allow-empty && \ 
+      cd \(tmpDir) && git init && git add . && git commit -m 'Initial commit' --allow-empty && \
       cp \(tmpFileV0Path) file && git add . && git commit -m 'baseline' --allow-empty && \
       git checkout -b current && git checkout -b suggestion && \
       cp \(tmpFileV2Path) file && git add . && git commit -m 'target' --allow-empty && \
