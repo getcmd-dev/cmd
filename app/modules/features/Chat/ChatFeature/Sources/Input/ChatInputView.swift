@@ -131,7 +131,8 @@ struct ChatInputView: View {
   private var chatModeSelection: some View {
     PopUpSelectionMenu(
       selectedItem: $inputViewModel.mode,
-      availableItems: ChatMode.allCases)
+      availableItems: ChatMode.allCases,
+      isExpanded: $inputViewModel.isChatModeSelectionExpanded)
     { mode in
       switch mode {
       case .agent:
@@ -148,7 +149,8 @@ struct ChatInputView: View {
       PopUpSelectionMenu(
         selectedItem: $inputViewModel.selectedModel,
         availableItems: inputViewModel.activeModels,
-        emptySelectionText: "No model configured")
+        emptySelectionText: "No model configured",
+        isExpanded: $inputViewModel.isModelSelectionExpanded)
       { model in
         Text(model.name)
       }

@@ -12,8 +12,10 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
+import SharedValuesFoundation
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -161,10 +163,29 @@ public class ChatViewModel {
       } else if event is NewChatEvent {
         await addTab(copyingCurrentInput: true)
         return true
+      } else if let event = event as? LocalServerRequestEvent {
+        if event.command == "tool_approval" {
+          Task { @MainActor in
+            do {
+              let response = try await self.handle(toolApprovalRequest: event.data)
+              event.completion(.success(response))
+            } catch {
+              event.completion(.failure(error))
+            }
+          }
+          return true
+        }
+        return false
       } else {
         return false
       }
     }
+  }
+
+  private func handle(toolApprovalRequest: Data) async throws -> Schema.ToolApprovalResponse {
+    let request = try JSONDecoder().decode(ExtensionRequest<Schema.ToolApprovalRequest>.self, from: toolApprovalRequest)
+    print("Tool approval request received: \(request)")
+    return Schema.ToolApprovalResponse(isAllowed: true)
   }
 
   private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {

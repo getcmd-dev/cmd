@@ -306,7 +306,12 @@ private class RichTextView: NSTextView {
       super.keyDown(with: event)
       return
     }
-    let key = KeyEquivalent(firstChar)
+    var key = KeyEquivalent(firstChar)
+
+    if key == KeyEquivalent("\u{19}") {
+      // When tab is pressed with shift, the key we get is \u{19} while without the modifier we get \t
+      key = .tab
+    }
 
     let specialKeyCodes: [KeyEquivalent] = [
       .leftArrow,
@@ -315,6 +320,7 @@ private class RichTextView: NSTextView {
       .upArrow,
       .return,
       .escape,
+      .tab,
     ]
 
     if specialKeyCodes.contains(key) {

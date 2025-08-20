@@ -189,26 +189,10 @@ private struct ProviderCard: View {
         }
       }
 
-      // Base URL section (for providers that support it)
-      if provider.supportsBaseURL {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("Base URL (Optional)")
-            .font(.subheadline)
-            .fontWeight(.medium)
-
-          TextField("Enter base URL...", text: $baseURL)
-            .textFieldStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.textBackgroundColor))
-            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
-        }
-      }
-
       // Local executable section (for providers that are local)
       if provider.isLocal {
         VStack(alignment: .leading, spacing: 8) {
-          Text("Path to \(provider.name)")
+          Text("How to run \(provider.name)")
             .font(.subheadline)
             .fontWeight(.medium)
 
@@ -237,11 +221,6 @@ private struct ProviderCard: View {
     }
     .onChange(of: executable) { _, _ in
       saveSettings()
-    }
-    .onChange(of: baseURL) { _, _ in
-      if provider.supportsBaseURL {
-        saveSettings()
-      }
     }
   }
 
@@ -294,15 +273,6 @@ extension LLMProvider {
       "Claude Code"
     default:
       "Unknown provider"
-    }
-  }
-
-  var supportsBaseURL: Bool {
-    switch self {
-    case .anthropic:
-      true
-    default:
-      false
     }
   }
 

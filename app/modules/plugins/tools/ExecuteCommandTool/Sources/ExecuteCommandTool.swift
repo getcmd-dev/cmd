@@ -152,7 +152,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
   }
 
   public var shortDescription: String {
-    "Executes CLI commands on the system for operations, builds, and tests."
+    "Executes shell commands with user level of permission"
   }
 
   public var inputSchema: JSON {

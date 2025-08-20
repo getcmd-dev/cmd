@@ -15,7 +15,7 @@ struct OnboardingCompletedView: View {
         .font(.title)
         .bold()
 
-      Text("In Xcode, you can now use:\n- **⌘ + I** to use the agent mode\n- **⌘ + L** to use the chat mode.")
+      Text("When in Xcode, you can now use:\n- **⌘ + I** to bring **cmd**")
         .lineLimit(nil)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: OnboardingView.Constants.maxTextWidth, alignment: .leading)

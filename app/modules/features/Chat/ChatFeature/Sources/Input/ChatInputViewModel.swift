@@ -185,6 +185,26 @@ final class ChatInputViewModel {
     }
   }
 
+  /// Whether the popup to select chat mode is shown
+  var isChatModeSelectionExpanded = false {
+    didSet {
+      if isChatModeSelectionExpanded {
+        // Close other popups
+        isModelSelectionExpanded = false
+      }
+    }
+  }
+
+  /// Whether the popup to select LLM model is shown
+  var isModelSelectionExpanded = false {
+    didSet {
+      if isModelSelectionExpanded {
+        // Close other popups
+        isChatModeSelectionExpanded = false
+      }
+    }
+  }
+
   /// The search query, and related information, used to find references.
   var inlineSearch: (String, NSRange, CGRect?)? {
     didSet {
@@ -247,53 +267,23 @@ final class ChatInputViewModel {
 
   @MainActor
   func handleOnKeyDown(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags) -> Bool {
-    // Tool approval
     if let pendingToolApproval {
-      if key == .upArrow {
-        switch pendingToolApprovalSuggestedResult {
-        case .approved:
-          pendingToolApprovalSuggestedResult = .alwaysApprove
-        case .denied:
-          pendingToolApprovalSuggestedResult = .approved
-        default:
-          break
-        }
-        return true
-      } else if key == .downArrow {
-        switch pendingToolApprovalSuggestedResult {
-        case .alwaysApprove:
-          pendingToolApprovalSuggestedResult = .approved
-        case .approved:
-          pendingToolApprovalSuggestedResult = .denied
-        default:
-          break
-        }
-        return true
-      } else if key == .return, !modifiers.contains(.shift) {
-        handleApproval(of: pendingToolApproval)
-        return true
-      }
-      return false
+      return handle(key: key, modifiers: modifiers, for: pendingToolApproval)
+    } else if let searchResults {
+      return handle(key: key, modifiers: modifiers, for: searchResults)
+    } else if isModelSelectionExpanded {
+      return handle(keyForModelSelection: key, modifiers: modifiers)
     }
 
-    // Search navigation
-    if let searchResults {
-      if key == .upArrow {
-        selectedSearchResultIndex = max(0, selectedSearchResultIndex - 1)
-        return true
-      } else if key == .downArrow {
-        selectedSearchResultIndex = min(searchResults.count - 1, selectedSearchResultIndex + 1)
-        return true
-      } else if key == .return, !modifiers.contains(.shift) {
-        guard searchResults.count > selectedSearchResultIndex else {
-          // Not searching, don't handle the key event.
-          return false
-        }
-        // Handle search selection
-        handleDidSelect(searchResult: searchResults[selectedSearchResultIndex])
+    if key == .tab, modifiers.contains(.shift) {
+      // cycle chat modes
+      if let idx = ChatMode.allCases.index(of: mode) {
+        mode = ChatMode.allCases[(idx + 1) % ChatMode.allCases.count]
         return true
       }
-      return false
+    }
+    if isChatModeSelectionExpanded {
+      return handle(keyForChatModeSelection: key, modifiers: modifiers)
     }
 
     if key == .escape {
@@ -425,6 +415,100 @@ final class ChatInputViewModel {
 
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
+
+  private func handle(keyForModelSelection key: KeyEquivalent, modifiers _: NSEvent.ModifierFlags) -> Bool {
+    if key == .escape || key == .return {
+      isModelSelectionExpanded = false
+      return true
+    }
+    // VStack is ordered top to bottom, so ↓ increases idx
+    if key == .downArrow, let selectedModel, let idx = activeModels.index(of: selectedModel) {
+      if idx < activeModels.count - 1 {
+        self.selectedModel = activeModels[idx + 1]
+      }
+      return true
+    }
+    if key == .upArrow, let selectedModel, let idx = activeModels.index(of: selectedModel) {
+      if idx > 0 {
+        self.selectedModel = activeModels[idx - 1]
+      }
+      return true
+    }
+    return false
+  }
+
+  private func handle(keyForChatModeSelection key: KeyEquivalent, modifiers _: NSEvent.ModifierFlags) -> Bool {
+    if key == .escape || key == .return {
+      isChatModeSelectionExpanded = false
+      return true
+    }
+    // VStack is ordered top to bottom, so ↓ increases idx
+    if key == .downArrow, let idx = ChatMode.allCases.index(of: mode) {
+      if idx < ChatMode.allCases.count - 1 {
+        mode = ChatMode.allCases[idx + 1]
+      }
+      return true
+    }
+    if key == .upArrow, let idx = ChatMode.allCases.index(of: mode) {
+      if idx > 0 {
+        mode = ChatMode.allCases[idx - 1]
+      }
+      return true
+    }
+    return false
+  }
+
+  private func handle(
+    key: KeyEquivalent,
+    modifiers: NSEvent.ModifierFlags,
+    for pendingToolApproval: ToolApprovalRequest)
+    -> Bool
+  {
+    if key == .upArrow {
+      switch pendingToolApprovalSuggestedResult {
+      case .approved:
+        pendingToolApprovalSuggestedResult = .alwaysApprove
+      case .denied:
+        pendingToolApprovalSuggestedResult = .approved
+      default:
+        break
+      }
+      return true
+    } else if key == .downArrow {
+      switch pendingToolApprovalSuggestedResult {
+      case .alwaysApprove:
+        pendingToolApprovalSuggestedResult = .approved
+      case .approved:
+        pendingToolApprovalSuggestedResult = .denied
+      default:
+        break
+      }
+      return true
+    } else if key == .return, !modifiers.contains(.shift) {
+      handleApproval(of: pendingToolApproval)
+      return true
+    }
+    return false
+  }
+
+  private func handle(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags, for searchResults: [FileSuggestion]) -> Bool {
+    if key == .upArrow {
+      selectedSearchResultIndex = max(0, selectedSearchResultIndex - 1)
+      return true
+    } else if key == .downArrow {
+      selectedSearchResultIndex = min(searchResults.count - 1, selectedSearchResultIndex + 1)
+      return true
+    } else if key == .return, !modifiers.contains(.shift) {
+      guard searchResults.count > selectedSearchResultIndex else {
+        // Not searching, don't handle the key event.
+        return false
+      }
+      // Handle search selection
+      handleDidSelect(searchResult: searchResults[selectedSearchResultIndex])
+      return true
+    }
+    return false
+  }
 
   private func clearSearchResults() {
     updateSearchResults(searchQuery: nil)

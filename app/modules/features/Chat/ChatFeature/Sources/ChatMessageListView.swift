@@ -30,6 +30,10 @@ struct ChatMessageList: View {
   var body: some View {
     ScrollView {
       AppUpdateWidget()
+      if events.count == 0 {
+        EmptyChatView()
+          .padding(ChatView.Constants.chatPadding)
+      }
       LazyVStack(spacing: 0) {
         ForEach(events) { event in
           switch event {

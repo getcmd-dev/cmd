@@ -15,7 +15,6 @@ struct AgentModeView: View {
       Icon(systemName: ChatMode.agent.systemImageName)
         .frame(width: iconSize, height: iconSize)
       Text(ChatMode.agent.name)
-      Text(ChatMode.agent.commandDisplay)
     }
   }
 }
@@ -28,7 +27,6 @@ struct AskModeView: View {
       Icon(systemName: ChatMode.ask.systemImageName)
         .frame(width: iconSize, height: iconSize)
       Text(ChatMode.ask.name)
-      Text(ChatMode.ask.commandDisplay)
     }
   }
 }

@@ -109,5 +109,4 @@ struct DebugStreamingMessages: View {
   ])
   .frame(maxWidth: 400, maxHeight: .infinity)
 }
-
 #endif
