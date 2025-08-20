@@ -348,33 +348,6 @@ extension Schema {
       }
     }
   }
-  public struct InternalTextMessage: Codable, Sendable {
-    public let text: String
-    public let type = "internal_text"
-  
-    private enum CodingKeys: String, CodingKey {
-      case text = "text"
-      case type = "type"
-    }
-  
-    public init(
-        text: String,
-        type: String = "internal_text"
-    ) {
-      self.text = text
-    }
-  
-    public init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-      text = try container.decode(String.self, forKey: .text)
-    }
-  
-    public func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(text, forKey: .text)
-      try container.encode(type, forKey: .type)
-    }
-  }
   public struct InternalContent: Codable, Sendable {
     public let type = "internal_content"
     public let value: JSON
@@ -413,7 +386,6 @@ extension Schema {
     case reasoningMessage(_ value: ReasoningMessage)
     case toolUseRequest(_ value: ToolUseRequest)
     case toolResultMessage(_ value: ToolResultMessage)
-    case internalTextMessage(_ value: InternalTextMessage)
     case internalContent(_ value: InternalContent)
   
     private enum CodingKeys: String, CodingKey {
@@ -432,8 +404,6 @@ extension Schema {
           self = .toolUseRequest(try ToolUseRequest(from: decoder))
         case "tool_result":
           self = .toolResultMessage(try ToolResultMessage(from: decoder))
-        case "internal_text":
-          self = .internalTextMessage(try InternalTextMessage(from: decoder))
         case "internal_content":
           self = .internalContent(try InternalContent(from: decoder))
         default:
@@ -450,8 +420,6 @@ extension Schema {
         case .toolUseRequest(let value):
           try value.encode(to: encoder)
         case .toolResultMessage(let value):
-          try value.encode(to: encoder)
-        case .internalTextMessage(let value):
           try value.encode(to: encoder)
         case .internalContent(let value):
           try value.encode(to: encoder)

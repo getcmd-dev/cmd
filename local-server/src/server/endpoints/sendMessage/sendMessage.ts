@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express"
 import { logError, logInfo, saveLogToFile } from "../../../logger"
 import { ModelProvider } from "../../providers/provider"
 import {
+	InternalContent,
 	Message,
 	MessageContent,
 	Ping,
@@ -410,8 +411,11 @@ const mapMessage = (message: Message): CoreMessage => {
 							text: content.text,
 							signature: content.signature,
 						}
+					} else if (isInternalContent(content)) {
+						// do not forward
+						return undefined
 					}
-					throw new Error(`Unsupported content type: ${content.type}`)
+					throw new Error(`Unsupported content type for assistant message: ${content.type}`)
 				})
 				.filter(isDefined),
 		} satisfies CoreAssistantMessage
@@ -457,6 +461,10 @@ const isToolUseRequestMessage = (message: MessageContent): message is ToolUseReq
 
 const isReasoningMessage = (message: MessageContent): message is ReasoningMessage => {
 	return message.type === "reasoning"
+}
+
+const isInternalContent = (message: MessageContent): message is InternalContent => {
+	return message.type === "internal_content"
 }
 
 const isDefined = <T>(value: T | undefined): value is T => {
