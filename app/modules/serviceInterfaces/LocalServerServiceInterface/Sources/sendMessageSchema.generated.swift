@@ -828,6 +828,51 @@ extension Schema {
       try container.encode(idx, forKey: .idx)
     }
   }
+  public struct ToolUsePermissionRequest: Codable, Sendable {
+    public let type = "tool_use_permission_request"
+    public let toolName: String
+    public let input: JSON
+    public let toolUseId: String
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case toolName = "toolName"
+      case input = "input"
+      case toolUseId = "toolUseId"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "tool_use_permission_request",
+        toolName: String,
+        input: JSON,
+        toolUseId: String,
+        idx: Int
+    ) {
+      self.toolName = toolName
+      self.input = input
+      self.toolUseId = toolUseId
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      toolName = try container.decode(String.self, forKey: .toolName)
+      input = try container.decode(JSON.self, forKey: .input)
+      toolUseId = try container.decode(String.self, forKey: .toolUseId)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(toolName, forKey: .toolName)
+      try container.encode(input, forKey: .input)
+      try container.encode(toolUseId, forKey: .toolUseId)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
   public struct ToolUseDelta: Codable, Sendable {
     public let type = "tool_call_delta"
     public let toolName: String
@@ -1053,6 +1098,7 @@ extension Schema {
   public enum StreamedResponseChunk: Codable, Sendable {
     case textDelta(_ value: TextDelta)
     case toolUseRequest(_ value: ToolUseRequest)
+    case toolUsePermissionRequest(_ value: ToolUsePermissionRequest)
     case toolUseDelta(_ value: ToolUseDelta)
     case toolResultMessage(_ value: ToolResultMessage)
     case responseError(_ value: ResponseError)
@@ -1074,6 +1120,8 @@ extension Schema {
           self = .textDelta(try TextDelta(from: decoder))
         case "tool_call":
           self = .toolUseRequest(try ToolUseRequest(from: decoder))
+        case "tool_use_permission_request":
+          self = .toolUsePermissionRequest(try ToolUsePermissionRequest(from: decoder))
         case "tool_call_delta":
           self = .toolUseDelta(try ToolUseDelta(from: decoder))
         case "tool_result":
@@ -1100,6 +1148,8 @@ extension Schema {
         case .textDelta(let value):
           try value.encode(to: encoder)
         case .toolUseRequest(let value):
+          try value.encode(to: encoder)
+        case .toolUsePermissionRequest(let value):
           try value.encode(to: encoder)
         case .toolUseDelta(let value):
           try value.encode(to: encoder)

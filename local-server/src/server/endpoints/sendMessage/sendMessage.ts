@@ -269,6 +269,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "error"
 		| "text_delta"
 		| "tool_call"
+		| "tool_use_permission_request"
 		| "tool_call_delta"
 		| "tool_result"
 		| "ping"

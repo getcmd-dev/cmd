@@ -29,6 +29,7 @@ export type APIProviderName = "openai" | "anthropic" | "openrouter" | "claude_co
 export type StreamedResponseChunk =
 	| TextDelta
 	| ToolUseRequest
+	| ToolUsePermissionRequest
 	| ToolUseDelta
 	| ToolResultMessage // When interacting with an external agent, like Claude Code, the tool results are produced externally and sent back to the host application.
 	| ResponseError
@@ -58,6 +59,17 @@ export interface Ping {
 
 export interface ToolUseRequest {
 	type: "tool_call"
+	toolName: string
+	input: Record<string, unknown>
+	toolUseId: string
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+
+export interface ToolUsePermissionRequest {
+	type: "tool_use_permission_request"
 	toolName: string
 	input: Record<string, unknown>
 	toolUseId: string
