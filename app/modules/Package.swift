@@ -402,7 +402,6 @@ targets.append(contentsOf: Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
-    "SharedValuesFoundation",
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
