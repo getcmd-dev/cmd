@@ -28,6 +28,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningDelta = Schema.ReasoningDelta(delta: "Let me think...", idx: 0)
@@ -69,6 +70,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningDelta = Schema.ReasoningDelta(delta: " continues...", idx: 0)
@@ -110,6 +112,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningSignature = Schema.ReasoningSignature(signature: "signature123", idx: 0)
@@ -144,6 +147,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningSignature = Schema.ReasoningSignature(signature: "signature456", idx: 0)
@@ -185,6 +189,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     // First send reasoning delta
@@ -238,6 +243,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let deltas = [
@@ -294,6 +300,7 @@ struct RequestStreamingHelperToolFailureTests {
       tools: [mockTool],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     // Create a tool failure message

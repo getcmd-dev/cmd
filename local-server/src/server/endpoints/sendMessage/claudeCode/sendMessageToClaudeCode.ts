@@ -17,6 +17,7 @@ import { writeFileSync, existsSync, mkdirSync } from "fs"
 import path from "path"
 import { StreamingJsonParser } from "@/utils/streamingJSONParser"
 import { registerMCPServerEndpoints } from "./mcp"
+import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
 
 // To handle tool use permissions that are received over MCP, we need to keep track of tool use requests.
 // This is because we receive the tool use request first, then the permission request over MCP.
@@ -25,7 +26,7 @@ import { registerMCPServerEndpoints } from "./mcp"
 const toolUseRequests: { [threadId: string]: [Omit<ToolUseRequest, "idx">] } = {}
 
 const pendingToolApprovalRequests: {
-	[toolUseId: string]: (result: { isAllowed: boolean; rejectionMessage?: string }) => void
+	[toolUseId: string]: (result: ApprovalResult) => void
 } = {}
 
 type ExtendedSDKMessage = SDKMessage | Omit<ToolUsePermissionRequest, "idx">
@@ -144,15 +145,9 @@ const createClaudeCodeEventStream = (
 			input: matchingToolCall.input,
 		} satisfies Omit<ToolUsePermissionRequest, "idx">)
 
-		const { isAllowed, rejectionMessage }: { isAllowed: boolean; rejectionMessage?: string } = await new Promise(
-			(resolve) => {
-				pendingToolApprovalRequests[matchingToolCall.toolUseId] = resolve
-			},
-		)
-		return {
-			isAllowed,
-			rejectionMessage,
-		}
+		return await new Promise((resolve) => {
+			pendingToolApprovalRequests[matchingToolCall.toolUseId] = resolve
+		})
 	})
 
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
@@ -405,9 +400,9 @@ type SessionIdInfo = {
 
 export const registerEndpoint = (router: Router) => {
 	router.post("/sendMessage/toolUse/permission", async (req: Request, res: Response) => {
-		const body = req.body as { toolUseId: string; isAllowed: boolean; rejectionMessage?: string }
-		const { toolUseId, isAllowed, rejectionMessage } = body
-		pendingToolApprovalRequests[toolUseId]?.({ isAllowed, rejectionMessage })
+		const body = req.body as ApproveToolUseRequestParams
+		const { toolUseId, approvalResult } = body
+		pendingToolApprovalRequests[toolUseId]?.(approvalResult)
 		res.json({ success: true })
 	})
 }

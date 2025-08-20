@@ -24,6 +24,7 @@ actor RequestStreamingHelper: Sendable {
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  ///   - localServer: The local server for making API requests.
   ///   - repeatDebugHelper: A debug helper that will repeat the last streamed responses, regardless of the current input.
   init(
     stream: AsyncThrowingStream<Data, any Error>,
@@ -31,6 +32,7 @@ actor RequestStreamingHelper: Sendable {
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
     isTaskCancelled: @escaping @Sendable () -> Bool,
+    localServer: LocalServer,
     repeatDebugHelper: RepeatDebugHelper?)
   {
     self.stream = stream
@@ -38,6 +40,7 @@ actor RequestStreamingHelper: Sendable {
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
+    self.localServer = localServer
     self.repeatDebugHelper = repeatDebugHelper
   }
   #else
@@ -47,18 +50,21 @@ actor RequestStreamingHelper: Sendable {
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  ///   - localServer: The local server for making API requests.
   init(
     stream: AsyncThrowingStream<Data, any Error>,
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
-    isTaskCancelled: @escaping @Sendable () -> Bool)
+    isTaskCancelled: @escaping @Sendable () -> Bool,
+    localServer: LocalServer)
   {
     self.stream = stream
     self.result = result
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
+    self.localServer = localServer
   }
   #endif
 
@@ -66,6 +72,7 @@ actor RequestStreamingHelper: Sendable {
   let stream: AsyncThrowingStream<Data, any Error>
   let tools: [any ToolFoundation.Tool]
   let context: (any ChatContext)?
+  let localServer: LocalServer
   var err: Error? = nil
   var streamingToolUse: (any ToolUse)? = nil
   var streamingToolUseInput = ""
@@ -177,6 +184,9 @@ actor RequestStreamingHelper: Sendable {
 
     case .internalContent(let message):
       handle(internalMessage: message)
+
+    case .toolUsePermissionRequest(let toolUsePermissionRequest):
+      await handle(toolUsePermissionRequest: toolUsePermissionRequest)
     }
 
     // Try to dequeue events received out of order.
@@ -445,6 +455,27 @@ actor RequestStreamingHelper: Sendable {
     result.update(with: AssistantMessage(content: content))
   }
 
+  private func handle(toolUsePermissionRequest: Schema.ToolUsePermissionRequest) async {
+    guard let tool = tools.first(where: { $0.name == toolUsePermissionRequest.toolName }) else {
+      defaultLogger.error("No tool found for permission request: \(toolUsePermissionRequest.toolName)")
+      return
+    }
+
+    do {
+      let permission = try await tool.requestPermission()
+      let response = Schema.ApproveToolUseRequestParams(
+        toolUseId: toolUsePermissionRequest.toolUseId,
+        approvalResult: permission ? .approvalResultApprove(.init()) : .approvalResultDeny(.init(reason: "Permission denied")))
+
+      let data = try JSONEncoder().encode(response)
+
+      _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
+
+    } catch {
+      defaultLogger.error("Failed to handle tool permission request: \(error)")
+    }
+  }
+
 }
 
 extension Schema.StreamedResponseChunk {
@@ -470,6 +501,8 @@ extension Schema.StreamedResponseChunk {
       usage.idx
     case .internalContent(let message):
       message.idx
+    case .toolUsePermissionRequest(let request):
+      request.idx
     }
   }
 }

@@ -30,11 +30,18 @@ public protocol Tool: Sendable {
   var displayName: String { get }
   /// A short description of the tool (max 3 lines)
   var shortDescription: String { get }
+  /// Request permission to use this tool. Returns true if permission is granted.
+  func requestPermission() async throws -> Bool
 }
 
 extension Tool {
   public typealias Input = Use.Input
   public typealias Output = Use.Output
+
+  /// Default implementation that approves all tool permission requests
+  public func requestPermission() async throws -> Bool {
+    true
+  }
 
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
   public func use(toolUseId: String, input: Use.Input, isInputComplete: Bool, context: ToolExecutionContext) -> Use {
