@@ -104,9 +104,15 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 
 			// Cleanup when disconnected
 			const abortController = new AbortController()
+			let responseCompletedByServer = false
+			res.on("finish", () => {
+				responseCompletedByServer = true
+			})
 			res.on("close", () => {
-				logInfo("Response closed (client disconnected), aborting the request.")
-				abortController.abort()
+				if (!responseCompletedByServer) {
+					logInfo("Response closed (client disconnected), aborting the request.")
+					abortController.abort()
+				}
 			})
 			res.on("error", (err) => {
 				logInfo(`Response error: ${err.message}, aborting the request.`)

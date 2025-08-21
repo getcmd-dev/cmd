@@ -75,12 +75,6 @@ export const registerMCPServerEndpoints = (
 	router.post(path, async (req, res) => {
 		// Check for existing session ID
 		const sessionId = req.headers["mcp-session-id"] as string | undefined
-		logInfo(
-			`Handling session request for session ID: ${sessionId}. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`,
-		)
-		res.on("close", () => {
-			logInfo(`Request closed. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`)
-		})
 		let transport: StreamableHTTPServerTransport
 		if (sessionId && transports[sessionId]) {
 			// Reuse existing transport
@@ -127,13 +121,6 @@ export const registerMCPServerEndpoints = (
 			res.status(400).send("Invalid or missing session ID")
 			return
 		}
-
-		logInfo(
-			`Handling session request for session ID: ${sessionId}. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`,
-		)
-		res.on("close", () => {
-			logInfo(`Request closed. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`)
-		})
 		const transport = transports[sessionId]
 		await transport.handleRequest(req, res)
 	}

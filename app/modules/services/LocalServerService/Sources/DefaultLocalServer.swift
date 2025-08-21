@@ -294,10 +294,10 @@ final class DefaultLocalServer: LocalServer {
           state.inflightTasks[task] = taskHandler
         }
 
-          print("Request \(task.originalRequest?.url?.absoluteString ?? "unknown") started")
-          if task.originalRequest?.url?.pathComponents.joined() == "/sendMessage" {
-              print("Request request started at \(Date().timeIntervalSince1970)")
-          }
+        print("Request \(task.originalRequest?.url?.absoluteString ?? "unknown") started")
+        if task.originalRequest?.url?.pathComponents.joined() == "/sendMessage" {
+          print("Request request started at \(Date().timeIntervalSince1970)")
+        }
         task.resume()
       }
     }, onCancel: {
@@ -348,10 +348,10 @@ private final class LocalServerDelegate: NSObject, URLSessionDataDelegate, @unch
   }
 
   func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-          print("Request \(task.originalRequest?.url?.absoluteString ?? "unknown") completed. Err: \(String(describing: error))")
-          if task.originalRequest?.url?.pathComponents.joined() == "/sendMessage" {
-              print("Request request completed at \(Date().timeIntervalSince1970)")
-          }
+    print("Request \(task.originalRequest?.url?.absoluteString ?? "unknown") completed. Err: \(String(describing: error))")
+    if task.originalRequest?.url?.pathComponents.joined() == "/sendMessage" {
+      print("Request request completed at \(Date().timeIntervalSince1970)")
+    }
     Task {
       owner?.handle(task: task, didCompleteWithError: error)
     }

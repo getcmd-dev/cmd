@@ -49,6 +49,7 @@ export const sendMessageToClaudeCode = async (
 ) => {
 	const eventStream = createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
 	await respondUsingResponseStream(mapStream(eventStream, threadId), res)
+	logInfo("done responsing, terminating request")
 	res.end()
 
 	delete toolUseRequests[threadId]
@@ -155,7 +156,6 @@ const createClaudeCodeEventStream = (
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
 	logInfo(`New user messages text: "${newUserMessagesText}"`)
 
-	// Use stdin instead of -p flag to avoid hanging
 	const args = [
 		"--output-format",
 		"stream-json",
@@ -164,14 +164,13 @@ const createClaudeCodeEventStream = (
 		"100",
 		"--mcp-config",
 		mcpConfigFilePath,
-		// "--dangerously-skip-permissions", // For now, the MCP seems to not work and not receive requests.
 		"--permission-prompt-tool",
 		"mcp__command__tool_approval",
 	]
 	if (existingSessionId) {
 		args.push("--resume", existingSessionId)
 	}
-	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")}`)
+	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} -p "${newUserMessagesText}"`)
 
 	const jsonParser = new StreamingJsonParser()
 
@@ -186,7 +185,7 @@ const createClaudeCodeEventStream = (
 
 	child.stdout.on("data", (data) => {
 		const output = data.toString()
-		logInfo(`Received data from Claude: ${output}`)
+		logInfo(`Received data from Claude Code: ${output}`)
 		const parsedMessages = jsonParser.processChunk(output)
 		for (const payload of parsedMessages) {
 			eventStream.yield(payload as SDKMessage)
@@ -195,22 +194,16 @@ const createClaudeCodeEventStream = (
 
 	child.stderr.on("data", (data) => {
 		const error = data.toString()
-		logError(`Received error from Claude: ${error}`)
+		logError(`Received error from Claude Code: ${error}`)
 		eventStream.error(new Error(error))
 	})
 
-	let claudeCodeKilledByUs = false
 	child.on("close", (code) => {
-		if (claudeCodeKilledByUs) {
-			logInfo("Claude Code was killed by us, not an error. Ending stream.")
-			eventStream.done()
-			return
-		}
-		logInfo(`Claude process exited with code ${code}`)
+		logInfo(`Claude Code process exited with code ${code}`)
 		if (code !== 0) {
-			eventStream.error(new Error(`Claude process exited with code ${code}`))
+			logError("Claude Code was killed with an external error. Ending stream.")
+			eventStream.error(new Error(`Claude Code process exited with code ${code}`))
 		}
-		logInfo("Claude Code was killed with an external error. Ending stream.")
 		eventStream.done()
 	})
 
@@ -218,21 +211,21 @@ const createClaudeCodeEventStream = (
 	child.stdin.write(newUserMessagesText)
 	child.stdin.end()
 
-	res.on("close", () => {
-		logInfo("Response closed (client disconnected), killing Claude process.")
-		// claudeCodeKilledByUs = true
-		// child.kill()
-	})
+	let responseCompletedByServer = false
 	res.on("finish", () => {
-		logInfo("Response completed.")
-		// claudeCodeKilledByUs = true
-		// child.kill()
+		responseCompletedByServer = true
+	})
+	res.on("close", () => {
+		if (!responseCompletedByServer) {
+			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			child.kill()
+		}
 	})
 
 	res.on("error", (err) => {
+		logError(`Claude Code will be killed after having error: ${err.message}`)
 		eventStream.error(new Error(`Claude Code errored: ${err.message}`))
-		logInfo(`Response error: ${err.message}, killing Claude process.`)
-		claudeCodeKilledByUs = true
+		eventStream.done()
 		child.kill()
 	})
 
@@ -253,7 +246,7 @@ async function* mapStream(
 	for await (const event of stream) {
 		if (isToolUsePermissionRequest(event)) {
 			yield event
-			return
+			continue
 		}
 		if (!hasSentSessionId) {
 			hasSentSessionId = true
