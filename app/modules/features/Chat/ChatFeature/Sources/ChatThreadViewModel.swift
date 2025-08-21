@@ -200,14 +200,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
     let messages = messages.apiFormat
 
-    if !textInput.string.string.isEmpty, name == nil {
-      Task { [weak self] in
-        let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
-        guard let self else { return }
-        name = conversationName
-        await persistThread()
-      }
-    }
+//    if !textInput.string.string.isEmpty, name == nil {
+//      Task { [weak self] in
+//        let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
+//        guard let self else { return }
+//        name = conversationName
+//        await persistThread()
+//      }
+//    }
     Task {
       await persistThread()
     }

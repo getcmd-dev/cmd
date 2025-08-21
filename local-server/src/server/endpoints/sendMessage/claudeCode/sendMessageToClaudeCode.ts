@@ -145,9 +145,11 @@ const createClaudeCodeEventStream = (
 			input: matchingToolCall.input,
 		} satisfies Omit<ToolUsePermissionRequest, "idx">)
 
-		return await new Promise((resolve) => {
+		const response: ApprovalResult = await new Promise((resolve) => {
 			pendingToolApprovalRequests[matchingToolCall.toolUseId] = resolve
 		})
+		logInfo(`Got tool approval response for ${newToolName}: ${JSON.stringify(response)}`)
+		return response
 	})
 
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
@@ -197,11 +199,18 @@ const createClaudeCodeEventStream = (
 		eventStream.error(new Error(error))
 	})
 
+	let claudeCodeKilledByUs = false
 	child.on("close", (code) => {
+		if (claudeCodeKilledByUs) {
+			logInfo("Claude Code was killed by us, not an error. Ending stream.")
+			eventStream.done()
+			return
+		}
 		logInfo(`Claude process exited with code ${code}`)
 		if (code !== 0) {
 			eventStream.error(new Error(`Claude process exited with code ${code}`))
 		}
+		logInfo("Claude Code was killed with an external error. Ending stream.")
 		eventStream.done()
 	})
 
@@ -211,11 +220,19 @@ const createClaudeCodeEventStream = (
 
 	res.on("close", () => {
 		logInfo("Response closed (client disconnected), killing Claude process.")
-		child.kill()
+		// claudeCodeKilledByUs = true
+		// child.kill()
+	})
+	res.on("finish", () => {
+		logInfo("Response completed.")
+		// claudeCodeKilledByUs = true
+		// child.kill()
 	})
 
 	res.on("error", (err) => {
+		eventStream.error(new Error(`Claude Code errored: ${err.message}`))
 		logInfo(`Response error: ${err.message}, killing Claude process.`)
+		claudeCodeKilledByUs = true
 		child.kill()
 	})
 

@@ -460,19 +460,22 @@ actor RequestStreamingHelper: Sendable {
       defaultLogger.error("No tool found for permission request: \(toolUsePermissionRequest.toolName)")
       return
     }
+    defaultLogger.log("Received tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId)")
 
     do {
       let permission = try await tool.requestPermission()
+      
       let response = Schema.ApproveToolUseRequestParams(
         toolUseId: toolUsePermissionRequest.toolUseId,
         approvalResult: permission ? .approvalResultApprove(.init()) : .approvalResultDeny(.init(reason: "Permission denied")))
 
       let data = try JSONEncoder().encode(response)
+      defaultLogger.log("Sending tool permission response for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(String(data: data, encoding: .utf8) ?? "<invalid UTF-8>")")
 
       _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
 
     } catch {
-      defaultLogger.error("Failed to handle tool permission request: \(error)")
+      defaultLogger.error("Failed to handle tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(error)")
     }
   }
 

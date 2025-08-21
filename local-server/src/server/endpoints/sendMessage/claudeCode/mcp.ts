@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { v4 as uuidv4 } from "uuid"
 import { ApprovalResult } from "@/server/schemas/toolApprovalSchema"
+import { logInfo } from "@/logger"
 
 export const registerMCPServerEndpoints = (
 	router: Router,
@@ -41,6 +42,7 @@ export const registerMCPServerEndpoints = (
 		const { tool_name, input } = args
 		const response = (await handleApproval(tool_name, input)) as ApprovalResult
 		if (response.type === "approval_allowed") {
+			logInfo("Approving tool call")
 			return {
 				content: [
 					{
@@ -53,6 +55,7 @@ export const registerMCPServerEndpoints = (
 				],
 			}
 		} else {
+			logInfo("Denying tool call")
 			return {
 				content: [
 					{
@@ -66,17 +69,18 @@ export const registerMCPServerEndpoints = (
 			}
 		}
 	}
-	server.tool(
-		"tool_approval",
-		'Simulate a permission check - approve if the input contains "allow", otherwise deny',
-		schema,
-		cb,
-	)
+	server.tool("tool_approval", "Prompt the user to approve or deny the tool call", schema, cb)
 
 	// Handle POST requests for client-to-server communication
 	router.post(path, async (req, res) => {
 		// Check for existing session ID
 		const sessionId = req.headers["mcp-session-id"] as string | undefined
+		logInfo(
+			`Handling session request for session ID: ${sessionId}. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`,
+		)
+		res.on("close", () => {
+			logInfo(`Request closed. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`)
+		})
 		let transport: StreamableHTTPServerTransport
 		if (sessionId && transports[sessionId]) {
 			// Reuse existing transport
@@ -124,6 +128,12 @@ export const registerMCPServerEndpoints = (
 			return
 		}
 
+		logInfo(
+			`Handling session request for session ID: ${sessionId}. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`,
+		)
+		res.on("close", () => {
+			logInfo(`Request closed. ${req.method} ${req.url} ${JSON.stringify({ headers: req.headers, query: req.query, body: req.body })}`)
+		})
 		const transport = transports[sessionId]
 		await transport.handleRequest(req, res)
 	}
