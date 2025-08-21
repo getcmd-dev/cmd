@@ -405,9 +405,6 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     if shouldAlwaysApprove(toolName: toolUse.toolName) {
       return // Skip approval for this tool
     }
-    if toolUse is any ExternalToolUse {
-      return // We don't manage the permission for this tool
-    }
 
     let approvalResult = await input.requestApproval(
       for: toolUse)

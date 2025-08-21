@@ -412,7 +412,12 @@ export const registerEndpoint = (router: Router) => {
 	router.post("/sendMessage/toolUse/permission", async (req: Request, res: Response) => {
 		const body = req.body as ApproveToolUseRequestParams
 		const { toolUseId, approvalResult } = body
-		pendingToolApprovalRequests[toolUseId]?.(approvalResult)
+		logInfo(`received tool use permission request: ${toolUseId}, ${JSON.stringify(approvalResult)}.`)
+		const pendingRequest = pendingToolApprovalRequests[toolUseId]
+		if (pendingRequest === undefined) {
+			throw new Error(`No pending tool use approval request found for tool use ${toolUseId}`)
+		}
+		pendingRequest(approvalResult)
 		res.json({ success: true })
 	})
 }

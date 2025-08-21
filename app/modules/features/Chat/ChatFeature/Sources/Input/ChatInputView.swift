@@ -256,8 +256,8 @@ struct ChatInputView: View {
     ToolApprovalView(
       request: pendingToolApproval,
       suggestedResult: $inputViewModel.pendingToolApprovalSuggestedResult,
-      onApprovalResult: { _ in
-        inputViewModel.handleApproval(of: pendingToolApproval)
+      onApprovalResult: { result in
+        inputViewModel.handleApproval(of: pendingToolApproval, result: result)
       })
       .with(
         cornerRadius: Self.cornerRadius,

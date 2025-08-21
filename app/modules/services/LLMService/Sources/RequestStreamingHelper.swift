@@ -281,7 +281,13 @@ actor RequestStreamingHelper: Sendable {
 
   private func startExecution(of toolUse: any ToolUse, context: any ChatContext) async {
     do {
-      try await context.requestToolApproval(toolUse)
+      if toolUse is any ExternalToolUse {
+        // We let the external agent manage permissions. If it needs permission
+        // approval it will explicitely ask us using `toolUsePermissionRequest`
+        // TODO: verify if there is any issue related to the ordering for external tools which calls first `toolUseRequest -> startExecution` and only later `toolUsePermissionRequest`
+      } else {
+        try await context.requestToolApproval(toolUse)
+      }
       toolUse.startExecuting()
     } catch is CancellationError {
       defaultLogger.error("Tool use is cancelled")
@@ -456,27 +462,55 @@ actor RequestStreamingHelper: Sendable {
   }
 
   private func handle(toolUsePermissionRequest: Schema.ToolUsePermissionRequest) async {
-    guard let tool = tools.first(where: { $0.name == toolUsePermissionRequest.toolName }) else {
-      defaultLogger.error("No tool found for permission request: \(toolUsePermissionRequest.toolName)")
-      return
-    }
     defaultLogger
       .log("Received tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId)")
 
+    guard
+      let toolUse = result.content
+        .compactMap(\.asToolUseRequest)
+        .first(where: { toolUseRequest in
+          toolUseRequest.id == toolUsePermissionRequest.toolUseId
+        })?.toolUse as? (any ExternalToolUse)
+    else {
+      defaultLogger.error("Could not find tool use matching \(toolUsePermissionRequest.toolUseId)")
+      return
+    }
+    guard let context else {
+      defaultLogger.error("No context available to handle tool use.")
+      return
+    }
+
+    let permissionApproval: Schema.ApprovalResult
     do {
-      let permission = try await tool.requestPermission()
+      try await context.requestToolApproval(toolUse)
+      permissionApproval = .approvalResultApprove(.init())
+    } catch is CancellationError {
+      defaultLogger.error("Tool use is cancelled")
+      permissionApproval = .approvalResultDeny(.init(reason: "Tool use cancelled"))
+      toolUse.cancel()
+    } catch let error as LLMServiceError {
+      defaultLogger.error("Tool approval is denied: \(error)")
+      switch error {
+      case .toolUsageDenied(let reason):
+        permissionApproval = .approvalResultDeny(.init(reason: reason))
+        toolUse.reject(reason: reason)
+      }
+    } catch {
+      defaultLogger.error("Tool approval had unexpected error type: \(error)")
+      // Reject the tool use instead of replacing it
+      permissionApproval = .approvalResultDeny(.init(reason: error.localizedDescription))
+      toolUse.reject(reason: error.localizedDescription)
+    }
 
-      let response = Schema.ApproveToolUseRequestParams(
-        toolUseId: toolUsePermissionRequest.toolUseId,
-        approvalResult: permission ? .approvalResultApprove(.init()) : .approvalResultDeny(.init(reason: "Permission denied")))
-
-      let data = try JSONEncoder().encode(response)
+    do {
+      let data = try JSONEncoder().encode(Schema.ApproveToolUseRequestParams(
+        toolUseId: toolUse.toolUseId,
+        approvalResult: permissionApproval))
       defaultLogger
         .log(
           "Sending tool permission response for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(String(data: data, encoding: .utf8) ?? "<invalid UTF-8>")")
 
       _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
-
     } catch {
       defaultLogger
         .error(
