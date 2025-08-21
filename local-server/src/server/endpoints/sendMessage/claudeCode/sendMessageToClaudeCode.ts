@@ -325,20 +325,27 @@ async function* mapStream(
 						const toolName = `${TOOL_NAME_PREFIX}${contentPart.name}`
 						toolNames[contentPart.id] = toolName
 						const input = contentPart.input as Record<string, unknown>
-						const toolUse = {
+
+						// Create the response object (without internal fields)
+						const toolUseResponse = {
 							type: "tool_call",
 							toolName,
 							toolUseId: contentPart.id,
 							input,
+						} satisfies Omit<ToolUseRequest, "idx">
+						yield toolUseResponse
+
+						// Create the internal storage object (with internal fields for matching)
+						const toolUseInternal = {
+							...toolUseResponse,
 							timestamp: Date.now(),
 							inputHash: createInputHash(input),
-						} satisfies Omit<ToolUseRequest, "idx"> & { timestamp: number; inputHash: string }
-						yield toolUse
+						}
 
 						if (!toolUseRequests.has(threadId)) {
 							toolUseRequests.set(threadId, [])
 						}
-						toolUseRequests.get(threadId)?.push(toolUse)
+						toolUseRequests.get(threadId)?.push(toolUseInternal)
 						break
 					}
 					default: {
