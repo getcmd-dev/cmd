@@ -393,7 +393,7 @@ struct RequestStreamingHelperToolFailureTests {
 
     // Create a tool failure message
     let failureMessage = Schema.ToolResultFailureMessage(
-      failure: JSON.Value.object(["message": JSON.Value.string("Tool execution failed with error")]))
+      failure: JSON.Value.string("Tool execution failed with error"))
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "test-tool-123",
       toolName: "mock_tool",
@@ -432,53 +432,4 @@ struct RequestStreamingHelperToolFailureTests {
 
     Issue.record("Expected TestExternalTool.Use or FailedToolUse, got \(type(of: toolMessage.toolUse))")
   }
-
-//  @Test("Handle tool result failure with string error message")
-//  func testHandleToolResultFailureWithStringError() async throws {
-//    let mockTool = TestExternalTool()
-//    let mockToolUse = mockTool.use(
-//      toolUseId: "test-tool-456",
-//      input: EmptyObject(),
-//      context: TestToolExecutionContext(projectRoot: URL(filePath: "/test")),
-//      initialStatus: nil)
-//
-//    let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))
-//    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
-//
-//    let helper = RequestStreamingHelper(
-//      stream: stream,
-//      result: result,
-//      tools: [mockTool],
-//      context: TestChatContext(projectRoot: URL(filePath: "/test")),
-//      isTaskCancelled: { false },
-//      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
-//
-//    // Create a tool failure message with string error
-//    let failureMessage = Schema.ToolResultFailureMessage(
-//      failure: JSON.Value.string("Simple error message"))
-//    let toolResult = Schema.ToolResultMessage(
-//      toolUseId: "test-tool-456",
-//      toolName: "mock_tool",
-//      result: .toolResultFailureMessage(failureMessage))
-//    let chunk = Schema.StreamedResponseChunk.toolResult(toolResult)
-//    let data = try JSONEncoder().encode(chunk)
-//
-//    continuation.yield(data)
-//    continuation.finish()
-//
-//    try await helper.processStream()
-//
-//    let finalMessage = result.value
-//    guard
-//      case .tool(let toolMessage) = finalMessage.content.first,
-//      let failedToolUse = toolMessage.toolUse as? FailedToolUse
-//    else {
-//      Issue.record("Expected FailedToolUse")
-//      return
-//    }
-//
-//    #expect(failedToolUse.toolUseId == "test-tool-456")
-//    #expect(failedToolUse.errorDescription == "Simple error message")
-//  }
-
 }
