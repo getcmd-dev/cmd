@@ -153,13 +153,7 @@ export interface InternalContent {
 	idx: number
 }
 
-export type MessageContent =
-	| TextMessage
-	| ReasoningMessage
-	| ToolUseRequest
-	| ToolResultMessage
-	| InternalTextMessage
-	| InternalContent
+export type MessageContent = TextMessage | ReasoningMessage | ToolUseRequest | ToolResultMessage | InternalContent
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
@@ -188,12 +182,6 @@ export interface ReasoningMessage {
 	text: string
 	signature?: string
 	type: "reasoning"
-}
-
-// This should not be sent to the provider. Can be used to hold internal information.
-export interface InternalTextMessage {
-	text: string
-	type: "internal_text"
 }
 
 export type MessageAttachment = ImageAttachment | FileAttachment | FileSelectionAttachment | BuildErrorAttachment

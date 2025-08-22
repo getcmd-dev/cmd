@@ -17,23 +17,23 @@ struct WelcomeView: View {
           .fill(Color.blue)
           .frame(width: 80, height: 80)
           .overlay(
-            AppLogo()
+            AppIcon()
               .tint(.white)
               .frame(square: 60)
               .foregroundColor(colorScheme.primaryForeground))
 
         VStack(spacing: 16) {
           Text("Welcome to ")
-            .font(.largeTitle)
+            .font(.system(size: 20))
             .fontWeight(.medium)
             .foregroundColor(colorScheme.primaryForeground)
             + Text("cmd")
-            .font(.largeTitle)
+            .font(.system(size: 20, design: .monospaced))
             .fontWeight(.medium)
-            .foregroundColor(.blue)
+            .foregroundColor(colorScheme.primaryForeground.opacity(0.5))
 
           Text(
-            "Your coding assistant for Xcode. Enhance your development workflow with AI-powered code suggestions.  Let agents automate the busy work so you can focus on what matters most.\n\nIt's all open source and local. No need to trust the middle man: your requests go directly to the LLM provider of your choice.")
+            "Your coding assistant for Xcode. Enhance your development workflow with AI-powered code suggestions.  Let agents automate the busy work so you can focus on what matters most.\n\nIt's all open source and local.")
             .font(.body)
             .foregroundColor(colorScheme.secondaryForeground)
             .multilineTextAlignment(.center)
@@ -47,26 +47,22 @@ struct WelcomeView: View {
         FeatureCard(
           icon: "sparkles",
           title: "AI-Powered",
-          description: "Intelligent code suggestions and automomous edits powered by state-of-the-art language models.",
-          color: .blue)
+          description: "State-of-the-art inteligence from the best language models with robust agentic capabilities.")
 
         FeatureCard(
           icon: "lock.open",
           title: "Open Source",
-          description: "Fully open source and transparent. Contribute to the future of iOS & MacOS development.",
-          color: .green)
+          description: "Fully open source and transparent. Contribute to the future of iOS & MacOS development.")
 
         FeatureCard(
           icon: "bolt",
           title: "Xcode Native",
-          description: "Seamlessly integrated into your Xcode workflow. No need to use another IDE.",
-          color: .purple)
+          description: "Seamlessly integrated into your Xcode workflow. No need to use another IDE. **cmd** works with Xcode 26's AI chat.")
 
         FeatureCard(
           icon: "shield",
           title: "Local development",
-          description: "**cmd** runs locally on your computer. No intermediary services, no additional third parties to trust.",
-          color: .purple)
+          description: "**cmd** runs locally on your computer. No intermediary services, no cloud based third parties to trust.")
       }
 
       HoveredButton(
@@ -94,7 +90,6 @@ private struct FeatureCard: View {
   let icon: String
   let title: String
   let description: String
-  let color: Color
 
   var body: some View {
     VStack(spacing: 16) {

@@ -119,7 +119,7 @@ public final class LSTool: NonStreamableTool {
   }
 
   public var shortDescription: String {
-    "Lists files and directories within a specified directory, optionally recursive."
+    "Lists files and directories within a specified directory."
   }
 
   public var inputSchema: JSON {

@@ -376,9 +376,9 @@ public final class EditFilesTool: Tool {
 
   public var shortDescription: String {
     if shouldAutoApply {
-      "Replace existing code using search/replace blocks in a list of files and create new files."
+      "Update existing code or create new files."
     } else {
-      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
+      "Suggest updates to existing code, or to create new files."
     }
   }
 

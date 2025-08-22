@@ -66,16 +66,12 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   }
 
   private func registerActions() {
-    on(.ask, trigger: AddCodeToChatEvent(newThread: false, chatMode: .ask))
-    on(.askInNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: .ask))
-    on(.agent, trigger: AddCodeToChatEvent(newThread: false, chatMode: .agent))
-    on(.agentInNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: .agent))
+    on(.addContext, trigger: AddCodeToChatEvent(newThread: false, chatMode: nil))
+    on(.addContextToNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: nil))
     on(.edit, trigger: EditEvent())
     on(.generate, trigger: GenerateEvent())
     on(.hideChat, trigger: HideChatEvent())
     on(.new, trigger: NewChatEvent())
-    on(.switchToAskMode, trigger: ChangeChatModeEvent(chatMode: .ask))
-    on(.switchToAgentMode, trigger: ChangeChatModeEvent(chatMode: .agent))
   }
 
   private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
@@ -93,29 +89,21 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
 extension KeyboardShortcuts.Name {
   static let hideChat = Self("hideChat", default: .init(.escape, modifiers: [.command]))
   // Xcode shortcuts
-  static let ask = Self("ask", default: .init(.l, modifiers: [.command]))
-  static let askInNewThread = Self("askInNewThread", default: .init(.l, modifiers: [.command, .shift]))
-  static let agent = Self("agent", default: .init(.i, modifiers: [.command]))
-  static let agentInNewThread = Self("agentInNewThread", default: .init(.i, modifiers: [.command, .shift]))
+  static let addContext = Self("addContext", default: .init(.i, modifiers: [.command]))
+  static let addContextToNewThread = Self("addContextToNewThread", default: .init(.i, modifiers: [.command, .shift]))
   static let edit = Self("edit", default: .init(.k, modifiers: [.command, .shift]))
   static let generate = Self("generate", default: .init(.k, modifiers: [.command]))
 
   static let xcodeShortcuts = [
-    Self.ask,
-    Self.askInNewThread,
-    Self.agent,
-    Self.agentInNewThread,
+    Self.addContext,
+    Self.addContextToNewThread,
     Self.edit,
     Self.generate,
   ]
-  // Host app shortcuts
+  /// Host app shortcuts
   static let new = Self("new", default: .init(.n, modifiers: [.command]))
-  static let switchToAskMode = Self("switchToAskMode", default: .init(.l, modifiers: [.command]))
-  static let switchToAgentMode = Self("switchToAgentMode", default: .init(.i, modifiers: [.command]))
 
   static let hostAppShortcuts = [
     Self.new,
-    Self.switchToAskMode,
-    Self.switchToAgentMode,
   ]
 }

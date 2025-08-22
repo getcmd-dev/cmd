@@ -126,7 +126,7 @@ public final class ReadFileTool: NonStreamableTool {
   }
 
   public var shortDescription: String {
-    "Reads the content of a file, optionally limiting to a specific line range."
+    "Reads the content of a file."
   }
 
   public var inputSchema: JSON {

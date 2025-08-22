@@ -13,4 +13,25 @@ public struct AppLogo: View {
   public init() { }
 }
 
+extension Bundle {
+  var icon: NSImage? {
+    if let iconFile = infoDictionary?["CFBundleIconFile"] as? String {
+      return NSImage(named: iconFile)
+    }
+    return nil
+  }
+}
+
+public struct AppIcon: View {
+  public var body: some View {
+    if let image = Bundle.main.icon {
+      Image(nsImage: image)
+    } else {
+      AppLogo()
+    }
+  }
+
+  public init() { }
+}
+
 private let resourceBundle = Bundle.module

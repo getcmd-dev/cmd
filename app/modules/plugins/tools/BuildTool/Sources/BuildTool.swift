@@ -111,7 +111,7 @@ public final class BuildTool: NonStreamableTool {
   }
 
   public var shortDescription: String {
-    "Triggers Xcode build actions for testing or running and provides output results."
+    "Triggers Xcode build and read the build output."
   }
 
   public var inputSchema: JSON {

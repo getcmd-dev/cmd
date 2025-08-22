@@ -15,11 +15,13 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - selectedItem: The item that is currently selected.
   ///   - availableItems: The list of items to display in the menu.
   ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
+  ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
   ///   - viewBuilder: Returns a view to display an item.
   public init(
     selectedItem: Binding<Item>,
     availableItems: [Item],
     searchKey: ((Item) -> String)? = nil,
+    isExpanded: Binding<Bool>? = nil,
     @ViewBuilder viewBuilder: @escaping (Item) -> Content)
   {
     _selectedItem = .init(
@@ -33,6 +35,14 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     self.searchKey = searchKey
     emptySelectionText = "Select an item"
     self.viewBuilder = viewBuilder
+
+    _isExpandedBinding = .init(
+      get: { isExpanded?.wrappedValue },
+      set: { newValue in
+        if let newValue {
+          isExpanded?.wrappedValue = newValue
+        }
+      })
   }
 
   /// A view that displays a list of items as a pop-up menu and allows the user to select one.
@@ -41,12 +51,14 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - availableItems: The list of items to display in the menu.
   ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
   ///   - emptySelectionText: The text to display when no item is selected.
+  ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
   ///   - viewBuilder: Returns a view to display an item.
   public init(
     selectedItem: Binding<Item?>,
     availableItems: [Item],
     searchKey: ((Item) -> String)? = nil,
     emptySelectionText: String,
+    isExpanded: Binding<Bool>? = nil,
     @ViewBuilder viewBuilder: @escaping (Item) -> Content)
   {
     _selectedItem = selectedItem
@@ -54,6 +66,14 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     self.searchKey = searchKey
     self.emptySelectionText = emptySelectionText
     self.viewBuilder = viewBuilder
+
+    _isExpandedBinding = .init(
+      get: { isExpanded?.wrappedValue },
+      set: { newValue in
+        if let newValue {
+          isExpanded?.wrappedValue = newValue
+        }
+      })
   }
 
   public var body: some View {
@@ -134,12 +154,23 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @State private var searchText = ""
-  @State private var isExpanded = false
+  @Binding private var isExpandedBinding: Bool?
+  @State private var isExpandedDefaultState = false
 
   private let availableItems: [Item]
   private let searchKey: ((Item) -> String)?
   private let emptySelectionText: String
   private let viewBuilder: (Item) -> Content
+
+  private var isExpanded: Bool {
+    get {
+      isExpandedBinding ?? isExpandedDefaultState
+    }
+    nonmutating set {
+      isExpandedBinding = newValue
+      isExpandedDefaultState = newValue
+    }
+  }
 
   private var filteredItems: [Item] {
     if searchText.isEmpty {

@@ -54,7 +54,7 @@ extension FileDiff {
     task.launch()
 
     let data = stdout.fileHandleForReading.readDataToEndOfFile()
-    return String(data: data, encoding: .utf8) ?? ""
+    return String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
   }
 }
 
