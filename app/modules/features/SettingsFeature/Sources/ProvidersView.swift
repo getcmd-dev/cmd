@@ -148,18 +148,33 @@ private struct ProviderCard: View {
               .foregroundColor(isConnected ? colorScheme.addedLineDiffText : .secondary)
           }
 
-          Text(provider.description)
-            .font(.subheadline)
-            .foregroundColor(.secondary)
+          if let websiteURL = provider.websiteURL {
+            PlainLink(provider.description, destination: websiteURL)
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+          } else {
+            Text(provider.description)
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+          }
         }
       }
 
       // API Key section
       if provider.needsAPIKey {
         VStack(alignment: .leading, spacing: 8) {
-          Text("API Key")
-            .font(.subheadline)
-            .fontWeight(.medium)
+          HStack {
+            Text("API Key")
+              .font(.subheadline)
+              .fontWeight(.medium)
+            Spacer(minLength: 0)
+            if let apiKeyCreationURL = provider.apiKeyCreationURL {
+              PlainLink("open API keys page", destination: apiKeyCreationURL)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fontWeight(.medium)
+            }
+          }
 
           HStack {
             if showAPIKey {

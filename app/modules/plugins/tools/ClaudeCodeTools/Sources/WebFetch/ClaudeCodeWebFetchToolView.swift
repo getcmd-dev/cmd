@@ -105,16 +105,7 @@ struct LinkView: View {
 
   var body: some View {
     if let url = URL(string: url) {
-      Link(url.absoluteString, destination: url)
-        .underline()
-        .buttonStyle(PlainButtonStyle())
-        .onHover { isHovering in
-          if isHovering {
-            NSCursor.pointingHand.push()
-          } else {
-            NSCursor.pop()
-          }
-        }
+      PlainLink(url.absoluteString, destination: url)
     } else {
       Text(url)
     }

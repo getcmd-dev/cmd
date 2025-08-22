@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import Foundation
 
 extension LLMProvider {
 
@@ -17,6 +18,8 @@ extension LLMProvider {
       .gpt_mini,
       .gpt_nano,
     ],
+    websiteURL: URL(string: "https://openrouter.ai"),
+    apiKeyCreationURL: URL(string: "https://openrouter.ai/keys"),
     idForModel: { model in
       switch model {
       case .claudeHaiku_3_5: return "anthropic/claude-3.5-haiku"

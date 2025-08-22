@@ -1,6 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
+
 // MARK: - LLMProvider
 
 public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
@@ -17,6 +19,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     name: String,
     keychainKey: String,
     supportedModels: [LLMModel] = [],
+    websiteURL: URL? = nil,
+    apiKeyCreationURL: URL? = nil,
     idForModel: @escaping @Sendable (LLMModel) throws -> String,
     priceForModel: @escaping @Sendable (LLMModel) -> ModelPricing?)
   {
@@ -24,6 +28,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     self.name = name
     self.keychainKey = keychainKey
     self.supportedModels = supportedModels
+    self.websiteURL = websiteURL
+    self.apiKeyCreationURL = apiKeyCreationURL
     self.idForModel = idForModel
     self.priceForModel = priceForModel
   }
@@ -41,6 +47,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
   public let name: String
   public let keychainKey: String
   public let supportedModels: [LLMModel]
+  public let websiteURL: URL?
+  public let apiKeyCreationURL: URL?
 
   public var rawValue: String { id }
 
