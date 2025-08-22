@@ -326,7 +326,6 @@ async function* mapStream(
 						toolNames[contentPart.id] = toolName
 						const input = contentPart.input as Record<string, unknown>
 
-						// Create the response object (without internal fields)
 						const toolUseResponse = {
 							type: "tool_call",
 							toolName,
@@ -335,17 +334,14 @@ async function* mapStream(
 						} satisfies Omit<ToolUseRequest, "idx">
 						yield toolUseResponse
 
-						// Create the internal storage object (with internal fields for matching)
-						const toolUseInternal = {
-							...toolUseResponse,
-							timestamp: Date.now(),
-							inputHash: createInputHash(input),
-						}
-
 						if (!toolUseRequests.has(threadId)) {
 							toolUseRequests.set(threadId, [])
 						}
-						toolUseRequests.get(threadId)?.push(toolUseInternal)
+						toolUseRequests.get(threadId)?.push({
+							...toolUseResponse,
+							timestamp: Date.now(),
+							inputHash: createInputHash(input),
+						})
 						break
 					}
 					default: {
@@ -459,6 +455,7 @@ type SessionIdInfo = {
 }
 
 export const registerEndpoint = (router: Router) => {
+	// This endpoint is used to receive the result of pending tool permission requests.
 	router.post("/sendMessage/toolUse/permission", async (req: Request, res: Response) => {
 		const body = req.body as ApproveToolUseRequestParams
 		const { toolUseId, approvalResult } = body

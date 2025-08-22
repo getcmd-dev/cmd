@@ -6,7 +6,6 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { v4 as uuidv4 } from "uuid"
 import { ApprovalResult } from "@/server/schemas/toolApprovalSchema"
-import { logInfo } from "@/logger"
 
 export const registerMCPServerEndpoints = (
 	router: Router,
@@ -42,7 +41,6 @@ export const registerMCPServerEndpoints = (
 		const { tool_name, input } = args
 		const response = (await handleApproval(tool_name, input)) as ApprovalResult
 		if (response.type === "approval_allowed") {
-			logInfo("Approving tool call")
 			return {
 				content: [
 					{
@@ -55,7 +53,6 @@ export const registerMCPServerEndpoints = (
 				],
 			}
 		} else {
-			logInfo("Denying tool call")
 			return {
 				content: [
 					{

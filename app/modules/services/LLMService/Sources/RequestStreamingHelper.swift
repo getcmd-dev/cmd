@@ -473,16 +473,15 @@ actor RequestStreamingHelper: Sendable {
         })?.toolUse as? (any ExternalToolUse)
     else {
       defaultLogger.error("Could not find tool use matching \(toolUsePermissionRequest.toolUseId)")
-      await sendPermissionDenialResponse(
-        for: toolUsePermissionRequest,
-        reason: "Tool use not found")
+      await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
       return
     }
     guard let context else {
       defaultLogger.error("No context available to handle tool use.")
-      await sendPermissionDenialResponse(
-        for: toolUsePermissionRequest,
-        reason: "No context available")
+      assertionFailure("No context available to handle tool use.")
+      await send(
+        permissionResponse: .approvalResultDeny(.init(reason: "Internal error, no context available")),
+        for: toolUsePermissionRequest)
       return
     }
 
@@ -507,40 +506,24 @@ actor RequestStreamingHelper: Sendable {
       permissionApproval = .approvalResultDeny(.init(reason: error.localizedDescription))
       toolUse.reject(reason: error.localizedDescription)
     }
+    await send(permissionResponse: permissionApproval, for: toolUsePermissionRequest)
+  }
 
+  private func send(
+    permissionResponse: Schema.ApprovalResult,
+    for toolUsePermissionRequest: Schema.ToolUsePermissionRequest)
+    async
+  {
     do {
       let data = try JSONEncoder().encode(Schema.ApproveToolUseRequestParams(
-        toolUseId: toolUse.toolUseId,
-        approvalResult: permissionApproval))
-      defaultLogger
-        .log(
-          "Sending tool permission response for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(String(data: data, encoding: .utf8) ?? "<invalid UTF-8>")")
+        toolUseId: toolUsePermissionRequest.toolUseId,
+        approvalResult: permissionResponse))
 
       _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
     } catch {
       defaultLogger
         .error(
           "Failed to handle tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(error)")
-    }
-  }
-
-  private func sendPermissionDenialResponse(
-    for request: Schema.ToolUsePermissionRequest,
-    reason: String)
-    async
-  {
-    let permissionApproval = Schema.ApprovalResult.approvalResultDeny(.init(reason: reason))
-
-    do {
-      let data = try JSONEncoder().encode(Schema.ApproveToolUseRequestParams(
-        toolUseId: request.toolUseId,
-        approvalResult: permissionApproval))
-
-      defaultLogger.log("Sending permission denial for \(request.toolName) \(request.toolUseId): \(reason)")
-
-      _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
-    } catch {
-      defaultLogger.error("Failed to send permission denial response: \(error)")
     }
   }
 
