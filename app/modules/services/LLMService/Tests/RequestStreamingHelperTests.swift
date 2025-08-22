@@ -8,6 +8,7 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMServiceInterface
 import LocalServerServiceInterface
+import SwiftTesting
 import Testing
 import ToolFoundation
 @testable import LLMService
@@ -274,6 +275,93 @@ struct RequestStreamingHelperReasoningTests {
     #expect(reasoningContent.content == "First thought then second and third")
     #expect(reasoningContent.deltas == ["First thought", " then second", " and third"])
   }
+
+  @Test("handle external tool use with permission request")
+  func handleExternalToolUseWithPermissionRequest() async throws {
+    // Given
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let tool = TestExternalTool()
+    let toolUseId = UUID().uuidString
+    let permissionRequested = expectation(description: "tool use permission requested and approved")
+    let permissionResultSent = expectation(description: "tool use approval sent")
+
+    let localServer = MockLocalServer()
+    localServer.onPostRequest = { path, data, _ in
+      #expect(permissionRequested.isFulfilled)
+      #expect(path == "sendMessage/toolUse/permission")
+      #expect(data.jsonString() == """
+        {
+          "approvalResult" : {
+            "type" : "approval_allowed"
+          },
+          "toolUseId" : "\(toolUseId)"
+        }
+        """)
+      permissionResultSent.fulfill()
+      return LocalServerResponse()
+    }
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [tool],
+      context: TestChatContext(
+        projectRoot: URL(filePath: "/test"),
+        requestToolApproval: { _ in
+          permissionRequested.fulfill()
+          // Returning without throwing will accept the tool use.
+        }),
+      isTaskCancelled: { false },
+      localServer: localServer,
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    async let requestResult = helper.processStream()
+
+    let input = JSON.object([:])
+
+    let streamChunk = { (chunk: Schema.StreamedResponseChunk) in
+      let data = try JSONEncoder().encode(chunk)
+      continuation.yield(data)
+    }
+
+    // When
+    try streamChunk(.toolUseRequest(.init(
+      toolName: tool.name,
+      input: input,
+      toolUseId: toolUseId,
+      idx: 0)))
+
+    try streamChunk(.toolUsePermissionRequest(.init(
+      toolName: tool.name,
+      input: input,
+      toolUseId: toolUseId, idx: 1)))
+
+    try await fulfillment(of: [permissionRequested, permissionResultSent])
+
+    try streamChunk(.toolResultMessage(.init(
+      request: .init(
+        toolName: tool.name,
+        input: input, toolUseId: toolUseId,
+        idx: 2),
+      output: .string("Worked"))))
+
+    continuation.finish()
+
+    _ = try await requestResult
+
+    // Then
+    let toolUse = try #require(result.content.first?.asToolUseRequest?.toolUse as? TestExternalTool.Use)
+    #expect(toolUse.toolUseId == toolUseId)
+
+    let toolStatus = await toolUse.status.lastValue
+    switch toolStatus {
+    case .completed(.success):
+      break
+    default:
+      Issue.record("Unexpected tool use status \(toolStatus)")
+    }
+  }
 }
 
 // MARK: - RequestStreamingHelperToolFailureTests
@@ -392,4 +480,5 @@ struct RequestStreamingHelperToolFailureTests {
 //    #expect(failedToolUse.toolUseId == "test-tool-456")
 //    #expect(failedToolUse.errorDescription == "Simple error message")
 //  }
+
 }

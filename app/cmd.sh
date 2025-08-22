@@ -33,7 +33,7 @@ close_xcode() {
 focus_dependency_command() {
 	close_xcode
 	# Reset xcode state
-	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+	# find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	./tools/dependencies/focus.sh "$@"
 	echo "👉 Don't forget to use 'cmd open:app' the next time you re-open the app's xcodeproj, instead of opening it manually."
@@ -60,8 +60,8 @@ clean_command() {
 		git check-ignore --stdin |
 		while read file; do rm -rf "$file"; done
 	# Reset xcode state
-	cd "$(git rev-parse --show-toplevel)/app" &&
-		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+	# cd "$(git rev-parse --show-toplevel)/app" &&
+	# 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	# Remove lock file
 	rm "$(git rev-parse --show-toplevel)/.build/disable-watcher"
@@ -100,6 +100,7 @@ focus)
 	;;
 open:app)
 	clean_command &&
+		cd "$(git rev-parse --show-toplevel)/app" &&
 		xcode_path=$(xcode-select -p) &&
 		xcode_path="${xcode_path%%.app*}.app" &&
 		open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES

@@ -332,6 +332,7 @@ extension ExternalToolUse {
 
   public func receive(output: JSON.Value, isSuccess: Bool) throws {
     guard case .string(let stringOutput) = output else {
+      assertionFailure("Expected the output to be a string for an external tool use")
       return
     }
     if isSuccess {

@@ -475,16 +475,14 @@ actor RequestStreamingHelper: Sendable {
       defaultLogger.error("Could not find tool use matching \(toolUsePermissionRequest.toolUseId)")
       await sendPermissionDenialResponse(
         for: toolUsePermissionRequest,
-        reason: "Tool use not found"
-      )
+        reason: "Tool use not found")
       return
     }
     guard let context else {
       defaultLogger.error("No context available to handle tool use.")
       await sendPermissionDenialResponse(
         for: toolUsePermissionRequest,
-        reason: "No context available"
-      )
+        reason: "No context available")
       return
     }
 
@@ -528,17 +526,18 @@ actor RequestStreamingHelper: Sendable {
 
   private func sendPermissionDenialResponse(
     for request: Schema.ToolUsePermissionRequest,
-    reason: String
-  ) async {
+    reason: String)
+    async
+  {
     let permissionApproval = Schema.ApprovalResult.approvalResultDeny(.init(reason: reason))
-    
+
     do {
       let data = try JSONEncoder().encode(Schema.ApproveToolUseRequestParams(
         toolUseId: request.toolUseId,
         approvalResult: permissionApproval))
-      
+
       defaultLogger.log("Sending permission denial for \(request.toolName) \(request.toolUseId): \(reason)")
-      
+
       _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
     } catch {
       defaultLogger.error("Failed to send permission denial response: \(error)")

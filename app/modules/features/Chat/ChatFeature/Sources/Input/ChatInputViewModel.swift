@@ -394,7 +394,7 @@ final class ChatInputViewModel {
   func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult? = nil) {
     let currentSuggestedResult = pendingToolApprovalSuggestedResult
     pendingToolApprovalSuggestedResult = .alwaysApprove
-    
+
     let approvalResult = result ?? currentSuggestedResult
     guard let index = toolCallsPendingApproval.firstIndex(where: { $0.request.id == request.id }) else {
       defaultLogger.error("Could not find pending tool approval request with ID: \(request.id)")
