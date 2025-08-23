@@ -242,6 +242,8 @@ extension ChatMessageToolUseContentModel: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let tool = try container.decodeAnyTool(forKey: .callingTool)
+    // TODO: If the tool use has issues and was represented with the FailedTool,
+    // the following will fail, causing the chat thread to be deleted when loaded from the history.
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
       toolUse: container.decode(useOf: tool, forKey: .toolUse))

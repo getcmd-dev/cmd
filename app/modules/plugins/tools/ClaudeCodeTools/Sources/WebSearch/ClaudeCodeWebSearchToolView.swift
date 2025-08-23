@@ -106,10 +106,12 @@ struct WebSearchToolUseView: View {
               .fill(Color.clear)
               .frame(width: 8, height: 8)
 
-            Text("Searching")
-              .font(.caption)
-              .foregroundColor(colorScheme.toolUseForeground)
-            ThreeDotsLoadingAnimation()
+            HStack(spacing: 0) {
+              Text("Searching")
+                .font(.caption)
+                .foregroundColor(colorScheme.toolUseForeground)
+              ThreeDotsLoadingAnimation()
+            }
           }
         } else if let error = errorDescription {
           HStack {

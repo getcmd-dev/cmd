@@ -319,6 +319,7 @@ actor RequestStreamingHelper: Sendable {
       do {
         try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
       } catch {
+        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId): \(error)")
         // If the above fails, this is because the input could not be parsed by the tool.
         var content = result.content
         assert(
@@ -367,6 +368,9 @@ actor RequestStreamingHelper: Sendable {
         await startExecution(of: toolUse, context: context)
 
       } catch {
+        defaultLogger
+          .error(
+            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\(String(data: (try! JSONEncoder().encode(request.input)), encoding: .utf8) ?? "unreadable")")
         // If the above fails, this is because the input could not be parsed by the tool.
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
@@ -393,7 +397,7 @@ actor RequestStreamingHelper: Sendable {
           toolUseRequest.id == toolResult.toolUseId
         })?.toolUse as? (any ExternalToolUse)
     else {
-      defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
+      defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId) for \(toolResult.toolName)")
       return
     }
 

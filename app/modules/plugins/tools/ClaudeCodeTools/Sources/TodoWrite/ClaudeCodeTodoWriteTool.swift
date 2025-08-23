@@ -61,6 +61,20 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       public let content: String
       public let status: String
       public let id: String
+
+      init(content: String, status: String, id: String) {
+        self.content = content
+        self.status = status
+        self.id = id
+      }
+
+      public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: String.self)
+        content = try container.decode(String.self, forKey: "content")
+        status = try container.decode(String.self, forKey: "status")
+        // Claude Code changed the format around 8/20/25 and replaced `id` with `activeForm` that can also be used as an id.
+        id = try container.decodeIfPresent(String.self, forKey: "activeForm") ?? container.decode(String.self, forKey: "id")
+      }
     }
 
     public struct Input: Codable, Sendable {
