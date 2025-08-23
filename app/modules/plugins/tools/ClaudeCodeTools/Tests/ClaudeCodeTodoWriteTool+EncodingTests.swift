@@ -175,6 +175,77 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
       }
       """)
   }
+
+  @Test
+  func decodesPayloadWithActiveFormField() throws {
+    let json = """
+      {
+        "todos": [
+          {
+            "content": "Check git diff to see what models were added",
+            "status": "completed",
+            "activeForm": "Checking git diff for new models"
+          },
+          {
+            "content": "Fetch Groq documentation for model parameters",
+            "status": "completed",
+            "activeForm": "Fetching Groq model documentation"
+          },
+          {
+            "content": "Compare added models with documentation",
+            "status": "completed",
+            "activeForm": "Comparing models with documentation"
+          },
+          {
+            "content": "Identify any discrepancies or missing parameters",
+            "status": "completed",
+            "activeForm": "Identifying parameter discrepancies"
+          }
+        ]
+      }
+      """
+
+    let decoded = try JSONDecoder().decode(ClaudeCodeTodoWriteTool.Use.Input.self, from: json.utf8Data)
+
+    let encoded = try JSONEncoder().encode(decoded)
+
+    let value = encoded.jsonString()
+    let expected = json.replacingOccurrences(of: "activeForm", with: "id").utf8Data.jsonString()
+
+    #expect(expected == value)
+  }
+
+  @Test
+  func decodesPayloadWithIdField() throws {
+    let jsonPayload = """
+      {
+        "todos": [
+          {
+            "content": "Check git diff to see what models were added",
+            "status": "completed",
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          {
+            "content": "Fetch Groq documentation for model parameters",
+            "status": "completed",
+            "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012"
+          },
+          {
+            "content": "Compare added models with documentation",
+            "status": "completed",
+            "id": "c3d4e5f6-g7h8-9012-cdef-345678901234"
+          },
+          {
+            "content": "Identify any discrepancies or missing parameters",
+            "status": "completed",
+            "id": "d4e5f6g7-h8i9-0123-def0-456789012345"
+          }
+        ]
+      }
+      """
+
+    try testDecodingEncodingOf(jsonPayload, with: ClaudeCodeTodoWriteTool.Use.Input.self)
+  }
 }
 
 private let toolExecutionContext = ToolExecutionContext()
