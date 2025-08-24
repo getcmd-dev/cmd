@@ -40,9 +40,11 @@ You can easily use Claude Code in `cmd`. In the LLM providers settings, enter wh
 #### Additional Installation steps for Xcode 26's AI chat
 - Go to Xcode > Settings > Intelligence > Add a Model Provider
 - Select a local model, running on port 10101
-<img align="center" height="200px" src="./docs/images/xcode26-installation-prompt.jpeg"/>
+<img align="center" height="300px" src="./docs/images/xcode26-installation-prompt.jpeg"/>
+
 - Interact with `cmd` using either Xcode 26 built in AI chat, or `cmd`'s richer UI.
-<img align="center" height="300px" src="./docs/images/xcode26-sidebar.jpeg"/>
+
+<img align="center" height="500px" src="./docs/images/xcode26-sidebar.jpeg"/>
 
 ## Roadmap & contributions
 [We welcome contributions](./contributing.md)! Help us make your work more enjoyable.

@@ -32,12 +32,12 @@
 		"export-schema-swift": "yarn tsx ./tools/generateSwiftSchema.ts"
 	},
 	"dependencies": {
-		"@ai-sdk/anthropic": "^1.2.12",
-		"@ai-sdk/openai": "^1.3.22",
+		"@ai-sdk/anthropic": "^2.0.6",
+		"@ai-sdk/openai": "^2.0.19",
 		"@anthropic-ai/claude-code": "^1.0.58",
 		"@modelcontextprotocol/sdk": "^1.17.0",
-		"@openrouter/ai-sdk-provider": "^0.5.0",
-		"ai": "^4.3.16",
+		"@openrouter/ai-sdk-provider": "^1.1.2",
+		"ai": "^5.0.22",
 		"express": "^4.21.2",
 		"express-promise-router": "^4.1.1",
 		"fzf": "^0.5.2",

@@ -18,18 +18,20 @@ import {
 import { addUserFacingError, UserFacingError } from "../../errors"
 
 import {
-	CoreAssistantMessage,
-	CoreMessage,
-	CoreToolMessage,
-	CoreUserMessage,
+	AssistantModelMessage,
+	ModelMessage,
+	ToolModelMessage,
+	JSONValue,
+	ToolResultPart,
+	UserModelMessage,
 	streamText,
-	Tool as MappedTool,
+	Tool as ToolModel,
 	jsonSchema,
 	TextStreamPart,
 	TextPart,
 	ImagePart,
 	FilePart,
-	CoreSystemMessage,
+	SystemModelMessage,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
 import {
@@ -128,14 +130,13 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 						acc[tool.name] = tool
 						return acc
 					},
-					{} as Record<string, MappedTool>,
+					{} as Record<string, ToolModel>,
 				),
 				messages: addProviderOptionsToMessages
 					? addProviderOptionsToMessages(messages.map(mapMessage))
 					: messages.map(mapMessage),
-				toolCallStreaming: true,
 				providerOptions: generalProviderOptions,
-				maxTokens: 8192,
+				maxOutputTokens: 8192,
 			})
 
 			let idx = await respondUsingResponseStream(mapStream(fullStream), res)
@@ -143,8 +144,8 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			const usageInfo = await usage
 			const usageRes: ResponseUsage = {
 				type: "usage",
-				inputTokens: usageInfo.promptTokens,
-				outputTokens: usageInfo.completionTokens,
+				inputTokens: usageInfo.inputTokens || 0,
+				outputTokens: usageInfo.outputTokens || 0,
 				idx: idx++,
 			}
 
@@ -168,22 +169,27 @@ export type ResponseChunkWithoutIndex = MappedOmit<StreamedResponseChunk, "idx">
  * Converts the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
  */
 async function* mapStream(
-	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+	stream: AsyncIterable<TextStreamPart<Record<string, ToolModel>>>,
 ): AsyncIterable<ResponseChunkWithoutIndex> {
+	const toolIdToNameMap: Record<string, string> = {}
+
 	for await (const chunk of stream) {
 		switch (chunk.type) {
 			case "text-delta":
 				yield {
 					type: "text_delta",
-					text: chunk.textDelta,
+					text: chunk.text,
 				}
 				break
-			case "tool-call-delta":
+			case "tool-input-start":
+				toolIdToNameMap[chunk.id] = chunk.toolName
+				break
+			case "tool-input-delta":
 				yield {
 					type: "tool_call_delta",
-					toolName: chunk.toolName,
-					toolUseId: chunk.toolCallId,
-					inputDelta: chunk.argsTextDelta,
+					toolName: toolIdToNameMap[chunk.id],
+					toolUseId: chunk.id,
+					inputDelta: chunk.delta,
 				}
 				break
 			case "tool-call":
@@ -191,21 +197,25 @@ async function* mapStream(
 					type: "tool_call",
 					toolName: chunk.toolName,
 					toolUseId: chunk.toolCallId,
-					input: chunk.args,
+					input: chunk.input,
 				}
 				break
-			case "reasoning":
+			case "reasoning-delta": {
 				yield {
 					type: "reasoning_delta",
-					delta: chunk.textDelta,
+					delta: chunk.text,
+				}
+				for (const [, providerMetadata] of Object.entries(chunk.providerMetadata || {})) {
+					const signature = providerMetadata?.signature
+					if (typeof signature === "string") {
+						yield {
+							type: "reasoning_signature",
+							signature,
+						}
+					}
 				}
 				break
-			case "reasoning-signature":
-				yield {
-					type: "reasoning_signature",
-					signature: chunk.signature,
-				}
-				break
+			}
 			case "error": {
 				const error = mapResponseError(chunk.error, () => 0)
 				yield error
@@ -255,6 +265,7 @@ export async function respondUsingResponseStream(
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
+			logInfo(`sending chunk: ${JSON.stringify(chunkWithIdx)}`)
 			res.write(JSON.stringify(chunkWithIdx) + "\n")
 		}
 		logInfo("Stream ended")
@@ -317,18 +328,18 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 /**
  * Maps a Tool to the format expected by the AI SDK.
  */
-const mapTool = (tool: Tool): MappedTool & { name: string } => {
+const mapTool = (tool: Tool): ToolModel & { name: string } => {
 	return {
 		description: tool.description,
 		name: tool.name,
-		parameters: jsonSchema(tool.inputSchema),
+		inputSchema: jsonSchema(tool.inputSchema),
 	}
 }
 
 /**
  * Maps a Message to the format expected by the AI SDK.
  */
-const mapMessage = (message: Message): CoreMessage => {
+const mapMessage = (message: Message): ModelMessage => {
 	if (message.role === "system") {
 		if (message.content.map(asTextMessage).length !== 1) {
 			throw new Error(`System message must have exactly one text content part. Got ${message.content.length}`)
@@ -336,7 +347,7 @@ const mapMessage = (message: Message): CoreMessage => {
 		return {
 			role: "system",
 			content: message.content.map(asTextMessage)[0].text,
-		} satisfies CoreSystemMessage
+		} satisfies SystemModelMessage
 	} else if (message.role === "user") {
 		return {
 			role: "user",
@@ -354,7 +365,7 @@ const mapMessage = (message: Message): CoreMessage => {
 							result.push({
 								type: "image",
 								image: attachment.url,
-								mimeType: attachment.mimeType,
+								mediaType: attachment.mimeType,
 							})
 							break
 						case "file_attachment":
@@ -393,7 +404,7 @@ const mapMessage = (message: Message): CoreMessage => {
 				})
 				return result
 			}),
-		} satisfies CoreUserMessage
+		} satisfies UserModelMessage
 	} else if (message.role === "assistant") {
 		return {
 			role: "assistant",
@@ -414,7 +425,7 @@ const mapMessage = (message: Message): CoreMessage => {
 							type: "tool-call" as const,
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
-							args: content.input,
+							input: content.input,
 						}
 					} else if (isReasoningMessage(content)) {
 						return {
@@ -429,17 +440,45 @@ const mapMessage = (message: Message): CoreMessage => {
 					throw new Error(`Unsupported content type for assistant message: ${content.type}`)
 				})
 				.filter(isDefined),
-		} satisfies CoreAssistantMessage
+		} satisfies AssistantModelMessage
 	} else if (message.role === "tool") {
 		return {
 			role: "tool",
-			content: message.content.map(asToolResultMessage).map((content) => ({
-				type: "tool-result",
-				toolCallId: content.toolUseId,
-				toolName: content.toolName,
-				result: content.result,
-			})),
-		} satisfies CoreToolMessage
+			content: message.content.map(asToolResultMessage).map((content) => {
+				let output: ToolResultPart["output"]
+				if (content.result.type === "tool_result_success") {
+					if (typeof content.result.success === "string") {
+						output = {
+							type: "text",
+							value: content.result.success,
+						}
+					} else {
+						output = {
+							type: "json",
+							value: content.result.success as JSONValue,
+						}
+					}
+				} else {
+					if (typeof content.result.failure === "string") {
+						output = {
+							type: "error-text",
+							value: content.result.failure,
+						}
+					} else {
+						output = {
+							type: "error-json",
+							value: content.result.failure as JSONValue,
+						}
+					}
+				}
+				return {
+					type: "tool-result",
+					toolCallId: content.toolUseId,
+					toolName: content.toolName,
+					output,
+				}
+			}),
+		} satisfies ToolModelMessage
 	} else {
 		throw new Error(`Unsupported message role: ${message.role}`)
 	}
