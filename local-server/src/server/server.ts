@@ -14,6 +14,7 @@ import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterModelProvider } from "./providers/open-router"
+import { GroqModelProvider } from "./providers/groq"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -34,7 +35,7 @@ app.get("/launch", (_, res) => {
 
 registerSendMessageEndpoint(
 	router,
-	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider()],
+	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider(), new GroqModelProvider()],
 	() => {
 		return connectionInfo.port
 	},

@@ -100,6 +100,46 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-nano"),
     reasoning: LLMReasoning())
 
+  /// Groq
+  public static let qwen3_32b = LLMModel(
+    name: "qwen3-32b",
+    id: "qwen3-32b",
+    contextSize: 131_072,
+    maxOutputTokens: 40_960,
+    defaultPricing: .init(input: 0.29, output: 0.59, cacheWriteMult: 0, cachedInputMult: 0.5),
+    documentationURL: URL(string: "https://huggingface.co/Qwen/Qwen3-32B"),
+    reasoning: LLMReasoning())
+  public static let gpt_oss_120b = LLMModel(
+    name: "gpt-oss-120b",
+    id: "gpt-oss-120b",
+    contextSize: 131_072,
+    maxOutputTokens: 65_536,
+    defaultPricing: .init(input: 0.15, output: 0.75, cacheWriteMult: 0, cachedInputMult: 0.5),
+    documentationURL: URL(string: "https://console.groq.com/docs/model/openai/gpt-oss-120b"),
+    reasoning: LLMReasoning())
+  public static let gpt_oss_20b = LLMModel(
+    name: "gpt-oss-20b",
+    id: "gpt-oss-20b",
+    contextSize: 131_072,
+    maxOutputTokens: 65_536,
+    defaultPricing: .init(input: 0.10, output: 0.50, cacheWriteMult: 0, cachedInputMult: 0.5),
+    documentationURL: URL(string: "https://console.groq.com/docs/model/openai/gpt-oss-20b"),
+    reasoning: LLMReasoning())
+  public static let llama_4_maverick_17b = LLMModel(
+    name: "Llama 4 Maverick",
+    id: "llama-4-maverick-17b",
+    contextSize: 131_072,
+    maxOutputTokens: 8_192,
+    defaultPricing: .init(input: 0.20, output: 0.60, cacheWriteMult: 0, cachedInputMult: 0.5),
+    documentationURL: URL(string: "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct"))
+  public static let kimi_k2 = LLMModel(
+    name: "Kimi K2",
+    id: "kimi-k2",
+    contextSize: 131_072,
+    maxOutputTokens: 16_384,
+    defaultPricing: .init(input: 1, output: 3, cacheWriteMult: 0, cachedInputMult: 0.5),
+    documentationURL: URL(string: "https://huggingface.co/moonshotai/Kimi-K2-Instruct"))
+
   public static var allCases: [LLMModel] {
     // Keep them ordered by most likely to be a good default.
     [
@@ -110,6 +150,10 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
       .claudeHaiku_3_5,
       .gpt_mini,
       .gpt_nano,
+      .qwen3_32b,
+      .gpt_oss_120b,
+      .gpt_oss_20b,
+      .llama_4_maverick_17b,
     ]
   }
 

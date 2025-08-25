@@ -284,6 +284,8 @@ extension LLMProvider {
       "GPT models"
     case .openRouter:
       "Multiple model providers"
+    case .groq:
+      "High-speed inference for open-weight LLMs"
     case .claudeCode:
       "Claude Code"
     default:

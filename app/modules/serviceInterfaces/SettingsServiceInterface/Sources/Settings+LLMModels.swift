@@ -20,6 +20,9 @@ extension SettingsServiceInterface.Settings {
     if llmProviderSettings[.claudeCode] != nil {
       for supportedModel in LLMProvider.claudeCode.supportedModels { models.insert(supportedModel) }
     }
+    if llmProviderSettings[.groq] != nil {
+      for supportedModel in LLMProvider.groq.supportedModels { models.insert(supportedModel) }
+    }
     return LLMModel.allCases.filter { models.contains($0) }
   }
 
@@ -33,6 +36,7 @@ extension SettingsServiceInterface.Settings {
     let preferredLowTierModels: [LLMModel] = [
       .claudeHaiku_3_5,
       .gpt_mini,
+      .gpt_oss_20b,
     ]
     return availableModels.sorted(by: { a, b in
       let i = preferredLowTierModels.firstIndex(of: a)

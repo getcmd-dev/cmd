@@ -727,6 +727,7 @@ extension Schema {
     case anthropic = "anthropic"
     case openrouter = "openrouter"
     case claudeCode = "claude_code"
+    case groq = "groq"
   }    
   public struct LocalExecutable: Codable, Sendable {
     public let executable: String

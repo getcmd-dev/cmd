@@ -361,6 +361,8 @@ extension Schema.APIProvider {
         return .openrouter
       case .claudeCode:
         return .claudeCode
+      case .groq:
+          return .groq
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
