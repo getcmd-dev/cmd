@@ -12,10 +12,16 @@ export class GeminiModelProvider implements ModelProvider {
 			baseURL: process.env["GEMINI_LOCAL_SERVER_PROXY"] ?? baseUrl,
 		})
 		const providerOptions: Record<string, JSONValue> = {}
+		if (reasoningBudget) {
+			providerOptions.thinkingConfig = {
+				thinkingBudget: reasoningBudget,
+				includeThoughts: true,
+			}
+		}
 		return {
 			model: provider(modelName) as unknown as LanguageModel,
 			generalProviderOptions: {
-				gemini: providerOptions,
+				google: providerOptions,
 			},
 		}
 	}

@@ -448,12 +448,7 @@ actor RequestStreamingHelper: Sendable {
         signature: reasoningSignature.signature)
       reasoningContent.update(with: newMessage)
     } else {
-      // Create a new reasoning content.
-      endPreviousContent()
-      let newContent = ReasoningContentMessage(content: "", deltas: [], signature: reasoningSignature.signature)
-      var content = result.content
-      content.append(.reasoning(MutableCurrentValueStream(newContent)))
-      result.update(with: AssistantMessage(content: content))
+        // Ignore. Some providers like Gemini can send reasoning signatures without having a reasoning content.
     }
   }
 
