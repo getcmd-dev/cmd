@@ -33,10 +33,23 @@ function cmd {
 }' >> ~/.zshrc
 ```
 
-## App developement
-See the [app's development guide](./app/contributing.md) for more details.
-
 ## Architecture overview
 command has a MacOS app and a local node server:
 - the MacOS app handles all the UI/UX and intergration with Xcode.
 - the local node server handles some business logic that leverages open source code written in typescript. Some examples include interfacing with external providers, defining some agentic tools etc. It's not worth re-building the wheel in Swift for the sake of it. The installation of node and the local server is managed by the MacOS app.
+
+## App developement
+See the [app's development guide](./app/contributing.md) for more details.
+
+## Proxying network traffic
+`cmd` sends requests from both the MacOS app and the node process it launches. Requests from the MacOS app can be proxied in a standard way by any proxy tool. Requests from the node process (which include all chat completion) require some specific setup:
+- Set env variables for the provider you want to proxy. For instance:
+```bash
+# in ~/.zshrc
+export ANTHROPIC_LOCAL_SERVER_PROXY="http://localhost:10001/v1"
+export OPEN_ROUTER_LOCAL_SERVER_PROXY="http://localhost:10002/api/v1"
+export OPENAI_LOCAL_SERVER_PROXY="http://localhost:10003/v1"
+export GROQ_LOCAL_SERVER_PROXY="http://localhost:10004/openai/v1"
+```
+- Set a reverse proxy in your proxy tool. For instance in Proxyman (Tools > Reverse Proxy...):
+<img height="width: 100%" src="./docs/images/proxy-setup.png"/>
