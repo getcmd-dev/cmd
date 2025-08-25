@@ -288,6 +288,8 @@ extension LLMProvider {
       "High-speed inference for open-weight LLMs"
     case .claudeCode:
       "Claude Code"
+    case .gemini:
+      "Gemini"
     default:
       "Unknown provider"
     }

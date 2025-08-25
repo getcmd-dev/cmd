@@ -143,8 +143,8 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			const usageInfo = await usage
 			const usageRes: ResponseUsage = {
 				type: "usage",
-				inputTokens: usageInfo.promptTokens,
-				outputTokens: usageInfo.completionTokens,
+				inputTokens: usageInfo.promptTokens || 0,
+				outputTokens: usageInfo.completionTokens || 0,
 				idx: idx++,
 			}
 

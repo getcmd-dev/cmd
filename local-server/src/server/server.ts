@@ -15,6 +15,7 @@ import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterModelProvider } from "./providers/open-router"
 import { GroqModelProvider } from "./providers/groq"
+import { GeminiModelProvider } from "./providers/gemini"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -35,7 +36,7 @@ app.get("/launch", (_, res) => {
 
 registerSendMessageEndpoint(
 	router,
-	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider(), new GroqModelProvider()],
+	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider(), new GroqModelProvider(), new GeminiModelProvider()],
 	() => {
 		return connectionInfo.port
 	},

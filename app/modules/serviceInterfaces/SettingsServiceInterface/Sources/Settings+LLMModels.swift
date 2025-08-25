@@ -23,6 +23,9 @@ extension SettingsServiceInterface.Settings {
     if llmProviderSettings[.groq] != nil {
       for supportedModel in LLMProvider.groq.supportedModels { models.insert(supportedModel) }
     }
+    if llmProviderSettings[.gemini] != nil {
+      for supportedModel in LLMProvider.gemini.supportedModels { models.insert(supportedModel) }
+    }
     return LLMModel.allCases.filter { models.contains($0) }
   }
 

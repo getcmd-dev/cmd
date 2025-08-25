@@ -140,6 +140,32 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     defaultPricing: .init(input: 1, output: 3, cacheWriteMult: 0, cachedInputMult: 0.5),
     documentationURL: URL(string: "https://huggingface.co/moonshotai/Kimi-K2-Instruct"))
 
+  /// Google Vertex AI
+  public static let gemini_2_5_pro = LLMModel(
+    name: "Gemini 2.5 Pro",
+    id: "gemini-2-5-pro",
+    contextSize: 1_048_576,
+    maxOutputTokens: 65_535,
+    defaultPricing: .init(input: 1.25, output: 10, cacheWriteMult: 0, cachedInputMult: 0),
+    documentationURL: URL(string: "https://ai.google.dev/gemini-api/docs/models#gemini-2.5-pro"),
+    reasoning: LLMReasoning())
+  public static let gemini_2_5_flash = LLMModel(
+    name: "Gemini 2.5 Flash",
+    id: "gemini-2-5-flash",
+    contextSize: 1_048_576,
+    maxOutputTokens: 65_535,
+    defaultPricing: .init(input: 0.30, output: 2.50, cacheWriteMult: 0, cachedInputMult: 0),
+    documentationURL: URL(string: "https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash"),
+    reasoning: LLMReasoning())
+  public static let gemini_2_5_flash_lite = LLMModel(
+    name: "Gemini 2.5 Flash Lite",
+    id: "gemini-2-5-flash-lite",
+    contextSize: 1_048_576,
+    maxOutputTokens: 65_536,
+    defaultPricing: .init(input: 0.10, output: 0.40, cacheWriteMult: 0, cachedInputMult: 0),
+    documentationURL: URL(string: "https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-lite"),
+    reasoning: LLMReasoning())
+
   public static var allCases: [LLMModel] {
     // Keep them ordered by most likely to be a good default.
     [
@@ -150,6 +176,9 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
       .claudeHaiku_3_5,
       .gpt_mini,
       .gpt_nano,
+      .gemini_2_5_pro,
+      .gemini_2_5_flash,
+      .gemini_2_5_flash_lite,
       .qwen3_32b,
       .gpt_oss_120b,
       .gpt_oss_20b,

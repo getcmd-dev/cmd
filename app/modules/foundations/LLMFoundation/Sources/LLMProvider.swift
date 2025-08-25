@@ -40,6 +40,7 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
       .anthropic,
       .openAI,
       .groq,
+      .gemini,
       .claudeCode,
     ]
   }
