@@ -137,8 +137,8 @@ struct RequestStreamingHelperReasoningTests {
     #expect(reasoningContent.signature == "signature123")
   }
 
-  @Test("Handle reasoning signature creates new reasoning content when none exists")
-  func testHandleReasoningSignatureCreatesNew() async throws {
+  @Test("Ignores reasoning signature when no reasoning is present")
+  func testIgnoresReasoningSignatureWhenNoReasoningIsPresent() async throws {
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 
@@ -151,11 +151,16 @@ struct RequestStreamingHelperReasoningTests {
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
-    let reasoningSignature = Schema.ReasoningSignature(signature: "signature456", idx: 0)
-    let chunk = Schema.StreamedResponseChunk.reasoningSignature(reasoningSignature)
-    let data = try JSONEncoder().encode(chunk)
+    let text = Schema.TextDelta(text: "hi", idx: 0)
+    let chunk1 = Schema.StreamedResponseChunk.textDelta(text)
+    let data1 = try JSONEncoder().encode(chunk1)
+    continuation.yield(data1)
 
-    continuation.yield(data)
+    let reasoningSignature = Schema.ReasoningSignature(signature: "signature456", idx: 1)
+    let chunk2 = Schema.StreamedResponseChunk.reasoningSignature(reasoningSignature)
+    let data2 = try JSONEncoder().encode(chunk2)
+    continuation.yield(data2)
+
     continuation.finish()
 
     _ = try await helper.processStream()
@@ -163,15 +168,10 @@ struct RequestStreamingHelperReasoningTests {
     let finalMessage = result.value
     #expect(finalMessage.content.count == 1)
 
-    guard case .reasoning(let reasoningStream) = finalMessage.content.first else {
-      Issue.record("Expected reasoning content")
+    guard case .text = finalMessage.content.first else {
+      Issue.record("Expected only text content")
       return
     }
-
-    let reasoningContent = reasoningStream.value
-    #expect(reasoningContent.content == "")
-    #expect(reasoningContent.deltas == [])
-    #expect(reasoningContent.signature == "signature456")
   }
 
   @Test("Reasoning content ends when text content starts")
