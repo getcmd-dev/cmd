@@ -448,7 +448,7 @@ actor RequestStreamingHelper: Sendable {
         signature: reasoningSignature.signature)
       reasoningContent.update(with: newMessage)
     } else {
-        // Ignore. Some providers like Gemini can send reasoning signatures without having a reasoning content.
+      // Ignore. Some providers like Gemini can send reasoning signatures without having a reasoning content.
     }
   }
 
