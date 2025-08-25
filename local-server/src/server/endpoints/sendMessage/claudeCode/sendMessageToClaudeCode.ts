@@ -7,7 +7,7 @@ import {
 	ToolUsePermissionRequest,
 	ToolUseRequest,
 } from "@/server/schemas/sendMessageSchema"
-import { CoreMessage, CoreUserMessage } from "ai"
+import { ModelMessage, UserModelMessage } from "ai"
 import { Request, Response, Router } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
@@ -269,7 +269,7 @@ const createClaudeCodeEventStream = (
 	return eventStream
 }
 
-export const isCoreUserMessage = (message: CoreMessage): message is CoreUserMessage => {
+export const isCoreUserMessage = (message: ModelMessage): message is UserModelMessage => {
 	return message.role === "user"
 }
 

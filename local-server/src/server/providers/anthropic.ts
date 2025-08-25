@@ -1,7 +1,7 @@
 import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
-import { CoreMessage } from "ai"
+import { ModelMessage } from "ai"
 
 export class AnthropicModelProvider implements ModelProvider {
 	name: APIProviderName = "anthropic"
@@ -27,7 +27,7 @@ export class AnthropicModelProvider implements ModelProvider {
 
 // Anthropic supports ephemeral caching for 4 messages.
 // We cache the last content from 'system, the last and penultimate content from 'user'.
-export const addCacheControlToMessages = (messages: Array<CoreMessage>, providerName: string): Array<CoreMessage> => {
+export const addCacheControlToMessages = (messages: Array<ModelMessage>, providerName: string): Array<ModelMessage> => {
 	// Create a deep copy of messages for the objects of interest to avoid mutating the original value.
 	const newMessages = [...messages]
 	let systemContentToCache = 1
