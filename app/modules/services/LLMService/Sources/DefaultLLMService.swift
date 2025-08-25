@@ -362,9 +362,9 @@ extension Schema.APIProvider {
       case .claudeCode:
         return .claudeCode
       case .groq:
-          return .groq
+        return .groq
       case .gemini:
-          return .gemini
+        return .gemini
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }

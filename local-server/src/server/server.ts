@@ -36,7 +36,13 @@ app.get("/launch", (_, res) => {
 
 registerSendMessageEndpoint(
 	router,
-	[new AnthropicModelProvider(), new OpenAIModelProvider(), new OpenRouterModelProvider(), new GroqModelProvider(), new GeminiModelProvider()],
+	[
+		new AnthropicModelProvider(),
+		new OpenAIModelProvider(),
+		new OpenRouterModelProvider(),
+		new GroqModelProvider(),
+		new GeminiModelProvider(),
+	],
 	() => {
 		return connectionInfo.port
 	},
