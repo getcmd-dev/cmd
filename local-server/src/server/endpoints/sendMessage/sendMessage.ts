@@ -241,19 +241,6 @@ async function* mapStream(
 				logInfo(`skipping chunk: ${chunk.type}`)
 				break
 		}
-
-		// Extract reasoning signature if provided.
-		if (chunk.type === "reasoning-delta") {
-			// Gemini seems to send reasoning signature with the next message (test-start)
-			// while anthropic sends it with the last reasoning delta.
-			const signature = extractReasoningSignature(chunk.providerMetadata)
-			if (signature) {
-				yield {
-					type: "reasoning_signature",
-					signature,
-				}
-			}
-		}
 	}
 }
 
@@ -509,6 +496,9 @@ const mapMessage = (message: Message): ModelMessage => {
 	}
 }
 
+/*
+ * Extracts the reasoning signature from the provider metadata.
+ */
 const extractReasoningSignature = (meta: ProviderMetadata | undefined): string | undefined => {
 	for (const [, providerMetadata] of Object.entries(meta || {})) {
 		const signature = providerMetadata?.signature || providerMetadata?.thoughtSignature
