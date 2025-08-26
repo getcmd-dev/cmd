@@ -285,7 +285,7 @@ struct ChatInputView: View {
     inputViewModel.handleDidTapSend()
   }
 
-  private func onKeyDown(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags) -> Bool {
+  private func onKeyDown(key: KeyEquivalent, modifiers: [KeyModifier]) -> Bool {
     // The input view gets to handle the key event first
     if inputViewModel.handleOnKeyDown(key: key, modifiers: modifiers) {
       return true

@@ -40,7 +40,9 @@ extension Settings: Codable {
       customInstructions: container
         .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions(),
       toolPreferences: container
-        .decodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [])
+        .decodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [],
+      keyboardShortcuts: container
+        .decodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts())
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -62,6 +64,7 @@ extension Settings: Codable {
     }, forKey: "reasoningModels")
     try container.encode(customInstructions, forKey: "customInstructions")
     try container.encode(toolPreferences, forKey: "toolPreferences")
+    try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
   }
 }
 

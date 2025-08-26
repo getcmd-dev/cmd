@@ -5,6 +5,7 @@ import Foundation
 import LLMFoundation
 import SettingsServiceInterface
 import SwiftTesting
+import SwiftUI
 import Testing
 
 @testable import SettingsService
@@ -27,6 +28,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
         "llmProviderSettings" : {},
@@ -64,6 +66,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {
@@ -113,6 +116,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {
@@ -254,6 +258,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {},
@@ -285,6 +290,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -436,6 +442,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "toolPreferences" : [],
@@ -472,6 +479,7 @@ struct SettingsCodableTests {
           "agentMode" : "Focus on code quality and best practices",
           "askMode" : "Always be concise and helpful"
         },
+        "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -561,6 +569,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
+        "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -679,5 +688,49 @@ struct SettingsCodableTests {
       toolPreferences: []) // Should default to empty array
 
     try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Encode and decode keyboard shortcuts")
+  func testKeyboardShortcutsEncodingDecoding() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      keyboardShortcuts: .init(
+        addContextToCurrentChat: .init(key: .leftArrow, modifiers: [.command, .shift]),
+        addContextToNewChat: .init(key: .init("L"), modifiers: [.command, .shift, .control])))
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "customInstructions" : {},
+        "keyboardShortcuts" : {
+          "addContextToCurrentChat" : {
+            "key" : "",
+            "modifiers" : [
+              "command",
+              "shift"
+            ]
+          },
+          "addContextToNewChat" : {
+            "key" : "L",
+            "modifiers" : [
+              "command",
+              "shift",
+              "control"
+            ]
+          },
+        },
+        "fileEditMode": "direct I/O",
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : []
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
   }
 }

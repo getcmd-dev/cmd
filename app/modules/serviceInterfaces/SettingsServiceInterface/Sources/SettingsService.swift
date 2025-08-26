@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LLMFoundation
+import SwiftUI
 
 // MARK: - FileEditMode
 
@@ -56,7 +57,8 @@ public struct Settings: Sendable, Equatable {
     inactiveModels: [LLMModel] = [],
     reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
-    toolPreferences: [ToolPreference] = [])
+    toolPreferences: [ToolPreference] = [],
+    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts())
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -69,6 +71,7 @@ public struct Settings: Sendable, Equatable {
     self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
+    self.keyboardShortcuts = keyboardShortcuts
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -126,6 +129,7 @@ public struct Settings: Sendable, Equatable {
   public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
+  public var keyboardShortcuts: KeyboardShortcuts
 
 }
 
@@ -150,6 +154,44 @@ extension Settings {
 }
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings
+
+// MARK: - Keyboard Shortcuts
+
+extension Settings {
+
+  /// Keyboard shortcuts used to help interact with `cmd`.
+  public struct KeyboardShortcuts: Sendable, Codable, Equatable {
+    public init(
+      addContextToCurrentChat: Shortcut? = nil,
+      addContextToNewChat: Shortcut? = nil,
+      dismissChat: Shortcut? = nil)
+    {
+      self.addContextToCurrentChat = addContextToCurrentChat
+      self.addContextToNewChat = addContextToNewChat
+      self.dismissChat = dismissChat
+    }
+
+    public struct Shortcut: Sendable, Codable, Equatable {
+      public let key: KeyEquivalent
+      public let modifiers: [KeyModifier]
+
+      public init(key: KeyEquivalent, modifiers: [KeyModifier]) {
+        self.key = key
+        self.modifiers = modifiers
+      }
+    }
+
+    /// Add current selection / file to the existing chat's context.
+    public var addContextToCurrentChat: Shortcut?
+
+    /// Create a new chat thread and add current selection / file to its context.
+    public var addContextToNewChat: Shortcut?
+
+    /// Dismiss the chat UI.
+    public var dismissChat: Shortcut?
+
+  }
+}
 
 // MARK: - SettingsService
 
@@ -191,4 +233,15 @@ extension UserDefaultsKey {
   public static let showInternalSettingsInRelease = "showInternalSettingsInRelease"
   public static let defaultChatPositionIsInverted = "defaultChatPositionIsInverted"
   public static let repeatLastLLMInteraction = "llmService.isRepeating"
+}
+
+extension KeyEquivalent: Codable {
+  public init(from decoder: any Decoder) throws {
+    try self.init(Character(String(from: decoder)))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    try String(character).encode(to: encoder)
+  }
+
 }

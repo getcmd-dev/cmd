@@ -252,22 +252,23 @@ struct DefaultSettingsServiceTests {
     let data = try #require(sharedUserDefaults.dumpStorage()["appWideSettings"] as? Data)
     data.expectToMatch("""
       {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates": true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "customInstructions" : {},
+        "fileEditMode": "direct I/O",
+        "inactiveModels" : [],
+        "keyboardShortcuts": {},
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "ANTHROPIC_API_KEY",
             "createdOrder" : 1
           }
         },
-        "allowAnonymousAnalytics" : true,
-        "customInstructions" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "automaticallyCheckForUpdates": true,
-        "automaticallyUpdateXcodeSettings" : false,
         "preferedProviders" : {},
         "reasoningModels" : {},
-        "inactiveModels" : [],
-        "toolPreferences" : [],
-        "fileEditMode": "direct I/O" 
+        "toolPreferences" : []
       }
       """)
     _ = cancellable

@@ -191,6 +191,15 @@ public final class SettingsViewModel {
     }
   }
 
+  // MARK: - Keyboard Shortcuts
+  var keyboardShortcuts: SettingsServiceInterface.Settings.KeyboardShortcuts {
+    get { settings.keyboardShortcuts }
+    set {
+      settings.keyboardShortcuts = newValue
+      settingsService.update(setting: \.keyboardShortcuts, to: newValue)
+    }
+  }
+
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModel] {
     settings.availableModels

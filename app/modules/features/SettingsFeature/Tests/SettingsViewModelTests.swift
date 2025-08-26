@@ -190,6 +190,25 @@ struct SettingsViewModelTests {
     #expect(mockSettingsService.value(for: \.fileEditMode) == .xcodeExtension)
   }
 
+  @Test("keyboardShortcuts setter updates settings service")
+  func test_keyboardShortcuts_setter() {
+    let mockSettingsService = MockSettingsService()
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    let shortcut = SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut(key: "i", modifiers: [.command, .shift])
+    viewModel.keyboardShortcuts = .init(addContextToCurrentChat: shortcut)
+
+    let value = mockSettingsService.value(for: \.keyboardShortcuts)
+    #expect(value.addContextToCurrentChat == shortcut)
+  }
+
   @Test("observes live settings updates")
   func test_liveSettingsUpdates() async throws {
     let mockSettingsService = MockSettingsService()

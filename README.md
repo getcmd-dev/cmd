@@ -62,3 +62,8 @@ Sharing feedback or opening a well documented issue is also greatly helpful.
 - Misc UI & UX improvements
 
 and much more! `cmd` is early stage, and in active development.
+
+
+## Acknoledgement
+- [CopilotForXcode](https://github.com/intitni/CopilotForXcode) that has been very influencial for the Xcode integration
+- [Sentry](http://sentry.io/) and [Github](https://github.com) for their generous support of OSS.

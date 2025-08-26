@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import AppKit
 import SwiftUI
 
@@ -17,17 +18,17 @@ public struct RichTextEditor: NSViewRepresentable {
   ///   - text: The text in the input. Supports rich formatting.
   ///   - font: The default font to use for new text entered by the user.
   ///   - needsFocus: Whether the input should become first responder when possible.
-  ///   - onFocusChanged: A callback that is called when by the text view when its focus changes.
-  ///   - onSearch: A callback that is called when the user types a search query. The owner of the text editor is responsible for updating the text if a search result is selected.
-  ///   - onKeyDown: A callback that is called when the user presses a special key. Return true to prevent the default behavior.
+  ///   - onFocusChanged: Called when by the text view when its focus changes.
+  ///   - onSearch: Called when the user types a search query. The owner of the text editor is responsible for updating the text if a search result is selected.
+  ///   - onKeyDown: Called when the user presses a key. Return true to prevent the default behavior.
   ///   - placeholder: A placeholder to display when no text is entered.
   public init(
     text: Binding<NSAttributedString>,
     font: NSFont = NSFont.preferredFont(forTextStyle: .title3, options: [:]),
-    needsFocus: Binding<Bool>,
+    needsFocus: Binding<Bool> = .constant(false),
     onFocusChanged: @escaping (Bool) -> Void = { _ in },
     onSearch: @escaping ((String, NSRange, CGRect?)?) -> Void = { _ in },
-    onKeyDown: ((KeyEquivalent, NSEvent.ModifierFlags) -> Bool)? = nil,
+    onKeyDown: ((KeyEquivalent, [KeyModifier]) -> Bool)? = nil,
     placeholder: String = "")
   {
     _text = text
@@ -167,7 +168,7 @@ public struct RichTextEditor: NSViewRepresentable {
     textView.isSelectable = true
     textView.isRichText = true
     textView.allowsUndo = true
-    textView.onKeyDown = onKeyDown
+    textView.onKeyDown = onKeyDown.map { onKeyDown in { k, m in onKeyDown(k, .init(m)) } }
 
     textView.resetTypingAttributes()
 
@@ -233,7 +234,7 @@ public struct RichTextEditor: NSViewRepresentable {
 
   private let onFocusChanged: (Bool) -> Void
   private let onSearch: ((String, NSRange, CGRect?)?) -> Void
-  private let onKeyDown: ((KeyEquivalent, NSEvent.ModifierFlags) -> Bool)?
+  private let onKeyDown: ((KeyEquivalent, [KeyModifier]) -> Bool)?
 
   private let font: NSFont
 
@@ -275,7 +276,7 @@ private class RichTextView: NSTextView {
 
     layoutManager.ensureLayout(for: textContainer)
     let contentHeight = layoutManager.usedRect(for: textContainer).height
-    return NSSize(width: NSView.noIntrinsicMetric, height: max(contentHeight, 30))
+    return NSSize(width: NSView.noIntrinsicMetric, height: max(contentHeight, 20))
   }
 
   /// Setting on focus will trigger the text view to request focus when possible. It will then use the call back to signal that focus was set.
@@ -313,21 +314,9 @@ private class RichTextView: NSTextView {
       key = .tab
     }
 
-    let specialKeyCodes: [KeyEquivalent] = [
-      .leftArrow,
-      .rightArrow,
-      .downArrow,
-      .upArrow,
-      .return,
-      .escape,
-      .tab,
-    ]
-
-    if specialKeyCodes.contains(key) {
-      let handled = onKeyDown(key, event.modifierFlags.intersection(.deviceIndependentFlagsMask))
-      if handled {
-        return
-      }
+    let handled = onKeyDown(key, event.modifierFlags.intersection(.deviceIndependentFlagsMask))
+    if handled {
+      return
     }
 
     super.keyDown(with: event)

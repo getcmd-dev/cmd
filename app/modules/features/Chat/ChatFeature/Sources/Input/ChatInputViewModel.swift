@@ -8,6 +8,7 @@ import ChatFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DLS
 import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
@@ -266,7 +267,21 @@ final class ChatInputViewModel {
   }
 
   @MainActor
-  func handleOnKeyDown(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags) -> Bool {
+  func handleOnKeyDown(key: KeyEquivalent, modifiers: [KeyModifier]) -> Bool {
+    if
+      ![
+        .leftArrow,
+        .rightArrow,
+        .downArrow,
+        .upArrow,
+        .return,
+        .escape,
+        .tab,
+      ].contains(key)
+    {
+      return false
+    }
+
     if let pendingToolApproval {
       return handle(key: key, modifiers: modifiers, for: pendingToolApproval)
     } else if let searchResults {
@@ -419,7 +434,7 @@ final class ChatInputViewModel {
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
 
-  private func handle(keyForModelSelection key: KeyEquivalent, modifiers _: NSEvent.ModifierFlags) -> Bool {
+  private func handle(keyForModelSelection key: KeyEquivalent, modifiers _: [KeyModifier]) -> Bool {
     if key == .escape || key == .return {
       isModelSelectionExpanded = false
       return true
@@ -440,7 +455,7 @@ final class ChatInputViewModel {
     return false
   }
 
-  private func handle(keyForChatModeSelection key: KeyEquivalent, modifiers _: NSEvent.ModifierFlags) -> Bool {
+  private func handle(keyForChatModeSelection key: KeyEquivalent, modifiers _: [KeyModifier]) -> Bool {
     if key == .escape || key == .return {
       isChatModeSelectionExpanded = false
       return true
@@ -463,7 +478,7 @@ final class ChatInputViewModel {
 
   private func handle(
     key: KeyEquivalent,
-    modifiers: NSEvent.ModifierFlags,
+    modifiers: [KeyModifier],
     for pendingToolApproval: ToolApprovalRequest)
     -> Bool
   {
@@ -494,7 +509,7 @@ final class ChatInputViewModel {
     return false
   }
 
-  private func handle(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags, for searchResults: [FileSuggestion]) -> Bool {
+  private func handle(key: KeyEquivalent, modifiers: [KeyModifier], for searchResults: [FileSuggestion]) -> Bool {
     if key == .upArrow {
       selectedSearchResultIndex = max(0, selectedSearchResultIndex - 1)
       return true

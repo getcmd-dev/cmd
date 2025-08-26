@@ -1,6 +1,7 @@
 Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatFoundation",
     "ConcurrencyFoundation",

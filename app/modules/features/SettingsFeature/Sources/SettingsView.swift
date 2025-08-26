@@ -99,6 +99,9 @@ public struct SettingsView: View {
       case .tools:
         ToolsConfigurationView(viewModel: viewModel.toolConfigurationViewModel)
 
+      case .keyboardShortcuts:
+        KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)
+
       case .internalSettings:
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
@@ -129,6 +132,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case models
   case chatModes
   case tools
+  case keyboardShortcuts
   case internalSettings
   case about
 
@@ -146,6 +150,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Chat Modes"
     case .tools:
       "Tools"
+    case .keyboardShortcuts:
+      "Keyboard Shortcuts"
     case .internalSettings:
       "Internal Settings"
     case .about:
@@ -165,6 +171,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "text.bubble"
     case .tools:
       "wrench.and.screwdriver"
+    case .keyboardShortcuts:
+      "keyboard"
     case .internalSettings:
       "slider.horizontal.3"
     case .about:
@@ -234,6 +242,11 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .tools,
             description: "Manage tool permissions and approval settings",
+            action: onNavigate)
+
+          SettingsCard(
+            section: .keyboardShortcuts,
+            description: "Configure app keyboard shortcuts",
             action: onNavigate)
 
           SettingsCard(

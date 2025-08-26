@@ -7,6 +7,7 @@ Target.module(
     "AccessibilityObjCFoundation",
     "AppEventService",
     "AppEventServiceInterface",
+    "AppFoundation",
     "AppUpdateService",
     "AppUpdateServiceInterface",
     "AskFollowUpTool",
@@ -55,6 +56,7 @@ Target.module(
   ],
   resources: [],
   testDependencies: [
+    .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
     "AppEventServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",

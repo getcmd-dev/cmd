@@ -80,6 +80,7 @@ targets.append(contentsOf: Target.module(
     "AccessibilityObjCFoundation",
     "AppEventService",
     "AppEventServiceInterface",
+    "AppFoundation",
     "AppUpdateService",
     "AppUpdateServiceInterface",
     "AskFollowUpTool",
@@ -128,6 +129,7 @@ targets.append(contentsOf: Target.module(
   ],
   resources: [],
   testDependencies: [
+    .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
     "AppEventServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
@@ -443,6 +445,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatFoundation",
     "ConcurrencyFoundation",

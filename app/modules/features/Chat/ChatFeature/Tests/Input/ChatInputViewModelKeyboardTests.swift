@@ -26,7 +26,7 @@ struct ChatInputViewModelKeyboardTests {
     #expect(viewModel.handleOnKeyDown(key: .upArrow, modifiers: []) == false)
     #expect(viewModel.handleOnKeyDown(key: .downArrow, modifiers: []) == false)
     #expect(viewModel.handleOnKeyDown(key: .return, modifiers: []) == false)
-    #expect(viewModel.handleOnKeyDown(key: .return, modifiers: .shift) == false)
+    #expect(viewModel.handleOnKeyDown(key: .return, modifiers: [.shift]) == false)
     #expect(viewModel.handleOnKeyDown(key: .tab, modifiers: []) == false)
   }
 
@@ -65,7 +65,7 @@ struct ChatInputViewModelKeyboardTests {
       #expect(viewModel.handleOnKeyDown(key: .upArrow, modifiers: []) == true)
       #expect(viewModel.selectedSearchResultIndex == 0) // No change since it's the first item
 
-      #expect(viewModel.handleOnKeyDown(key: .return, modifiers: .shift) == false)
+      #expect(viewModel.handleOnKeyDown(key: .return, modifiers: [.shift]) == false)
       #expect(viewModel.handleOnKeyDown(key: .return, modifiers: []) == true)
 
       // Validate search selection

@@ -1,11 +1,18 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Dependencies
+import SettingsServiceInterface
 import SwiftUI
 
 // MARK: - EmptyChatView
 
 struct EmptyChatView: View {
+  init() {
+    @Dependency(\.settingsService) var settingsService
+    _keyboardShortcuts = .init(initialValue: settingsService.value(for: \.keyboardShortcuts))
+  }
+
   var body: some View {
     VStack {
       Text("Keyboard Shortcuts")
@@ -17,17 +24,20 @@ struct EmptyChatView: View {
       keyBoardShortCutCard(
         title: "Add to current chat",
         description: "Continue exisiting conversation with added context",
-        keys: ["⌘", "I"])
+        keys: (keyboardShortcuts.addContextToCurrentChat ?? .init(key: "I", modifiers: [.command])).keys)
       keyBoardShortCutCard(
         title: "Add to new chat",
-        description: "Created a new conversation with the selected context",
-        keys: ["⌘", "↑", "I"])
+        description: "Create a new conversation with the selected context",
+        keys: (keyboardShortcuts.addContextToNewChat ?? .init(key: "I", modifiers: [.command, .shift])).keys)
       keyBoardShortCutCard(
         title: "Dismiss",
-        description: "Dismiss command. It'll still be available in the menu bar and respond to shortcuts",
-        keys: ["⌘", "␛"])
+        description: "Dismiss cmd. It'll still be available in the menu bar and respond to shortcuts",
+        keys: (keyboardShortcuts.dismissChat ?? .init(key: .escape, modifiers: [.command])).keys)
       keyBoardShortCutCard(title: "Cycle chat mode", description: "Switch between different chat mode", keys: ["⇧", "⇥"])
     }
+    .onReceive(settingsService.liveValue(for: \.keyboardShortcuts), perform: { keyboardShortcuts in
+      self.keyboardShortcuts = keyboardShortcuts
+    })
   }
 
   @ViewBuilder
@@ -66,5 +76,15 @@ struct EmptyChatView: View {
       borderWidth: 0.5)
   }
 
+  @State private var keyboardShortcuts: SettingsServiceInterface.Settings.KeyboardShortcuts
   @Environment(\.colorScheme) private var colorScheme
+
+  @Dependency(\.settingsService) private var settingsService
+
+}
+
+extension SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut {
+  var keys: [String] {
+    modifiers.map(\.description) + [key.description]
+  }
 }

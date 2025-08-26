@@ -2,10 +2,14 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppEventServiceInterface
+import AppFoundation
+import AppKit
 import ChatAppEvents
 @preconcurrency import Combine
 import Dependencies
 import KeyboardShortcuts
+import SettingsServiceInterface
+import SwiftUI
 import ThreadSafe
 import XcodeObserverServiceInterface
 
@@ -20,6 +24,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
 
     observeXcodeState(appsActivationState: appsActivationState)
     enable([.hideChat])
+    observeSettings()
   }
 
   private var cancellables: Set<AnyCancellable> = []
@@ -27,6 +32,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   private var enabledShortcutNames = Set<String>()
 
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
+  @Dependency(\.settingsService) private var settingsService
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func observeXcodeState(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
@@ -74,6 +80,33 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     on(.new, trigger: NewChatEvent())
   }
 
+  // MARK: - Settings integration
+
+  /// Observe settings and update the registered keyboard shortcuts when they change.
+  private func observeSettings() {
+    let cancellable = settingsService
+      .liveValue(for: \.keyboardShortcuts)
+      .sink { @Sendable [weak self] keyboardShortcutsSettings in
+        self?.apply(keyboardShortcutsSettings)
+      }
+    inLock { $0.cancellables.insert(cancellable) }
+  }
+
+  private func apply(_ settings: SettingsServiceInterface.Settings.KeyboardShortcuts) {
+    let keyBoardMap: [(SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut?, KeyboardShortcuts.Name)] = [
+      (settings.addContextToCurrentChat, .addContext),
+      (settings.addContextToNewChat, .addContextToNewThread),
+      (settings.dismissChat, .hideChat),
+    ]
+    for (setting, shortcutName) in keyBoardMap {
+      if let setting {
+        KeyboardShortcuts.setShortcut(setting.mapped, for: shortcutName)
+      } else {
+        KeyboardShortcuts.setShortcut(nil, for: shortcutName)
+      }
+    }
+  }
+
   private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
     KeyboardShortcuts.onKeyUp(for: keyEvent) {
       Task { [weak self] in
@@ -106,4 +139,70 @@ extension KeyboardShortcuts.Name {
   static let hostAppShortcuts = [
     Self.new,
   ]
+}
+
+extension KeyboardShortcuts.Key {
+  init?(character key: Character) {
+    switch key {
+    case "a": self = .a
+    case "b": self = .b
+    case "c": self = .c
+    case "d": self = .d
+    case "e": self = .e
+    case "f": self = .f
+    case "g": self = .g
+    case "h": self = .h
+    case "i": self = .i
+    case "j": self = .j
+    case "k": self = .k
+    case "l": self = .l
+    case "m": self = .m
+    case "n": self = .n
+    case "o": self = .o
+    case "p": self = .p
+    case "q": self = .q
+    case "r": self = .r
+    case "s": self = .s
+    case "t": self = .t
+    case "u": self = .u
+    case "v": self = .v
+    case "w": self = .w
+    case "x": self = .x
+    case "y": self = .y
+    case "z": self = .z
+    case "0": self = .zero
+    case "1": self = .one
+    case "2": self = .two
+    case "3": self = .three
+    case "4": self = .four
+    case "5": self = .five
+    case "6": self = .six
+    case "7": self = .seven
+    case "8": self = .eight
+    case "9": self = .nine
+    case KeyEquivalent.upArrow.character: self = .upArrow
+    case KeyEquivalent.downArrow.character: self = .downArrow
+    case KeyEquivalent.leftArrow.character: self = .leftArrow
+    case KeyEquivalent.rightArrow.character: self = .rightArrow
+    case KeyEquivalent.escape.character: self = .escape
+    case KeyEquivalent.delete.character: self = .delete
+    case KeyEquivalent.deleteForward.character: self = .deleteForward
+    case KeyEquivalent.home.character: self = .home
+    case KeyEquivalent.end.character: self = .end
+    case KeyEquivalent.pageUp.character: self = .pageUp
+    case KeyEquivalent.pageDown.character: self = .pageDown
+    case KeyEquivalent.tab.character: self = .tab
+    case KeyEquivalent.space.character: self = .space
+    case KeyEquivalent.`return`.character: self = .`return`
+    default:
+      return nil
+    }
+  }
+}
+
+extension SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut {
+  var mapped: KeyboardShortcuts.Shortcut? {
+    guard let key = KeyboardShortcuts.Key(character: key.character) else { return nil }
+    return KeyboardShortcuts.Shortcut(key, modifiers: modifiers.nsEventModifierFlags)
+  }
 }
