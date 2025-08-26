@@ -37,7 +37,7 @@ struct ClaudeCodeTodoWriteToolTests {
     // Simulate successful output from Claude Code
     let output = "Todos have been modified successfully"
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.success == true)
@@ -64,7 +64,7 @@ struct ClaudeCodeTodoWriteToolTests {
     // Simulate error output from Claude Code
     let errorMessage = "Error: Invalid todo status provided"
 
-    try toolUse.receive(output: errorMessage)
+    try toolUse.receive(output: .string(errorMessage))
     let result = try await toolUse.output
 
     #expect(result.success == false)
@@ -84,7 +84,7 @@ struct ClaudeCodeTodoWriteToolTests {
     // Simulate successful output for empty list
     let output = "Todos have been modified successfully"
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.success == true)
@@ -111,7 +111,7 @@ struct ClaudeCodeTodoWriteToolTests {
     // Simulate successful output
     let output = "Todos have been modified successfully"
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.success == true)

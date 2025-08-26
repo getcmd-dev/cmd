@@ -8,6 +8,7 @@ import Combine
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 
 // MARK: - Tool
@@ -319,7 +320,7 @@ public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
 
 public protocol ExternalToolUse: NonStreamableToolUse, UpdatableToolUse where SomeTool: ExternalTool {
   /// Set the output
-  func receive(output: String) throws
+  func receive(output: JSON.Value) throws
 }
 
 extension ExternalToolUse {
@@ -331,19 +332,35 @@ extension ExternalToolUse {
   }
 
   public func receive(output: JSON.Value, isSuccess: Bool) throws {
-    guard case .string(let stringOutput) = output else {
-      assertionFailure("Expected the output to be a string for an external tool use")
-      return
-    }
     if isSuccess {
-      try receive(output: stringOutput)
+      try receive(output: output)
     } else {
+      guard case .string(let stringOutput) = output else {
+        assertionFailure("Expected the output to be a string for an external tool use's error")
+        return
+      }
       updateStatus.complete(with: .failure(AppError(stringOutput)))
     }
   }
 
   public func cancel() {
-    updateStatus.complete(with: .failure(CancellationError()))
+    fail(with: CancellationError())
+  }
+
+  public func fail(with error: Error) {
+    updateStatus.complete(with: .failure(error))
+  }
+
+  public func requireStringOutput(from output: JSON.Value) throws -> String {
+    guard case .string(let stringOutput) = output else {
+      let data = try JSONEncoder().encode(output)
+      guard let str = String(data: data, encoding: .utf8) else {
+        throw AppError("Could not parse output for tool \(toolName).")
+      }
+      defaultLogger.error("Could not parse output for tool \(toolName). Expected string but got \(str)")
+      return str
+    }
+    return stringOutput
   }
 }
 

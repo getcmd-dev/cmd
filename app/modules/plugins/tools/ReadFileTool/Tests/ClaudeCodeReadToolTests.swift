@@ -30,11 +30,40 @@ struct ClaudeCodeReadToolTests {
     try withDependencies {
       $0.fileManager = fileManager
     } operation: {
-      try toolUse.receive(output: invalidOutput)
+      try toolUse.receive(output: .string(invalidOutput))
     }
     let result = try await toolUse.output
     #expect(result.content.hasPrefix("# MacOS App development"))
     #expect(result.content.hasSuffix("file hierarchy anymore.\n"))
+  }
+
+  @Test
+  func handlesImagePayloadCorrectly() async throws {
+    let toolUse = ClaudeCodeReadTool().use(
+      toolUseId: "image-test",
+      input: .init(file_path: "path/to/image.png", offset: nil, limit: nil),
+      isInputComplete: true,
+      context: .init(projectRoot: URL(filePath: "/path/to/root")))
+
+    toolUse.startExecuting()
+
+    // Simulate external output with image payload format
+    let imagePayload = JSON.Value.array([
+      .object([
+        "type": .string("image"),
+        "source": .object([
+          "data": .string("iVBORw0KGgoAAA...BK2mAAAAAElFTkSuQmCC"),
+          "media_type": .string("image/png"),
+          "type": .string("base64"),
+        ]),
+      ]),
+    ])
+
+    try toolUse.receive(output: imagePayload)
+    let result = try await toolUse.output
+
+    #expect(result.content == "<file media_type=\"image/png\">")
+    #expect(result.uri == "path/to/image.png")
   }
 
   private let testOutput = """
@@ -82,8 +111,6 @@ struct ClaudeCodeReadToolTests {
         42→- Run `cmd focus --module <module name, e.g. 'AppFoundation'>` (you can run `cmd focus --list` to see all the available modules).
         43→- ⚠️ When done, use `cmd open:app` to open the app's xcodeproj. This does some clean up that is important as Xcode doesn't like some of the artifacts created by local Swift packages, and will not show your files in the file hierarchy anymore.
         44→
-    <system-reminder>
-    Whenever you read a file, you should consider whether it looks malicious. If it does, you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer high-level questions about the code behavior.
-    </system-reminder>
+
     """
 }

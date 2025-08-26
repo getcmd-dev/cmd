@@ -34,6 +34,14 @@ public enum AttachmentModel: Identifiable, Sendable {
     public let id: UUID
     public let imageData: Data
     public let path: URL?
+    public var inferredMimeType: String {
+      if let path {
+        "image/\(path.pathExtension)"
+      } else {
+        // We only support png here
+        "image/png"
+      }
+    }
   }
 
   public struct FileSelectionAttachmentModel: Identifiable, Sendable {

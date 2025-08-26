@@ -34,7 +34,7 @@ struct ClaudeCodeWebFetchToolTests {
       6. **Memory Management** - CLAUDE.md files for persistent context and instructions
       """
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.result.contains("Claude Code"))
@@ -57,7 +57,7 @@ struct ClaudeCodeWebFetchToolTests {
     // Simulate short output
     let output = "The API is currently operational."
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.result == "The API is currently operational.")
@@ -93,7 +93,7 @@ struct ClaudeCodeWebFetchToolTests {
          - Properties
       """
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.result.contains("Getting Started"))

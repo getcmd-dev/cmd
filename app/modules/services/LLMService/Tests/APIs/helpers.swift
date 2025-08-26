@@ -309,8 +309,10 @@ struct TestExternalTool: ExternalTool {
 
     var isReadonly: Bool { true }
 
-    func receive(output: String) throws {
-      updateStatus.complete(with: .success(output))
+    func receive(output: JSON.Value) throws {
+      let data = try JSONEncoder().encode(output)
+      let stringOutput = try JSONDecoder().decode(String.self, from: data)
+      updateStatus.complete(with: .success(stringOutput))
     }
 
   }

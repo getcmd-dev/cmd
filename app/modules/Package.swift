@@ -539,6 +539,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "JSONFoundation",
+    "LoggingServiceInterface",
     "ThreadSafe",
   ],
   testDependencies: [],

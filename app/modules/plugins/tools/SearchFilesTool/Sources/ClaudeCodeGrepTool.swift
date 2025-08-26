@@ -59,7 +59,8 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       // Try parsing with the simple format first
       if let result = parseSimpleGrepOutput(rawOutput: output, projectRoot: input.projectRoot) {
         updateStatus.complete(with: .success(result))

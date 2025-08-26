@@ -119,7 +119,7 @@ actor RequestStreamingHelper: Sendable {
       }
       finish()
     } catch {
-      defaultLogger.error("Finished streaming response with error \(err ?? error)")
+      defaultLogger.error("Finished streaming response with error", err ?? error)
       finish()
       throw err ?? error
     }
@@ -403,10 +403,18 @@ actor RequestStreamingHelper: Sendable {
 
     switch toolResult.result {
     case .toolResultSuccessMessage(let toolResultSuccess):
-      try? toolUse.receive(output: toolResultSuccess.success, isSuccess: true)
+      do {
+        try toolUse.receive(output: toolResultSuccess.success, isSuccess: true)
+      } catch {
+        toolUse.fail(with: AppError("Could not parse tool ouput"))
+      }
 
     case .toolResultFailureMessage(let toolResultFailure):
-      try? toolUse.receive(output: toolResultFailure.failure, isSuccess: false)
+      do {
+        try toolUse.receive(output: toolResultFailure.failure, isSuccess: false)
+      } catch {
+        toolUse.fail(with: AppError("Could not parse failure"))
+      }
     }
   }
 

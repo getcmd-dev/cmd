@@ -58,7 +58,8 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       // The output from Claude Code is the result of applying the prompt to the fetched content
       updateStatus.complete(with: .success(.init(result: output)))
     }

@@ -58,7 +58,8 @@ public final class ClaudeCodeGlobTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       // Parse the glob output from Claude Code
       // The output is newline-separated file paths
       let files = output

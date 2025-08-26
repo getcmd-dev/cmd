@@ -189,7 +189,9 @@ export type MessageAttachment = ImageAttachment | FileAttachment | FileSelection
 export interface ImageAttachment {
 	type: "image_attachment"
 	url: string
-	mimeType: string
+	mimeType?: string
+	path?: string
+	filename?: string
 }
 
 export interface FileAttachment {

@@ -734,4 +734,30 @@ struct SettingsCodableTests {
 
     try testEncodingDecoding(settings, json)
   }
+
+  @Test("Resilient decoding with corrupted field falls back to defaults")
+  func testResilientDecodingWithCorruptedField() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : "invalid-boolean-value",
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : "invalid-dictionary",
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-key",
+            "createdOrder" : 1
+          }
+        }
+      }
+      """
+
+    let decodedSettings = try JSONDecoder().decode(Settings.self, from: json.data(using: .utf8)!)
+
+    // Should use defaults for corrupted fields
+    #expect(decodedSettings.allowAnonymousAnalytics == true) // default value
+    #expect(decodedSettings.pointReleaseXcodeExtensionToDebugApp == true) // correctly decoded
+    #expect(decodedSettings.preferedProviders.isEmpty) // default empty dictionary
+    #expect(decodedSettings.llmProviderSettings.count == 1) // successfully decoded valid provider
+    #expect(decodedSettings.llmProviderSettings[.anthropic]?.apiKey == "test-key")
+  }
 }

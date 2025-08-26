@@ -67,7 +67,8 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       // Parse the output from Claude Code
       let parsedOutput = try parseWebSearchOutput(output)
       updateStatus.complete(with: .success(parsedOutput))

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import LLMFoundation
+import LoggingServiceInterface
 import SettingsServiceInterface
 
 // MARK: - Settings + Codable
@@ -10,39 +11,43 @@ extension Settings: Codable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: String.self)
-    try self.init(
+    self.init(
       pointReleaseXcodeExtensionToDebugApp: container
-        .decodeIfPresent(Bool.self, forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
-      allowAnonymousAnalytics: container.decodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true,
-      automaticallyCheckForUpdates: container.decodeIfPresent(Bool.self, forKey: "automaticallyCheckForUpdates") ?? true,
-      fileEditMode: container.decodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
-      automaticallyUpdateXcodeSettings: container.decodeIfPresent(Bool.self, forKey: "automaticallyUpdateXcodeSettings") ?? false,
-      preferedProviders: container.decodeIfPresent([String: String].self, forKey: "preferedProviders")?
+        .resilientlyDecodeIfPresent(Bool.self, forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
+      allowAnonymousAnalytics: container.resilientlyDecodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true,
+      automaticallyCheckForUpdates: container
+        .resilientlyDecodeIfPresent(Bool.self, forKey: "automaticallyCheckForUpdates") ?? true,
+      fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
+      automaticallyUpdateXcodeSettings: container.resilientlyDecodeIfPresent(
+        Bool.self,
+        forKey: "automaticallyUpdateXcodeSettings") ?? false,
+      preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [LLMModel: LLMProvider]()) { acc, el in
           guard let model = LLMModel(rawValue: el.key), let provider = LLMProvider(rawValue: el.value) else { return }
           acc[model] = provider
         } ?? [:],
       llmProviderSettings: container
-        .decodeIfPresent([String: LLMProviderSettings].self, forKey: "llmProviderSettings")?
+        .resilientlyDecodeIfPresent([String: LLMProviderSettings].self, forKey: "llmProviderSettings")?
         .reduce(into: [LLMProvider: LLMProviderSettings]()) { acc, el in
           guard let provider = LLMProvider(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? [:],
       inactiveModels: container
-        .decodeIfPresent([String].self, forKey: "inactiveModels")?
+        .resilientlyDecodeIfPresent([String].self, forKey: "inactiveModels")?
         .compactMap { modelName in LLMModel(rawValue: modelName) } ?? [],
       reasoningModels: container
-        .decodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels")?
+        .resilientlyDecodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels")?
         .reduce(into: [LLMModel: LLMReasoningSetting]()) { acc, el in
           guard let provider = LLMModel(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? [:],
       customInstructions: container
-        .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions(),
+        .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings
+        .CustomInstructions(),
       toolPreferences: container
-        .decodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [],
+        .resilientlyDecodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [],
       keyboardShortcuts: container
-        .decodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts())
+        .resilientlyDecodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts())
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -81,5 +86,19 @@ extension LLMReasoningSetting: Codable {
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
     try container.encode(isEnabled, forKey: "isEnabled")
+  }
+}
+
+extension KeyedDecodingContainer where K == String {
+  /// Decoding the desired key, returning nil when the decoding fails.
+  /// This allows for an object to not fail entirely when one property could not be decoded, which is desirable for settings.
+  /// For instance this prevents one buggy format change from destroying all user settings.
+  public func resilientlyDecodeIfPresent<T: Decodable>(_: T.Type, forKey key: KeyedDecodingContainer<K>.Key) -> T? {
+    do {
+      return try decodeIfPresent(T.self, forKey: key)
+    } catch {
+      defaultLogger.error("Failed to decode \(T.self) for key \(key) at \(codingPath): \(error)")
+      return nil
+    }
   }
 }

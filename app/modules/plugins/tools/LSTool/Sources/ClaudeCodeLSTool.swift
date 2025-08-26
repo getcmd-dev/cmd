@@ -57,7 +57,8 @@ public final class ClaudeCodeLSTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       updateStatus.complete(with: .success(parse(rawOutput: output)))
     }
 

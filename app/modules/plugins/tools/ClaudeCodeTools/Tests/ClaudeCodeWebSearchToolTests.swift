@@ -89,7 +89,7 @@ struct ClaudeCodeWebSearchToolTests {
       context: .init())
 
     // Test receiving the output
-    try use.receive(output: output)
+    try use.receive(output: .string(output))
 
     // Wait for the status to be updated
     var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
@@ -143,7 +143,7 @@ struct ClaudeCodeWebSearchToolTests {
       input: .init(query: "test query", allowed_domains: nil, blocked_domains: nil),
       context: .init())
 
-    try use.receive(output: output)
+    try use.receive(output: .string(output))
 
     var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
     for await status in use.status.futureUpdates {
@@ -174,7 +174,7 @@ struct ClaudeCodeWebSearchToolTests {
       context: .init())
 
     #expect(throws: (any Error).self) {
-      try use.receive(output: output)
+      try use.receive(output: .string(output))
     }
   }
 

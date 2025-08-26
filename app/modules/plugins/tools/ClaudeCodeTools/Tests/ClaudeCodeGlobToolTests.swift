@@ -23,7 +23,7 @@ struct ClaudeCodeGlobToolTests {
     // Simulate external output from Claude Code
     let output = testGlobOutput
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.files.count == 5)
@@ -48,7 +48,7 @@ struct ClaudeCodeGlobToolTests {
     // Simulate empty output
     let output = ""
 
-    try toolUse.receive(output: output)
+    try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
     #expect(result.files.isEmpty)

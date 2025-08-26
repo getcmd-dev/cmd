@@ -23,7 +23,7 @@ struct ClaudeCodeLSToolTests {
     // Simulate invalid external output
     let invalidOutput = testOutput
 
-    try toolUse.receive(output: invalidOutput)
+    try toolUse.receive(output: .string(invalidOutput))
     let result = try await toolUse.output.files.map(\.path)
     #expect(result == [
       "/Users/me/cmd/app/modules/plugins/tools/ClaudeCodeTools/Tests",

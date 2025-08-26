@@ -72,7 +72,7 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
     public var internalState: InternalState? { mappedInput }
 
-    public func receive(output _: String) throws {
+    public func receive(output _: JSON.Value) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "Write completed successfully"
       // TODO: handle failures

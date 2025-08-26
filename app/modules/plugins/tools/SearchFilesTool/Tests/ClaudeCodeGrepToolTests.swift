@@ -29,7 +29,7 @@ struct ClaudeCodeGrepToolTests {
 
     toolUse.startExecuting()
 
-    try toolUse.receive(output: testOutput)
+    try toolUse.receive(output: .string(testOutput))
     let result = try await toolUse.output.results.map(\.path)
     #expect(result == [
       "/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift",
@@ -53,7 +53,7 @@ struct ClaudeCodeGrepToolTests {
 
     toolUse.startExecuting()
 
-    try toolUse.receive(output: otherTestOutput)
+    try toolUse.receive(output: .string(otherTestOutput))
     let results = try await toolUse.output.results
 
     // Validate we have the expected number of file results (5 unique files with matches)

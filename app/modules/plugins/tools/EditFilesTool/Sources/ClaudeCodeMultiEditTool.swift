@@ -80,7 +80,7 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
 
     public var internalState: InternalState? { mappedInput }
 
-    public func receive(output _: String) throws {
+    public func receive(output _: JSON.Value) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "MultiEdit completed successfully"
       // TODO: handle failures

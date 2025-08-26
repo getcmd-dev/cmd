@@ -104,7 +104,8 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
+    public func receive(output: JSON.Value) throws {
+      let output = try requireStringOutput(from: output)
       // Parse the todo write output from Claude Code
       let success = output.contains("successfully")
       let message = success ? "Todo list updated successfully" : output

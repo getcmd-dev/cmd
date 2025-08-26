@@ -63,21 +63,62 @@ public final class ClaudeCodeReadTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func receive(output: String) throws {
-      // Parse the read file from the text output sent by Claude Code to the server.
-      // The ouput is in the format (line number)→... and can contain extra XML like info.
+    public func receive(output: JSON.Value) throws {
+      let data = try JSONEncoder().encode(output)
+      let output = try JSONDecoder().decode(ClaudeCodeOutput.self, from: data)
+      updateStatus.complete(with: .success(.init(content: output.content, uri: input.file_path)))
 
-      let parsedOutput = output
-        .split(separator: "\n", omittingEmptySubsequences: false)
-        .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
-        .joined(separator: "\n")
-      updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
+      guard output.isText else { return }
 
-      let content = try fileManager.read(contentsOf: filePath)
+      // Sync current file content to help manage edits.
       do {
+        let content = try fileManager.read(contentsOf: filePath)
         try chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
       } catch {
         defaultLogger.error("Failed to register file content for path \(filePath)", error)
+      }
+    }
+
+    enum ClaudeCodeOutput: Decodable {
+      case files(_ files: [File])
+      case rawText(_ text: String)
+
+      init(from decoder: any Decoder) throws {
+        do {
+          let content = try String(from: decoder)
+          // Parse the read file from the text output sent by Claude Code to the server.
+          // The ouput is in the format (line number)→... and can contain extra XML like info.
+          let parsedContent = content
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
+            .joined(separator: "\n")
+          self = .rawText(parsedContent)
+        } catch {
+          self = try .files([File](from: decoder))
+        }
+      }
+
+      struct File: Decodable {
+        let type: String
+        let source: ImageSource
+
+        struct ImageSource: Decodable {
+          let media_type: String
+          let type: String
+          let data: String
+        }
+      }
+
+      var content: String {
+        switch self {
+        case .rawText(let text): text
+        case .files(let files): files.map { "<file media_type=\"\($0.source.media_type)\">" }.joined(separator: "\n")
+        }
+      }
+
+      var isText: Bool {
+        if case .rawText = self { return true }
+        return false
       }
     }
 
