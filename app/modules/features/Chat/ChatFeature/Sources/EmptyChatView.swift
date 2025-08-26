@@ -24,15 +24,15 @@ struct EmptyChatView: View {
       keyBoardShortCutCard(
         title: "Add to current chat",
         description: "Continue exisiting conversation with added context",
-        keys: (keyboardShortcuts.addContextToCurrentChat ?? .init(key: "I", modifiers: [.command])).keys)
+        keys: keyboardShortcuts[withDefault: .addContextToCurrentChat].keys)
       keyBoardShortCutCard(
         title: "Add to new chat",
         description: "Create a new conversation with the selected context",
-        keys: (keyboardShortcuts.addContextToNewChat ?? .init(key: "I", modifiers: [.command, .shift])).keys)
+        keys: keyboardShortcuts[withDefault: .addContextToNewChat].keys)
       keyBoardShortCutCard(
         title: "Dismiss",
         description: "Dismiss cmd. It'll still be available in the menu bar and respond to shortcuts",
-        keys: (keyboardShortcuts.dismissChat ?? .init(key: .escape, modifiers: [.command])).keys)
+        keys: keyboardShortcuts[withDefault: .dismissChat].keys)
       keyBoardShortCutCard(title: "Cycle chat mode", description: "Switch between different chat mode", keys: ["⇧", "⇥"])
     }
     .onReceive(settingsService.liveValue(for: \.keyboardShortcuts), perform: { keyboardShortcuts in
@@ -83,7 +83,7 @@ struct EmptyChatView: View {
 
 }
 
-extension SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut {
+extension SettingsServiceInterface.Settings.KeyboardShortcut {
   var keys: [String] {
     modifiers.map(\.description) + [key.description]
   }

@@ -202,11 +202,11 @@ struct SettingsViewModelTests {
       SettingsViewModel()
     }
 
-    let shortcut = SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut(key: "i", modifiers: [.command, .shift])
-    viewModel.keyboardShortcuts = .init(addContextToCurrentChat: shortcut)
+    let shortcut = SettingsServiceInterface.Settings.KeyboardShortcut(key: "i", modifiers: [.command, .shift])
+      viewModel.keyboardShortcuts = [.addContextToCurrentChat: shortcut]
 
     let value = mockSettingsService.value(for: \.keyboardShortcuts)
-    #expect(value.addContextToCurrentChat == shortcut)
+    #expect(value[.addContextToCurrentChat] == shortcut)
   }
 
   @Test("observes live settings updates")

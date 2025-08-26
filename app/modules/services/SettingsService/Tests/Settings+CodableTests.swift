@@ -694,9 +694,10 @@ struct SettingsCodableTests {
   func testKeyboardShortcutsEncodingDecoding() throws {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
-      keyboardShortcuts: .init(
-        addContextToCurrentChat: .init(key: .leftArrow, modifiers: [.command, .shift]),
-        addContextToNewChat: .init(key: .init("L"), modifiers: [.command, .shift, .control])))
+      keyboardShortcuts: [
+        .addContextToCurrentChat: .init(key: .leftArrow, modifiers: [.command, .shift]),
+        .addContextToNewChat: .init(key: .init("L"), modifiers: [.command, .shift, .control]),
+      ])
 
     let json = """
       {

@@ -13,11 +13,13 @@ import SwiftUI
 }
 
 #Preview("Keyboard Shortcuts - Custom") {
-  KeyboardShortcutsSettingsView(keyboardShortcuts: .constant(.init(addContextToCurrentChat: .init(
-    key: "k",
-    modifiers: [.control]))))
-    .frame(width: 600, height: 400)
-    .padding()
+  KeyboardShortcutsSettingsView(keyboardShortcuts: .constant([
+    .addContextToCurrentChat: .init(
+      key: "k",
+      modifiers: [.control]),
+  ]))
+  .frame(width: 600, height: 400)
+  .padding()
 }
 
 #endif

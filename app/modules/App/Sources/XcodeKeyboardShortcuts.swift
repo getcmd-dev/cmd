@@ -93,17 +93,13 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   }
 
   private func apply(_ settings: SettingsServiceInterface.Settings.KeyboardShortcuts) {
-    let keyBoardMap: [(SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut?, KeyboardShortcuts.Name)] = [
-      (settings.addContextToCurrentChat, .addContext),
-      (settings.addContextToNewChat, .addContextToNewThread),
-      (settings.dismissChat, .hideChat),
+    let keyBoardMap: [(SettingsServiceInterface.Settings.KeyboardShortcut, KeyboardShortcuts.Name)] = [
+      (settings[withDefault: .addContextToCurrentChat], .addContext),
+      (settings[withDefault: .addContextToNewChat], .addContextToNewThread),
+      (settings[withDefault: .dismissChat], .hideChat),
     ]
     for (setting, shortcutName) in keyBoardMap {
-      if let setting {
-        KeyboardShortcuts.setShortcut(setting.mapped, for: shortcutName)
-      } else {
-        KeyboardShortcuts.setShortcut(nil, for: shortcutName)
-      }
+      KeyboardShortcuts.setShortcut(setting.mapped, for: shortcutName)
     }
   }
 
@@ -200,7 +196,7 @@ extension KeyboardShortcuts.Key {
   }
 }
 
-extension SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut {
+extension SettingsServiceInterface.Settings.KeyboardShortcut {
   var mapped: KeyboardShortcuts.Shortcut? {
     guard let key = KeyboardShortcuts.Key(character: key.character) else { return nil }
     return KeyboardShortcuts.Shortcut(key, modifiers: modifiers.nsEventModifierFlags)

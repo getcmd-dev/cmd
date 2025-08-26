@@ -9,7 +9,7 @@ import SwiftUI
 // MARK: - KeyboardShortcutsView
 
 typealias KeyboardShortcuts = SettingsServiceInterface.Settings.KeyboardShortcuts
-typealias KeyboardShortcut = SettingsServiceInterface.Settings.KeyboardShortcuts.Shortcut
+typealias KeyboardShortcut = SettingsServiceInterface.Settings.KeyboardShortcut
 
 // MARK: - KeyboardShortcutsSettingsView
 
@@ -23,18 +23,18 @@ struct KeyboardShortcutsSettingsView: View {
       KeyboardShortcutView(
         title: "Add to current chat",
         description: "Continue existing conversation with added context",
-        defaultValue: .init(key: "I", modifiers: [.command]),
-        keyboardShortcut: $keyboardShortcuts.addContextToCurrentChat)
+        defaultValue: Settings.KeyboardShortcutKey.addContextToCurrentChat.defaultShortcut,
+        keyboardShortcut: $keyboardShortcuts[.addContextToCurrentChat])
       KeyboardShortcutView(
         title: "Add to new chat",
         description: "Create a new conversation with the selected context",
-        defaultValue: .init(key: "I", modifiers: [.command, .shift]),
-        keyboardShortcut: $keyboardShortcuts.addContextToNewChat)
+        defaultValue: Settings.KeyboardShortcutKey.addContextToNewChat.defaultShortcut,
+        keyboardShortcut: $keyboardShortcuts[.addContextToNewChat])
       KeyboardShortcutView(
         title: "Dismiss",
         description: "Dismiss cmd. It'll still be available in the menu bar and respond to shortcuts",
-        defaultValue: .init(key: .escape, modifiers: [.command]),
-        keyboardShortcut: $keyboardShortcuts.dismissChat)
+        defaultValue: Settings.KeyboardShortcutKey.dismissChat.defaultShortcut,
+        keyboardShortcut: $keyboardShortcuts[.dismissChat])
       Spacer()
     }
   }
@@ -77,7 +77,7 @@ struct KeyboardShortcutView: View {
             }
             return true
           })
-          .frame(width: 60, height: 20)
+          .frame(width: 60, height: Constants.lineHeight)
           .with(
             cornerRadius: 5,
             backgroundColor: colorScheme.tertiarySystemBackground,
@@ -86,7 +86,7 @@ struct KeyboardShortcutView: View {
 
         Spacer(minLength: 0)
 
-        if keyboardShortcut != defaultValue {
+        if keyboardShortcut != nil, keyboardShortcut != defaultValue {
           HoveredButton(
             action: {
               keyboardShortcut = nil
@@ -97,6 +97,7 @@ struct KeyboardShortcutView: View {
             content: {
               Text("Reset to \(display(shortcut: defaultValue))")
             })
+            .frame(height: Constants.lineHeight)
         }
       }
       if let description {
@@ -111,10 +112,15 @@ struct KeyboardShortcutView: View {
   }
 
   func display(shortcut: KeyboardShortcut) -> String {
-    (shortcut.modifiers
-      .map(\.description)
-      + [shortcut.key.description])
+    (
+      shortcut.modifiers
+        .map(\.description)
+        + [shortcut.key.description])
       .joined(separator: " ")
+  }
+
+  private enum Constants {
+    static let lineHeight: CGFloat = 20
   }
 
   @Binding private var keyboardShortcut: KeyboardShortcut?

@@ -159,37 +159,39 @@ public typealias LLMProviderSettings = Settings.LLMProviderSettings
 
 extension Settings {
 
-  /// Keyboard shortcuts used to help interact with `cmd`.
-  public struct KeyboardShortcuts: Sendable, Codable, Equatable {
-    public init(
-      addContextToCurrentChat: Shortcut? = nil,
-      addContextToNewChat: Shortcut? = nil,
-      dismissChat: Shortcut? = nil)
-    {
-      self.addContextToCurrentChat = addContextToCurrentChat
-      self.addContextToNewChat = addContextToNewChat
-      self.dismissChat = dismissChat
+  public typealias KeyboardShortcuts = [KeyboardShortcutKey: KeyboardShortcut]
+
+  public struct KeyboardShortcut: Sendable, Codable, Equatable {
+    public let key: KeyEquivalent
+    public let modifiers: [KeyModifier]
+
+    public init(key: KeyEquivalent, modifiers: [KeyModifier]) {
+      self.key = key
+      self.modifiers = modifiers
     }
+  }
 
-    public struct Shortcut: Sendable, Codable, Equatable {
-      public let key: KeyEquivalent
-      public let modifiers: [KeyModifier]
+  public enum KeyboardShortcutKey: String, Codable, Sendable, CaseIterable, CodingKeyRepresentable {
+    /// Add current selection / file to the existing chat's context.
+    case addContextToCurrentChat
+    /// Create a new chat thread and add current selection / file to its context.
+    case addContextToNewChat
+    /// Dismiss the chat UI.
+    case dismissChat
 
-      public init(key: KeyEquivalent, modifiers: [KeyModifier]) {
-        self.key = key
-        self.modifiers = modifiers
+    public var defaultShortcut: KeyboardShortcut {
+      switch self {
+      case .addContextToCurrentChat: KeyboardShortcut(key: "i", modifiers: [.command])
+      case .addContextToNewChat: KeyboardShortcut(key: "i", modifiers: [.command, .shift])
+      case .dismissChat: KeyboardShortcut(key: .escape, modifiers: [.command])
       }
     }
+  }
+}
 
-    /// Add current selection / file to the existing chat's context.
-    public var addContextToCurrentChat: Shortcut?
-
-    /// Create a new chat thread and add current selection / file to its context.
-    public var addContextToNewChat: Shortcut?
-
-    /// Dismiss the chat UI.
-    public var dismissChat: Shortcut?
-
+extension Settings.KeyboardShortcuts {
+  public subscript(withDefault key: Settings.KeyboardShortcutKey) -> Settings.KeyboardShortcut {
+    self[key] ?? key.defaultShortcut
   }
 }
 
