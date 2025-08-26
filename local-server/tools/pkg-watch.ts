@@ -77,7 +77,7 @@ watch("../app/modules", { recursive: true }, function (evt, filePath) {
 		}
 		const generateAllPackages = `${ignoredSwiftPackage()}`.includes("Package.swift")
 
-		execSync(`${appPath}/cmd.sh sync:dependencies ${generateAllPackages ? "--all" : ""}`)
+		execSync(`${appPath}/../cmd.sh sync:dependencies ${generateAllPackages ? "--all" : ""}`)
 	} catch (error) {
 		console.error(`Error watching file changes: ${error as Error}`)
 	}

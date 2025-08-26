@@ -15,6 +15,14 @@ lint_swift_command() {
 		swiftformat --config rules.swiftformat . --cache .build/caches/swiftformat
 }
 
+lint_ts_command() {
+	cd "$(git rev-parse --show-toplevel)/local-server" && yarn lint --fix
+}
+
+lint_shell_command() {
+	shfmt -w ./**/*.sh
+}
+	  
 sync_dependencies_command() {
 	./tools/dependencies/sync.sh "$@"
 }
@@ -84,13 +92,25 @@ lint:swift)
 	lint_swift_command "$@"
 	;;
 lint:ts)
-	cd "$(git rev-parse --show-toplevel)/local-server" && yarn lint --fix
+	lint_ts_command "$@"
+	;;
+lint:shell)
+	lint_shell_command "$@"
+	;;
+lint)
+	lint_swift_command && 
+		lint_ts_command && 
+		lint_shell_command
 	;;
 test:swift)
 	test_swift_command "$@"
 	;;
 test:ts)
 	test_ts_command "$@"
+	;;
+test)
+	test_swift_command &&
+	test_ts_command
 	;;
 sync:dependencies)
 	sync_dependencies_command "$@"

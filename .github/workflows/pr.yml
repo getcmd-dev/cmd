@@ -68,7 +68,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-app-modules-
     - name: Run tests
-      run: cd app && ./cmd.sh test:swift
+      run: ./cmd.sh test:swift
 
   lint-swift:
     runs-on: macos-15
@@ -82,7 +82,7 @@ jobs:
     - name: Install swiftformat
       run: brew install swiftformat
     - name: Run linter
-      run: cd app && ./cmd.sh lint:swift
+      run: ./cmd.sh lint:swift
     - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
@@ -108,7 +108,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-app-modules-
     - name: Run sync dependencies
-      run: cd app && ./cmd.sh sync:dependencies
+      run: ./cmd.sh sync:dependencies
     - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
@@ -124,7 +124,7 @@ jobs:
     - name: Install dependencies
       run: cd local-server && yarn install
     - name: Run tests
-      run: cd local-server && yarn test
+      run: ./cmd.sh test:ts
 
   tsc:
     runs-on: macos-15
@@ -152,7 +152,7 @@ jobs:
     - name: Install dependencies
       run: cd local-server && yarn install
     - name: Run linter
-      run: cd local-server && yarn lint:fix
+      run: ./cmd.sh lint:ts
     - name: Verify that `yarn lint:fix` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
@@ -168,6 +168,6 @@ jobs:
     - name: Install shfmt
       run: brew install shfmt
     - name: Run linter
-      run: shfmt -w ./**/*.sh
+      run: ./cmd.sh lint:shell
     - name: Verify that `shfmt -w ./**/*.sh` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code

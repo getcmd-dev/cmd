@@ -21,7 +21,7 @@ cd "$repo_root/local-server"
 yarn lint:fix --quiet
 
 # lint swift files and dependencies
-cd "$repo_root/app"
+cd "$repo_root"
 ./cmd.sh sync:dependencies
 ./cmd.sh lint:swift
 
