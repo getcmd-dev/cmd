@@ -6,7 +6,9 @@ import SwiftUI
 #if DEBUG
 #Preview {
   VStack(alignment: .leading, spacing: 10) {
-    AttachmentItemView(attachment: .image(.init(imageData: imageData, path: nil)), removeAttachment: { _ in })
+    AttachmentItemView(
+      attachment: .image(.init(imageData: imageData, path: nil, mimeType: "image/png")),
+      removeAttachment: { _ in })
     AttachmentItemView(attachment: .file(.init(path: URL(filePath: "/Users/me/app/source.swift")!, content: mediumFileContent)))
     AttachmentItemView(
       attachment: .fileSelection(.init(

@@ -275,9 +275,8 @@ extension AttachmentModel {
     case .image(let imageAttachment):
       return .imageAttachment(Schema.ImageAttachment(
         url: imageData(from: imageAttachment),
-        mimeType: imageAttachment.inferredMimeType,
-        path: imageAttachment.path?.path,
-        filename: imageAttachment.path?.lastPathComponent))
+        mimeType: imageAttachment.mimeType,
+        path: imageAttachment.path?.path))
 
     case .fileSelection(let fileSelectionAttachment):
       let startLine = fileSelectionAttachment.startLine

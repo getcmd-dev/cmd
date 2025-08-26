@@ -318,7 +318,7 @@ final class ChatInputViewModel {
         assertionFailure("Could not convert image to PNG data")
         return false
       }
-      let attachment = AttachmentModel.image(.init(imageData: imageData, path: nil))
+      let attachment = AttachmentModel.image(.init(imageData: imageData, path: nil, mimeType: "image/png"))
       attachments.append(attachment)
 
     case .file(let url):
@@ -540,7 +540,7 @@ final class ChatInputViewModel {
         assertionFailure("Could not read image data from \(url)")
         return nil
       }
-      return AttachmentModel.image(.init(imageData: data, path: url))
+      return AttachmentModel.image(.init(imageData: data, path: url, mimeType: "image/\(url.pathExtension)"))
     }
     guard let content = try? fileManager.read(contentsOf: url) else {
       assertionFailure("Could not read file at \(url)")

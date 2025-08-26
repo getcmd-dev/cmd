@@ -429,46 +429,40 @@ extension Schema {
   public struct ImageAttachment: Codable, Sendable {
     public let type = "image_attachment"
     public let url: String
-    public let mimeType: String?
+    public let mimeType: String
     public let path: String?
-    public let filename: String?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case url = "url"
       case mimeType = "mimeType"
       case path = "path"
-      case filename = "filename"
     }
   
     public init(
         type: String = "image_attachment",
         url: String,
-        mimeType: String? = nil,
-        path: String? = nil,
-        filename: String? = nil
+        mimeType: String,
+        path: String? = nil
     ) {
       self.url = url
       self.mimeType = mimeType
       self.path = path
-      self.filename = filename
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       url = try container.decode(String.self, forKey: .url)
-      mimeType = try container.decodeIfPresent(String?.self, forKey: .mimeType)
+      mimeType = try container.decode(String.self, forKey: .mimeType)
       path = try container.decodeIfPresent(String?.self, forKey: .path)
-      filename = try container.decodeIfPresent(String?.self, forKey: .filename)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(type, forKey: .type)
       try container.encode(url, forKey: .url)
-      try container.encodeIfPresent(mimeType, forKey: .mimeType)
+      try container.encode(mimeType, forKey: .mimeType)
       try container.encodeIfPresent(path, forKey: .path)
-      try container.encodeIfPresent(filename, forKey: .filename)
     }
   }
   public struct FileAttachment: Codable, Sendable {

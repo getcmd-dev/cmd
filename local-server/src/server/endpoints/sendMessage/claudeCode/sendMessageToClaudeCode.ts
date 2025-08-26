@@ -116,13 +116,14 @@ const createClaudeCodeEventStream = (
 								if (attachment.path) {
 									filePath = attachment.path
 								} else {
-									// Image copied from pasteboard, no path available
+									// No path available. This can happen when the image was copied from the pasteboard.
 
 									// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
 									const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
+									const fileExtension = attachment.mimeType.split("/").pop()
 									// Write the image to a tmp file
 									const imageBuffer = Buffer.from(base64Data, "base64")
-									const tmpPath = `/tmp/cmd/${createHash("sha256").update(attachment.url).digest("hex").toString().slice(0, 8)}.png`
+									const tmpPath = `/tmp/cmd/${createHash("sha256").update(attachment.url).digest("hex").toString().slice(0, 8)}.${fileExtension}`
 									const dir = path.dirname(tmpPath)
 									if (!existsSync(dir)) {
 										mkdirSync(dir)

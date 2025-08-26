@@ -473,7 +473,9 @@ extension AttachmentModel.ImageAttachmentModel: Codable {
     try self.init(
       id: id,
       imageData: attachmentSerializer.read(Data.self, for: id),
-      path: container.decodeIfPresent(URL.self, forKey: .path))
+      path: container.decodeIfPresent(URL.self, forKey: .path),
+      // Old versions didn't have this property...
+      mimeType: container.decodeIfPresent(String.self, forKey: .mimeType) ?? "image/png")
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -485,7 +487,7 @@ extension AttachmentModel.ImageAttachmentModel: Codable {
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, imageData, path
+    case id, imageData, path, mimeType
   }
 }
 

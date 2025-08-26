@@ -33,7 +33,7 @@ let shortFileContent = """
 #Preview {
   VStack(alignment: .leading, spacing: 10) {
     VStack {
-      AttachmentPreview(attachment: .image(.init(imageData: imageData, path: nil)))
+      AttachmentPreview(attachment: .image(.init(imageData: imageData, path: nil, mimeType: "image/png")))
       Spacer()
     }
     .frame(height: 50)

@@ -96,7 +96,7 @@ let imageData: Data = NSImage(systemSymbolName: "car", accessibilityDescription:
           file: .init(path: URL(filePath: "/Users/me/app/source.swift")!, content: shortFileContent),
           startLine: 12,
           endLine: 34)),
-        .image(.init(imageData: imageData, path: nil)),
+        .image(.init(imageData: imageData, path: nil, mimeType: "image/png")),
       ]))
       .padding()
   }

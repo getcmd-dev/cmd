@@ -45,7 +45,7 @@ struct ImageAttachmentPickerView: View {
         return nil
       }
 
-      return AttachmentModel.image(.init(imageData: data, path: url))
+      return AttachmentModel.image(.init(imageData: data, path: url, mimeType: "image/\(url.pathExtension)"))
     }
     var allAttachments = attachments.wrappedValue
     allAttachments.append(contentsOf: newAttachments)

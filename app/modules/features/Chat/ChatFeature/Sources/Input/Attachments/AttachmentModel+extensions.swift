@@ -83,8 +83,8 @@ extension AttachmentModel.FileSelectionAttachment {
 }
 
 extension AttachmentModel.ImageAttachment {
-  init(imageData: Data, path: URL?) {
-    self.init(id: UUID(), imageData: imageData, path: path)
+  init(imageData: Data, path: URL?, mimeType: String) {
+    self.init(id: UUID(), imageData: imageData, path: path, mimeType: mimeType)
   }
 
   func loadImage() async -> Image? {
