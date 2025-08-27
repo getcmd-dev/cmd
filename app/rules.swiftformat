@@ -1,7 +1,7 @@
 # copied from https://github.com/airbnb/swift/blob/master/Sources/AirbnbSwiftFormatTool/airbnb.swiftformat
 
 # Exclude checkout directories for common package managers
---exclude Carthage,Pods,.build,build
+--exclude Carthage,Pods,**/.build,**/build
 
 # options
 --swiftversion 6.1.2
