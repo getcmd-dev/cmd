@@ -31,7 +31,7 @@ platform :mac do
       skip_archive: true,
       scheme: "command",
       # silent: true,
-      xcodebuild_formatter: "cat",
+      xcodebuild_formatter: "xcbeautify",
     )
   end
 
@@ -39,10 +39,14 @@ platform :mac do
   lane :build_release do
     setup_ci if ENV['CI']
 
+    build_path = File.absolute_path("../build")
+    sh("rm -rf #{build_path}")
+
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     readonly = true
@@ -63,13 +67,13 @@ platform :mac do
       project: "./command.xcodeproj",
       configuration: "Release", 
       export_method: "mac-application",
-      output_directory: "build/release",
-      derived_data_path: "build/derived_data",
+      output_directory: "#{build_path}/release",
+      derived_data_path: "#{build_path}/derived_data",
       output_name: "command.app",
       scheme: "command",
       # silent: true,
       skip_archive: true,
-      xcodebuild_formatter: "cat",
+      xcodebuild_formatter: "xcbeautify",
       export_options: {
         method: "development",
       },
@@ -82,9 +86,11 @@ platform :mac do
     setup_ci if ENV['CI']
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
+    build_path = File.absolute_path("../build")
+    sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath build/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
+    # sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
@@ -108,10 +114,11 @@ platform :mac do
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    build_path = File.absolute_path("../build")
     release_path = "#{build_path}/release"
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
+    dsym_path = "#{app_path}.dSYM.zip"
+
     build_mac_app(
       destination: "platform=macOS,arch=arm64",
       skip_package_dependencies_resolution: true,
@@ -124,7 +131,7 @@ platform :mac do
       scheme: "command",
       # silent: true,
       skip_archive: false,
-      xcodebuild_formatter: "cat",
+      xcodebuild_formatter: "xcbeautify",
     )
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
@@ -174,7 +181,7 @@ platform :mac do
     File.write(appcast_path, appcast_content)
 
     sh("rm -rf #{build_path}") if remove_zip
-    { version: version, app_zip_path: app_zip_path, build_path: build_path }
+    { version: version, app_zip_path: app_zip_path, build_path: build_path, dsym_path: dsym_path }
   end
 
   desc "Build, archive, sign and publish the app for distribution"
@@ -200,6 +207,39 @@ platform :mac do
     version = result[:version]
     app_zip_path = result[:app_zip_path]
     build_path = result[:build_path]
+    dsym_path = result[:dsym_path]
+
+    # Upload DSYM & other info to Sentry
+    sentry_upload_dsym(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'apple-macos',
+      # symbol_maps: 'path to bcsymbols folder', # use this if you have a bcsymbols folder
+      dsym_path: dsym_path,
+    )
+    sentry_debug_files_upload(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'apple-macos',
+      include_sources: true,
+      wait: true, # TODO: remove
+      path: File.absolute_path("../"), # Optional. Defaults to '.' when no value is provided. Path(s) can be a string, a comma-separated string, or an array of strings.
+    )
+    sentry_create_release(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'apple-macos',
+      version: version,
+      app_identifier: 'dev.getcmd.command',
+      finalize: true
+    )
+    sentry_set_commits(
+      version: version,
+      app_identifier: 'dev.getcmd.command',
+      auto: true,
+      clear: false
+    )
+    # End of Sentry setup
 
     gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
