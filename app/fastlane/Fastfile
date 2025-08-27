@@ -87,7 +87,7 @@ platform :mac do
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
     build_path = File.absolute_path("../build")
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
@@ -180,7 +180,7 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
 
-    sh("rm -rf #{build_path}") if remove_zip
+    # sh("rm -rf #{build_path}") if remove_zip
     { version: version, app_zip_path: app_zip_path, build_path: build_path, dsym_path: dsym_path }
   end
 
@@ -191,9 +191,9 @@ platform :mac do
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
-    if existing_version.empty?
-      puts "Using version: #{version}"
-    else
+    # if existing_version.empty?
+    #   puts "Using version: #{version}"
+    # else
       version_parts = version.split('.')
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
       new_version = version_parts.join('.')
@@ -201,7 +201,7 @@ platform :mac do
 
       sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
       version = new_version
-    end
+    # end
 
     result = create_and_sign_release(remove_zip: false, version: version)
     version = result[:version]
@@ -241,29 +241,29 @@ platform :mac do
     )
     # End of Sentry setup
 
-    gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+    # gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
-    set_github_release(
-      api_token: gh_personal_access_token_cmd,
-      server_url: "https://api.github.com",
-      repository_name: "getcmd-dev/cmd",
-      name: "v#{version}",
-      tag_name: "v#{version}",
-      description: "v#{version}",
-      commitish: "main",
-      upload_assets: app_zip_path
-    )
+    # set_github_release(
+    #   api_token: gh_personal_access_token_cmd,
+    #   server_url: "https://api.github.com",
+    #   repository_name: "getcmd-dev/cmd",
+    #   name: "v#{version}",
+    #   tag_name: "v#{version}",
+    #   description: "v#{version}",
+    #   commitish: "main",
+    #   upload_assets: app_zip_path
+    # )
 
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
-    new_branch_name = "release-v#{version}"
-    sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
-    create_pull_request(
-      api_token: gh_personal_access_token_cmd,
-      title: "Release v#{version}",
-      repo: "getcmd-dev/cmd",
-      head: new_branch_name,
-      base: "main"
-    )
+    # new_branch_name = "release-v#{version}"
+    # sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
+    # create_pull_request(
+    #   api_token: gh_personal_access_token_cmd,
+    #   title: "Release v#{version}",
+    #   repo: "getcmd-dev/cmd",
+    #   head: new_branch_name,
+    #   base: "main"
+    # )
   end
 end
