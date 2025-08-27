@@ -38,7 +38,7 @@ extension ExecuteCommandToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "exec-123"
         }
@@ -70,7 +70,7 @@ extension ExecuteCommandToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "exec-git-456"
         }
@@ -102,7 +102,7 @@ extension ExecuteCommandToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "exec-build-789"
         }

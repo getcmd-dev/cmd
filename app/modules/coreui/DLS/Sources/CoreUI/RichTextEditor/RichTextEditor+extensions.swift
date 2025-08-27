@@ -96,7 +96,7 @@ extension NSAttributedString {
         searchStartIndex = i
         break
       }
-      if nsString.character(at: i) == Self.newLineChar {
+      if isWhiteSpace(nsString.character(at: i)) {
         break
       }
     }
@@ -104,13 +104,28 @@ extension NSAttributedString {
     guard let searchStartIndex else { return nil }
 
     // Find the end (until newline, @ or end of effective range)
-    let searchEndIndex = max(cursorLocation, searchStartIndex + 1)
+    var searchEndIndex = max(cursorLocation, searchStartIndex + 1)
+    let maxEnd = min(effectiveRange.location + effectiveRange.length, textLength)
+
+    while searchEndIndex < maxEnd {
+      let char = nsString.character(at: searchEndIndex)
+      if char == Self.atChar || isWhiteSpace(char) {
+        break
+      }
+      searchEndIndex += 1
+    }
 
     return NSRange(location: searchStartIndex, length: searchEndIndex - searchStartIndex)
   }
 
   private static let newLineChar: unichar = NSString(string: "\n").character(at: 0)
+  private static let carriageReturnChar: unichar = NSString(string: "\r").character(at: 0)
+  private static let space: unichar = NSString(string: " ").character(at: 0)
   private static let atChar: unichar = NSString(string: "@").character(at: 0)
+
+  private func isWhiteSpace(_ char: unichar) -> Bool {
+    char == Self.space || char == Self.carriageReturnChar || char == Self.newLineChar
+  }
 
   private func adjustedTextBlockRangeReverse(new: NSRange, old: NSRange, textBlockRange: NSRange) -> NSRange {
     if

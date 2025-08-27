@@ -35,7 +35,7 @@ extension LSToolTests {
         "internalState" : null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "ls-123"
         }
@@ -63,7 +63,7 @@ extension LSToolTests {
         "internalState" : null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "ls-recursive-456"
         }
@@ -90,7 +90,7 @@ extension LSToolTests {
         "internalState" : null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "ls-structure-789"
         }

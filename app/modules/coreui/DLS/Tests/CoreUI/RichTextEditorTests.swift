@@ -49,18 +49,19 @@ struct RichTextEditorTests {
       ],
       .textBlock: UUID().uuidString,
     ]))
-    attrString.append(NSAttributedString(string: " !@searchQuery"))
+    attrString.append(NSAttributedString(string: " !@searchQuery hello"))
 
     #expect(try searchQuery(after: "Hello", in: attrString) == nil) // selection before `@`, before text block, no search
     #expect(try searchQuery(after: "Worl", in: attrString) == nil) // selection in text block, no search
     #expect(try searchQuery(after: "Hello World ", in: attrString) == nil) // selection before `@`, no search
-    #expect(try searchQuery(after: "Hello World !@", in: attrString) == "@searchQuery") // selection at `@`, search triggered
+    #expect(try searchQuery(after: "Hello World !@", in: attrString) ==
+      "@searchQuery") // selection at `@`, search triggered up to next whitespace
     #expect(
       try searchQuery(after: "Hello World !@sear", in: attrString) ==
-        "@searchQuery") // selection after `@`, search triggered
+        "@searchQuery") // selection after `@`, search triggered up to next whitespace
     #expect(
-      try searchQuery(after: "Hello World !@sear", in: attrString, selectionLength: 2) ==
-        nil) // non empty selection, no search
+      try searchQuery(after: "searchQuery hel", in: attrString) ==
+        nil) // selection after `@` and a whitespace, no result
   }
 
   @Test

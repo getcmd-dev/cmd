@@ -32,7 +32,7 @@ struct BuildToolEncodingTests {
         "internalState": null,
         "isInputComplete": true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "build-test-789"
       }
@@ -57,7 +57,7 @@ struct BuildToolEncodingTests {
         "internalState": null,
         "isInputComplete": true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "build-run-101"
       }

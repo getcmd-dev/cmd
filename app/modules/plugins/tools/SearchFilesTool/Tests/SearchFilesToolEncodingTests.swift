@@ -35,7 +35,7 @@ struct SearchFilesToolEncodingTests {
         "internalState": null,
         "isInputComplete": true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "search-123"
       }
@@ -65,7 +65,7 @@ struct SearchFilesToolEncodingTests {
         "internalState": null,
         "isInputComplete": true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "search-pattern-456"
       }
@@ -95,7 +95,7 @@ struct SearchFilesToolEncodingTests {
         "internalState": null,
         "isInputComplete": true,
         "status": {
-          "status": "pendingApproval"
+          "status": "notStarted"
         },
         "toolUseId": "search-structure-789"
       }

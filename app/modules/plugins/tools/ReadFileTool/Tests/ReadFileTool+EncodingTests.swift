@@ -35,7 +35,7 @@ extension ReadFileToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "read-123"
         }
@@ -67,7 +67,7 @@ extension ReadFileToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "read-range-456"
         }
@@ -99,7 +99,7 @@ extension ReadFileToolTests {
           "internalState": null,
           "isInputComplete": true,
           "status": {
-            "status": "pendingApproval"
+            "status": "notStarted"
           },
           "toolUseId": "read-single-789"
         }

@@ -567,8 +567,6 @@ final class ChatInputViewModel {
   private func updateSearchResults(searchQuery: String?) {
     guard
       let searchQuery,
-      // Don't support multi words search.
-      searchQuery.split(whereSeparator: \.isWhitespace).count == 1,
       let workspaceUrl = xcodeObserver.state.focusedWorkspace?.url
     else {
       searchResults = nil

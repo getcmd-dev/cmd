@@ -69,7 +69,7 @@ struct EditFilesToolEncodingTests {
         "internalState" : null,
         "isInputComplete" : true,
         "status" : {
-          "status" : "pendingApproval"
+          "status" : "notStarted"
         },
         "toolUseId" : "edit-123"
       }
@@ -117,7 +117,7 @@ struct EditFilesToolEncodingTests {
         "internalState" : null,
         "isInputComplete" : true,
         "status" : {
-          "status" : "pendingApproval"
+          "status" : "notStarted"
         },
         "toolUseId" : "edit-new-456"
       }
@@ -184,7 +184,7 @@ struct EditFilesToolEncodingTests {
         "internalState" : null,
         "isInputComplete" : true,
         "status" : {
-          "status" : "pendingApproval"
+          "status" : "notStarted"
         },
         "toolUseId" : "edit-multi-789"
       }
