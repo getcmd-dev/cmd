@@ -26,7 +26,7 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows applied file changes with relative paths")
     func test_streamRepresentationWithAppliedChanges() async throws {
-      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
+      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit successfully applied")))
       let projectRoot = URL(filePath: "/project")
 
       let viewModel = EditFilesToolUseViewModel(
@@ -57,7 +57,7 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows error file changes")
     func test_streamRepresentationWithErrorChanges() async throws {
-      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
+      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit successfully applied")))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,
@@ -82,7 +82,7 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows absolute paths when no projectRoot")
     func test_streamRepresentationWithAbsolutePaths() async throws {
-      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
+      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit successfully applied")))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,
@@ -108,7 +108,7 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation ignores pending status changes")
     func test_streamRepresentationIgnoresPendingChanges() async throws {
-      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit succesfully applied")))
+      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .completed(.success("Edit successfully applied")))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,

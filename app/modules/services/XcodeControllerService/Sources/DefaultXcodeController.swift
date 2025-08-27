@@ -338,7 +338,7 @@ extension DefaultXcodeController {
         defaultLogger.error("Edit failed: \(error)")
       }
     } else {
-      defaultLogger.log("Extension has succesfully applied the edit.")
+      defaultLogger.log("Extension has successfully applied the edit.")
     }
 
     let currentContinuation = inLock { state in

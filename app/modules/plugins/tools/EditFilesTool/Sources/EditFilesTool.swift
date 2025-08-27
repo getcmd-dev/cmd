@@ -258,7 +258,7 @@ public final class EditFilesTool: Tool {
             toolUseResult.fileChanges.contains(where: { if case .error = $0.status { true } else { false } }) ||
             toolUseResult.fileChanges.allSatisfy({ if case .applied = $0.status { true } else { false } })
           {
-            // If one change failed to apply, or all were succesfully applied, complete the tool use.
+            // If one change failed to apply, or all were successfully applied, complete the tool use.
             updateStatus.yield(.completed(toolUseResult.asToolUseResult))
           }
           // Update tracked content for successfully applied files
