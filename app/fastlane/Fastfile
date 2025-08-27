@@ -136,19 +136,19 @@ platform :mac do
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 
-    # Notarize the app
-    app_store_connect_api_key(
-      key_id: load_secret("NOTARY_KEY_ID"),
-      issuer_id: load_secret("NOTARY_ISSUER_ID"),
-      key_content: load_secret("NOTARY_P8"),
-    )
+    # # Notarize the app
+    # app_store_connect_api_key(
+    #   key_id: load_secret("NOTARY_KEY_ID"),
+    #   issuer_id: load_secret("NOTARY_ISSUER_ID"),
+    #   key_content: load_secret("NOTARY_P8"),
+    # )
 
-    notarize(
-      package: app_path,
-      verbose: false,
-      print_log: true,
-      use_notarytool: true
-    )
+    # notarize(
+    #   package: app_path,
+    #   verbose: false,
+    #   print_log: true,
+    #   use_notarytool: true
+    # )
 
     # Create metadata for the new release
 
@@ -158,10 +158,7 @@ platform :mac do
     # ._Foo but codesigning doesn't like that, and instead
     # wants them in __MACOSX.
     app_zip_path = "#{app_path}.zip"
-    sh(
-      "ditto", "-c", "-k", "--keepParent", "--sequesterRsrc",
-      app_path, app_zip_path,
-    )
+    sh("ditto -c -k --keepParent --sequesterRsrc #{app_path} #{app_zip_path}")
     sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
@@ -179,6 +176,10 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
+
+
+    archive_path = lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+    sh("echo '#{archive_path}-from-create_and_sign_release'")
 
     # sh("rm -rf #{build_path}") if remove_zip
     { version: version, app_zip_path: app_zip_path, build_path: build_path, dsym_path: dsym_path }
@@ -209,29 +210,83 @@ platform :mac do
     build_path = result[:build_path]
     dsym_path = result[:dsym_path]
 
+
+    archive_path = lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+    sh("echo '#{archive_path}-from-distribute_release'")
+
     # Upload DSYM & other info to Sentry
-    sentry_upload_dsym(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'apple-macos',
-      # symbol_maps: 'path to bcsymbols folder', # use this if you have a bcsymbols folder
-      dsym_path: dsym_path,
-    )
-    sentry_debug_files_upload(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'apple-macos',
-      include_sources: true,
-      wait: true, # TODO: remove
-      path: File.absolute_path("../"), # Optional. Defaults to '.' when no value is provided. Path(s) can be a string, a comma-separated string, or an array of strings.
-    )
     sentry_create_release(
       auth_token: load_secret("SENTRY_AUTH_TOKEN"),
       org_slug: 'getcmd',
-      project_slug: 'apple-macos',
+      project_slug: 'cmd-mac-app',
       version: version,
       app_identifier: 'dev.getcmd.command',
       finalize: true
+    )
+
+    
+    decompressed_dsym_path = "#{build_path}/release/command.app.dSYM"
+    sh "rm -rf #{decompressed_dsym_path} && ditto -xk #{dsym_path} #{decompressed_dsym_path}"
+    plist_path = "#{build_path}/release/command.app/Contents/Info.plist"
+
+    sentry_upload_dsym(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
+      # symbol_maps: 'path to bcsymbols folder', # use this if you have a bcsymbols folder
+      # info_plist: "#{build_path}/release/command.app/Contents/Info.plist",
+      dsym_path: dsym_path,
+      # dsym_paths: dsym_path,
+    )
+    
+    bugsnap_api_key = sh("plutil -convert json -o - #{plist_path} | jq -r '.bugsnag.apiKey'").strip
+    sh("bugsnag-cli upload xcode-archive '#{archive_path}' --api-key '#{bugsnap_api_key}'")
+    # upload_symbols_to_bugsnag(
+    #   config_file: "#{build_path}/release/command.app/Contents/Info.plist",
+    #   dsym_path: dsym_path
+    # )
+    # send_build_to_bugsnag(
+    #   config_file: "#{build_path}/release/command.app/Contents/Info.plist",
+    # )
+
+    # dsyms
+    # dsyms.each do |dsym|
+    #   Process.detach Process.spawn('/usr/bin/curl', '--http1.1',
+    #     '-F', "apiKey=#{api_key}",
+    #     '-F', "dsym=@#{dsym}",
+    #     '-F', "projectRoot=#{ENV['PROJECT_DIR']}",
+    #     'https://upload.bugsnag.com/dsym'
+    #   )
+    # end
+
+    # sentry_upload_dsym(
+    #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+    #   org_slug: 'getcmd',
+    #   project_slug: 'cmd-mac-app',
+    #   # symbol_maps: 'path to bcsymbols folder', # use this if you have a bcsymbols folder
+    #   info_plist: "#{build_path}/release/command.app/Contents/Info.plist",
+    #   dsym_path: "#{decompressed_dsym_path}/command.app.dSYM",
+    #   # dsym_paths: dsym_path,
+    # )
+
+    # sentry_upload_dsym(
+    #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+    #   org_slug: 'getcmd',
+    #   project_slug: 'cmd-mac-app',
+    #   # symbol_maps: 'path to bcsymbols folder', # use this if you have a bcsymbols folder
+    #   info_plist: "#{build_path}/release/command.app/Contents/Info.plist",
+    #   # dsym_path: "#{decompressed_dsym_path}/command.app.dSYM",
+    #   dsym_paths: decompressed_dsym_path,
+    # )
+
+
+    sentry_debug_files_upload(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
+      include_sources: true,
+      wait: true, # TODO: remove
+      path: File.absolute_path("../"), # Optional. Defaults to '.' when no value is provided. Path(s) can be a string, a comma-separated string, or an array of strings.
     )
     sentry_set_commits(
       version: version,

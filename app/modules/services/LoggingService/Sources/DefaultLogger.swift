@@ -1,6 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
+import Bugsnag
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -66,6 +68,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     let wasEnable = _internalState.set(\.is3rdPartyLoggingEnabled, to: true)
     guard !wasEnable else { return }
     startSentry()
+    startBugSnag()
     startStatsig()
   }
 
@@ -75,6 +78,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     let wasEnable = _internalState.set(\.is3rdPartyLoggingEnabled, to: false)
     guard wasEnable else { return }
     stopSentry()
+    stopBugsnag()
     stopStatsig()
   }
 
@@ -151,6 +155,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     writeToFile("\(subsystem).\(category) \(formattedMessage)")
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(message: formattedMessage)
+      Bugsnag.notifyError(AppError(message))
     }
   }
 
@@ -180,6 +185,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     }
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(error: error)
+      Bugsnag.notifyError(error)
     }
   }
 
@@ -252,6 +258,14 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
 
   /// Shuts down Sentry SDK.
   private func stopSentry() {
+    SentrySDK.close()
+  }
+
+  private func startBugSnag() {
+    Bugsnag.start()
+  }
+
+  private func stopBugsnag() {
     SentrySDK.close()
   }
 

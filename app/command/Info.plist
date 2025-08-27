@@ -18,5 +18,10 @@
 	<string>$(INFOPLIST_KEY_UserDefaultsSharedSuiteName)</string>
 	<key>XCODE_EXTENSION_PRODUCT_NAME</key>
 	<string>$(XCODE_EXTENSION_PRODUCT_NAME)</string>
+	<key>bugsnag</key>
+	<dict>
+		<key>apiKey</key>
+		<string>86058bcd935ef218b50ca6f0af0a5206</string>
+	</dict>
 </dict>
 </plist>
