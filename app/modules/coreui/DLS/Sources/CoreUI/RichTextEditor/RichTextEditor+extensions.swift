@@ -101,16 +101,7 @@ extension NSAttributedString {
     guard let searchStartIndex else { return nil }
 
     // Find the end (until newline, @ or end of effective range)
-    var searchEndIndex = max(cursorLocation, searchStartIndex + 1)
-    let maxEnd = min(effectiveRange.location + effectiveRange.length, textLength)
-
-    while searchEndIndex < maxEnd {
-      let char = nsString.character(at: searchEndIndex)
-      if char == Self.atChar || char == Self.newLineChar {
-        break
-      }
-      searchEndIndex += 1
-    }
+    let searchEndIndex = max(cursorLocation, searchStartIndex + 1)
 
     return NSRange(location: searchStartIndex, length: searchEndIndex - searchStartIndex)
   }
