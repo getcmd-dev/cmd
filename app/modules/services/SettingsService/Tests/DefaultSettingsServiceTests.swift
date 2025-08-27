@@ -32,6 +32,47 @@ struct DefaultSettingsServiceTests {
     #expect(service.value(for: \.llmProviderSettings[.openAI]) == nil)
   }
 
+  @Test("API keys are correctly mapped to keychain keys")
+  @MainActor
+  func test_apiKeyKeychainMapping() async throws {
+    // Setup
+    let sharedUserDefaults = MockUserDefaults()
+    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+
+    // Test individual provider key mapping
+    let groqSettings = LLMProviderSettings(
+      apiKey: "test-groq-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 1)
+    let geminiSettings = LLMProviderSettings(
+      apiKey: "test-gemini-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 2)
+    
+    var newSettings = service.value(for: \.llmProviderSettings)
+    newSettings[.groq] = groqSettings
+    newSettings[.gemini] = geminiSettings
+    service.update(setting: \.llmProviderSettings, to: newSettings)
+
+    // Verify the new providers (Groq and Gemini) are handled correctly
+    #expect(service.value(for: \.llmProviderSettings[.groq]?.apiKey) == "test-groq-key")
+    #expect(service.value(for: \.llmProviderSettings[.gemini]?.apiKey) == "test-gemini-key")
+    
+    // Wait for async storage
+    let exp = expectation(description: "Storage completed")
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+      exp.fulfill()
+    }
+    try await fulfillment(of: exp)
+    
+    // Verify secure storage has the correct keychain keys
+    let secureStorage = sharedUserDefaults.dumpSecureStorage()
+    #expect(secureStorage["GROQ_API_KEY"] == "test-groq-key")
+    #expect(secureStorage["GEMINI_API_KEY"] == "test-gemini-key")
+  }
+
   @Test("Updates and retrieves values")
   @MainActor
   func test_updateAndRetrieveValues() {
@@ -221,18 +262,39 @@ struct DefaultSettingsServiceTests {
     #expect(receivedSettings[1].pointReleaseXcodeExtensionToDebugApp == true)
   }
 
-  @Test("API keys are stored securely")
+  @Test("All provider API keys are stored securely")
   @MainActor
-  func test_apiKeysStoredSecurely() async throws {
+  func test_allProviderApiKeysStoredSecurely() async throws {
     // Setup
     let sharedUserDefaults = MockUserDefaults()
     let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     let anthropicSettings = LLMProviderSettings(
-      apiKey: "secret-key",
+      apiKey: "anthropic-secret-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 1)
+    let openAISettings = LLMProviderSettings(
+      apiKey: "openai-secret-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 2)
+    let openRouterSettings = LLMProviderSettings(
+      apiKey: "openrouter-secret-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 3)
+    let groqSettings = LLMProviderSettings(
+      apiKey: "groq-secret-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 4)
+    let geminiSettings = LLMProviderSettings(
+      apiKey: "gemini-secret-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 5)
+    
     let exp = expectation(description: "Storage updated")
     let updateCount = Atomic(0)
     let cancellable = sharedUserDefaults.onChange {
@@ -243,12 +305,30 @@ struct DefaultSettingsServiceTests {
 
     var newSettings = service.value(for: \.llmProviderSettings)
     newSettings[.anthropic] = anthropicSettings
+    newSettings[.openAI] = openAISettings
+    newSettings[.openRouter] = openRouterSettings
+    newSettings[.groq] = groqSettings
+    newSettings[.gemini] = geminiSettings
     service.update(setting: \.llmProviderSettings, to: newSettings)
 
-    // Verify
-    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "secret-key")
+    // Verify all API keys are accessible
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "anthropic-secret-key")
+    #expect(service.value(for: \.llmProviderSettings[.openAI]?.apiKey) == "openai-secret-key")
+    #expect(service.value(for: \.llmProviderSettings[.openRouter]?.apiKey) == "openrouter-secret-key")
+    #expect(service.value(for: \.llmProviderSettings[.groq]?.apiKey) == "groq-secret-key")
+    #expect(service.value(for: \.llmProviderSettings[.gemini]?.apiKey) == "gemini-secret-key")
+    
     try await fulfillment(of: exp)
-    #expect(sharedUserDefaults.dumpSecureStorage() == ["ANTHROPIC_API_KEY": "secret-key"])
+    
+    // Verify all keys are stored securely in keychain
+    let secureStorage = sharedUserDefaults.dumpSecureStorage()
+    #expect(secureStorage["ANTHROPIC_API_KEY"] == "anthropic-secret-key")
+    #expect(secureStorage["OPENAI_API_KEY"] == "openai-secret-key")
+    #expect(secureStorage["OPENROUTER_API_KEY"] == "openrouter-secret-key")
+    #expect(secureStorage["GROQ_API_KEY"] == "groq-secret-key")
+    #expect(secureStorage["GEMINI_API_KEY"] == "gemini-secret-key")
+    
+    // Verify the public settings contain key references, not actual keys
     let data = try #require(sharedUserDefaults.dumpStorage()["appWideSettings"] as? Data)
     data.expectToMatch("""
       {
@@ -263,6 +343,22 @@ struct DefaultSettingsServiceTests {
           "anthropic" : {
             "apiKey" : "ANTHROPIC_API_KEY",
             "createdOrder" : 1
+          },
+          "gemini" : {
+            "apiKey" : "GEMINI_API_KEY",
+            "createdOrder" : 5
+          },
+          "groq" : {
+            "apiKey" : "GROQ_API_KEY",
+            "createdOrder" : 4
+          },
+          "openai" : {
+            "apiKey" : "OPENAI_API_KEY",
+            "createdOrder" : 2
+          },
+          "openrouter" : {
+            "apiKey" : "OPENROUTER_API_KEY",
+            "createdOrder" : 3
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
@@ -279,5 +375,4 @@ extension DefaultSettingsService {
   convenience init(sharedUserDefaults: UserDefaultsI = MockUserDefaults()) {
     self.init(sharedUserDefaults: sharedUserDefaults, releaseSharedUserDefaults: nil)
   }
-
 }

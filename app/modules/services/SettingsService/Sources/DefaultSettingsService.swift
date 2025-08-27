@@ -5,6 +5,7 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
+import LLMFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
@@ -138,24 +139,18 @@ final class DefaultSettingsService: SettingsService {
       do {
         // Persist settings to user defaults, but move keys to the keychain.
         var publicSettings = settings
-        var privateKeys: [String: String?] = [
-          "ANTHROPIC_API_KEY": nil,
-          "OPENAI_API_KEY": nil,
-          "OPENROUTER_API_KEY": nil,
-        ]
-
-        if let anthropicSettings = settings.llmProviderSettings[.anthropic] {
-          privateKeys["ANTHROPIC_API_KEY"] = anthropicSettings.apiKey
-          publicSettings.llmProviderSettings[.anthropic]?.apiKey = "ANTHROPIC_API_KEY"
-        }
-        if let openAISettings = settings.llmProviderSettings[.openAI] {
-          privateKeys["OPENAI_API_KEY"] = openAISettings.apiKey
-          publicSettings.llmProviderSettings[.openAI]?.apiKey = "OPENAI_API_KEY"
-        }
-        if let openRouterSettings = settings.llmProviderSettings[.openRouter] {
-          privateKeys["OPENROUTER_API_KEY"] = openRouterSettings.apiKey
-          publicSettings.llmProviderSettings[.openRouter]?.apiKey = "OPENROUTER_API_KEY"
-        }
+          
+          
+        var privateKeys = [String: String?]()
+          
+          for provider in LLMProvider.allCases {
+              if let settings = settings.llmProviderSettings[provider] {
+                  privateKeys[provider.keychainKey] = settings.apiKey
+                publicSettings.llmProviderSettings[provider]?.apiKey = provider.keychainKey
+              } else {
+                  privateKeys[provider.keychainKey] = nil
+              }
+          }
         let value = try JSONEncoder.sortingKeys.encode(publicSettings)
         sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
 
