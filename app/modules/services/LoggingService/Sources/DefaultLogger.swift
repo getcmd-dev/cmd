@@ -114,7 +114,9 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     writeToFile("\(subsystem).\(category) \(formattedMessage)")
 
     if is3rdPartyLoggingEnabled {
-      SentrySDK.capture(message: message)
+        let breadcrumb = Breadcrumb(level: .info, category: "\(subsystem):\(category)")
+        breadcrumb.message = message
+        SentrySDK.addBreadcrumb(breadcrumb)
     }
   }
 
