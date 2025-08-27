@@ -50,7 +50,7 @@ struct DefaultSettingsServiceTests {
       baseUrl: nil,
       executable: nil,
       createdOrder: 2)
-    
+
     var newSettings = service.value(for: \.llmProviderSettings)
     newSettings[.groq] = groqSettings
     newSettings[.gemini] = geminiSettings
@@ -59,14 +59,14 @@ struct DefaultSettingsServiceTests {
     // Verify the new providers (Groq and Gemini) are handled correctly
     #expect(service.value(for: \.llmProviderSettings[.groq]?.apiKey) == "test-groq-key")
     #expect(service.value(for: \.llmProviderSettings[.gemini]?.apiKey) == "test-gemini-key")
-    
+
     // Wait for async storage
     let exp = expectation(description: "Storage completed")
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
       exp.fulfill()
     }
     try await fulfillment(of: exp)
-    
+
     // Verify secure storage has the correct keychain keys
     let secureStorage = sharedUserDefaults.dumpSecureStorage()
     #expect(secureStorage["GROQ_API_KEY"] == "test-groq-key")
@@ -294,7 +294,7 @@ struct DefaultSettingsServiceTests {
       baseUrl: nil,
       executable: nil,
       createdOrder: 5)
-    
+
     let exp = expectation(description: "Storage updated")
     let updateCount = Atomic(0)
     let cancellable = sharedUserDefaults.onChange {
@@ -317,9 +317,9 @@ struct DefaultSettingsServiceTests {
     #expect(service.value(for: \.llmProviderSettings[.openRouter]?.apiKey) == "openrouter-secret-key")
     #expect(service.value(for: \.llmProviderSettings[.groq]?.apiKey) == "groq-secret-key")
     #expect(service.value(for: \.llmProviderSettings[.gemini]?.apiKey) == "gemini-secret-key")
-    
+
     try await fulfillment(of: exp)
-    
+
     // Verify all keys are stored securely in keychain
     let secureStorage = sharedUserDefaults.dumpSecureStorage()
     #expect(secureStorage["ANTHROPIC_API_KEY"] == "anthropic-secret-key")
@@ -327,7 +327,7 @@ struct DefaultSettingsServiceTests {
     #expect(secureStorage["OPENROUTER_API_KEY"] == "openrouter-secret-key")
     #expect(secureStorage["GROQ_API_KEY"] == "groq-secret-key")
     #expect(secureStorage["GEMINI_API_KEY"] == "gemini-secret-key")
-    
+
     // Verify the public settings contain key references, not actual keys
     let data = try #require(sharedUserDefaults.dumpStorage()["appWideSettings"] as? Data)
     data.expectToMatch("""

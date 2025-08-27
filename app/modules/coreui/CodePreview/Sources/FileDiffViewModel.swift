@@ -38,14 +38,6 @@ public final class FileDiffViewModel: Sendable {
       let changes = try FileDiff.parse(searchReplacePattern: llmDiff, for: fileContent)
       try self.init(filePath: filePath, changes: changes, oldContent: fileContent)
     } catch {
-      defaultLogger.error("""
-        Could not format diff for \(filePath): \(error)
-        -- Diff:
-        \(llmDiff)
-        -- Current content:
-        \(fileContent)
-        --
-        """)
       throw error
     }
   }
@@ -101,14 +93,6 @@ public final class FileDiffViewModel: Sendable {
         return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: fileContent, targetContent: newContent)
       }
     } catch {
-      defaultLogger.error("""
-        Could not format diff for \(filePath): \(error)
-        -- Changes:
-        \(changes.map { "replace:\n\($0.search)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
-        -- Previous Content:
-        \(fileContent)
-        --
-        """)
       throw error
     }
   }

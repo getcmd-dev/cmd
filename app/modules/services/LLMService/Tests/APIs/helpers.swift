@@ -147,6 +147,8 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
     func reject(reason _: String?) { }
 
     func cancel() { }
+      
+    func waitForApproval() { }
 
     func encode(to _: Encoder) throws {
       fatalError("Decoding not implemented for TestTool.Use")
@@ -178,7 +180,8 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
   }
 
   @ThreadSafe
-  final class Use: ToolUse, Codable {
+    final class Use: ToolUse, Codable {
+        
     init(
       callingTool: TestStreamingTool<I, O>,
       toolUseId: String,
@@ -227,6 +230,8 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
     func reject(reason _: String?) { }
 
     func cancel() { }
+        
+        func waitForApproval() { }
 
     func encode(to _: Encoder) throws {
       fatalError("Decoding not implemented for TestStreamingTool.Use")
@@ -352,23 +357,37 @@ struct TestChatContext: ChatContext {
     project: URL? = nil,
     projectRoot: URL,
     chatMode: ChatMode = .ask,
-    prepareForWriteToolUse: @escaping @Sendable () async -> Void = { },
-    requestToolApproval: @escaping @Sendable (any ToolFoundation.ToolUse) async throws -> Void = { _ in })
+    prepareForWriteToolUseHandler: @escaping @Sendable () async -> Void = { },
+    needsApprovalHandler: @escaping @Sendable (any ToolFoundation.ToolUse) async -> Bool = { _ in false },
+    requestApprovalHandler: @escaping @Sendable (any ToolFoundation.ToolUse) async throws -> Void = { _ in })
   {
     self.project = project
     self.projectRoot = projectRoot
     self.chatMode = chatMode
-    self.prepareForWriteToolUse = prepareForWriteToolUse
-    self.requestToolApproval = requestToolApproval
+    self.prepareForWriteToolUseHandler = prepareForWriteToolUseHandler
+    self.needsApprovalHandler = needsApprovalHandler
+    self.requestApprovalHandler = requestApprovalHandler
     toolExecutionContext = ToolExecutionContext(projectRoot: projectRoot)
   }
 
-  let requestToolApproval: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
+  private let prepareForWriteToolUseHandler: @Sendable () async -> Void
+  private let needsApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async -> Bool
+  private let requestApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
 
   let project: URL?
   let projectRoot: URL?
   let chatMode: ChatMode
   let toolExecutionContext: ToolExecutionContext
 
-  let prepareForWriteToolUse: @Sendable () async -> Void
+  func prepareForWriteToolUse() async {
+    await prepareForWriteToolUseHandler()
+  }
+
+  func needsApproval(for toolUse: any ToolUse) async -> Bool {
+    await needsApprovalHandler(toolUse)
+  }
+
+  func requestApproval(for toolUse: any ToolUse) async throws {
+    try await requestApprovalHandler(toolUse)
+  }
 }

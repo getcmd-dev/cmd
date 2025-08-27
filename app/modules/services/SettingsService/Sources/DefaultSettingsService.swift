@@ -5,10 +5,10 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
-import LLMFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import LLMFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
@@ -139,18 +139,17 @@ final class DefaultSettingsService: SettingsService {
       do {
         // Persist settings to user defaults, but move keys to the keychain.
         var publicSettings = settings
-          
-          
+
         var privateKeys = [String: String?]()
-          
-          for provider in LLMProvider.allCases {
-              if let settings = settings.llmProviderSettings[provider] {
-                  privateKeys[provider.keychainKey] = settings.apiKey
-                publicSettings.llmProviderSettings[provider]?.apiKey = provider.keychainKey
-              } else {
-                  privateKeys[provider.keychainKey] = nil
-              }
+
+        for provider in LLMProvider.allCases {
+          if let settings = settings.llmProviderSettings[provider] {
+            privateKeys[provider.keychainKey] = settings.apiKey
+            publicSettings.llmProviderSettings[provider]?.apiKey = provider.keychainKey
+          } else {
+            privateKeys[provider.keychainKey] = nil
           }
+        }
         let value = try JSONEncoder.sortingKeys.encode(publicSettings)
         sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
 

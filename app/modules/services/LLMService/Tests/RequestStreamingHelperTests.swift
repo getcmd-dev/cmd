@@ -308,7 +308,8 @@ struct RequestStreamingHelperReasoningTests {
       tools: [tool],
       context: TestChatContext(
         projectRoot: URL(filePath: "/test"),
-        requestToolApproval: { _ in
+        needsApprovalHandler: { _ in true },
+        requestApprovalHandler: { _ in
           permissionRequested.fulfill()
           // Returning without throwing will accept the tool use.
         }),
