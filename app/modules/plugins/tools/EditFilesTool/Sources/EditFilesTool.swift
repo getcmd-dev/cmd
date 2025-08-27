@@ -40,7 +40,7 @@ public final class EditFilesTool: Tool {
 
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

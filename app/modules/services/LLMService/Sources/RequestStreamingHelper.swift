@@ -100,10 +100,11 @@ actor RequestStreamingHelper: Sendable {
               // events are ordered
               await process(event: event)
             } else {
-              print("queing event \(idx). Current idx: \(lastChunkIdx)")
               // Events have been received out of order. Correct this.
               pendingEvents.append(event)
-              defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
+              defaultLogger
+                .log(
+                  "Received chunks out of order. Queing event \(idx) (current idx: \(lastChunkIdx)) to avoid corrupted the data.")
             }
           } else {
             await process(event: event)
@@ -286,7 +287,11 @@ actor RequestStreamingHelper: Sendable {
         // approval it will explicitely ask us using `toolUsePermissionRequest`
         // TODO: verify if there is any issue related to the ordering for external tools which calls first `toolUseRequest -> startExecution` and only later `toolUsePermissionRequest`
       } else {
-        try await context.requestToolApproval(toolUse)
+        let needsApproval = await context.needsApproval(for: toolUse)
+        if needsApproval {
+          toolUse.waitForApproval()
+          try await context.requestApproval(for: toolUse)
+        }
       }
       toolUse.startExecuting()
     } catch is CancellationError {
@@ -494,7 +499,11 @@ actor RequestStreamingHelper: Sendable {
 
     let permissionApproval: Schema.ApprovalResult
     do {
-      try await context.requestToolApproval(toolUse)
+      let needsUserApproval = await context.needsApproval(for: toolUse)
+      if needsUserApproval {
+        toolUse.waitForApproval()
+        try await context.requestApproval(for: toolUse)
+      }
       permissionApproval = .approvalResultApprove(.init())
     } catch is CancellationError {
       defaultLogger.error("Tool use is cancelled")

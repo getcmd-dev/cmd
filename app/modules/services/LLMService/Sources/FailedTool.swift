@@ -60,6 +60,8 @@ struct FailedToolUse: NonStreamableToolUse {
   func reject(reason _: String?) { }
 
   func cancel() { }
+
+  func waitForApproval() { }
 }
 
 // MARK: - FailedTool

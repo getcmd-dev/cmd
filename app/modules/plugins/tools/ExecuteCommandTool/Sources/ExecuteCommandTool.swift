@@ -36,7 +36,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       // If the tool was running when the app was terminated, we don't support resume execution so it's set to cancelled.
       if case .running = stream.value { updateStatus.complete(with: .failure(CancellationError())) }

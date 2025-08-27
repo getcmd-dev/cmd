@@ -35,7 +35,7 @@ public final class LSTool: NonStreamableTool {
         recursive: input.recursive)
       directoryPath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

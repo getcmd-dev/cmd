@@ -98,6 +98,8 @@ public protocol ToolUse: Sendable, Codable {
   ///   - inputUpdate: The update input containing all the data since it started streaming.
   ///   - isLast: Whether this is the last chunk of the input.
   func receive(inputUpdate: Data, isLast: Bool) throws
+  /// Change the status to represent that the tool use is waiting for user's approval before being able to start the execution.
+  func waitForApproval()
   /// Start the execution of the tool use. The execution should not start before this method is called.
   /// Note: the tool can expect this to be called after all the input has been received, and to not receive later calls to `receive(inputUpdate:)`.
   func startExecuting()
@@ -312,6 +314,9 @@ extension UpdatableToolUse {
     updateStatus.yield(.approvalRejected(reason: reason))
   }
 
+  public func waitForApproval() {
+    updateStatus.yield(.pendingApproval)
+  }
 }
 
 // MARK: - ExternalTool

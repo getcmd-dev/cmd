@@ -15,9 +15,11 @@ public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<Assistant
 
 public protocol ChatContext: Sendable {
   /// When a tool that is not read-only runs, this function will be called before.
-  var prepareForWriteToolUse: @Sendable () async -> Void { get }
+  func prepareForWriteToolUse() async
+  /// Returns whether the tool use needs user's approval.
+  func needsApproval(for toolUse: any ToolUse) async -> Bool
   /// Request user approval before executing a tool.
-  var requestToolApproval: @Sendable (any ToolUse) async throws -> Void { get }
+  func requestApproval(for toolUse: any ToolUse) async throws
 
   var toolExecutionContext: ToolExecutionContext { get }
 }

@@ -56,6 +56,7 @@ struct TestTool: NonStreamableTool {
 
     func cancel() { }
 
+    func waitForApproval() { }
   }
 
   var inputSchema = JSON.object([:])
