@@ -345,7 +345,6 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"${DWARF_DSYM_FOLDER_PATH}/${EXECUTABLE_NAME}.app.dSYM/Contents/Resources/DWARF/${EXECUTABLE_NAME}",
 			);
 			name = "Strip DEBUG symbols";
 			outputFileListPaths = (
