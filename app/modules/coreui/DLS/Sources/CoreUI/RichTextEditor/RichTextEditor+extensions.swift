@@ -58,7 +58,10 @@ extension NSAttributedString {
 
     // First, find the effective range with no textBlock attribute at cursor position
     var effectiveRange = NSRange()
-    let hasTextBlockAtCursor = attribute(.textBlock, at: cursorLocation - 1, effectiveRange: &effectiveRange) != nil
+    let hasTextBlockAtCursor = cursorLocation > 0 && attribute(
+      .textBlock,
+      at: cursorLocation - 1,
+      effectiveRange: &effectiveRange) != nil
 
     if hasTextBlockAtCursor {
       return nil // Cursor is within a text block, don't search
