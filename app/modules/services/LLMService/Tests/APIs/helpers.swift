@@ -147,7 +147,7 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
     func reject(reason _: String?) { }
 
     func cancel() { }
-      
+
     func waitForApproval() { }
 
     func encode(to _: Encoder) throws {
@@ -180,8 +180,8 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
   }
 
   @ThreadSafe
-    final class Use: ToolUse, Codable {
-        
+  final class Use: ToolUse, Codable {
+
     init(
       callingTool: TestStreamingTool<I, O>,
       toolUseId: String,
@@ -230,8 +230,8 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
     func reject(reason _: String?) { }
 
     func cancel() { }
-        
-        func waitForApproval() { }
+
+    func waitForApproval() { }
 
     func encode(to _: Encoder) throws {
       fatalError("Decoding not implemented for TestStreamingTool.Use")
@@ -370,10 +370,6 @@ struct TestChatContext: ChatContext {
     toolExecutionContext = ToolExecutionContext(projectRoot: projectRoot)
   }
 
-  private let prepareForWriteToolUseHandler: @Sendable () async -> Void
-  private let needsApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async -> Bool
-  private let requestApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
-
   let project: URL?
   let projectRoot: URL?
   let chatMode: ChatMode
@@ -390,4 +386,9 @@ struct TestChatContext: ChatContext {
   func requestApproval(for toolUse: any ToolUse) async throws {
     try await requestApprovalHandler(toolUse)
   }
+
+  private let prepareForWriteToolUseHandler: @Sendable () async -> Void
+  private let needsApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async -> Bool
+  private let requestApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
+
 }
