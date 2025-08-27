@@ -29,8 +29,6 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Fastlane dependencies installation
-      run: cd app && gem install fastlane-plugin-sentry
     - name: Load derived data cache
       uses: actions/cache/restore@v4
       with:
