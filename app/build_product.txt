@@ -1,1 +1,1 @@
-BUILT_PRODUCTS_DIR 
+BUILT_PRODUCTS_DIR /Users/guigui/dev/cmd/app/build/derived_data/Build/Intermediates.noindex/ArchiveIntermediates/command/BuildProductsPath/Release

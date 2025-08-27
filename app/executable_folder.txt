@@ -1,0 +1,1 @@
+EXECUTABLE_FOLDER_PATH command.app/Contents/MacOS

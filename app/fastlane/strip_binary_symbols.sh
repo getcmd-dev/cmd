@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# From https://docs.emergetools.com/docs/strip-binary-symbols
+
 set -e
 
 echo "Starting the symbol stripping process..."

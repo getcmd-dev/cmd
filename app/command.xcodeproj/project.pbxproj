@@ -353,7 +353,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n\n# From https://docs.emergetools.com/docs/strip-binary-symbols\n\nset -e\n\necho \"Starting the symbol stripping process...\"\n\necho \"BUILT_PRODUCTS_DIR $BUILT_PRODUCTS_DIR\" > /Users/guigui/dev/cmd/app/build_product.txt\necho \"EXECUTABLE_FOLDER_PATH $EXECUTABLE_FOLDER_PATH\" > /Users/guigui/dev/cmd/app/executable_folder.txt\n\necho \"Symbol stripping process completed.\"\n";
+			shellScript = "#!/bin/bash\n\n# From https://docs.emergetools.com/docs/strip-binary-symbols\n\nset -e\n\necho \"Starting the symbol stripping process...\"\n\necho \"BUILT_PRODUCTS_DIR $BUILT_PRODUCTS_DIR\" > /Users/guigui/dev/cmd/app/build_product.txt\necho \"EXECUTABLE_FOLDER_PATH $EXECUTABLE_FOLDER_PATH\" > /Users/guigui/dev/cmd/app/executable_folder.txt\necho \"EXECUTABLE_NAME $EXECUTABLE_NAME\" > /Users/guigui/dev/cmd/app/executable_name.txt\n\necho \"Symbol stripping process completed.\"\n";
 		};
 		F66E8DEA2E5FADF4009B641B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
