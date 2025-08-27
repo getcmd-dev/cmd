@@ -206,38 +206,8 @@ platform :mac do
     build_path = result[:build_path]
     dsym_path = result[:dsym_path]
 
-    # Upload DSYM & other info to Sentry
-    sentry_create_release(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
-      version: version,
-      app_identifier: 'dev.getcmd.command',
-      finalize: true
-    )
-
-    sentry_upload_dsym(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
-      dsym_path: dsym_path,
-    )
-
-    sentry_debug_files_upload(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
-      include_sources: true,
-      wait: true, # TODO: remove
-      path: File.absolute_path("../"), # Optional. Defaults to '.' when no value is provided. Path(s) can be a string, a comma-separated string, or an array of strings.
-    )
-    sentry_set_commits(
-      version: version,
-      app_identifier: 'dev.getcmd.command',
-      auto: true,
-      clear: false
-    )
-    # End of Sentry setup
+    # Upload the dsym and relevant release info to Sentry
+    upload_release_to_sentry(version: version, dsym_path: dsym_path)
 
     gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
@@ -262,6 +232,40 @@ platform :mac do
       repo: "getcmd-dev/cmd",
       head: new_branch_name,
       base: "main"
+    )
+  end
+
+  desc "Upload the new release to Sentry"
+  lane :upload_release_to_sentry do |options|
+    version = options.fetch(:version, nil)
+    dsym_path = options.fetch(:dsym_path, nil)
+
+    sentry_create_release(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
+      version: version,
+      app_identifier: 'dev.getcmd.command',
+      finalize: true
+    )
+    sentry_upload_dsym(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
+      dsym_path: dsym_path,
+    )
+    sentry_debug_files_upload(
+      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
+      include_sources: true,
+      path: File.absolute_path("../"),
+    )
+    sentry_set_commits(
+      version: version,
+      app_identifier: 'dev.getcmd.command',
+      auto: true,
+      clear: false
     )
   end
 end
