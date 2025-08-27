@@ -15,7 +15,8 @@ if [ "Release" = "${CONFIGURATION}" ]; then
 
   # Strip main binary
   echo "Stripping main binary: ${APP_DIR_PATH}/${EXECUTABLE_NAME}"
-  strip -rSTx "${APP_DIR_PATH}/${EXECUTABLE_NAME}"
+#   strip -rSTx "${APP_DIR_PATH}/${EXECUTABLE_NAME}"
+  strip -rSTx "/Users/guigui/dev/cmd/app/build/release/command.app/Contents/MacOS"
   if [ $? -eq 0 ]; then
     echo "Successfully stripped main binary."
   else
