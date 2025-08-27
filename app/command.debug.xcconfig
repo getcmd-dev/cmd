@@ -12,4 +12,4 @@ HOST_APP_BUNDLE_IDENTIFIER = dev.getcmd.debug.command
 XCODE_EXTENSION_BUNDLE_IDENTIFIER = dev.getcmd.debug.command.Extension
 
 // This cannot be identical to the App's product name. So we add an invisible utf8 character (not visible in Xcode).
-XCODE_EXTENSION_PRODUCT_NAME = ؜command $(DEBUG_SUFFIX)
+XCODE_EXTENSION_PRODUCT_NAME = ؜command

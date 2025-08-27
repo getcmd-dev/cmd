@@ -40,7 +40,7 @@ platform :mac do
     setup_ci if ENV['CI']
 
     build_path = File.absolute_path("../build")
-    # sh("rm -rf #{build_path}")
+    sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
@@ -87,7 +87,7 @@ platform :mac do
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
     build_path = File.absolute_path("../build")
-    # sh("rm -rf #{build_path}")
+    sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
