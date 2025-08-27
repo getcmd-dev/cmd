@@ -1,2 +1,10 @@
 Starting the symbol stripping process...
 Starting the symbol stripping process...
+Starting the symbol stripping process...
+Configuration is Release.
+App directory path: /Users/guigui/dev/cmd/app/build/derived_data/Build/Intermediates.noindex/ArchiveIntermediates/command/BuildProductsPath/Release/command.app/Contents/MacOS
+Stripping main binary: /Users/guigui/dev/cmd/app/build/derived_data/Build/Intermediates.noindex/ArchiveIntermediates/command/BuildProductsPath/Release/command.app/Contents/MacOS/command
+Successfully stripped main binary.
+Frameworks directory path: /Users/guigui/dev/cmd/app/build/derived_data/Build/Intermediates.noindex/ArchiveIntermediates/command/BuildProductsPath/Release/command.app/Contents/MacOS/Frameworks
+Frameworks directory does not exist. Skipping framework stripping.
+Symbol stripping process completed.
