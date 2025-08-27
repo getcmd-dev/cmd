@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Dependencies
+import DLS
 import FoundationInterfaces
 import SwiftUI
 
@@ -34,6 +35,16 @@ struct InternalSettingsView: View {
           "Invert the default chat position",
           caption: "Useful when using both the Debug and Release apps to avoid overlaps",
           value: $defaultChatPositionIsInverted)
+        HoveredButton(
+          action: {
+            let arr = [Int]()
+            _ = arr[100]
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 6,
+          cornerRadius: 8,
+          content: { Text("Crash the app") })
       }
       .padding(16)
       .background(Color(NSColor.controlBackgroundColor))
@@ -45,6 +56,8 @@ struct InternalSettingsView: View {
 
     Spacer()
   }
+
+  @Environment(\.colorScheme) private var colorScheme
 
   @Dependency(\.userDefaults) private var userDefaults
 }
