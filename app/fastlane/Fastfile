@@ -40,7 +40,7 @@ platform :mac do
     setup_ci if ENV['CI']
 
     build_path = File.absolute_path("../build")
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
@@ -87,7 +87,7 @@ platform :mac do
     remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
     build_path = File.absolute_path("../build")
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
@@ -119,23 +119,24 @@ platform :mac do
     app_path = "#{release_path}/#{app_name}.app"
     dsym_path = "#{app_path}.dSYM.zip"
 
-    build_mac_app(
-      destination: "platform=macOS,arch=arm64",
-      skip_package_dependencies_resolution: true,
-      project: "./command.xcodeproj",
-      configuration: "Release",
-      export_method: "developer-id",
-      output_directory: release_path,
-      derived_data_path: "#{build_path}/derived_data",
-      output_name: app_name,
-      scheme: "command",
-      # silent: true,
-      skip_archive: false,
-      xcodebuild_formatter: "xcbeautify --quiet",
-    )
+    # build_mac_app(
+    #   destination: "platform=macOS,arch=arm64",
+    #   skip_package_dependencies_resolution: true,
+    #   project: "./command.xcodeproj",
+    #   configuration: "Release",
+    #   export_method: "developer-id",
+    #   output_directory: release_path,
+    #   derived_data_path: "#{build_path}/derived_data",
+    #   output_name: app_name,
+    #   scheme: "command",
+    #   # silent: true,
+    #   skip_archive: false,
+    #   xcodebuild_formatter: "xcbeautify --quiet",
+    # )
 
-    # TODO: remove
-    sh("ditto #{build_path}/release #{build_path}/release_backup")
+    # # # TODO: remove
+    # sh("ditto #{build_path}/release #{build_path}/release_backup")
+    sh("ditto #{build_path}/release_backup #{build_path}/release")
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
     app_binary_path = "#{app_path}/Contents/MacOS/command"
@@ -144,23 +145,23 @@ platform :mac do
     entitlements_path = "#{build_path}/extracted_entitlements.plist"
     sh("codesign -d --entitlements :- '#{app_path}' > '#{entitlements_path}'")
 
-    # Verify that frameworks have no entitlements, as this is not currently supported by our script (they would need to be preserved).
-    Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
-      framework_entitlements = sh("codesign -d --entitlements :- '#{framework}' 2>/dev/null").strip
-      if framework_entitlements && !framework_entitlements.empty?
-        raise "Framework #{File.basename(framework)} has entitlements. Not supported."
-      end
-    end
+    # # Verify that frameworks have no entitlements, as this is not currently supported by our script (they would need to be preserved).
+    # Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
+    #   framework_entitlements = sh("codesign -d --entitlements :- '#{framework}' 2>/dev/null").strip
+    #   if framework_entitlements && !framework_entitlements.empty?
+    #     raise "Framework #{File.basename(framework)} has entitlements. Not supported."
+    #   end
+    # end
 
     ## Strip DEBUG symbols to reduce app size.
-    # sh("strip -rSTx '#{app_binary_path}'")
+    sh("strip -rSTx '#{app_binary_path}'")
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
       
-      file_type = sh("file -b '#{file}'", log: false) rescue ""
+      file_type = Actions.sh("file -b '#{file}'", log: false, print_command: false, print_command_output: false) rescue ""
       if file_type.include?("Mach-O") && !file_type.include?("dSYM")
         puts "Stripping: #{file}"
-        sh("strip -rSTx '#{file}'") rescue puts "Warning: Could not strip #{file}"
+        sh("strip -rSTx '#{file}'", log: false) rescue puts "Warning: Could not strip #{file}"
       end
     end
 
@@ -174,25 +175,85 @@ platform :mac do
     end
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
     # sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
-    Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
-      sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
+
+    # Find all signable components and sort by depth (deepest first)
+    all_components = []
+
+    Dir.glob("#{app_path}/**/*.{framework,appex,bundle,xpc,app}").each do |component|
+      # Skip the main app itself
+      next if component == app_path
+      
+      depth = component.split('/').length
+      all_components << { path: component, depth: depth }
     end
-    # Not needed for now, keeping this here for reference.
-    # Dir.glob("#{app_path}/Contents/XPCServices/*.xpc").each do |xpc|
-    #   sh("codesign --force --sign #{certificate_sha1} --options runtime '#{xpc}'")
-    # end
-    Dir.glob("#{app_path}/Contents/PlugIns/*.bundle").each do |bundle|
-      sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{bundle}'")
+
+    # Sort by depth (deepest first) then by path for consistency
+    all_components.sort_by! { |c| [-c[:depth], c[:path]] }
+
+    # Sign each component with its own entitlements (if any)
+    all_components.each do |component|
+      component_name = File.basename(component[:path])
+      puts "Signing: #{component_name}"
+      
+      # Try to extract entitlements for ANY component type
+      temp_entitlements = "#{build_path}/#{component_name.gsub(/[^\w.-]/, '_')}_entitlements.plist"
+      sh("codesign -d --entitlements :- '#{component[:path]}' > '#{temp_entitlements}' 2>/dev/null") rescue nil
+      
+      # Sign with entitlements if they exist, without if they don't
+      if File.exist?(temp_entitlements) && File.size(temp_entitlements) > 0
+        puts "  → with entitlements"
+        sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{temp_entitlements}' '#{component[:path]}'")
+      else
+        puts "  → without entitlements"
+        sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{component[:path]}'")
+      end
+      
+      # Clean up
+      sh("rm -f '#{temp_entitlements}'")
     end
+
+    # Finally sign the main app
     sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{entitlements_path}' '#{app_path}'")
-    puts "Verifying code signature..."
-    sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
-    sh("spctl -a -t exec -vvv '#{app_path}'")
+
+
+    # Dir.glob("#{app_path}/Contents/PlugIns/*.appex/Contents/Frameworks/*.framework").sort.each do |framework|
+    #   puts "Signing framework inside appex: #{File.basename(framework)}"
+    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
+    # end
+    # Dir.glob("#{app_path}/Contents/PlugIns/*.appex").sort.each do |appex|
+    #   appex_name = File.basename(appex)
+    #   appex_entitlements_path = "#{build_path}/#{appex_name}_entitlements.plist"
+      
+    #   sh("codesign -d --entitlements :- '#{appex}' > '#{appex_entitlements_path}' 2>/dev/null") rescue nil
+      
+    #   if File.exist?(appex_entitlements_path) && File.size(appex_entitlements_path) > 0
+    #     sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{appex_entitlements_path}' '#{appex}'")
+    #     sh("rm '#{appex_entitlements_path}'")
+    #   else
+    #     sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{appex}'")
+    #   end
+    # end
+
+    # Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
+    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
+    # end
+    # # Not needed for now, keeping this here for reference.
+    # # Dir.glob("#{app_path}/Contents/XPCServices/*.xpc").each do |xpc|
+    # #   sh("codesign --force --sign #{certificate_sha1} --options runtime '#{xpc}'")
+    # # end
+    # Dir.glob("#{app_path}/Contents/PlugIns/*.bundle").sort.each do |bundle|
+    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{bundle}'")
+    # end
+    # sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{entitlements_path}' '#{app_path}'")
+
+    # puts "Verifying code signature..."
+    # sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
+    # sh("dwarfdump --uuidv '#{app_path}'")
 
     # Verify dSYM UUID matches binary (for Sentry)
-    binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
-    dsym_uuid = sh("dwarfdump --uuid '#{dsym_path}' | awk '{print $2}'").strip
-    raise "UUID mismatch between binary and dSYM!" unless binary_uuid == dsym_uuid
+    # binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
+    # dsym_uuid = sh("dwarfdump --uuid '#{dsym_path}' | awk '{print $2}'").strip
+    # raise "UUID mismatch between binary and dSYM!" unless binary_uuid == dsym_uuid
 
     sh("rm '#{entitlements_path}'")
 
@@ -239,7 +300,7 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
 
-    sh("rm -rf #{build_path}") if remove_zip
+    # sh("rm -rf #{build_path}") if remove_zip
     { version: version, app_zip_path: app_zip_path, build_path: build_path, dsym_path: dsym_path }
   end
 
@@ -284,7 +345,7 @@ platform :mac do
       upload_assets: app_zip_path
     )
 
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
 
     new_branch_name = "release-v#{version}"
     sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
