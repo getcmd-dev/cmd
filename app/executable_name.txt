@@ -1,1 +1,0 @@
-EXECUTABLE_NAME command

@@ -86,18 +86,14 @@ final class DefaultSettingsService: SettingsService {
   private let releaseSharedUserDefaults: UserDefaultsI?
 
   private static func loadSettings(from userDefaults: UserDefaultsI) -> Settings {
-      defaultLogger.log("DefaultSettingsService.loadSettings: has appWideSettings ? \(userDefaults.data(forKey: Keys.appWideSettings) != nil)")
     if let data = userDefaults.data(forKey: Keys.appWideSettings) {
       do {
         var settings = try JSONDecoder().decode(Settings.self, from: data)
         // Load API keys fromn the keychain.
-          defaultLogger.log("Anthropic API key: \(settings.llmProviderSettings[.anthropic]?.apiKey ?? "nil")")
         if let anthropicAPIKey = settings.llmProviderSettings[.anthropic]?.apiKey {
           if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
-              defaultLogger.log("Loaded Anthropic API key: \(key)")
             settings.llmProviderSettings[.anthropic]?.apiKey = key
           } else {
-              defaultLogger.log("Could not load Anthropic API key")
             settings.llmProviderSettings.removeValue(forKey: .anthropic)
           }
         }

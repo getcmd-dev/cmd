@@ -138,46 +138,38 @@ platform :mac do
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
     app_binary_path = "#{release_path}/#{app_name}.app/Contents/MacOS/command"
-    # Extract the current entitlements before stripping
-    embedded_profile = "#{app_path}/Contents/embedded.provisionprofile"
-    temp_profile = "#{build_path}/temp.provisionprofile"
-    if File.exist?(embedded_profile)
-      sh("cp '#{embedded_profile}' '#{temp_profile}'")
-    end
+    ## Extract the current entitlements before stripping
     entitlements_path = "#{build_path}/extracted_entitlements.plist"
     sh("codesign -d --entitlements :- '#{app_path}' > '#{entitlements_path}'")
-
+    ## Strip DEBUG symbols to reduce app size.
     sh("strip -rSTx '#{app_binary_path}'")
+    ## Resign
     certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
     provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
-    # Find the sha1 to identify the right certificate when several with the same name are installed.
+    ### Find the sha1 to identify the right certificate when several with the same name are installed.
     certificate_sha1 = sh("security cms -D -i '#{provisioning_profile_path}' | plutil -extract DeveloperCertificates.0 raw -o - - | base64 -D | openssl x509 -inform DER -noout -fingerprint -sha1  | cut -d= -f2 | sed 's/://g'").strip
     if certificate_sha1.empty?
       raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
     end
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
     sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
-    # if File.exist?(temp_profile)
-    #   sh("cp '#{temp_profile}' '#{embedded_profile}'")
-    #   sh("rm '#{temp_profile}'")
-    # end
-    # sh("rm '#{entitlements_path}'")
+    sh("rm '#{entitlements_path}'")
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 
-    # # Notarize the app
-    # app_store_connect_api_key(
-    #   key_id: load_secret("NOTARY_KEY_ID"),
-    #   issuer_id: load_secret("NOTARY_ISSUER_ID"),
-    #   key_content: load_secret("NOTARY_P8"),
-    # )
+    # Notarize the app
+    app_store_connect_api_key(
+      key_id: load_secret("NOTARY_KEY_ID"),
+      issuer_id: load_secret("NOTARY_ISSUER_ID"),
+      key_content: load_secret("NOTARY_P8"),
+    )
 
-    # notarize(
-    #   package: app_path,
-    #   verbose: false,
-    #   print_log: true,
-    #   use_notarytool: true
-    # )
+    notarize(
+      package: app_path,
+      verbose: false,
+      print_log: true,
+      use_notarytool: true
+    )
 
     # Create metadata for the new release
 
@@ -217,9 +209,9 @@ platform :mac do
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
-    # if existing_version.empty?
-    #   puts "Using version: #{version}"
-    # else
+    if existing_version.empty?
+      puts "Using version: #{version}"
+    else
       version_parts = version.split('.')
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
       new_version = version_parts.join('.')
@@ -227,7 +219,7 @@ platform :mac do
 
       sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
       version = new_version
-    # end
+    end
 
     result = create_and_sign_release(remove_zip: false, version: version)
     version = result[:version]
@@ -236,32 +228,32 @@ platform :mac do
     dsym_path = result[:dsym_path]
 
     # Upload the dsym and relevant release info to Sentry
-    # upload_release_to_sentry(version: version, dsym_path: dsym_path)
+    upload_release_to_sentry(version: version, dsym_path: dsym_path)
 
-    # gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+    gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
-    # set_github_release(
-    #   api_token: gh_personal_access_token_cmd,
-    #   server_url: "https://api.github.com",
-    #   repository_name: "getcmd-dev/cmd",
-    #   name: "v#{version}",
-    #   tag_name: "v#{version}",
-    #   description: "v#{version}",
-    #   commitish: "main",
-    #   upload_assets: app_zip_path
-    # )
+    set_github_release(
+      api_token: gh_personal_access_token_cmd,
+      server_url: "https://api.github.com",
+      repository_name: "getcmd-dev/cmd",
+      name: "v#{version}",
+      tag_name: "v#{version}",
+      description: "v#{version}",
+      commitish: "main",
+      upload_assets: app_zip_path
+    )
 
-    # sh("rm -rf #{build_path}")
+    sh("rm -rf #{build_path}")
 
-    # new_branch_name = "release-v#{version}"
-    # sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
-    # create_pull_request(
-    #   api_token: gh_personal_access_token_cmd,
-    #   title: "Release v#{version}",
-    #   repo: "getcmd-dev/cmd",
-    #   head: new_branch_name,
-    #   base: "main"
-    # )
+    new_branch_name = "release-v#{version}"
+    sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
+    create_pull_request(
+      api_token: gh_personal_access_token_cmd,
+      title: "Release v#{version}",
+      repo: "getcmd-dev/cmd",
+      head: new_branch_name,
+      base: "main"
+    )
   end
 
   desc "Upload the new release to Sentry"
