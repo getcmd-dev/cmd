@@ -134,15 +134,36 @@ platform :mac do
       xcodebuild_formatter: "xcbeautify --quiet",
     )
 
+    # TODO: remove
     sh("ditto #{build_path}/release #{build_path}/release_backup")
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
-    app_binary_path = "#{release_path}/#{app_name}.app/Contents/MacOS/command"
+    app_binary_path = "#{app_path}/Contents/MacOS/command"
+
     ## Extract the current entitlements before stripping
     entitlements_path = "#{build_path}/extracted_entitlements.plist"
     sh("codesign -d --entitlements :- '#{app_path}' > '#{entitlements_path}'")
+
+    # Verify that frameworks have no entitlements, as this is not currently supported by our script (they would need to be preserved).
+    Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
+      framework_entitlements = sh("codesign -d --entitlements :- '#{framework}' 2>/dev/null").strip
+      if framework_entitlements && !framework_entitlements.empty?
+        raise "Framework #{File.basename(framework)} has entitlements. Not supported."
+      end
+    end
+
     ## Strip DEBUG symbols to reduce app size.
-    sh("strip -rSTx '#{app_binary_path}'")
+    # sh("strip -rSTx '#{app_binary_path}'")
+    Dir.glob("#{app_path}/**/*").each do |file|
+      next unless File.file?(file) && !File.symlink?(file)
+      
+      file_type = sh("file -b '#{file}'", log: false) rescue ""
+      if file_type.include?("Mach-O") && !file_type.include?("dSYM")
+        puts "Stripping: #{file}"
+        sh("strip -rSTx '#{file}'") rescue puts "Warning: Could not strip #{file}"
+      end
+    end
+
     ## Resign
     certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
     provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
@@ -152,7 +173,27 @@ platform :mac do
       raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
     end
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
-    sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
+    # sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
+    Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
+      sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
+    end
+    # Not needed for now, keeping this here for reference.
+    # Dir.glob("#{app_path}/Contents/XPCServices/*.xpc").each do |xpc|
+    #   sh("codesign --force --sign #{certificate_sha1} --options runtime '#{xpc}'")
+    # end
+    Dir.glob("#{app_path}/Contents/PlugIns/*.bundle").each do |bundle|
+      sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{bundle}'")
+    end
+    sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{entitlements_path}' '#{app_path}'")
+    puts "Verifying code signature..."
+    sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
+    sh("spctl -a -t exec -vvv '#{app_path}'")
+
+    # Verify dSYM UUID matches binary (for Sentry)
+    binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
+    dsym_uuid = sh("dwarfdump --uuid '#{dsym_path}' | awk '{print $2}'").strip
+    raise "UUID mismatch between binary and dSYM!" unless binary_uuid == dsym_uuid
+
     sh("rm '#{entitlements_path}'")
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
