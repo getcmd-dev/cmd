@@ -1,10 +1,11 @@
 .DS_Store
 secrets.json
-tmp
+tmp/**
 .aider*
 
-.build
-build
+.build/**
+build/**
 .swiftpm
 .serena
 *.tmp
+!.keep

@@ -188,6 +188,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.textInput = TextInput()
     input.attachments = []
 
+    for attachment in attachments {
+      if case .file(let fileAttachment) = attachment {
+        // The entire content of the attachment is sent to the LLM.
+        // We update the chat context to reflect this, so that the LLM can edit this file without having to first use the read tool.
+        context.set(knownFileContent: fileAttachment.content, for: fileAttachment.path)
+      }
+    }
+
     if !textInput.string.string.isEmpty {
       // TODO: reformat the string sent to the LLM
       let messageContent = ChatMessageContent.text(ChatMessageTextContent(
