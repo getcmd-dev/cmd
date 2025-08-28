@@ -47,6 +47,14 @@ Build, archive and sign the app for distribution
 
 Build, archive, sign and publish the app for distribution
 
+### mac strip_debug_symbols_and_resign
+
+```sh
+[bundle exec] fastlane mac strip_debug_symbols_and_resign
+```
+
+Strip debug symbols from the binary and resign the app
+
 ### mac upload_release_to_sentry
 
 ```sh
