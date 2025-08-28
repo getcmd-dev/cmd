@@ -134,6 +134,13 @@ platform :mac do
       xcodebuild_formatter: "xcbeautify",
     )
 
+    # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
+    app_binary_path = "#{release_path}/#{app_name}.app/Contents/MacOS/command"
+    sh("strip -rSTx '#{app_binary_path}'")
+    certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
+    certificate_sha1 = sh("security find-certificate -c '#{certificate_name}' -a -Z | grep SHA-1 | awk '{print $3}' | head -1").strip
+    puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
+    sh("codesign --force --deep --sign #{certificate_sha1} '#{app_path}'")
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 
     # Notarize the app
