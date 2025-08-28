@@ -259,10 +259,10 @@ platform :mac do
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
       
-      file_type = silent_sh("file -b '#{file}'", log: false, print_command: false, print_command_output: false) rescue ""
+      file_type = silent_sh("file -b '#{file}'") rescue ""
       if file_type.include?("Mach-O") && !file_type.include?("dSYM")
         puts "Stripping: #{file}"
-        sh("strip -rSTx '#{file}'", log: false) rescue puts "Warning: Could not strip #{file}"
+        silent_sh("strip -rSTx '#{file}'") rescue puts "Warning: Could not strip #{file}"
       end
     end
 
