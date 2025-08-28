@@ -203,20 +203,20 @@ final class UpdateChecker: NSObject, Sendable {
 
 extension UpdateChecker: SPUUpdaterDelegate {
   func updaterShouldPromptForPermissionToCheck(forUpdates _: SPUUpdater) -> Bool {
-    updateLogger.log("updaterShouldPromptForPermissionToCheck(forUpdates:)")
+    updateLogger.info("updaterShouldPromptForPermissionToCheck(forUpdates:)")
     return false
   }
 
   func updater(_: SPUUpdater, didDownloadUpdate _: SUAppcastItem) {
-    updateLogger.log("updater(_:didDownloadUpdate:)")
+    updateLogger.info("updater(_:didDownloadUpdate:)")
   }
 
   func updater(_: SPUUpdater, didExtractUpdate _: SUAppcastItem) {
-    updateLogger.log("updater(_:didExtractUpdate:)")
+    updateLogger.info("updater(_:didExtractUpdate:)")
   }
 
   func updater(_: SPUUpdater, shouldProceedWithUpdate _: SUAppcastItem, updateCheck _: SPUUpdateCheck) throws {
-    updateLogger.log("updater(_:shouldProceedWithUpdate:updateCheck:)")
+    updateLogger.info("updater(_:shouldProceedWithUpdate:updateCheck:)")
   }
 
   func updater(
@@ -225,30 +225,34 @@ extension UpdateChecker: SPUUpdaterDelegate {
     immediateInstallationBlock _: @escaping () -> Void)
     -> Bool
   {
-    updateLogger.log("updater(willInstallUpdateOnQuit:)")
+    updateLogger.info("updater(willInstallUpdateOnQuit:)")
     return true
   }
 
   func updater(_: SPUUpdater, mayPerform _: SPUUpdateCheck) throws {
-    updateLogger.log("updater(_:mayPerform:)")
+    updateLogger.info("updater(_:mayPerform:)")
   }
 
   func updaterDidNotFindUpdate(_: SPUUpdater, error: any Error) {
-    defaultLogger.error("updaterDidNotFindUpdate(_:error:)", error)
+    if (error as NSError).domain == SUSparkleErrorDomain, (error as NSError).code == SUError.noUpdateError.rawValue {
+      defaultLogger.info("No update available")
+    } else {
+      defaultLogger.error("updaterDidNotFindUpdate(_:error:)", error)
+    }
     complete(with: .success(.noUpdateAvailable))
   }
 
   func updaterWillRelaunchApplication(_: SPUUpdater) {
-    updateLogger.log("updaterWillRelaunchApplication(_:)")
+    updateLogger.info("updaterWillRelaunchApplication(_:)")
   }
 
   func bestValidUpdate(in appCast: SUAppcast, for _: SPUUpdater) -> SUAppcastItem? {
-    updateLogger.log("bestValidUpdate(in:for:)")
+    updateLogger.info("bestValidUpdate(in:for:)")
     return appCast.items.first
   }
 
   func updaterMayCheck(forUpdates _: SPUUpdater) -> Bool {
-    updateLogger.log("updaterMayCheck(forUpdates:)")
+    updateLogger.info("updaterMayCheck(forUpdates:)")
     return true
   }
 }
@@ -267,44 +271,44 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
   }
 
   func show(_: SPUUpdatePermissionRequest) async -> SUUpdatePermissionResponse {
-    updateLogger.log("Showing update permission request")
+    updateLogger.info("Showing update permission request")
     return SUUpdatePermissionResponse(automaticUpdateChecks: true, automaticUpdateDownloading: true, sendSystemProfile: false)
   }
 
   func showUpdateReleaseNotes(with _: SPUDownloadData) {
-    updateLogger.log("Showing update release notes")
+    updateLogger.info("Showing update release notes")
   }
 
   func showUpdateReleaseNotesFailedToDownloadWithError(_ error: any Error) {
-    updateLogger.log("Failed to download release notes: \(error.localizedDescription)")
+    updateLogger.info("Failed to download release notes: \(error.localizedDescription)")
   }
 
   func showUpdateNotFoundWithError(_ error: any Error, acknowledgement _: @escaping () -> Void) {
-    updateLogger.log("Update not found with error: \(error.localizedDescription)")
+    updateLogger.info("Update not found with error: \(error.localizedDescription)")
   }
 
   func showDownloadInitiated(cancellation _: @escaping () -> Void) {
-    updateLogger.log("Download initiated")
+    updateLogger.info("Download initiated")
   }
 
   func showDownloadDidReceiveExpectedContentLength(_ expectedContentLength: UInt64) {
-    updateLogger.log("Download expected content length: \(expectedContentLength) bytes")
+    updateLogger.info("Download expected content length: \(expectedContentLength) bytes")
   }
 
   func showDownloadDidReceiveData(ofLength length: UInt64) {
-    updateLogger.log("Download received data: \(length) bytes")
+    updateLogger.info("Download received data: \(length) bytes")
   }
 
   func showDownloadDidStartExtractingUpdate() {
-    updateLogger.log("Started extracting update")
+    updateLogger.info("Started extracting update")
   }
 
   func showExtractionReceivedProgress(_ progress: Double) {
-    updateLogger.log("Extraction progress: \(Int(progress * 100))%")
+    updateLogger.info("Extraction progress: \(Int(progress * 100))%")
   }
 
   func showReadyToInstallAndRelaunch() async -> SPUUserUpdateChoice {
-    updateLogger.log("Ready to install and relaunch - dismissing")
+    updateLogger.info("Ready to install and relaunch - dismissing")
     onReadyToInstall()
     return SPUUserUpdateChoice.dismiss
   }
@@ -313,19 +317,19 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
     withApplicationTerminated applicationTerminated: Bool,
     retryTerminatingApplication _: @escaping () -> Void)
   {
-    updateLogger.log("Installing update (app terminated: \(applicationTerminated))")
+    updateLogger.info("Installing update (app terminated: \(applicationTerminated))")
   }
 
   func showUpdateInstalledAndRelaunched(_ relaunched: Bool, acknowledgement _: @escaping () -> Void) {
-    updateLogger.log("Update installed and relaunched: \(relaunched)")
+    updateLogger.info("Update installed and relaunched: \(relaunched)")
   }
 
   func showUpdateInFocus() {
-    updateLogger.log("Update in focus")
+    updateLogger.info("Update in focus")
   }
 
   func showUserInitiatedUpdateCheck(cancellation _: @escaping () -> Void) {
-    updateLogger.log("User initiated update check")
+    updateLogger.info("User initiated update check")
     // Do not call completion here as this would cancel the update.
   }
 
@@ -344,33 +348,33 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
   }
 
   func showDownloadedUpdate(_ updateItem: SUAppcastItem, acknowledgement: @escaping () -> Void) {
-    updateLogger.log("Update downloaded: \(updateItem.displayVersionString)")
+    updateLogger.info("Update downloaded: \(updateItem.displayVersionString)")
     acknowledgement()
   }
 
   func showInstallingUpdate(withApplicationTerminated terminated: Bool) {
-    updateLogger.log("Installing update (app terminated: \(terminated))")
+    updateLogger.info("Installing update (app terminated: \(terminated))")
   }
 
   func showUpdateInstallationDidFinish() {
-    updateLogger.log("Update installation finished")
+    updateLogger.info("Update installation finished")
   }
 
   func showUpdateInstallationDidCancel() {
-    updateLogger.log("Update installation cancelled")
+    updateLogger.info("Update installation cancelled")
   }
 
   func dismissUpdateInstallation() {
-    updateLogger.log("Dismissing update installation")
+    updateLogger.info("Dismissing update installation")
   }
 
   func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
-    updateLogger.log("Updater error: \(error.localizedDescription)")
+    updateLogger.info("Updater error: \(error.localizedDescription)")
     acknowledgement()
   }
 
   func showUpdateNotFoundAcknowledgement(completion: @escaping () -> Void) {
-    updateLogger.log("No update found - app is up to date")
+    updateLogger.info("No update found - app is up to date")
     completion()
   }
 

@@ -47,6 +47,22 @@ Build, archive and sign the app for distribution
 
 Build, archive, sign and publish the app for distribution
 
+### mac strip_debug_symbols_and_resign
+
+```sh
+[bundle exec] fastlane mac strip_debug_symbols_and_resign
+```
+
+Strip debug symbols from the binary and resign the app
+
+### mac upload_release_to_sentry
+
+```sh
+[bundle exec] fastlane mac upload_release_to_sentry
+```
+
+Upload the new release to Sentry
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
