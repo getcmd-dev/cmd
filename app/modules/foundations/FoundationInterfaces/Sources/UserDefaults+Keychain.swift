@@ -4,6 +4,7 @@
 import AppFoundation
 import Foundation
 import Security
+import OSLog
 
 // MARK: - KeychainHelper
 
@@ -40,6 +41,8 @@ class KeychainHelper {
     if status == errSecSuccess, let data = result as? Data {
       return String(data: data, encoding: .utf8)
     }
+      let defaultLogger = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
+      defaultLogger.error("Failed to load value for key \(key): \(status)")
     return nil
   }
 

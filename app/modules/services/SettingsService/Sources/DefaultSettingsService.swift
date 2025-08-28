@@ -90,10 +90,13 @@ final class DefaultSettingsService: SettingsService {
       do {
         var settings = try JSONDecoder().decode(Settings.self, from: data)
         // Load API keys fromn the keychain.
+          defaultLogger.log("Anthropic API key: \(settings.llmProviderSettings[.anthropic]?.apiKey ?? "nil")")
         if let anthropicAPIKey = settings.llmProviderSettings[.anthropic]?.apiKey {
           if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
+              defaultLogger.log("Loaded Anthropic API key: \(key)")
             settings.llmProviderSettings[.anthropic]?.apiKey = key
           } else {
+              defaultLogger.log("Could not load Anthropic API key")
             settings.llmProviderSettings.removeValue(forKey: .anthropic)
           }
         }
