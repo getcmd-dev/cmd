@@ -323,8 +323,10 @@ platform :mac do
 
     # Verify dSYM UUID matches binary
     binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
-    dsym_uuid = sh("dwarfdump --uuid '#{dsym_path}' | awk '{print $2}'").strip
-    puts "UUID mismatch between binary and dSYM!" unless binary_uuid == dsym_uuid
+    unzipped_dsym_path = dsym_path.gsub('.zip', '')
+    sh("ditto -xk '#{dsym_path}' '#{unzipped_dsym_path}'")
+    dsym_uuid = sh("dwarfdump --uuid '#{unzipped_dsym_path}/command.app.dSYM' | awk '{print $2}'").strip
+    raise "UUID mismatch between binary and dSYM. This will prevent traces from being symbolicated" unless binary_uuid == dsym_uuid
 
     sentry_create_release(
       auth_token: load_secret("SENTRY_AUTH_TOKEN"),
