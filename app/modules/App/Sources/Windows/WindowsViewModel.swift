@@ -9,6 +9,7 @@ import Combine
 import Dependencies
 import FoundationInterfaces
 import Observation
+import LoggingServiceInterface
 import Onboarding
 import PermissionsServiceInterface
 import XcodeObserverServiceInterface
@@ -61,9 +62,11 @@ final class WindowsViewModel {
   var isOnboardingVisible: Bool {
     if userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) != true {
       // Show onboarding at least once
+        defaultLogger.log("isOnboardingVisible -> hasCompletedOnboardingUserDefaultsKey\(userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey))")
       return true
     }
     if !isAccessibilityPermissionGranted {
+        defaultLogger.log("isOnboardingVisible not isAccessibilityPermissionGranted")
       // Show onboarding if accessibility permission is not granted
       return true
     }

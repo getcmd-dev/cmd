@@ -104,8 +104,10 @@ extension UserDefaultsI {
 
   public static func shared(bundle: Bundle) throws -> UserDefaults? {
     guard let suiteName = sharedSuiteName(bundle: bundle) else {
+        foundationLogger.error("shared(bundle: Bundle): not found")
       throw UserDefaultsError.sharedSuiteNameNotFound
     }
+      foundationLogger.log("shared(bundle: Bundle) suiteName: \(suiteName, privacy: .public)")
     return Foundation.UserDefaults(suiteName: suiteName)
   }
 

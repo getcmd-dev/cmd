@@ -86,6 +86,7 @@ final class DefaultSettingsService: SettingsService {
   private let releaseSharedUserDefaults: UserDefaultsI?
 
   private static func loadSettings(from userDefaults: UserDefaultsI) -> Settings {
+      defaultLogger.log("DefaultSettingsService.loadSettings: has appWideSettings ? \(userDefaults.data(forKey: Keys.appWideSettings) != nil)")
     if let data = userDefaults.data(forKey: Keys.appWideSettings) {
       do {
         var settings = try JSONDecoder().decode(Settings.self, from: data)

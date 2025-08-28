@@ -235,8 +235,10 @@ extension AppScope: UserDefaultsProviding {
         guard let userDefaults = try UserDefaults.shared(bundle: Bundle(for: AppScope.self)) else {
           return Foundation.UserDefaults.standard
         }
+          defaultLogger.error("UserDefaults.shared(bundle:) is nil")
         return userDefaults
       } catch {
+          defaultLogger.error("Returning Foundation.UserDefaults.standard", error)
         return Foundation.UserDefaults.standard
       }
     }

@@ -6,6 +6,9 @@ import Foundation
 import Security
 import OSLog
 
+
+  let foundationLogger = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command.foundation")
+
 // MARK: - KeychainHelper
 
 class KeychainHelper {
@@ -41,8 +44,7 @@ class KeychainHelper {
     if status == errSecSuccess, let data = result as? Data {
       return String(data: data, encoding: .utf8)
     }
-      let defaultLogger = os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
-      defaultLogger.error("Failed to load value for key \(key): \(status)")
+      foundationLogger.error("Failed to load value for key \(key, privacy: .public): \(status, privacy: .public)")
     return nil
   }
 
