@@ -137,123 +137,10 @@ platform :mac do
       xcodebuild_formatter: "xcbeautify --quiet",
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
-
-    # # # TODO: remove
-    # sh("ditto #{build_path}/release #{build_path}/release_backup")
-    # sh("ditto #{build_path}/release_backup #{build_path}/release")
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
     app_binary_path = "#{app_path}/Contents/MacOS/command"
     strip_debug_symbols_and_resign(app_path: app_path, app_binary_path: app_binary_path, build_path: build_path)
-
-    # ## Extract the current entitlements before stripping
-    # entitlements_path = "#{build_path}/extracted_entitlements.plist"
-    # sh("codesign -d --entitlements :- '#{app_path}' > '#{entitlements_path}'")
-
-    # # # Verify that frameworks have no entitlements, as this is not currently supported by our script (they would need to be preserved).
-    # # Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
-    # #   framework_entitlements = sh("codesign -d --entitlements :- '#{framework}' 2>/dev/null").strip
-    # #   if framework_entitlements && !framework_entitlements.empty?
-    # #     raise "Framework #{File.basename(framework)} has entitlements. Not supported."
-    # #   end
-    # # end
-
-    # ## Strip DEBUG symbols to reduce app size.
-    # sh("strip -rSTx '#{app_binary_path}'")
-    # Dir.glob("#{app_path}/**/*").each do |file|
-    #   next unless File.file?(file) && !File.symlink?(file)
-      
-    #   file_type = silent_sh("file -b '#{file}'", log: false, print_command: false, print_command_output: false) rescue ""
-    #   if file_type.include?("Mach-O") && !file_type.include?("dSYM")
-    #     puts "Stripping: #{file}"
-    #     sh("strip -rSTx '#{file}'", log: false) rescue puts "Warning: Could not strip #{file}"
-    #   end
-    # end
-
-    # ## Resign
-    # certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
-    # provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
-    # ### Find the sha1 to identify the right certificate when several with the same name are installed.
-    # certificate_sha1 = sh("security cms -D -i '#{provisioning_profile_path}' | plutil -extract DeveloperCertificates.0 raw -o - - | base64 -D | openssl x509 -inform DER -noout -fingerprint -sha1  | cut -d= -f2 | sed 's/://g'").strip
-    # if certificate_sha1.empty?
-    #   raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
-    # end
-    # puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
-    # # sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
-
-    # # Find all signable components and sort by depth (deepest first)
-    # all_components = []
-
-    # Dir.glob("#{app_path}/**/*.{framework,appex,bundle,xpc,app}").each do |component|
-    #   # Skip the main app itself
-    #   next if component == app_path
-      
-    #   depth = component.split('/').length
-    #   all_components << { path: component, depth: depth }
-    # end
-
-    # # Sort by depth (deepest first) then by path for consistency
-    # all_components.sort_by! { |c| [-c[:depth], c[:path]] }
-
-    # # Sign each component with its own entitlements (if any)
-    # all_components.each do |component|
-    #   component_name = File.basename(component[:path])
-    #   puts "Signing: #{component_name}"
-      
-    #   # Try to extract entitlements for ANY component type
-    #   temp_entitlements = "#{build_path}/#{component_name.gsub(/[^\w.-]/, '_')}_entitlements.plist"
-    #   silent_sh("codesign -d --entitlements :- '#{component[:path]}' > '#{temp_entitlements}' 2>/dev/null") rescue nil
-      
-    #   # Sign with entitlements if they exist, without if they don't
-    #   if File.exist?(temp_entitlements) && File.size(temp_entitlements) > 0
-    #     puts "  → with entitlements"
-    #     silent_sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{temp_entitlements}' '#{component[:path]}'")
-    #   else
-    #     puts "  → without entitlements"
-    #     silent_sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{component[:path]}'")
-    #   end
-      
-    #   # Clean up
-    #   silent_sh("rm -f '#{temp_entitlements}'")
-    # end
-
-    # # Finally sign the main app
-    # silent_sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{entitlements_path}' '#{app_path}'")
-
-
-    # Dir.glob("#{app_path}/Contents/PlugIns/*.appex/Contents/Frameworks/*.framework").sort.each do |framework|
-    #   puts "Signing framework inside appex: #{File.basename(framework)}"
-    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
-    # end
-    # Dir.glob("#{app_path}/Contents/PlugIns/*.appex").sort.each do |appex|
-    #   appex_name = File.basename(appex)
-    #   appex_entitlements_path = "#{build_path}/#{appex_name}_entitlements.plist"
-      
-    #   sh("codesign -d --entitlements :- '#{appex}' > '#{appex_entitlements_path}' 2>/dev/null") rescue nil
-      
-    #   if File.exist?(appex_entitlements_path) && File.size(appex_entitlements_path) > 0
-    #     sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{appex_entitlements_path}' '#{appex}'")
-    #     sh("rm '#{appex_entitlements_path}'")
-    #   else
-    #     sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{appex}'")
-    #   end
-    # end
-
-    # Dir.glob("#{app_path}/Contents/Frameworks/*.framework").sort.each do |framework|
-    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{framework}'")
-    # end
-    # # Not needed for now, keeping this here for reference.
-    # # Dir.glob("#{app_path}/Contents/XPCServices/*.xpc").each do |xpc|
-    # #   sh("codesign --force --sign #{certificate_sha1} --options runtime '#{xpc}'")
-    # # end
-    # Dir.glob("#{app_path}/Contents/PlugIns/*.bundle").sort.each do |bundle|
-    #   sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{bundle}'")
-    # end
-    # sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{entitlements_path}' '#{app_path}'")
-
-
-    # sh("rm '#{entitlements_path}'")
-
 
     # Notarize the app
     app_store_connect_api_key(
@@ -261,7 +148,6 @@ platform :mac do
       issuer_id: load_secret("NOTARY_ISSUER_ID"),
       key_content: load_secret("NOTARY_P8"),
     )
-
     notarize(
       package: app_path,
       verbose: false,
@@ -300,7 +186,6 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
 
-    sh("rm -rf #{build_path}") if remove_zip
     { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path }
   end
 
@@ -311,9 +196,9 @@ platform :mac do
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
-    # if existing_version.empty?
-    #   puts "Using version: #{version}"
-    # else
+    if existing_version.empty?
+      puts "Using version: #{version}"
+    else
       version_parts = version.split('.')
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
       new_version = version_parts.join('.')
@@ -321,7 +206,7 @@ platform :mac do
 
       sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
       version = new_version
-    # end
+    end
 
     result = create_and_sign_release(remove_zip: false, version: version)
     version = result[:version]
@@ -346,8 +231,6 @@ platform :mac do
       upload_assets: app_zip_path
     )
 
-    sh("rm -rf #{build_path}")
-
     new_branch_name = "release-v#{version}"
     sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
     create_pull_request(
@@ -362,6 +245,7 @@ platform :mac do
 
   desc "Strip debug symbols from the binary and resign the app"
   lane :strip_debug_symbols_and_resign do |options|
+    # Note: an alternative is to more simply use 
     app_binary_path = options.fetch(:app_binary_path, nil)
     app_path = options.fetch(:app_path, nil)
     build_path = options.fetch(:build_path, nil)
@@ -390,7 +274,6 @@ platform :mac do
       raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
     end
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
-    # sh("codesign --force --deep --sign #{certificate_sha1} --options runtime --entitlements '#{entitlements_path}' '#{app_path}'")
 
     # Find all signable components and sort by depth (deepest first)
     all_components = []
@@ -465,6 +348,8 @@ platform :mac do
       path: File.absolute_path("../"),
     )
     sentry_set_commits(
+      org_slug: 'getcmd',
+      project_slug: 'cmd-mac-app',
       version: version,
       app_identifier: 'dev.getcmd.command',
       auto: true,
