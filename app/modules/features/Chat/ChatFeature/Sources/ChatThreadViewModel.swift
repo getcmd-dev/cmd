@@ -219,6 +219,16 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
+      defaultLogger.record(
+        event: "message_sent",
+        value: "initiated",
+        metadata: [
+          "model": selectedModel.rawValue,
+          "chat_mode": input.mode.rawValue,
+          "attachments_count": String(attachments.count),
+          "message_length": String(textInput.string.string.count),
+        ])
+
       streamingTask = Task {
         async let response = llmService.sendMessage(
           messageHistory: messages,

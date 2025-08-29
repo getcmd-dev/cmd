@@ -4,6 +4,7 @@
 import Combine
 import Dependencies
 import FoundationInterfaces
+import LoggingServiceInterface
 import Observation
 import PermissionsServiceInterface
 import SettingsServiceInterface
@@ -50,6 +51,11 @@ final class OnboardingViewModel {
         guard let self else { return }
         self.isAccessibilityPermissionGranted = status == true
         if status == true, self.currentStep == .accessibilityPermission {
+          defaultLogger.record(
+            event: "accessibility_permission_granted",
+            metadata: [
+              "source": "onboarding",
+            ])
           self.handleMoveToNextStep()
           self.bringWindowToFront()
         }
@@ -61,6 +67,11 @@ final class OnboardingViewModel {
         guard let self else { return }
         self.isXcodeExtensionPermissionGranted = status == true
         if status == true, self.currentStep == .xcodeExtensionPermission {
+          defaultLogger.record(
+            event: "xcode_extension_permission_granted",
+            metadata: [
+              "source": "onboarding",
+            ])
           self.handleMoveToNextStep()
           self.bringWindowToFront()
         }
@@ -99,6 +110,15 @@ final class OnboardingViewModel {
     }
     if currentStep == .setupComplete {
       userDefaults.set(true, forKey: .hasCompletedOnboardingUserDefaultsKey)
+
+      defaultLogger.record(
+        event: "onboarding_completed",
+        value: "success",
+        metadata: [
+          "accessibility_granted": String(isAccessibilityPermissionGranted),
+          "xcode_extension_granted": String(isXcodeExtensionPermissionGranted),
+        ])
+
       onDone()
     }
     currentStep = getStep()

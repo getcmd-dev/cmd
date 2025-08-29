@@ -4,7 +4,6 @@
 import FileDiffFoundation
 import FileDiffTypesFoundation
 import Foundation
-import LoggingServiceInterface
 import SharedValuesFoundation
 import XcodeKit
 
@@ -20,6 +19,7 @@ final class ApplyEditCommand: CommandType, @unchecked Sendable {
     let changeToApply: FileChange = try await LocalServer().send(
       command: ExtensionCommandKeys.getFileChangeToApply,
       input: EmptyInput())
+
     do {
       try SourceModificationHelpers.update(buffer: invocation.buffer, with: changeToApply)
       let _: EmptyResponse = try await LocalServer().send(
