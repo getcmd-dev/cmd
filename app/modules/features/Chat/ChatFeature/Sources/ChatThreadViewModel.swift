@@ -219,6 +219,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
+
+      let startTime = Date()
       defaultLogger.record(
         event: "message_sent",
         value: "initiated",
@@ -230,7 +232,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
         ])
 
       streamingTask = Task {
-        async let response = llmService.sendMessage(
+        async let response = try await llmService.sendMessage(
           messageHistory: messages,
           tools: tools,
           model: selectedModel,
@@ -285,7 +287,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             }
           })
 
-        try await usageInfo.set(to: response.usageInfo)
+        let res = try await response
+        usageInfo.set(to: res.usageInfo)
+
+        recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
 
       try await streamingTask?.value
@@ -393,6 +398,33 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
+  }
+
+  private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {
+    let (reasoningContent, textContent, toolContent) = messages.reduce(into: (0, 0, 0)) { acc, message in
+      for content in message.content {
+        switch content {
+        case .reasoning:
+          acc.0 += 1
+        case .text:
+          acc.1 += 1
+        case .tool:
+          acc.2 += 1
+        case .internalContent: break
+        }
+      }
+    }
+
+    defaultLogger.record(
+      event: "message_sent",
+      value: "completed",
+      metadata: [
+        "duration": String(describing: Date().timeIntervalSince(startTime)),
+        "assistant_messages_count": String(describing: messages.count),
+        "reasoning_content_count": String(describing: reasoningContent),
+        "text_content_count": String(describing: textContent),
+        "tools_count_count": String(describing: toolContent),
+      ])
   }
 
   private func handle(usageInfo: LLMUsageInfo, model: LLMModel) async throws {
