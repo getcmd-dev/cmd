@@ -43,7 +43,7 @@ build_and_copy() {
 		echo "node_modules not found. Running yarn install..."
 		(cd "$repo_root/local-server" && yarn install) || exit 1
 	fi
-	
+
 	(cd "$repo_root/local-server" && yarn build) || exit 1
 
 	files_to_copy=(
