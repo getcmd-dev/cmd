@@ -9,6 +9,7 @@ import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import LoggingServiceInterface
 import Observation
 import SwiftUI
 import ToolFoundation
@@ -277,14 +278,33 @@ final class EditFilesToolUseViewModel {
       let baseLineContent = diffViewModel.baseLineContent
       let targetContent = await diffViewModel.targetContent
       let fileDiff = try FileDiff.getFileChange(changing: baseLineContent, to: targetContent)
+
       try await xcodeController.apply(fileChange: .init(
         filePath: file,
         oldContent: baseLineContent,
         suggestedNewContent: fileDiff.newContent,
         selectedChange: fileDiff.diff))
       filesEdit[file] = .applied
+
+      let oldLineCount = baseLineContent.components(separatedBy: .newlines).count
+      let newLineCount = targetContent.components(separatedBy: .newlines).count
+      let linesAdded = fileDiff.diff.filter { $0.type == .added }.count
+      let linesRemoved = fileDiff.diff.filter { $0.type == .removed }.count
+
+      defaultLogger.record(
+        event: "file_edit_applied",
+        metadata: [
+          "lines_added": String(linesAdded),
+          "lines_removed": String(linesRemoved),
+        ])
     } catch {
       filesEdit[file] = .error(error.localizedDescription)
+
+      defaultLogger.record(
+        event: "file_edit_failed",
+        metadata: [
+          "error": error.localizedDescription,
+        ])
       throw error
     }
   }

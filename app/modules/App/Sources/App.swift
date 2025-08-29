@@ -148,6 +148,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationDidBecomeActive(_: Notification) {
     isAppActive.send(true)
+
+    defaultLogger.record(event: "app_activated")
+
     handleApplicationDidBecomeActive?()
   }
 
