@@ -164,12 +164,6 @@ platform :mac do
     # Create a DMG file for distribution using create-dmg
     dmg_path = "#{build_path}/release/#{app_name}.dmg"
     sh("create-dmg '#{app_path}' --output '#{dmg_path}' --identity #{certificate_sha1}")
-    # notarize(
-    #   package: dmg_path,
-    #   verbose: false,
-    #   print_log: true,
-    #   use_notarytool: true
-    # )
 
     puts "Verifying code signature..."
     sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
@@ -246,7 +240,7 @@ platform :mac do
       tag_name: "v#{version}",
       description: "v#{version}",
       commitish: "main",
-      upload_assets: dmg_path
+      upload_assets: [dmg_path, app_zip_path],
     )
 
     new_branch_name = "release-v#{version}"
