@@ -207,9 +207,9 @@ platform :mac do
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
-    # if existing_version.empty?
-    #   puts "Using version: #{version}"
-    # else
+    if existing_version.empty?
+      puts "Using version: #{version}"
+    else
       version_parts = version.split('.')
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
       new_version = version_parts.join('.')
@@ -217,7 +217,7 @@ platform :mac do
 
       sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
       version = new_version
-    # end
+    end
 
     result = create_and_sign_release(version: version)
     version = result[:version]
