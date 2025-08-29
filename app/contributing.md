@@ -44,5 +44,6 @@ To do so:
 
 ### Setup to run release script locally
 ```bash
-brew install create-dmg
+npm install --global https://github.com/gsabran/create-dmg\#203701b1793def72a1eba6214958ea892ba3e27b # until https://github.com/sindresorhus/create-dmg/pull/97 is merged
+brew install graphicsmagick imagemagick
 ```

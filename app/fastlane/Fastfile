@@ -110,6 +110,13 @@ platform :mac do
       use_automatic_signing: false,
       path: "./command.xcodeproj"
     )
+    certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
+    provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
+    ### Find the sha1 to identify the right certificate when several with the same name are installed.
+    certificate_sha1 = sh("security cms -D -i '#{provisioning_profile_path}' | plutil -extract DeveloperCertificates.0 raw -o - - | base64 -D | openssl x509 -inform DER -noout -fingerprint -sha1  | cut -d= -f2 | sed 's/://g'").strip
+    if certificate_sha1.empty?
+      raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
+    end
 
     # Build and archive the app
     build_path = File.absolute_path("../build")
@@ -139,7 +146,7 @@ platform :mac do
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
     app_binary_path = "#{app_path}/Contents/MacOS/command"
-    strip_debug_symbols_and_resign(app_path: app_path, app_binary_path: app_binary_path, build_path: build_path)
+    strip_debug_symbols_and_resign(app_path: app_path, app_binary_path: app_binary_path, build_path: build_path, certificate_name: certificate_name, certificate_sha1: certificate_sha1)
 
     # Notarize the app
     app_store_connect_api_key(
@@ -154,9 +161,20 @@ platform :mac do
       use_notarytool: true
     )
 
+    # Create a DMG file for distribution using create-dmg
+    dmg_path = "#{build_path}/release/#{app_name}.dmg"
+    sh("create-dmg '#{app_path}' --output '#{dmg_path}' --identity #{certificate_sha1}")
+    # notarize(
+    #   package: dmg_path,
+    #   verbose: false,
+    #   print_log: true,
+    #   use_notarytool: true
+    # )
+
     puts "Verifying code signature..."
     sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
     sh("spctl -a -t exec -vv '#{app_path}'")
+    sh("codesign --verify --deep --strict --verbose=2 '#{dmg_path}'") 
 
     # Create metadata for the new release
 
@@ -184,11 +202,6 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
-
-    # Create a DMG file for distribution using create-dmg
-    dmg_path = "#{build_path}/release/#{app_name}.dmg"
-    # Create DMG with drag-to-Applications functionality
-    sh("create-dmg --volname '#{app_name}' --window-pos 200 120 --window-size 600 300 --icon-size 100 --icon '#{app_name}.app' 175 120 --hide-extension '#{app_name}.app' --app-drop-link 425 120 '#{dmg_path}' '#{build_path}/release'")
 
     { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path, dmg_path: dmg_path }
   end
@@ -233,7 +246,7 @@ platform :mac do
       tag_name: "v#{version}",
       description: "v#{version}",
       commitish: "main",
-      upload_assets: [app_zip_path, dmg_path]
+      upload_assets: dmg_path
     )
 
     new_branch_name = "release-v#{version}"
@@ -255,6 +268,8 @@ platform :mac do
     app_binary_path = options.fetch(:app_binary_path, nil)
     app_path = options.fetch(:app_path, nil)
     build_path = options.fetch(:build_path, nil)
+    certificate_name = options.fetch(:certificate_name, nil)
+    certificate_sha1 = options.fetch(:certificate_sha1, nil)
 
     ## Extract the current entitlements before stripping
     entitlements_path = "#{build_path}/extracted_entitlements.plist"
@@ -272,13 +287,6 @@ platform :mac do
     end
 
     ## Resign
-    certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
-    provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
-    ### Find the sha1 to identify the right certificate when several with the same name are installed.
-    certificate_sha1 = sh("security cms -D -i '#{provisioning_profile_path}' | plutil -extract DeveloperCertificates.0 raw -o - - | base64 -D | openssl x509 -inform DER -noout -fingerprint -sha1  | cut -d= -f2 | sed 's/://g'").strip
-    if certificate_sha1.empty?
-      raise "Could not get certificate SHA1 from provisioning profile at path: #{provisioning_profile_path}"
-    end
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
 
     # Find all signable components and sort by depth (deepest first)
