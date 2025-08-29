@@ -41,3 +41,8 @@ To do so:
 - Close open Xcode windows that might overlap with what you will focus on.
 - Run `cmd focus --module <module name, e.g. 'AppFoundation'>` (you can run `cmd focus --list` to see all the available modules).
 - ⚠️ When done, use `cmd open:app` to open the app's xcodeproj. This does some clean up that is important as Xcode doesn't like some of the artifacts created by local Swift packages, and will not show your files in the file hierarchy anymore.
+
+### Setup to run release script locally
+```bash
+brew install create-dmg
+```

@@ -90,7 +90,6 @@ platform :mac do
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
     setup_ci if ENV['CI']
-    remove_zip = options.fetch(:remove_zip, true)
     version = options.fetch(:version, nil)
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
@@ -186,7 +185,12 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
 
-    { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path }
+    # Create a DMG file for distribution using create-dmg
+    dmg_path = "#{release_path}/#{app_name}.dmg"
+    # Create DMG with drag-to-Applications functionality
+    sh("create-dmg --volname '#{app_name}' --window-pos 200 120 --window-size 600 300 --icon-size 100 --icon '#{app_name}.app' 175 120 --hide-extension '#{app_name}.app' --app-drop-link 425 120 '#{dmg_path}' '#{release_path}'")
+
+    { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path, dmg_path: dmg_path }
   end
 
   desc "Build, archive, sign and publish the app for distribution"
@@ -208,9 +212,10 @@ platform :mac do
       version = new_version
     end
 
-    result = create_and_sign_release(remove_zip: false, version: version)
+    result = create_and_sign_release(version: version)
     version = result[:version]
     app_zip_path = result[:app_zip_path]
+    dmg_path = result[:dmg_path]
     build_path = result[:build_path]
     dsym_path = result[:dsym_path]
     app_binary_path = result[:app_binary_path]
@@ -228,7 +233,7 @@ platform :mac do
       tag_name: "v#{version}",
       description: "v#{version}",
       commitish: "main",
-      upload_assets: app_zip_path
+      upload_assets: [app_zip_path, dmg_path]
     )
 
     new_branch_name = "release-v#{version}"
