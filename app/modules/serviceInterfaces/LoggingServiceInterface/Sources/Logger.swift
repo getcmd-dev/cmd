@@ -34,11 +34,11 @@ public protocol Logger: Sendable {
 }
 
 extension Logger {
-  func record(event: StaticString, metadata: [StaticString: String]? = nil) {
+  public func record(event: StaticString, metadata: [StaticString: String]? = nil) {
     record(event: event, value: "NA", metadata: metadata)
   }
 
-  func record(event: StaticString, value: String) {
+  public func record(event: StaticString, value: String) {
     record(event: event, value: value, metadata: nil)
   }
 }
