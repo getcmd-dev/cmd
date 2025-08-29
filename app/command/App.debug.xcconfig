@@ -3,8 +3,8 @@
 
 #include "../command.debug.xcconfig"
 
-PRODUCT_NAME = command $(DEBUG_SUFFIX)
-INFOPLIST_KEY_CFBundleDisplayName = command $(DEBUG_SUFFIX)
+PRODUCT_NAME = cmd $(DEBUG_SUFFIX)
+INFOPLIST_KEY_CFBundleDisplayName = cmd $(DEBUG_SUFFIX)
 PRODUCT_BUNDLE_IDENTIFIER = $(HOST_APP_BUNDLE_IDENTIFIER)
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon.debug
 INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.developer-tools

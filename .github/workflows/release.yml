@@ -23,10 +23,6 @@ jobs:
         xcode-version: latest-stable
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
-    - name: Install packaging dependencies
-      run: |
-        npm install --global https://github.com/gsabran/create-dmg#203701b1793def72a1eba6214958ea892ba3e27b
-        brew install graphicsmagick imagemagick
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
     - uses: extractions/netrc@v1
       with:

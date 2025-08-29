@@ -75,7 +75,7 @@ platform :mac do
       export_method: "mac-application",
       output_directory: "#{build_path}/release",
       derived_data_path: "#{build_path}/derived_data",
-      output_name: "command.app",
+      output_name: "cmd.app",
       scheme: "command",
       # silent: true,
       skip_archive: true,
@@ -124,7 +124,7 @@ platform :mac do
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    app_name = "command"
+    app_name = "cmd"
     app_path = "#{build_path}/release/#{app_name}.app"
     dsym_path = "#{app_path}.dSYM.zip"
 
@@ -145,7 +145,7 @@ platform :mac do
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
     
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
-    app_binary_path = "#{app_path}/Contents/MacOS/command"
+    app_binary_path = "#{app_path}/Contents/MacOS/cmd"
     strip_debug_symbols_and_resign(app_path: app_path, app_binary_path: app_binary_path, build_path: build_path, certificate_name: certificate_name, certificate_sha1: certificate_sha1)
 
     # Notarize the app
@@ -196,6 +196,11 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
+
+    readme_path = File.absolute_path("../../README.md")
+    readme_content = File.read(readme_path)
+    readme_content.gsub!(/(.*)v[0-9\.]+(.*<!-- version automatically updated during release -->)/, "\\1v#{version}\\2")
+    File.write(readme_path, readme_content)
 
     { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path, dmg_path: dmg_path }
   end
@@ -333,7 +338,7 @@ platform :mac do
     binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
     unzipped_dsym_path = dsym_path.gsub('.zip', '')
     sh("ditto -xk '#{dsym_path}' '#{unzipped_dsym_path}'")
-    dsym_uuid = sh("dwarfdump --uuid '#{unzipped_dsym_path}/command.app.dSYM' | awk '{print $2}'").strip
+    dsym_uuid = sh("dwarfdump --uuid '#{unzipped_dsym_path}/cmd.app.dSYM' | awk '{print $2}'").strip
     raise "UUID mismatch between binary and dSYM. This will prevent traces from being symbolicated" unless binary_uuid == dsym_uuid
 
     sentry_create_release(

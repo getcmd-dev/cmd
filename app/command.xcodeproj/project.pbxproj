@@ -60,7 +60,7 @@
 		F668BFD52D74DD8F00387742 /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
 		F6B34B892D74E17D00AC0BBA /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
 		F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "؜command (Debug).appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		F6EF7DBF2D4C4F2C0074006B /* command (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "command (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "cmd (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6F3892C2D6FBE05004DAB09 /* command.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.debug.xcconfig; sourceTree = "<group>"; };
 		F6F3892D2D6FBE05004DAB09 /* command.release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -175,7 +175,7 @@
 		F6EF7DC02D4C4F2C0074006B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				F6EF7DBF2D4C4F2C0074006B /* command (Debug).app */,
+				F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */,
 				F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */,
 			);
 			name = Products;
@@ -232,7 +232,7 @@
 				F6EC34F22D5C165A006E935C /* App */,
 			);
 			productName = command;
-			productReference = F6EF7DBF2D4C4F2C0074006B /* command (Debug).app */;
+			productReference = F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -582,7 +582,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = command/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "command (Debug)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(INFOPLIST_KEY_CFBundleDisplayName)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "$(PRODUCT_NAME) needs to control System Events";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -620,7 +620,7 @@
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = command/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "command (Debug)";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(INFOPLIST_KEY_CFBundleDisplayName)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "$(PRODUCT_NAME) needs to control System Events";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
