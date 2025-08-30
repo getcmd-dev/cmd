@@ -249,7 +249,7 @@ platform :mac do
     )
 
     new_branch_name = "release-v#{version}"
-    sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
+    sh("git checkout -b #{new_branch_name} && git add ../..  && git commit -m 'Release v#{version}' --no-verify && git push origin #{new_branch_name} --no-verify")
     create_pull_request(
       api_token: gh_personal_access_token_cmd,
       title: "Release v#{version}",

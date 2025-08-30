@@ -19,7 +19,7 @@
 - `cmd` is open source with an Apache 2.0 license
 
 ## Installation
-- [Download the latest release](https://github.com/getcmd-dev/cmd/releases/download/v0.1.9/cmd.dmg)<!-- version automatically updated during release -->
+- [Download the latest release](https://github.com/getcmd-dev/cmd/releases/download/v0.1.10/cmd.dmg)<!-- version automatically updated during release -->
 - Extract the app, move it to `Applications`
 - Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)
 - If using Xcode 26 follow the additional steps.

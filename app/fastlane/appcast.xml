@@ -6,9 +6,9 @@
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
       <item>
-        <title>Version 0.1.8</title>
+        <title>Version 0.1.10</title>
         <link>https://sparkle-project.org</link>
-        <sparkle:version>0.1.8</sparkle:version>
+        <sparkle:version>0.1.10</sparkle:version>
         <description>
           <![CDATA[
            Test description for the release
@@ -16,7 +16,7 @@ new line
           ]]>
         </description>
         <pubDate>Tue, 29 Mar 2022 15:20:11 +0000</pubDate>
-        <enclosure url="https://github.com/getcmd-dev/cmd/releases/download/v0.1.8/command.app.zip" sparkle:edSignature="ze1XebePiLDBT5dpBqzmodGDN38fja8/xdS2DN098JqoI0+T+bIoOI3c5GjkyBru0c2w2tbbSiAChefeTdBIDg==" length="41850595"
+        <enclosure url="https://github.com/getcmd-dev/cmd/releases/download/v0.1.10/cmd.app.zip" sparkle:edSignature="mRc5Jf09qXS4SY+PB0Ke2CnKHgLdcBGHl4AZQYHQQ6Oo9o67acBCFKjItdKP1DtJMz+bc/208ifVkEKsrQJuDg==" length="41842266"
  />
       </item>
   </channel>
