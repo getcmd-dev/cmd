@@ -47,7 +47,7 @@ final class SidePanel: XcodeWindow {
     let screen = NSScreen.screens.first?.frame
     let defaultFrame = defaultChatPositionIsInverted
       ? CGRect(x: 0, y: 0, width: defaultWidth, height: screen?.size.height ?? 1000)
-      : CGRect(x: (screen?.size.width ?? 0) - defaultWidth, y: 0, width: defaultWidth, height: screen?.size.height ?? 1000)
+      : CGRect(x: (screen?.size.width ?? defaultWidth) - defaultWidth, y: 0, width: defaultWidth, height: screen?.size.height ?? 1000)
 
     let frame = idealFrame ?? defaultFrame
     setFrame(frame, display: isVisible)

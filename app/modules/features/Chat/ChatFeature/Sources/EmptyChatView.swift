@@ -32,7 +32,7 @@ struct EmptyChatView: View {
           .padding(.bottom, 4)
         keyBoardShortCutCard(
           title: "Add to current chat",
-          description: "Continue exisiting conversation with added context",
+          description: "Continue existing conversation with added context",
           keys: keyboardShortcuts[withDefault: .addContextToCurrentChat].keys)
         keyBoardShortCutCard(
           title: "Add to new chat",
