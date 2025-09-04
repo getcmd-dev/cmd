@@ -1,39 +1,58 @@
-# **cmd**: agentic AI in Xcode
+# **⌘ cmd**
 
-`cmd` is an agentic AI assistant for the work you do in Xcode. It helps you plan, handles routine tasks and answers your questions so that you can focus on the most **valuable** and **creative** parts of your work.
-
-## AI, in Xcode
-
-`cmd` integrates in your existing workflows with Xcode. No need for another IDE. `⌘`+`I` brings the assistant, `⌘`+`␛` backgrounds it.
+- 🤝 Integrates in Xcode
+- ✨ Generate code from natural language
+- 🤖 Checks its own work
+- 🌐 Open source, open choice of models
+- 👉 Works with Claude Code
+- 👉 Works with Xcode 26's AI chat
+- 🪪 [Official getcmd.dev home page](https://getcmd.dev/)
 
 <img align="center" width="100%" src="./docs/images/sidebar.png"/>
 
-## Delegate your work
-`cmd` autonomously handles various tasks. From new code generation, to bug fixing, to refactoring, to understanding new codebases, it can help you in many aspects of your job.
+## Key features:
+- **Seamless integration in Xcode**: `cmd` operates as a side panel in Xcode. It sees what is in Xcode, can edit files and take other actions.
+- **Best agentic AI in Xcode**: `cmd` uses frontier models and provides them with file access, build tools, and project context for effective code generation.
+- **Easy to trust**: `cmd` is open source and runs entirely locally. No data about your code is sent to 3rd parties other than the AI providers of your chosing. You can opt out of anonymised analytics.
+- **Claude Code**: `cmd` brings Claude Code to Xcode, as the first external agent supported.
+- **Chose the AI provider you want**: `cmd` supports the most popular AI providers. If you need another one, reach out!
 
-## You're in control
-- Use any LLM provider of your choosing (if your preferred provider is not yet supported, open an issue and we'll add support)
-- Your data is shared with no 3rd party other than the LLM provider you chose. All processing is local
-- `cmd` is free to use. No murky pricing or misaligned incentives. You bring your own API keys and get the most out of them
-- fine grained permissions about what agents can do autonomously
-- `cmd` is open source with an Apache 2.0 license
 
 ## Installation
-- [Download the latest release](https://github.com/getcmd-dev/cmd/releases/download/v0.1.10/cmd.dmg)<!-- version automatically updated during release -->
-- Extract the app, move it to `Applications`
-- Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)
-- If using Xcode 26 follow the additional steps.
-- Enjoy!
 
-## Claude Code
-You can easily use Claude Code in `cmd`. In the LLM providers settings, enter what you use to launch Claude Code (typically just `claude`). `Claude Code` then becomes available in the LLM options. Using it will delegate all the agentic AI to Claude Code, and you can enjoy a great integration with Xcode.
-<p align="center">
-    <img width="45%" src="./docs/images/claude-code-setting.png"/>
-    &nbsp; &nbsp; &nbsp; &nbsp;
-    <img width="45%" src="./docs/images/claude-code-in-chat.png"/>
-</p>
+<ul>
+    <li><a href="https://github.com/getcmd-dev/cmd/releases/download/v0.1.10/cmd.dmg">Download the latest release</a></li><!-- version automatically updated during release -->
+    <li>Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)</li>
+    <li>
+        <details>
+            <summary>Xcode 26 integration</summary>
+            <ul>
+                <li>Go to <code>Xcode > Settings > Intelligence > Add a Model Provider</code></li>
+                <li>
+                    Select a local model, running on port 10101<br/>
+                    <img align="center" height="300px" src="./docs/images/xcode26-installation-prompt.jpeg"/>
+                </li>
+                <li>
+                    Interact with <code>cmd</code> using either Xcode 26 built in AI chat, or <code>cmd</code>'s own UI.<br/>
+                    <img align="center" height="500px" src="./docs/images/xcode26-sidebar.jpeg"/>
+                </li>
+            </ul>
+        </details>
+    </li>
+</ul>
 
-## Xcode 26
+## High level technical overview
+<details>
+
+- `cmd` uses the accessibility permission to "see" what is in Xcode, including which project/file is open, which code is selected etc.
+- `cmd` is mostly a Swift/SwiftUI application. It bundles a shallow layer of javascript that eases the interaction with external APIs.
+- The Swift application has two targets (the main app and an app extension for Xcode extension) that are each mostly one Swift Package with many targets. The code is structured across many modules, that are each bundled in their of SPM target.
+
+</details>
+
+## Xcode 26 integration
+<details>
+
 `cmd` integrates with Xcode 26, bringing powerful agentic AI and making integration with LLM providers easier. When using Xcode 26, you can interact with `cmd` using either Xcode's built AI chat, or `cmd`'s own interface that provides a richer UI.
 
 #### Additional Installation steps for Xcode 26's AI chat
@@ -44,6 +63,32 @@ You can easily use Claude Code in `cmd`. In the LLM providers settings, enter wh
 - Interact with `cmd` using either Xcode 26 built in AI chat, or `cmd`'s richer UI.
 
 <img align="center" height="500px" src="./docs/images/xcode26-sidebar.jpeg"/>
+</details>
+
+## Demos
+
+### Agent mode
+
+[agent-mode.webm](https://github.com/user-attachments/assets/36305127-5946-4fb2-bd28-0e2d8248a46f)
+
+Delegate entire tasks to an autonomous agent. Remain in the loop with instant feedback, and in control thanks to fine grained permissions.
+
+### Chat mode
+[chat-mode.webm](https://github.com/user-attachments/assets/4d8b9087-f81d-4115-bb77-67ab27efe6d3)
+
+Switch to 'Chat' mode and get detailed answers or explanations without modifying your code. Compared to other chat alternatives (e.g. ChatGPT, Google etc), cmd provides relevant context to get more accurate results.
+
+### Claude Code
+
+[claude-code.webm](https://github.com/user-attachments/assets/6b41fd4a-b8ba-4e7d-beea-92e0ffcbf39a)
+
+You can interact directly with Claude Code through cmd. If you prefer using Claude Code over other tools for its advanced agentic capabilities, or because you have a subscription cmd has you covered. cmd makes Claude Code accessible right from Xcode, and displays its output in a rich native UI.
+
+### Xcode 26
+
+[xcode26-demo.webm](https://github.com/user-attachments/assets/42860f8e-d167-424b-b144-4651bd179d29)
+
+In Xcode 26, you can chose to interact with cmd through the new 'Code Assist' interface. When working on complex tasks, cmd's agentic AI is much more powerful than that of Xcode which cripples the most powerful LLMs with unnecessary privacy limitations. It's also easier to manage configurations like using a specific AI provider in cmd.
 
 ## Roadmap & contributions
 [We welcome contributions](./contributing.md)! Help us make your work more enjoyable.
