@@ -195,6 +195,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
           }
         }
       } catch {
+        defaultLogger.error("Failed to handle chat completion request", error)
         continuation.yield(ChatStreamResult(
           completionId: completionId,
           model: model,
