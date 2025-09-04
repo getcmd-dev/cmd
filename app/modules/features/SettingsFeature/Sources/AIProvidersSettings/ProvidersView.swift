@@ -42,6 +42,7 @@ public struct ProvidersView: View {
               onSettingsChanged: { newSettings in
                 updateProviderSettings(for: providerInfo.provider, with: newSettings)
               })
+              .id(providerInfo.provider)
           }
         }
         .padding(.bottom, 20)
@@ -64,7 +65,7 @@ public struct ProvidersView: View {
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
-        isConnected: existingSettings?.hasValidAPIKey == true || existingSettings?.hasValidExecutable == true)
+        isConnected: provider.isConnected(existingSettings))
     }
 
     return searchText.isEmpty
@@ -76,8 +77,7 @@ public struct ProvidersView: View {
 
   private func setInitialOrder() {
     orderedProviders = LLMProvider.allCases.map { provider in
-      let existingSettings = providerSettings[provider]
-      return (provider, existingSettings?.hasValidAPIKey == true)
+      (provider, provider.isConnected(providerSettings[provider]))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
@@ -125,7 +125,6 @@ private struct ProviderCard: View {
     self.settings = settings
     self.isConnected = isConnected
     self.onSettingsChanged = onSettingsChanged
-    executableFinder = ExecutableFinder(defaultExecutable: provider.defaultExecutable)
   }
 
   let provider: LLMProvider
@@ -205,24 +204,8 @@ private struct ProviderCard: View {
       }
 
       // Local executable section (for providers that are local)
-      if provider.isLocal {
-        VStack(alignment: .leading, spacing: 8) {
-          Text("How to run \(provider.name)")
-            .font(.subheadline)
-            .fontWeight(.medium)
-
-          // keep the default executable name if it can be found, as there is no need to hardcode a specivic path.
-          TextField(
-            executableFinder.executablePath != nil
-              ? "\(provider.defaultExecutable ?? "executable")"
-              : "/path/to/\(provider.defaultExecutable ?? "executable")",
-            text: $executable)
-            .textFieldStyle(.plain)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.textBackgroundColor))
-            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
-        }
+      if let externalAgent = provider.externalAgent {
+        ExternalAgentCard(externalAgent: externalAgent, executable: $executable)
       }
     }
     .padding(16)
@@ -238,8 +221,6 @@ private struct ProviderCard: View {
       saveSettings()
     }
   }
-
-  @Bindable private var executableFinder: ExecutableFinder
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -259,9 +240,16 @@ private struct ProviderCard: View {
     let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedExecutable = executable.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    guard !trimmedAPIKey.isEmpty || !trimmedExecutable.isEmpty else {
-      onSettingsChanged(nil)
-      return
+    if provider.externalAgent == nil {
+      guard !trimmedAPIKey.isEmpty else {
+        onSettingsChanged(nil)
+        return
+      }
+    } else {
+      guard !trimmedExecutable.isEmpty else {
+        onSettingsChanged(nil)
+        return
+      }
     }
 
     let settings = LLMProviderSettings(
@@ -270,6 +258,10 @@ private struct ProviderCard: View {
       executable: trimmedExecutable.isEmpty ? nil : trimmedExecutable,
       createdOrder: -1)
     onSettingsChanged(settings)
+
+    if let externalAgent = provider.externalAgent, !trimmedExecutable.isEmpty {
+      externalAgent.markHasBeenEnabledOnce()
+    }
   }
 }
 
@@ -295,64 +287,16 @@ extension LLMProvider {
     }
   }
 
+  /// Whether the provider requires an API key to function (regardless of whether one has already been provided).
   var needsAPIKey: Bool {
-    switch self {
-    case .claudeCode:
-      false
-    default:
-      true
+    externalAgent == nil
+  }
+
+  func isConnected(_ settings: LLMProviderSettings?) -> Bool {
+    if externalAgent != nil {
+      settings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    } else {
+      settings?.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
   }
-
-  var isLocal: Bool {
-    switch self {
-    case .claudeCode:
-      true
-    default:
-      false
-    }
-  }
-
-  var defaultExecutable: String? {
-    switch self {
-    case .claudeCode:
-      "claude"
-    default:
-      nil
-    }
-  }
-}
-
-// MARK: - ProviderSettings Extensions
-
-extension LLMProviderSettings {
-
-  var hasValidAPIKey: Bool {
-    !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-  }
-
-  var hasValidExecutable: Bool {
-    executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-  }
-}
-
-@MainActor @Observable
-private final class ExecutableFinder {
-  init(defaultExecutable: String?) {
-    self.defaultExecutable = defaultExecutable
-    if let defaultExecutable {
-      Task {
-        let executablePath = try await shellService.run("which \(defaultExecutable)", useInteractiveShell: true)
-        Task { @MainActor [weak self] in
-          self?.executablePath = executablePath.stdout?.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-      }
-    }
-  }
-
-  private(set) var executablePath: String?
-
-  private let defaultExecutable: String?
-  @ObservationIgnored
-  @Dependency(\.shellService) private var shellService
 }

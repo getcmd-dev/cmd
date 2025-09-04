@@ -26,7 +26,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     description: String? = nil,
     contextSize: Int,
     maxOutputTokens: Int,
-    defaultPricing: ModelPricing,
+    defaultPricing: ModelPricing?,
     documentationURL: URL? = nil,
     reasoning: LLMReasoning? = nil)
   {
@@ -70,9 +70,8 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: "claude_code_default",
     contextSize: 200_000,
     maxOutputTokens: 128_000,
-    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
-    reasoning: LLMReasoning())
+    defaultPricing: nil,
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
 
   /// OpenAI
   public static let gpt = LLMModel(
@@ -191,7 +190,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let description: String?
   public let contextSize: Int
   public let maxOutputTokens: Int
-  public let defaultPricing: ModelPricing
+  public let defaultPricing: ModelPricing?
   public let documentationURL: URL?
   public let reasoning: LLMReasoning?
 

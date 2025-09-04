@@ -20,7 +20,5 @@ extension LLMProvider {
       default: throw AppError(message: "Model \(model) is not supported by Claude Code provider.")
       }
     },
-    priceForModel: { model in
-      model.defaultPricing
-    })
+    priceForModel: { _ in nil })
 }

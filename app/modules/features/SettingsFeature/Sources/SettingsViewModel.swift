@@ -99,6 +99,13 @@ public final class SettingsViewModel {
   var showOnboardingScreenAgain: Bool {
     didSet {
       userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
+      if showOnboardingScreenAgain {
+        LLMProvider.allCases
+          .compactMap(\.externalAgent)
+          .forEach {
+            $0.unmarkHasBeenEnabledOnce()
+          }
+      }
     }
   }
 
