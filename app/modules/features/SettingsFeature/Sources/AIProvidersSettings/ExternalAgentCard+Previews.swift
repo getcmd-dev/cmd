@@ -8,13 +8,13 @@ import ShellServiceInterface
 import SwiftUI
 
 #if DEBUG
-@MainActor let executable1 = ObservableValue("/usr/local/bin/claude")
-@MainActor let executable2 = ObservableValue("")
-@MainActor let executable3 = ObservableValue("")
+@MainActor let enabledExecutable = ObservableValue("/usr/local/bin/claude")
+@MainActor let disabledExecutable = ObservableValue("")
+@MainActor let executableWithCustomPath = ObservableValue("")
 
 func createShellService(installedExecutablePath: String?) -> ShellService {
-  let mockShellService1 = MockShellService()
-  mockShellService1.onRun = { _, _, _, _ in
+  let mockShellService = MockShellService()
+  mockShellService.onRun = { _, _, _, _ in
     if let installedExecutablePath {
       return CommandExecutionResult(
         exitCode: 0,
@@ -24,13 +24,13 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
       exitCode: 1,
       stderr: "not found")
   }
-  return mockShellService1
+  return mockShellService
 }
 
 #Preview("Agent enabled") {
   ExternalAgentCard(
     externalAgent: LLMProvider.claudeCode.externalAgent!,
-    executable: executable1.binding)
+    executable: enabledExecutable.binding)
     .frame(minHeight: 300)
 }
 
@@ -41,7 +41,7 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
   operation: {
     ExternalAgentCard(
       externalAgent: LLMProvider.claudeCode.externalAgent!,
-      executable: executable2.binding)
+      executable: disabledExecutable.binding)
       .frame(minHeight: 300)
   }
 }
@@ -53,7 +53,7 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
   operation: {
     ExternalAgentCard(
       externalAgent: LLMProvider.claudeCode.externalAgent!,
-      executable: executable3.binding)
+      executable: executableWithCustomPath.binding)
       .frame(minHeight: 300)
   }
 }

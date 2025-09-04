@@ -28,7 +28,7 @@ extension LLMProvider {
       .init(
         name: "Claude Code",
         defaultExecutableName: "claude",
-        installationInstructions: "https://docs.anthropic.com/en/docs/claude-code/setup#standard-installation",
+        installationInstructions: URL(string: "https://docs.anthropic.com/en/docs/claude-code/setup#standard-installation")!,
         llmProvider: self)
 
     default:

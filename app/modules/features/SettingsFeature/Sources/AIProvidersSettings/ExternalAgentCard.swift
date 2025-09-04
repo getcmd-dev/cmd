@@ -119,11 +119,15 @@ private final class ExecutableFinder {
   init(defaultExecutable: String) {
     @Dependency(\.shellService) var shellService
 
-    Task {
-      let executablePath = try await shellService.run("which \(defaultExecutable)", useInteractiveShell: true)
-      Task { @MainActor [weak self] in
-        guard let self else { return }
-        self.executablePath = executablePath.stdout?.trimmingCharacters(in: .whitespacesAndNewlines)
+    Task { [weak self] in
+      do {
+        let executablePath = try await shellService.run("which \(defaultExecutable)", useInteractiveShell: true)
+        await MainActor.run { [weak self] in
+          guard let self else { return }
+          self.executablePath = executablePath.stdout?.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+      } catch {
+        // Silently ignore errors - executable not found is expected
       }
     }
   }

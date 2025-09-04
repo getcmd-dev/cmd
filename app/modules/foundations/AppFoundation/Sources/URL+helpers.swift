@@ -52,12 +52,3 @@ extension String {
   }
 
 }
-
-extension URL: @retroactive ExpressibleByStringLiteral {
-  public init(stringLiteral value: StaticString) {
-    guard let url = URL(string: "\(value)") else {
-      fatalError("Invalid URL string literal: \(value)")
-    }
-    self = url
-  }
-}
