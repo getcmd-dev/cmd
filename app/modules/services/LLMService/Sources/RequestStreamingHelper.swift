@@ -264,9 +264,6 @@ actor RequestStreamingHelper: Sendable {
           isInputComplete: false,
           context: context.toolExecutionContext)
 
-        if !toolUse.isReadonly {
-          await context.prepareForWriteToolUse()
-        }
         streamingToolUse = toolUse
         content.append(toolUse: toolUse)
         result.update(with: AssistantMessage(content: content))
@@ -292,6 +289,9 @@ actor RequestStreamingHelper: Sendable {
           toolUse.waitForApproval()
           try await context.requestApproval(for: toolUse)
         }
+      }
+      if !toolUse.isReadonly {
+        await context.prepareForWriteToolUse()
       }
       toolUse.startExecuting()
     } catch is CancellationError {
@@ -387,7 +387,9 @@ actor RequestStreamingHelper: Sendable {
           isInputComplete: true,
           context: context.toolExecutionContext)
 
-        if !toolUse.isReadonly {
+        if !toolUse.isReadonly, tool.isExternalTool {
+          // We create a checkpoint now for external tools, as we do not control when the execution starts.
+          // For internal tool, this will be done in `startExecution` after validating permissions.
           await context.prepareForWriteToolUse()
         }
         content.append(toolUse: toolUse)
