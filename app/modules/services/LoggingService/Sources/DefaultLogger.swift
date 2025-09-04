@@ -7,6 +7,7 @@ import FoundationInterfaces
 import LoggingServiceInterface
 import OSLog
 import Sentry
+import SettingsServiceInterface
 import Statsig
 import ThreadSafe
 
@@ -67,6 +68,10 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   /// Enables external logging services (Sentry and Statsig).
   /// This method is idempotent - calling it multiple times has no additional effect.
   public func startExternalLogging() {
+    #if DEBUG
+    guard userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting) else { return }
+    #endif
+
     let wasEnable = _internalState.set(\.is3rdPartyLoggingEnabled, to: true)
     guard !wasEnable else { return }
     startSentry()

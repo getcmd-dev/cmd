@@ -16,6 +16,7 @@ struct InternalSettingsView: View {
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
   @Binding var showInternalSettingsInRelease: Bool
   @Binding var defaultChatPositionIsInverted: Bool
+  @Binding var enableAnalyticsAndCrashReporting: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -37,6 +38,12 @@ struct InternalSettingsView: View {
           "Invert the default chat position",
           caption: "Useful when using both the Debug and Release apps to avoid overlaps",
           value: $defaultChatPositionIsInverted)
+        #if DEBUG
+        InternalSettingsRow(
+          "Enable analytics and crash reporting",
+          caption: "Send usage data and crash reports for debugging",
+          value: $enableAnalyticsAndCrashReporting)
+        #endif
         HoveredButton(
           action: {
             Task {

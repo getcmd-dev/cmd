@@ -286,8 +286,6 @@ final class EditFilesToolUseViewModel {
         selectedChange: fileDiff.diff))
       filesEdit[file] = .applied
 
-      let oldLineCount = baseLineContent.components(separatedBy: .newlines).count
-      let newLineCount = targetContent.components(separatedBy: .newlines).count
       let linesAdded = fileDiff.diff.filter { $0.type == .added }.count
       let linesRemoved = fileDiff.diff.filter { $0.type == .removed }.count
 

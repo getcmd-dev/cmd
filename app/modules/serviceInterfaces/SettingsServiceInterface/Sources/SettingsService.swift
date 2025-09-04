@@ -235,6 +235,7 @@ extension UserDefaultsKey {
   public static let showInternalSettingsInRelease = "showInternalSettingsInRelease"
   public static let defaultChatPositionIsInverted = "defaultChatPositionIsInverted"
   public static let repeatLastLLMInteraction = "llmService.isRepeating"
+  public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
 }
 
 extension KeyEquivalent: Codable {
