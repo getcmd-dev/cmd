@@ -238,7 +238,9 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
       let timestamp = dateFormatter.string(from: Date())
 
-      let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        return
+      }
       let logDir = applicationSupport.appendingPathComponent("command").appendingPathComponent("logs")
       try? fileManager.createDirectory(at: logDir, withIntermediateDirectories: true)
 
