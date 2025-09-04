@@ -72,7 +72,6 @@ struct ExternalAgentCard: View {
               Text("Enable")
             })
         }
-
       } else {
         Text("\(provider.name)'s executable could not be found. Either:")
           .font(.subheadline)
@@ -80,7 +79,7 @@ struct ExternalAgentCard: View {
         PlainLink("install it first", destination: externalAgent.installationInstructions)
           .font(.subheadline)
           .fontWeight(.medium)
-        Text("or if it installed already describe how to launch it below:")
+        Text("or if it's already installed describe how to launch it below:")
           .font(.subheadline)
           .fontWeight(.medium)
 
@@ -122,7 +121,7 @@ private final class ExecutableFinder {
     Task { [weak self] in
       do {
         let executablePath = try await shellService.run("which \(defaultExecutable)", useInteractiveShell: true)
-        await MainActor.run { [weak self] in
+        await MainActor.run {
           guard let self else { return }
           self.executablePath = executablePath.stdout?.trimmingCharacters(in: .whitespacesAndNewlines)
         }
