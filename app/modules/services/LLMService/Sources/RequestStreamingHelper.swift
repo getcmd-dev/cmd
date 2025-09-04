@@ -322,24 +322,46 @@ actor RequestStreamingHelper: Sendable {
         assertionFailure("Received a tool use request for a different tool use ID while already streaming a tool use.")
       }
       do {
-        try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
+        // Complete the tool use input with the final data received from the server.
+        // This marks the end of streaming input for this tool use.
+        if toolUse.toolName == "edit_or_create_files" {
+          let mock = """
+            {"files":[{"changes":{"searchh":"        // here?","replace":"        // Update the existing streaming tool use with newly received input data.\n        // This continues the streaming process for a tool that's already been initialized."},"path":"./modules/services/LLMService/Sources/RequestStreamingHelper.swift"}]}
+            """
+          try toolUse.receive(inputUpdate: mock.utf8Data, isLast: true)
+        } else {
+          try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
+        }
+        endStreamedToolUse()
+        await startExecution(of: toolUse, context: context)
       } catch {
-        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId): \(error)")
-        // If the above fails, this is because the input could not be parsed by the tool.
-        var content = result.content
-        assert(
-          content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
-          "The last content should be the tool use request we are ending.")
-        content.removeLast()
-        content.append(toolUse: FailedToolUse(
-          toolUseId: toolUse.toolUseId,
-          toolName: toolUse.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
-          context: context.toolExecutionContext))
-        result.update(with: AssistantMessage(content: content))
+        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId)", error)
+        if let updatableToolUse = toolUse as? (any UpdatableToolUse) {
+          print(type(of: error))
+          if let decodingError = error as? DecodingError {
+            updatableToolUse.complete(with: AppError(message: decodingError.llmErrorDescription))
+          } else {
+            updatableToolUse.complete(with: error)
+          }
+        } else {
+          // We are not able to update the tool use with the failure. So we cancel it and create a new tool use to represent the error.
+          toolUse.cancel()
+
+          // If the above fails, this is because the input could not be parsed by the tool.
+          var content = result.content
+          assert(
+            content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
+            "The last content should be the tool use request we are ending.")
+          content.removeLast()
+          content.append(toolUse: FailedToolUse(
+            toolUseId: toolUse.toolUseId,
+            toolName: toolUse.toolName,
+            errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
+            context: context.toolExecutionContext))
+          result.update(with: AssistantMessage(content: content))
+        }
+        endStreamedToolUse()
       }
-      endStreamedToolUse()
-      await startExecution(of: toolUse, context: context)
       return
     }
 

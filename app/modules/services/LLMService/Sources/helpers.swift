@@ -83,3 +83,45 @@ extension Schema.ToolResultMessage.Result {
     .failure(["error": .string(errorDescription)])
   }
 }
+
+extension DecodingError {
+  /// A detailed description that is meant to send enough debugging information back to the LLM
+  var llmErrorDescription: String {
+    switch self {
+    case .valueNotFound(let type, let context):
+      return context.llmErrorDescription
+    case .dataCorrupted(let context):
+      return context.llmErrorDescription
+    case .typeMismatch(let type, let context):
+      return context.llmErrorDescription
+    case .keyNotFound(let key, let context):
+      return context.llmErrorDescription
+    @unknown default:
+      return localizedDescription
+    }
+  }
+}
+
+extension DecodingError.Context {
+  fileprivate var llmErrorDescription: String {
+    var description = "Error at coding path: \(codingPath.description): " + debugDescription
+    if let underlyingError, let debugDescription = (underlyingError as NSError).userInfo[NSDebugDescriptionErrorKey] as? String {
+      description += " Underlying error: \(debugDescription)"
+    }
+    return description
+  }
+}
+
+extension [any CodingKey] {
+  fileprivate var description: String {
+    var description = ""
+    for key in self {
+      if let i = key.intValue {
+        description += "[\(i)]"
+      } else {
+        description += "\(description.isEmpty ? "" : ".")\(key.stringValue)"
+      }
+    }
+    return description
+  }
+}
