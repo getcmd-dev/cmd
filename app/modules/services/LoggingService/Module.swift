@@ -8,4 +8,6 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "FoundationInterfaces",
+  ])

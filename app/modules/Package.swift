@@ -487,7 +487,6 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "AppExtension",
   dependencies: [
-    "AccessibilityFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LoggingService",
@@ -918,7 +917,9 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "FoundationInterfaces",
+  ],
   path: "./services/LoggingService"))
 
 targets.append(contentsOf: Target.module(
