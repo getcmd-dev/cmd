@@ -25,6 +25,7 @@ const buildOptions = {
 
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
+
 	if (process.env.SENTRY_AUTH_TOKEN === undefined) {
 		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
 	}
@@ -32,6 +33,8 @@ if (process.env.NODE_ENV === "production") {
 		authToken: process.env.SENTRY_AUTH_TOKEN,
 		org: "getcmd",
 		project: "cmd-node-server",
+		telemetry: false,
+		debug: true,
 	}))
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
@@ -102,12 +105,17 @@ const plugins = [
 					if (count++ === 0) console.log(`build completed in ${Date.now() - t0}ms (${newHash})`)
 					else console.log(`re-build completed in ${Date.now() - t0}ms (${newHash})`)
 				}
+
+				if (process.env.NODE_ENV === "production") {
+					// Remove the sourcemap, as it has been uploaded to Sentry.
+					// await fs.unlink("./dist/main.bundle.cjs.map")
+				}
 			})
 		},
 	},
 ]
 
-export const ctx = await esbuild.context({ ...buildOptions, plugins })
+export const ctx = await esbuild.context({ ...buildOptions, plugins: [...buildOptions.plugins, ...plugins] })
 
 // Check if --watch flag is present in process arguments
 if (process.argv.includes("--watch")) {
@@ -116,9 +124,4 @@ if (process.argv.includes("--watch")) {
 } else {
 	ctx.rebuild()
 	ctx.dispose()
-
-	if (process.env.NODE_ENV === "production") {
-		// Remove the sourcemap, as it has been uploaded to Sentry.
-		fs.unlinkSync("./dist/main.bundle.cjs.map")
-	}
 }

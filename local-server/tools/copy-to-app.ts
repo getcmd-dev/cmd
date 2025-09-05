@@ -24,7 +24,11 @@ for (const source of sources) {
 		if (fs.existsSync(source)) {
 			await fs.copy(source, destination)
 		} else {
-			await fs.unlink(destination)
+			try {
+				await fs.unlink(destination)
+			} catch {
+				// Ignore errors if the file doesn't exist
+			}
 		}
 	}
 }

@@ -11,7 +11,7 @@ import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/get
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
-import Sentry from "@sentry/node"
+import { setupExpressErrorHandler } from "@sentry/node"
 import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
@@ -33,6 +33,7 @@ app.get("/", (_, res) => {
 	res.send("Hello World!")
 })
 app.get("/launch", (_, res) => {
+	throw new Error(`Not implemented :( ${process.env.NODE_ENV}`)
 	res.json({ ok: true })
 })
 
@@ -56,7 +57,7 @@ registerCheckpointEndpoints(router)
 registerGetFileIconEndpoint(router)
 
 if (process.env.NODE_ENV === "production") {
-	Sentry.setupExpressErrorHandler(app)
+	setupExpressErrorHandler(app)
 }
 
 // Add middleware to handle 404 errors (no route matched)
