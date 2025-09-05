@@ -45,26 +45,26 @@ if (process.env.NODE_ENV === "production") {
 		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
 	}
 
-	buildOptions.plugins.push(sentryEsbuildPlugin({
-		authToken: process.env.SENTRY_AUTH_TOKEN,
-		org: "getcmd",
-		project: "cmd-node-server",
-		telemetry: false,
-		debug: true,
-		release: {
-			inject: false,
-		},
-	}))
+	buildOptions.plugins.push(
+		sentryEsbuildPlugin({
+			authToken: process.env.SENTRY_AUTH_TOKEN,
+			org: "getcmd",
+			project: "cmd-node-server",
+			telemetry: false,
+			debug: true,
+			release: {
+				inject: false,
+			},
+		}),
+	)
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
-
-// Function to compute and save SHA256 hash
 export async function computeAndSaveHash() {
 	let fileBuffer = ""
 	try {
 		fileBuffer = await fs.readFile("./dist/main.bundle.cjs")
-	} catch (error) {
+	} catch {
 		// the bundle file doesn't exist yet. This is ok.
 	}
 	const hashSum = crypto.createHash("sha256")
@@ -77,15 +77,11 @@ export async function computeAndSaveHash() {
 
 // Function to compute and save build file size.
 export async function computeAndSaveBuildFileSize() {
-	let fileBuffer = ""
-	try {
-		fileBuffer = await fs.readFile("./dist/main.bundle.cjs")
-	} catch (error) {
-		// the bundle file doesn't exist yet. This is ok.
+	if (!fs.existsSync("./dist/main.bundle.cjs")) {
 		return
 	}
 
-	// buid file size in MB
+	// build file size in MB
 	const stats = await fs.stat("./dist/main.bundle.cjs").catch(() => ({ size: 0 }))
 	const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2)
 

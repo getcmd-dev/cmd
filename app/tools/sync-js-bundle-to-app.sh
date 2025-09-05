@@ -45,13 +45,13 @@ build_and_copy() {
 	fi
 
 	(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
-	# if [ "${CONFIGURATION}" = "Debug" ]; then
-	# 	echo "Building in Debug mode"
-	# 	(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
-	# else
-	# 	echo "Building in Release mode"
-	# 	(cd "$repo_root/local-server" && yarn build:prod && yarn copy-to-app) || exit 1
-	# fi
+	if [ "${CONFIGURATION}" = "Release" ]; then
+		echo "Building in Release mode"
+		(cd "$repo_root/local-server" && yarn build:prod && yarn copy-to-app) || exit 1
+	else
+		echo "Building in Debug mode"
+		(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
+	fi
 
 	if [ "$PRE_BUILD_SCRIPT" = true ]; then
 		echo "The local server has been updated."
