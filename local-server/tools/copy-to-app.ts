@@ -21,7 +21,11 @@ for (const source of sources) {
 	const filename = path.basename(source)
 	for (const dest of destinations) {
 		const destination = path.join(dest, filename)
-		await fs.copy(source, destination)
+		if (fs.existsSync(source)) {
+			await fs.copy(source, destination)
+		} else {
+			await fs.unlink(destination)
+		}
 	}
 }
 

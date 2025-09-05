@@ -3,6 +3,7 @@ import esbuildPluginTsc from "esbuild-plugin-tsc"
 import crypto from "crypto"
 import fs from "fs/promises"
 import { execSync } from "child_process"
+import { sentryEsbuildPlugin } from "@sentry/esbuild-plugin"
 
 const buildOptions = {
 	entryPoints: ["src/main.ts"],
@@ -24,6 +25,14 @@ const buildOptions = {
 
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
+	if (process.env.SENTRY_AUTH_TOKEN === undefined) {
+		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
+	}
+	buildOptions.plugins.push(sentryEsbuildPlugin({
+		authToken: process.env.SENTRY_AUTH_TOKEN,
+		org: "getcmd",
+		project: "cmd-node-server",
+	}))
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
@@ -107,4 +116,9 @@ if (process.argv.includes("--watch")) {
 } else {
 	ctx.rebuild()
 	ctx.dispose()
+
+	if (process.env.NODE_ENV === "production") {
+		// Remove the sourcemap, as it has been uploaded to Sentry.
+		fs.unlinkSync("./dist/main.bundle.cjs.map")
+	}
 }

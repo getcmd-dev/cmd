@@ -10,3 +10,5 @@
 coverage
 *.log
 persist/*.json
+# Sentry Config File
+.env.sentry-build-plugin
