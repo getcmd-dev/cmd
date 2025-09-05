@@ -14,7 +14,8 @@ const buildOptions = {
 			tsconfigPath: "./tsconfig.json",
 			force: true,
 		}),
-		// Plugin to exclude external source maps
+		// Plugin to exclude external source maps.
+		// This will prevent tracing through node_modules, but seems required to have a valid sourcemap for Sentry (node was fine without doing it).
 		{
 			name: "excludeVendorFromSourceMap",
 			setup(build) {
@@ -54,6 +55,7 @@ if (process.env.NODE_ENV === "production") {
 				telemetry: false,
 				debug: true,
 				release: {
+					// This seems necessary for the sourcemap to work: https://github.com/getsentry/sentry-javascript-bundler-plugins/issues/803#issuecomment-3259417064
 					inject: false,
 				},
 			}),

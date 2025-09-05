@@ -41,7 +41,7 @@ const srcIconsDir = path.join(__dirname, "../node_modules/vscode-material-icons/
 
 // Compress the icons directory using tar via spawn
 await new Promise<void>((resolve, reject) => {
-	const tarProcess = spawn("tar", ["-czf", path.join(iconsDir, "icons.tar.gz"), "-C", srcIconsDir, "."])
+	const tarProcess = spawn("sh", ["-c", `tar cf - ${srcIconsDir} | gzip -n > ${path.join(iconsDir, "icons.tar.gz")}`])
 	tarProcess.on("error", reject)
 	tarProcess.on("close", (code) => {
 		if (code === 0) resolve()
