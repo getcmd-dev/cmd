@@ -14,6 +14,33 @@ const buildOptions = {
 			tsconfigPath: "./tsconfig.json",
 			force: true,
 		}),
+		// Plugin to exclude external source maps
+		// {
+		// 	name: 'exclude-external-sourcemaps',
+		// 	setup(build) {
+		// 		build.onLoad({ filter: /node_modules.*\.js$/ }, async (args) => {
+		// 			let contents = await fs.readFile(args.path, 'utf8')
+		// 			// Remove sourcemap reference comments
+		// 			contents = contents.replace(/\/\/# sourceMappingURL=.*$/gm, '')
+		// 			return {
+		// 				contents,
+		// 				loader: 'js'
+		// 			}
+		// 		})
+		// 	}
+		// }
+		{
+  name: 'excludeVendorFromSourceMap',
+  setup(build) {
+    build.onLoad({ filter: /node_modules.*\.js$/ }, async (args) => {
+      return {
+        contents: await fs.readFile(args.path, 'utf8')
+          + '\n//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIiJdLCJtYXBwaW5ncyI6IkEifQ==',
+        loader: 'default',
+      }
+    })
+  },
+}
 	],
 	sourcemap: true,
 	platform: "node",
@@ -55,8 +82,6 @@ export async function computeAndSaveHash() {
 	await fs.writeFile("./build.sha256", hex)
 	return hex
 }
-
-
 
 // Function to compute and save build file size.
 export async function computeAndSaveBuildFileSize() {
