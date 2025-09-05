@@ -31,10 +31,8 @@ final class DefaultLocalServer: LocalServer {
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.fileManager = fileManager
     hasCopiedFiles = false
-    applicationSupportPath = {
-      let paths = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-      return paths[0].appendingPathComponent("command").path
-    }()
+    applicationSupportPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("command").path
 
     let delegate = LocalServerDelegate()
     let configuration = URLSessionConfiguration.default
@@ -257,14 +255,11 @@ final class DefaultLocalServer: LocalServer {
       return
     }
     hasCopiedFiles = true
-    #if DEBUG
     let files = ["main.bundle.cjs.gz", "main.bundle.cjs.map", "launch-server.sh"]
-    #else
-    let files = ["main.bundle.cjs.gz", "launch-server.sh"]
-    #endif
     let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
 
     guard filePaths.count == files.count else {
+      assertionFailure("Application is missing required files")
       throw AppError(
         message: "Application is missing required files",
         debugDescription: "Failed to locate all files to copy. Could not start the local server.\nYou likely need to do File>Packages>Reset Package Cache and rebuild to resolve the issue.")

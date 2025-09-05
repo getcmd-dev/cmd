@@ -3,8 +3,10 @@ Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "ShellServiceInterface",
   ],
   resources: [
     .process("Resources/fileIcons"),
