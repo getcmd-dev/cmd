@@ -15,20 +15,6 @@ const buildOptions = {
 			force: true,
 		}),
 		// Plugin to exclude external source maps
-		// {
-		// 	name: 'exclude-external-sourcemaps',
-		// 	setup(build) {
-		// 		build.onLoad({ filter: /node_modules.*\.js$/ }, async (args) => {
-		// 			let contents = await fs.readFile(args.path, 'utf8')
-		// 			// Remove sourcemap reference comments
-		// 			contents = contents.replace(/\/\/# sourceMappingURL=.*$/gm, '')
-		// 			return {
-		// 				contents,
-		// 				loader: 'js'
-		// 			}
-		// 		})
-		// 	}
-		// }
 		{
 			name: "excludeVendorFromSourceMap",
 			setup(build) {
@@ -51,8 +37,6 @@ const buildOptions = {
 	minify: true,
 }
 
-const useSentryPlugin = false;
-
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
 
@@ -60,15 +44,16 @@ if (process.env.NODE_ENV === "production") {
 		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
 	}
 
-	if (useSentryPlugin) {
-		buildOptions.plugins.push(sentryEsbuildPlugin({
-			authToken: process.env.SENTRY_AUTH_TOKEN,
-			org: "getcmd",
-			project: "cmd-node-server",
-			telemetry: false,
-			debug: true,
-		}))
-	}
+	buildOptions.plugins.push(sentryEsbuildPlugin({
+		authToken: process.env.SENTRY_AUTH_TOKEN,
+		org: "getcmd",
+		project: "cmd-node-server",
+		telemetry: false,
+		debug: true,
+		release: {
+			inject: false,
+		},
+	}))
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
@@ -144,17 +129,9 @@ const plugins = [
 					else console.log(`re-build completed in ${Date.now() - t0}ms (${newHash})`)
 				}
 
-				if (useSentryPlugin) {
-					await fs.copyFile("./dist/main.bundle.cjs", "./dist/main.bundle.with-sentry-plugin.cjs")
-					await fs.copyFile("./dist/main.bundle.cjs.map", "./dist/main.bundle.with-sentry-plugin.cjs.map")
-				} else {
-					await fs.copyFile("./dist/main.bundle.cjs", "./dist/main.bundle.without-sentry-plugin.cjs")
-					await fs.copyFile("./dist/main.bundle.cjs.map", "./dist/main.bundle.without-sentry-plugin.cjs.map")
-				}
-
 				if (process.env.NODE_ENV === "production") {
 					// Remove the sourcemap, as it has been uploaded to Sentry.
-					// await fs.unlink("./dist/main.bundle.cjs.map")
+					await fs.unlink("./dist/main.bundle.cjs.map")
 				}
 			})
 		},
