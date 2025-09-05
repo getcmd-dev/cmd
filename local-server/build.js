@@ -30,17 +30,18 @@ const buildOptions = {
 		// 	}
 		// }
 		{
-  name: 'excludeVendorFromSourceMap',
-  setup(build) {
-    build.onLoad({ filter: /node_modules.*\.js$/ }, async (args) => {
-      return {
-        contents: await fs.readFile(args.path, 'utf8')
-          + '\n//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIiJdLCJtYXBwaW5ncyI6IkEifQ==',
-        loader: 'default',
-      }
-    })
-  },
-}
+			name: "excludeVendorFromSourceMap",
+			setup(build) {
+				build.onLoad({ filter: /node_modules.*\.js$/ }, async (args) => {
+					return {
+						contents:
+							(await fs.readFile(args.path, "utf8")) +
+							"\n//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIiJdLCJtYXBwaW5ncyI6IkEifQ==",
+						loader: "default",
+					}
+				})
+			},
+		},
 	],
 	sourcemap: true,
 	platform: "node",
@@ -53,16 +54,16 @@ const buildOptions = {
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
 
-	if (process.env.SENTRY_AUTH_TOKEN === undefined) {
-		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
-	}
-	buildOptions.plugins.push(sentryEsbuildPlugin({
-		authToken: process.env.SENTRY_AUTH_TOKEN,
-		org: "getcmd",
-		project: "cmd-node-server",
-		telemetry: false,
-		debug: true,
-	}))
+	// if (process.env.SENTRY_AUTH_TOKEN === undefined) {
+	// 	throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
+	// }
+	// buildOptions.plugins.push(sentryEsbuildPlugin({
+	// 	authToken: process.env.SENTRY_AUTH_TOKEN,
+	// 	org: "getcmd",
+	// 	project: "cmd-node-server",
+	// 	telemetry: false,
+	// 	debug: true,
+	// }))
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
@@ -90,23 +91,30 @@ export async function computeAndSaveBuildFileSize() {
 		fileBuffer = await fs.readFile("./dist/main.bundle.cjs")
 	} catch (error) {
 		// the bundle file doesn't exist yet. This is ok.
-		return;
+		return
 	}
-	
+
 	// buid file size in MB
 	const stats = await fs.stat("./dist/main.bundle.cjs").catch(() => ({ size: 0 }))
 	const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2)
 
 	// compressed  file using process
 	// Compressed file size in MB
-	execSync(`gzip -k ./dist/main.bundle.cjs -f`, { stdio: "inherit" });
+	execSync(`gzip -k ./dist/main.bundle.cjs -f`, { stdio: "inherit" })
 	const compressedStats = await fs.stat("./dist/main.bundle.cjs.gz").catch(() => ({ size: 0 }))
 	const compressedSizeInMB = (compressedStats.size / (1024 * 1024)).toFixed(2)
 
-	await fs.writeFile("./build.size", JSON.stringify({
-		size: `${sizeInMB}MB`,
-		compressedSize: `${compressedSizeInMB}MB`,
-	}, null, 2));
+	await fs.writeFile(
+		"./build.size",
+		JSON.stringify(
+			{
+				size: `${sizeInMB}MB`,
+				compressedSize: `${compressedSizeInMB}MB`,
+			},
+			null,
+			2,
+		),
+	)
 }
 
 await computeAndSaveHash()
