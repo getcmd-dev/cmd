@@ -33,9 +33,6 @@ app.get("/", (_, res) => {
 	res.send("Hello World!")
 })
 app.get("/launch", (_, res) => {
-	const error = new Error(`Not implemented :(:(:( ${process.env.NODE_ENV}`)
-	console.log(error.stack)
-	throw error
 	res.json({ ok: true })
 })
 

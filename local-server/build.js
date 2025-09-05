@@ -30,6 +30,7 @@ const buildOptions = {
 		},
 	],
 	sourcemap: true,
+	sourceRoot: "../",
 	platform: "node",
 	// While this seems to be the desired setting, this doesn't work.
 	// See https://github.com/evanw/esbuild/issues/1921 and https://github.com/evanw/esbuild/issues/3324#issuecomment-2215644754
