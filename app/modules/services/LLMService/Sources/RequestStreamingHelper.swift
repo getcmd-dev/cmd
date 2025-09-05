@@ -324,14 +324,7 @@ actor RequestStreamingHelper: Sendable {
       do {
         // Complete the tool use input with the final data received from the server.
         // This marks the end of streaming input for this tool use.
-        if toolUse.toolName == "edit_or_create_files" {
-          let mock = """
-            {"files":[{"changes":{"searchh":"        // here?","replace":"        // Update the existing streaming tool use with newly received input data.\n        // This continues the streaming process for a tool that's already been initialized."},"path":"./modules/services/LLMService/Sources/RequestStreamingHelper.swift"}]}
-            """
-          try toolUse.receive(inputUpdate: mock.utf8Data, isLast: true)
-        } else {
-          try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
-        }
+        try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
         endStreamedToolUse()
         await startExecution(of: toolUse, context: context)
       } catch {
@@ -399,7 +392,7 @@ actor RequestStreamingHelper: Sendable {
       } catch {
         defaultLogger
           .error(
-            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\(String(data: (try! JSONEncoder().encode(request.input)), encoding: .utf8) ?? "unreadable")")
+            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\((try? JSONEncoder().encode(request.input)).map { String(data: $0, encoding: .utf8) } ??? "unreadable")")
         var err = error
         if let decodingError = error as? DecodingError {
           err = AppError(message: decodingError.llmErrorDescription)
