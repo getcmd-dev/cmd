@@ -41,22 +41,24 @@ const buildOptions = {
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
 
-	if (process.env.SENTRY_AUTH_TOKEN === undefined) {
-		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
-	}
+	if (process.env.UPLOAD_SOURCEMAP_TO_SENTRY) {
+		if (process.env.SENTRY_AUTH_TOKEN === undefined) {
+			throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
+		}
 
-	buildOptions.plugins.push(
-		sentryEsbuildPlugin({
-			authToken: process.env.SENTRY_AUTH_TOKEN,
-			org: "getcmd",
-			project: "cmd-node-server",
-			telemetry: false,
-			debug: true,
-			release: {
-				inject: false,
-			},
-		}),
-	)
+		buildOptions.plugins.push(
+			sentryEsbuildPlugin({
+				authToken: process.env.SENTRY_AUTH_TOKEN,
+				org: "getcmd",
+				project: "cmd-node-server",
+				telemetry: false,
+				debug: true,
+				release: {
+					inject: false,
+				},
+			}),
+		)
+	}
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
@@ -129,8 +131,8 @@ const plugins = [
 				}
 
 				if (process.env.NODE_ENV === "production") {
-					// Remove the sourcemap, as it has been uploaded to Sentry.
-					await fs.unlink("./dist/main.bundle.cjs.map")
+					// Remove the sourcemap for production.
+					await fs.writeFile("./dist/main.bundle.cjs.map", "")
 				}
 			})
 		},

@@ -66,7 +66,6 @@ platform :mac do
       git_url: git_url
     )
 
-    ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
       destination: "platform=macOS,arch=arm64",
@@ -124,7 +123,6 @@ platform :mac do
     sh("rm -rf #{build_path}")
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
-    ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     app_name = "cmd"
     app_path = "#{build_path}/release/#{app_name}.app"
@@ -226,6 +224,9 @@ platform :mac do
       version = new_version
     end
 
+    ENV['UPLOAD_SOURCEMAP_TO_SENTRY'] = "true"
+    ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
+    
     result = create_and_sign_release(version: version)
     version = result[:version]
     app_zip_path = result[:app_zip_path]
