@@ -9,7 +9,7 @@ const destinations = [
 	path.join(os.homedir(), "Library/Application Support/command"),
 	path.join(__dirname, "../../app/modules/services/LocalServerService/Sources/Resources"),
 ]
-const sources = ["./dist/main.bundle.cjs", "./dist/main.bundle.cjs.map", "./build.sha256"]
+const sources = ["./dist/main.bundle.cjs.gz", "./dist/main.bundle.cjs.map", "./build.sha256"]
 
 // Ensure all destination directories exist
 for (const dest of destinations) {

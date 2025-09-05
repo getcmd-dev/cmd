@@ -257,7 +257,11 @@ final class DefaultLocalServer: LocalServer {
       return
     }
     hasCopiedFiles = true
-    let files = ["main.bundle.cjs", "main.bundle.cjs.map", "launch-server.sh"]
+    #if DEBUG
+    let files = ["main.bundle.cjs.gz", "main.bundle.cjs.map", "launch-server.sh"]
+    #else
+    let files = ["main.bundle.cjs.gz", "launch-server.sh"]
+    #endif
     let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
 
     guard filePaths.count == files.count else {

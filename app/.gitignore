@@ -65,6 +65,7 @@ fastlane/test_output
 **/Sources/Resources/main.bundle.js
 **/Sources/Resources/main.bundle.js.map
 **/Sources/Resources/main.bundle.cjs
+**/Sources/Resources/main.bundle.cjs.gz
 **/Sources/Resources/main.bundle.cjs.map
 **/Sources/Resources/build.sha256
 

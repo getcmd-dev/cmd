@@ -950,10 +950,11 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
   ],
   resources: [
-    .process("Resources/build.sha256"),
-    .process("Resources/launch-server.sh"),
-    .process("Resources/main.bundle.cjs"),
-    .process("Resources/main.bundle.cjs.map"),
+    .copy("Resources"),
+    // .process("Resources/build.sha256"),
+    // .process("Resources/launch-server.sh"),
+    // .process("Resources/main.bundle.cjs.gz"),
+    // .process("Resources/main.bundle.cjs.map"),
   ],
   testDependencies: [
     "AppFoundation",
