@@ -35,6 +35,9 @@ app.get("/", (_, res) => {
 app.get("/launch", (_, res) => {
 	res.json({ ok: true })
 })
+app.get("/error", () => {
+	throw new Error("test error")
+})
 
 registerSendMessageEndpoint(
 	router,
