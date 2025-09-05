@@ -51,10 +51,7 @@ const buildOptions = {
 	minify: true,
 }
 
-
-// Copy the original bundle, before sentry modifies it, to validate it against the original sourcemap
-await fs.copyFile("./dist/main.bundle.cjs", "./dist/main.bundle.backup.cjs")
-await fs.copyFile("./dist/main.bundle.cjs.map", "./dist/main.bundle.backup.cjs.map")
+const useSentryPlugin = false;
 
 if (process.env.NODE_ENV === "production") {
 	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
@@ -63,13 +60,15 @@ if (process.env.NODE_ENV === "production") {
 		throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
 	}
 
-	buildOptions.plugins.push(sentryEsbuildPlugin({
-		authToken: process.env.SENTRY_AUTH_TOKEN,
-		org: "getcmd",
-		project: "cmd-node-server",
-		telemetry: false,
-		debug: true,
-	}))
+	if (useSentryPlugin) {
+		buildOptions.plugins.push(sentryEsbuildPlugin({
+			authToken: process.env.SENTRY_AUTH_TOKEN,
+			org: "getcmd",
+			project: "cmd-node-server",
+			telemetry: false,
+			debug: true,
+		}))
+	}
 } else {
 	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
@@ -143,6 +142,14 @@ const plugins = [
 					let newHash = await computeAndSaveHash()
 					if (count++ === 0) console.log(`build completed in ${Date.now() - t0}ms (${newHash})`)
 					else console.log(`re-build completed in ${Date.now() - t0}ms (${newHash})`)
+				}
+
+				if (useSentryPlugin) {
+					await fs.copyFile("./dist/main.bundle.cjs", "./dist/main.bundle.with-sentry-plugin.cjs")
+					await fs.copyFile("./dist/main.bundle.cjs.map", "./dist/main.bundle.with-sentry-plugin.cjs.map")
+				} else {
+					await fs.copyFile("./dist/main.bundle.cjs", "./dist/main.bundle.without-sentry-plugin.cjs")
+					await fs.copyFile("./dist/main.bundle.cjs.map", "./dist/main.bundle.without-sentry-plugin.cjs.map")
 				}
 
 				if (process.env.NODE_ENV === "production") {
