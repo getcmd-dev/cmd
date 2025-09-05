@@ -280,7 +280,7 @@ final class SendOneMessageTests {
         #expect(toolCall.toolUse.toolUseId == "123")
         #expect(
           (toolCall.toolUse as? FailedToolUse)?.errorDescription ==
-            "Could not parse the input for tool read_file: The data couldn’t be read because it is missing.")
+            "Could not parse the input for tool read_file: Error at coding path: \'\': No value associated with key CodingKeys(stringValue: \"file\", intValue: nil) (\"file\").")
         toolCallReceived.fulfill()
       }
       messagesReceived.fulfill()

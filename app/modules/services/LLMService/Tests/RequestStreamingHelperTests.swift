@@ -365,6 +365,167 @@ struct RequestStreamingHelperReasoningTests {
   }
 }
 
+// MARK: - RequestStreamingHelperBadInputTests
+
+@Suite("RequestStreamingHelper Bad Input Tests")
+struct RequestStreamingHelperBadInputTests {
+
+  @Test("Handle non-streamable tool with bad input creates FailedToolUse")
+  func testBadInputCreatesFailedToolUseForNonStreamableTools() async throws {
+    let mockTool = TestTool<TestToolInput, String>(name: "test_non_streamable", output: "success")
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [mockTool],
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isTaskCancelled: { false },
+      localServer: MockLocalServer(),
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    // Create malformed JSON that will cause parsing to fail - TestToolInput expects an object with "file" and "keywords" but we send wrong format
+    let malformedInput = JSON.object(["invalid": .string("format")]) // TestToolInput expects "file" and "keywords"
+    let toolUseRequest = Schema.ToolUseRequest(
+      toolName: mockTool.name,
+      input: malformedInput,
+      toolUseId: "bad-input-tool-123",
+      idx: 0)
+
+    let chunk = Schema.StreamedResponseChunk.toolUseRequest(toolUseRequest)
+    let data = try JSONEncoder().encode(chunk)
+
+    continuation.yield(data)
+    continuation.finish()
+
+    _ = try await helper.processStream()
+
+    let finalMessage = result.value
+    #expect(finalMessage.content.count == 1)
+
+    guard case .tool(let toolMessage) = finalMessage.content.first else {
+      Issue.record("Expected tool content")
+      return
+    }
+
+    // Should be a FailedToolUse due to bad input parsing
+    guard let failedToolUse = toolMessage.toolUse as? FailedToolUse else {
+      Issue.record("Expected FailedToolUse, got \(type(of: toolMessage.toolUse))")
+      return
+    }
+
+    #expect(failedToolUse.toolUseId == "bad-input-tool-123")
+    #expect(failedToolUse.toolName == mockTool.name)
+    #expect(failedToolUse.errorDescription.contains("Could not parse"))
+  }
+
+  @Test("Handle external tool with bad input verifies error handling")
+  func testExternalToolBadInputHandling() async throws {
+    let mockTool = TestExternalTool()
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [mockTool],
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isTaskCancelled: { false },
+      localServer: MockLocalServer(),
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    // Send bad input that will fail parsing (external tools use EmptyObject)
+    let badInput = JSON.object(["unexpected_field": .string("should not be here")])
+    let badToolUseRequest = Schema.ToolUseRequest(
+      toolName: mockTool.name,
+      input: badInput,
+      toolUseId: "external-tool-123",
+      idx: 0)
+
+    let badChunk = Schema.StreamedResponseChunk.toolUseRequest(badToolUseRequest)
+    let badData = try JSONEncoder().encode(badChunk)
+    continuation.yield(badData)
+
+    continuation.finish()
+
+    _ = try await helper.processStream()
+
+    let finalMessage = result.value
+    #expect(finalMessage.content.count == 1)
+
+    guard case .tool(let toolMessage) = finalMessage.content.first else {
+      Issue.record("Expected tool content")
+      return
+    }
+
+    // External tools with bad input should either create FailedToolUse or succeed with the tool use created
+    if let failedToolUse = toolMessage.toolUse as? FailedToolUse {
+      #expect(failedToolUse.toolUseId == "external-tool-123")
+      #expect(failedToolUse.toolName == mockTool.name)
+      #expect(failedToolUse.errorDescription.contains("Could not parse"))
+    } else if let externalToolUse = toolMessage.toolUse as? TestExternalTool.Use {
+      // If external tool use is created, verify basic properties
+      #expect(externalToolUse.toolUseId == "external-tool-123")
+      // External tools may handle bad input differently than streamable tools
+    } else {
+      Issue.record("Expected FailedToolUse or TestExternalTool.Use, got \(type(of: toolMessage.toolUse))")
+    }
+  }
+
+  @Test("Handle streaming tool with bad input shows error handling")
+  func testStreamingToolBadInputHandling() async throws {
+    let mockTool = TestStreamingTool<TestToolInput, String>()
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [mockTool],
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isTaskCancelled: { false },
+      localServer: MockLocalServer(),
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    // Send bad input that will fail parsing
+    let badInput = JSON.object([
+      "file": .number(123), // Should be string, but sending number
+      "keywords": .string("should be array"),
+    ])
+    let badToolUseRequest = Schema.ToolUseRequest(
+      toolName: mockTool.name,
+      input: badInput,
+      toolUseId: "streaming-tool-123",
+      idx: 0)
+
+    let badChunk = Schema.StreamedResponseChunk.toolUseRequest(badToolUseRequest)
+    let badData = try JSONEncoder().encode(badChunk)
+    continuation.yield(badData)
+
+    continuation.finish()
+
+    _ = try await helper.processStream()
+
+    let finalMessage = result.value
+    #expect(finalMessage.content.count == 1)
+
+    guard case .tool(let toolMessage) = finalMessage.content.first else {
+      Issue.record("Expected tool content")
+      return
+    }
+
+    // For streaming tools that don't implement UpdatableToolUse, should create FailedToolUse
+    if let failedToolUse = toolMessage.toolUse as? FailedToolUse {
+      #expect(failedToolUse.toolUseId == "streaming-tool-123")
+      #expect(failedToolUse.toolName == mockTool.name)
+      #expect(failedToolUse.errorDescription.contains("Could not parse"))
+    } else {
+      Issue.record("Expected FailedToolUse, got \(type(of: toolMessage.toolUse))")
+    }
+  }
+}
+
 // MARK: - RequestStreamingHelperToolFailureTests
 
 @Suite("RequestStreamingHelper Tool Failure Tests")

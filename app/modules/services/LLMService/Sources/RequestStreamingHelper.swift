@@ -336,13 +336,13 @@ actor RequestStreamingHelper: Sendable {
         await startExecution(of: toolUse, context: context)
       } catch {
         defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId)", error)
+        var err = error
+        if let decodingError = error as? DecodingError {
+          err = AppError(message: decodingError.llmErrorDescription)
+        }
+
         if let updatableToolUse = toolUse as? (any UpdatableToolUse) {
-          print(type(of: error))
-          if let decodingError = error as? DecodingError {
-            updatableToolUse.complete(with: AppError(message: decodingError.llmErrorDescription))
-          } else {
-            updatableToolUse.complete(with: error)
-          }
+          updatableToolUse.complete(with: err)
         } else {
           // We are not able to update the tool use with the failure. So we cancel it and create a new tool use to represent the error.
           toolUse.cancel()
@@ -356,7 +356,7 @@ actor RequestStreamingHelper: Sendable {
           content.append(toolUse: FailedToolUse(
             toolUseId: toolUse.toolUseId,
             toolName: toolUse.toolName,
-            errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
+            errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: err).localizedDescription,
             context: context.toolExecutionContext))
           result.update(with: AssistantMessage(content: content))
         }
@@ -400,11 +400,15 @@ actor RequestStreamingHelper: Sendable {
         defaultLogger
           .error(
             "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\(String(data: (try! JSONEncoder().encode(request.input)), encoding: .utf8) ?? "unreadable")")
+        var err = error
+        if let decodingError = error as? DecodingError {
+          err = AppError(message: decodingError.llmErrorDescription)
+        }
         // If the above fails, this is because the input could not be parsed by the tool.
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription,
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: err).localizedDescription,
           context: context.toolExecutionContext))
       }
     } else {

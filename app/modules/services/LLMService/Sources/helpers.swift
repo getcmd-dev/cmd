@@ -103,8 +103,8 @@ extension DecodingError {
 }
 
 extension DecodingError.Context {
-  fileprivate var llmErrorDescription: String {
-    var description = "Error at coding path: \(codingPath.description): " + debugDescription
+  var llmErrorDescription: String {
+    var description = "Error at coding path: '\(codingPath.description)': " + debugDescription
     if let underlyingError, let debugDescription = (underlyingError as NSError).userInfo[NSDebugDescriptionErrorKey] as? String {
       description += " Underlying error: \(debugDescription)"
     }
@@ -113,13 +113,13 @@ extension DecodingError.Context {
 }
 
 extension [any CodingKey] {
-  fileprivate var description: String {
+  var description: String {
     var description = ""
     for key in self {
       if let i = key.intValue {
         description += "[\(i)]"
       } else {
-        description += "\(description.isEmpty ? "" : ".")\(key.stringValue)"
+        description += ".\(key.stringValue)"
       }
     }
     return description
