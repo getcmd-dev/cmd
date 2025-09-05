@@ -77,7 +77,9 @@ export async function computeAndSaveHash() {
 
 // Function to compute and save build file size.
 export async function computeAndSaveBuildFileSize() {
-	if (!fs.existsSync("./dist/main.bundle.cjs")) {
+	try {
+		await fs.access("./dist/main.bundle.cjs")
+	} catch {
 		return
 	}
 
