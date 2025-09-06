@@ -95,11 +95,12 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				})
 			}
 			const modelName = body.model
-			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build({
-				...body.provider.settings,
-				modelName,
-				reasoningBudget: body.enableReasoning ? 12000 : undefined,
-			})
+			const { model, generalProviderOptions, addProviderOptionsToMessages, addProviderOptionsToTools } =
+				await modelProvider.build({
+					...body.provider.settings,
+					modelName,
+					reasoningBudget: body.enableReasoning ? 12000 : undefined,
+				})
 			if (!model) {
 				throw new UserFacingError({
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
@@ -126,7 +127,10 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			const { fullStream, usage } = await streamText({
 				model,
 				abortSignal: abortController.signal,
-				tools: tools?.map(mapTool).reduce(
+				tools: (addProviderOptionsToTools
+					? addProviderOptionsToTools(tools?.map(mapTool))
+					: tools?.map(mapTool)
+				)?.reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool
 						return acc
@@ -340,7 +344,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 /**
  * Maps a Tool to the format expected by the AI SDK.
  */
-const mapTool = (tool: Tool): ToolModel & { name: string } => {
+const mapTool = (tool: Tool): ToolModelWithName => {
 	return {
 		description: tool.description,
 		name: tool.name,
@@ -508,6 +512,8 @@ const extractReasoningSignature = (meta: ProviderMetadata | undefined): string |
 	}
 	return undefined
 }
+
+export type ToolModelWithName = ToolModel & { name: string }
 
 const isTextMessage = (message: MessageContent): message is TextMessage => {
 	return message.type === "text"

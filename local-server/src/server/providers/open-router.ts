@@ -1,7 +1,7 @@
 import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
-import { addCacheControlToMessages } from "./anthropic"
+import { addCacheControlToMessages, addCacheControlToTools } from "./anthropic"
 
 export class OpenRouterModelProvider implements ModelProvider {
 	name: APIProviderName = "openrouter"
@@ -93,6 +93,13 @@ const fetchAnthropicResponse: typeof fetch = (input, init) => {
 					delete message.cache_control
 				}
 			}
+		}
+	}
+	if (body?.tools && body?.tools.length > 0) {
+		const lastIdx = body.tools.length - 1
+		body.tools[lastIdx] = {
+			...body.tools[lastIdx],
+			cache_control: { type: "ephemeral" },
 		}
 	}
 	init.body = JSON.stringify(body)
