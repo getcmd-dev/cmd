@@ -1,7 +1,7 @@
 import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
-import { addCacheControlToMessages, addCacheControlToTools } from "./anthropic"
+import { addCacheControlToMessages } from "./anthropic"
 
 export class OpenRouterModelProvider implements ModelProvider {
 	name: APIProviderName = "openrouter"
