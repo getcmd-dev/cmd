@@ -266,7 +266,11 @@ final class DefaultLLMService: LLMService {
         shellService: shellService,
         projectRoot: context?.projectRoot?.path),
       threadId: context?.threadId)
-    let data = try JSONEncoder().encode(params)
+
+    let encoder = JSONEncoder()
+    // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
+    encoder.outputFormatting = [.sortedKeys]
+    let data = try encoder.encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []), replayStrategy: .replayAll)
     handleUpdateStream(result)

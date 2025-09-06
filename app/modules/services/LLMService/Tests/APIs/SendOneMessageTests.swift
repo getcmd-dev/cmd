@@ -1,14 +1,14 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import ConcurrencyFoundation
 import Foundation
-import SwiftTesting
-import Testing
-
-import AppFoundation
 import LLMServiceInterface
 import LocalServerServiceInterface
+import SnapshotTesting
+import SwiftTesting
+import Testing
 
 @testable import LLMService
 
@@ -50,6 +50,40 @@ final class SendOneMessageTests {
     }
     _ = try await sut.sendOneMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
+      tools: [])
+
+    try await fulfillment(of: [requestCompleted])
+  }
+
+  @Test("SendOneMessage sends payload with correct fields ordering")
+  func test_sendOneMessage_sendsPayloadWithCorrectFieldsOrdering() async throws {
+    let requestCompleted = expectation(description: "The request completed")
+    let server = MockLocalServer()
+    let sut = DefaultLLMService(server: server)
+    server.onPostRequest = { path, data, _ in
+      #expect(path == "sendMessage")
+      assertSnapshot(of: String(data: data, encoding: .utf8), as: .dump)
+      requestCompleted.fulfill()
+      return okServerResponse
+    }
+    _ = try await sut.sendOneMessage(
+      messageHistory: [
+        .init(role: .user, content: [.textMessage(.init(text: "hello"))]),
+        .init(role: .tool, content: [.toolUseRequest(.init(toolName: "someTool", input: .object([
+          "z": "Z",
+          "a": "A",
+          "e": .array([
+            .object([
+              "x": "X",
+              "b": "B",
+            ]),
+            .object([
+              "a": "a",
+              "b": "B",
+            ]),
+          ]),
+        ]), toolUseId: "23123", idx: 0))]),
+      ],
       tools: [])
 
     try await fulfillment(of: [requestCompleted])

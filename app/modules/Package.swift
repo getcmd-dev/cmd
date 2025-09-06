@@ -1094,6 +1094,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
