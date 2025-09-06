@@ -76,7 +76,7 @@ clean_command() {
 }
 
 test_swift_command() {
-	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet "$@"
+	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --no-parallel "$@"
 }
 
 test_ts_command() {

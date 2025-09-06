@@ -15,7 +15,7 @@ public protocol UserDefaultsProviding: BaseProviding {
 
 public final class SharedUserDefaultsDependencyKey: TestDependencyKey {
   #if DEBUG
-  public static let testValue: UserDefaultsI = MockUserDefaults()
+  public static var testValue: UserDefaultsI { MockUserDefaults() }
   #else
   /// This is not read outside of DEBUG
   public static let testValue: UserDefaultsI = () as! UserDefaults
