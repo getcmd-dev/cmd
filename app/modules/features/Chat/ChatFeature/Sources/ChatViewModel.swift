@@ -24,31 +24,26 @@ public class ChatViewModel {
 
   #if DEBUG
   convenience init(
-    defaultMode: ChatMode? = nil,
     tab: ChatThreadViewModel = ChatThreadViewModel())
   {
     self.init(
-      defaultMode: defaultMode ?? .agent,
       tab: tab,
       currentModel: .claudeSonnet)
   }
   #endif
 
-  public convenience init(defaultMode: ChatMode? = nil) {
+  public convenience init() {
     self.init(
-      defaultMode: defaultMode ?? .agent,
       tab: ChatThreadViewModel(),
       currentModel: .claudeSonnet)
   }
 
   private init(
-    defaultMode: ChatMode,
     tab: ChatThreadViewModel,
     currentModel: LLMModel)
   {
     self.tab = tab
     self.currentModel = currentModel
-    self.defaultMode = defaultMode
     registerAsAppEventHandler()
 
     xcodeObserver.statePublisher.map(\.focusedWorkspace).map(\.?.url).removeDuplicates()
@@ -65,18 +60,21 @@ public class ChatViewModel {
     }
   }
 
-  var tab: ChatThreadViewModel
   var currentModel: LLMModel
   var selectedFile: URL?
-
-  // TODO: persist to user defaults and load
-  var defaultMode: ChatMode
   private(set) var focusedWorkspacePath: URL? = nil
   private(set) var showChatHistory = false
 
   @ObservationIgnored @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+  @ObservationIgnored @Dependency(\.userDefaults) var userDefaults: UserDefaultsI
 
   let chatHistory = ChatHistoryViewModel()
+
+  var tab: ChatThreadViewModel {
+    didSet {
+      saveLastOpenThreadId(tab.id)
+    }
+  }
 
   func handleShowChatHistory() {
     showChatHistory = true
@@ -109,20 +107,30 @@ public class ChatViewModel {
 
   func loadPersistedChatThreads() async {
     do {
+      if let id = userDefaults.string(forKey: Constants.lastOpenChatThreadIdKey) {
+        if
+          let threadId = UUID(uuidString: id),
+          let thread = try await chatHistoryService.loadChatThread(id: threadId)
+        {
+          tab = ChatThreadViewModel(from: thread)
+          return
+        }
+        userDefaults.removeObject(forKey: Constants.lastOpenChatThreadIdKey)
+      }
       guard
-        let persistentTabInfo = try await chatHistoryService.loadLastChatThreads(last: 1, offset: 0).first,
-        let thread = try await chatHistoryService.loadChatThread(id: persistentTabInfo.id)
+        let threadId = try await chatHistoryService.loadLastChatThreads(last: 1, offset: 0).first?.id,
+        let thread = try await chatHistoryService.loadChatThread(id: threadId)
       else {
         return
       }
-      let ChatThread = ChatThreadViewModel(from: thread)
-
-      tab = ChatThread
-
-      defaultLogger.log("Loaded chat tabs from database")
+      tab = ChatThreadViewModel(from: thread)
     } catch {
       defaultLogger.error("Failed to load chat tabs from database", error)
     }
+  }
+
+  private enum Constants {
+    static let lastOpenChatThreadIdKey = "lastOpenChatThreadId"
   }
 
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
@@ -130,6 +138,10 @@ public class ChatViewModel {
   @ObservationIgnored @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
   @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver
   @ObservationIgnored @Dependency(\.fileManager) private var fileManager
+
+  private func saveLastOpenThreadId(_ threadId: UUID) {
+    userDefaults.set(threadId.uuidString, forKey: Constants.lastOpenChatThreadIdKey)
+  }
 
   private func selectChatThread(id: UUID) async {
     do {
