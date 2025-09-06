@@ -1,5 +1,7 @@
+import "./utils/instrument"
 import { appendFileSync, mkdirSync, writeFileSync } from "fs"
 import { join } from "path"
+import { captureException } from "@sentry/node"
 // Define log levels
 type LogLevel = "ERROR" | "INFO"
 
@@ -48,6 +50,9 @@ const logError = (error: unknown) => {
 	if (error instanceof Error) {
 		writeToLog("ERROR", error.stack)
 		return
+	}
+	if (process.env.NODE_ENV === "production") {
+		captureException(error)
 	}
 	const stackTrace = new Error("").stack
 	if (typeof error === "object" && error !== null) {

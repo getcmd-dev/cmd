@@ -224,6 +224,9 @@ platform :mac do
       version = new_version
     end
 
+    ENV['UPLOAD_SOURCEMAP_TO_SENTRY'] = "true"
+    ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
+    
     result = create_and_sign_release(version: version)
     version = result[:version]
     app_zip_path = result[:app_zip_path]

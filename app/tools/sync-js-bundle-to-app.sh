@@ -44,22 +44,14 @@ build_and_copy() {
 		(cd "$repo_root/local-server" && yarn install) || exit 1
 	fi
 
-	(cd "$repo_root/local-server" && yarn build) || exit 1
-
-	files_to_copy=(
-		"$repo_root/local-server/dist/main.bundle.cjs"
-		"$repo_root/local-server/dist/main.bundle.cjs.map"
-		"$repo_root/local-server/build.sha256"
-	)
-	destination_dir=(
-		"$repo_root/app/modules/services/LocalServerService/Sources/Resources"
-		"$HOME/Library/Application\ Support/command"
-	)
-	for file in "${files_to_copy[@]}"; do
-		for destination in "${destination_dir[@]}"; do
-			copy_one_file "$file" "$destination"
-		done
-	done
+	(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
+	if [ "${CONFIGURATION}" = "Release" ]; then
+		echo "Building in Release mode"
+		(cd "$repo_root/local-server" && yarn build:prod && yarn copy-to-app) || exit 1
+	else
+		echo "Building in Debug mode"
+		(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
+	fi
 
 	if [ "$PRE_BUILD_SCRIPT" = true ]; then
 		echo "The local server has been updated."

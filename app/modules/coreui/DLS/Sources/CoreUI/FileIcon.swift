@@ -6,7 +6,9 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import Foundation
+import FoundationInterfaces
 import LocalServerServiceInterface
+import ShellServiceInterface
 import SwiftUI
 
 // MARK: - FileIcon
@@ -85,15 +87,40 @@ extension FileIcon {
       """.utf8Data
 
     let response: IconResponse = try await server.postRequest(path: "/icon", data: payload)
-    guard
-      let svgPath = resourceBundle.path(forResource: response.iconPath, ofType: nil)
-    else {
+
+    @Dependency(\.fileManager) var fileManager
+    let iconsPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("command")
+      .appendingPathComponent("icons")
+    try fileManager.createDirectory(atPath: iconsPath.path, withIntermediateDirectories: true)
+
+    let iconPath = iconsPath.appendingPathComponent(response.iconPath).standardized
+    if !fileManager.fileExists(atPath: iconPath.path) {
+      try await extractIcons(to: iconsPath)
+    }
+    guard fileManager.fileExists(atPath: iconPath.path) else {
       throw URLError(.badURL)
     }
-    return try SVGImageLoader.svg(atPath: svgPath)
+
+    let image = try SVGImageLoader.svg(atPath: iconPath.path)
+    cachedImages[language] = image
+    return image
   }
 
   @MainActor private static var cachedImages = [String: NSImage]()
+
+  private static func extractIcons(to path: URL) async throws {
+    @Dependency(\.fileManager) var fileManager
+    @Dependency(\.shellService) var shellService
+    guard let bundlePath = resourceBundle.path(forResource: "icons.tar.gz", ofType: nil) else {
+      throw URLError(.badURL)
+    }
+    let tarDestinationPath = path.deletingLastPathComponent().appendingPathComponent("icons.tar.gz").path
+    do {
+      try fileManager.removeItem(atPath: tarDestinationPath)
+    } catch { }
+    try fileManager.copyItem(atPath: bundlePath, toPath: tarDestinationPath)
+    try await shellService.run("tar -xzf '\(tarDestinationPath)' -C '\(path.path)'")
+  }
 
 }
 

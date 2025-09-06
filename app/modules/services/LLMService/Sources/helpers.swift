@@ -88,13 +88,13 @@ extension DecodingError {
   /// A detailed description that is meant to send enough debugging information back to the LLM
   var llmErrorDescription: String {
     switch self {
-    case .valueNotFound(let type, let context):
+    case .valueNotFound(_, let context):
       return context.llmErrorDescription
     case .dataCorrupted(let context):
       return context.llmErrorDescription
-    case .typeMismatch(let type, let context):
+    case .typeMismatch(_, let context):
       return context.llmErrorDescription
-    case .keyNotFound(let key, let context):
+    case .keyNotFound(_, let context):
       return context.llmErrorDescription
     @unknown default:
       return localizedDescription

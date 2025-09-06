@@ -145,8 +145,10 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "ShellServiceInterface",
   ],
   resources: [
     .process("Resources/fileIcons"),
@@ -452,6 +454,7 @@ targets.append(contentsOf: Target.module(
     "DLS",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
@@ -952,7 +955,7 @@ targets.append(contentsOf: Target.module(
   resources: [
     .process("Resources/build.sha256"),
     .process("Resources/launch-server.sh"),
-    .process("Resources/main.bundle.cjs"),
+    .process("Resources/main.bundle.cjs.gz"),
     .process("Resources/main.bundle.cjs.map"),
   ],
   testDependencies: [

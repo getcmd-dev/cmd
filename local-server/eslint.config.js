@@ -10,21 +10,28 @@ export default tseslint.config(
 	},
 	{
 		files: ["**/*.ts", "**/*.tsx", "**/*.js"],
+		languageOptions: {
+			globals: {
+				process: "readonly",
+				console: "readonly",
+				global: "readonly",
+				Buffer: "readonly",
+				__dirname: "readonly",
+				__filename: "readonly",
+			},
+		},
 		extends: [eslint.configs.recommended, eslintPluginPrettierRecommended],
 		rules: {
-            "prettier/prettier": "error",
-            // Turn off rules that might conflict with Prettier
-            "indent": "off",
-            "linebreak-style": "off",
-            "quotes": "off",
+			"prettier/prettier": "error",
+			// Turn off rules that might conflict with Prettier
+			indent: "off",
+			"linebreak-style": "off",
+			quotes: "off",
 			semi: "off",
 			"no-empty": "off",
-            // Enforce awaiting all promises
-            "@typescript-eslint/no-floating-promises": "error"
+			// Relax unused vars for JS files
+			"no-unused-vars": "warn",
 		},
-	},
-	{
-		ignores: ["**/*.js"],
 	},
 	{
 		files: ["**/*.ts", "**/*.tsx"],
@@ -39,6 +46,8 @@ export default tseslint.config(
 			indent: "off",
 			"@typescript-eslint/no-namespace": "off",
 			"@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+			// Enforce awaiting all promises
+			"@typescript-eslint/no-floating-promises": "error",
 		},
 	},
 )
