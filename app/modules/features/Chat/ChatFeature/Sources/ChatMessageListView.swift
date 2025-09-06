@@ -52,7 +52,7 @@ struct ChatMessageList: View {
         .id(Constants.scrollAnchorID)
         .background(GeometryReader {
           let frame = $0.frame(in: .named(Constants.scrollCoordinateSpace))
-          Task.detached { @MainActor in
+          Task { @MainActor in
             if !isUserScrolling {
               scrollToBottomIfNeeded(proxy: proxy)
             } else {
