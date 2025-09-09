@@ -915,8 +915,10 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "LoggingService",
   dependencies: [
+    .product(name: "Bugsnag", package: "bugsnag-cocoa"),
     .product(name: "Sentry", package: "sentry-cocoa"),
     .product(name: "Statsig", package: "statsig-kit"),
+    "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
@@ -1163,6 +1165,7 @@ let package = Package(
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
+    .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

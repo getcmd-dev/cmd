@@ -120,13 +120,15 @@ platform :mac do
 
     # Build and archive the app
     build_path = File.absolute_path("../build")
+    app_name = "cmd"
+    app_path = "#{build_path}/release/#{app_name}.app"
+    archive_path = "#{build_path}/release/#{app_name}.xcarchive"
+
+    # Create a new build
     sh("rm -rf #{build_path}")
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-    app_name = "cmd"
-    app_path = "#{build_path}/release/#{app_name}.app"
-    dsym_path = "#{app_path}.dSYM.zip"
 
     build_mac_app(
       destination: "platform=macOS,arch=arm64",
@@ -135,6 +137,7 @@ platform :mac do
       configuration: "Release",
       export_method: "developer-id",
       output_directory: "#{build_path}/release",
+      archive_path: archive_path,
       derived_data_path: "#{build_path}/derived_data",
       output_name: app_name,
       scheme: "command",
@@ -143,7 +146,7 @@ platform :mac do
       xcodebuild_formatter: "xcbeautify --quiet",
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
-    
+
     # Strip DEBUG symbols from the binary to reduce size, after the archive has been created, and resign.
     app_binary_path = "#{app_path}/Contents/MacOS/cmd"
     strip_debug_symbols_and_resign(app_path: app_path, app_binary_path: app_binary_path, build_path: build_path, certificate_name: certificate_name, certificate_sha1: certificate_sha1)
@@ -202,7 +205,7 @@ platform :mac do
     readme_content.gsub!(/(.*)v[0-9\.]+(.*<!-- version automatically updated during release -->)/, "\\1v#{version}\\2")
     File.write(readme_path, readme_content)
 
-    { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dsym_path: dsym_path, dmg_path: dmg_path }
+    { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dmg_path: dmg_path, archive_path: archive_path }
   end
 
   desc "Build, archive, sign and publish the app for distribution"
@@ -232,11 +235,11 @@ platform :mac do
     app_zip_path = result[:app_zip_path]
     dmg_path = result[:dmg_path]
     build_path = result[:build_path]
-    dsym_path = result[:dsym_path]
     app_binary_path = result[:app_binary_path]
+    archive_path = result[:archive_path]
 
     # Upload the dsym and relevant release info to Sentry
-    upload_release_to_sentry(version: version, dsym_path: dsym_path, app_binary_path: app_binary_path)
+    upload_release_to_sentry(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
 
     gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
@@ -279,6 +282,7 @@ platform :mac do
     entitlements_path = "#{build_path}/extracted_entitlements.plist"
     sh("codesign -d --entitlements :- '#{app_path}' > '#{entitlements_path}'")
 
+    # Strip only debug info, preserve symbols needed for crash symbolication
     sh("strip -rSTx '#{app_binary_path}'")
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
@@ -336,14 +340,13 @@ platform :mac do
   desc "Upload the new release to Sentry"
   lane :upload_release_to_sentry do |options|
     version = options.fetch(:version, nil)
-    dsym_path = options.fetch(:dsym_path, nil)
     app_binary_path = options.fetch(:app_binary_path, nil)
+    archive_path = options[:archive_path]
+    build_path = options[:build_path]
 
     # Verify dSYM UUID matches binary
     binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
-    unzipped_dsym_path = dsym_path.gsub('.zip', '')
-    sh("ditto -xk '#{dsym_path}' '#{unzipped_dsym_path}'")
-    dsym_uuid = sh("dwarfdump --uuid '#{unzipped_dsym_path}/cmd.app.dSYM' | awk '{print $2}'").strip
+    dsym_uuid = sh("dwarfdump --uuid '#{archive_path}/dSYMs/cmd.app.dSYM' | awk '{print $2}'").strip
     raise "UUID mismatch between binary and dSYM. This will prevent traces from being symbolicated" unless binary_uuid == dsym_uuid
 
     sentry_create_release(
@@ -354,19 +357,15 @@ platform :mac do
       app_identifier: 'dev.getcmd.command',
       finalize: true
     )
-    sentry_upload_dsym(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
-      dsym_path: dsym_path,
-    )
-    sentry_debug_files_upload(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
-      include_sources: true,
-      path: File.absolute_path("../"),
-    )
+    sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --log-level trace --wait '#{archive_path}'")
+    # sentry_debug_files_upload(
+    #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+    #   org_slug: 'getcmd',
+    #   project_slug: 'cmd-mac-app',
+    #   # include_sources: true,
+    #   path: dsym_path,
+    #   wait: true,
+    # )
     sentry_set_commits(
       org_slug: 'getcmd',
       project_slug: 'cmd-mac-app',
@@ -375,5 +374,9 @@ platform :mac do
       auto: true,
       clear: false
     )
+
+    plist_path = "#{build_path}/release/cmd.app/Contents/Info.plist"
+    bugsnap_api_key = sh("plutil -convert json -o - #{plist_path} | jq -r '.bugsnag.apiKey'").strip
+    sh("bugsnag-cli upload xcode-archive '#{archive_path}' --api-key '#{bugsnap_api_key}'")
   end
 end

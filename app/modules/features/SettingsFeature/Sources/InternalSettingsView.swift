@@ -50,21 +50,37 @@ struct InternalSettingsView: View {
           caption: "Send usage data and crash reports for debugging",
           value: $enableAnalyticsAndCrashReporting)
         #endif
-
-        HoveredButton(
-          action: {
-            Task {
-              defaultLogger.error(AppError("test error"))
-              try await Task.sleep(nanoseconds: 1_000_000_000)
-              let arr = [Int]()
-              _ = arr[100]
-            }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8,
-          content: { Text("Crash the app") })
+          
+          HoveredButton(
+            action: {
+              Task {
+                let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+                defaultLogger.error(AppError(message))
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                  let arr = [Int]()
+                  _ = arr[100]
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Crash the app") })
+          
+          HoveredButton(
+            action: {
+              Task {
+                let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+                defaultLogger.error(AppError(message))
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                fatalError(message)
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Crash the app2") })
 
         HoveredButton(
           action: {
