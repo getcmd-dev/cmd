@@ -34,7 +34,8 @@ public final class AppExtensionScope: Sendable, BaseProviding {
     let logger = DefaultLogger(
       subsystem: defaultLogger.subsystem,
       category: defaultLogger.category,
-      fileManager: fileManager)
+      fileManager: fileManager,
+      userDefaults: sharedUserDefaults)
     /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
     defaultLogger = logger
 

@@ -129,8 +129,7 @@ public final class EditFilesTool: Tool {
 
       public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: String.self)
-        // Decode all the values possible, and drop those that are still missing required properties to be decoded.
-        files = try container.resilientlyDecode([FileChange].self, forKey: "files")
+        files = try container.decode([FileChange].self, forKey: "files")
       }
 
       public struct FileChange: Codable, Sendable {

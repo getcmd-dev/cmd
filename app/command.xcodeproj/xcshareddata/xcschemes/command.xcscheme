@@ -25,7 +25,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-               BuildableName = "command.app"
+               BuildableName = "cmd.app"
                BlueprintName = "command"
                ReferencedContainer = "container:command.xcodeproj">
             </BuildableReference>
@@ -54,7 +54,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-            BuildableName = "command.app"
+            BuildableName = "cmd.app"
             BlueprintName = "command"
             ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>
@@ -78,7 +78,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-            BuildableName = "command.app"
+            BuildableName = "cmd.app"
             BlueprintName = "command"
             ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>

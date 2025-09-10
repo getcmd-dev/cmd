@@ -61,6 +61,15 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
+      if output.trimmingCharacters(in: .whitespacesAndNewlines) == "No files found" {
+        updateStatus.complete(with: .success(Output(
+          outputForLLm: output,
+          results: [],
+          rootPath: input.projectRoot ?? "/",
+          hasMore: false)))
+        return
+      }
+
       // Try parsing with the simple format first
       if let result = parseSimpleGrepOutput(rawOutput: output, projectRoot: input.projectRoot) {
         updateStatus.complete(with: .success(result))

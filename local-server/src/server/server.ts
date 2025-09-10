@@ -1,3 +1,4 @@
+import "../utils/instrument"
 import express from "express"
 import Router from "express-promise-router"
 import { logInfo } from "../logger"
@@ -10,6 +11,7 @@ import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/get
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
+import { setupExpressErrorHandler } from "@sentry/node"
 import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
@@ -33,6 +35,9 @@ app.get("/", (_, res) => {
 app.get("/launch", (_, res) => {
 	res.json({ ok: true })
 })
+app.get("/error", () => {
+	throw new Error("test error")
+})
 
 registerSendMessageEndpoint(
 	router,
@@ -52,6 +57,10 @@ registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)
 registerCheckpointEndpoints(router)
 registerGetFileIconEndpoint(router)
+
+if (process.env.NODE_ENV === "production") {
+	setupExpressErrorHandler(app)
+}
 
 // Add middleware to handle 404 errors (no route matched)
 app.use((req, res, next) => {

@@ -202,19 +202,25 @@ private struct ModelCard: View {
         .padding(.top, 8)
       }
 
-      HStack {
-        Text("Pricing:")
-          .font(.headline)
-          .fontWeight(.medium)
-        Text("\(displayPrice(model.defaultPricing.input)) / \(displayPrice(model.defaultPricing.output))")
-          .fontWeight(.medium)
+      if let pricing = provider.price(for: model) ?? model.defaultPricing {
+        HStack {
+          Text("Pricing:")
+            .font(.headline)
+            .fontWeight(.medium)
+          Text("\(displayPrice(pricing.input)) / \(displayPrice(pricing.output))")
+            .fontWeight(.medium)
 
-        Spacer()
+          Spacer()
 
-        Toggle("", isOn: $isActive)
-          .toggleStyle(.switch)
+          Toggle("", isOn: $isActive)
+            .toggleStyle(.switch)
+        }
+        .padding(.top, 8)
       }
-      .padding(.top, 8)
+
+      if provider.externalAgent != nil {
+        Text("\(model.name) is an external agent")
+      }
     }
     .padding(16)
     .background(Color(NSColor.controlBackgroundColor))

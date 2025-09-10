@@ -317,6 +317,10 @@ extension UpdatableToolUse {
   public func waitForApproval() {
     updateStatus.yield(.pendingApproval)
   }
+
+  public func complete(with error: Error) {
+    updateStatus.complete(with: .failure(error))
+  }
 }
 
 // MARK: - ExternalTool

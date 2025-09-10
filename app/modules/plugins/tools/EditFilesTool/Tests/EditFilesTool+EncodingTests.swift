@@ -37,43 +37,43 @@ struct EditFilesToolEncodingTests {
       fileChange.path: "# Old Title",
     ]
 
-    let use = try withDependencies {
+    try withDependencies {
       $0.chatContextRegistry = MockChatContextRegistryService([
         "mock-thread-id": MockChatThreadContext(knownFilesContent: files),
       ])
       $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
     } operation: {
-      try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
-    }
+      let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    try testDecodingEncodingWithTool(of: use, tool: tool, """
-      {
-        "callingTool" : "suggest_files_changes",
-        "context" : {
-          "threadId": "mock-thread-id"
-        },
-        "input" : {
-          "files" : [
-            {
-              "changes" : [
-                {
-                  "replace" : "# New Title",
-                  "search" : "# Old Title"
-                }
-              ],
-              "isNewFile" : false,
-              "path" : "\\/project\\/README.md"
-            }
-          ]
-        },
-        "internalState" : null,
-        "isInputComplete" : true,
-        "status" : {
-          "status" : "notStarted"
-        },
-        "toolUseId" : "edit-123"
-      }
-      """)
+      try testDecodingEncodingWithTool(of: use, tool: tool, """
+        {
+          "callingTool" : "suggest_files_changes",
+          "context" : {
+            "threadId": "mock-thread-id"
+          },
+          "input" : {
+            "files" : [
+              {
+                "changes" : [
+                  {
+                    "replace" : "# New Title",
+                    "search" : "# Old Title"
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "\\/project\\/README.md"
+              }
+            ]
+          },
+          "internalState" : null,
+          "isInputComplete" : true,
+          "status" : {
+            "status" : "notStarted"
+          },
+          "toolUseId" : "edit-123"
+        }
+        """)
+    }
   }
 
   @Test("Tool Use encoding/decoding - new file creation")
@@ -149,46 +149,57 @@ struct EditFilesToolEncodingTests {
 
     let input = EditFilesTool.Use.Input(files: fileChanges)
     let data = try JSONEncoder().encode(input)
-    let use = try tool.use(toolUseId: "edit-multi-789", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    try testDecodingEncodingWithTool(of: use, tool: tool, """
-      {
-        "callingTool" : "suggest_files_changes",
-        "context" : {
-          "threadId": "mock-thread-id"
-        },
-        "input" : {
-          "files" : [
-            {
-              "changes" : [
-                {
-                  "replace" : "let API_URL = \\"api.example.com\\"",
-                  "search" : "let API_URL = \\"dev.example.com\\""
-                }
-              ],
-              "isNewFile" : false,
-              "path" : "/src/constants.swift"
-            },
-            {
-              "changes" : [
-                {
-                  "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    \\/\\/ Test implementation\\n}",
-                  "search" : ""
-                }
-              ],
-              "isNewFile" : true,
-              "path" : "/tests/NewTest.swift"
-            }
-          ]
-        },
-        "internalState" : null,
-        "isInputComplete" : true,
-        "status" : {
-          "status" : "notStarted"
-        },
-        "toolUseId" : "edit-multi-789"
-      }
-      """)
+    let files = [
+      fileChanges[0].path: "let API_URL = \"dev.example.com\"",
+    ]
+
+    try withDependencies {
+      $0.chatContextRegistry = MockChatContextRegistryService([
+        "mock-thread-id": MockChatThreadContext(knownFilesContent: files),
+      ])
+      $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
+    } operation: {
+      let use = try tool.use(toolUseId: "edit-multi-789", input: data, isInputComplete: true, context: toolExecutionContext)
+      try testDecodingEncodingWithTool(of: use, tool: tool, """
+        {
+          "callingTool" : "suggest_files_changes",
+          "context" : {
+            "threadId": "mock-thread-id"
+          },
+          "input" : {
+            "files" : [
+              {
+                "changes" : [
+                  {
+                    "replace" : "let API_URL = \\"api.example.com\\"",
+                    "search" : "let API_URL = \\"dev.example.com\\""
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "/src/constants.swift"
+              },
+              {
+                "changes" : [
+                  {
+                    "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    \\/\\/ Test implementation\\n}",
+                    "search" : ""
+                  }
+                ],
+                "isNewFile" : true,
+                "path" : "/tests/NewTest.swift"
+              }
+            ]
+          },
+          "internalState" : null,
+          "isInputComplete" : true,
+          "status" : {
+            "status" : "notStarted"
+          },
+          "toolUseId" : "edit-multi-789"
+        }
+        """)
+    }
   }
 }
 

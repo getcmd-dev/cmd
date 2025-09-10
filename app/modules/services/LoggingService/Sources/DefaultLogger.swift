@@ -1,12 +1,15 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
+import Bugsnag
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
 import OSLog
 import Sentry
+import SettingsServiceInterface
 import Statsig
 import ThreadSafe
 
@@ -21,11 +24,12 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   ///   - subsystem: The subsystem identifier for the logger
   ///   - category: The category identifier for the logger
   ///   - fileManager: File manager for handling log file operations
-  public convenience init(subsystem: String, category: String, fileManager: FileManagerI) {
+  public convenience init(subsystem: String, category: String, fileManager: FileManagerI, userDefaults: UserDefaultsI) {
     self.init(
       subsystem: subsystem,
       category: category,
       fileManager: fileManager,
+      userDefaults: userDefaults,
       is3rdPartyLoggingEnabled: false,
       writeToFile: nil)
   }
@@ -41,6 +45,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     subsystem: String,
     category: String,
     fileManager: FileManagerI,
+    userDefaults: UserDefaultsI,
     is3rdPartyLoggingEnabled: Bool,
     writeToFile: (@Sendable (String) -> Void)?)
   {
@@ -48,6 +53,8 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     self.subsystem = subsystem
     self.category = category
     self.fileManager = fileManager
+    self.userDefaults = userDefaults
+    deviceId = Self.getDeviceId(userDefaults: userDefaults)
     self.is3rdPartyLoggingEnabled = is3rdPartyLoggingEnabled
 
     setupLocalLogFile(writeToFile: writeToFile, fileManager: fileManager)
@@ -63,9 +70,14 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   /// Enables external logging services (Sentry and Statsig).
   /// This method is idempotent - calling it multiple times has no additional effect.
   public func startExternalLogging() {
+    #if DEBUG
+    guard userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting) else { return }
+    #endif
+
     let wasEnable = _internalState.set(\.is3rdPartyLoggingEnabled, to: true)
     guard !wasEnable else { return }
     startSentry()
+    startBugSnag()
     startStatsig()
   }
 
@@ -75,6 +87,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     let wasEnable = _internalState.set(\.is3rdPartyLoggingEnabled, to: false)
     guard wasEnable else { return }
     stopSentry()
+    stopBugsnag()
     stopStatsig()
   }
 
@@ -86,6 +99,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       subsystem: "\(self.subsystem).\(subsystem)",
       category: category,
       fileManager: fileManager,
+      userDefaults: userDefaults,
       is3rdPartyLoggingEnabled: is3rdPartyLoggingEnabled,
       writeToFile: writeToFile)
   }
@@ -153,6 +167,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     writeToFile("\(subsystem).\(category) \(formattedMessage)")
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(message: formattedMessage)
+      Bugsnag.notifyError(AppError(message))
     }
   }
 
@@ -182,13 +197,18 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     }
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(error: error)
+      Bugsnag.notifyError(error)
     }
   }
+
+  let deviceId: String
 
   /// Queue for handling concurrent write operations to the log file
   private let fileWriteQueue = TaskQueue<Void, any Error>()
 
   private let fileManager: FileManagerI
+
+  private let userDefaults: UserDefaultsI
 
   private var is3rdPartyLoggingEnabled = false
 
@@ -199,6 +219,16 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
 
   /// Writes a message to the log file
   private var writeToFile: (@Sendable (_ message: String) -> Void) = { _ in }
+
+  private static func getDeviceId(userDefaults: UserDefaultsI) -> String {
+    if let deviceId = userDefaults.string(forKey: "deviceId") {
+      return deviceId
+    } else {
+      let newDeviceId = UUID().uuidString
+      userDefaults.set(newDeviceId, forKey: "deviceId")
+      return newDeviceId
+    }
+  }
 
   /// Sets up local file logging with automatic file creation and timestamped naming.
   /// Creates log files in the application support directory under command/logs/.
@@ -214,7 +244,9 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       dateFormatter.timeZone = TimeZone(abbreviation: "UTC")
       let timestamp = dateFormatter.string(from: Date())
 
-      let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        return
+      }
       let logDir = applicationSupport.appendingPathComponent("command").appendingPathComponent("logs")
       try? fileManager.createDirectory(at: logDir, withIntermediateDirectories: true)
 
@@ -257,11 +289,19 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     SentrySDK.close()
   }
 
+  private func startBugSnag() {
+    Bugsnag.start()
+  }
+
+  private func stopBugsnag() {
+    Bugsnag.pauseSession()
+  }
+
   /// Initializes Statsig SDK for event tracking and feature flags.
   private func startStatsig() {
     Statsig.initialize(
       sdkKey: "client-Ffl8pgONvlrjhUh2c4tEUwHQRbVGCplGCpzAwuHLFeE",
-      user: StatsigUser(userID: "my_user_id"),
+      user: StatsigUser(userID: deviceId),
       options: StatsigOptions(),
       completion: { _ in
         // Statsig has finished fetching the latest feature gate and experiment values for your user.

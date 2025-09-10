@@ -40,3 +40,5 @@ if (attachToIdx !== -1 && attachToIdx + 1 < process.argv.length) {
 }
 
 void startServer()
+
+export default startServer

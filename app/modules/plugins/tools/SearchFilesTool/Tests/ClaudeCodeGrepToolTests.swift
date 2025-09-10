@@ -82,6 +82,21 @@ struct ClaudeCodeGrepToolTests {
     #expect(secondResult.searchResults[1].isMatch == true)
   }
 
+  @Test
+  func handlesEmptyOutputCorrectly() async throws {
+    let toolUse = ClaudeCodeGrepTool().use(
+      toolUseId: "123",
+      input: mockInput,
+      isInputComplete: true,
+      context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
+
+    toolUse.startExecuting()
+
+    try toolUse.receive(output: .string("No files found"))
+    let result = try await toolUse.output.results.map(\.path)
+    #expect(result == [])
+  }
+
   private let testOutput = """
     Found 8 files
     /me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift

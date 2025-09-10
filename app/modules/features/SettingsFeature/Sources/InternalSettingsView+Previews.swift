@@ -11,7 +11,8 @@ import SwiftUI
     showOnboardingScreenAgain: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(false),
     showInternalSettingsInRelease: .constant(false),
-    defaultChatPositionIsInverted: .constant(false))
+    defaultChatPositionIsInverted: .constant(false),
+    enableAnalyticsAndCrashReporting: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -22,7 +23,8 @@ import SwiftUI
     showOnboardingScreenAgain: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(true),
     showInternalSettingsInRelease: .constant(true),
-    defaultChatPositionIsInverted: .constant(true))
+    defaultChatPositionIsInverted: .constant(true),
+    enableAnalyticsAndCrashReporting: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }

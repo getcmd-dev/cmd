@@ -49,7 +49,8 @@ extension SettingsServiceInterface.Settings {
       case (let i?, let j?): return i < j
       case (_?, nil): return true
       case (nil, _?): return false
-      case (nil, nil): return a.defaultPricing.input < b.defaultPricing.input
+      case (nil, nil): return (a.defaultPricing?.input ?? .greatestFiniteMagnitude) <
+        (b.defaultPricing?.input ?? .greatestFiniteMagnitude)
       }
     }).first
   }

@@ -9,8 +9,22 @@ import { WebSocketServer, WebSocket } from "ws"
 import * as http from "http"
 import { v4 as uuidv4 } from "uuid"
 
+/** Send a message / command to the host application */
+export const sendCommandToHostApp = (
+	command: ExecuteCommandRequest & { id?: string },
+	id: string | undefined = undefined,
+): string => {
+	const idToUse = id || command.id || uuidv4()
+	if (connectionToHostApp === undefined) {
+		logError(`No connection to host app. Failed to send command: ${JSON.stringify(command)}`)
+		return idToUse
+	}
+	connectionToHostApp.send(JSON.stringify({ ...command, id: idToUse }))
+	return idToUse
+}
+
 /** Active WebSocket connection to the host application */
-let connectionToHostApp: WebSocket | null = null
+let connectionToHostApp: WebSocket | undefined = undefined
 /** Map of pending command IDs to their response handlers */
 const pendingCommands: Record<string, (response: unknown, error: Error | undefined) => void> = {}
 
@@ -105,7 +119,7 @@ export const startInterProcessesBridge = (server: http.Server) => {
 
 			ws.on("close", () => {
 				logInfo("Client disconnected from WS")
-				connectionToHostApp = null
+				connectionToHostApp = undefined
 			})
 
 			ws.on("error", (error) => {
@@ -166,7 +180,7 @@ export const registerEndpoint = (router: Router) => {
 					}
 				}
 
-				connectionToHostApp?.send(JSON.stringify(commandWithId))
+				sendCommandToHostApp(commandWithId)
 				logWithId(id, "info", `Sent command '${commandWithId.command}' to host app.`)
 			})
 

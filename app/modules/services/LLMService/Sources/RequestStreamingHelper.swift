@@ -264,9 +264,6 @@ actor RequestStreamingHelper: Sendable {
           isInputComplete: false,
           context: context.toolExecutionContext)
 
-        if !toolUse.isReadonly {
-          await context.prepareForWriteToolUse()
-        }
         streamingToolUse = toolUse
         content.append(toolUse: toolUse)
         result.update(with: AssistantMessage(content: content))
@@ -292,6 +289,9 @@ actor RequestStreamingHelper: Sendable {
           toolUse.waitForApproval()
           try await context.requestApproval(for: toolUse)
         }
+      }
+      if !toolUse.isReadonly {
+        await context.prepareForWriteToolUse()
       }
       toolUse.startExecuting()
     } catch is CancellationError {
@@ -322,24 +322,39 @@ actor RequestStreamingHelper: Sendable {
         assertionFailure("Received a tool use request for a different tool use ID while already streaming a tool use.")
       }
       do {
+        // Complete the tool use input with the final data received from the server.
+        // This marks the end of streaming input for this tool use.
         try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
+        endStreamedToolUse()
+        await startExecution(of: toolUse, context: context)
       } catch {
-        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId): \(error)")
-        // If the above fails, this is because the input could not be parsed by the tool.
-        var content = result.content
-        assert(
-          content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
-          "The last content should be the tool use request we are ending.")
-        content.removeLast()
-        content.append(toolUse: FailedToolUse(
-          toolUseId: toolUse.toolUseId,
-          toolName: toolUse.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
-          context: context.toolExecutionContext))
-        result.update(with: AssistantMessage(content: content))
+        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId)", error)
+        var err = error
+        if let decodingError = error as? DecodingError {
+          err = AppError(message: decodingError.llmErrorDescription)
+        }
+
+        if let updatableToolUse = toolUse as? (any UpdatableToolUse) {
+          updatableToolUse.complete(with: err)
+        } else {
+          // We are not able to update the tool use with the failure. So we cancel it and create a new tool use to represent the error.
+          toolUse.cancel()
+
+          // If the above fails, this is because the input could not be parsed by the tool.
+          var content = result.content
+          assert(
+            content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
+            "The last content should be the tool use request we are ending.")
+          content.removeLast()
+          content.append(toolUse: FailedToolUse(
+            toolUseId: toolUse.toolUseId,
+            toolName: toolUse.toolName,
+            errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: err).localizedDescription,
+            context: context.toolExecutionContext))
+          result.update(with: AssistantMessage(content: content))
+        }
+        endStreamedToolUse()
       }
-      endStreamedToolUse()
-      await startExecution(of: toolUse, context: context)
       return
     }
 
@@ -365,7 +380,9 @@ actor RequestStreamingHelper: Sendable {
           isInputComplete: true,
           context: context.toolExecutionContext)
 
-        if !toolUse.isReadonly {
+        if !toolUse.isReadonly, tool.isExternalTool {
+          // We create a checkpoint now for external tools, as we do not control when the execution starts.
+          // For internal tool, this will be done in `startExecution` after validating permissions.
           await context.prepareForWriteToolUse()
         }
         content.append(toolUse: toolUse)
@@ -375,12 +392,16 @@ actor RequestStreamingHelper: Sendable {
       } catch {
         defaultLogger
           .error(
-            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\(String(data: (try! JSONEncoder().encode(request.input)), encoding: .utf8) ?? "unreadable")")
+            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\((try? JSONEncoder().encode(request.input)).map { String(data: $0, encoding: .utf8) } ??? "unreadable")")
+        var err = error
+        if let decodingError = error as? DecodingError {
+          err = AppError(message: decodingError.llmErrorDescription)
+        }
         // If the above fails, this is because the input could not be parsed by the tool.
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription,
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: err).localizedDescription,
           context: context.toolExecutionContext))
       }
     } else {

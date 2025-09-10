@@ -230,6 +230,8 @@ extension AppScope: UserDefaultsProviding {
   var sharedUserDefaults: any UserDefaultsI {
     shared {
       do {
+        // Note: this will be located at
+        // ~/Library/Group\ Containers/GP78T2GNXD.dev.getcmd.shared/Library/Preferences/GP78T2GNXD.dev.getcmd.shared.plist
         guard let userDefaults = try UserDefaults.shared(bundle: Bundle(for: AppScope.self)) else {
           return Foundation.UserDefaults.standard
         }

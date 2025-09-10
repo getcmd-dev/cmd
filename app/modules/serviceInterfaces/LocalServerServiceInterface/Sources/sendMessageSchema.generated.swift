@@ -1146,6 +1146,35 @@ extension Schema {
       }
     }
   }
+  public struct NameConversationCommandParams: Codable, Sendable {
+    public let name: String
+    public let threadId: String
+  
+    private enum CodingKeys: String, CodingKey {
+      case name = "name"
+      case threadId = "threadId"
+    }
+  
+    public init(
+        name: String,
+        threadId: String
+    ) {
+      self.name = name
+      self.threadId = threadId
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      name = try container.decode(String.self, forKey: .name)
+      threadId = try container.decode(String.self, forKey: .threadId)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(name, forKey: .name)
+      try container.encode(threadId, forKey: .threadId)
+    }
+  }
   public struct ChatCompletionToolResponseChunk: Codable, Sendable {
     public let type = "tool_call"
     public let id: String

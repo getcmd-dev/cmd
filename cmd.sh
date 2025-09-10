@@ -2,7 +2,6 @@
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 current_dir=$(pwd)
-cd "$ROOT_DIR/app"
 
 reset() {
 	cd $current_dir
@@ -10,7 +9,8 @@ reset() {
 trap reset EXIT
 
 lint_swift_command() {
-	mkdir -p .build/caches/swiftformat &&
+	cd "$(git rev-parse --show-toplevel)/app" &&
+		mkdir -p .build/caches/swiftformat &&
 		swiftformat --config rules-header.swiftformat . &&
 		swiftformat --config rules.swiftformat . --cache .build/caches/swiftformat
 }
@@ -20,11 +20,14 @@ lint_ts_command() {
 }
 
 lint_shell_command() {
-	shfmt -w ./**/*.sh
+	cd "$(git rev-parse --show-toplevel)" &&
+		git ls-files '*.sh' |
+		while read file; do shfmt -w "$file"; done
 }
-	  
+
 sync_dependencies_command() {
-	./tools/dependencies/sync.sh "$@"
+	cd "$(git rev-parse --show-toplevel)/app" &&
+		./tools/dependencies/sync.sh "$@"
 }
 
 close_xcode() {
@@ -39,6 +42,7 @@ close_xcode() {
 }
 
 focus_dependency_command() {
+	cd "$(git rev-parse --show-toplevel)/app"
 	close_xcode
 	# Reset xcode state
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
@@ -48,7 +52,8 @@ focus_dependency_command() {
 }
 
 build_release_command() {
-	./tools/release/release.sh "$@"
+	cd "$(git rev-parse --show-toplevel)/app" &&
+		./tools/release/release.sh "$@"
 }
 
 clean_command() {
@@ -76,11 +81,11 @@ clean_command() {
 }
 
 test_swift_command() {
-	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet
+	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "$@"
 }
 
 test_ts_command() {
-	cd "$(git rev-parse --show-toplevel)/local-server" && yarn test
+	cd "$(git rev-parse --show-toplevel)/local-server" && yarn test "$@"
 }
 
 # Main command dispatcher
@@ -98,8 +103,8 @@ lint:shell)
 	lint_shell_command "$@"
 	;;
 lint)
-	lint_swift_command && 
-		lint_ts_command && 
+	lint_swift_command &&
+		lint_ts_command &&
 		lint_shell_command
 	;;
 test:swift)
@@ -110,7 +115,7 @@ test:ts)
 	;;
 test)
 	test_swift_command &&
-	test_ts_command
+		test_ts_command
 	;;
 sync:dependencies)
 	sync_dependencies_command "$@"

@@ -5,6 +5,7 @@ import AppEventServiceInterface
 import Foundation
 // MARK: - ExecuteExtensionRequestEvent
 
+// TODO: make more generic than for extension
 public struct ExecuteExtensionRequestEvent: AppEvent {
 
   public init(

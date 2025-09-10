@@ -153,6 +153,11 @@ export interface InternalContent {
 	idx: number
 }
 
+export interface NameConversationCommandParams {
+	name: string
+	threadId: string
+}
+
 export type MessageContent = TextMessage | ReasoningMessage | ToolUseRequest | ToolResultMessage | InternalContent
 
 export interface Message {

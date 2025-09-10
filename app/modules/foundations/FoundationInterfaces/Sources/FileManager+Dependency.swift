@@ -21,7 +21,7 @@ extension BaseProviding {
 
 public final class FileManagerDependencyKey: TestDependencyKey {
   #if DEBUG
-  public static let testValue: FileManagerI = MockFileManager()
+  public static var testValue: FileManagerI { MockFileManager() }
   #else
   /// This is not read outside of DEBUG
   public static let testValue: FileManagerI = () as! FileManagerI

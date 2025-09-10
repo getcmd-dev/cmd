@@ -145,6 +145,10 @@ final class DefaultLLMService: LLMService {
       defaultLogger.error("Unable to name conversation: no low tier model available")
       return "New conversation"
     }
+    if (try? settings.provider(for: lowTierModel))?.0.isExternalAgent == true {
+      // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
+      return "New conversation"
+    }
 
     let assistantMessage = try await streamCompletionResponse(
       system: """
@@ -266,7 +270,11 @@ final class DefaultLLMService: LLMService {
         shellService: shellService,
         projectRoot: context?.projectRoot?.path),
       threadId: context?.threadId)
-    let data = try JSONEncoder().encode(params)
+
+    let encoder = JSONEncoder()
+    // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
+    encoder.outputFormatting = [.sortedKeys]
+    let data = try encoder.encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []), replayStrategy: .replayAll)
     handleUpdateStream(result)

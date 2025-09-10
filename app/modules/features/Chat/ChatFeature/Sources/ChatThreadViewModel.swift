@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppEventServiceInterface
 import AppFoundation
 import ChatFeatureInterface
 import ChatFoundation
@@ -9,6 +10,7 @@ import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import ExtensionEventsInterface
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
@@ -18,6 +20,7 @@ import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
 import SettingsServiceInterface
+import SharedValuesFoundation
 import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
@@ -55,6 +58,19 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     knownFilesContent: [String: String] = [:],
     createdAt: Date = Date())
   {
+    @Dependency(\.toolsPlugin) var toolsPlugin
+    @Dependency(\.settingsService) var settingsService
+    @Dependency(\.llmService) var llmService
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    @Dependency(\.fileManager) var fileManager
+    @Dependency(\.checkpointService) var checkpointService
+
+    self.toolsPlugin = toolsPlugin
+    self.settingsService = settingsService
+    self.llmService = llmService
+    self.xcodeObserver = xcodeObserver
+    self.fileManager = fileManager
+    self.checkpointService = checkpointService
     self.id = id
     self.name = name
     self.messages = messages
@@ -72,26 +88,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
-    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
-      guard state.focusedWorkspace != nil else { return }
-      Task { @MainActor in
-        _ = self.updateProjectInfo()
-        self.workspaceRootObservation = nil
-      }
-    }
-
-    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
-      Task { @MainActor in
-        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
-      }
-    }.store(in: &cancellables)
-
-    context.handle(requestPersistence: { [weak self] in
-      Task { await self?.persistThread() }
-    })
-
-    @Dependency(\.chatContextRegistry) var chatContextRegistry
-    chatContextRegistry.register(context: context, for: id.uuidString)
+    setUp()
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -188,6 +185,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.textInput = TextInput()
     input.attachments = []
 
+    for attachment in attachments {
+      if case .file(let fileAttachment) = attachment {
+        // The entire content of the attachment is sent to the LLM.
+        // We update the chat context to reflect this, so that the LLM can edit this file without having to first use the read tool.
+        context.set(knownFileContent: fileAttachment.content, for: fileAttachment.path)
+      }
+    }
+
     if !textInput.string.string.isEmpty {
       // TODO: reformat the string sent to the LLM
       let messageContent = ChatMessageContent.text(ChatMessageTextContent(
@@ -219,8 +224,20 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
+
+      let startTime = Date()
+      defaultLogger.record(
+        event: "message_sent",
+        value: "initiated",
+        metadata: [
+          "model": selectedModel.rawValue,
+          "chat_mode": input.mode.rawValue,
+          "attachments_count": String(attachments.count),
+          "message_length": String(textInput.string.string.count),
+        ])
+
       streamingTask = Task {
-        async let response = llmService.sendMessage(
+        async let response = try await llmService.sendMessage(
           messageHistory: messages,
           tools: tools,
           model: selectedModel,
@@ -275,7 +292,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             }
           })
 
-        try await usageInfo.set(to: response.usageInfo)
+        let res = try await response
+        usageInfo.set(to: res.usageInfo)
+
+        recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
 
       try await streamingTask?.value
@@ -358,23 +378,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   private var hasChangedSinceLastSave = true
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
+  private let toolsPlugin: ToolsPlugin
+  private let settingsService: SettingsService
 
-  @ObservationIgnored
-  @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
+  @MainActor private let llmService: LLMService
+  private let xcodeObserver: XcodeObserver
+  private let fileManager: FileManagerI
+  private let checkpointService: CheckpointService
 
-  @ObservationIgnored
-  @Dependency(\.settingsService) private var settingsService: SettingsService
-
-  @MainActor @ObservationIgnored @Dependency(\.llmService) private var llmService: LLMService
-
-  @ObservationIgnored
-  @Dependency(\.xcodeObserver) private var xcodeObserver
-
-  @ObservationIgnored
-  @Dependency(\.fileManager) private var fileManager: FileManagerI
-
-  @ObservationIgnored
-  @Dependency(\.checkpointService) private var checkpointService: CheckpointService
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
   private var summarizationTask: Task<Void, any Error>? = nil
@@ -383,6 +394,85 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
+  }
+
+  private func handle(appEvent: AppEvent) async -> Bool {
+    switch appEvent {
+    case let event as ExecuteExtensionRequestEvent:
+      if event.command == "set_conversation_name" {
+        do {
+          let params = try JSONDecoder().decode(ExtensionRequest<Schema.NameConversationCommandParams>.self, from: event.data)
+            .input
+          if params.threadId == id.uuidString {
+            name = params.name
+            await persistThread()
+            return true
+          }
+        } catch {
+          defaultLogger.error("Failed to handle app event", error)
+        }
+      }
+      break
+
+    default:
+      break
+    }
+    return false
+  }
+
+  private func setUp() {
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      guard state.focusedWorkspace != nil else { return }
+      Task { @MainActor in
+        _ = self.updateProjectInfo()
+        self.workspaceRootObservation = nil
+      }
+    }
+
+    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
+      Task { @MainActor in
+        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
+      }
+    }.store(in: &cancellables)
+
+    context.handle(requestPersistence: { [weak self] in
+      Task { await self?.persistThread() }
+    })
+
+    @Dependency(\.chatContextRegistry) var chatContextRegistry
+    chatContextRegistry.register(context: context, for: id.uuidString)
+
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      await self?.handle(appEvent: event) ?? false
+    }
+  }
+
+  private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {
+    let (reasoningContent, textContent, toolContent) = messages.reduce(into: (0, 0, 0)) { acc, message in
+      for content in message.content {
+        switch content {
+        case .reasoning:
+          acc.0 += 1
+        case .text:
+          acc.1 += 1
+        case .tool:
+          acc.2 += 1
+        case .internalContent: break
+        }
+      }
+    }
+
+    defaultLogger.record(
+      event: "message_sent",
+      value: "completed",
+      metadata: [
+        "duration": String(describing: Date().timeIntervalSince(startTime)),
+        "assistant_messages_count": String(describing: messages.count),
+        "reasoning_content_count": String(describing: reasoningContent),
+        "text_content_count": String(describing: textContent),
+        "tools_count_count": String(describing: toolContent),
+      ])
   }
 
   private func handle(usageInfo: LLMUsageInfo, model: LLMModel) async throws {

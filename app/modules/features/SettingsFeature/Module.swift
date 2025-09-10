@@ -8,6 +8,8 @@ Target.module(
     "DLS",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LocalServerServiceInterface",
+    "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "ToolFoundation",

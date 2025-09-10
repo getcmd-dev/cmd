@@ -11,6 +11,7 @@ import ChatServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DependenciesTestSupport
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
@@ -24,47 +25,32 @@ import XcodeObserverServiceInterface
 
 // MARK: - ChatViewModelTests
 
+@Suite(.dependencies {
+  $0.userDefaults = MockUserDefaults()
+  $0.chatHistoryService = MockChatHistoryService()
+  $0.fileManager = MockFileManager()
+  $0.llmService = MockLLMService()
+  $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
+})
 struct ChatViewModelTests {
+
   let dummyAXElement = AnyAXUIElement(AXUIElementCreateApplication(0))
 
   @MainActor
-  @Test("initializing with default parameters creates a tab with default mode")
+  @Test("initializing with default parameters creates a tab")
   func test_initialization_withDefaultParameters() {
     let viewModel = ChatViewModel()
 
     #expect(viewModel.tab.messages == [])
-    #expect(viewModel.defaultMode == .agent)
     #expect(viewModel.currentModel == .claudeSonnet)
   }
 
   @MainActor
-  @Test("initializing with custom mode uses that mode")
-  func test_initialization_withCustomMode() {
-    let viewModel = ChatViewModel(defaultMode: .ask)
-
-    #expect(viewModel.defaultMode == ChatMode.ask)
-  }
-
-  @MainActor
-  @Test("debug initializer with custom tabs and selected tab")
-  func test_debugInitializer_withCustomTabsAndSelectedTab() {
-    let tab = ChatThreadViewModel()
-
-    let viewModel = ChatViewModel(
-      defaultMode: .ask,
-      tab: tab)
-
-    #expect(viewModel.tab == tab)
-    #expect(viewModel.defaultMode == ChatMode.ask)
-    #expect(viewModel.currentModel == .claudeSonnet)
-  }
-
-  @MainActor
-  @Test("adding a new tab replaces the current one")
+  @Test("adding a new tab replaces the current one", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_addTab_increasesTabCount() async {
-    let viewModel = withAllModelAvailable {
-      ChatViewModel()
-    }
+    let viewModel = ChatViewModel()
     let firstTab = viewModel.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
     await firstTab.sendMessage()
@@ -95,12 +81,11 @@ struct ChatViewModelTests {
   func test_handleNewChatEvent() async {
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
-      } operation: {
-        ChatViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
+    } operation: {
+      ChatViewModel()
     }
 
     let firstTab = viewModel.tab
@@ -121,12 +106,12 @@ struct ChatViewModelTests {
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.unknown)
 
-    let viewModel = withAllModelAvailable { withDependencies {
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ChatViewModel()
-    }
     }
     let firstTab = viewModel.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
@@ -545,22 +530,264 @@ struct ChatViewModelTests {
       loadChatThreadId.set(to: id)
     }
 
+    let sut = withDependencies {
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+    await sut.loadPersistedChatThreads()
+
+    // Test loadPersistedChatThreads
+    #expect(loadLastChatThreadsCalled.value == true)
+
+    // Test handleSelectChatThread
+    sut.handleSelectChatThread(id: threadId)
+    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+    #expect(loadChatThreadCalled.value == true)
+    #expect(loadChatThreadId.value == threadId)
+  }
+
+  // MARK: - Thread Persistence Tests
+
+  @MainActor
+  @Test("setting tab saves thread ID to UserDefaults")
+  func test_settingTab_savesThreadIdToUserDefaults() {
+    let mockUserDefaults = MockUserDefaults()
+
     let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      ChatViewModel()
+    }
+
+    let newTab = ChatThreadViewModel()
+    viewModel.tab = newTab
+
+    #expect(mockUserDefaults.string(forKey: "lastOpenChatThreadId") == newTab.id.uuidString)
+  }
+
+  @MainActor
+  @Test("addTab saves new thread ID to UserDefaults")
+  func test_addTab_savesNewThreadIdToUserDefaults() {
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      ChatViewModel()
+    }
+
+    let originalTabId = viewModel.tab.id
+    viewModel.addTab()
+
+    let savedThreadId = mockUserDefaults.string(forKey: "lastOpenChatThreadId")
+    #expect(savedThreadId != originalTabId.uuidString)
+    #expect(savedThreadId == viewModel.tab.id.uuidString)
+  }
+
+  @MainActor
+  @Test("loadPersistedChatThreads uses UserDefaults thread ID first")
+  func test_loadPersistedChatThreads_usesUserDefaultsFirst() async {
+    let savedThreadId = UUID()
+    let testThread = ChatThreadModel(
+      id: savedThreadId,
+      name: "Saved Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date().addingTimeInterval(-3600))
+
+    let recentThread = ChatThreadModel(
+      id: UUID(),
+      name: "Recent Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults(initialValues: [
+      "lastOpenChatThreadId": savedThreadId.uuidString,
+    ])
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread, recentThread])
+
+    let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    // Test loadPersistedChatThreads
     await viewModel.loadPersistedChatThreads()
-    #expect(loadLastChatThreadsCalled.value == true)
 
-    // Test handleSelectChatThread
-    viewModel.handleSelectChatThread(id: threadId)
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    // Should load the saved thread, not the most recent one
+    #expect(viewModel.tab.id == savedThreadId)
+    #expect(viewModel.tab.name == "Saved Thread")
+  }
 
-    #expect(loadChatThreadCalled.value == true)
-    #expect(loadChatThreadId.value == threadId)
+  @MainActor
+  @Test("loadPersistedChatThreads falls back to most recent when UserDefaults has invalid ID")
+  func test_loadPersistedChatThreads_fallsBackToMostRecent() async {
+    let recentThreadId = UUID()
+    let recentThread = ChatThreadModel(
+      id: recentThreadId,
+      name: "Recent Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults(initialValues: [
+      "lastOpenChatThreadId": "invalid-uuid",
+    ])
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
+
+    let viewModel = await withDependencies {
+      $0.userDefaults = mockUserDefaults
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      let viewModel = ChatViewModel()
+      await viewModel.loadPersistedChatThreads()
+      return viewModel
+    }
+
+    // Should fall back to most recent thread
+    #expect(viewModel.tab.id == recentThreadId)
+    #expect(viewModel.tab.name == "Recent Thread")
+  }
+
+  @MainActor
+  @Test("loadPersistedChatThreads falls back to most recent when saved thread not found")
+  func test_loadPersistedChatThreads_fallsBackWhenSavedThreadNotFound() async {
+    let missingThreadId = UUID()
+    let recentThreadId = UUID()
+    let recentThread = ChatThreadModel(
+      id: recentThreadId,
+      name: "Recent Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults(initialValues: [
+      "lastOpenChatThreadId": missingThreadId.uuidString,
+    ])
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
+
+    let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    await viewModel.loadPersistedChatThreads()
+
+    // Should fall back to most recent thread since saved one doesn't exist
+    #expect(viewModel.tab.id == recentThreadId)
+    #expect(viewModel.tab.name == "Recent Thread")
+  }
+
+  @MainActor
+  @Test("loadPersistedChatThreads handles missing UserDefaults and uses most recent")
+  func test_loadPersistedChatThreads_handlesMissingUserDefaults() async {
+    let recentThreadId = UUID()
+    let recentThread = ChatThreadModel(
+      id: recentThreadId,
+      name: "Recent Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults() // No saved thread ID
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
+
+    let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    await viewModel.loadPersistedChatThreads()
+
+    // Should use most recent thread
+    #expect(viewModel.tab.id == recentThreadId)
+    #expect(viewModel.tab.name == "Recent Thread")
+  }
+
+  @MainActor
+  @Test("tab persistence works end-to-end")
+  func test_tabPersistenceEndToEnd() async {
+    let thread1Id = UUID()
+    let thread2Id = UUID()
+
+    let thread1 = ChatThreadModel(
+      id: thread1Id,
+      name: "Thread 1",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date().addingTimeInterval(-3600))
+
+    let thread2 = ChatThreadModel(
+      id: thread2Id,
+      name: "Thread 2",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults()
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [thread1, thread2])
+
+    // First instance - should load most recent (thread2)
+    let viewModel1 = withDependencies {
+      $0.userDefaults = mockUserDefaults
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    await viewModel1.loadPersistedChatThreads()
+    #expect(viewModel1.tab.id == thread2Id)
+
+    // Switch to thread1
+    viewModel1.handleSelectChatThread(id: thread1Id)
+    try? await Task.sleep(nanoseconds: 100_000_000) // Allow async operation to complete
+    #expect(viewModel1.tab.id == thread1Id)
+
+    // Create second instance - should load thread1 (the last saved one)
+    let viewModel2 = withDependencies {
+      $0.userDefaults = mockUserDefaults
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    await viewModel2.loadPersistedChatThreads()
+    #expect(viewModel2.tab.id == thread1Id)
+    #expect(viewModel2.tab.name == "Thread 1")
+  }
+
+  @MainActor
+  @Test("UserDefaults key constant is correct")
+  func test_userDefaultsKeyConstant() {
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      ChatViewModel()
+    }
+
+    let newTab = ChatThreadViewModel()
+    viewModel.tab = newTab
+
+    // Verify the specific key used
+    #expect(mockUserDefaults.string(forKey: "lastOpenChatThreadId") == newTab.id.uuidString)
+    #expect(mockUserDefaults.string(forKey: "wrongKey") == nil)
   }
 
   // MARK: - Summarization Tests
@@ -579,7 +806,6 @@ struct ChatViewModelTests {
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
-      let messageStream = MutableCurrentValueStream<AssistantMessage>(assistantMessage)
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
       handleUpdateStream(updateStream)
@@ -592,12 +818,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("Test message")])
@@ -642,12 +867,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("Test message")])
@@ -694,12 +918,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("User message")])
@@ -733,12 +956,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     let initialMessageCount = viewModel.messages.count
@@ -807,12 +1029,11 @@ struct ChatViewModelTests {
       }
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     // Send first message that will trigger summarization
@@ -839,23 +1060,6 @@ struct ChatViewModelTests {
       ],
     ])
   }
-
-  /// Setup the settings and used default to allow for messages to be sent (there need to be an LLM model configured).
-  private func withAllModelAvailable<R>(
-    operation: () -> R)
-    -> R
-  {
-    let settingsService = MockSettingsService.allConfigured
-    let mockUserDefaults = MockUserDefaults(initialValues: [
-      "selectedLLMModel": "gpt-latest",
-    ])
-    return withDependencies({
-      $0.settingsService = settingsService
-      $0.userDefaults = mockUserDefaults
-    }) {
-      operation()
-    }
-  }
 }
 
 extension Schema.MessageContent {
@@ -866,6 +1070,18 @@ extension Schema.MessageContent {
     default:
       nil
     }
+  }
+}
+
+extension DependencyValues {
+  /// Setup the settings and used default to allow for messages to be sent (there need to be an LLM model configured).
+  mutating func withAllModelAvailable() {
+    let settingsService = MockSettingsService.allConfigured
+    let mockUserDefaults = MockUserDefaults(initialValues: [
+      "selectedLLMModel": "gpt-latest",
+    ])
+    self.settingsService = settingsService
+    userDefaults = mockUserDefaults
   }
 }
 

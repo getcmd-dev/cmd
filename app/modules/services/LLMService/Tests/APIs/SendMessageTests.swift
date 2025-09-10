@@ -620,4 +620,77 @@ final class SendMessageTests {
     #expect(messagesUpdateCount == 1)
     #expect(firstMessageUpdateCount == 2)
   }
+
+  @Test("SendMessage with tool use that has bad input sends detailed error message")
+  func test_sendMessage_withBadToolInput() async throws {
+    let requestResponded = expectation(description: "The request was responded to")
+    let server = MockLocalServer()
+    let sut = DefaultLLMService(server: server)
+
+    let requestCount = Atomic(0)
+    server.onPostRequest = { _, data, sendChunk in
+      if requestCount.increment() == 1 {
+        // First request: LLM sends a tool use with bad input (wrong type for 'file' field)
+        sendChunk?("""
+          {
+            "type": "tool_call",
+            "toolName": "TestTool",
+            "input": {"file": 123, "keywords": "should be array"},
+            "toolUseId": "bad-input-tool-123",
+            "idx": 0
+          }
+          """.utf8Data)
+        return okServerResponse
+      } else {
+        // Second request: Verify that the error message about bad tool input is included
+        let requestData = String(data: data, encoding: .utf8) ?? ""
+        #expect(requestData.contains("tool_result_failure"))
+        #expect(requestData
+          .contains(
+            "Could not parse the input for tool TestTool: Error at coding path: '.file': Expected to decode String but found number instead."))
+
+        sendChunk?("""
+          {
+            "type": "text_delta",
+            "text": "I'll fix that input format",
+            "idx": 0
+          }
+          """.utf8Data)
+        requestResponded.fulfill()
+        return okServerResponse
+      }
+    }
+
+    let messages = try await sut.sendMessage(
+      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
+      tools: [TestTool<TestToolInput, String>(output: "test_result")]).lastValue
+    #expect(messages.count == 2)
+
+    let firstMessage = try await (#require(messages.first)).lastValue
+    let firstMessageContent = firstMessage.content
+    #expect(firstMessageContent.count == 1)
+
+    // Verify the FailedToolUse is created with detailed error description
+    if let toolUseMessage = firstMessageContent.first?.asToolUseRequest {
+      if let failedToolUse = toolUseMessage.toolUse as? FailedToolUse {
+        #expect(failedToolUse.toolUseId == "bad-input-tool-123")
+        #expect(failedToolUse.toolName == "TestTool")
+        // Validate core properties - the exact message format may have smart quotes
+        #expect(failedToolUse
+          .errorDescription ==
+          "Could not parse the input for tool TestTool: Error at coding path: '.file': Expected to decode String but found number instead.")
+      } else {
+        Issue.record("Expected FailedToolUse for bad input, got \(type(of: toolUseMessage.toolUse))")
+      }
+    } else {
+      Issue.record("Expected tool use request in first message")
+    }
+
+    let secondMessage = try await (#require(messages.last)).lastValue
+    let secondMessageContent = secondMessage.content
+    #expect(secondMessageContent.count == 1)
+    #expect(secondMessageContent.first?.asText?.content == "I'll fix that input format")
+
+    try await fulfillment(of: [requestResponded])
+  }
 }

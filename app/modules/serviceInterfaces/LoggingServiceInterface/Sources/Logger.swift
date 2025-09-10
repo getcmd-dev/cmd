@@ -33,6 +33,16 @@ public protocol Logger: Sendable {
   var category: String { get }
 }
 
+extension Logger {
+  public func record(event: StaticString, metadata: [StaticString: String]? = nil) {
+    record(event: event, value: "NA", metadata: metadata)
+  }
+
+  public func record(event: StaticString, value: String) {
+    record(event: event, value: value, metadata: nil)
+  }
+}
+
 /// The global default logger.
 /// For convenience, this is globally accessible instead of passed through the dependency injection system.
 /// Changing this value is not thread safe and should be done cautiously.

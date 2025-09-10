@@ -64,4 +64,5 @@ setup_dependencies() {
 setup_node_environment >"./launch-server.log" 2>&1
 setup_dependencies >"./launch-server.log" 2>&1
 
+gunzip ./main.bundle.cjs.gz --force --keep
 ./node --enable-source-maps ./main.bundle.cjs "$@" 2> >(tee "./launch-server.stderr.log") 1> >(tee "./launch-server.stdout.log")

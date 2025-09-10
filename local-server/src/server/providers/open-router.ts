@@ -95,6 +95,13 @@ const fetchAnthropicResponse: typeof fetch = (input, init) => {
 			}
 		}
 	}
+	if (body?.tools && body?.tools.length > 0) {
+		const lastIdx = body.tools.length - 1
+		body.tools[lastIdx] = {
+			...body.tools[lastIdx],
+			cache_control: { type: "ephemeral" },
+		}
+	}
 	init.body = JSON.stringify(body)
 
 	return fetch(input, init)

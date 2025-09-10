@@ -88,7 +88,10 @@ public final class ReadFileTool: NonStreamableTool {
 
         if let lineRange = input.lineRange {
           let lines = content.components(separatedBy: .newlines)
-          let selectedLines = lines[safe: (lineRange.start - 1)..<(lineRange.end)]
+          // -1 as the line is 1-indexed, +1 to make the range inclusive of end line
+          let startIndex = lineRange.start - 1
+          let endIndex = lineRange.end - 1 + 1
+          let selectedLines = lines.safeRange(from: startIndex, to: endIndex)
           content = selectedLines?.joined(separator: "\n") ?? content
         }
 
@@ -173,9 +176,21 @@ extension ReadFileTool.Use: DisplayableToolUse {
 }
 
 extension [String] {
-  subscript(safe range: Range<Int>) -> [String]? {
-    let start = Swift.max(0, range.lowerBound)
-    let end = Swift.min(count, range.upperBound)
+  /// Safely extracts a range of lines from the array.
+  ///
+  /// - Parameters:
+  ///   - lower: The starting index (inclusive).
+  ///   - upper: The ending index (exclusive).
+  /// - Returns: An array of strings representing the extracted lines, or nil if the range is invalid.
+  /// If the upper bound is negative, it is treated as an offset from the end of the array.
+  func safeRange(from lower: Int, to upper: Int) -> [String]? {
+    let start = Swift.max(0, lower)
+    var end = upper
+    if upper < 0 {
+      // Never trust an LLM!
+      end = self.count + upper + 1
+    }
+    end = Swift.min(count, end)
 
     guard start < end else { return nil }
     return Array(self[start..<end])

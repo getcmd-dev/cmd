@@ -38,6 +38,7 @@ public final class SettingsViewModel {
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
+    enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -104,6 +105,13 @@ public final class SettingsViewModel {
   var showOnboardingScreenAgain: Bool {
     didSet {
       userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
+      if showOnboardingScreenAgain {
+        LLMProvider.allCases
+          .compactMap(\.externalAgent)
+          .forEach {
+            $0.unmarkHasBeenEnabledOnce()
+          }
+      }
     }
   }
 
@@ -126,6 +134,12 @@ public final class SettingsViewModel {
   var defaultChatPositionIsInverted: Bool {
     didSet {
       userDefaults.set(defaultChatPositionIsInverted, forKey: .defaultChatPositionIsInverted)
+    }
+  }
+
+  var enableAnalyticsAndCrashReporting: Bool {
+    didSet {
+      userDefaults.set(enableAnalyticsAndCrashReporting, forKey: .enableAnalyticsAndCrashReporting)
     }
   }
 
