@@ -91,7 +91,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/appstefan/highlightswift", from: "1.1.0"),
     .package(url: "https://github.com/gsabran/Down", revision: "14309dd8781c7613063344727454ffbbebc8e8bd"),
-    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.7.0"),
+    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.9.4"),
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),

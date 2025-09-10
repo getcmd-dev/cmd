@@ -58,6 +58,19 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     knownFilesContent: [String: String] = [:],
     createdAt: Date = Date())
   {
+    @Dependency(\.toolsPlugin) var toolsPlugin
+    @Dependency(\.settingsService) var settingsService
+    @Dependency(\.llmService) var llmService
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    @Dependency(\.fileManager) var fileManager
+    @Dependency(\.checkpointService) var checkpointService
+
+    self.toolsPlugin = toolsPlugin
+    self.settingsService = settingsService
+    self.llmService = llmService
+    self.xcodeObserver = xcodeObserver
+    self.fileManager = fileManager
+    self.checkpointService = checkpointService
     self.id = id
     self.name = name
     self.messages = messages
@@ -365,23 +378,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   private var hasChangedSinceLastSave = true
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
+  private let toolsPlugin: ToolsPlugin
+  private let settingsService: SettingsService
 
-  @ObservationIgnored
-  @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
+  @MainActor private let llmService: LLMService
+  private let xcodeObserver: XcodeObserver
+  private let fileManager: FileManagerI
+  private let checkpointService: CheckpointService
 
-  @ObservationIgnored
-  @Dependency(\.settingsService) private var settingsService: SettingsService
-
-  @MainActor @ObservationIgnored @Dependency(\.llmService) private var llmService: LLMService
-
-  @ObservationIgnored
-  @Dependency(\.xcodeObserver) private var xcodeObserver
-
-  @ObservationIgnored
-  @Dependency(\.fileManager) private var fileManager: FileManagerI
-
-  @ObservationIgnored
-  @Dependency(\.checkpointService) private var checkpointService: CheckpointService
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
   private var summarizationTask: Task<Void, any Error>? = nil
@@ -437,6 +441,11 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     @Dependency(\.chatContextRegistry) var chatContextRegistry
     chatContextRegistry.register(context: context, for: id.uuidString)
+
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      await self?.handle(appEvent: event) ?? false
+    }
   }
 
   private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {

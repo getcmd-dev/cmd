@@ -36,6 +36,7 @@ Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AccessibilityFoundation",
     "AppEventServiceInterface",
     "ChatAppEvents",
@@ -44,12 +45,14 @@ Target.module(
     "ChatServiceInterface",
     "CheckpointServiceInterface",
     "ConcurrencyFoundation",
+    "ExtensionEventsInterface",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
     "LLMFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ])

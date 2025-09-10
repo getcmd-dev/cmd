@@ -44,6 +44,18 @@ public class ChatViewModel {
   {
     self.tab = tab
     self.currentModel = currentModel
+
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    @Dependency(\.fileManager) var fileManager
+    @Dependency(\.chatHistoryService) var chatHistoryService
+    @Dependency(\.userDefaults) var userDefaults
+    self.appEventHandlerRegistry = appEventHandlerRegistry
+    self.xcodeObserver = xcodeObserver
+    self.fileManager = fileManager
+    self.chatHistoryService = chatHistoryService
+    self.userDefaults = userDefaults
+
     registerAsAppEventHandler()
 
     xcodeObserver.statePublisher.map(\.focusedWorkspace).map(\.?.url).removeDuplicates()
@@ -65,8 +77,8 @@ public class ChatViewModel {
   private(set) var focusedWorkspacePath: URL? = nil
   private(set) var showChatHistory = false
 
-  @ObservationIgnored @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
-  @ObservationIgnored @Dependency(\.userDefaults) var userDefaults: UserDefaultsI
+  let chatHistoryService: ChatHistoryService
+  let userDefaults: UserDefaultsI
 
   let chatHistory = ChatHistoryViewModel()
 
@@ -135,9 +147,9 @@ public class ChatViewModel {
 
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
-  @ObservationIgnored @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
-  @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver
-  @ObservationIgnored @Dependency(\.fileManager) private var fileManager
+  private let appEventHandlerRegistry: AppEventHandlerRegistry
+  private let xcodeObserver: XcodeObserver
+  private let fileManager: FileManagerI
 
   private func saveLastOpenThreadId(_ threadId: UUID) {
     userDefaults.set(threadId.uuidString, forKey: Constants.lastOpenChatThreadIdKey)
@@ -164,7 +176,7 @@ public class ChatViewModel {
       guard let self else { return false }
       if let event = event as? AddCodeToChatEvent {
         await handle(addCodeToChatEvent: event)
-        return true //
+        return true
       } else if let event = event as? ChangeChatModeEvent {
         Task { @MainActor in
           self.tab.input.mode = event.chatMode

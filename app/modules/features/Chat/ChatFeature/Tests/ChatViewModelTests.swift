@@ -11,6 +11,7 @@ import ChatServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DependenciesTestSupport
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
@@ -24,7 +25,15 @@ import XcodeObserverServiceInterface
 
 // MARK: - ChatViewModelTests
 
+@Suite(.dependencies {
+  $0.userDefaults = MockUserDefaults()
+  $0.chatHistoryService = MockChatHistoryService()
+  $0.fileManager = MockFileManager()
+  $0.llmService = MockLLMService()
+  $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
+}, .serialized)
 struct ChatViewModelTests {
+
   let dummyAXElement = AnyAXUIElement(AXUIElementCreateApplication(0))
 
   @MainActor
@@ -798,7 +807,6 @@ struct ChatViewModelTests {
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
-      let messageStream = MutableCurrentValueStream<AssistantMessage>(assistantMessage)
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
       handleUpdateStream(updateStream)
