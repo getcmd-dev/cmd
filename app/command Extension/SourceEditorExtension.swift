@@ -63,7 +63,7 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
       }
 
       let commandClass = BaseUserDefinedXcodeShortcutCommand.subClasses[index]
-      let command = commandClass.init(name: shortcut.name, command: shortcut.command)
+      let command = commandClass.init()
 
       userDefinedXcodeShortcutCommands.append(command)
       defaultLogger.log("Configured user defined Xcode shortcut: \(shortcut.name)")

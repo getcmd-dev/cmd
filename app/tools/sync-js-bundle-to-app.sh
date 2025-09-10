@@ -45,7 +45,12 @@ build_and_copy() {
 	fi
 
 	(cd "$repo_root/local-server" && yarn build && yarn copy-to-app) || exit 1
-	if [ "${CONFIGURATION}" = "Release" ]; then
+
+	# Temporarily disable strict mode to read CONFIGURATION which might not be set
+	set +u
+	config="${CONFIGURATION}"
+	set -u
+	if [ "${config}" = "Release" ]; then
 		echo "Building in Release mode"
 		(cd "$repo_root/local-server" && yarn build:prod && yarn copy-to-app) || exit 1
 	else

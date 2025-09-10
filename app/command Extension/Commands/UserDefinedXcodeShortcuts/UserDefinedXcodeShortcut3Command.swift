@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 final class UserDefinedXcodeShortcut3Command: BaseUserDefinedXcodeShortcutCommand, @unchecked Sendable {
-  required init(name: String? = nil, command: String? = nil) {
-    super.init(shortcutIndex: 3, name: name, command: command)
+  required init() {
+    super.init(shortcutIndex: 3)
   }
 }

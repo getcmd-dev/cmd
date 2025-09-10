@@ -6,31 +6,33 @@ import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
 import SharedValuesFoundation
+import AppExtension
+import SettingsServiceInterface
 import XcodeKit
 
 // MARK: - UserDefinedShortcutCommand
 
-protocol UserDefinedShortcutCommand {
-  init(name: String?, command: String?)
-}
-
 // MARK: - BaseUserDefinedXcodeShortcutCommand
 
-class BaseUserDefinedXcodeShortcutCommand: CommandType, UserDefinedShortcutCommand, @unchecked Sendable {
+class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
 
   // MARK: - Initialization
 
-  required init(name: String?, command: String?) {
-    shortcutIndex = -1
-    userDefinedShortcutName = name
-    shellCommand = command
-    super.init()
+  required override convenience init() {
+    self.init(shortcutIndex: -1)
   }
 
-  init(shortcutIndex: Int, name: String? = nil, command: String? = nil) {
+  init(shortcutIndex: Int) {
+    defaultLogger.log("\(type(of: self)): Initializing with index \(shortcutIndex)")
+    let settings = AppExtensionScope.shared.settingsService.value(for: \.userDefinedXcodeShortcuts)
     self.shortcutIndex = shortcutIndex
-    userDefinedShortcutName = name
-    shellCommand = command
+    if shortcutIndex < 0 || shortcutIndex >= settings.count {
+      userDefinedShortcutName = nil
+      shellCommand = nil
+    } else {
+      userDefinedShortcutName = settings[shortcutIndex].name
+      shellCommand = settings[shortcutIndex].command
+    }
     super.init()
   }
 

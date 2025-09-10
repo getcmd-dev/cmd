@@ -15,6 +15,9 @@ final class ReloadSettingsCommand: CommandType, @unchecked Sendable {
     defaultLogger.log("ReloadSettingsCommand triggered - crashing extension to force reload")
 
     // Force crash the extension to trigger reload
-    fatalError("Extension reload requested")
+    Task {
+      try await Task.sleep(nanoseconds: 100_000_000)
+      fatalError("Killing extension to relead settings")
+    }
   }
 }
