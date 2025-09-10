@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6DA466E2D6EDBA100408790"
-               BuildableName = "&#x61c;command.appex"
+               BuildableName = "&#x61c;cmd.appex"
                BlueprintName = "command Extension"
                ReferencedContainer = "container:command.xcodeproj">
             </BuildableReference>
@@ -82,7 +82,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6DA466E2D6EDBA100408790"
-            BuildableName = "&#x61c;command.appex"
+            BuildableName = "&#x61c;cmd.appex"
             BlueprintName = "command Extension"
             ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>

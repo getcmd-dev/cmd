@@ -125,7 +125,7 @@ platform :mac do
     archive_path = "#{build_path}/release/#{app_name}.xcarchive"
 
     # Create a new build
-    sh("rm -rf #{build_path}")
+    # sh("rm -rf #{build_path}")
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -209,7 +209,10 @@ platform :mac do
   end
 
   desc "Build, archive, sign and publish the app for distribution"
-  lane :distribute_release do
+  lane :distribute_release do |options|
+    skip_symbols_upload = !options[:skip_symbols_upload].nil?
+    skip_github_release = !options[:skip_github_release].nil?
+
     setup_ci if ENV['CI']
     app_config_path = File.absolute_path("../command.shared.xcconfig")
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
@@ -238,32 +241,36 @@ platform :mac do
     app_binary_path = result[:app_binary_path]
     archive_path = result[:archive_path]
 
-    # Upload the dsym and relevant release info to Sentry
-    upload_release_to_sentry(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
+    unless skip_symbols_upload
+      # Upload the dsym and relevant release info to Sentry/Bugsnag
+      upload_release_symbols(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
+    end
 
-    gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+    unless skip_github_release
+      gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
 
-    set_github_release(
-      api_token: gh_personal_access_token_cmd,
-      server_url: "https://api.github.com",
-      repository_name: "getcmd-dev/cmd",
-      name: "v#{version}",
-      tag_name: "v#{version}",
-      description: "v#{version}",
-      commitish: "main",
-      upload_assets: [dmg_path, app_zip_path],
-    )
+      set_github_release(
+        api_token: gh_personal_access_token_cmd,
+        server_url: "https://api.github.com",
+        repository_name: "getcmd-dev/cmd",
+        name: "v#{version}",
+        tag_name: "v#{version}",
+        description: "v#{version}",
+        commitish: "main",
+        upload_assets: [dmg_path, app_zip_path],
+      )
 
-    current_branch = sh("git rev-parse --abbrev-ref HEAD").strip
-    new_branch_name = "release-v#{version}"
-    sh("git add ../..  && git commit -m 'Release v#{version}' --no-verify && git checkout -b #{new_branch_name} && git push origin #{new_branch_name} --no-verify")
-    create_pull_request(
-      api_token: gh_personal_access_token_cmd,
-      title: "Release v#{version}",
-      repo: "getcmd-dev/cmd",
-      head: new_branch_name,
-      base: "main"
-    )
+      current_branch = sh("git rev-parse --abbrev-ref HEAD").strip
+      new_branch_name = "release-v#{version}"
+      sh("git add ../..  && git commit -m 'Release v#{version}' --no-verify && git checkout -b #{new_branch_name} && git push origin #{new_branch_name} --no-verify")
+      create_pull_request(
+        api_token: gh_personal_access_token_cmd,
+        title: "Release v#{version}",
+        repo: "getcmd-dev/cmd",
+        head: new_branch_name,
+        base: "main"
+      )
+    end
     sh("git checkout #{current_branch}")
   end
 
@@ -338,7 +345,7 @@ platform :mac do
   end
 
   desc "Upload the new release to Sentry"
-  lane :upload_release_to_sentry do |options|
+  lane :upload_release_symbols do |options|
     version = options.fetch(:version, nil)
     app_binary_path = options.fetch(:app_binary_path, nil)
     archive_path = options[:archive_path]
