@@ -97,17 +97,14 @@ export async function computeAndSaveBuildFileSize() {
 	const compressedStats = await fs.stat("./dist/main.bundle.cjs.gz").catch(() => ({ size: 0 }))
 	const compressedSizeInMB = (compressedStats.size / (1024 * 1024)).toFixed(2)
 
-	await fs.writeFile(
-		"./build.size",
-		JSON.stringify(
-			{
-				size: `${sizeInMB}MB`,
-				compressedSize: `${compressedSizeInMB}MB`,
-			},
-			null,
-			2,
-		),
-	)
+	const size = JSON.parse(await fs.readFile("./build.size", "utf-8"))
+	const env = process.env.NODE_ENV === "production" ? "production" : "development"
+	size[env] = {
+		size: `${sizeInMB}MB`,
+		compressedSize: `${compressedSizeInMB}MB`,
+	}
+
+	await fs.writeFile("./build.size", JSON.stringify(size, null, 2))
 }
 
 await computeAndSaveHash()
