@@ -65,7 +65,7 @@ struct DefaultFileSuggestionServiceTests {
   func testSwiftPackage() async throws {
     let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
     let shellService = MockShellService()
-    shellService.onRun = { command, cwd, _, _ in
+    shellService.onRun = { command, cwd, _, _, _ in
       #expect(command == "swift package describe --type json")
       #expect(cwd?.hasSuffix("/SPM") == true)
       return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)
@@ -103,7 +103,7 @@ struct DefaultFileSuggestionServiceTests {
     let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
     let shellService = MockShellService()
     let callCount = Atomic(0)
-    shellService.onRun = { _, _, _, _ in
+    shellService.onRun = { _, _, _, _, _ in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)
     }
@@ -134,7 +134,7 @@ struct DefaultFileSuggestionServiceTests {
     let didStartConcurrentRequests = expectation(description: "Did start concurrent requests")
     let didCompleteConcurrentRequests = expectation(description: "Did complete concurrent requests")
 
-    shellService.onRun = { _, _, _, _ in
+    shellService.onRun = { _, _, _, _, _ in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       try await fulfillment(of: didStartConcurrentRequests)
       return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)

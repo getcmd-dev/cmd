@@ -93,7 +93,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
           let shellResult = try await shellService.run(
             input.command,
             cwd: input.cwd ?? context.projectRoot?.path(),
-            useInteractiveShell: true)
+            useInteractiveShell: true,
+            env: nil)
           { execution, _, stdout, stderr in
             self.runningProcess = execution
             self.setStdoutStream(.init(replayStrategy: .replayAll, stdout))

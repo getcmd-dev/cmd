@@ -29,14 +29,22 @@ final class DefaultShellService: ShellService {
     _ command: String,
     cwd: String?,
     useInteractiveShell: Bool,
+    env: [String: String]?,
     body: SubprocessHandle? = nil)
     async throws -> CommandExecutionResult
   {
     let process = Process()
     process.launchPath = "/bin/zsh"
-    if useInteractiveShell {
-      process.environment = env
-    }
+
+    let environment: Environment = {
+      guard useInteractiveShell || env != nil else {
+        return .inherit
+      }
+      var environment = useInteractiveShell ? self.env : ProcessInfo.processInfo.environment
+      environment.merge(env ?? [:]) { _, new in new }
+      return .custom(environment)
+    }()
+
     process.arguments = ["-c"] + [command]
     if let cwd {
       process.currentDirectoryPath = cwd
@@ -52,7 +60,7 @@ final class DefaultShellService: ShellService {
     let result = try await Subprocess.run(
       .path("/bin/zsh"),
       arguments: Arguments(["-c"] + [command]),
-      environment: useInteractiveShell ? Environment.custom(env) : .inherit,
+      environment: environment,
       workingDirectory: cwd.map { .init($0) })
     { execution, inputIO, outputIO, errorIO in
       let outputStream = outputIO.toDataStream

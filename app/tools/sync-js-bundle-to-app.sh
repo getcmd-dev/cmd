@@ -67,6 +67,12 @@ build_and_copy() {
 	fi
 }
 
+# Install node dependencies if needed
+if [ ! -d "$repo_root/local-server/node_modules" ]; then
+	echo "Installing node dependencies in local-server..."
+	(cd "$repo_root/local-server" && yarn install) || exit 1
+fi
+
 # Sync the schema
 (cd "$repo_root/local-server" && yarn export-schema-swift) || exit 1
 

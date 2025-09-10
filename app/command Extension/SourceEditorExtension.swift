@@ -13,10 +13,19 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
   var commandDefinitions: [[XCSourceEditorCommandDefinitionKey: Any]] {
     defaultLogger.log("creating commandDefinitions")
     let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
-    return [
+
+    // Base commands
+    var commands: [CommandType] = [
       ApplyEditCommand(),
       OpenInCursorCommand(),
-    ].map { $0.makeCommandDefinition(identifierPrefix: bundleIdentifier) }
+      ReloadSettingsCommand(),
+    ]
+
+    // Configure and add user defined Xcode shortcut commands based on settings
+    configureUserDefinedXcodeShortcutCommands()
+    commands.append(contentsOf: userDefinedXcodeShortcutCommands)
+
+    return commands.map { $0.makeCommandDefinition(identifierPrefix: bundleIdentifier) }
   }
 
   func extensionDidFinishLaunching() {
@@ -25,6 +34,42 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
       openContainingAppIfNecessary()
     }
     #endif
+  }
+
+  private var userDefinedXcodeShortcutCommands: [CommandType] = []
+
+  private func configureUserDefinedXcodeShortcutCommands() {
+    defaultLogger.log("Configuring user defined Xcode shortcut commands")
+    userDefinedXcodeShortcutCommands.removeAll()
+
+    // Load user defined Xcode shortcuts from settings
+    let settings = AppExtensionScope.shared.settingsService.values()
+    let enabledUserDefinedShortcuts = settings.userDefinedXcodeShortcuts.filter(\.isEnabled)
+
+    defaultLogger.log("Found \(enabledUserDefinedShortcuts.count) enabled user defined Xcode shortcuts")
+
+    // Create command instances for each enabled shortcut (max from shared constant)
+    for (index, shortcut) in enabledUserDefinedShortcuts.enumerated() {
+      guard index < UserDefinedXcodeShortcutLimits.maxShortcuts else {
+        defaultLogger
+          .error(
+            "Too many user defined Xcode shortcuts configured. Only first \(UserDefinedXcodeShortcutLimits.maxShortcuts) will be available.")
+        break
+      }
+
+      guard index < BaseUserDefinedXcodeShortcutCommand.subClasses.count else {
+        defaultLogger.error("No command class available for index \(index)")
+        continue
+      }
+
+      let commandClass = BaseUserDefinedXcodeShortcutCommand.subClasses[index]
+      let command = commandClass.init(name: shortcut.name, command: shortcut.command)
+
+      userDefinedXcodeShortcutCommands.append(command)
+      defaultLogger.log("Configured user defined Xcode shortcut: \(shortcut.name)")
+    }
+
+    defaultLogger.log("Configured \(userDefinedXcodeShortcutCommands.count) user defined Xcode shortcut commands")
   }
 
   private func openContainingAppIfNecessary() {

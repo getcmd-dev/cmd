@@ -68,7 +68,7 @@ struct DefaultPermissionsServiceTests {
     let pollCount = Atomic(0)
 
     let shellService = MockShellService()
-    shellService.onRun = { command, _, _, _ in
+    shellService.onRun = { command, _, _, _, _ in
       #expect(command == "ps aux | grep 'command'")
       let count = pollCount.increment()
       return CommandExecutionResult(

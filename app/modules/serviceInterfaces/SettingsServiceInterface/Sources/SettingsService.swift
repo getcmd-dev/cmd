@@ -58,7 +58,8 @@ public struct Settings: Sendable, Equatable {
     reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
-    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts())
+    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
+    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -72,6 +73,7 @@ public struct Settings: Sendable, Equatable {
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
+    self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -130,6 +132,7 @@ public struct Settings: Sendable, Equatable {
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
+  public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
 
 }
 
@@ -154,6 +157,22 @@ extension Settings {
 }
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings
+
+// MARK: - User Defined Xcode Shortcuts
+
+public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiable {
+  public let id: UUID
+  public var name: String
+  public var command: String
+  public var isEnabled: Bool
+
+  public init(id: UUID = UUID(), name: String, command: String, isEnabled: Bool = true) {
+    self.id = id
+    self.name = name
+    self.command = command
+    self.isEnabled = isEnabled
+  }
+}
 
 // MARK: - Keyboard Shortcuts
 
