@@ -86,52 +86,33 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     // Prepare environment variables instead of string replacement
     var environmentVariables: [String: String] = [:]
 
-//    let xcodeState = xcodeObserver.state
-//
-//    // Set FILEPATH
-//    if let currentFile = xcodeState.focusedTabURL {
-//      environmentVariables["FILEPATH"] = currentFile.path(percentEncoded: false)
-//    }
-//
-//    // Set FILEPATH_FROM_GIT_ROOT
-//    if let currentFile = xcodeState.focusedTabURL {
-//      let gitRoot = findGitRoot(from: currentFile)
-//      if let gitRoot = gitRoot {
-//        let relativePath = currentFile.path(percentEncoded: false).replacingOccurrences(of: gitRoot + "/", with: "")
-//        environmentVariables["FILEPATH_FROM_GIT_ROOT"] = relativePath
-//      }
-//    }
-//
-//    // Set XCODE_PROJECT_PATH
-//    if let projectPath = xcodeState.focusedWorkspace?.rootPath {
-//      environmentVariables["XCODE_PROJECT_PATH"] = projectPath.path(percentEncoded: false)
-//    }
-//
-//    // Set SELECTED_LINE_NUMBER_START and SELECTED_LINE_NUMBER_END
-//    if let selection = xcodeState.focusedWorkspace?.editors.first?.selections.first {
-//      environmentVariables["SELECTED_LINE_NUMBER_START"] = String(selection.start.line + 1)
-//      environmentVariables["SELECTED_LINE_NUMBER_END"] = String(selection.end.line + 1)
-//    }
+    let xcodeState = xcodeObserver.state
+      
+    // Set FILEPATH
+    if let currentFile = xcodeState.focusedTabURL {
+      environmentVariables["FILEPATH"] = currentFile.path(percentEncoded: false)
+    }
+    // Set FILEPATH_FROM_GIT_ROOT
+    if let currentFile = xcodeState.focusedTabURL,
+        let gitRoot = try? await shellService.stdout("git rev-parse --show-toplevel", cwd: currentFile.deletingLastPathComponent().path)  {
+        let relativePath = currentFile.path(percentEncoded: false).replacingOccurrences(of: gitRoot + "/", with: "")
+        environmentVariables["FILEPATH_FROM_GIT_ROOT"] = relativePath
+    }
+    // Set XCODE_PROJECT_PATH
+      if let projectPath = xcodeState.focusedWorkspace?.url {
+      environmentVariables["XCODE_PROJECT_PATH"] = projectPath.path(percentEncoded: false)
+    }
+    // Set SELECTED_LINE_NUMBER_START and SELECTED_LINE_NUMBER_END
+    if let selection = xcodeState.focusedWorkspace?.editors.first?.selections.first {
+      environmentVariables["SELECTED_LINE_NUMBER_START"] = String(selection.start.line + 1)
+      environmentVariables["SELECTED_LINE_NUMBER_END"] = String(selection.end.line + 1)
+    }
 
     defaultLogger.log("Executing command with environment variables: \(environmentVariables)")
 
     // Execute the shell command with environment variables
     try await shellService.run(input.shellCommand, useInteractiveShell: true, env: environmentVariables)
   }
-
-//  private func findGitRoot(from url: URL) -> String? {
-//    var currentURL = url.deletingLastPathComponent()
-//
-//    while currentURL.path != "/" {
-//      let gitURL = currentURL.appendingPathComponent(".git")
-//      if FileManager.default.fileExists(atPath: gitURL.path) {
-//        return currentURL.path
-//      }
-//      currentURL = currentURL.deletingLastPathComponent()
-//    }
-//
-//    return nil
-//  }
 }
 
 // MARK: - EmptyResult

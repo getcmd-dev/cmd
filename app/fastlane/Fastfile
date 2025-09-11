@@ -166,6 +166,7 @@ platform :mac do
 
     # Create a DMG file for distribution using create-dmg
     dmg_path = "#{build_path}/release/#{app_name}.dmg"
+    sh("rm -f '#{dmg_path}'") # Remove existing DMG file if it exists
     sh("create-dmg '#{app_path}' --output '#{dmg_path}' --identity #{certificate_sha1}")
 
     puts "Verifying code signature..."

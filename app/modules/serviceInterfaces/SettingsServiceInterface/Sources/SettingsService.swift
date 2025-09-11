@@ -164,13 +164,13 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
   public let id: UUID
   public var name: String
   public var command: String
-  public var isEnabled: Bool
+    public var keyBinding: Settings.KeyboardShortcut?
 
-  public init(id: UUID = UUID(), name: String, command: String, isEnabled: Bool = true) {
+    public init(id: UUID = UUID(), name: String, command: String, keyBinding: Settings.KeyboardShortcut? = nil) {
     self.id = id
     self.name = name
     self.command = command
-    self.isEnabled = isEnabled
+      self.keyBinding = keyBinding
   }
 }
 

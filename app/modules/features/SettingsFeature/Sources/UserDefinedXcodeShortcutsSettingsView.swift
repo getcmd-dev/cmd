@@ -15,6 +15,12 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading) {
+            Text("Easily create new shortcuts in Xcode")
+                .font(.headline)
+                .padding(.bottom, 4)
+            Text("You will find them under\n    `Editor > cmd`\n\nYou can set key bindings in\n    `Xcode > Settings > Key Bindings`")
+        }
       // Environment variables info
       VStack(alignment: .leading, spacing: 8) {
         Text("Available Environment Variables")
@@ -41,10 +47,16 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
 
           Spacer()
 
-          Button("Add Shortcut") {
-            showingAddSheet = true
-          }
-          .buttonStyle(.borderedProminent)
+          HoveredButton(
+            action: {
+              showingAddSheet = true
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 8,
+            cornerRadius: 6) {
+              Text("Add Shortcut")
+            }
           .disabled(userDefinedXcodeShortcuts.count >= UserDefinedXcodeShortcutLimits.maxShortcuts)
         }
 
@@ -80,7 +92,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
     }
     .sheet(isPresented: $showingAddSheet) {
       UserDefinedXcodeShortcutEditSheet(
-        shortcut: .constant(UserDefinedXcodeShortcut(name: "", command: "")),
+        initialValue: nil,
         isNew: true,
         onSave: { shortcut in
           userDefinedXcodeShortcuts.append(shortcut)
@@ -92,7 +104,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
     }
     .sheet(item: $editingShortcut) { shortcut in
       UserDefinedXcodeShortcutEditSheet(
-        shortcut: .constant(shortcut),
+        initialValue: shortcut,
         isNew: false,
         onSave: { updatedShortcut in
           if let index = userDefinedXcodeShortcuts.firstIndex(where: { $0.id == shortcut.id }) {
@@ -113,11 +125,12 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   private func envVarRow(_ name: String, _ description: String) -> some View {
-    HStack {
+    HStack(spacing: 0) {
       Text("$\(name)")
         .font(.system(.caption, design: .monospaced))
         .foregroundColor(.primary)
-      Text("- \(description)")
+        .textSelection(.enabled)
+      Text(" - \(description)")
         .font(.caption)
         .foregroundColor(.secondary)
       Spacer()
@@ -128,13 +141,25 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
     HStack {
       VStack(alignment: .leading, spacing: 4) {
         Text(shortcut.wrappedValue.name)
-          .font(.subheadline)
+          .font(.body)
           .fontWeight(.medium)
 
         Text(shortcut.wrappedValue.command)
-          .font(.system(.caption, design: .monospaced))
+          .font(.system(.body, design: .monospaced))
           .foregroundColor(.secondary)
           .fixedSize(horizontal: false, vertical: true)
+          
+          if let keyBinding = shortcut.wrappedValue.keyBinding {
+              HStack {
+                  Text("Key Binding:")
+                        .font(.subheadline)
+                        
+                  Text(keyBinding.display)
+                      .font(.system(.body, design: .monospaced))
+                    .foregroundColor(.secondary)
+              }
+              
+          }
       }
 
       Spacer()
@@ -175,12 +200,26 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
 
 // MARK: - UserDefinedXcodeShortcutEditSheet
 
+
 private struct UserDefinedXcodeShortcutEditSheet: View {
-  @Binding var shortcut: UserDefinedXcodeShortcut
+    
+    @State private var shortcut: UserDefinedXcodeShortcut
+    @Environment(\.colorScheme) private var colorScheme
 
   let isNew: Bool
   let onSave: (UserDefinedXcodeShortcut) -> Void
   let onCancel: () -> Void
+    
+    init(
+        initialValue: UserDefinedXcodeShortcut?,
+        isNew: Bool,
+        onSave: @escaping (UserDefinedXcodeShortcut) -> Void,
+        onCancel: @escaping () -> Void) {
+            _shortcut = .init(initialValue: initialValue ?? UserDefinedXcodeShortcut(name: "", command: ""))
+        self.isNew = isNew
+        self.onSave = onSave
+        self.onCancel = onCancel
+    }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -191,41 +230,50 @@ private struct UserDefinedXcodeShortcutEditSheet: View {
         Text("Name")
           .font(.subheadline)
           .fontWeight(.medium)
-        TextField("Open file in GitHub", text: $name)
+          TextField("Open file in GitHub", text: $shortcut.name)
           .textFieldStyle(.roundedBorder)
       }
-
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Shell Command")
-          .font(.subheadline)
-          .fontWeight(.medium)
-        TextField("open \"https://github.com/myorg/$FILEPATH_FROM_GIT_ROOT\"", text: $command)
-          .textFieldStyle(.roundedBorder)
-      }
+        
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Shell Command")
+            .font(.subheadline)
+            .fontWeight(.medium)
+            TextField("open \"https://github.com/myorg/$FILEPATH_FROM_GIT_ROOT\"", text: $shortcut.command)
+            .textFieldStyle(.roundedBorder)
+        }
+        // TODO: complete setting key bindings.
+        // Xcode key bindings are store at ~/Library/Developer/Xcode/UserData/KeyBindings/Default.idekeybindings in XML format.
+        // This would need to be modified _after_ Xcode has added an entry for the shortcut, which likely requires Xcode to be restarted.
+        // Alternatively, the key binding could be managed directly through cmd.
+        
+//        VStack(alignment: .leading, spacing: 8) {
+//          Text("Optional key binding")
+//                .font(.subheadline)
+//                .fontWeight(.medium)
+//            KeyBindingInputView(keyboardShortcut: $shortcut.keyBinding)
+//        }
 
       HStack {
         Spacer()
 
-        Button("Save") {
-          onSave(UserDefinedXcodeShortcut(
-            id: isNew ? UUID() : shortcut.id,
-            name: name,
-            command: command,
-            isEnabled: true))
-        }
-        .buttonStyle(.borderedProminent)
-        .disabled(name.isEmpty || command.isEmpty)
+        HoveredButton(
+          action: {
+            onSave(UserDefinedXcodeShortcut(
+              id: isNew ? UUID() : shortcut.id,
+              name: shortcut.name,
+              command: shortcut.command,
+            keyBinding: shortcut.keyBinding))
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 5,
+          cornerRadius: 6) {
+            Text("Save")
+          }
+        .disabled(shortcut.name.isEmpty || shortcut.command.isEmpty)
       }
     }
     .padding()
     .frame(width: 500, height: 300)
-    .onAppear {
-      name = shortcut.name
-      command = shortcut.command
-    }
   }
-
-  @State private var name = ""
-  @State private var command = ""
-
 }

@@ -86,7 +86,7 @@ final class WindowsViewModel {
       state = state.with(isOnboardingVisible: isOnboardingVisible)
 
     case .onboardingDidComplete:
-      state = state.with(isOnboardingVisible: isOnboardingVisible)
+      state = state.with(isSidePanelVisible: true, isOnboardingVisible: false)
     }
   }
 

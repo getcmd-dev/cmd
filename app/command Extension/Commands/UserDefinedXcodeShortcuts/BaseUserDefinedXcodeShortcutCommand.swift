@@ -37,8 +37,9 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
   }
 
   static let subClasses: [BaseUserDefinedXcodeShortcutCommand.Type] = [
+    UserDefinedXcodeShortcut0Command.self,
     UserDefinedXcodeShortcut1Command.self,
-    UserDefinedXcodeShortcut2Command.self,
+    UserDefinedXcodeshortcutCommand.self,
     UserDefinedXcodeShortcut3Command.self,
     UserDefinedXcodeShortcut4Command.self,
     UserDefinedXcodeShortcut5Command.self,
@@ -46,7 +47,6 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
     UserDefinedXcodeShortcut7Command.self,
     UserDefinedXcodeShortcut8Command.self,
     UserDefinedXcodeShortcut9Command.self,
-    UserDefinedXcodeShortcut10Command.self,
   ]
 
   let userDefinedShortcutName: String?

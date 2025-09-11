@@ -49,7 +49,9 @@ public struct RichTextEditor: NSViewRepresentable {
     public func textDidChange(_ notification: Notification) {
       guard let textView = notification.object as? NSTextView else { return }
       if let string = textView.textStorage {
-        parent.text = string
+          DispatchQueue.main.async {
+              self.parent.text = string
+          }
       }
 
       // Force layout update to resize the text view
@@ -312,6 +314,9 @@ private class RichTextView: NSTextView {
     if key == KeyEquivalent("\u{19}") {
       // When tab is pressed with shift, the key we get is \u{19} while without the modifier we get \t
       key = .tab
+    } else if key == KeyEquivalent("\u{7F}") {
+        // Somehow not mapped correctly
+        key = .delete
     }
 
     let handled = onKeyDown(key, event.modifierFlags.intersection(.deviceIndependentFlagsMask))
