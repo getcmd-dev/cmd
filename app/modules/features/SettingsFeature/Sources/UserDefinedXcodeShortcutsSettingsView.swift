@@ -57,7 +57,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
             cornerRadius: 6) {
               Text("Add Shortcut")
             }
-          .disabled(userDefinedXcodeShortcuts.count >= UserDefinedXcodeShortcutLimits.maxShortcuts)
+          .disabled(!hasAvailableCommandIndex)
         }
 
         if userDefinedXcodeShortcuts.isEmpty {
@@ -73,7 +73,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
           }
         }
 
-        if userDefinedXcodeShortcuts.count >= UserDefinedXcodeShortcutLimits.maxShortcuts {
+        if !hasAvailableCommandIndex {
           HStack {
             Image(systemName: "info.circle")
               .foregroundColor(.orange)
@@ -94,6 +94,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
       UserDefinedXcodeShortcutEditSheet(
         initialValue: nil,
         isNew: true,
+        userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
         onSave: { shortcut in
           userDefinedXcodeShortcuts.append(shortcut)
           showingAddSheet = false
@@ -106,6 +107,7 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
       UserDefinedXcodeShortcutEditSheet(
         initialValue: shortcut,
         isNew: false,
+        userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
         onSave: { updatedShortcut in
           if let index = userDefinedXcodeShortcuts.firstIndex(where: { $0.id == shortcut.id }) {
             userDefinedXcodeShortcuts[index] = updatedShortcut
@@ -123,6 +125,10 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
   @State private var editingShortcut: UserDefinedXcodeShortcut?
   @State private var showingAddSheet = false
   @Environment(\.colorScheme) private var colorScheme
+  
+  private var hasAvailableCommandIndex: Bool {
+    userDefinedXcodeShortcuts.nextAvailableXcodeCommandIndex() != nil
+  }
 
   private func envVarRow(_ name: String, _ description: String) -> some View {
     HStack(spacing: 0) {
@@ -140,9 +146,21 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
   private func shortcutRow(for shortcut: Binding<UserDefinedXcodeShortcut>) -> some View {
     HStack {
       VStack(alignment: .leading, spacing: 4) {
-        Text(shortcut.wrappedValue.name)
-          .font(.body)
-          .fontWeight(.medium)
+        HStack {
+          Text(shortcut.wrappedValue.name)
+            .font(.body)
+            .fontWeight(.medium)
+          
+          Spacer()
+          
+          Text("Command \(shortcut.wrappedValue.xcodeCommandIndex)")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.gray.opacity(0.2))
+            .cornerRadius(4)
+        }
 
         Text(shortcut.wrappedValue.command)
           .font(.system(.body, design: .monospaced))
@@ -207,24 +225,41 @@ private struct UserDefinedXcodeShortcutEditSheet: View {
     @Environment(\.colorScheme) private var colorScheme
 
   let isNew: Bool
+  let userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   let onSave: (UserDefinedXcodeShortcut) -> Void
   let onCancel: () -> Void
     
     init(
         initialValue: UserDefinedXcodeShortcut?,
         isNew: Bool,
+        userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut],
         onSave: @escaping (UserDefinedXcodeShortcut) -> Void,
         onCancel: @escaping () -> Void) {
-            _shortcut = .init(initialValue: initialValue ?? UserDefinedXcodeShortcut(name: "", command: ""))
+            
+        let defaultIndex: Int
+        if isNew {
+          defaultIndex = userDefinedXcodeShortcuts.nextAvailableXcodeCommandIndex() ?? 0
+        } else {
+          defaultIndex = initialValue?.xcodeCommandIndex ?? 0
+        }
+            
+        _shortcut = .init(initialValue: initialValue ?? UserDefinedXcodeShortcut(name: "", command: "", xcodeCommandIndex: defaultIndex))
         self.isNew = isNew
+        self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
         self.onSave = onSave
         self.onCancel = onCancel
     }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
-      Text(isNew ? "Add User Defined Xcode Shortcut" : "Edit User Defined Xcode Shortcut")
-        .font(.headline)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(isNew ? "Add User Defined Xcode Shortcut" : "Edit User Defined Xcode Shortcut")
+          .font(.headline)
+        
+        Text("This will be mapped to Xcode command index \(shortcut.xcodeCommandIndex)")
+          .font(.caption)
+          .foregroundColor(.secondary)
+      }
 
       VStack(alignment: .leading, spacing: 8) {
         Text("Name")
@@ -238,7 +273,7 @@ private struct UserDefinedXcodeShortcutEditSheet: View {
           Text("Shell Command")
             .font(.subheadline)
             .fontWeight(.medium)
-            TextField("open \"https://github.com/myorg/$FILEPATH_FROM_GIT_ROOT\"", text: $shortcut.command)
+            TextField("open \"https://github.com/myorg/myrepo/$FILEPATH_FROM_GIT_ROOT\"", text: $shortcut.command)
             .textFieldStyle(.roundedBorder)
         }
         // TODO: complete setting key bindings.
@@ -262,7 +297,8 @@ private struct UserDefinedXcodeShortcutEditSheet: View {
               id: isNew ? UUID() : shortcut.id,
               name: shortcut.name,
               command: shortcut.command,
-            keyBinding: shortcut.keyBinding))
+              keyBinding: shortcut.keyBinding,
+              xcodeCommandIndex: shortcut.xcodeCommandIndex))
           },
           onHoverColor: colorScheme.tertiarySystemBackground,
           backgroundColor: colorScheme.secondarySystemBackground,
@@ -275,5 +311,19 @@ private struct UserDefinedXcodeShortcutEditSheet: View {
     }
     .padding()
     .frame(width: 500, height: 300)
+  }
+}
+
+
+extension [UserDefinedXcodeShortcut] {
+  
+  func nextAvailableXcodeCommandIndex() -> Int? {
+    let usedIndexes = Set(self.map { $0.xcodeCommandIndex })
+    for index in 0..<UserDefinedXcodeShortcutLimits.maxShortcuts {
+      if !usedIndexes.contains(index) {
+        return index
+      }
+    }
+    return nil
   }
 }

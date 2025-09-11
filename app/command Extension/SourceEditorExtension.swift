@@ -44,28 +44,28 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
 
     defaultLogger.log("Found \(settings.userDefinedXcodeShortcuts.count) enabled user defined Xcode shortcuts")
 
-    // Create command instances for each enabled shortcut (max from shared constant)
-    for (index, shortcut) in settings.userDefinedXcodeShortcuts.enumerated() {
-      guard index < UserDefinedXcodeShortcutLimits.maxShortcuts else {
-        defaultLogger
-          .error(
-            "Too many user defined Xcode shortcuts configured. Only first \(UserDefinedXcodeShortcutLimits.maxShortcuts) will be available.")
-        break
-      }
-
-      guard index < BaseUserDefinedXcodeShortcutCommand.subClasses.count else {
-        defaultLogger.error("No command class available for index \(index)")
+    // Create command instances using stable xcodeCommandIndex
+    for shortcut in settings.userDefinedXcodeShortcuts {
+      let commandIndex = shortcut.xcodeCommandIndex
+      
+      guard commandIndex >= 0 && commandIndex < UserDefinedXcodeShortcutLimits.maxShortcuts else {
+        defaultLogger.error("Invalid xcode command index \(commandIndex) for shortcut '\(shortcut.name)'")
         continue
       }
 
-      let commandClass = BaseUserDefinedXcodeShortcutCommand.subClasses[index]
+      guard commandIndex < BaseUserDefinedXcodeShortcutCommand.subClasses.count else {
+        defaultLogger.error("No command class available for index \(commandIndex)")
+        continue
+      }
+
+      let commandClass = BaseUserDefinedXcodeShortcutCommand.subClasses[commandIndex]
       let command = commandClass.init()
 
       result.append(command)
-      defaultLogger.log("User defined Xcode shortcut: \(shortcut.name)")
+      defaultLogger.log("User defined Xcode shortcut: '\(shortcut.name)' mapped to command index \(commandIndex)")
     }
 
-    defaultLogger.log("Found \(result.count) user defined Xcode shortcut commands")
+    defaultLogger.log("Created \(result.count) user defined Xcode shortcut commands")
     return result
   }
 

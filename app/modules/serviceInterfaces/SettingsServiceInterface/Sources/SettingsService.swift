@@ -164,13 +164,18 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
   public let id: UUID
   public var name: String
   public var command: String
-    public var keyBinding: Settings.KeyboardShortcut?
+  public var keyBinding: Settings.KeyboardShortcut?
+  /// The index of the Xcode command this shortcut is associated with.
+  /// Xcode identifies commands by the class name they are mapped to (e.g. `UserDefinedXcodeShortcut0Command` for index 0).
+  /// We keep track to this index to keep it consistently associated with the same command.
+  public let xcodeCommandIndex: Int
 
-    public init(id: UUID = UUID(), name: String, command: String, keyBinding: Settings.KeyboardShortcut? = nil) {
+  public init(id: UUID = UUID(), name: String, command: String, keyBinding: Settings.KeyboardShortcut? = nil, xcodeCommandIndex: Int) {
     self.id = id
     self.name = name
     self.command = command
-      self.keyBinding = keyBinding
+    self.keyBinding = keyBinding
+    self.xcodeCommandIndex = xcodeCommandIndex
   }
 }
 

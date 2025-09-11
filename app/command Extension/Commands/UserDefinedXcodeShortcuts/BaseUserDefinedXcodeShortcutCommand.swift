@@ -26,12 +26,14 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
     defaultLogger.log("\(type(of: self)): Initializing with index \(shortcutIndex)")
     let settings = AppExtensionScope.shared.settingsService.value(for: \.userDefinedXcodeShortcuts)
     self.shortcutIndex = shortcutIndex
-    if shortcutIndex < 0 || shortcutIndex >= settings.count {
+    
+    // Find shortcut by xcodeCommandIndex instead of array position
+    if let shortcut = settings.first(where: { $0.xcodeCommandIndex == shortcutIndex }) {
+      userDefinedShortcutName = shortcut.name
+      shellCommand = shortcut.command
+    } else {
       userDefinedShortcutName = nil
       shellCommand = nil
-    } else {
-      userDefinedShortcutName = settings[shortcutIndex].name
-      shellCommand = settings[shortcutIndex].command
     }
     super.init()
   }
