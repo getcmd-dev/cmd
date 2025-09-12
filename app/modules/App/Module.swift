@@ -63,5 +63,7 @@ Target.module(
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "SwiftTesting",
   ])

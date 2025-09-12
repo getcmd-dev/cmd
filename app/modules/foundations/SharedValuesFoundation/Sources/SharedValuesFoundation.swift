@@ -58,6 +58,7 @@ public enum UserDefinedXcodeShortcutLimits {
 
 // MARK: - UserDefinedXcodeShortcutExecutionInput
 
+/// Parameters to execute an Xcode shortcut that has been defined by the user.
 public struct UserDefinedXcodeShortcutExecutionInput: Codable {
   public let shortcutId: String
   public let shellCommand: String

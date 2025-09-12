@@ -3,6 +3,7 @@
 
 import AccessibilityFoundation
 import AppExtension
+import ExtensionEventsInterface
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface

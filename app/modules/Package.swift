@@ -136,6 +136,8 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "SwiftTesting",
   ],
   path: "./App"))
@@ -457,13 +459,17 @@ targets.append(contentsOf: Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DLS",
+    "ExtensionEventsInterface",
     "FoundationInterfaces",
     "LLMFoundation",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ShellServiceInterface",
     "ToolFoundation",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   testDependencies: [
     "FoundationInterfaces",
@@ -750,6 +756,11 @@ targets.append(contentsOf: Target.module(
   name: "ExtensionEventsInterface",
   dependencies: [
     "AppEventServiceInterface",
+    "AppFoundation",
+    "LoggingServiceInterface",
+    "SharedValuesFoundation",
+    "ShellServiceInterface",
+    "XcodeObserverServiceInterface",
   ],
   path: "./serviceInterfaces/ExtensionEventsInterface"))
 
