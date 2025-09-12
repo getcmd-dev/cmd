@@ -8,7 +8,7 @@ extension Bundle {
   /// The name of the Xcode extension.
   public var xcodeExtensionName: String {
     // We use an invisible non unicode character in the extension name to allow for it to have the ~same name as the main app.
-    (infoDictionary?["XCODE_EXTENSION_PRODUCT_NAME"] as? String)?.trimmingLeadingNonUnicodeCharacters ?? "command"
+    (infoDictionary?["XCODE_EXTENSION_PRODUCT_NAME"] as? String)?.trimmingLeadingNonUnicodeCharacters ?? "cmd"
   }
 
   /// The bundle identifier for the host app. This is also the prefix of any identifier for other targets.

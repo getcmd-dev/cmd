@@ -17,7 +17,7 @@ final class ReloadSettingsCommand: CommandType, @unchecked Sendable {
     // Force crash the extension to trigger reload
     Task {
       try await Task.sleep(nanoseconds: 100_000_000)
-      fatalError("Killing extension to relead settings")
+      fatalError("Killing extension to reload settings")
     }
   }
 }

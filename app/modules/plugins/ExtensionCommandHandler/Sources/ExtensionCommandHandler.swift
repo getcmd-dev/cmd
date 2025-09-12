@@ -29,29 +29,6 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     if let appEvent = appEvent as? ExecuteExtensionRequestEvent {
       do {
         switch appEvent.command {
-        case ExtensionCommandKeys.openInCursor:
-          let xcodeState = xcodeObserver.state
-          guard let currentFile = xcodeState.focusedTabURL else {
-            defaultLogger.error("No active file found")
-            return false
-          }
-          var lineDescriptor = ""
-          if
-            let line = xcodeState.focusedWorkspace?.editors.first(where: {
-              $0.fileName == currentFile.lastPathComponent
-            })?.selections.first?.start.line
-          {
-            lineDescriptor = ":\(line + 1)"
-          }
-
-          try await shellService
-            .run(
-              "/Applications/Cursor.app/Contents/Resources/app/bin/code -g \"\(currentFile.path(percentEncoded: false))\(lineDescriptor)\"",
-              useInteractiveShell: false)
-          defaultLogger.log("Completed command")
-          appEvent.completion(.success(EmptyResult()))
-          return true
-
         case ExtensionCommandKeys.executeUserDefinedXcodeShortcut:
           let input = try JSONDecoder().decode(ExtensionRequest<UserDefinedXcodeShortcutExecutionInput>.self, from: appEvent.data)
             .input
@@ -87,19 +64,23 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     var environmentVariables: [String: String] = [:]
 
     let xcodeState = xcodeObserver.state
-      
+
     // Set FILEPATH
     if let currentFile = xcodeState.focusedTabURL {
       environmentVariables["FILEPATH"] = currentFile.path(percentEncoded: false)
     }
     // Set FILEPATH_FROM_GIT_ROOT
-    if let currentFile = xcodeState.focusedTabURL,
-        let gitRoot = try? await shellService.stdout("git rev-parse --show-toplevel", cwd: currentFile.deletingLastPathComponent().path)  {
-        let relativePath = currentFile.path(percentEncoded: false).replacingOccurrences(of: gitRoot + "/", with: "")
-        environmentVariables["FILEPATH_FROM_GIT_ROOT"] = relativePath
+    if
+      let currentFile = xcodeState.focusedTabURL,
+      let gitRoot = try? await shellService.stdout(
+        "git rev-parse --show-toplevel",
+        cwd: currentFile.deletingLastPathComponent().path)
+    {
+      let relativePath = currentFile.path(percentEncoded: false).replacingOccurrences(of: gitRoot + "/", with: "")
+      environmentVariables["FILEPATH_FROM_GIT_ROOT"] = relativePath
     }
     // Set XCODE_PROJECT_PATH
-      if let projectPath = xcodeState.focusedWorkspace?.url {
+    if let projectPath = xcodeState.focusedWorkspace?.url {
       environmentVariables["XCODE_PROJECT_PATH"] = projectPath.path(percentEncoded: false)
     }
     // Set SELECTED_LINE_NUMBER_START and SELECTED_LINE_NUMBER_END

@@ -31,6 +31,7 @@ struct SettingsCodableTests {
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
+        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
@@ -38,7 +39,8 @@ struct SettingsCodableTests {
           "gpt-latest" : "openai"
         },
         "reasoningModels": {},
-        "toolPreferences" : []
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : []
       }
       """
 
@@ -79,6 +81,7 @@ struct SettingsCodableTests {
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -135,6 +138,7 @@ struct SettingsCodableTests {
           "claude-haiku-35" : "anthropic"
         },
         "reasoningModels": {},
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -265,6 +269,7 @@ struct SettingsCodableTests {
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -306,6 +311,7 @@ struct SettingsCodableTests {
           }
         },
         "toolPreferences": [],
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -449,6 +455,7 @@ struct SettingsCodableTests {
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -487,6 +494,7 @@ struct SettingsCodableTests {
           "claude-haiku-35" : "anthropic"
         },
         "reasoningModels": {},
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -591,6 +599,7 @@ struct SettingsCodableTests {
             "toolName" : "ReadFileTool"
           }
         ],
+        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O" 
       }
       """
@@ -724,11 +733,13 @@ struct SettingsCodableTests {
         },
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
+        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {},
         "reasoningModels": {},
-        "toolPreferences" : []
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : []
       }
       """
 

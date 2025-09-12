@@ -20,7 +20,6 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     // Base commands
     commands.append(contentsOf: [
       ApplyEditCommand(),
-      OpenInCursorCommand(),
       ReloadSettingsCommand(),
     ])
 
@@ -47,8 +46,8 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     // Create command instances using stable xcodeCommandIndex
     for shortcut in settings.userDefinedXcodeShortcuts {
       let commandIndex = shortcut.xcodeCommandIndex
-      
-      guard commandIndex >= 0 && commandIndex < UserDefinedXcodeShortcutLimits.maxShortcuts else {
+
+      guard commandIndex >= 0, commandIndex < UserDefinedXcodeShortcutLimits.maxShortcuts else {
         defaultLogger.error("Invalid xcode command index \(commandIndex) for shortcut '\(shortcut.name)'")
         continue
       }

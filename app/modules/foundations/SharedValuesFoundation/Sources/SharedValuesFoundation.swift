@@ -7,7 +7,6 @@ import Foundation
 // MARK: - ExtensionCommandKeys
 
 public enum ExtensionCommandKeys {
-  public static let openInCursor = "openInCursor"
   public static let getFileChangeToApply = "getFileChangeToApply"
   public static let confirmFileChangeApplied = "confirmFileChangeApplied"
   public static let executeUserDefinedXcodeShortcut = "executeUserDefinedXcodeShortcut"

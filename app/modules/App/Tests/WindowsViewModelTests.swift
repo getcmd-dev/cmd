@@ -183,8 +183,9 @@ struct WindowsViewModelTests {
 
     viewModel.handle(.onboardingDidComplete)
 
-    // Should compute onboarding visibility based on current state
-    #expect(viewModel.state.isOnboardingVisible == true) // Because onboarding is not marked as completed
+    // Should show side panel and hide onboarding
+    #expect(viewModel.state.isSidePanelVisible == true)
+    #expect(viewModel.state.isOnboardingVisible == false)
   }
 
   @Test("onboarding visibility when onboarding not completed")

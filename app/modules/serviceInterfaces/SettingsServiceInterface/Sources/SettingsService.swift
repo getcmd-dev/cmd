@@ -170,7 +170,13 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
   /// We keep track to this index to keep it consistently associated with the same command.
   public let xcodeCommandIndex: Int
 
-  public init(id: UUID = UUID(), name: String, command: String, keyBinding: Settings.KeyboardShortcut? = nil, xcodeCommandIndex: Int) {
+  public init(
+    id: UUID = UUID(),
+    name: String,
+    command: String,
+    keyBinding: Settings.KeyboardShortcut? = nil,
+    xcodeCommandIndex: Int)
+  {
     self.id = id
     self.name = name
     self.command = command

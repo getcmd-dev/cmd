@@ -2,12 +2,12 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
+import AppExtension
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
-import SharedValuesFoundation
-import AppExtension
 import SettingsServiceInterface
+import SharedValuesFoundation
 import XcodeKit
 
 // MARK: - UserDefinedShortcutCommand
@@ -26,7 +26,7 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
     defaultLogger.log("\(type(of: self)): Initializing with index \(shortcutIndex)")
     let settings = AppExtensionScope.shared.settingsService.value(for: \.userDefinedXcodeShortcuts)
     self.shortcutIndex = shortcutIndex
-    
+
     // Find shortcut by xcodeCommandIndex instead of array position
     if let shortcut = settings.first(where: { $0.xcodeCommandIndex == shortcutIndex }) {
       userDefinedShortcutName = shortcut.name
@@ -41,7 +41,7 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
   static let subClasses: [BaseUserDefinedXcodeShortcutCommand.Type] = [
     UserDefinedXcodeShortcut0Command.self,
     UserDefinedXcodeShortcut1Command.self,
-    UserDefinedXcodeshortcutCommand.self,
+    UserDefinedXcodeShortcut2Command.self,
     UserDefinedXcodeShortcut3Command.self,
     UserDefinedXcodeShortcut4Command.self,
     UserDefinedXcodeShortcut5Command.self,

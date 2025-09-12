@@ -364,7 +364,8 @@ struct DefaultSettingsServiceTests {
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels" : {},
-        "toolPreferences" : []
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : []
       }
       """)
     _ = cancellable
