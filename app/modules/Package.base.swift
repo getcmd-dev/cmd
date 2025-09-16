@@ -96,7 +96,7 @@ let package = Package(
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
-    .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
+    .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.56.0"),
     .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
     .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.7.0"),
     .package(url: "https://github.com/swiftlang/swift-subprocess", revision: "43f99d981c7486858b4bcb8cb5861e63bd63d841"),
