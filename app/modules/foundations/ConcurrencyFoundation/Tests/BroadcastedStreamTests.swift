@@ -108,7 +108,7 @@ struct BroadcastedStreamTests {
     Task {
       for await value in stream {
         receivedValues.mutate { $0.append(value) }
-        if receivedValues.count == 3 {
+        if receivedValues.value.count == 3 {
           valuesReceived.fulfill()
         }
       }
