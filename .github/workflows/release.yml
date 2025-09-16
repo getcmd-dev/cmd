@@ -30,7 +30,7 @@ jobs:
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Fastlane dependencies installation
-      run: cd app/fastlane && gem install
+      run: cd app/fastlane && gem install bundler && bundle install
     - name: Load derived data cache
       uses: actions/cache/restore@v4
       with:
