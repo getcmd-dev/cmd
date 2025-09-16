@@ -116,11 +116,11 @@ struct CurrentValueStreamTests {
   @Test("Just updates complete immediately")
   func test_justStream_hasNoUpdates() async throws {
     let stream = CurrentValueStream<Int>.Just(1)
-    var updatesCount = 0
+    let updatesCount = Atomic(0)
     for await _ in stream.futureUpdates {
-      updatesCount += 1
+      updatesCount.increment()
     }
-    #expect(updatesCount == 1)
+    #expect(updatesCount.value == 1)
   }
 
   @Test("CurrentValueStream with configurable ReplayStrategy - replayLast (default)")
