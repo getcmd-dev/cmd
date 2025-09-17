@@ -365,7 +365,7 @@ platform :mac do
       app_identifier: 'dev.getcmd.command',
       finalize: true
     )
-    sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --log-level trace --wait '#{archive_path}'")
+    sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --wait '#{archive_path}'")
     # sentry_debug_files_upload(
     #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
     #   org_slug: 'getcmd',
