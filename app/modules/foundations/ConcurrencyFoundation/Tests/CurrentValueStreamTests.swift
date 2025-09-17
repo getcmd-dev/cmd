@@ -17,14 +17,14 @@ struct CurrentValueStreamTests {
     #expect(stream.value == 0)
 
     let valuesReceived = expectation(description: "Values received")
-    var receivedValues = [Int]()
+    let receivedValues = Atomic<[Int]>([])
 
     // Create the iterator sync to ensure that is is created before yielding new values.
     var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
       while let value = await iterator.next() {
-        receivedValues.append(value)
-        if receivedValues.count == 3 {
+        receivedValues.mutate { $0.append(value) }
+        if receivedValues.value.count == 3 {
           valuesReceived.fulfill()
         }
       }
@@ -34,7 +34,7 @@ struct CurrentValueStreamTests {
     subject.send(2)
 
     try await fulfillment(of: [valuesReceived])
-    #expect(receivedValues == [0, 1, 2])
+    #expect(receivedValues.value == [0, 1, 2])
     #expect(stream.value == 2)
   }
 
@@ -116,11 +116,11 @@ struct CurrentValueStreamTests {
   @Test("Just updates complete immediately")
   func test_justStream_hasNoUpdates() async throws {
     let stream = CurrentValueStream<Int>.Just(1)
-    var updatesCount = 0
+    let updatesCount = Atomic(0)
     for await _ in stream.futureUpdates {
-      updatesCount += 1
+      updatesCount.increment()
     }
-    #expect(updatesCount == 1)
+    #expect(updatesCount.value == 1)
   }
 
   @Test("CurrentValueStream with configurable ReplayStrategy - replayLast (default)")
@@ -139,14 +139,14 @@ struct CurrentValueStreamTests {
     try await fulfillment(of: exp)
 
     // Late subscriber should receive current value and new updates
-    var lateValues = [Int]()
+    let lateValues = Atomic<[Int]>([])
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
     // Create the iterator sync to ensure that is is created before yielding new values.
     var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
       while let value = await iterator.next() {
-        lateValues.append(value)
+        lateValues.mutate { $0.append(value) }
       }
       lateSubscriberDone.fulfill()
     }
@@ -158,7 +158,7 @@ struct CurrentValueStreamTests {
     try await fulfillment(of: [lateSubscriberDone])
 
     // Should receive the last value (3) and the new value (4)
-    #expect(lateValues == [3, 4])
+    #expect(lateValues.value == [3, 4])
   }
 
   @MainActor
@@ -215,13 +215,13 @@ struct CurrentValueStreamTests {
     try await fulfillment(of: exp)
 
     // Late subscriber should receive all past values
-    var lateValues = [Int]()
+    let lateValues = Atomic<[Int]>([])
     let lateSubscriberDone = expectation(description: "Late subscriber completed")
 
     var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
       while let value = await iterator.next() {
-        lateValues.append(value)
+        lateValues.mutate { $0.append(value) }
       }
       lateSubscriberDone.fulfill()
     }
@@ -233,7 +233,7 @@ struct CurrentValueStreamTests {
     try await fulfillment(of: [lateSubscriberDone])
 
     // Should receive all values including initial value
-    #expect(lateValues == [1, 2, 3, 4])
+    #expect(lateValues.value == [1, 2, 3, 4])
   }
 }
 
@@ -246,13 +246,13 @@ struct MutableCurrentValueStreamTests {
     #expect(stream.value == 0)
 
     let updates = expectation(description: "Updates received")
-    var receivedValues = [Int]()
+    let receivedValues = Atomic<[Int]>([])
 
     var iterator = stream.futureUpdates.makeAsyncIterator()
     Task {
       while let value = await iterator.next() {
-        receivedValues.append(value)
-        if receivedValues.count == 3 {
+        receivedValues.mutate { $0.append(value) }
+        if receivedValues.value.count == 3 {
           updates.fulfill()
         }
       }
@@ -263,7 +263,7 @@ struct MutableCurrentValueStreamTests {
     stream.update(with: 3)
 
     try await fulfillment(of: [updates])
-    #expect(receivedValues == [1, 2, 3])
+    #expect(receivedValues.value == [1, 2, 3])
     #expect(stream.value == 3)
   }
 
