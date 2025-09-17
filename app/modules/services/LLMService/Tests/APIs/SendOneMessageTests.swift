@@ -121,19 +121,19 @@ final class SendOneMessageTests {
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
-    var messageUpdateCount = 0
-    var contentUpdateCount = 0
+    let messageUpdateCount = Atomic(0)
+    let contentUpdateCount = Atomic(0)
     Task {
       for await message in updatingMessage.futureUpdates {
-        messageUpdateCount += 1
-        if messageUpdateCount == 1 {
+        let count = messageUpdateCount.increment()
+        if count == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
           for await textContent in updatingTextContent.futureUpdates {
-            contentUpdateCount += 1
-            if contentUpdateCount == 1 {
+            let contentCount = contentUpdateCount.increment()
+            if contentCount == 1 {
               #expect(textContent.content == "hi what can I do?")
               #expect(textContent.deltas == ["hi", " what can I do?"])
             }
@@ -145,8 +145,8 @@ final class SendOneMessageTests {
     }
 
     try await fulfillment(of: [messageUpdatesReceived, chunksReceived])
-    #expect(messageUpdateCount == 1)
-    #expect(contentUpdateCount == 1)
+    #expect(messageUpdateCount.value == 1)
+    #expect(contentUpdateCount.value == 1)
   }
 
   @Test("SendOneMessage with bad data receives valid text chunks and completes")
@@ -180,19 +180,19 @@ final class SendOneMessageTests {
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
-    var messageUpdateCount = 0
-    var contentUpdateCount = 0
+    let messageUpdateCount = Atomic(0)
+    let contentUpdateCount = Atomic(0)
     Task {
       for await message in updatingMessage.futureUpdates {
-        messageUpdateCount += 1
-        if messageUpdateCount == 1 {
+        let count = messageUpdateCount.increment()
+        if count == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
           for await textContent in updatingTextContent.futureUpdates {
-            contentUpdateCount += 1
-            if contentUpdateCount == 1 {
+            let contentCount = contentUpdateCount.increment()
+            if contentCount == 1 {
               #expect(textContent.content == "hi")
               #expect(textContent.deltas == ["hi"])
             }
@@ -204,8 +204,8 @@ final class SendOneMessageTests {
     }
 
     try await fulfillment(of: [messageUpdatesReceived, chunksReceived])
-    #expect(messageUpdateCount == 1)
-    #expect(contentUpdateCount == 0)
+    #expect(messageUpdateCount.value == 1)
+    #expect(contentUpdateCount.value == 0)
   }
 
   @Test("SendOneMessage with text chunks tool use")
@@ -251,15 +251,15 @@ final class SendOneMessageTests {
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
-    var messageUpdateCount = 0
+    let messageUpdateCount = Atomic(0)
     Task {
       for await message in updatingMessage.futureUpdates {
-        messageUpdateCount += 1
-        if messageUpdateCount == 1 {
+        let count = messageUpdateCount.increment()
+        if count == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           #expect(message.content.first?.asText != nil)
-        } else if messageUpdateCount == 2 {
+        } else if count == 2 {
           // Second update has a tool call
           #expect(message.content.count == 2)
           let toolCall = try #require(message.content.last?.asToolUseRequest)
@@ -273,7 +273,7 @@ final class SendOneMessageTests {
     }
 
     try await fulfillment(of: [toolCallReceived, messagesReceived])
-    #expect(messageUpdateCount == 2)
+    #expect(messageUpdateCount.value == 2)
   }
 
   @Test("SendOneMessage with failed tool use")
@@ -508,7 +508,7 @@ final class SendOneMessageTests {
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
-    var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
+    let _toolUse = Atomic<TestStreamingTool<TestToolInput, EmptyObject>.Use?>(nil)
     Task {
       for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
@@ -519,14 +519,14 @@ final class SendOneMessageTests {
         >.Use)
         #expect(toolUse.callingTool.name == "TestStreamingTool")
         #expect(toolUse.toolUseId == "123")
-        _toolUse = toolUse
+        _toolUse.set(to: toolUse)
         toolCallReceived.fulfill()
       }
       messagesReceived.fulfill()
     }
 
     try await fulfillment(of: [toolCallReceived])
-    let toolUse = try #require(_toolUse)
+    let toolUse = try #require(_toolUse.value)
 
     #expect(toolUse.receivedInputs.count == 1)
     #expect(toolUse.receivedInputs.last?.file == "file.t")
@@ -620,7 +620,7 @@ final class SendOneMessageTests {
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
-    var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
+    let _toolUse = Atomic<TestStreamingTool<TestToolInput, EmptyObject>.Use?>(nil)
     Task {
       for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
@@ -631,13 +631,13 @@ final class SendOneMessageTests {
         >.Use)
         #expect(toolUse.callingTool.name == "TestStreamingTool")
         #expect(toolUse.toolUseId == "123")
-        _toolUse = toolUse
+        _toolUse.set(to: toolUse)
       }
       messagesReceived.fulfill()
     }
 
     try await fulfillment(of: [messagesReceived])
-    let toolUse = try #require(_toolUse)
+    let toolUse = try #require(_toolUse.value)
 
     #expect(toolUse.receivedInputs.count == 2)
     #expect(toolUse.receivedInputs.last?.file == "file.txt")
