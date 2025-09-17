@@ -21,7 +21,7 @@ done
 # Cache the built binary, as for some reasons it gets rebuilt every time otherwise.
 # The cache will need to be manually cleaned if the binary is updated.
 if [ ! -f "./tmp/bin/sync-package-dependencies" ]; then
-	swift build -c release --enable-experimental-prebuilts
+	swift build -c release
 	mkdir -p tmp
 	mkdir -p tmp/bin
 	cp ".build/release/SyncPackageDependenciesCommand" "./tmp/bin/sync-package-dependencies"

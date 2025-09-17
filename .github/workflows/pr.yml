@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   build-release-app:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -16,12 +16,13 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version-file: "./local-server/.nvmrc"
-    - uses: swift-actions/setup-swift@v2
+    - uses: gsabran/setup-swift@main
       with:
-        swift-version: "6.1"
+        swift-version: "6.2"
+        soft-fail-version-check: true
     - uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: latest-stable
+        xcode-version: '26.0'
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -44,17 +45,18 @@ jobs:
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
 
   test-swift:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
     - uses: actions/checkout@v4
-    - uses: swift-actions/setup-swift@v2
+    - uses: gsabran/setup-swift@main
       with:
-        swift-version: "6.1"
+        swift-version: "6.2"
+        soft-fail-version-check: true
     - uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: latest-stable
+        xcode-version: '26.0'
     - uses: actions/setup-node@v4
       with:
         node-version-file: "./local-server/.nvmrc"
@@ -71,7 +73,7 @@ jobs:
       run: ./cmd.sh test:swift
 
   lint-swift:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -87,14 +89,15 @@ jobs:
       run: git diff --exit-code
 
   sync-app-dependencies:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
     - uses: actions/checkout@v4
-    - uses: swift-actions/setup-swift@v2
+    - uses: gsabran/setup-swift@main
       with:
-        swift-version: "6.1"
+        swift-version: "6.2"
+        soft-fail-version-check: true
     - name: Set up Homebrew
       id: set-up-homebrew
       uses: Homebrew/actions/setup-homebrew@master
@@ -113,7 +116,7 @@ jobs:
       run: git diff --exit-code
 
   test-node:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -127,7 +130,7 @@ jobs:
       run: ./cmd.sh test:ts
 
   tsc:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -141,7 +144,7 @@ jobs:
       run: cd local-server && yarn tsc
 
   lint-node:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -157,7 +160,7 @@ jobs:
       run: git diff --exit-code
 
   lint-shell:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers

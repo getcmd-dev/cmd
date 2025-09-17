@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   warm-up-release-app-cache:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
     - name: MacOS version
       run: sw_vers
@@ -16,12 +16,13 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version-file: "./local-server/.nvmrc"
-    - uses: swift-actions/setup-swift@v2
+    - uses: gsabran/setup-swift@main
       with:
-        swift-version: "6.1"
+        swift-version: "6.2"
+        soft-fail-version-check: true
     - uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: latest-stable
+        xcode-version: '26.0'
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421

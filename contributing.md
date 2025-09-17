@@ -15,10 +15,6 @@ brew install --cask swiftformat-for-xcode
 # Open Settings > General > Login Items & Extensions > Xcode > Enable SwiftFormat for Xcode
 # Set a key binding for SwiftFormat in Xcode > Preferences > Key Bindings > Format File
 
-# Enable using pre-built swift packages, useful for macros
-# https://forums.swift.org/t/preview-swift-syntax-prebuilts-for-macros/80202
-defaults write com.apple.dt.Xcode IDEPackageEnablePrebuilts YES
-
 
 brew install jc
 brew install jq
