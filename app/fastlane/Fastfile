@@ -181,8 +181,6 @@ platform :mac do
     # Create a DMG file for distribution using create-dmg
     dmg_path = "#{build_path}/release/#{app_name}.dmg"
     sh("create-dmg '#{app_path}' --identity #{certificate_sha1} --no-version-in-filename --overwrite")
-    sh("ls #{build_path}/release/") # tmp
-    sh("ls") # tmp
     sh("mv cmd.dmg #{dmg_path}")
 
     puts "Verifying code signature..."
