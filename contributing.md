@@ -27,6 +27,16 @@ echo '
 function cmd {
   (cd $(git rev-parse --show-toplevel) && ./cmd.sh "$@")
 }' >> ~/.zshrc
+
+# Ruby version management
+brew install chruby ruby-install
+ruby-install ruby
+echo '
+# Ruby
+source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
+source /opt/homebrew/opt/chruby/share/chruby/auto.sh' >>  ~/.zshrc
+source ~/.zshrc
+gem install
 ```
 
 ## Architecture overview

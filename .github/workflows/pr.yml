@@ -197,7 +197,7 @@ jobs:
       run: cd local-server && yarn install
     - name: Run linter
       run: ./cmd.sh lint:ts
-    - name: Verify that `yarn lint:fix` did not change outputs (if it did, please re-run it and re-commit!)
+    - name: Verify that `cmd lint:ts` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
   lint-shell:
@@ -214,5 +214,20 @@ jobs:
       run: brew install shfmt
     - name: Run linter
       run: ./cmd.sh lint:shell
-    - name: Verify that `shfmt -w ./**/*.sh` did not change outputs (if it did, please re-run it and re-commit!)
+    - name: Verify that `cmd lint:shell` did not change outputs (if it did, please re-run it and re-commit!)
+      run: git diff --exit-code
+
+  lint-ruby:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+    - name: MacOS version
+      run: sw_vers
+    - uses: actions/checkout@v4
+    - name: Install rubocop
+      run:
+        gem install
+    - name: Run linter
+      run: ./cmd.sh lint:rb
+    - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
