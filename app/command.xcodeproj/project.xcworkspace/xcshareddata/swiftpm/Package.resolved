@@ -1,5 +1,5 @@
 {
-  "originHash" : "bf0023afa3e9a5526a77f477564bfd50bc6513badd51fba19cbde958616b228d",
+  "originHash" : "5c00b48cb6f23f4c2cb78f29efb1b42c083a68d187f425c87f12443f96b323bc",
   "pins" : [
     {
       "identity" : "aexml",
@@ -266,8 +266,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-concurrency-extras",
       "state" : {
-        "revision" : "82a4ae7170d98d8538ec77238b7eb8e7199ef2e8",
-        "version" : "1.3.1"
+        "revision" : "5a3825302b1a0d744183200915a47b508c828e6f",
+        "version" : "1.3.2"
       }
     },
     {
@@ -291,9 +291,10 @@
     {
       "identity" : "swift-dependencies",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-dependencies",
+      "location" : "https://github.com/pointfreeco/swift-dependencies",
       "state" : {
-        "revision" : "7a54e2353c8441c3deb88e577e271cd1e19e42d7"
+        "revision" : "a10f9feeb214bc72b5337b6ef6d5a029360db4cc",
+        "version" : "1.9.5"
       }
     },
     {
@@ -335,9 +336,10 @@
     {
       "identity" : "swift-macro-testing",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-macro-testing",
+      "location" : "https://github.com/pointfreeco/swift-macro-testing",
       "state" : {
-        "revision" : "15eb78772e2e541f60948ee37be5d7c6fb6c7597"
+        "revision" : "9ab11325daa51c7c5c10fcf16c92bac906717c7e",
+        "version" : "0.6.4"
       }
     },
     {
@@ -424,9 +426,10 @@
     {
       "identity" : "swift-snapshot-testing",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-snapshot-testing",
+      "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
       "state" : {
-        "revision" : "919ae5136eeeee7759568b4125b95de7c34ef60b"
+        "revision" : "a8b7c5e0ed33d8ab8887d1654d9b59f2cbad529b",
+        "version" : "1.18.7"
       }
     },
     {
@@ -496,8 +499,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
       "state" : {
-        "revision" : "b444594f79844b0d6d76d70fbfb3f7f71728f938",
-        "version" : "1.5.1"
+        "revision" : "b2ed9eabefe56202ee4939dd9fc46b6241c88317",
+        "version" : "1.6.1"
       }
     }
   ],
