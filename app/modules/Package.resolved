@@ -1,5 +1,5 @@
 {
-  "originHash" : "4d7f40ea741e790f569565a5f1fdae41f59ad5a0111cb6962ad3d0e7ebe6fbc7",
+  "originHash" : "2b0b4e443a59827fa02b2c4122b0ea54b8ef4162669b5cda6e24d2917ec8b973",
   "pins" : [
     {
       "identity" : "aexml",
@@ -291,9 +291,10 @@
     {
       "identity" : "swift-dependencies",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-dependencies",
+      "location" : "https://github.com/pointfreeco/swift-dependencies",
       "state" : {
-        "revision" : "7a54e2353c8441c3deb88e577e271cd1e19e42d7"
+        "revision" : "a10f9feeb214bc72b5337b6ef6d5a029360db4cc",
+        "version" : "1.9.5"
       }
     },
     {
@@ -335,9 +336,10 @@
     {
       "identity" : "swift-macro-testing",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-macro-testing",
+      "location" : "https://github.com/pointfreeco/swift-macro-testing",
       "state" : {
-        "revision" : "15eb78772e2e541f60948ee37be5d7c6fb6c7597"
+        "revision" : "9ab11325daa51c7c5c10fcf16c92bac906717c7e",
+        "version" : "0.6.4"
       }
     },
     {
@@ -424,9 +426,10 @@
     {
       "identity" : "swift-snapshot-testing",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/gsabran/swift-snapshot-testing",
+      "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
       "state" : {
-        "revision" : "919ae5136eeeee7759568b4125b95de7c34ef60b"
+        "revision" : "a8b7c5e0ed33d8ab8887d1654d9b59f2cbad529b",
+        "version" : "1.18.7"
       }
     },
     {
