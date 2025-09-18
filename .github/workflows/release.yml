@@ -37,7 +37,8 @@ jobs:
     - name: Install release dependencies
       run: |
         npm install --global create-dmg
-        brew install graphicsmagick imagemagick sentry-cli
+        brew tap bugsnag/tap
+        brew install graphicsmagick imagemagick sentry-cli bugsnag-cli
         cd app/fastlane && gem install bundler && bundle install
     - name: Load derived data cache
       uses: actions/cache/restore@v4
