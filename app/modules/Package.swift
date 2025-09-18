@@ -1166,8 +1166,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/appstefan/highlightswift", from: "1.1.0"),
     .package(url: "https://github.com/gsabran/Down", revision: "14309dd8781c7613063344727454ffbbebc8e8bd"),
-    // TODO: remove the fork once the main repo supports Swift Syntax 602.0.0
-    .package(url: "https://github.com/gsabran/swift-dependencies", revision: "7a54e2353c8441c3deb88e577e271cd1e19e42d7"),
+    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.10.0"),
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
@@ -1183,9 +1182,7 @@ let package = Package(
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
 
     // Testing dependencies:
-    // TODO: remove the fork once the main repo supports Swift Syntax 602.0.0
-    .package(url: "https://github.com/gsabran/swift-snapshot-testing", revision: "919ae5136eeeee7759568b4125b95de7c34ef60b"),
-    // TODO: remove the fork once the main repo supports Swift Syntax 602.0.0
-    .package(url: "https://github.com/gsabran/swift-macro-testing", revision: "15eb78772e2e541f60948ee37be5d7c6fb6c7597"),
+    .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),
+    .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.4"),
   ],
   targets: targets)
