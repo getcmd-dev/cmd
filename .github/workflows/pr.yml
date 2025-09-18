@@ -9,6 +9,7 @@ concurrency:
 jobs:
   build-release-app:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -56,6 +57,7 @@ jobs:
 
   test-swift:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -93,6 +95,7 @@ jobs:
 
   lint-swift:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -109,6 +112,7 @@ jobs:
 
   sync-app-dependencies:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -136,6 +140,7 @@ jobs:
 
   test-node:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -155,6 +160,7 @@ jobs:
 
   tsc:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -174,6 +180,7 @@ jobs:
 
   lint-node:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
@@ -195,6 +202,7 @@ jobs:
 
   lint-shell:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers

@@ -9,6 +9,7 @@ concurrency:
 jobs:
   warm-up-release-app-cache:
     runs-on: macos-26
+    timeout-minutes: 60
     steps:
     - name: MacOS version
       run: sw_vers
