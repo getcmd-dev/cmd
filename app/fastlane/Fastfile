@@ -95,7 +95,8 @@ platform :mac do
     setup_ci if ENV["CI"]
 
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
+    build_path = File.absolute_path("../build")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     # Debug: Check what keychain is being used
     sh("security list-keychains")
@@ -135,7 +136,6 @@ platform :mac do
     end
 
     # Build and archive the app
-    build_path = File.absolute_path("../build")
     app_name = "cmd"
     app_path = "#{build_path}/release/#{app_name}.app"
     archive_path = "#{build_path}/release/#{app_name}.xcarchive"
