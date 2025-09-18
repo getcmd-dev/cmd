@@ -7,6 +7,7 @@
 source "https://rubygems.org"
 
 gem "fastlane"
+gem "abbrev" # See https://github.com/fastlane/fastlane/issues/21942#issuecomment-3023805251 as of why this is needed.
 
 plugins_path = File.join(File.dirname(__FILE__), ".", "Pluginfile")
 eval_gemfile(plugins_path) if File.exist?(plugins_path)

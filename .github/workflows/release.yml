@@ -45,7 +45,7 @@ jobs:
         path: app/build/derived_data
         key: ${{ runner.os }}-app-derived-data-main
     - name: Publish release
-      run: cd app && bundle exec fastlane mac distribute_release
+      run: cd app/fastlane && bundle exec fastlane mac distribute_release
       env:
         FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
         FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
