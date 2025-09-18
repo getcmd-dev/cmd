@@ -94,6 +94,9 @@ platform :mac do
   lane :create_and_sign_release do |options|
     setup_ci if ENV["CI"]
 
+    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
+
     # Debug: Check what keychain is being used
     sh("security list-keychains")
     sh("security default-keychain")
@@ -139,8 +142,6 @@ platform :mac do
 
     # Create a new build
     # sh("rm -rf #{build_path}")
-    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets CODE_SIGN_IDENTITY=\"\" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
 
     build_mac_app(
