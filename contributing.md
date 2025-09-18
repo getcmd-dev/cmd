@@ -25,7 +25,7 @@ cp -R ./tools/githooks/. .git/hooks
 echo '
 # Run helper tools for the cmd app
 function cmd {
-  (cd $(git rev-parse --show-toplevel) && ./cmd.sh "$@")
+  "$(git rev-parse --show-toplevel)/cmd.sh" "$@"
 }' >> ~/.zshrc
 ```
 
