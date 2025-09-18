@@ -11,7 +11,7 @@ trap reset EXIT
 lint_swift_command() {
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	echo $1 > ~/Downloads/tmp.log
+	echo $1 >~/Downloads/tmp.log
 	if [ -z "$1" ]; then
 		files="."
 	else
