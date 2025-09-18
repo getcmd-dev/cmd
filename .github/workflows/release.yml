@@ -10,12 +10,12 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 30
     steps:
+    - uses: actions/checkout@v4
     - name: MacOS version
       run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
     - uses: gsabran/setup-swift@main
       with:
         swift-version: "6.2"
@@ -23,6 +23,9 @@ jobs:
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '26.0'
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: "./local-server/.nvmrc"
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -31,15 +34,18 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Fastlane dependencies installation
-      run: cd app/fastlane && gem install bundler && bundle install
+    - name: Install release dependencies
+      run:
+        npm install --global create-dmg
+        brew install graphicsmagick imagemagick
+        cd app/fastlane && gem install bundler && bundle install
     - name: Load derived data cache
       uses: actions/cache/restore@v4
       with:
         path: app/build/derived_data
         key: ${{ runner.os }}-app-derived-data-main
     - name: Publish release
-      run: cd app && fastlane mac distribute_release
+      run: cd app && bundle exec fastlane mac distribute_release
       env:
         FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
         FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
