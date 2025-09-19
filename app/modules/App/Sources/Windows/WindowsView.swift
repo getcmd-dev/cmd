@@ -83,6 +83,7 @@ final class WindowsView {
 
   private func hideSetupWindow() {
     setupWindow?.setIsVisible(false)
+    setupWindow?.close()
   }
 
   @MainActor
