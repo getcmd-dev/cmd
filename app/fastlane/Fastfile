@@ -98,10 +98,6 @@ platform :mac do
     build_path = File.absolute_path("../build")
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
-    # Debug: Check what keychain is being used
-    sh("security list-keychains")
-    sh("security default-keychain")
-
     version = options.fetch(:version, nil)
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
@@ -122,10 +118,6 @@ platform :mac do
       use_automatic_signing: false,
       path: "./command.xcodeproj",
     )
-
-    # Debug: Check what keychain is being used
-    sh("security list-keychains")
-    sh("security default-keychain")
 
     certificate_name = ENV["sigh_dev.getcmd.command_developer_id_macos_certificate-name"]
     provisioning_profile_path = ENV["sigh_dev.getcmd.command_developer_id_macos_profile-path"]
