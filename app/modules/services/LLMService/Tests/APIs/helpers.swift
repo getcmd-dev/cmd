@@ -357,14 +357,14 @@ struct TestChatContext: ChatContext {
     project: URL? = nil,
     projectRoot: URL,
     chatMode: ChatMode = .ask,
-    prepareForWriteToolUseHandler: @escaping @Sendable () async -> Void = { },
+    prepareToExecuteHandler: @escaping @Sendable (any ToolFoundation.ToolUse) async -> Void = { _ in },
     needsApprovalHandler: @escaping @Sendable (any ToolFoundation.ToolUse) async -> Bool = { _ in false },
     requestApprovalHandler: @escaping @Sendable (any ToolFoundation.ToolUse) async throws -> Void = { _ in })
   {
     self.project = project
     self.projectRoot = projectRoot
     self.chatMode = chatMode
-    self.prepareForWriteToolUseHandler = prepareForWriteToolUseHandler
+    self.prepareToExecuteHandler = prepareToExecuteHandler
     self.needsApprovalHandler = needsApprovalHandler
     self.requestApprovalHandler = requestApprovalHandler
     toolExecutionContext = ToolExecutionContext(projectRoot: projectRoot)
@@ -375,8 +375,8 @@ struct TestChatContext: ChatContext {
   let chatMode: ChatMode
   let toolExecutionContext: ToolExecutionContext
 
-  func prepareForWriteToolUse() async {
-    await prepareForWriteToolUseHandler()
+  func prepareToExecute(writingToolUse: any ToolUse) async {
+    await prepareToExecuteHandler(writingToolUse)
   }
 
   func needsApproval(for toolUse: any ToolUse) async -> Bool {
@@ -387,7 +387,7 @@ struct TestChatContext: ChatContext {
     try await requestApprovalHandler(toolUse)
   }
 
-  private let prepareForWriteToolUseHandler: @Sendable () async -> Void
+  private let prepareToExecuteHandler: @Sendable (any ToolUse) async -> Void
   private let needsApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async -> Bool
   private let requestApprovalHandler: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
 

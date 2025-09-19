@@ -245,7 +245,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           context: DefaultChatContext(
             project: projectInfo?.path,
             projectRoot: projectInfo?.dirPath,
-            prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
+            prepareToExecute: { [weak self] toolUse in await self?.handlePrepareToExecute(toolUse) },
             needsApproval: { [weak self] toolUse in await self?.needsApproval(for: toolUse) ?? true },
             requestToolApproval: { [weak self] toolUse in
               try await self?.handleToolApproval(for: toolUse)
@@ -525,7 +525,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
   }
 
-  private func handlePrepareForWriteToolUse() async {
+  private func handlePrepareToExecute(_ toolUse: any ToolUse) async {
     guard let projectInfo = updateProjectInfo() else {
       return
     }
@@ -539,7 +539,13 @@ final class ChatThreadViewModel: Identifiable, Equatable {
         // Execute on the main actor to update the UI
         await MainActor.run {
           // Find the index of the last message to insert the checkpoint after it
-          if let lastMessageIndex = events.lastIndex(where: { $0.message != nil }) {
+          if
+            let toolUseIndex = events
+              .firstIndex(where: { $0.message?.content.asToolUse?.toolUse.toolUseId == toolUse.toolUseId })
+          {
+            // Insert the checkpoint before the toolUse
+            events.insert(.checkpoint(checkpoint), at: toolUseIndex)
+          } else if let lastMessageIndex = events.lastIndex(where: { $0.message != nil }) {
             // Insert the checkpoint after the last message
             events.insert(.checkpoint(checkpoint), at: lastMessageIndex + 1)
           } else {
@@ -548,6 +554,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           }
         }
       }
+      await persistThread()
     } catch {
       defaultLogger.error("Failed to create checkpoint", error)
     }

@@ -291,7 +291,7 @@ actor RequestStreamingHelper: Sendable {
         }
       }
       if !toolUse.isReadonly {
-        await context.prepareForWriteToolUse()
+        await context.prepareToExecute(writingToolUse: toolUse)
       }
       toolUse.startExecuting()
     } catch is CancellationError {
@@ -383,7 +383,7 @@ actor RequestStreamingHelper: Sendable {
         if !toolUse.isReadonly, tool.isExternalTool {
           // We create a checkpoint now for external tools, as we do not control when the execution starts.
           // For internal tool, this will be done in `startExecution` after validating permissions.
-          await context.prepareForWriteToolUse()
+          await context.prepareToExecute(writingToolUse: toolUse)
         }
         content.append(toolUse: toolUse)
 
