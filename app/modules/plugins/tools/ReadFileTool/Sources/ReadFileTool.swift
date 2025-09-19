@@ -34,10 +34,10 @@ public final class ReadFileTool: NonStreamableTool {
       self.toolUseId = toolUseId
       self.context = context
       self.input = input
-      self.internalState = internalState ?? Input(
+      resolvedInput = internalState ?? Input(
         path: input.path.resolvePath(from: context.projectRoot).path,
         lineRange: input.lineRange)
-      filePath = URL(fileURLWithPath: self.internalState.path)
+      filePath = URL(fileURLWithPath: resolvedInput.path)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
@@ -60,8 +60,7 @@ public final class ReadFileTool: NonStreamableTool {
       public let uri: String
     }
 
-    public let internalState: InternalState
-
+    public let resolvedInput: InternalState
     public let isReadonly = true
 
     public let callingTool: ReadFileTool
@@ -72,6 +71,8 @@ public final class ReadFileTool: NonStreamableTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public var internalState: InternalState? { resolvedInput }
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -107,7 +108,7 @@ public final class ReadFileTool: NonStreamableTool {
 
     let filePath: URL
 
-    var mappedInput: Input { internalState }
+    var mappedInput: Input { resolvedInput }
 
     @Dependency(\.fileManager) private var fileManager
     @Dependency(\.chatContextRegistry) private var chatContextRegistry

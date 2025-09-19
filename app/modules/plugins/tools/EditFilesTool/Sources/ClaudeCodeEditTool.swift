@@ -52,6 +52,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
         defaultLogger
           .error("Claude Code edited a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
       }
+      chatContextRegistry.persist(thread: context.threadId)
     }
 
     public typealias InternalState = [EditFilesTool.Use.FileChange]
@@ -193,11 +194,7 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
         mappedInput = mappedInput.correcting(file: file, with: fixedInput)
         updateTrackedFileContent()
 
-        do {
-          try chatContextRegistry.context(for: context.threadId).requestPersistence()
-        } catch {
-          defaultLogger.error("Failed to persist thread")
-        }
+        chatContextRegistry.persist(thread: context.threadId)
       }))
   }
 }

@@ -136,7 +136,7 @@ extension ToolUse {
   }
 }
 
-extension ToolUse where InternalState == InternalState {
+extension ToolUse where InternalState == EmptyObject {
   public var internalState: InternalState? { nil }
 }
 

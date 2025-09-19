@@ -10,6 +10,7 @@ import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import LoggingServiceInterface
 import SwiftUI
 import ThreadSafe
 import ToolFoundation
@@ -66,6 +67,7 @@ public final class EditFilesTool: Tool {
       if let error, isInputComplete {
         updateStatus.complete(with: .failure(error))
       }
+      chatContextRegistry.persist(thread: context.threadId)
     }
 
     public struct InternalState: Codable, Sendable {
@@ -157,6 +159,11 @@ public final class EditFilesTool: Tool {
 
       public fileprivate(set) var files: [FileChange]
 
+      public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: String.self)
+        try container.encode(files, forKey: "files")
+      }
+
     }
 
     public typealias Output = String
@@ -174,10 +181,8 @@ public final class EditFilesTool: Tool {
 
     public var isInputComplete: Bool { _isInputComplete.value }
 
-    public var internalState: InternalState {
-      InternalState(
-        convertedInput: mappedInput.value,
-        formattedOutput: formattedOutput.value)
+    public var internalState: InternalState? {
+      resolvedInput
     }
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
@@ -187,7 +192,6 @@ public final class EditFilesTool: Tool {
 
       let (mappedInput, error) = context.mappedInput(persistedInput: nil, rawInput: input)
       self.mappedInput.set(to: mappedInput)
-
       // Update formatted output with new input
       let updatedOutput = FormattedOutput(
         fileChanges: mappedInput.map { fileChange in
@@ -207,6 +211,7 @@ public final class EditFilesTool: Tool {
         self._viewModel?.isInputComplete = isLast
         self._viewModel?.toolUseResult = self.formattedOutput.value
       }
+      chatContextRegistry.persist(thread: context.threadId)
     }
 
     public func startExecuting() {
@@ -240,6 +245,12 @@ public final class EditFilesTool: Tool {
 
     let _isInputComplete: Atomic<Bool>
 
+    var resolvedInput: InternalState {
+      InternalState(
+        convertedInput: mappedInput.value,
+        formattedOutput: formattedOutput.value)
+    }
+
     @MainActor
     var editViewModel: EditFilesToolUseViewModel {
       if let _viewModel {
@@ -268,6 +279,8 @@ public final class EditFilesTool: Tool {
       _viewModel = viewModel
       return viewModel
     }
+
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
     private let _input: Atomic<Input>
     private let mappedInput: Atomic<[FileChange]>
@@ -410,5 +423,15 @@ extension EditFilesTool.Use: DisplayableToolUse {
   @MainActor
   public var viewModel: AnyToolUseViewModel {
     AnyToolUseViewModel(editViewModel)
+  }
+}
+
+extension ChatContextRegistryService {
+  func persist(thread id: String) {
+    do {
+      try context(for: id).requestPersistence()
+    } catch {
+      defaultLogger.error("Failed to persist thread")
+    }
   }
 }
