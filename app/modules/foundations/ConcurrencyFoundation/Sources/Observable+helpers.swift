@@ -24,7 +24,6 @@ extension Observable where Self: Sendable {
         guard !isCancelled.value else {
           return nil
         }
-        _ = cancellable
         return ""
       },
       willChange: nil,
