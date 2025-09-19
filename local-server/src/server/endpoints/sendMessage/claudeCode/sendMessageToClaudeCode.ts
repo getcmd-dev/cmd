@@ -16,6 +16,7 @@ import {
 	SDKUserMessage,
 	type SDKMessage,
 	query,
+	SDKPartialAssistantMessage,
 } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
@@ -327,27 +328,28 @@ async function* mapStream(
 			}
 		}
 
-		if (isSDKAssistantMessage(event)) {
+		if (isSDKPartialAssistantMessage(event)) {
+			if (event.event.type === "content_block_delta") {
+				if (event.event.delta.type === "text_delta") {
+					yield {
+						type: "text_delta",
+						text: event.event.delta.text,
+					}
+				} else if (event.event.delta.type === "thinking_delta") {
+					yield {
+						type: "reasoning_delta",
+						delta: event.event.delta.thinking,
+					}
+				}
+			}
+		} else if (isSDKAssistantMessage(event)) {
 			for (const contentPart of event.message.content) {
 				switch (contentPart.type) {
 					case "text": {
-						// Special cases
-						if (contentPart.text.startsWith("Claude AI usage limit reached|")) {
-							// ignore, this will also show up as an error
-							break
-						}
-						yield {
-							type: "text_delta",
-							text: contentPart.text + "\n",
-						}
-						break
+						break // Already streamed
 					}
 					case "thinking": {
-						yield {
-							type: "reasoning_delta",
-							delta: contentPart.thinking + "\n",
-						}
-						break
+						break // Already streamed
 					}
 					case "tool_use": {
 						const toolName = `${TOOL_NAME_PREFIX}${contentPart.name}`
@@ -517,6 +519,10 @@ export const readConversationSummary = async (sessionId: string, threadId: strin
 const isSDKAssistantMessage = (message: ExtendedSDKMessage): message is SDKAssistantMessage => {
 	return message.type === "assistant"
 }
+const isSDKPartialAssistantMessage = (message: ExtendedSDKMessage): message is SDKPartialAssistantMessage => {
+	return message.type === "stream_event"
+}
+
 const isSDKUserMessage = (message: ExtendedSDKMessage): message is SDKUserMessage => {
 	return message.type === "user"
 }
