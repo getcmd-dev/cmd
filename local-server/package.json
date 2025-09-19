@@ -37,6 +37,7 @@
 		"@ai-sdk/groq": "^2.0.14",
 		"@ai-sdk/openai": "^2.0.19",
 		"@anthropic-ai/claude-code": "^1.0.119",
+		"@anthropic-ai/sdk": "^0.63.0",
 		"@modelcontextprotocol/sdk": "^1.17.0",
 		"@openrouter/ai-sdk-provider": "^1.1.2",
 		"@sentry/node": "^10.10.0",
