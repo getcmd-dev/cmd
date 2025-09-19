@@ -203,6 +203,7 @@ struct ChatThreadViewModelTests {
     }
 
     let isDoneStreaming = expectation(description: "is done streaming")
+    let hasProcessedFirstMessage = expectation(description: "has processed first message")
 
     mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
@@ -211,12 +212,16 @@ struct ChatThreadViewModelTests {
       let message = MutableCurrentValueStream<AssistantMessage>(.init(content: []))
       updateStream.update(with: [message])
 
-      let firstTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "hello"))
+      let firstTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
       message.update(with: AssistantMessage(content: [.text(firstTextContent)]))
+      firstTextContent.update(with: .init(content: "hello", deltas: ["hello"]))
       firstTextContent.finish()
 
-      let secondTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "world"))
+      try await fulfillment(of: hasProcessedFirstMessage)
+
+      let secondTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
       message.update(with: AssistantMessage(content: [.text(firstTextContent), .text(secondTextContent)]))
+      secondTextContent.update(with: .init(content: "world", deltas: ["world"]))
       secondTextContent.finish()
 
       message.finish()
@@ -227,25 +232,32 @@ struct ChatThreadViewModelTests {
 
     var cancellables = Set<AnyCancellable>()
 
-    let eventsHistory = Atomic<[[ChatEvent]]>([])
+    let eventsHistory = Atomic<[[String]]>([])
     sut.observeChanges(to: \.events) { value in
-      eventsHistory.mutate { $0.append(value) }
-    }.store(in: &cancellables)
-
-    let wasStreaming = Atomic(false)
-    sut.observeChanges(to: \.isStreamingResponse) { value in
-      if wasStreaming.set(to: value), !value {
-        isDoneStreaming.fulfill()
+      MainActor.assumeIsolated {
+        let newValue = value.compactMap { $0.message?.content.asText?.text }
+        let events = eventsHistory.mutate { events in
+          if events.last != newValue {
+            events.append(newValue)
+          }
+          return events
+        }
+        if value.count == 2 {
+          hasProcessedFirstMessage.fulfillAtMostOnce()
+        }
+        if value.count == 3 {
+          isDoneStreaming.fulfillAtMostOnce()
+        }
       }
     }.store(in: &cancellables)
 
     // when
-    sut.input.textInput = .init(NSAttributedString(string: "hello"))
+    sut.input.textInput = .init(NSAttributedString(string: "sup?"))
     await sut.sendMessage()
 
     // then
     try await fulfillment(of: isDoneStreaming)
-    #expect(eventsHistory.value.map { $0.map { $0.message?.content.asText?.text } } == [["hello"], ["hello", "world"]])
+    #expect(eventsHistory.value == [["sup?"], ["sup?", "hello"], ["sup?", "hello", "world"]])
 
     // Clean up
     _ = cancellables
