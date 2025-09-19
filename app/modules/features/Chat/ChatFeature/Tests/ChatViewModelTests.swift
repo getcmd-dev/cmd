@@ -5,6 +5,7 @@ import AccessibilityFoundation
 import AppEventServiceInterface
 import AppKit
 import ChatAppEvents
+import ChatCompletionServiceInterface
 import ChatFeatureInterface
 import ChatFoundation
 import ChatServiceInterface
@@ -981,6 +982,109 @@ struct ChatViewModelTests {
       }
     }
     #expect(summaryMessages.count == 0)
+  }
+
+  @MainActor
+  @Test("client cancellation behavior is properly implemented")
+  func test_clientCancellation_behaviorImplemented() async throws {
+    // given
+    let mockChatHistoryService = MockChatHistoryService()
+    let mockLLMService = MockLLMService()
+
+    let testThreadId = UUID()
+
+    let (threadViewModel, chatViewModel) = withDependencies {
+      $0.withAllModelAvailable()
+      $0.chatHistoryService = mockChatHistoryService
+      $0.llmService = mockLLMService
+    } operation: {
+      let thread = ChatThreadViewModel(id: testThreadId)
+      let sut = ChatViewModel()
+      sut.tab = thread
+      return (thread, sut)
+    }
+
+    let isDoneStreaming = expectation(description: "is done streaming")
+    let hasReceivedOneStreamedChunk = expectation(description: "has received one streamed chunk")
+    let threadChangedFromStreamingToNotStreaming = expectation(description: "thread changed from streaming to not streaming")
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
+      handleUpdateStream(updateStream)
+
+      let message = MutableCurrentValueStream<AssistantMessage>(.init(content: []))
+      updateStream.update(with: [message])
+
+      let firstTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent)]))
+      firstTextContent.update(with: .init(content: "hello", deltas: ["hello"]))
+      firstTextContent.finish()
+
+      try await fulfillment(of: isDoneStreaming)
+
+      let secondTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent), .text(secondTextContent)]))
+      firstTextContent.update(with: .init(content: "world", deltas: ["world"]))
+      secondTextContent.finish()
+      message.finish()
+      updateStream.finish()
+      return SendMessageResponse(newMessages: [], usageInfo: nil)
+    }
+
+    // when
+    let chatCompletionInput = ChatCompletionInput(
+      threadId: testThreadId.uuidString,
+      newUserMessages: ["Test message for client cancellation"],
+      modelName: "gpt-5")
+
+    // Handle the chat completion and get the stream
+    let receivedEvents = Atomic<[[ChatCompletionServiceInterface.ChatEvent]]>([])
+    let task = Task {
+      let eventStream = try await chatViewModel.handle(chatCompletion: chatCompletionInput)
+      for await event in eventStream {
+        receivedEvents.mutate { $0.append(event) }
+        if receivedEvents.value.count == 1 {
+          hasReceivedOneStreamedChunk.fulfill()
+        }
+      }
+    }
+
+    let wasStreaming = Atomic(threadViewModel.isStreamingResponse)
+    let cancellable = threadViewModel.observeChanges(to: \.isStreamingResponse) { @Sendable value in
+      if wasStreaming.value, !value {
+        threadChangedFromStreamingToNotStreaming.fulfill()
+      }
+      wasStreaming.set(to: value)
+    }
+
+    try await fulfillment(of: hasReceivedOneStreamedChunk)
+    #expect(threadViewModel.isStreamingResponse)
+    task.cancel()
+    try await fulfillment(of: threadChangedFromStreamingToNotStreaming)
+//
+//    // Verify that the thread started streaming
+//    let wasStreamingBeforeCancellation = threadViewModel.isStreamingResponse
+//
+//    // Cancel the stream consumption task (simulates client disconnect)
+//      task.cancel()
+//
+//    // Allow time for cancellation to propagate through the AsyncStream's onTermination
+//    try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+//
+//    // Verify that the thread's streaming state was properly cleared
+//    let isStreamingAfterCancellation = threadViewModel.isStreamingResponse
+//
+//    // Clean up
+    _ = await task.result
+    _ = cancellable
+//
+//    // then
+//    // This test validates the fix from commit 301ade5:
+//    // - When a client cancels their stream consumption, the AsyncStream's onTermination should trigger
+//    // - The onTermination callback calls thread.cancelCurrentMessage()
+//    // - This should clear the streaming state on the thread
+//    #expect(wasStreamingBeforeCancellation == true)
+//    #expect(isStreamingAfterCancellation == false)
   }
 
   @MainActor

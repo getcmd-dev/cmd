@@ -40,6 +40,7 @@ Target.module(
     "AccessibilityFoundation",
     "AppEventServiceInterface",
     "ChatAppEvents",
+    "ChatCompletionServiceInterface",
     "ChatFeatureInterface",
     "ChatFoundation",
     "ChatServiceInterface",

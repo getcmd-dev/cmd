@@ -12,13 +12,18 @@ extension Observable where Self: Sendable {
     perform action: @Sendable @escaping (Value) -> Void)
     -> AnyCancellable
   {
-    let cancellable = AnyCancellable { }
+    let isCancelled = Atomic(false)
+    let cancellable = AnyCancellable {
+      isCancelled.set(to: true)
+    }
     withObservationTracking(
       {
         _ = self[keyPath: keyPath]
       },
-      token: { [weak cancellable] in
-        guard let cancellable else { return nil }
+      token: {
+        guard !isCancelled.value else {
+          return nil
+        }
         _ = cancellable
         return ""
       },
@@ -57,7 +62,10 @@ extension Observable where Self: Sendable {
   {
     let isFirstObservation = Atomic<Bool>(true)
 
-    let cancellable = AnyCancellable { }
+    let isCancelled = Atomic(false)
+    let cancellable = AnyCancellable {
+      isCancelled.set(to: true)
+    }
 
     withObservationTracking(
       {
@@ -67,9 +75,10 @@ extension Observable where Self: Sendable {
           action(value)
         }
       },
-      token: { [weak cancellable] in
-        guard let cancellable else { return nil }
-        _ = cancellable
+      token: {
+        guard !isCancelled.value else {
+          return nil
+        }
         return ""
       },
       willChange: nil,

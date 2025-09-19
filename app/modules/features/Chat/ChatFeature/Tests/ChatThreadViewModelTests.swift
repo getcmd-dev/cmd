@@ -152,6 +152,7 @@ struct ChatThreadViewModelTests {
 
     // Assert
     #expect(handled == false)
+    #expect(sut.name == nil) // Name should remain unchanged
   }
 
   @MainActor

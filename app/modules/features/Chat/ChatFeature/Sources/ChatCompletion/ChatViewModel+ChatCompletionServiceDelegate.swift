@@ -43,11 +43,11 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
         }
       }
 
-      continuation.onTermination = { @Sendable [weak cancellable] _ in
+      continuation.onTermination = { @Sendable _ in
         Task { @MainActor in
           thread.cancelCurrentMessage()
         }
-        cancellable?.cancel()
+        cancellable.cancel()
       }
     }
   }
