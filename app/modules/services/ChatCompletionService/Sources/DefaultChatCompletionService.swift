@@ -134,9 +134,10 @@ final class DefaultChatCompletionService: ChatCompletionService {
   }
 
   // TODO: find how to detect request cancellation by the client.
-  private func chatCompletion(req: Request) async throws -> BroadcastedStream<ChatStreamResult> {
+  private func chatCompletion(req: Request) async throws -> StreamedResponse<ChatStreamResult> {
     let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream(replayStrategy: .replayAll)
-    Task {
+
+    let task = Task {
       let completionId = UUID().uuidString
       var model = "unknown"
       do {
@@ -184,6 +185,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
         var sentEventIds: Set<String> = []
 
         for await chatEvents in chatEventsStream {
+          try Task.checkCancellation()
           let newEvents = chatEvents.filter { !sentEventIds.contains($0.id) }
           for newEvent in newEvents {
             sentEventIds.insert(newEvent.id)
@@ -194,6 +196,8 @@ final class DefaultChatCompletionService: ChatCompletionService {
               content: newEvent.content))
           }
         }
+      } catch is CancellationError {
+        // nothing to do
       } catch {
         defaultLogger.error("Failed to handle chat completion request", error)
         continuation.yield(ChatStreamResult(
@@ -204,7 +208,9 @@ final class DefaultChatCompletionService: ChatCompletionService {
       continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model))
       continuation.finish()
     }
-    return stream
+    return .init(stream: stream, onCancel: {
+      task.cancel()
+    })
   }
 
   /// Directly modify Xcode settings to setup `cmd` as an AI backend or to sync its port.
@@ -251,15 +257,39 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
 }
 
-// MARK: - BroadcastedStream + AsyncResponseEncodable
+// MARK: - StreamedResponse
 
-extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
+struct StreamedResponse<Element: Sendable & Encodable> {
+  let stream: BroadcastedStream<Element>
+  let onCancel: @Sendable () -> Void
+}
+
+// MARK: AsyncResponseEncodable
+
+extension StreamedResponse: AsyncResponseEncodable {
   public func encodeResponse(for _: Request) async throws -> Response {
     let response = Response(status: .ok)
     response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
     response.body = Response.Body(managedAsyncStream: { writer in
+      // With Vapor, there seems to be no easy way to detect when the request is cancelled by the client
+      // See https://github.com/vapor/vapor/issues/3354
+      // It is important for us to handle this cancellation. We detect it by writting no-op tokens to the response stream regularly.
+      // If the client has disconnected Vapor will fail the write.
+      let monitorClientDisconnection = Task {
+        while true {
+          do {
+            try await Task.sleep(for: .milliseconds(10))
+            try Task.checkCancellation()
+            _ = try await writer.write(.buffer(ByteBuffer(string: " ")))
+          } catch {
+            onCancel()
+            break
+          }
+        }
+      }
+
       do {
-        for try await element in self {
+        for try await element in stream {
           let data = try JSONEncoder.sortingKeys.encode(element)
           guard let string = String(data: data, encoding: .utf8) else {
             throw AppError("Could not convert Data to String in DefaultChatCompletionService")
@@ -271,6 +301,8 @@ extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
         let data = Data(chunkWithError: error.localizedDescription)
         _ = try await writer.write(.buffer(ByteBuffer(data: data)))
       }
+
+      monitorClientDisconnection.cancel()
       _ = try await writer.write(.buffer(ByteBuffer(string: "data: [DONE]")))
     })
 
