@@ -2,10 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppEventServiceInterface
+import ChatFeatureInterface
+import Combine
 import ConcurrencyFoundation
 import Dependencies
 import ExtensionEventsInterface
 import Foundation
+import LLMServiceInterface
 import LocalServerServiceInterface
 import SharedValuesFoundation
 import SwiftTesting
@@ -182,6 +185,70 @@ struct ChatThreadViewModelTests {
     // Assert
     #expect(handled == false)
     _ = sut // Keep reference
+  }
+
+  @MainActor
+  @Test("receiving messages updates state")
+  func test_receivingMessages_updatesState() async throws {
+    // given
+    let mockLLMService = MockLLMService()
+
+    let testThreadId = UUID()
+
+    let sut = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel(id: testThreadId)
+    }
+
+    let isDoneStreaming = expectation(description: "is done streaming")
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
+      handleUpdateStream(updateStream)
+
+      let message = MutableCurrentValueStream<AssistantMessage>(.init(content: []))
+      updateStream.update(with: [message])
+
+      let firstTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "hello"))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent)]))
+      firstTextContent.finish()
+
+      let secondTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "world"))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent), .text(secondTextContent)]))
+      secondTextContent.finish()
+
+      message.finish()
+      updateStream.finish()
+
+      return SendMessageResponse(newMessages: [], usageInfo: nil)
+    }
+
+    var cancellables = Set<AnyCancellable>()
+
+    let eventsHistory = Atomic<[[ChatEvent]]>([])
+    sut.observeChanges(to: \.events) { value in
+      eventsHistory.mutate { $0.append(value) }
+    }.store(in: &cancellables)
+
+    let wasStreaming = Atomic(false)
+    sut.observeChanges(to: \.isStreamingResponse) { value in
+      if wasStreaming.set(to: value), !value {
+        isDoneStreaming.fulfill()
+      }
+    }.store(in: &cancellables)
+
+    // when
+    sut.input.textInput = .init(NSAttributedString(string: "hello"))
+    await sut.sendMessage()
+
+    // then
+    try await fulfillment(of: isDoneStreaming)
+    #expect(eventsHistory.value.map { $0.map { $0.message?.content.asText?.text } } == [["hello"], ["hello", "world"]])
+
+    // Clean up
+    _ = cancellables
   }
 
 }
