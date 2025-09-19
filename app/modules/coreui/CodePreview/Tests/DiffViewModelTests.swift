@@ -325,6 +325,7 @@ struct FileDiffViewModelTests {
       if count == 1 {
         firstUpdateExpectation.fulfill()
       } else if count == 2 {
+          
         secondUpdateExpectation.fulfill()
       }
     })
