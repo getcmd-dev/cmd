@@ -36,7 +36,7 @@ echo '
 source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
 source /opt/homebrew/opt/chruby/share/chruby/auto.sh' >>  ~/.zshrc
 source ~/.zshrc
-gem install
+gem install bundler && bundle install
 ```
 
 ## Architecture overview

@@ -37,8 +37,11 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install fastlane dependencies
+      run: |
+        cd app/fastlane && gem install bundler && bundle install
     - name: Make release
-      run: cd app && fastlane mac build_release
+      run: cd app/fastlane && bundle exec fastlane mac build_release
       env:
         FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
         FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10

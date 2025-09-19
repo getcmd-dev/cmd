@@ -47,8 +47,11 @@ jobs:
           ~/Library/org.swift.swiftpm
           ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
         key: ${{ runner.os }}-app-derived-data-main
+    - name: Install fastlane dependencies
+      run: |
+        cd app/fastlane && gem install bundler && bundle install
     - name: Build app in Release mode
-      run: cd app && fastlane mac build_release
+      run: cd app/fastlane && bundle exec fastlane mac build_release
       env:
         FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
         FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
@@ -224,7 +227,7 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install rubocop
       run:
-        gem install
+        gem install bundler && bundle install
     - name: Run linter
       run: ./cmd.sh lint:rb
     - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
