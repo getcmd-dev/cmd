@@ -370,6 +370,81 @@ struct DefaultSettingsServiceTests {
       """)
     _ = cancellable
   }
+
+  @Test("API keys are properly deserialized from stored JSON for all providers")
+  @MainActor
+  func test_apiKeyDeserializationFromStoredJSON() async throws {
+    // given
+    let sharedUserDefaults = MockUserDefaults()
+
+    // Store API keys in keychain first
+    sharedUserDefaults.securelySave("test-anthropic-key", forKey: "ANTHROPIC_API_KEY")
+    sharedUserDefaults.securelySave("test-openai-key", forKey: "OPENAI_API_KEY")
+    sharedUserDefaults.securelySave("test-openrouter-key", forKey: "OPENROUTER_API_KEY")
+    sharedUserDefaults.securelySave("test-groq-key", forKey: "GROQ_API_KEY")
+    sharedUserDefaults.securelySave("test-gemini-key", forKey: "GEMINI_API_KEY")
+
+    // Create settings JSON with keychain references (as they would be stored)
+    let settingsJSON = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates": true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "customInstructions" : {},
+        "fileEditMode": "direct I/O",
+        "inactiveModels" : [],
+        "keyboardShortcuts": {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "ANTHROPIC_API_KEY",
+            "createdOrder" : 1
+          },
+          "openai" : {
+            "apiKey" : "OPENAI_API_KEY",
+            "createdOrder" : 2
+          },
+          "openrouter" : {
+            "apiKey" : "OPENROUTER_API_KEY",
+            "createdOrder" : 3
+          },
+          "groq" : {
+            "apiKey" : "GROQ_API_KEY",
+            "createdOrder" : 4
+          },
+          "gemini" : {
+            "apiKey" : "GEMINI_API_KEY",
+            "createdOrder" : 5
+          }
+        },
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels" : {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : []
+      }
+      """
+
+    let settingsData = try #require(settingsJSON.data(using: .utf8))
+    sharedUserDefaults.set(settingsData, forKey: DefaultSettingsService.Keys.appWideSettings)
+
+    // when
+    let sut = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+
+    // then
+    // Verify all provider API keys are properly deserialized from keychain
+    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "test-anthropic-key")
+    #expect(sut.value(for: \.llmProviderSettings[.openAI]?.apiKey) == "test-openai-key")
+    #expect(sut.value(for: \.llmProviderSettings[.openRouter]?.apiKey) == "test-openrouter-key")
+    #expect(sut.value(for: \.llmProviderSettings[.groq]?.apiKey) == "test-groq-key")
+    #expect(sut.value(for: \.llmProviderSettings[.gemini]?.apiKey) == "test-gemini-key")
+
+    // Verify all other settings remain intact
+    #expect(sut.value(for: \.llmProviderSettings[.anthropic]?.createdOrder) == 1)
+    #expect(sut.value(for: \.llmProviderSettings[.openAI]?.createdOrder) == 2)
+    #expect(sut.value(for: \.llmProviderSettings[.openRouter]?.createdOrder) == 3)
+    #expect(sut.value(for: \.llmProviderSettings[.groq]?.createdOrder) == 4)
+    #expect(sut.value(for: \.llmProviderSettings[.gemini]?.createdOrder) == 5)
+  }
 }
 
 extension DefaultSettingsService {
