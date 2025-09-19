@@ -90,26 +90,14 @@ final class DefaultSettingsService: SettingsService {
     if let data = userDefaults.data(forKey: Keys.appWideSettings) {
       do {
         var settings = try JSONDecoder().decode(Settings.self, from: data)
-        // Load API keys fromn the keychain.
-        if let anthropicAPIKey = settings.llmProviderSettings[.anthropic]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
-            settings.llmProviderSettings[.anthropic]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .anthropic)
-          }
-        }
-        if let openAIAPIKey = settings.llmProviderSettings[.openAI]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: openAIAPIKey) {
-            settings.llmProviderSettings[.openAI]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .openAI)
-          }
-        }
-        if let openRouterAPIKey = settings.llmProviderSettings[.openRouter]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: openRouterAPIKey) {
-            settings.llmProviderSettings[.openRouter]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .openRouter)
+        // Load API keys from the keychain.
+        for provider in LLMProvider.allCases {
+          if let apiKey = settings.llmProviderSettings[provider]?.apiKey {
+            if let key = userDefaults.loadSecuredValue(forKey: apiKey) {
+              settings.llmProviderSettings[provider]?.apiKey = key
+            } else {
+              settings.llmProviderSettings.removeValue(forKey: provider)
+            }
           }
         }
 
