@@ -543,7 +543,11 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             let toolUseIndex = events
               .firstIndex(where: { $0.message?.content.asToolUse?.toolUse.toolUseId == toolUse.toolUseId })
           {
-            // Insert the checkpoint before the toolUse
+            // Insert the checkpoint before the toolUse:
+            // The tool use is created first, because we might need to get permissions before doing anything else.
+            // The checkpoint is created after permissions are granted and before the tool runs.
+            // Semantically, the checkpoint happens "before" the tool use (ie before it runs which is the important part)
+            // so once a checkpoint is created we need to re-order the events.
             events.insert(.checkpoint(checkpoint), at: toolUseIndex)
           } else if let lastMessageIndex = events.lastIndex(where: { $0.message != nil }) {
             // Insert the checkpoint after the last message
