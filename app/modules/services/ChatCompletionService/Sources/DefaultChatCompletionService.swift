@@ -74,7 +74,12 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
   /// Find an available port where to start the HTTP server.
   private func findAvailablePort() async throws -> Int {
+    #if DEBUG
+    /// Start one higher in DEBUG, to allow for both DEBUG and RELEASE to co-exist on different stable ports.
+    var port = 10102
+    #else
     var port = 10101
+    #endif
 
     while true {
       if port >= 65535 {
