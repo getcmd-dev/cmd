@@ -87,7 +87,7 @@ extension LSToolTests {
           "input": {
             "path": "/home/user/projects"
           },
-        "internalState" : null,
+          "internalState" : null,
           "isInputComplete": true,
           "status": {
             "status": "notStarted"
