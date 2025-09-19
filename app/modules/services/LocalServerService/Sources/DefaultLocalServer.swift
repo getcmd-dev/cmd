@@ -370,6 +370,4 @@ extension BaseProviding where
   }
 }
 
-extension URLResponse: @unchecked @retroactive Sendable { }
-
 private let resourceBundle = Bundle.module

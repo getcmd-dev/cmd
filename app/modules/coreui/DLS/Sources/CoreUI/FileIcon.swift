@@ -151,5 +151,3 @@ private let resourceBundle = Bundle(for: ResourceBundle.self)
     .padding()
   }
 }
-
-extension NSImage: @retroactive @unchecked Sendable { }
