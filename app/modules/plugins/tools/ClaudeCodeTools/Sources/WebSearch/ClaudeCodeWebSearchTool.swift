@@ -19,7 +19,7 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWebSearchTool,
       toolUseId: String,
@@ -55,6 +55,8 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
       public let links: [SearchResult]
       public let content: String
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
 

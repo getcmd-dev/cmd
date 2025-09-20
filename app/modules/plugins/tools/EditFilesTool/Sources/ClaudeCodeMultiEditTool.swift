@@ -68,6 +68,8 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
 
     public typealias Output = EditFilesTool.Use.Output
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let isReadonly = false
 
     public let callingTool: ClaudeCodeMultiEditTool
@@ -234,7 +236,8 @@ extension ClaudeCodeMultiEditTool.Use.Input {
 // MARK: - ClaudeCodeMultiEditTool.Use + DisplayableToolUse
 
 extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,

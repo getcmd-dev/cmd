@@ -21,7 +21,9 @@ public final class ReadFileTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+    @unchecked Sendable
+  {
     public init(
       callingTool: ReadFileTool,
       toolUseId: String,
@@ -59,6 +61,8 @@ public final class ReadFileTool: NonStreamableTool {
       public let content: String
       public let uri: String
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let resolvedInput: InternalState
     public let isReadonly = true
@@ -171,7 +175,8 @@ public final class ReadFileTool: NonStreamableTool {
 // MARK: - ReadFileTool.Use + DisplayableToolUse
 
 extension ReadFileTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput, projectRoot: context.projectRoot))
   }
 }

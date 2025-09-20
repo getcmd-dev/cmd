@@ -48,6 +48,8 @@ public final class AskFollowUpTool: NonStreamableTool {
       public let response: String
     }
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let context: ToolFoundation.ToolExecutionContext
 
     public let isReadonly = true

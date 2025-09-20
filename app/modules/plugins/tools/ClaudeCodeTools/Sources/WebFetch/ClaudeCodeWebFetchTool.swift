@@ -17,7 +17,7 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWebFetchTool,
       toolUseId: String,
@@ -46,6 +46,8 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
     public struct Output: Codable, Sendable {
       public let result: String
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
 

@@ -47,6 +47,8 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public typealias Output = SearchFilesTool.Use.Output
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let isReadonly = true
 
     public let callingTool: ClaudeCodeGrepTool
@@ -356,7 +358,8 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
 // MARK: - ClaudeCodeGrepTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     let mappedInput = SearchFilesTool.Use.Input(
       directoryPath: input.path ?? input.projectRoot ?? "/",
       regex: input.pattern,
