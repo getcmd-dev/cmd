@@ -5,9 +5,12 @@ import AppFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
+import LocalServerServiceInterface
 import SwiftTesting
 import Testing
 @testable import SearchFilesTool
+
+// MARK: - ClaudeCodeGrepToolTests
 
 struct ClaudeCodeGrepToolTests {
 
@@ -29,17 +32,28 @@ struct ClaudeCodeGrepToolTests {
 
     toolUse.startExecuting()
 
+    let testOutput = """
+      Found 8 files
+      /serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
+      /services/ChatHistoryService/Sources/Serialization.swift
+      /foundations/JSONFoundation/Sources/JSON.swift
+      /foundations/LLMFoundation/Sources/LLMProvider.swift
+      /services/LLMService/Sources/JSON+partialParsing.swift
+      /services/ChatHistoryService/Sources/AttachmentSerializer.swift
+      /serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift
+      /foundations/ToolFoundation/Sources/Encoding.swift
+      """
     try toolUse.receive(output: .string(testOutput))
-    let result = try await toolUse.output.results.map(\.path)
-    #expect(result == [
-      "/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift",
-      "/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift",
-      "/me/cmd/app/modules/foundations/JSONFoundation/Sources/JSON.swift",
-      "/me/cmd/app/modules/foundations/LLMFoundation/Sources/LLMProvider.swift",
-      "/me/cmd/app/modules/services/LLMService/Sources/JSON+partialParsing.swift",
-      "/me/cmd/app/modules/services/ChatHistoryService/Sources/AttachmentSerializer.swift",
-      "/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift",
-      "/me/cmd/app/modules/foundations/ToolFoundation/Sources/Encoding.swift",
+    let results = try await toolUse.output.results
+    #expect(results.map(\.path) == [
+      "/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift",
+      "/services/ChatHistoryService/Sources/Serialization.swift",
+      "/foundations/JSONFoundation/Sources/JSON.swift",
+      "/foundations/LLMFoundation/Sources/LLMProvider.swift",
+      "/services/LLMService/Sources/JSON+partialParsing.swift",
+      "/services/ChatHistoryService/Sources/AttachmentSerializer.swift",
+      "/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift",
+      "/foundations/ToolFoundation/Sources/Encoding.swift",
     ])
   }
 
@@ -52,34 +66,70 @@ struct ClaudeCodeGrepToolTests {
       context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
     toolUse.startExecuting()
-
-    try toolUse.receive(output: .string(otherTestOutput))
+    let outputWithoutLineNumber = """
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-    thread.input.selectedModel = LLMModel.allCases.first { $0.name == chatCompletion.modelName }
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    @Dependency(\\.xcodeObserver) var xcodeObserver
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    let projectRoot = xcodeObserver.state.focusedWorkspace?.url
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-
+      """
+    try toolUse.receive(output: .string(outputWithoutLineNumber))
     let results = try await toolUse.output.results
 
-    // Validate we have the expected number of file results (5 unique files with matches)
-    #expect(results.count == 2)
+    #expect(results.map(\.path) == [
+      "/features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift",
+    ])
 
-    // Validate first file result
-    let firstResult = results[0]
-    #expect(firstResult.path == "/me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift")
-    #expect(firstResult.searchResults.count == 1)
-    #expect(firstResult.searchResults[0].line == 154)
-    #expect(firstResult.searchResults[0].text == "      setResult: { _ in },")
-    #expect(firstResult.searchResults[0].isMatch == true)
+    #expect(results.map(\.searchResults) == [
+      [
+        [0, "    @Dependency(\\.xcodeObserver) var xcodeObserver", true],
+        [0, "    let projectRoot = xcodeObserver.state.focusedWorkspace?.url", true],
+      ],
+    ])
+  }
 
-    // Validate second file result - ToolUseViewModel.swift has multiple matches
-    let secondResult = results[1]
-    #expect(secondResult.path == "/me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift")
-    #expect(secondResult.searchResults.count == 2)
+  @Test
+  func handlesExternalOutputWithContextLineNumberCorrectly() async throws {
+    let toolUse = ClaudeCodeGrepTool().use(
+      toolUseId: "123",
+      input: mockInput,
+      isInputComplete: true,
+      context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
-    // Check the matched lines in ToolUseViewModel.swift
-    #expect(secondResult.searchResults[0].line == 32)
-    #expect(secondResult.searchResults[0].text == "    setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,")
-    #expect(secondResult.searchResults[0].isMatch == true)
+    toolUse.startExecuting()
+    let outputWithLineNumber = """
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-152-      input: mappedInput,
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-153-      isInputComplete: true,
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift:154:      setResult: { _ in },
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-155-      context: context)
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-156-
+      --
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-30-    input: [EditFilesTool.Use.FileChange],
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-31-    isInputComplete: Bool,
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift:32:    setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-33-    toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []),
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-34-    context: ToolExecutionContext)
+      --
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-37-    self.input = input
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-38-    self.isInputComplete = isInputComplete
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift:39:    self.setResult = setResult
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-40-    self.toolUseResult = toolUseResult
+      /plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-41-    self.context = context
+      """
+    try toolUse.receive(output: .string(outputWithLineNumber))
+    let results = try await toolUse.output.results
 
-    #expect(secondResult.searchResults[1].line == 39)
-    #expect(secondResult.searchResults[1].text == "    self.setResult = setResult")
-    #expect(secondResult.searchResults[1].isMatch == true)
+    #expect(results.map(\.path) == [
+      "/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift",
+      "/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift",
+    ])
+    #expect(results.map(\.searchResults) == [
+      [
+        [154, "      setResult: { _ in },", true],
+      ], [
+        [32, "    setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,", true],
+        [39, "    self.setResult = setResult", true],
+      ],
+    ])
   }
 
   @Test
@@ -96,36 +146,27 @@ struct ClaudeCodeGrepToolTests {
     let result = try await toolUse.output.results.map(\.path)
     #expect(result == [])
   }
+}
 
-  private let testOutput = """
-    Found 8 files
-    /me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
-    /me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
-    /me/cmd/app/modules/foundations/JSONFoundation/Sources/JSON.swift
-    /me/cmd/app/modules/foundations/LLMFoundation/Sources/LLMProvider.swift
-    /me/cmd/app/modules/services/LLMService/Sources/JSON+partialParsing.swift
-    /me/cmd/app/modules/services/ChatHistoryService/Sources/AttachmentSerializer.swift
-    /me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift
-    /me/cmd/app/modules/foundations/ToolFoundation/Sources/Encoding.swift
-    """
+// MARK: - Schema.SearchResult + ExpressibleByArrayLiteral, Equatable
 
-  private let otherTestOutput = """
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-152-      input: mappedInput,
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-153-      isInputComplete: true,
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift:154:      setResult: { _ in },
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-155-      context: context)
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-156-
-    --
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-30-    input: [EditFilesTool.Use.FileChange],
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-31-    isInputComplete: Bool,
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift:32:    setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-33-    toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []),
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-34-    context: ToolExecutionContext)
-    --
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-37-    self.input = input
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-38-    self.isInputComplete = isInputComplete
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift:39:    self.setResult = setResult
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-40-    self.toolUseResult = toolUseResult
-    /me/cmd/app/modules/plugins/tools/EditFilesTool/Sources/ToolUseViewModel.swift-41-    self.context = context
-    """
+extension Schema.SearchResult: ExpressibleByArrayLiteral, Equatable {
+  public init(arrayLiteral elements: ArrayLiteralElement...) {
+    guard
+      elements.count == 3,
+      let line = elements[0] as? Int,
+      let text = elements[1] as? String,
+      let isMatch = elements[2] as? Bool
+    else {
+      fatalError("Invalid elements for array literal \(elements)")
+    }
+    self.init(line: line, text: text, isMatch: isMatch)
+  }
+
+  public typealias ArrayLiteralElement = Any
+
+  public static func ==(lhs: Schema.SearchResult, rhs: Schema.SearchResult) -> Bool {
+    lhs.line == rhs.line && lhs.text == rhs.text && lhs.isMatch == rhs.isMatch
+  }
+
 }
