@@ -20,7 +20,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
     self.init(initial)
 
     value.sink { [weak self] value in
-      Task { @MainActor [weak self] in
+      Task { @MainActor in
         self?.value = value
       }
     }.store(in: &cancellables)
@@ -30,9 +30,9 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
   public convenience init(initial: Value, updates: AsyncStream<Value>) {
     self.init(initial)
 
-    Task {
+    Task { [weak self] in
       for await value in updates {
-        Task { @MainActor [weak self] in
+        Task { @MainActor in
           self?.value = value
         }
       }
@@ -44,7 +44,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
     Task { [weak self] in
       let value = await update()
-      Task { @MainActor [weak self] in
+      Task { @MainActor in
         self?.value = value
       }
     }

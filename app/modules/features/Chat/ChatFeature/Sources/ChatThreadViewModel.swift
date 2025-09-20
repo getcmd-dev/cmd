@@ -85,7 +85,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel()
-    input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
+    input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
     setUp()
@@ -256,8 +256,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             },
             chatMode: input.mode,
             threadId: self.id.uuidString),
-          handleUpdateStream: { newMessagesUpdates in
-            Task { @MainActor [weak self] in
+          handleUpdateStream: { [weak self] newMessagesUpdates in
+            Task { @MainActor in
               guard let self else { return }
               var trackedMessages = Set<UUID>()
               for await update in newMessagesUpdates.futureUpdates {
@@ -275,8 +275,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       var content = newMessageState.content
                       let newContent = newContent.domainFormat(projectRoot: projectInfo?.dirPath)
                       content.append(newContent)
-                      events.append(.message(.init(content: newContent, role: .assistant)))
-                      indexOfLastEventFromThisMessage.set(to: events.count - 1)
+                      self.events.append(.message(.init(content: newContent, role: .assistant)))
+                      indexOfLastEventFromThisMessage.set(to: self.events.count - 1)
                       newMessageState.content = content
 
                       // Persistence
@@ -455,9 +455,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   }
 
   private func setUp() {
-    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable [weak self] state in
       guard state.focusedWorkspace != nil else { return }
       Task { @MainActor in
+        guard let self else { return }
         _ = self.updateProjectInfo()
         self.workspaceRootObservation = nil
       }

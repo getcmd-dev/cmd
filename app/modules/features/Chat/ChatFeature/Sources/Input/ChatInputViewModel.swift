@@ -125,8 +125,8 @@ final class ChatInputViewModel {
       }.store(in: &cancellables)
     }
 
-    searchTasks.sink { @Sendable suggestions in
-      Task { @MainActor [weak self] in
+    searchTasks.sink { @Sendable [weak self] suggestions in
+      Task { @MainActor in
         self?.searchResults = suggestions
       }
     }.store(in: &cancellables)

@@ -30,10 +30,11 @@ public struct ThreeDotsLoadingAnimation: View {
   private func startAnimation() {
     let stepDuration = duration / 4 // 4 steps: "", ".", "..", "..."
 
-    Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { _ in
+    Timer.scheduledTimer(withTimeInterval: stepDuration, repeats: true) { [weak self] _ in
       Task { @MainActor in
+        guard let self else { return }
         withAnimation(.easeInOut(duration: stepDuration * 0.3)) {
-          i = (i + 1) % 4
+          self.i = (self.i + 1) % 4
         }
       }
     }
