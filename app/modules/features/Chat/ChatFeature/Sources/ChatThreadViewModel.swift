@@ -162,6 +162,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
+    updateFocusFileInfo()
+
     if let summarizationTask {
       try? await summarizationTask.value
     }
@@ -390,9 +392,34 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   private var summarizationTask: Task<Void, any Error>? = nil
 
+  /// Track the last focused file in Xcode to provide context
+  private var lastFocusedFileURL: URL? = nil
+
   private var streamingTask: Task<Void, any Error>? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
+    }
+  }
+
+  private func updateFocusFileInfo() {
+    // Check if the focused file in Xcode has changed and add it as context
+    if let currentFocusedFile = xcodeObserver.state.focusedTabURL {
+      if currentFocusedFile != lastFocusedFileURL {
+        lastFocusedFileURL = currentFocusedFile
+
+        // Create an internal message to provide context about the focused file
+        let focusedFileMessage = "The file currently focused in the editor is: \(currentFocusedFile.path)"
+        let contextMessage = ChatMessageTextContent(
+          projectRoot: projectInfo?.dirPath,
+          text: focusedFileMessage,
+          attachments: [])
+
+        let focusedFileContent = ChatMessageContent.nonUserFacingText(contextMessage)
+        messages.append(ChatMessageViewModel(
+          content: [focusedFileContent],
+          role: .user))
+        events.append(.message(.init(content: focusedFileContent, role: .user)))
+      }
     }
   }
 

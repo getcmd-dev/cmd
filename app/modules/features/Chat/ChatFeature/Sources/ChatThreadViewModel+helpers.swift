@@ -191,7 +191,9 @@ extension ChatMessageViewModel {
     var currentMessage = Schema.Message(role: role.apiFormat, content: [])
     for (role, messageContent) in content.flatMap(\.apiFormat) {
       if role != currentMessage.role {
-        messages.append(currentMessage)
+        if !currentMessage.content.isEmpty {
+          messages.append(currentMessage)
+        }
         currentMessage = Schema.Message(role: role ?? self.role.apiFormat, content: [])
       }
       currentMessage = Schema.Message(
