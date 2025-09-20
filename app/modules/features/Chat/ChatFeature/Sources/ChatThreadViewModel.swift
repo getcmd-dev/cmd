@@ -129,7 +129,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   @MainActor
   func cancelCurrentMessage() {
-    streamingTask?.cancel()
+    streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
     // Cancel all existing tool calls.
@@ -170,7 +170,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     if let streamingTask {
       defaultLogger.info("Cancelling current chat streaming task")
-      streamingTask.cancel()
+      streamingTask.task.cancel()
       self.streamingTask = nil
     }
 
@@ -224,6 +224,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     // Send the message to the server and stream the response.
     let indexOfLastEventFromThisMessage = Atomic(events.count - 1)
+    let taskId = UUID()
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
@@ -239,7 +240,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           "message_length": String(textInput.string.string.count),
         ])
 
-      streamingTask = Task {
+      let task = Task {
         async let response = try await llmService.sendMessage(
           messageHistory: messages,
           tools: tools,
@@ -301,8 +302,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
         recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
+      streamingTask = (task: task, id: taskId)
 
-      try await streamingTask?.value
+      try await task.value
       streamingTask = nil
 
       // Save the conversation after successful completion
@@ -317,7 +319,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
     } catch {
       defaultLogger.error("Error sending message", error)
-      streamingTask = nil
+      if streamingTask?.id == taskId {
+        streamingTask = nil
+      }
 
       let lastMessageIndex = indexOfLastEventFromThisMessage.value
       if case .message(let lastEvent) = events[lastMessageIndex] {
@@ -398,7 +402,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   /// Track the last focused file in Xcode to provide context
   private var lastFocusedFileURL: URL? = nil
 
-  private var streamingTask: Task<Void, any Error>? = nil {
+  private var streamingTask: (task: Task<Void, any Error>, id: UUID)? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
