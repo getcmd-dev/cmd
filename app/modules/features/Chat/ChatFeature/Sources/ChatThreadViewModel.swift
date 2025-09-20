@@ -223,6 +223,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
 
     // Send the message to the server and stream the response.
+    let indexOfLastEventFromThisMessage = Atomic(events.count - 1)
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
@@ -274,6 +275,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       let newContent = newContent.domainFormat(projectRoot: projectInfo?.dirPath)
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
+                      indexOfLastEventFromThisMessage.set(to: events.count - 1)
                       newMessageState.content = content
 
                       // Persistence
@@ -317,11 +319,12 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
 
-      if case .message(let lastEvent) = events.last {
+      let lastMessageIndex = indexOfLastEventFromThisMessage.value
+      if case .message(let lastEvent) = events[lastMessageIndex] {
         if error is CancellationError {
-          events[events.count - 1] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
+          events[lastMessageIndex] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
         } else {
-          events[events.count - 1] = .message(lastEvent.with(info: .init(
+          events[lastMessageIndex] = .message(lastEvent.with(info: .init(
             info: "Error sending message: \(error.localizedDescription)",
             level: .error)))
         }
