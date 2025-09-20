@@ -27,7 +27,12 @@ public final class MockLocalServer: LocalServer {
     set { _onPostRequest.mutate { $0 = newValue } }
   }
 
-  public func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> LocalServerResponse {
+  public func getRequest(
+    path: String,
+    configure _: (inout URLRequest) -> Void,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> LocalServerResponse
+  {
     try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
       try await self.onGetRequest(path, onReceiveJSONData)
     }
@@ -36,6 +41,7 @@ public final class MockLocalServer: LocalServer {
   public func postRequest(
     path: String,
     data: Data,
+    configure _: (inout URLRequest) -> Void,
     onReceiveJSONData: (@Sendable (Data) -> Void)?)
     async throws -> LocalServerResponse
   {
