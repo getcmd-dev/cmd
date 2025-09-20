@@ -302,15 +302,15 @@ private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> S
 /// /path/to/another.swift-30-    input: [EditFilesTool.Use.FileChange],
 /// ```
 private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
-    // Regex to parse ripgrep output lines with format: path[:lineNum]:text
-    // - path: Matches file paths, allowing escaped spaces (\\ ) but not unescaped spaces
-    //   Uses non-greedy matching to stop at the first colon delimiter
-    // - lineNum: Optional line number after the first colon
-    // - text: Remaining content after the final colon (the matched line text)
-    // Example matches:
-    //   "/path/to/file.txt:42:some text" -> path="/path/to/file.txt", lineNum="42", text="some text"
-    //   "/path/with\\ space.txt:content here" -> path="/path/with\\ space.txt", text="content here"
-    let matchedLineRegex = #/^(?<path>(?:[^\\ ]|\\ )+?)(?::(?<lineNum>\d+))?:(?<text>.*)$/#
+  // Regex to parse ripgrep output lines with format: path[:lineNum]:text
+  // - path: Matches file paths, allowing escaped spaces (\\ ) but not unescaped spaces
+  //   Uses non-greedy matching to stop at the first colon delimiter
+  // - lineNum: Optional line number after the first colon
+  // - text: Remaining content after the final colon (the matched line text)
+  // Example matches:
+  //   "/path/to/file.txt:42:some text" -> path="/path/to/file.txt", lineNum="42", text="some text"
+  //   "/path/with\\ space.txt:content here" -> path="/path/with\\ space.txt", text="content here"
+  let matchedLineRegex = #/^(?<path>(?:[^\\ ]|\\ )+?)(?::(?<lineNum>\d+))?:(?<text>.*)$/#
 
   var fileResults: [String: [Schema.SearchResult]] = [:]
   var fileOrder: [String] = []

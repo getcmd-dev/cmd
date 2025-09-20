@@ -127,10 +127,6 @@ public protocol LocalServerProviding {
 // MARK: - APIError
 
 public struct APIError: Error, Sendable, LocalizedError {
-  let statusCode: Int
-  let localizedDescription: String
-  let debugDescription: String?
-
   /// Initializes an API error with detailed information
   /// - Parameters:
   ///   - statusCode: The HTTP status code associated with the error
@@ -147,6 +143,11 @@ public struct APIError: Error, Sendable, LocalizedError {
   public init(_ message: String) {
     self.init(statusCode: 500, localizedDescription: message, debugDescription: nil)
   }
+
+  let statusCode: Int
+  let localizedDescription: String
+  let debugDescription: String?
+
 }
 
 // MARK: - SerializedError
