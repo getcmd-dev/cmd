@@ -1,7 +1,7 @@
 {
   "development": {
-    "size": "2.57MB",
-    "compressedSize": "0.73MB"
+    "size": "2.77MB",
+    "compressedSize": "0.78MB"
   },
   "production": {
     "size": "3.30MB",

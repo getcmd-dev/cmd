@@ -1,11 +1,12 @@
 import { spawn as _spawn } from "child_process"
 
-export function spawn(command: string): Promise<{ stdout: string; stderr: string; code: number }>
-export function spawn(command: string, args: string[]): Promise<{ stdout: string; stderr: string; code: number }>
-export function spawn(command: string, args?: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
+export function spawn(
+	command: string,
+	options: { args?: string[]; env?: Record<string, string>; cwd?: string } = {},
+): Promise<{ stdout: string; stderr: string; code: number }> {
 	return new Promise((resolve, reject) => {
 		let cmd = command
-		let cmdArgs = args
+		let cmdArgs = options.args
 		if (cmdArgs == undefined) {
 			const spl = cmd.split(" ").filter((s) => s.length > 0)
 
@@ -13,7 +14,10 @@ export function spawn(command: string, args?: string[]): Promise<{ stdout: strin
 			cmdArgs = spl.slice(1)
 		}
 
-		const child = _spawn(cmd, cmdArgs)
+		const child = _spawn(cmd, cmdArgs, {
+			cwd: options.cwd,
+			env: options.env,
+		})
 
 		let stdout = ""
 		let stderr = ""
