@@ -430,6 +430,7 @@ targets.append(contentsOf: Target.module(
     "ExtensionEventsInterface",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
+    "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",

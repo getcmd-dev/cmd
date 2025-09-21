@@ -49,6 +49,7 @@ Target.module(
     "ExtensionEventsInterface",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
+    "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
