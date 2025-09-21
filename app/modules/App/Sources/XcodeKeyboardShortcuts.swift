@@ -104,7 +104,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   }
 
   private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
-    KeyboardShortcuts.onKeyUp(for: keyEvent) { [weak self] in
+    KeyboardShortcuts.onKeyUp(for: keyEvent) { @Sendable [weak self] in
       Task {
         guard let self else { return }
         if self.enabledShortcutNames.contains(keyEvent.rawValue) {

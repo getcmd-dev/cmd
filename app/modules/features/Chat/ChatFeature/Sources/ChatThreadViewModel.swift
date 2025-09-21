@@ -257,7 +257,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             chatMode: input.mode,
             threadId: self.id.uuidString),
           handleUpdateStream: { [weak self] newMessagesUpdates in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
               guard let self else { return }
               var trackedMessages = Set<UUID>()
               for await update in newMessagesUpdates.futureUpdates {
@@ -275,8 +275,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       var content = newMessageState.content
                       let newContent = newContent.domainFormat(projectRoot: projectInfo?.dirPath)
                       content.append(newContent)
-                      self.events.append(.message(.init(content: newContent, role: .assistant)))
-                      indexOfLastEventFromThisMessage.set(to: self.events.count - 1)
+                      events.append(.message(.init(content: newContent, role: .assistant)))
+                      indexOfLastEventFromThisMessage.set(to: events.count - 1)
                       newMessageState.content = content
 
                       // Persistence

@@ -333,7 +333,6 @@ struct ChatThreadViewModelTests {
     // then
     let sentMessages = messagesSent.value
     #expect(sentMessages.map { $0.content.map(\.text) } == [
-      ["How do I fix this?"],
       ["The file currently focused in the editor is: /Users/test/MyProject/File.swift"],
       ["How do I fix this?"],
       ["Thanks"],
