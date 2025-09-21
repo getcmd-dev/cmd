@@ -20,7 +20,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
     self.init(initial)
 
     value.sink { [weak self] value in
-      Task { @MainActor in
+      Task { @MainActor [weak self] in
         self?.value = value
       }
     }.store(in: &cancellables)
@@ -32,7 +32,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
     Task { [weak self] in
       for await value in updates {
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
           self?.value = value
         }
       }
@@ -44,7 +44,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
     Task { [weak self] in
       let value = await update()
-      Task { @MainActor in
+      Task { @MainActor [weak self] in
         self?.value = value
       }
     }
