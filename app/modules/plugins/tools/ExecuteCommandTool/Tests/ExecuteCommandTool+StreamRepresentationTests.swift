@@ -186,8 +186,8 @@ extension ExecuteCommandToolTests {
       #expect(result.contains("⎿ Failed:"))
       let errorMessage = try #require(result.split(separator: "⎿ Failed:").last)
       #expect(errorMessage.trimmingCharacters(in: .whitespacesAndNewlines) == """
-      This is a very long error message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message ... [280 characters truncated] ...r message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message that should be trimmed.
-      """.trimmingCharacters(in: .whitespacesAndNewlines))
+        This is a very long error message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message ... [280 characters truncated] ...r message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message that should be trimmed.
+        """.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     @MainActor
