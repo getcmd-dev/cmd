@@ -33,7 +33,7 @@ final class DefaultLocalServer: LocalServer {
     self.fileManager = fileManager
     hasCopiedFiles = false
     applicationSupportPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("command").path
+      .appendingPathComponent(Bundle.main.hostAppBundleId).path
 
     let delegate = LocalServerDelegate()
     let configuration = URLSessionConfiguration.default

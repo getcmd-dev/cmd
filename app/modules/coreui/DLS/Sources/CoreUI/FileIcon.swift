@@ -89,7 +89,8 @@ extension FileIcon {
     let response: IconResponse = try await server.postRequest(path: "/icon", data: payload)
 
     @Dependency(\.fileManager) var fileManager
-    let iconsPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("command")
+    let iconsPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent(Bundle.main.hostAppBundleId)
       .appendingPathComponent("icons")
     try fileManager.createDirectory(atPath: iconsPath.path, withIntermediateDirectories: true)
 
