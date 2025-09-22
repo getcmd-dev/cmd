@@ -112,7 +112,8 @@ public struct SettingsView: View {
           pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
           showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease,
           defaultChatPositionIsInverted: $viewModel.defaultChatPositionIsInverted,
-          enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting)
+          enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
+          enableNetworkProxy: $viewModel.enableNetworkProxy)
 
       case .about:
         AboutSettingsView(

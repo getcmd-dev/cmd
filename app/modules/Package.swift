@@ -969,6 +969,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
   ],
   resources: [

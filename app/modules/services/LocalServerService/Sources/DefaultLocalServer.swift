@@ -10,6 +10,7 @@ import Foundation
 import FoundationInterfaces
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import SettingsServiceInterface
 
 // MARK: - DefaultLocalServer
 
@@ -195,7 +196,13 @@ final class DefaultLocalServer: LocalServer {
       // In debug, load the interactive shell to allow for local env parameters to be passed in.
       process.arguments = ["-ilc"] + ["'\(mainPath)' --attachTo \(getpid())"]
       #else
-      process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      let enableNetworkProxy = sharedUserDefaults.bool(forKey: .enableNetworkProxy)
+      if enableNetworkProxy {
+        // In release with network proxy enabled, load the interactive shell to allow for local env parameters to be passed in.
+        process.arguments = ["-ilc"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      } else {
+        process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      }
       #endif
 
       let stdout = Pipe()

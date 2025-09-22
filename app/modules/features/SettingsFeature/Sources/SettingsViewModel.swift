@@ -39,6 +39,7 @@ public final class SettingsViewModel {
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
+    enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -140,6 +141,12 @@ public final class SettingsViewModel {
   var enableAnalyticsAndCrashReporting: Bool {
     didSet {
       userDefaults.set(enableAnalyticsAndCrashReporting, forKey: .enableAnalyticsAndCrashReporting)
+    }
+  }
+
+  var enableNetworkProxy: Bool {
+    didSet {
+      userDefaults.set(enableNetworkProxy, forKey: .enableNetworkProxy)
     }
   }
 
