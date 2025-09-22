@@ -168,6 +168,8 @@ public final class EditFilesTool: Tool {
 
     public typealias Output = String
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let isReadonly = false
 
     public let callingTool: EditFilesTool
@@ -421,7 +423,7 @@ public final class EditFilesTool: Tool {
 extension EditFilesTool.Use: DisplayableToolUse {
 
   @MainActor
-  public var viewModel: AnyToolUseViewModel {
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(editViewModel)
   }
 }

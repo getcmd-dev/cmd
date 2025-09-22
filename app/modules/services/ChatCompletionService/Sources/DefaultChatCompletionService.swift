@@ -138,20 +138,20 @@ final class DefaultChatCompletionService: ChatCompletionService {
       object: "list")
   }
 
-  // TODO: find how to detect request cancellation by the client.
-  private func chatCompletion(req: Request) async throws -> StreamedResponse<ChatStreamResult> {
+  private func chatCompletion(req: Request) async throws -> Response {
     let (stream, continuation) = BroadcastedStream<ChatStreamResult>.makeStream(replayStrategy: .replayAll)
 
+    let completionId = UUID().uuidString
+    let model = Atomic("unknown")
     let task = Task {
-      let completionId = UUID().uuidString
-      var model = "unknown"
       do {
         guard let data = req.body.data else {
           throw AppError("Missing request body")
         }
 
         let request = try JSONDecoder().decode(ChatQuery.self, from: data)
-        model = request.model
+        model.set(to: request.model)
+        let model = model.value
 
         let threadId = {
           if let id = request.messages.threadId {
@@ -207,15 +207,15 @@ final class DefaultChatCompletionService: ChatCompletionService {
         defaultLogger.error("Failed to handle chat completion request", error)
         continuation.yield(ChatStreamResult(
           completionId: completionId,
-          model: model,
+          model: model.value,
           content: "\(error.localizedDescription)\n"))
       }
-      continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model))
+      continuation.yield(ChatStreamResult(stoppingCompletionWithId: completionId, model: model.value))
       continuation.finish()
     }
-    return .init(stream: stream, onCancel: {
+    return try await StreamedResponse<ChatStreamResult>(stream: stream, onCancel: {
       task.cancel()
-    })
+    }).encodeResponse(completionId: completionId, model: model.value)
   }
 
   /// Directly modify Xcode settings to setup `cmd` as an AI backend or to sync its port.
@@ -271,8 +271,8 @@ struct StreamedResponse<Element: Sendable & Encodable> {
 
 // MARK: AsyncResponseEncodable
 
-extension StreamedResponse: AsyncResponseEncodable {
-  public func encodeResponse(for _: Request) async throws -> Response {
+extension StreamedResponse where Element == ChatStreamResult {
+  func encodeResponse(completionId: String, model: String) async throws -> Response {
     let response = Response(status: .ok)
     response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
     response.body = Response.Body(managedAsyncStream: { writer in
@@ -285,7 +285,12 @@ extension StreamedResponse: AsyncResponseEncodable {
           do {
             try await Task.sleep(for: .milliseconds(10))
             try Task.checkCancellation()
-            _ = try await writer.write(.buffer(ByteBuffer(string: " ")))
+            let emptyChunk = ChatStreamResult(completionId: completionId, model: model, content: "")
+            let data = try JSONEncoder.sortingKeys.encode(emptyChunk)
+            guard let string = String(data: data, encoding: .utf8) else {
+              throw AppError("Could not convert Data to String in DefaultChatCompletionService")
+            }
+            _ = try await writer.write(.buffer(ByteBuffer(string: "data: \(string)\n\n")))
           } catch {
             onCancel()
             break

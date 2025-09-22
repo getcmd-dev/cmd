@@ -55,7 +55,12 @@ final class DefaultLocalServer: LocalServer {
 
   var serverConnection: URLSessionWebSocketTask?
 
-  func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> Data {
+  func getRequest(
+    path: String,
+    configure: (inout URLRequest) -> Void,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> Data
+  {
     let port = try await connectionStatus.port
     guard let url = URL(string: "http://localhost:\(port)/\(path)") else {
       throw APIError("Invalid URL: http://localhost:\(port)/\(path)")
@@ -63,6 +68,7 @@ final class DefaultLocalServer: LocalServer {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.timeoutInterval = 60
+    configure(&request)
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
     try assertIsSuccess(response: response, data: data)
@@ -72,6 +78,7 @@ final class DefaultLocalServer: LocalServer {
   func postRequest(
     path: String,
     data: Data,
+    configure: (inout URLRequest) -> Void,
     onReceiveJSONData: (@Sendable (Data) -> Void)?)
     async throws -> Data
   {
@@ -86,6 +93,7 @@ final class DefaultLocalServer: LocalServer {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
     request.httpBody = data
+    configure(&request)
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
     try assertIsSuccess(response: response, data: data)

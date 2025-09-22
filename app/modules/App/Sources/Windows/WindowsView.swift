@@ -90,11 +90,11 @@ final class WindowsView {
   private func startObservations(of viewModel: WindowsViewModel) {
     withObservationTracking({
       _ = viewModel.state
-    }, onChange: {
-      Task { @MainActor [weak self] in
+    }, onChange: { [weak self] in
+      Task { @MainActor in
         guard let self, viewModel === self.viewModel else { return }
-        state = viewModel.state
-        startObservations(of: viewModel)
+        self.state = viewModel.state
+        self.startObservations(of: viewModel)
       }
     })
   }

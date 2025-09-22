@@ -18,7 +18,7 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
 
     public init(
       callingTool: ClaudeCodeTodoWriteTool,
@@ -90,6 +90,8 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
       public let success: Bool
       public let message: String
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let internalState: InternalState?
 

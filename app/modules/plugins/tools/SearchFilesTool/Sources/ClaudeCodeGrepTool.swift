@@ -47,6 +47,8 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public typealias Output = SearchFilesTool.Use.Output
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let isReadonly = true
 
     public let callingTool: ClaudeCodeGrepTool
@@ -61,7 +63,8 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
-      if output.trimmingCharacters(in: .whitespacesAndNewlines) == "No files found" {
+      let trimmedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
+      if ["No matches found", "No files found"].contains(where: { $0 == trimmedOutput }) {
         updateStatus.complete(with: .success(Output(
           outputForLLm: output,
           results: [],
@@ -301,8 +304,15 @@ private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> S
 /// /path/to/another.swift-30-    input: [EditFilesTool.Use.FileChange],
 /// ```
 private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
-  // Regex patterns for matched and context lines
-  let matchedLineRegex = #/^(?<path>.+):(?<lineNum>\d+):(?<text>.*)$/#
+  // Regex to parse ripgrep output lines with format: path[:lineNum]:text
+  // - path: Matches file paths, allowing escaped spaces (\\ ) but not unescaped spaces
+  //   Uses non-greedy matching to stop at the first colon delimiter
+  // - lineNum: Optional line number after the first colon
+  // - text: Remaining content after the final colon (the matched line text)
+  // Example matches:
+  //   "/path/to/file.txt:42:some text" -> path="/path/to/file.txt", lineNum="42", text="some text"
+  //   "/path/with\\ space.txt:content here" -> path="/path/with\\ space.txt", text="content here"
+  let matchedLineRegex = #/^(?<path>(?:[^\\ ]|\\ )+?)(?::(?<lineNum>\d+))?:(?<text>.*)$/#
 
   var fileResults: [String: [Schema.SearchResult]] = [:]
   var fileOrder: [String] = []
@@ -316,16 +326,14 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
     // Try to match as a matched line (with colons)
     if let match = try? matchedLineRegex.wholeMatch(in: line) {
       let path = String(match.path)
-      if let lineNum = Int(match.lineNum) {
-        if fileResults[path] == nil {
-          fileOrder.append(path)
-          fileResults[path] = []
-        }
-        fileResults[path]?.append(Schema.SearchResult(
-          line: lineNum,
-          text: String(match.text),
-          isMatch: true))
+      if fileResults[path] == nil {
+        fileOrder.append(path)
+        fileResults[path] = []
       }
+      fileResults[path]?.append(Schema.SearchResult(
+        line: match.lineNum.map { Int($0) } ??? 0,
+        text: String(match.text),
+        isMatch: true))
     }
   }
 
@@ -350,7 +358,8 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
 // MARK: - ClaudeCodeGrepTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     let mappedInput = SearchFilesTool.Use.Input(
       directoryPath: input.path ?? input.projectRoot ?? "/",
       regex: input.pattern,

@@ -85,7 +85,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel()
-    input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
+    input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
     setUp()
@@ -129,7 +129,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   @MainActor
   func cancelCurrentMessage() {
-    streamingTask?.cancel()
+    streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
     // Cancel all existing tool calls.
@@ -162,13 +162,15 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
+    updateFocusFileInfo()
+
     if let summarizationTask {
       try? await summarizationTask.value
     }
 
     if let streamingTask {
       defaultLogger.info("Cancelling current chat streaming task")
-      streamingTask.cancel()
+      streamingTask.task.cancel()
       self.streamingTask = nil
     }
 
@@ -221,6 +223,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
 
     // Send the message to the server and stream the response.
+    let indexOfLastEventFromThisMessage = Atomic(events.count - 1)
+    let taskId = UUID()
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
@@ -236,7 +240,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           "message_length": String(textInput.string.string.count),
         ])
 
-      streamingTask = Task {
+      let task = Task {
         async let response = try await llmService.sendMessage(
           messageHistory: messages,
           tools: tools,
@@ -252,7 +256,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             },
             chatMode: input.mode,
             threadId: self.id.uuidString),
-          handleUpdateStream: { newMessagesUpdates in
+          handleUpdateStream: { [weak self] newMessagesUpdates in
             Task { @MainActor [weak self] in
               guard let self else { return }
               var trackedMessages = Set<UUID>()
@@ -272,6 +276,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       let newContent = newContent.domainFormat(projectRoot: projectInfo?.dirPath)
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
+                      indexOfLastEventFromThisMessage.set(to: events.count - 1)
                       newMessageState.content = content
 
                       // Persistence
@@ -297,8 +302,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
         recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
+      streamingTask = (task: task, id: taskId)
 
-      try await streamingTask?.value
+      try await task.value
       streamingTask = nil
 
       // Save the conversation after successful completion
@@ -313,13 +319,16 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
     } catch {
       defaultLogger.error("Error sending message", error)
-      streamingTask = nil
+      if streamingTask?.id == taskId {
+        streamingTask = nil
+      }
 
-      if case .message(let lastEvent) = events.last {
+      let lastMessageIndex = indexOfLastEventFromThisMessage.value
+      if case .message(let lastEvent) = events[lastMessageIndex] {
         if error is CancellationError {
-          events[events.count - 1] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
+          events[lastMessageIndex] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
         } else {
-          events[events.count - 1] = .message(lastEvent.with(info: .init(
+          events[lastMessageIndex] = .message(lastEvent.with(info: .init(
             info: "Error sending message: \(error.localizedDescription)",
             level: .error)))
         }
@@ -390,9 +399,34 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   private var summarizationTask: Task<Void, any Error>? = nil
 
-  private var streamingTask: Task<Void, any Error>? = nil {
+  /// Track the last focused file in Xcode to provide context
+  private var lastFocusedFileURL: URL? = nil
+
+  private var streamingTask: (task: Task<Void, any Error>, id: UUID)? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
+    }
+  }
+
+  private func updateFocusFileInfo() {
+    // Check if the focused file in Xcode has changed and add it as context
+    if let currentFocusedFile = xcodeObserver.state.focusedTabURL {
+      if currentFocusedFile != lastFocusedFileURL {
+        lastFocusedFileURL = currentFocusedFile
+
+        // Create an internal message to provide context about the focused file
+        let focusedFileMessage = "The file currently focused in the editor is: \(currentFocusedFile.path)"
+        let contextMessage = ChatMessageTextContent(
+          projectRoot: projectInfo?.dirPath,
+          text: focusedFileMessage,
+          attachments: [])
+
+        let focusedFileContent = ChatMessageContent.nonUserFacingText(contextMessage)
+        messages.append(ChatMessageViewModel(
+          content: [focusedFileContent],
+          role: .user))
+        events.append(.message(.init(content: focusedFileContent, role: .user)))
+      }
     }
   }
 
@@ -421,9 +455,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   }
 
   private func setUp() {
-    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable [weak self] state in
       guard state.focusedWorkspace != nil else { return }
       Task { @MainActor in
+        guard let self else { return }
         _ = self.updateProjectInfo()
         self.workspaceRootObservation = nil
       }

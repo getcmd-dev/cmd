@@ -24,7 +24,7 @@ struct MockLocalServerTests {
       return Data()
     }
 
-    _ = try await server.getRequest(path: "/test") { data in
+    _ = try await server.getRequest(path: "/test", configure: { _ in }) { data in
       receivedData.mutate { $0 = data }
     }
 
@@ -37,7 +37,7 @@ struct MockLocalServerTests {
 
     // Default behavior should throw badServerResponse
     do {
-      _ = try await server.getRequest(path: "/test", onReceiveJSONData: nil)
+      _ = try await server.getRequest(path: "/test", configure: { _ in }, onReceiveJSONData: nil)
       Issue.record("Expected error to be thrown")
     } catch let error as URLError {
       #expect(error.code == .badServerResponse)
@@ -56,7 +56,7 @@ struct MockLocalServerTests {
 
     let task = Task {
       do {
-        _ = try await server.getRequest(path: "/test", onReceiveJSONData: nil)
+        _ = try await server.getRequest(path: "/test", configure: { _ in }, onReceiveJSONData: nil)
         Issue.record("Request should have been cancelled")
       } catch is CancellationError {
         expectation.fulfill()
@@ -84,7 +84,7 @@ struct MockLocalServerTests {
       return Data()
     }
 
-    _ = try await server.postRequest(path: "/test", data: sentData) { data in
+    _ = try await server.postRequest(path: "/test", data: sentData, configure: { _ in }) { data in
       receivedData.mutate { $0 = data }
     }
 
@@ -98,7 +98,7 @@ struct MockLocalServerTests {
 
     // Default behavior should throw badServerResponse
     do {
-      _ = try await server.postRequest(path: "/test", data: testData, onReceiveJSONData: nil)
+      _ = try await server.postRequest(path: "/test", data: testData, configure: { _ in }, onReceiveJSONData: nil)
       Issue.record("Expected error to be thrown")
     } catch let error as URLError {
       #expect(error.code == .badServerResponse)
@@ -118,7 +118,7 @@ struct MockLocalServerTests {
 
     let task = Task {
       do {
-        _ = try await server.postRequest(path: "/test", data: testData, onReceiveJSONData: nil)
+        _ = try await server.postRequest(path: "/test", data: testData, configure: { _ in }, onReceiveJSONData: nil)
         Issue.record("Request should have been cancelled")
       } catch is CancellationError {
         expectation.fulfill()
@@ -144,7 +144,7 @@ struct MockLocalServerTests {
       return Data()
     }
 
-    _ = try await server.getRequest(path: "/test") { _ in
+    _ = try await server.getRequest(path: "/test", configure: { _ in }) { _ in
       dataReceived.mutate { $0 = true }
     }
 

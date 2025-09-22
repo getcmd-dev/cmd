@@ -7,16 +7,20 @@ import {
 	ToolUsePermissionRequest,
 	ToolUseRequest,
 } from "@/server/schemas/sendMessageSchema"
+import type { ContentBlockParam } from "@anthropic-ai/sdk/resources"
 import { ModelMessage, UserModelMessage } from "ai"
 import { Request, Response, Router } from "express"
-import { spawn as spawnStream } from "child_process"
-import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
+import {
+	SDKAssistantMessage,
+	SDKResultMessage,
+	SDKUserMessage,
+	type SDKMessage,
+	query,
+	SDKPartialAssistantMessage,
+} from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
-import { writeFileSync, existsSync, mkdirSync } from "fs"
 import { readFile } from "fs/promises"
-import path from "path"
-import { StreamingJsonParser } from "@/utils/streamingJSONParser"
 import { registerMCPServerEndpoints } from "./mcp"
 import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
 import { createHash } from "crypto"
@@ -25,6 +29,7 @@ import { JSONL } from "@/utils/jsonl"
 import { spawn } from "@/utils/spawn-promise"
 import { homedir } from "os"
 import { sendCommandToHostApp } from "../../interProcessesBridge"
+import { v4 as uuidv4 } from "uuid"
 
 // Constants
 const TOOL_NAME_PREFIX = "claude_code_"
@@ -63,7 +68,7 @@ export const sendMessageToClaudeCode = async (
 	},
 	res: Response,
 ) => {
-	const eventStream = createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
+	const eventStream = await createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
 	await respondUsingResponseStream(mapStream(eventStream, threadId, res), res)
 	logInfo("done responsing, terminating request")
 	res.end()
@@ -71,7 +76,7 @@ export const sendMessageToClaudeCode = async (
 	toolUseRequests.delete(threadId)
 }
 
-const createClaudeCodeEventStream = (
+const createClaudeCodeEventStream = async (
 	res: Response,
 	{
 		messages,
@@ -86,73 +91,7 @@ const createClaudeCodeEventStream = (
 		threadId: string
 		router: Router
 	},
-): AsyncStream<ExtendedSDKMessage> => {
-	// get the user messages since the last message sent
-	let firstNewUserMessagesIdx = messages.length
-	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
-		firstNewUserMessagesIdx--
-	}
-	logInfo(`First new user messages index: ${firstNewUserMessagesIdx} / Total messages: ${messages.length}`)
-
-	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
-	const newUserMessagesText = newUserMessages
-		.map((message) => {
-			return message.content
-				.map((content) => {
-					if (content.type === "text") {
-						let text = content.text
-						content.attachments?.forEach((attachment) => {
-							if (attachment.type === "file_attachment") {
-								text += `
-								<file_attachment>
-									<path>${attachment.path}</path>
-									<content>${attachment.content}</content>
-								</file_attachment>`
-							} else if (attachment.type === "file_selection_attachment") {
-								text += `
-								<file_selection_attachment>
-									<path>${attachment.path}</path>
-									<selection>${attachment.content}</selection>
-									<start_line>${attachment.startLine}</start_line>
-									<end_line>${attachment.endLine}</end_line>
-								</file_selection_attachment>`
-							} else if (attachment.type === "image_attachment") {
-								let filePath: string
-								if (attachment.path) {
-									filePath = attachment.path
-								} else {
-									// No path available. This can happen when the image was copied from the pasteboard.
-
-									// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
-									const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
-									const fileExtension = attachment.mimeType.split("/").pop()
-									// Write the image to a tmp file
-									const imageBuffer = Buffer.from(base64Data, "base64")
-									const tmpPath = `/tmp/cmd/${createHash("sha256").update(attachment.url).digest("hex").toString().slice(0, 8)}.${fileExtension}`
-									const dir = path.dirname(tmpPath)
-									if (!existsSync(dir)) {
-										mkdirSync(dir)
-									}
-									writeFileSync(tmpPath, imageBuffer)
-									filePath = tmpPath
-								}
-
-								text += `
-								<image_attachment>
-									<mimeType>${attachment.mimeType}</mimeType>
-									<path>${filePath}</path>
-								</image_attachment>`
-							}
-						})
-						return text
-					}
-					return undefined
-				})
-				.filter(Boolean)
-				.join("\n")
-		})
-		.join("\n")
-
+): Promise<AsyncStream<ExtendedSDKMessage>> => {
 	// get the id of the session to resume
 	const existingSessionId = ((): string | undefined => {
 		for (const message of messages) {
@@ -166,27 +105,93 @@ const createClaudeCodeEventStream = (
 		}
 		return undefined
 	})()
+	const sessionId = existingSessionId || uuidv4()
+	// get the user messages since the last message sent
+	let firstNewUserMessagesIdx = messages.length
+	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
+		firstNewUserMessagesIdx--
+	}
+	logInfo(`First new user messages index: ${firstNewUserMessagesIdx} / Total messages: ${messages.length}`)
+
+	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
+	const userMessages: SDKUserMessage[] = []
+
+	newUserMessages.forEach((message) => {
+		const content: Array<ContentBlockParam> = message.content.flatMap((content) => {
+			const result: ContentBlockParam[] = []
+			if (content.type === "text") {
+				result.push({
+					text: content.text,
+					type: "text",
+				})
+				content.attachments?.forEach((attachment) => {
+					if (attachment.type === "file_attachment") {
+						result.push({
+							text: `<file_attachment>
+									<path>${attachment.path}</path>
+									<content>${attachment.content}</content>
+								</file_attachment>`,
+
+							type: "text",
+						})
+					} else if (attachment.type === "file_selection_attachment") {
+						result.push({
+							text: `<file_selection_attachment>
+									<path>${attachment.path}</path>
+									<selection>${attachment.content}</selection>
+									<start_line>${attachment.startLine}</start_line>
+									<end_line>${attachment.endLine}</end_line>
+								</file_selection_attachment>`,
+
+							type: "text",
+						})
+					} else if (attachment.type === "image_attachment") {
+						// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
+						const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
+						const fileExtension = attachment.mimeType.split("/").pop()
+						const mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" = (() => {
+							switch (fileExtension) {
+								case "png":
+									return "image/png"
+								case "jpg":
+									return "image/jpeg"
+								case "gif":
+									return "image/gif"
+								case "webp":
+									return "image/webp"
+								default:
+									return "image/png"
+							}
+						})()
+						result.push({
+							type: "image",
+							source: {
+								data: base64Data,
+								media_type: mediaType,
+								type: "base64",
+							},
+						})
+					}
+				})
+			}
+			return result
+		})
+		userMessages.push({
+			type: "user",
+			message: {
+				role: "user",
+				content,
+			},
+			parent_tool_use_id: null,
+			session_id: sessionId,
+		})
+	})
 
 	// Create a tmp file for the mcp config used to receive permission requests
 	const mcpEndpoint = `/mcp/${threadId}`
-	const mcpConfig = {
-		mcpServers: {
-			command: {
-				type: "http",
-				url: `http://localhost:${port}${mcpEndpoint}`,
-			},
-		},
-	}
-	const dir = "/tmp/command"
-	const mcpConfigFilePath = path.join(dir, `mcp-${threadId}.json`)
-	if (!existsSync(dir)) {
-		mkdirSync(dir, {
-			mode: 0o700,
-		})
-	}
 	const eventStream = new AsyncStream<ExtendedSDKMessage>()
 
-	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
+	// writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
 	registerMCPServerEndpoints(router, mcpEndpoint, async (toolName, input) => {
 		logInfo(
 			`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
@@ -239,63 +244,40 @@ const createClaudeCodeEventStream = (
 		return response
 	})
 
-	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
-	logInfo(`New user messages text: "${newUserMessagesText}"`)
-
-	const args = [
-		"--output-format",
-		"stream-json",
-		"--verbose",
-		"--max-turns",
-		"100",
-		"--mcp-config",
-		mcpConfigFilePath,
-		"--permission-prompt-tool",
-		"mcp__command__tool_approval",
-	]
-	if (existingSessionId) {
-		args.push("--resume", existingSessionId)
-	}
-	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} -p "${newUserMessagesText}"`)
-
-	const jsonParser = new StreamingJsonParser()
-
-	const child = spawnStream(localExecutable.executable, args, {
-		stdio: ["pipe", "pipe", "pipe"],
-		env: localExecutable.env,
-		cwd: localExecutable.cwd,
+	const abortController = new AbortController()
+	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)
+	const runningQuery = query({
+		prompt: arrayToAsyncIterable(userMessages),
+		options: {
+			mcpServers: {
+				command: {
+					type: "http",
+					url: `http://localhost:${port}${mcpEndpoint}`,
+				},
+			},
+			permissionPromptToolName: "mcp__command__tool_approval",
+			pathToClaudeCodeExecutable,
+			executableArgs,
+			cwd: localExecutable.cwd,
+			env: localExecutable.env,
+			abortController,
+			includePartialMessages: true,
+			maxTurns: 100,
+			resume: existingSessionId,
+			stderr: (data: string) => {
+				if (data.startsWith("Spawning Claude Code native binary")) {
+					return
+				}
+				logInfo(`Claude Code stderr: '${data}'`)
+				if (data.trim().length && data.trim() !== "Error") {
+					// TODO: clarify what's going on
+					logError(`Claude Code stderr: ${data}`)
+				}
+			},
+		},
 	})
 
-	child.stdout.setEncoding("utf8")
-	child.stderr.setEncoding("utf8")
-
-	child.stdout.on("data", (data) => {
-		const output = data.toString()
-		logInfo(`Received data from Claude Code: ${output}`)
-		const parsedMessages = jsonParser.processChunk(output)
-		for (const payload of parsedMessages) {
-			eventStream.yield(payload as SDKMessage)
-		}
-	})
-
-	child.stderr.on("data", (data) => {
-		const error = data.toString()
-		logError(`Received error from Claude Code: ${error}`)
-		eventStream.error(new Error(error))
-	})
-
-	child.on("close", (code) => {
-		logInfo(`Claude Code process exited with code ${code}`)
-		if (code !== 0) {
-			logError("Claude Code was killed with an external error. Ending stream.")
-			eventStream.error(new Error(`Claude Code process exited with code ${code}`))
-		}
-		eventStream.done()
-	})
-
-	// Write to stdin instead of using -p flag, as for some reason this avoids hanging.
-	child.stdin.write(newUserMessagesText)
-	child.stdin.end()
+	eventStream.pipeFrom(runningQuery)
 
 	let responseCompletedByServer = false
 	res.on("finish", () => {
@@ -304,15 +286,11 @@ const createClaudeCodeEventStream = (
 	res.on("close", () => {
 		if (!responseCompletedByServer) {
 			logInfo("Response closed (client disconnected), killing Claude Code process.")
-			child.kill()
+			runningQuery.interrupt().catch((err) => {
+				logError(`Error interrupting running query: ${err.message}`)
+			})
+			abortController.abort()
 		}
-	})
-
-	res.on("error", (err) => {
-		logError(`Claude Code will be killed after having error: ${err.message}`)
-		eventStream.error(new Error(`Claude Code errored: ${err.message}`))
-		eventStream.done()
-		child.kill()
 	})
 
 	return eventStream
@@ -350,27 +328,28 @@ async function* mapStream(
 			}
 		}
 
-		if (isSDKAssistantMessage(event)) {
+		if (isSDKPartialAssistantMessage(event)) {
+			if (event.event.type === "content_block_delta") {
+				if (event.event.delta.type === "text_delta") {
+					yield {
+						type: "text_delta",
+						text: event.event.delta.text,
+					}
+				} else if (event.event.delta.type === "thinking_delta") {
+					yield {
+						type: "reasoning_delta",
+						delta: event.event.delta.thinking,
+					}
+				}
+			}
+		} else if (isSDKAssistantMessage(event)) {
 			for (const contentPart of event.message.content) {
 				switch (contentPart.type) {
 					case "text": {
-						// Special cases
-						if (contentPart.text.startsWith("Claude AI usage limit reached|")) {
-							// ignore, this will also show up as an error
-							break
-						}
-						yield {
-							type: "text_delta",
-							text: contentPart.text + "\n",
-						}
-						break
+						break // Already streamed
 					}
 					case "thinking": {
-						yield {
-							type: "reasoning_delta",
-							delta: contentPart.thinking + "\n",
-						}
-						break
+						break // Already streamed
 					}
 					case "tool_use": {
 						const toolName = `${TOOL_NAME_PREFIX}${contentPart.name}`
@@ -509,14 +488,10 @@ export const readConversationSummary = async (sessionId: string, threadId: strin
 	})
 	while (!isCancelled) {
 		try {
-			const res = await spawn("find", [`${homedir()}/.claude/projects`, "-name", `${sessionId}.jsonl`])
+			const res = await spawn("find", { args: [`${homedir()}/.claude/projects`, "-name", `${sessionId}.jsonl`] })
 			const conversationDataPath = res.stdout.trim()
 			if (conversationDataPath.length > 0) {
 				const conversationContent = await readFile(conversationDataPath, "utf8")
-
-				logInfo(
-					`Found conversation data path: ${conversationDataPath}. Has content: ${conversationContent.length > 0}`,
-				)
 				const conversationData = JSONL.parse(conversationContent)
 				for (const data of conversationData.reverse() as Array<{
 					type: string
@@ -544,6 +519,10 @@ export const readConversationSummary = async (sessionId: string, threadId: strin
 const isSDKAssistantMessage = (message: ExtendedSDKMessage): message is SDKAssistantMessage => {
 	return message.type === "assistant"
 }
+const isSDKPartialAssistantMessage = (message: ExtendedSDKMessage): message is SDKPartialAssistantMessage => {
+	return message.type === "stream_event"
+}
+
 const isSDKUserMessage = (message: ExtendedSDKMessage): message is SDKUserMessage => {
 	return message.type === "user"
 }
@@ -594,4 +573,41 @@ export const registerEndpoint = (router: Router) => {
 		pendingRequest(approvalResult)
 		res.json({ success: true })
 	})
+}
+
+function arrayToAsyncIterable<T>(arr: T[]): AsyncIterable<T> {
+	return {
+		async *[Symbol.asyncIterator]() {
+			for (const item of arr) {
+				// You can introduce asynchronous operations here if needed,
+				// for example, simulating a delay with await new Promise()
+				yield item
+			}
+		},
+	}
+}
+
+/// Extract the executable path and args from the LocalExecutable configuration.
+/// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
+// For instance `claude --dangerously-skip-permissions`
+const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<{ path: string; args: string[] }> => {
+	const parts = localExecutable.executable.match(/(?:[^\s"]+|"[^"]*")+/g) || []
+	const execName = parts[0]?.replace(/(^"|"$)/g, "") // Remove surrounding quotes if any
+	const args = parts.slice(1).map((arg) => arg.replace(/(^"|"$)/g, ""))
+	if (!execName) {
+		throw new Error("Invalid executable path")
+	}
+	if (execName.startsWith("/")) {
+		// absolute path
+		return { path: execName, args }
+	}
+	const execPath = await spawn("which", {
+		args: [execName],
+		env: localExecutable.env,
+		cwd: localExecutable.cwd,
+	}).then((r) => r.stdout.trim())
+	if (!execPath.length) {
+		throw new Error(`Executable ${execName} not found in PATH`)
+	}
+	return { path: execPath, args }
 }

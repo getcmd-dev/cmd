@@ -7,7 +7,7 @@ import Foundation
 import XcodeObserverServiceInterface
 
 extension MockXcodeObserver {
-  convenience init(workspaceURL: URL) {
+  convenience init(workspaceURL: URL, focussedTabURL: URL? = nil) {
     let mockElement = AnyAXUIElement(
       isOnScreen: { true },
       raise: { },
@@ -16,6 +16,14 @@ extension MockXcodeObserver {
       pid: { 0 },
       setAppKitframe: { _ in },
       id: "1")
+    var tabs: [XcodeWorkspaceState.Tab] = []
+    if let focussedTabURL {
+      tabs.append(.init(
+        fileName: focussedTabURL.lastPathComponent,
+        isFocused: true,
+        knownPath: focussedTabURL,
+        lastKnownContent: nil))
+    }
     self.init(.state(
       XcodeState(
         activeApplicationProcessIdentifier: 1,
@@ -28,7 +36,7 @@ extension MockXcodeObserver {
               editors: [],
               isFocused: true,
               document: nil,
-              tabs: []),
+              tabs: tabs),
           ]),
         ])))
   }

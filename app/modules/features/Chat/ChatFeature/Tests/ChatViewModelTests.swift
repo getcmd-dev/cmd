@@ -1067,6 +1067,17 @@ extension Schema.MessageContent {
     switch self {
     case .textMessage(let value):
       value.text
+    case .reasoningMessage(let value):
+      value.text
+    default:
+      nil
+    }
+  }
+
+  var signature: String? {
+    switch self {
+    case .reasoningMessage(let value):
+      value.signature
     default:
       nil
     }

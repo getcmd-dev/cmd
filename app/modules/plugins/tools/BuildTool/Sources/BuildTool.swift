@@ -56,6 +56,8 @@ public final class BuildTool: NonStreamableTool {
       let isSuccess: Bool
     }
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     /// True as building only modifies derived data.
     public let isReadonly = true
 
