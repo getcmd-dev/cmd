@@ -165,7 +165,7 @@ extension ExecuteCommandToolTests {
 
     @MainActor
     @Test("streamRepresentation trims long error messages")
-    func test_streamRepresentationTrimsLongErrorMessages() {
+    func test_streamRepresentationTrimsLongErrorMessages() throws {
       // given
       let longErrorMessage = String(repeating: "This is a very long error message that should be trimmed. ", count: 10)
       let error = AppError(longErrorMessage)
@@ -179,20 +179,15 @@ extension ExecuteCommandToolTests {
         kill: { })
 
       // when
-      let result = viewModel.streamRepresentation
+      let res = viewModel.streamRepresentation
 
       // then
-      #expect(result != nil)
-      if let result = result {
-        let lines = result.components(separatedBy: "\n")
-        let failedLine = lines.first { $0.contains("Failed:") }
-        #expect(failedLine != nil)
-        if let failedLine = failedLine {
-          // The error message should be trimmed to 300 characters or less
-          let errorPart = failedLine.replacingOccurrences(of: "          ⎿ Failed: ", with: "")
-          #expect(errorPart.count <= 300)
-        }
-      }
+      let result = try #require(res)
+      #expect(result.contains("⎿ Failed:"))
+      let errorMessage = try #require(result.split(separator: "⎿ Failed:").last)
+      #expect(errorMessage.trimmingCharacters(in: .whitespacesAndNewlines) == """
+      This is a very long error message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message ... [280 characters truncated] ...r message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message that should be trimmed.
+      """.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     @MainActor

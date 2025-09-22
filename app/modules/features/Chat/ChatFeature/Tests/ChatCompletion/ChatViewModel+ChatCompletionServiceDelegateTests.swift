@@ -89,7 +89,7 @@ extension ChatViewModelTests {
     #expect(threadViewModel.isStreamingResponse)
     task.cancel()
     try await fulfillment(of: threadChangedFromStreamingToNotStreaming)
-    #expect(receivedEvents.value.flatMap(\.self).map(\.content) == ["hello"])
+    #expect(receivedEvents.value.flatMap(\.self).map(\.content) == ["hello\n"])
 
     // Clean up
     _ = await task.result
