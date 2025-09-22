@@ -81,7 +81,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
     case .failure(let error):
       return """
         ⏺ Bash(\(command))
-          ⎿ Failed: \(error.localizedDescription)
+          ⎿ Failed: \(error.localizedDescription.trimmed(toNotExceed: 300))
 
 
         """
