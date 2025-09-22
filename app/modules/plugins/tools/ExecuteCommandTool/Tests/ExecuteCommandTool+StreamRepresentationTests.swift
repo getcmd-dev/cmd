@@ -162,6 +162,62 @@ extension ExecuteCommandToolTests {
 
         """)
     }
+
+    @MainActor
+    @Test("streamRepresentation trims long error messages")
+    func test_streamRepresentationTrimsLongErrorMessages() {
+      // given
+      let longErrorMessage = String(repeating: "This is a very long error message that should be trimmed. ", count: 10)
+      let error = AppError(longErrorMessage)
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+
+      let viewModel = ToolUseViewModel(
+        command: "test command",
+        status: status,
+        stdout: .Just(.Just(Data())),
+        stderr: .Just(.Just(Data())),
+        kill: { })
+
+      // when
+      let result = viewModel.streamRepresentation
+
+      // then
+      #expect(result != nil)
+      if let result = result {
+        let lines = result.components(separatedBy: "\n")
+        let failedLine = lines.first { $0.contains("Failed:") }
+        #expect(failedLine != nil)
+        if let failedLine = failedLine {
+          // The error message should be trimmed to 300 characters or less
+          let errorPart = failedLine.replacingOccurrences(of: "          ⎿ Failed: ", with: "")
+          #expect(errorPart.count <= 300)
+        }
+      }
+    }
+
+    @MainActor
+    @Test("streamRepresentation preserves short error messages")
+    func test_streamRepresentationPreservesShortErrorMessages() {
+      // given
+      let shortErrorMessage = "Short error"
+      let error = AppError(shortErrorMessage)
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+
+      let viewModel = ToolUseViewModel(
+        command: "test command",
+        status: status,
+        stdout: .Just(.Just(Data())),
+        stderr: .Just(.Just(Data())),
+        kill: { })
+
+      // then
+      #expect(viewModel.streamRepresentation == """
+        ⏺ Bash(test command)
+          ⎿ Failed: Short error
+
+
+        """)
+    }
   }
 
 }
