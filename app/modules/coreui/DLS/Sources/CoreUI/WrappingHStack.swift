@@ -80,8 +80,8 @@ public struct WrappingHStack: Layout {
 
     // First pass: calculate rows
     // We need to calculate the rows first because we need to know the width of each row to place the subviews correctly.
-    var rows: [[LayoutSubviews.Element]] = []
-    var currentRow: [LayoutSubviews.Element] = []
+    var rows = [[LayoutSubviews.Element]]()
+    var currentRow = [LayoutSubviews.Element]()
     var currentRowWidth: CGFloat = 0
 
     for subview in subviews {

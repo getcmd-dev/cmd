@@ -39,7 +39,7 @@ extension UserDefinedXcodeShortcutExecutionInput {
     defaultLogger.log("Preparing to execute user defined Xcode shortcut command: \(shellCommand)")
 
     // Prepare environment variables instead of string replacement
-    var environmentVariables: [String: String] = [:]
+    var environmentVariables = [String: String]()
 
     let xcodeState = xcodeObserver.state
 

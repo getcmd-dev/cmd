@@ -16,7 +16,7 @@ extension MockXcodeObserver {
       pid: { 0 },
       setAppKitframe: { _ in },
       id: "1")
-    var tabs: [XcodeWorkspaceState.Tab] = []
+    var tabs = [XcodeWorkspaceState.Tab]()
     if let focussedTabURL {
       tabs.append(.init(
         fileName: focussedTabURL.lastPathComponent,

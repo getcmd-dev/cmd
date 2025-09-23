@@ -69,7 +69,7 @@ extension Target {
   }
 }
 
-var targets: [Target] = []
+var targets = [Target]()
 
 targets.append(contentsOf: Target.module(
   name: "App",

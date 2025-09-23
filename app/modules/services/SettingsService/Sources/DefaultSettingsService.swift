@@ -99,7 +99,7 @@ final class DefaultSettingsService: SettingsService {
   private let releaseSharedUserDefaults: UserDefaultsI?
 
   private var globalSettingsLocation: FilePath {
-    "~/.cmd/settings.json"
+    FilePath(fileManager.homeDirectoryForCurrentUser.path).appending(".cmd/settings.json")
   }
 
   private func loadSettings() -> Settings {

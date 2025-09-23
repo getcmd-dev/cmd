@@ -20,7 +20,7 @@ public final class MockChatContextRegistryService: ChatContextRegistryService {
 
   public var onUnregister: (@Sendable (String) -> Void)?
 
-  public var contexts: [String: any LiveToolExecutionContext] = [:]
+  public var contexts = [String: any LiveToolExecutionContext]()
 
   public func context(for threadId: String) throws -> any LiveToolExecutionContext {
     if let onContext {

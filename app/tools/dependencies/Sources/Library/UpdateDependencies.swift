@@ -195,7 +195,7 @@ public final class UpdateDependencies: SyntaxRewriter {
 
   /// Recursively traverses `baseURL` to find every file ending in `.swift`.
   private func allSwiftFiles(in baseURL: URL) -> [URL] {
-    var result: [URL] = []
+    var result = [URL]()
     if
       let enumerator = FileManager.default.enumerator(
         at: baseURL,
@@ -216,7 +216,7 @@ public final class UpdateDependencies: SyntaxRewriter {
   ///    import SwiftUI           → "SwiftUI"
   ///    import Foundation.NSData → "Foundation"
   private func findImports(in sourceFile: SourceFileSyntax) -> [String] {
-    var imports: [String] = []
+    var imports = [String]()
     for statement in sourceFile.statements {
       if let importDecl = statement.item.as(ImportDeclSyntax.self) {
         let pathComponents = importDecl.path.map(\.name.text)

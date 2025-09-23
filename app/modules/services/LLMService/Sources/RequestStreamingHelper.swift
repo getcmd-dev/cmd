@@ -128,7 +128,7 @@ actor RequestStreamingHelper: Sendable {
   }
 
   private var usage: Schema.ResponseUsage? = nil
-  private var pendingEvents: [Schema.StreamedResponseChunk] = []
+  private var pendingEvents = [Schema.StreamedResponseChunk]()
 
   private let isTaskCancelled: @Sendable () -> Bool
   private var lastChunkIdx = -1

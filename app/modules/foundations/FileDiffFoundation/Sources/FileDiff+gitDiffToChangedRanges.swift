@@ -72,7 +72,7 @@ extension FileDiff {
   }
 
   private static func offsetFor(lines: [String.SubSequence]) -> [Int] {
-    var result: [Int] = []
+    var result = [Int]()
     result.reserveCapacity(lines.count + 1)
     var offset = 0
     for l in lines {

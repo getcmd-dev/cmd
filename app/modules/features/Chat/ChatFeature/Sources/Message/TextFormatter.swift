@@ -67,7 +67,7 @@ final class TextFormatter {
 
   private(set) var text: String
 
-  private(set) var elements: [Element] = []
+  private(set) var elements = [Element]()
 
   private(set) var deltas: [String]
 

@@ -84,6 +84,8 @@ extension [ChatEvent] {
   }
 }
 
+// MARK: - ChatMessageContent + StreamRepresentable
+
 extension ChatMessageContent: StreamRepresentable {
   @MainActor
   var streamRepresentation: String? {

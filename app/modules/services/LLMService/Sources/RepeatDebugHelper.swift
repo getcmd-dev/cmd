@@ -26,7 +26,7 @@ final class RepeatDebugHelper: Sendable {
   let userDefaults: UserDefaultsI
   let isRepeating: Bool
 
-  var streams: [Stream] = []
+  var streams = [Stream]()
   var streamStartedAt: Date?
 
   func startSession() {

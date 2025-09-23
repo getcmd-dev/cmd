@@ -66,7 +66,7 @@ final class AppScopeStorage: @unchecked Sendable {
     return instance
   }
 
-  private var dependencies: [String: Sendable] = [:]
+  private var dependencies = [String: Sendable]()
 
   /// The lock that should be used to synchronize access to the dependencies.
   ///

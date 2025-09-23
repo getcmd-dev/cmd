@@ -16,21 +16,20 @@ extension Observable where Self: Sendable {
     let cancellable = AnyCancellable {
       isCancelled.set(to: true)
     }
-    withObservationTracking(
-      {
-        _ = self[keyPath: keyPath]
-      },
-      token: {
-        guard !isCancelled.value else {
-          return nil
-        }
-        return ""
-      },
-      willChange: nil,
-      didChange: { [weak cancellable] in
-        action(self[keyPath: keyPath])
-        cancellable?.cancel()
-      })
+    withObservationTracking {
+      _ = self[keyPath: keyPath]
+    }
+    token: {
+      guard !isCancelled.value else {
+        return nil
+      }
+      return ""
+    },
+    willChange: nil
+    didChange: { [weak cancellable] in
+      action(self[keyPath: keyPath])
+      cancellable?.cancel()
+    }
     return cancellable
   }
 
@@ -66,24 +65,23 @@ extension Observable where Self: Sendable {
       isCancelled.set(to: true)
     }
 
-    withObservationTracking(
-      {
-        let value = computedValue(self)
-        let wasFirstObservation = isFirstObservation.set(to: false)
-        if !wasFirstObservation {
-          action(value)
-        }
-      },
-      token: {
-        guard !isCancelled.value else {
-          return nil
-        }
-        return ""
-      },
-      willChange: nil,
-      didChange: {
-        // apply will be called immediately after.
-      })
+    withObservationTracking {
+      let value = computedValue(self)
+      let wasFirstObservation = isFirstObservation.set(to: false)
+      if !wasFirstObservation {
+        action(value)
+      }
+    }
+    token: {
+      guard !isCancelled.value else {
+        return nil
+      }
+      return ""
+    },
+    willChange: nil
+    didChange: {
+      // apply will be called immediately after.
+    }
     return cancellable
   }
 }
@@ -109,6 +107,8 @@ func withObservationTracking(
     }
   }
 }
+
+// MARK: - ObservablePublisher
 
 public final class ObservablePublisher<Object: Observable, Output>: Publisher, Sendable {
   init(observable: Object, computedValue: @Sendable @escaping (Object) -> Output) {

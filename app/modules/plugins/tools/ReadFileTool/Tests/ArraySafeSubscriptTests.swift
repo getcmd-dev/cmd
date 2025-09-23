@@ -106,7 +106,7 @@ struct ArraySafeSubscriptTests {
 
   @Test("safe subscript with empty array")
   func test_emptyArray() {
-    let array: [String] = []
+    let array = [String]()
 
     let result1 = array.safeRange(from: 0, to: 1)
     #expect(result1 == nil)

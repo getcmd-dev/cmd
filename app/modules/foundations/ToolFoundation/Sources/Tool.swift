@@ -140,7 +140,7 @@ extension ToolUse where InternalState == EmptyObject {
   public var internalState: InternalState? { nil }
 }
 
-// MARK: - StreamableTool
+// MARK: - NonStreamableTool
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
 public protocol NonStreamableTool: Tool where Use: NonStreamableToolUse { }
@@ -148,6 +148,8 @@ public protocol NonStreamableTool: Tool where Use: NonStreamableToolUse { }
 extension NonStreamableTool {
   public var canInputBeStreamed: Bool { false }
 }
+
+// MARK: - NonStreamableToolUse
 
 public protocol NonStreamableToolUse: ToolUse where SomeTool: NonStreamableTool {
   init(
@@ -185,12 +187,16 @@ extension ToolUse where SomeTool: NonStreamableTool {
   public func receive(inputUpdate _: Data, isLast _: Bool) throws { }
 }
 
+// MARK: - ViewRepresentable
+
 /// An object that can be represented as a view
 public protocol ViewRepresentable {
   associatedtype SomeView: View
   @MainActor
   var body: SomeView { get }
 }
+
+// MARK: - AnyToolUseViewModel
 
 public final class AnyToolUseViewModel: Sendable, ViewRepresentable, StreamRepresentable {
   public init(_ viewModel: some Sendable & ViewRepresentable & StreamRepresentable) {
@@ -253,6 +259,8 @@ public struct ToolExecutionContext: Sendable, Codable {
 
 }
 
+// MARK: - LiveToolExecutionContext
+
 /// The current context in which the tool use exists. The tool can modify relevant properties.
 public protocol LiveToolExecutionContext: Sendable, AnyObject {
   /// The files whose content has been read/modified during the conversation.
@@ -300,7 +308,7 @@ extension ToolUseExecutionStatus {
   }
 }
 
-// MARK: UpdatableToolUse
+// MARK: - UpdatableToolUse
 
 /// A tool use that can update its status in a standardized way.
 ///
@@ -326,6 +334,8 @@ extension UpdatableToolUse {
 // MARK: - ExternalTool
 
 public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
+
+// MARK: - ExternalToolUse
 
 public protocol ExternalToolUse: NonStreamableToolUse, UpdatableToolUse where SomeTool: ExternalTool {
   /// Set the output
@@ -380,6 +390,8 @@ extension Tool {
     self as? (any ExternalTool) != nil
   }
 }
+
+// MARK: - StreamableInput
 
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {
   case streaming(_ input: StreamingInput)

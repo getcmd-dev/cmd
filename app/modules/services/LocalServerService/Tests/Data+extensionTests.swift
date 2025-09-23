@@ -179,7 +179,7 @@ struct DataStreamTests {
       continuation.yield(data)
     }
 
-    var receivedObjects: [Data] = []
+    var receivedObjects = [Data]()
     Task {
       for try await object in jsonStream {
         receivedObjects.append(object)

@@ -30,7 +30,6 @@ struct ExternalSettingsCodableTests {
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
-        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",

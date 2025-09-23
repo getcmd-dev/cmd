@@ -55,7 +55,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     }
   }
 
-  private var xcodeObservers: [Int32: XcodeAppInstanceObserver] = [:]
+  private var xcodeObservers = [Int32: XcodeAppInstanceObserver]()
   private let internalState = CurrentValueSubject<AXState<InternalXcodeState>, Never>(.unknown)
   private let axNotificationPublisher = PassthroughSubject<AXNotification, Never>()
   private let permissionsService: PermissionsService

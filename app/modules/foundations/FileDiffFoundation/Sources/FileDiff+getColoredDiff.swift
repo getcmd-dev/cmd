@@ -78,7 +78,7 @@ extension FileDiff {
 
     let newContentFormatted = try await newContentFormatting
     let oldContentFormatted = try await oldContentFormatting
-    var formattedLineChanges: [FormattedLineChange] = []
+    var formattedLineChanges = [FormattedLineChange]()
 
     for lineChange in diffRanges {
       let formattedContent = lineChange.type == .removed ? oldContentFormatted : newContentFormatted

@@ -105,7 +105,7 @@ struct SettingsServiceMockTests {
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
-    var receivedValues: [Bool] = []
+    var receivedValues = [Bool]()
     let valuesReceived = expectation(description: "Values received")
 
     sut.liveValue(for: \Settings.pointReleaseXcodeExtensionToDebugApp)
@@ -148,7 +148,7 @@ struct SettingsServiceMockTests {
 
     // Test live all values
     var cancellables = Set<AnyCancellable>()
-    var receivedSettings: [Settings] = []
+    var receivedSettings = [Settings]()
     let settingsReceived = expectation(description: "Settings received")
 
     sut.liveValues()
@@ -206,7 +206,7 @@ struct SettingsServiceMockTests {
     let sut = MockSettingsService(defaultSettings: initialSettings)
 
     var cancellables = Set<AnyCancellable>()
-    var receivedModes: [FileEditMode] = []
+    var receivedModes = [FileEditMode]()
     let modesReceived = expectation(description: "File edit modes received")
 
     sut.liveValue(for: \Settings.fileEditMode)

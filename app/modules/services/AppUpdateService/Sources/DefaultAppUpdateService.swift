@@ -75,7 +75,7 @@ final class DefaultAppUpdateService: AppUpdateService {
 
   private let userDefaults: UserDefaultsI
 
-  private var cancellables: Set<AnyCancellable> = []
+  private var cancellables = Set<AnyCancellable>()
   private let settingsService: SettingsService
 
   private let delayBetweenChecks = Duration.seconds(60)

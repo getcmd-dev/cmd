@@ -36,7 +36,7 @@ extension ThreadSafeMacro: MemberMacro {
     guard let classDecl = declaration.as(ClassDeclSyntax.self) else { return [] }
     let storedVariables = classDecl.storedVariables
 
-    var members: [DeclSyntax] = []
+    var members = [DeclSyntax]()
 
     // Generate _internalState property
     let internalStateProperty = DeclSyntax("""
@@ -314,7 +314,7 @@ extension DiagnosticsError {
 extension ClassDeclSyntax {
   /// Returns the list of mutable stored properties in the class.
   var storedVariables: [(name: String, type: String, defaultValue: String?)] {
-    var storedVars: [(String, String, String?)] = []
+    var storedVars = [(String, String, String?)]()
 
     for member in memberBlock.members {
       guard

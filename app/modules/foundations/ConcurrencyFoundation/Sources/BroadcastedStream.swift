@@ -117,8 +117,8 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
   }
 
   private struct InternalState: Sendable {
-    var subscribers: [UUID: AsyncStream<Element>.Continuation] = [:]
-    var pastUpdates: [Element] = []
+    var subscribers = [UUID: AsyncStream<Element>.Continuation]()
+    var pastUpdates = [Element]()
     var isFinished = false
   }
 
@@ -173,6 +173,8 @@ extension BroadcastedStream {
     return (broadcastedStream, continuation)
   }
 }
+
+// MARK: - Iterator
 
 /// An iterator that will cancel the attached cancellabled when re-referenced.
 public struct Iterator<Element: Sendable>: AsyncIteratorProtocol {

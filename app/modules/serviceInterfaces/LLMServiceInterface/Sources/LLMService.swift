@@ -15,8 +15,8 @@ public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<Assistant
 
 public protocol ChatContext: Sendable {
   /// When a tool that is not read-only runs, this function will be called before.
-  func prepareToExecute(writingToolUse: any ToolUse) async
-  /// Returns whether the tool use needs user's approval.
+  func prepareToExecute(writingToolUse: any ToolUse) /// Returns whether the tool use needs user's approval.
+    async
   func needsApproval(for toolUse: any ToolUse) async -> Bool
   /// Request user approval before executing a tool.
   func requestApproval(for toolUse: any ToolUse) async throws

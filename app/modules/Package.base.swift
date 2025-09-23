@@ -69,7 +69,7 @@ extension Target {
   }
 }
 
-var targets: [Target] = []
+var targets = [Target]()
 
 let package = Package(
   name: "Packages",

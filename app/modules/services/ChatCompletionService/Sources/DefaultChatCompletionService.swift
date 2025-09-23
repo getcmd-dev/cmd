@@ -187,7 +187,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
             },
           modelName: model))
 
-        var sentEventIds: Set<String> = []
+        var sentEventIds = Set<String>()
 
         for await chatEvents in chatEventsStream {
           try Task.checkCancellation()
@@ -372,7 +372,11 @@ extension ChatStreamResult {
   }
 }
 
+// MARK: - ModelsResult + Content
+
 extension ModelsResult: Content { }
+
+// MARK: - XcodeIDEChatUserChatModelProvider
 
 private struct XcodeIDEChatUserChatModelProvider: Codable {
   let isEnabled: Bool

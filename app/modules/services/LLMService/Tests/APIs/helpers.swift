@@ -174,6 +174,8 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
 
 }
 
+// MARK: - TestStreamingTool
+
 struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
   init(name: String = "TestStreamingTool") {
     self.name = name
@@ -269,6 +271,8 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
     true
   }
 }
+
+// MARK: - TestExternalTool
 
 struct TestExternalTool: ExternalTool {
 

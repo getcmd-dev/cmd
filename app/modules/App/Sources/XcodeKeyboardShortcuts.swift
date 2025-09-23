@@ -27,7 +27,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     observeSettings()
   }
 
-  private var cancellables: Set<AnyCancellable> = []
+  private var cancellables = Set<AnyCancellable>()
 
   private var enabledShortcutNames = Set<String>()
 

@@ -179,7 +179,7 @@ final class DefaultLocalServer: LocalServer {
   private let sharedUserDefaults: UserDefaultsI
   private var hasCopiedFiles: Bool
 
-  private var inflightTasks: [URLSessionTask: TaskHandler] = [:]
+  private var inflightTasks = [URLSessionTask: TaskHandler]()
 
   private let delegate: LocalServerDelegate
 
@@ -217,7 +217,7 @@ final class DefaultLocalServer: LocalServer {
       process.standardOutput = stdout
       let connectionResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
         ConnectionResponse,
-        Error
+        Error,
       >) in
         let hasResponded = Atomic(false)
 

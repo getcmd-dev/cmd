@@ -95,7 +95,7 @@ final class DefaultLLMService: LLMService {
 
     // At this point all the assistant messages have been received.
     // Return them to the caller.
-    var messages: [AssistantMessage] = []
+    var messages = [AssistantMessage]()
     for message in response.value {
       let finalMessage = await message.lastValue
       messages.append(finalMessage)
