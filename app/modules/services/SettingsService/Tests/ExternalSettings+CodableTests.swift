@@ -672,7 +672,7 @@ struct ExternalSettingsCodableTests {
 
     let json = """
       {
-        "allowAnonymousAnalytics" : false,
+        "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
