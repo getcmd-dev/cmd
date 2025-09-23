@@ -126,7 +126,7 @@ final class SummarizeConversationTests {
     let mockServer = MockLocalServer()
     let service = DefaultLLMService(server: mockServer)
 
-    let messageHistory: [Schema.Message] = []
+    let messageHistory = [Schema.Message]()
 
     let expectedSummary = "This conversation appears to be empty with no messages to summarize."
 

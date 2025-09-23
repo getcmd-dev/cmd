@@ -75,7 +75,7 @@ public final class ReplaceableTaskQueue<Output: Sendable>: Sendable, Publisher {
   private struct State: Sendable {
     var currentTask: QueuedTask?
     var nextTask: QueuedTask?
-    var onIdle: [@Sendable () -> Void] = []
+    var onIdle = [@Sendable () -> Void]()
   }
 
   private let publisher = CurrentValueSubject<Output?, Failure>(nil)

@@ -515,7 +515,7 @@ final class SendOneMessageTests {
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<
           TestToolInput,
-          EmptyObject
+          EmptyObject,
         >.Use)
         #expect(toolUse.callingTool.name == "TestStreamingTool")
         #expect(toolUse.toolUseId == "123")
@@ -627,7 +627,7 @@ final class SendOneMessageTests {
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<
           TestToolInput,
-          EmptyObject
+          EmptyObject,
         >.Use)
         #expect(toolUse.callingTool.name == "TestStreamingTool")
         #expect(toolUse.toolUseId == "123")

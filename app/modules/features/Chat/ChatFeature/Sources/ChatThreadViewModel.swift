@@ -101,7 +101,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   var isStreamingResponse = false
   var hasSomeLLMModelsAvailable = true
 
-  private(set) var messages: [ChatMessageViewModel] = []
+  private(set) var messages = [ChatMessageViewModel]()
 
   private(set) var projectInfo: SelectedProjectInfo?
 

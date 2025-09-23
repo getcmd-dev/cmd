@@ -23,4 +23,6 @@ extension AsyncSequence {
   }
 }
 
+// MARK: - AsyncStream.Iterator + @unchecked @retroactive Sendable
+
 extension AsyncStream.Iterator: @unchecked @retroactive Sendable where Self.Element: Sendable { }

@@ -141,7 +141,7 @@ final class ChatMessageTextContent: EquatableByIdentifier {
   let id: UUID
   var attachments: [AttachmentModel]
 
-  private(set) var elements: [TextFormatter.Element] = []
+  private(set) var elements = [TextFormatter.Element]()
 
   let formatter: TextFormatter
   private(set) var isStreaming: Bool
@@ -237,7 +237,7 @@ final class ChatMessageReasoningContent: EquatableByIdentifier {
 
   private let startedAt = Date()
 
-  private var deltas: [String] = []
+  private var deltas = [String]()
 
   #if DEBUG
   private func ingest(delta: String) {

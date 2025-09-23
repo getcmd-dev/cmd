@@ -175,7 +175,7 @@ struct DefaultSettingsServiceTests {
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
-    var receivedValues: [Bool] = []
+    var receivedValues = [Bool]()
     let valuesReceived = expectation(description: "Values received")
 
     service.liveValue(for: \.pointReleaseXcodeExtensionToDebugApp)
@@ -208,7 +208,7 @@ struct DefaultSettingsServiceTests {
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
-    var receivedValues: [Bool] = []
+    var receivedValues = [Bool]()
     let valuesReceived = expectation(description: "Values received")
 
     service.liveValue(for: \.pointReleaseXcodeExtensionToDebugApp)
@@ -244,7 +244,7 @@ struct DefaultSettingsServiceTests {
 
     // Test live all values
     var cancellables = Set<AnyCancellable>()
-    var receivedSettings: [Settings] = []
+    var receivedSettings = [Settings]()
     let settingsReceived = expectation(description: "Settings received")
 
     service.liveValues()

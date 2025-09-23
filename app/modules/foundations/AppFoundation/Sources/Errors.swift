@@ -64,11 +64,15 @@ extension AppError: CustomDebugStringConvertible {
   }
 }
 
+// MARK: - CancellationError + @retroactive LocalizedError
+
 extension CancellationError: @retroactive LocalizedError {
   var localizedDescription: String {
     "cancelled"
   }
 }
+
+// MARK: - AppError + Codable
 
 extension AppError: Codable {
   public init(from decoder: any Decoder) throws {

@@ -34,7 +34,7 @@ struct ReplaceableTaskQueueTests {
     let firstTaskReady = expectation(description: "First task ready to complete")
     let firstTaskCompleted = expectation(description: "First task completed")
     let secondTaskCompleted = expectation(description: "Second task completed")
-    var results: [Int] = []
+    var results = [Int]()
 
     let cancellable = queue.sink { value in
       results.append(value)
@@ -76,7 +76,7 @@ struct ReplaceableTaskQueueTests {
     let firstTaskStarted = expectation(description: "First task started")
     let firstTaskReady = expectation(description: "First task ready to complete")
     let completion = expectation(description: "All tasks completed")
-    var results: [Int] = []
+    var results = [Int]()
 
     let cancellable = queue.sink { value in
       results.append(value)
@@ -116,7 +116,7 @@ struct ReplaceableTaskQueueTests {
     let firstTaskStarted = expectation(description: "First task started")
     let secondTaskStarted = expectation(description: "Second task started")
     let completion = expectation(description: "All tasks completed")
-    var results: [Int] = []
+    var results = [Int]()
     let executionOrder = Atomic<[Int]>([])
 
     let cancellable = queue.sink { value in
@@ -148,7 +148,7 @@ struct ReplaceableTaskQueueTests {
   func test_continuesAfterTaskFailure() async throws {
     let queue = ReplaceableTaskQueue<Int>()
     let completion = expectation(description: "Successful task completed")
-    var results: [Int] = []
+    var results = [Int]()
 
     let cancellable = queue.sink { value in
       results.append(value)
@@ -174,7 +174,7 @@ struct ReplaceableTaskQueueTests {
   func test_handlesMiddleTaskFailure() async throws {
     let queue = ReplaceableTaskQueue<Int>()
     let completion = expectation(description: "All tasks completed")
-    var results: [Int] = []
+    var results = [Int]()
 
     let cancellable = queue.sink { value in
       results.append(value)
@@ -205,7 +205,7 @@ struct ReplaceableTaskQueueTests {
     let firstTaskStarted = expectation(description: "First task started")
     let firstTaskReady = expectation(description: "First task ready to complete")
     let completion = expectation(description: "All tasks completed")
-    var results: [Int] = []
+    var results = [Int]()
 
     let cancellable = queue.sink { value in
       results.append(value)

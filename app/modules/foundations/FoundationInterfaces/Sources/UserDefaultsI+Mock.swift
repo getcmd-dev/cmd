@@ -182,9 +182,9 @@ public final class MockUserDefaults: UserDefaultsI {
   }
 
   /// Internal storage
-  private var storage: [String: UncheckedSendable<Any>] = [:]
+  private var storage = [String: UncheckedSendable<Any>]()
 
-  private var securedStorage: [String: String] = [:]
+  private var securedStorage = [String: String]()
 
   /// Subject to emit change events
   private let changeSubject = PassthroughSubject<Void, Never>()

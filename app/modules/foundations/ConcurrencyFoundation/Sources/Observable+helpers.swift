@@ -110,6 +110,8 @@ func withObservationTracking(
   }
 }
 
+// MARK: - ObservablePublisher
+
 public final class ObservablePublisher<Object: Observable, Output>: Publisher, Sendable {
   init(observable: Object, computedValue: @Sendable @escaping (Object) -> Output) {
     let internalPublisher = PassthroughSubject<Output, Never>()

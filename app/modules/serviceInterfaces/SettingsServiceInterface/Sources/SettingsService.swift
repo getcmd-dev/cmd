@@ -158,7 +158,7 @@ extension Settings {
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings
 
-// MARK: - User Defined Xcode Shortcuts
+// MARK: - UserDefinedXcodeShortcut
 
 public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiable {
   public init(
@@ -286,6 +286,8 @@ extension UserDefaultsKey {
   public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
   public static let enableNetworkProxy = "enableNetworkProxy"
 }
+
+// MARK: - KeyEquivalent + Codable
 
 extension KeyEquivalent: Codable {
   public init(from decoder: any Decoder) throws {

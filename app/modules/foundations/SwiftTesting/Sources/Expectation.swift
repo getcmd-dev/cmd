@@ -102,7 +102,7 @@ public enum SwiftTestingUtils {
 
     private struct InternalState {
       var isFulfilled = false
-      var onFulfill: [@Sendable () -> Void] = []
+      var onFulfill = [@Sendable () -> Void]()
     }
 
     private let lock = OSAllocatedUnfairLock<InternalState>(initialState: InternalState())

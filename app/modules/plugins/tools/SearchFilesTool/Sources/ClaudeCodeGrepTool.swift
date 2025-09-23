@@ -314,8 +314,8 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
   //   "/path/with\\ space.txt:content here" -> path="/path/with\\ space.txt", text="content here"
   let matchedLineRegex = #/^(?<path>(?:[^\\ ]|\\ )+?)(?::(?<lineNum>\d+))?:(?<text>.*)$/#
 
-  var fileResults: [String: [Schema.SearchResult]] = [:]
-  var fileOrder: [String] = []
+  var fileResults = [String: [Schema.SearchResult]]()
+  var fileOrder = [String]()
 
   for line in rawOutput.split(separator: "\n") {
     // Skip separator lines

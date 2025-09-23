@@ -48,7 +48,7 @@ struct BadToolInputTests {
 
   @Test("Empty coding path returns empty description")
   func testEmptyCodingPath() throws {
-    let emptyCodingPath: [any CodingKey] = []
+    let emptyCodingPath = [any CodingKey]()
     let description = emptyCodingPath.description
     #expect(description == "")
   }

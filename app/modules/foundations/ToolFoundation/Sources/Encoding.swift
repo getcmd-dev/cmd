@@ -49,6 +49,8 @@ extension ToolUse {
   }
 }
 
+// MARK: - ToolUseCodingKeys
+
 private enum ToolUseCodingKeys: String, CodingKey {
   case callingTool
   case toolUseId
@@ -113,6 +115,8 @@ extension [CodingUserInfoKey: Any] {
   }
 }
 
+// MARK: - StreamableInput + Codable
+
 extension StreamableInput: Codable {
 
   public init(from decoder: any Decoder) throws {
@@ -129,6 +133,8 @@ extension StreamableInput: Codable {
     }
   }
 }
+
+// MARK: - ToolUseExecutionStatus + Codable
 
 extension ToolUseExecutionStatus: Codable {
   public init(from decoder: any Decoder) throws {
@@ -187,6 +193,8 @@ extension ToolUseExecutionStatus: Codable {
     case value
   }
 }
+
+// MARK: - Result + Codable
 
 extension Result: Codable where Success: Codable, Failure == Error {
   public init(from decoder: any Decoder) throws {

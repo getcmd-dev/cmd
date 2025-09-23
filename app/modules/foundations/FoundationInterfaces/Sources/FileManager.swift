@@ -102,7 +102,7 @@ extension FileManagerI {
   }
 }
 
-// MARK: - Foundation.FileManager + FileManager
+// MARK: - FileManager + @retroactive @unchecked Sendable
 
 extension FileManager: @retroactive @unchecked Sendable { }
 

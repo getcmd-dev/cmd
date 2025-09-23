@@ -20,8 +20,8 @@ public final class ToolConfigurationViewModel {
     observeSettings()
   }
 
-  private(set) var availableTools: [any Tool] = []
-  private(set) var toolPreferences: [Settings.ToolPreference] = []
+  private(set) var availableTools = [any Tool]()
+  private(set) var toolPreferences = [Settings.ToolPreference]()
 
   /// Returns whether a tool is configured to always be approved.
   func isAlwaysApproved(toolName: String) -> Bool {

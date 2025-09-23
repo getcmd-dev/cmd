@@ -155,6 +155,8 @@ extension DefaultXcodeController {
 
 }
 
+// MARK: - IDEActivityLog + @retroactive @unchecked Sendable
+
 extension IDEActivityLog: @retroactive @unchecked Sendable { }
 
 extension IDEActivityLogSection {

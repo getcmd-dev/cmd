@@ -123,7 +123,7 @@ struct ChatThreadViewModelHelpersTests {
   @Test("formatFileListAsHierarchy handles empty file list")
   func formatFileListAsHierarchyWithEmptyList() {
     // Setup
-    let files: [Schema.ListedFileInfo] = []
+    let files = [Schema.ListedFileInfo]()
 
     // Test
     let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))

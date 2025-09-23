@@ -239,7 +239,7 @@ extension StringProtocol {
   }
 
   func ranges(of string: some StringProtocol, options: String.CompareOptions = []) -> [Range<Index>] {
-    var result: [Range<Index>] = []
+    var result = [Range<Index>]()
     var startIndex = startIndex
     while
       startIndex < endIndex,
@@ -254,5 +254,7 @@ extension StringProtocol {
     return result
   }
 }
+
+// MARK: - Regex + @unchecked @retroactive Sendable
 
 extension Regex: @unchecked @retroactive Sendable { }

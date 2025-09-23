@@ -41,8 +41,8 @@ extension ChatThreadViewModel {
   nonisolated static func formatFileListAsHierarchy(filesInfo: [Schema.ListedFileInfo], projectRoot: URL) -> String {
     let filesInfo = filesInfo
       .sorted { $0.path < $1.path }
-    var result: [String] = []
-    var indentation: [String] = []
+    var result = [String]()
+    var indentation = [String]()
     var processedPaths = Set<String>()
 
     let dirInfoMap = Dictionary(uniqueKeysWithValues: filesInfo.filter { !$0.isFile }.map { ($0.path, $0) })

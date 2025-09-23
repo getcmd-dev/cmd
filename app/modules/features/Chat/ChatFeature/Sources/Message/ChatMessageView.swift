@@ -374,6 +374,8 @@ extension NSAttributedString {
   }
 }
 
+// MARK: - ReshareGeometry
+
 /// This is a hack to read the width of the view...
 /// Wrapping the entire message view in a GeometryReader was preventing the view from being interactive.
 /// So instead we use a hidden GeometryReader to get the size of the message view and reshare it with the main view through a binding.
