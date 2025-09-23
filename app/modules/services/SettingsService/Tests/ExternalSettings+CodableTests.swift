@@ -695,7 +695,6 @@ struct ExternalSettingsCodableTests {
         },
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
-        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "preferedProviders" : {},
         "reasoningModels": {},
