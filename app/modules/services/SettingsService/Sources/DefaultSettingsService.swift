@@ -178,6 +178,7 @@ final class DefaultSettingsService: SettingsService {
             sharedUserDefaults.removeObject(forKey: Keys.appWideSettings)
           } catch {
             defaultLogger.error("Failed to migrate settings to new location", error)
+            self.observeChangesToUserDefaults()
           }
         }
         return settings

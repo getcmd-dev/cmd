@@ -126,48 +126,49 @@ extension ExternalSettings: Codable {
   }
 
   func encode(to encoder: any Encoder) throws {
-    let encodeAllKeys = (encoder.userInfo[.encodeAllKeys] as? Bool) ?? false
+    let doNotEncodeDefaultValues = (encoder.userInfo[.doNotEncodeDefaultValues] as? Bool) ?? false
+    let encodeAllValues = !doNotEncodeDefaultValues
     var container = encoder.container(keyedBy: String.self)
-    if encodeAllKeys || allowAnonymousAnalytics != Self.defaultSettings.allowAnonymousAnalytics {
+    if encodeAllValues || allowAnonymousAnalytics != Self.defaultSettings.allowAnonymousAnalytics {
       try container.encode(allowAnonymousAnalytics, forKey: "allowAnonymousAnalytics")
     }
-    if encodeAllKeys || automaticallyCheckForUpdates != Self.defaultSettings.automaticallyCheckForUpdates {
+    if encodeAllValues || automaticallyCheckForUpdates != Self.defaultSettings.automaticallyCheckForUpdates {
       try container.encode(automaticallyCheckForUpdates, forKey: "automaticallyCheckForUpdates")
     }
-    if encodeAllKeys || fileEditMode != Self.defaultSettings.fileEditMode {
+    if encodeAllValues || fileEditMode != Self.defaultSettings.fileEditMode {
       try container.encode(fileEditMode, forKey: "fileEditMode")
     }
-    if encodeAllKeys || automaticallyUpdateXcodeSettings != Self.defaultSettings.automaticallyUpdateXcodeSettings {
+    if encodeAllValues || automaticallyUpdateXcodeSettings != Self.defaultSettings.automaticallyUpdateXcodeSettings {
       try container.encode(automaticallyUpdateXcodeSettings, forKey: "automaticallyUpdateXcodeSettings")
     }
-    if encodeAllKeys || preferedProviders != Self.defaultSettings.preferedProviders {
+    if encodeAllValues || preferedProviders != Self.defaultSettings.preferedProviders {
       try container.encode(preferedProviders.reduce(into: [String: String]()) { acc, el in
         acc[el.key.rawValue] = el.value.rawValue
       }, forKey: "preferedProviders")
     }
-    if encodeAllKeys || llmProviderSettings != Self.defaultSettings.llmProviderSettings {
+    if encodeAllValues || llmProviderSettings != Self.defaultSettings.llmProviderSettings {
       try container.encode(llmProviderSettings.reduce(into: [String: LLMProviderSettings]()) { acc, el in
         acc[el.key.rawValue] = el.value
       }, forKey: "llmProviderSettings")
     }
-    if encodeAllKeys || inactiveModels != Self.defaultSettings.inactiveModels {
+    if encodeAllValues || inactiveModels != Self.defaultSettings.inactiveModels {
       try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
     }
-    if encodeAllKeys || reasoningModels != Self.defaultSettings.reasoningModels {
+    if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
       try container.encode(reasoningModels.reduce(into: [String: LLMReasoningSetting]()) { acc, el in
         acc[el.key.rawValue] = el.value
       }, forKey: "reasoningModels")
     }
-    if encodeAllKeys || customInstructions != Self.defaultSettings.customInstructions {
+    if encodeAllValues || customInstructions != Self.defaultSettings.customInstructions {
       try container.encode(customInstructions, forKey: "customInstructions")
     }
-    if encodeAllKeys || toolPreferences != Self.defaultSettings.toolPreferences {
+    if encodeAllValues || toolPreferences != Self.defaultSettings.toolPreferences {
       try container.encode(toolPreferences, forKey: "toolPreferences")
     }
-    if encodeAllKeys || keyboardShortcuts != Self.defaultSettings.keyboardShortcuts {
+    if encodeAllValues || keyboardShortcuts != Self.defaultSettings.keyboardShortcuts {
       try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
     }
-    if encodeAllKeys || userDefinedXcodeShortcuts != Self.defaultSettings.userDefinedXcodeShortcuts {
+    if encodeAllValues || userDefinedXcodeShortcuts != Self.defaultSettings.userDefinedXcodeShortcuts {
       try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
     }
   }
@@ -202,6 +203,7 @@ extension Encodable {
 
     if !fileManager.fileExists(atPath: path.string) {
       let encoder = JSONEncoder()
+      encoder.userInfo[.doNotEncodeDefaultValues] = true
       encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
       let data = try encoder.encode(self)
       try fileManager.write(data: data, to: fileUrl)
@@ -216,7 +218,7 @@ extension Encodable {
     let fullyEncodedData = try JSONEncoder().encode(self)
     let fullyEncoded = try JSONSerialization.jsonObject(with: fullyEncodedData) as? [String: Any]
     let partialEncoder = JSONEncoder()
-    partialEncoder.userInfo[.encodeAllKeys] = false
+    partialEncoder.userInfo[.doNotEncodeDefaultValues] = true
     let partiallyEncodedData = try partialEncoder.encode(self)
     let partiallyEncoded = try JSONSerialization.jsonObject(with: partiallyEncodedData) as? [String: Any]
     let existing = try? {
@@ -278,5 +280,5 @@ extension Settings {
 
 extension CodingUserInfoKey {
   /// Whether to encode values for all keys, or only for those that have a non default value.
-  static let encodeAllKeys = CodingUserInfoKey(rawValue: "encodeAllKeys")!
+  static let doNotEncodeDefaultValues = CodingUserInfoKey(rawValue: "doNotEncodeDefaultValues")!
 }

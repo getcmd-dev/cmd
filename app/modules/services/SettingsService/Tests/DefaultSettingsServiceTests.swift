@@ -20,10 +20,11 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_initialization() {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
 
     // Test
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
@@ -36,8 +37,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_apiKeyKeychainMapping() async throws {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Test individual provider key mapping
     let groqSettings = LLMProviderSettings(
@@ -69,16 +71,17 @@ struct DefaultSettingsServiceTests {
 
     // Verify secure storage has the correct keychain keys
     let secureStorage = sharedUserDefaults.dumpSecureStorage()
-    #expect(secureStorage["GROQ_API_KEY"] == "test-groq-key")
-    #expect(secureStorage["GEMINI_API_KEY"] == "test-gemini-key")
+    #expect(secureStorage["cmd-keychain-key-GROQ_API_KEY"] == "test-groq-key")
+    #expect(secureStorage["cmd-keychain-key-GEMINI_API_KEY"] == "test-gemini-key")
   }
 
   @Test("Updates and retrieves values")
   @MainActor
   func test_updateAndRetrieveValues() {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -102,8 +105,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetIndividualSettings() {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -129,8 +133,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetAllSettings() {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -164,8 +169,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_liveValuesUpdate() async throws {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -196,8 +202,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_liveValuesUpdateFromDiskChange() async throws {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -217,11 +224,10 @@ struct DefaultSettingsServiceTests {
     #expect(receivedValues.count == 1)
     #expect(receivedValues.first == false)
 
-    // Update value
-    var settings = service.values()
-    settings.pointReleaseXcodeExtensionToDebugApp = true
-    let data = try JSONEncoder().encode(settings)
-    sharedUserDefaults.set(data, forKey: DefaultSettingsService.Keys.appWideSettings)
+    // Update value by writing to both new storage locations
+    // Update internal settings in UserDefaults
+    let internalData = try JSONEncoder().encode(InternalSettings(pointReleaseXcodeExtensionToDebugApp: true))
+    sharedUserDefaults.set(internalData, forKey: DefaultSettingsService.Keys.internalSettings)
     sharedUserDefaults.set(true, forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
     try await fulfillment(of: [valuesReceived])
@@ -232,8 +238,9 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_allLiveValuesUpdate() async throws {
     // Setup
+    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Test live all values
     var cancellables = Set<AnyCancellable>()
@@ -266,8 +273,11 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_allProviderApiKeysStoredSecurely() async throws {
     // Setup
+    let fileManager = MockFileManager()
+    // Create the .cmd directory
+    try fileManager.createDirectory(at: URL(filePath: "~/.cmd")!, withIntermediateDirectories: true, attributes: nil)
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     let anthropicSettings = LLMProviderSettings(
       apiKey: "anthropic-secret-key",
@@ -322,113 +332,114 @@ struct DefaultSettingsServiceTests {
 
     // Verify all keys are stored securely in keychain
     let secureStorage = sharedUserDefaults.dumpSecureStorage()
-    #expect(secureStorage["ANTHROPIC_API_KEY"] == "anthropic-secret-key")
-    #expect(secureStorage["OPENAI_API_KEY"] == "openai-secret-key")
-    #expect(secureStorage["OPENROUTER_API_KEY"] == "openrouter-secret-key")
-    #expect(secureStorage["GROQ_API_KEY"] == "groq-secret-key")
-    #expect(secureStorage["GEMINI_API_KEY"] == "gemini-secret-key")
+    #expect(secureStorage["cmd-keychain-key-ANTHROPIC_API_KEY"] == "anthropic-secret-key")
+    #expect(secureStorage["cmd-keychain-key-OPENAI_API_KEY"] == "openai-secret-key")
+    #expect(secureStorage["cmd-keychain-key-OPENROUTER_API_KEY"] == "openrouter-secret-key")
+    #expect(secureStorage["cmd-keychain-key-GROQ_API_KEY"] == "groq-secret-key")
+    #expect(secureStorage["cmd-keychain-key-GEMINI_API_KEY"] == "gemini-secret-key")
 
-    // Verify the public settings contain key references, not actual keys
-    let data = try #require(sharedUserDefaults.dumpStorage()["appWideSettings"] as? Data)
-    data.expectToMatch("""
+    // Verify internal settings are written to UserDefaults
+    let internalData = try #require(sharedUserDefaults.dumpStorage()["internalSettings"] as? Data)
+    internalData.expectToMatch("""
       {
-        "allowAnonymousAnalytics" : true,
-        "automaticallyCheckForUpdates": true,
-        "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
-        "fileEditMode": "direct I/O",
-        "inactiveModels" : [],
-        "keyboardShortcuts": {},
+        "pointReleaseXcodeExtensionToDebugApp" : false
+      }
+      """)
+
+    // Verify external settings are written to disk (only non-default values)
+    let settingsFileURL = URL(filePath: "~/.cmd/settings.json")!
+    let externalData = try fileManager.read(dataFrom: settingsFileURL)
+    externalData.expectToMatch("""
+      {
         "llmProviderSettings" : {
           "anthropic" : {
-            "apiKey" : "ANTHROPIC_API_KEY",
+            "apiKey" : "cmd-keychain-key-ANTHROPIC_API_KEY",
             "createdOrder" : 1
           },
           "gemini" : {
-            "apiKey" : "GEMINI_API_KEY",
+            "apiKey" : "cmd-keychain-key-GEMINI_API_KEY",
             "createdOrder" : 5
           },
           "groq" : {
-            "apiKey" : "GROQ_API_KEY",
+            "apiKey" : "cmd-keychain-key-GROQ_API_KEY",
             "createdOrder" : 4
           },
           "openai" : {
-            "apiKey" : "OPENAI_API_KEY",
+            "apiKey" : "cmd-keychain-key-OPENAI_API_KEY",
             "createdOrder" : 2
           },
           "openrouter" : {
-            "apiKey" : "OPENROUTER_API_KEY",
+            "apiKey" : "cmd-keychain-key-OPENROUTER_API_KEY",
             "createdOrder" : 3
           }
-        },
-        "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {},
-        "reasoningModels" : {},
-        "toolPreferences" : [],
-        "userDefinedXcodeShortcuts" : []
+        }
       }
       """)
     _ = cancellable
   }
 
-  @Test("API keys are properly deserialized from stored JSON for all providers")
+  @Test("API keys are properly deserialized from new storage format")
   @MainActor
-  func test_apiKeyDeserializationFromStoredJSON() async throws {
+  func test_apiKeyDeserializationFromNewStorageFormat() async throws {
     // given
+    let fileManager = MockFileManager()
+    // Create the .cmd directory
+    try fileManager.createDirectory(at: URL(filePath: "~/.cmd")!, withIntermediateDirectories: true, attributes: nil)
     let sharedUserDefaults = MockUserDefaults()
 
-    // Store API keys in keychain first
-    sharedUserDefaults.securelySave("test-anthropic-key", forKey: "ANTHROPIC_API_KEY")
-    sharedUserDefaults.securelySave("test-openai-key", forKey: "OPENAI_API_KEY")
-    sharedUserDefaults.securelySave("test-openrouter-key", forKey: "OPENROUTER_API_KEY")
-    sharedUserDefaults.securelySave("test-groq-key", forKey: "GROQ_API_KEY")
-    sharedUserDefaults.securelySave("test-gemini-key", forKey: "GEMINI_API_KEY")
+    // Store API keys in keychain format
+    sharedUserDefaults.securelySave("test-anthropic-key", forKey: "cmd-keychain-key-ANTHROPIC_API_KEY")
+    sharedUserDefaults.securelySave("test-openai-key", forKey: "cmd-keychain-key-OPENAI_API_KEY")
+    sharedUserDefaults.securelySave("test-openrouter-key", forKey: "cmd-keychain-key-OPENROUTER_API_KEY")
+    sharedUserDefaults.securelySave("test-groq-key", forKey: "cmd-keychain-key-GROQ_API_KEY")
+    sharedUserDefaults.securelySave("test-gemini-key", forKey: "cmd-keychain-key-GEMINI_API_KEY")
 
-    // Create settings JSON with keychain references (as they would be stored)
-    let settingsJSON = """
+    // Store internal settings in UserDefaults
+    let internalSettingsJSON = """
+      {
+        "pointReleaseXcodeExtensionToDebugApp" : false
+      }
+      """
+    let internalData = try #require(internalSettingsJSON.data(using: .utf8))
+    sharedUserDefaults.set(internalData, forKey: DefaultSettingsService.Keys.internalSettings)
+
+    // Store external settings on disk
+    let externalSettingsJSON = """
       {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates": true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "fileEditMode": "direct I/O",
-        "inactiveModels" : [],
-        "keyboardShortcuts": {},
         "llmProviderSettings" : {
           "anthropic" : {
-            "apiKey" : "ANTHROPIC_API_KEY",
+            "apiKey" : "cmd-keychain-key-ANTHROPIC_API_KEY",
             "createdOrder" : 1
           },
           "openai" : {
-            "apiKey" : "OPENAI_API_KEY",
+            "apiKey" : "cmd-keychain-key-OPENAI_API_KEY",
             "createdOrder" : 2
           },
           "openrouter" : {
-            "apiKey" : "OPENROUTER_API_KEY",
+            "apiKey" : "cmd-keychain-key-OPENROUTER_API_KEY",
             "createdOrder" : 3
           },
           "groq" : {
-            "apiKey" : "GROQ_API_KEY",
+            "apiKey" : "cmd-keychain-key-GROQ_API_KEY",
             "createdOrder" : 4
           },
           "gemini" : {
-            "apiKey" : "GEMINI_API_KEY",
+            "apiKey" : "cmd-keychain-key-GEMINI_API_KEY",
             "createdOrder" : 5
           }
-        },
-        "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {},
-        "reasoningModels" : {},
-        "toolPreferences" : [],
-        "userDefinedXcodeShortcuts" : []
+        }
       }
       """
 
-    let settingsData = try #require(settingsJSON.data(using: .utf8))
-    sharedUserDefaults.set(settingsData, forKey: DefaultSettingsService.Keys.appWideSettings)
+    let settingsFileURL = URL(filePath: "~/.cmd/settings.json")!
+    try fileManager.write(string: externalSettingsJSON, to: settingsFileURL, options: [])
 
     // when
-    let sut = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let sut = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // then
     // Verify all provider API keys are properly deserialized from keychain
@@ -448,7 +459,13 @@ struct DefaultSettingsServiceTests {
 }
 
 extension DefaultSettingsService {
-  convenience init(sharedUserDefaults: UserDefaultsI = MockUserDefaults()) {
-    self.init(sharedUserDefaults: sharedUserDefaults, releaseSharedUserDefaults: nil)
+  convenience init(
+    fileManager: FileManagerI = MockFileManager(),
+    sharedUserDefaults: UserDefaultsI = MockUserDefaults())
+  {
+    self.init(
+      fileManager: fileManager,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil)
   }
 }

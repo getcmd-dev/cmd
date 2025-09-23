@@ -5,10 +5,10 @@ import LLMFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 
-// MARK: - Settings + Decodable
+// MARK: - Settings + Codable
 
 /// Settings is kept Decodable to maintain backward compatibility with older versions of the app where settings were serialized in different location / formats.
-extension Settings: Decodable {
+extension Settings: Codable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: String.self)
