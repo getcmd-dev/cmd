@@ -122,8 +122,6 @@ extension KeyboardShortcut {
   }
 }
 
-// MARK: - KeyBindingInputView
-
 struct KeyBindingInputView: View {
   init(keyboardShortcut: Binding<KeyboardShortcut?>, lineHeight: CGFloat = 20) {
     _keyboardShortcut = keyboardShortcut

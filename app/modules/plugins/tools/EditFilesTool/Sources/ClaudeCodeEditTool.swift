@@ -184,8 +184,6 @@ extension ClaudeCodeEditTool.Use.Input {
   }
 }
 
-// MARK: - ClaudeCodeEditTool.Use + DisplayableToolUse
-
 extension ClaudeCodeEditTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {

@@ -96,14 +96,13 @@ extension FileManagerI {
   /// Creates any required directories for the given file URL.
   public func createDirectories(requiredForFileAt url: URL) throws {
     let directory = url.deletingLastPathComponent()
-    let attributes: [FileAttributeKey: Any] = [.posixPermissions: 0o700]
     if !fileExists(atPath: directory.path) {
-      try createDirectory(at: directory, withIntermediateDirectories: true, attributes: attributes)
+      try createDirectory(at: directory, withIntermediateDirectories: true)
     }
   }
 }
 
-// MARK: - FileManager + @retroactive @unchecked Sendable
+// MARK: - Foundation.FileManager + FileManager
 
 extension FileManager: @retroactive @unchecked Sendable { }
 

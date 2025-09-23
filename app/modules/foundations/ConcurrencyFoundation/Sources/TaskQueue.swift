@@ -34,7 +34,7 @@ public final class TaskQueue<Output: Sendable, Failure: Error>: Sendable {
 
   private struct State: Sendable {
     var isExecuting = false
-    var taskQueue = [@Sendable () async throws -> Output]()
+    var taskQueue: [@Sendable () async throws -> Output] = []
   }
 
   private let publisher = CurrentValueSubject<Output?, Failure>(nil)
@@ -86,9 +86,7 @@ public final class TaskQueue<Output: Sendable, Failure: Error>: Sendable {
     }
   }
 
-  private func wrap(_ task: @escaping @Sendable () async throws -> Output) -> @Sendable ()
-    async -> Result<Output, Error>
-  {
+  private func wrap(_ task: @escaping @Sendable () async throws -> Output) -> @Sendable () async -> Result<Output, Error> {
     {
       do {
         return try await .success(task())
@@ -138,8 +136,6 @@ extension TaskQueue where Failure == Never {
     queue(task: task)
   }
 }
-
-// MARK: Publisher
 
 extension TaskQueue: Publisher {
   public func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {

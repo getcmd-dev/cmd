@@ -22,8 +22,6 @@ extension Bundle {
   }
 }
 
-// MARK: - AppIcon
-
 public struct AppIcon: View {
   public var body: some View {
     if let image = Bundle.main.icon {

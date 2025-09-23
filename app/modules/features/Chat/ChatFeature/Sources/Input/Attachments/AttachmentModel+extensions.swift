@@ -42,7 +42,7 @@ extension AttachmentModel {
   }
 }
 
-// MARK: - AttachmentModel + Equatable
+// MARK: Equatable
 
 extension AttachmentModel: Equatable {
   /// Executes a cheap comparison between the attachments based on their id.

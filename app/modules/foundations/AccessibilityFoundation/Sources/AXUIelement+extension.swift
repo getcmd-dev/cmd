@@ -364,8 +364,6 @@ extension AXUIElement {
 
 }
 
-// MARK: - AXError + @retroactive Error
-
 extension AXError: @retroactive Error { }
 
 extension CGRect {

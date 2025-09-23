@@ -284,7 +284,7 @@ struct DebugStreamingMessage: View {
 
 #Preview("Message with code diff") {
   ScrollView {
-    withDependencies {
+    withDependencies({
       $0.fileManager = MockFileManager(files: [
         "/path/to/file.swift": """
           Hello, world!
@@ -292,11 +292,11 @@ struct DebugStreamingMessage: View {
           So lucky to be here!
           """,
       ])
-    } operation: {
+    }, operation: {
       ChatMessageView(message: ChatMessageContentWithRole(
         content: .text(.init(text: messageContentWithCodeDiff)),
         role: .assistant))
-    }
+    })
   }
   .frame(width: 400)
   .padding()
@@ -304,7 +304,7 @@ struct DebugStreamingMessage: View {
 
 #Preview("Tool use message") {
   ScrollView {
-    withDependencies {
+    withDependencies({
       $0.fileManager = MockFileManager(files: [
         "/path/to/file.swift": """
           Hello, world!
@@ -312,11 +312,11 @@ struct DebugStreamingMessage: View {
           So lucky to be here!
           """,
       ])
-    } operation: {
+    }, operation: {
       ChatMessageView(message: ChatMessageContentWithRole(
         content: .toolUse(.init(toolUse: TestTool.Use())),
         role: .assistant))
-    }
+    })
   }
   .frame(width: 400)
   .padding()

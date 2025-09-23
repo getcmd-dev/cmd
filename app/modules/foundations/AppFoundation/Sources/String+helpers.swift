@@ -9,8 +9,6 @@ extension String {
   }
 }
 
-// MARK: - String + @retroactive CodingKey
-
 extension String: @retroactive CodingKey {
 
   public init?(stringValue: String) {
