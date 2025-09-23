@@ -50,8 +50,8 @@ public struct Settings: Sendable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
-    fileEditMode: FileEditMode = .directIO,
     automaticallyUpdateXcodeSettings: Bool = false,
+    fileEditMode: FileEditMode = .directIO,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
@@ -64,8 +64,8 @@ public struct Settings: Sendable, Equatable {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
-    self.fileEditMode = fileEditMode
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
+    self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
@@ -120,9 +120,9 @@ public struct Settings: Sendable, Equatable {
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var automaticallyCheckForUpdates: Bool
-  public var fileEditMode: FileEditMode
   /// Whether to automatically update Xcode settings to configure `cmd` as an AI backend.
   public var automaticallyUpdateXcodeSettings: Bool
+  public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
@@ -185,6 +185,22 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
   /// We keep track to this index to keep it consistently associated with the same command.
   public let xcodeCommandIndex: Int
 
+  public func encode(to encoder: any Encoder) throws {
+    // The id is not encoded. It is only used in memory to help identify
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(name, forKey: .name)
+    try container.encode(command, forKey: .command)
+    // keyBinding is not encoded as it is not yet supported
+    try container.encode(xcodeCommandIndex, forKey: .xcodeCommandIndex)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case name
+    case command
+    case keyBinding
+    case xcodeCommandIndex
+  }
 }
 
 // MARK: - Keyboard Shortcuts

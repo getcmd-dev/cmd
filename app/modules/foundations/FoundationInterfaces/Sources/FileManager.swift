@@ -92,6 +92,14 @@ extension FileManagerI {
   public func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]? = nil) throws -> [URL] {
     try contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [])
   }
+
+  /// Creates any required directories for the given file URL.
+  public func createDirectories(requiredForFileAt url: URL) throws {
+    let directory = url.deletingLastPathComponent()
+    if !fileExists(atPath: directory.path) {
+      try createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+  }
 }
 
 // MARK: - Foundation.FileManager + FileManager
