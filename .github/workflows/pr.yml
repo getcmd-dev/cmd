@@ -107,12 +107,7 @@ jobs:
       id: set-up-homebrew
       uses: Homebrew/actions/setup-homebrew@master
     - name: Install swiftformat
-      run: |
-        curl -L -o swiftformat.zip https://github.com/nicklockwood/SwiftFormat/releases/download/0.57.2/swiftformat.zip
-        unzip swiftformat.zip
-        chmod +x swiftformat
-        sudo mv swiftformat /usr/local/bin/
-        swiftformat --version
+      run: brew install swiftformat
     - name: Run linter
       run: ./cmd.sh lint:swift
     - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
