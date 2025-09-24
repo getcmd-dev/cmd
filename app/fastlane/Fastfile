@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 default_platform(:mac)
 
 # Load a secret from the keychain if it is not passed as an environment variable.
-require 'base64'
+require "base64"
 
 # Execute a shell command silently, without logging the step, the command or its output.
 # Similar to `sh(..., log: false)` but without logging the step.
@@ -12,18 +14,19 @@ end
 # A helper that loads a secret from the environment variable or the keychain.
 def load_secret(env_key)
   if ENV[env_key]
-    unless ENV['CI']
+    unless ENV["CI"]
       # When the secret is passed as an environment variable locally, we store it in the keychain for future use.
       puts "Writting secret to keychain: #{env_key}"
       # Use base64 encoding to avoid dealing with new lines.
-      sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{env_key}' -w '#{Base64.strict_encode64(ENV[env_key])}' -U")
+      sh("security add-generic-password -a '#{ENV["USER"]}' -s 'dev.getcmd.#{env_key}' -w '#{Base64.strict_encode64(ENV[env_key])}' -U")
     end
     return ENV[env_key]
   end
-  
+
   puts "Loading secret from keychain: #{env_key}"
-  encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
-  return nil if encoded.empty?
+  encoded = %x(security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null).strip
+  return if encoded.empty?
+
   decoded = Base64.decode64(encoded)
   ENV[env_key] = decoded
 end
@@ -43,7 +46,7 @@ platform :mac do
 
   desc "Build and archive the app for Mac App Store distribution"
   lane :build_release do
-    setup_ci if ENV['CI']
+    setup_ci if ENV["CI"]
 
     build_path = File.absolute_path("../build")
     sh("rm -rf #{build_path}")
@@ -52,18 +55,18 @@ platform :mac do
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-    
+
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
-    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    ENV["MATCH_PASSWORD"] = load_secret("MATCH_PASSWORD")
     readonly = true
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
     git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
-      type: 'development',
-      team_id: 'GP78T2GNXD',
+      type: "development",
+      team_id: "GP78T2GNXD",
       readonly: readonly,
-      git_url: git_url
+      git_url: git_url,
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -71,7 +74,7 @@ platform :mac do
       destination: "platform=macOS,arch=arm64",
       skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
-      configuration: "Release", 
+      configuration: "Release",
       export_method: "mac-application",
       output_directory: "#{build_path}/release",
       derived_data_path: "#{build_path}/derived_data",
@@ -89,29 +92,35 @@ platform :mac do
 
   desc "Build, archive and sign the app for distribution"
   lane :create_and_sign_release do |options|
-    setup_ci if ENV['CI']
+    setup_ci if ENV["CI"]
+
+    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
+    build_path = File.absolute_path("../build")
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
+
     version = options.fetch(:version, nil)
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
-    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    ENV["MATCH_PASSWORD"] = load_secret("MATCH_PASSWORD")
     readonly = true
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
     git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
-      type: 'developer_id',
-      team_id: 'GP78T2GNXD',
+      type: "developer_id",
+      team_id: "GP78T2GNXD",
       readonly: readonly,
-      git_url: git_url
+      git_url: git_url,
     )
     update_code_signing_settings(
-      code_sign_identity: 'Developer ID Application',
+      code_sign_identity: "Developer ID Application",
       use_automatic_signing: false,
-      path: "./command.xcodeproj"
+      path: "./command.xcodeproj",
     )
-    certificate_name = ENV['sigh_dev.getcmd.command_developer_id_macos_certificate-name']
-    provisioning_profile_path = ENV['sigh_dev.getcmd.command_developer_id_macos_profile-path']
+
+    certificate_name = ENV["sigh_dev.getcmd.command_developer_id_macos_certificate-name"]
+    provisioning_profile_path = ENV["sigh_dev.getcmd.command_developer_id_macos_profile-path"]
     ### Find the sha1 to identify the right certificate when several with the same name are installed.
     certificate_sha1 = sh("security cms -D -i '#{provisioning_profile_path}' | plutil -extract DeveloperCertificates.0 raw -o - - | base64 -D | openssl x509 -inform DER -noout -fingerprint -sha1  | cut -d= -f2 | sed 's/://g'").strip
     if certificate_sha1.empty?
@@ -119,7 +128,6 @@ platform :mac do
     end
 
     # Build and archive the app
-    build_path = File.absolute_path("../build")
     app_name = "cmd"
     app_path = "#{build_path}/release/#{app_name}.app"
     archive_path = "#{build_path}/release/#{app_name}.xcarchive"
@@ -161,18 +169,18 @@ platform :mac do
       package: app_path,
       verbose: false,
       print_log: true,
-      use_notarytool: true
+      use_notarytool: true,
     )
 
     # Create a DMG file for distribution using create-dmg
     dmg_path = "#{build_path}/release/#{app_name}.dmg"
-    sh("rm -f '#{dmg_path}'") # Remove existing DMG file if it exists
-    sh("create-dmg '#{app_path}' --output '#{dmg_path}' --identity #{certificate_sha1}")
+    sh("create-dmg '#{app_path}' --identity #{certificate_sha1} --no-version-in-filename --overwrite")
+    sh("mv cmd.dmg #{dmg_path}")
 
     puts "Verifying code signature..."
-    sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'") 
+    sh("codesign --verify --deep --strict --verbose=2 '#{app_path}'")
     sh("spctl -a -t exec -vv '#{app_path}'")
-    sh("codesign --verify --deep --strict --verbose=2 '#{dmg_path}'") 
+    sh("codesign --verify --deep --strict --verbose=2 '#{dmg_path}'")
 
     # Create metadata for the new release
 
@@ -189,7 +197,7 @@ platform :mac do
 
     sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{app_zip_path} --ed-key-file -")
     app_config_path = File.absolute_path("../command.shared.xcconfig")
-    version = version || sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+    version ||= sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
 
     puts "Notarization completed successfully. version: #{version}, app_path: #{app_path}"
 
@@ -214,7 +222,7 @@ platform :mac do
     skip_symbols_upload = !options[:skip_symbols_upload].nil?
     skip_github_release = !options[:skip_github_release].nil?
 
-    setup_ci if ENV['CI']
+    setup_ci if ENV["CI"]
     app_config_path = File.absolute_path("../command.shared.xcconfig")
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
@@ -222,18 +230,18 @@ platform :mac do
     if existing_version.empty?
       puts "Using version: #{version}"
     else
-      version_parts = version.split('.')
+      version_parts = version.split(".")
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
-      new_version = version_parts.join('.')
+      new_version = version_parts.join(".")
       puts "Bumping version from #{version} to #{new_version}."
 
       sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
       version = new_version
     end
 
-    ENV['UPLOAD_SOURCEMAP_TO_SENTRY'] = "true"
+    ENV["UPLOAD_SOURCEMAP_TO_SENTRY"] = "true"
     ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
-    
+
     result = create_and_sign_release(version: version)
     version = result[:version]
     app_zip_path = result[:app_zip_path]
@@ -269,16 +277,15 @@ platform :mac do
         title: "Release v#{version}",
         repo: "getcmd-dev/cmd",
         head: new_branch_name,
-        base: "main"
+        base: "main",
       )
     end
     sh("git checkout #{current_branch}")
   end
 
-
   desc "Strip debug symbols from the binary and resign the app"
   lane :strip_debug_symbols_and_resign do |options|
-    # Note: an alternative is to more simply use COPY_PHASE_STRIP / STRIP_INSTALLED_PRODUCT in the build settings.
+    # NOTE: an alternative is to more simply use COPY_PHASE_STRIP / STRIP_INSTALLED_PRODUCT in the build settings.
     # Those seem to result in a larger binary, but might be less succeptible to break.
     app_binary_path = options.fetch(:app_binary_path, nil)
     app_path = options.fetch(:app_path, nil)
@@ -294,11 +301,19 @@ platform :mac do
     sh("strip -rSTx '#{app_binary_path}'")
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
-      
-      file_type = silent_sh("file -b '#{file}'") rescue ""
-      if file_type.include?("Mach-O") && !file_type.include?("dSYM")
-        puts "Stripping: #{file}"
-        silent_sh("strip -rSTx '#{file}'") rescue puts "Warning: Could not strip #{file}"
+
+      file_type = begin
+        silent_sh("file -b '#{file}'")
+      rescue
+        ""
+      end
+      next unless file_type.include?("Mach-O") && !file_type.include?("dSYM")
+
+      puts "Stripping: #{file}"
+      begin
+        silent_sh("strip -rSTx '#{file}'")
+      rescue
+        puts "Warning: Could not strip #{file}"
       end
     end
 
@@ -311,8 +326,8 @@ platform :mac do
     Dir.glob("#{app_path}/**/*.{framework,appex,bundle,xpc,app}").each do |component|
       # Skip the main app itself
       next if component == app_path
-      
-      depth = component.split('/').length
+
+      depth = component.split("/").length
       all_components << { path: component, depth: depth }
     end
 
@@ -323,18 +338,22 @@ platform :mac do
     all_components.each do |component|
       component_name = File.basename(component[:path])
       puts "Signing: #{component_name}"
-      
+
       # Try to extract entitlements for ANY component type
-      temp_entitlements = "#{build_path}/#{component_name.gsub(/[^\w.-]/, '_')}_entitlements.plist"
-      silent_sh("codesign -d --entitlements :- '#{component[:path]}' > '#{temp_entitlements}' 2>/dev/null") rescue nil
-      
+      temp_entitlements = "#{build_path}/#{component_name.gsub(/[^\w.-]/, "_")}_entitlements.plist"
+      begin
+        silent_sh("codesign -d --entitlements :- '#{component[:path]}' > '#{temp_entitlements}' 2>/dev/null")
+      rescue
+        nil
+      end
+
       # Sign with entitlements if they exist, without if they don't
       if File.exist?(temp_entitlements) && File.size(temp_entitlements) > 0
         silent_sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp --entitlements '#{temp_entitlements}' '#{component[:path]}'")
       else
         silent_sh("codesign --force --sign #{certificate_sha1} --options runtime --timestamp '#{component[:path]}'")
       end
-      
+
       # Clean up
       silent_sh("rm -f '#{temp_entitlements}'")
     end
@@ -359,13 +378,13 @@ platform :mac do
 
     sentry_create_release(
       auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
+      org_slug: "getcmd",
+      project_slug: "cmd-mac-app",
       version: version,
-      app_identifier: 'dev.getcmd.command',
-      finalize: true
+      app_identifier: "dev.getcmd.command",
+      finalize: true,
     )
-    sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --log-level trace --wait '#{archive_path}'")
+    sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --wait '#{archive_path}'")
     # sentry_debug_files_upload(
     #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
     #   org_slug: 'getcmd',
@@ -375,12 +394,12 @@ platform :mac do
     #   wait: true,
     # )
     sentry_set_commits(
-      org_slug: 'getcmd',
-      project_slug: 'cmd-mac-app',
+      org_slug: "getcmd",
+      project_slug: "cmd-mac-app",
       version: version,
-      app_identifier: 'dev.getcmd.command',
+      app_identifier: "dev.getcmd.command",
       auto: true,
-      clear: false
+      clear: false,
     )
 
     plist_path = "#{build_path}/release/cmd.app/Contents/Info.plist"

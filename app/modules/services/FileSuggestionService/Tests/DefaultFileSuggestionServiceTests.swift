@@ -250,8 +250,8 @@ extension DefaultFileSuggestionService {
 
 extension MockFileManager {
   convenience init(copyingFrom path: URL) throws {
-    var files: [String: String] = [:]
-    var directories: [String] = []
+    var files = [String: String]()
+    var directories = [String]()
 
     if
       let enumerator = FileManager.default.enumerator(

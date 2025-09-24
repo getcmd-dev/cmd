@@ -17,7 +17,7 @@ public final class ClaudeCodeGlobTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeGlobTool,
       toolUseId: String,
@@ -46,6 +46,8 @@ public final class ClaudeCodeGlobTool: ExternalTool {
     public struct Output: Codable, Sendable {
       public let files: [String]
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
 

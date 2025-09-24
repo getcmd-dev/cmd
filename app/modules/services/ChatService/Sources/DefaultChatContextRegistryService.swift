@@ -32,7 +32,7 @@ final class DefaultChatContextRegistryService: ChatContextRegistryService {
     contexts.removeValue(forKey: threadId)
   }
 
-  private var contexts: [String: any LiveToolExecutionContext] = [:]
+  private var contexts = [String: any LiveToolExecutionContext]()
 }
 
 extension BaseProviding {

@@ -9,7 +9,8 @@ import ToolFoundation
 // MARK: - AskFollowUpTool.Use + DisplayableToolUse
 
 extension AskFollowUpTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       input: input,

@@ -50,7 +50,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     }
     let editorContexts = editorArea
       .children(where: { $0.identifier == "editor context" })
-      .compactMap { el in el.firstParent(where: { $0.description == el.description }) }
+      .compactMap { el in el.firstParent(where: { $0.description?.starts(with: el.description ?? "<NA>") == true }) }
     let editorsContainer = editorContexts.first?.firstParent(
       where: { $0.role == kAXSplitGroupRole })
 
@@ -73,11 +73,13 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       .firstChild(where: { $0.roleDescription == "tab group" })?
       .children(where: { $0.roleDescription == "tab" }) ?? []
     } ?? []
+    // When in tabless mode, there are no tab elements. Use the editor context name instead.
+    let fallbackFocusTabName = editorContexts.first?.firstChild(where: { $0.identifier == "editor context" })?.description
     // Use a set as there are several hierachies of tabs that can contain the same file.
     // Sort to avoid unnucessary state updates.
-    let tabNames = Array(Set(tabEls.compactMap(\.title))).sorted()
+    let tabNames = Array(Set(tabEls.compactMap(\.title) + (fallbackFocusTabName.map { [$0] } ?? []))).sorted()
     let existingTabs = internalState.value.tabs
-    let focusedTabName = tabEls.first(where: { $0.doubleValue == 1 })?.title
+    let focusedTabName = tabEls.first(where: { $0.doubleValue == 1 })?.title ?? fallbackFocusTabName
     let documentURL = workspace.documentURL
 
     let focusEditorState = editorInspectors.lazy.compactMap { editor in

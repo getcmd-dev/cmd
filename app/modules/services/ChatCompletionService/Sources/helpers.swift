@@ -50,7 +50,7 @@ extension [ChatQuery.ChatCompletionMessageParam] {
 extension ChatQuery.ChatCompletionMessageParam.UserMessageParam {
   /// All the text elements contained in the user message.
   var textContentParts: [String] {
-    var result: [String] = []
+    var result = [String]()
     switch content {
     case .string(let text):
       result.append(text)

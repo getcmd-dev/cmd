@@ -16,6 +16,8 @@ public final class MockUserDefaults: UserDefaultsI {
     storage = initialValues.mapValues { UncheckedSendable($0) }
   }
 
+  public var onRemoveObjectForKey: (@Sendable (String) -> Void)?
+
   // MARK: - Core Methods
 
   public func object(forKey defaultName: String) -> Any? {
@@ -29,6 +31,7 @@ public final class MockUserDefaults: UserDefaultsI {
   public func removeObject(forKey defaultName: String) {
     storage.removeValue(forKey: defaultName)
     notifyChange()
+    onRemoveObjectForKey?(defaultName)
   }
 
   // MARK: - Type-Specific Getters
@@ -179,9 +182,9 @@ public final class MockUserDefaults: UserDefaultsI {
   }
 
   /// Internal storage
-  private var storage: [String: UncheckedSendable<Any>] = [:]
+  private var storage = [String: UncheckedSendable<Any>]()
 
-  private var securedStorage: [String: String] = [:]
+  private var securedStorage = [String: String]()
 
   /// Subject to emit change events
   private let changeSubject = PassthroughSubject<Void, Never>()

@@ -20,7 +20,7 @@ public final class MockChatContextRegistryService: ChatContextRegistryService {
 
   public var onUnregister: (@Sendable (String) -> Void)?
 
-  public var contexts: [String: any LiveToolExecutionContext] = [:]
+  public var contexts = [String: any LiveToolExecutionContext]()
 
   public func context(for threadId: String) throws -> any LiveToolExecutionContext {
     if let onContext {
@@ -59,6 +59,8 @@ public final class MockChatThreadContext: LiveToolExecutionContext {
     self.userInfo = userInfo
   }
 
+  public var onRequestPersistence: @Sendable () -> Void = { }
+
   public func knownFileContent(for path: URL) -> String? {
     knownFilesContent[path.path]
   }
@@ -78,7 +80,9 @@ public final class MockChatThreadContext: LiveToolExecutionContext {
     userInfo[key] = value
   }
 
-  public func requestPersistence() { }
+  public func requestPersistence() {
+    onRequestPersistence()
+  }
 
   private(set) var knownFilesContent: [String: String]
   private(set) var userInfo: [String: any Codable & Sendable]

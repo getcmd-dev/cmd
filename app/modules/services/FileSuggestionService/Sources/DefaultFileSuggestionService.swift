@@ -76,8 +76,8 @@ final class DefaultFileSuggestionService: FileSuggestionService {
     case newTask(_ task: (Future<[FileSuggestion], Error>, @Sendable (Result<[FileSuggestion], Error>) -> Void))
   }
 
-  private var inflightTasks: [URL: Future<[FileSuggestion], Error>] = [:]
-  private var cachedFiles: [URL: CachedFileResult] = [:]
+  private var inflightTasks = [URL: Future<[FileSuggestion], Error>]()
+  private var cachedFiles = [URL: CachedFileResult]()
   private let fileManager: FileManagerI
   private let shellService: ShellService
 

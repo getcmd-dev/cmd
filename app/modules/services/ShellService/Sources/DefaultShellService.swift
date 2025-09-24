@@ -22,7 +22,7 @@ final class DefaultShellService: ShellService {
     loadZshEnvironmentInBackground()
   }
 
-  public private(set) var env: [String: String] = [:]
+  public private(set) var env = [String: String]()
 
   @discardableResult
   func run(
@@ -153,6 +153,8 @@ extension FileHandle {
   }
 }
 
+// MARK: - Subprocess.StandardInputWriter + ShellServiceInterface.StandardInputWriter
+
 // Conform Subprocess types to ShellServiceInterface protocols,
 // which are similar but allow to limit imports to consuming modules
 
@@ -162,6 +164,8 @@ extension Subprocess.StandardInputWriter: ShellServiceInterface.StandardInputWri
   }
 
 }
+
+// MARK: - Subprocess.Execution + ShellServiceInterface.Execution
 
 extension Subprocess.Execution: ShellServiceInterface.Execution {
   public func tearDown() async {

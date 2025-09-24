@@ -125,8 +125,8 @@ final class ChatInputViewModel {
       }.store(in: &cancellables)
     }
 
-    searchTasks.sink { @Sendable suggestions in
-      Task { @MainActor [weak self] in
+    searchTasks.sink { @Sendable [weak self] suggestions in
+      Task { @MainActor in
         self?.searchResults = suggestions
       }
     }.store(in: &cancellables)
@@ -414,7 +414,7 @@ final class ChatInputViewModel {
 
   /// Queue of tool approval requests waiting for user response.
   /// Each entry contains both the request details and the continuation that will receive the user's decision.
-  private var toolCallsPendingApproval: [PendingToolApproval] = []
+  private var toolCallsPendingApproval = [PendingToolApproval]()
 
   /// References to attachments within the text input.
   @ObservationIgnored private var inlineReferences = [String: AttachmentModel]()

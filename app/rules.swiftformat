@@ -4,7 +4,7 @@
 --exclude Carthage,Pods,**/.build,**/build
 
 # options
---swiftversion 6.1.2
+--swiftversion 6.2
 --languagemode 6
 --self remove # redundantSelf
 --importgrouping testable-bottom # sortedImports
@@ -113,7 +113,7 @@
 --rules andOperator
 --rules opaqueGenericParameters
 # --rules genericExtensions
---rules trailingClosures
+# --rules trailingClosures
 --rules elseOnSameLine
 --rules sortTypealiases
 --rules preferForLoop

@@ -34,9 +34,9 @@ public enum AssistantMessageContent: Sendable { // TODO: rename to StreamedAssis
 public struct TextContentMessage: Sendable {
   // MARK: Lifecycle
 
-  public init(content: String, deltas: [String] = []) {
+  public init(content: String, deltas: [String]? = nil) {
     self.content = content
-    self.deltas = deltas
+    self.deltas = deltas ?? [content]
   }
 
   // MARK: Public

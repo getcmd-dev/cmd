@@ -32,18 +32,6 @@ public struct NewChatEvent: AppEvent {
   public init() { }
 }
 
-// MARK: - EditEvent
-
-public struct EditEvent: AppEvent {
-  public init() { }
-}
-
-// MARK: - GenerateEvent
-
-public struct GenerateEvent: AppEvent {
-  public init() { }
-}
-
 // MARK: - HideChatEvent
 
 public struct HideChatEvent: AppEvent {

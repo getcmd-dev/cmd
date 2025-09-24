@@ -51,6 +51,7 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
         defaultLogger
           .error("Claude Code edited a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
       }
+      chatContextRegistry.persist(thread: context.threadId)
     }
 
     public typealias InternalState = [EditFilesTool.Use.FileChange]
@@ -66,6 +67,8 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
     }
 
     public typealias Output = EditFilesTool.Use.Output
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = false
 
@@ -233,7 +236,8 @@ extension ClaudeCodeMultiEditTool.Use.Input {
 // MARK: - ClaudeCodeMultiEditTool.Use + DisplayableToolUse
 
 extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
@@ -248,11 +252,7 @@ extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
         mappedInput = mappedInput.correcting(file: file, with: fixedInput)
         updateTrackedFileContent()
 
-        do {
-          try chatContextRegistry.context(for: context.threadId).requestPersistence()
-        } catch {
-          defaultLogger.error("Failed to persist thread")
-        }
+        chatContextRegistry.persist(thread: context.threadId)
       }))
   }
 }

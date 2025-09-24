@@ -19,7 +19,7 @@ public final class MockShellService: ShellService {
     CommandExecutionResult(exitCode: 0)
   }
 
-  public var env: [String: String] = [:]
+  public var env = [String: String]()
 
   public func run(
     _ command: String,

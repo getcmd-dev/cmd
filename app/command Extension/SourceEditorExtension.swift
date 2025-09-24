@@ -36,7 +36,7 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
 
   private func getUserDefinedXcodeShortcutCommands() -> [CommandType] {
     defaultLogger.log("Reading user defined Xcode shortcut commands")
-    var result: [CommandType] = []
+    var result = [CommandType]()
 
     // Load user defined Xcode shortcuts from settings
     let settings = AppExtensionScope.shared.settingsService.values()

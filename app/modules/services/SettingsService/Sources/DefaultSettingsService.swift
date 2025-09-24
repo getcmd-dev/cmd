@@ -12,6 +12,7 @@ import LLMFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
+import System
 import ThreadSafe
 
 // MARK: - DefaultSettingsService
@@ -21,10 +22,16 @@ final class DefaultSettingsService: SettingsService {
 
   // MARK: - Initialization
 
-  init(sharedUserDefaults: UserDefaultsI, releaseSharedUserDefaults: UserDefaultsI?) {
+  init(
+    fileManager: FileManagerI,
+    sharedUserDefaults: UserDefaultsI,
+    releaseSharedUserDefaults: UserDefaultsI?)
+  {
+    self.fileManager = fileManager
     self.sharedUserDefaults = sharedUserDefaults
     self.releaseSharedUserDefaults = releaseSharedUserDefaults
-    settings = CurrentValueSubject<Settings, Never>(Self.loadSettings(from: sharedUserDefaults))
+    settings = CurrentValueSubject<Settings, Never>(defaultSettings)
+    settings.send(loadSettings())
 
     observeChangesToUserDefaults()
   }
@@ -33,6 +40,7 @@ final class DefaultSettingsService: SettingsService {
 
   enum Keys {
     static let appWideSettings = "appWideSettings"
+    static let internalSettings = "internalSettings"
   }
 
   // MARK: - SettingsService Implementation
@@ -63,119 +71,179 @@ final class DefaultSettingsService: SettingsService {
 
   func update(to newSettings: Settings) {
     settings.send(newSettings)
-    persist(settings: newSettings)
-  }
-
-  func resetToDefault<T>(setting: WritableKeyPath<Settings, T>) {
-    update(setting: setting, to: Self.defaultSettings[keyPath: setting])
-  }
-
-  func resetAllToDefault() {
-    settings.send(Self.defaultSettings)
     Task { @MainActor in
-      persist(settings: Self.defaultSettings)
+      do {
+        try persist(settings: newSettings)
+      } catch {
+        defaultLogger.error("Failed to persist settings", error)
+      }
     }
   }
 
+  func resetToDefault<T>(setting: WritableKeyPath<Settings, T>) {
+    update(setting: setting, to: defaultSettings[keyPath: setting])
+  }
+
+  func resetAllToDefault() {
+    update(to: defaultSettings)
+  }
+
   /// Decode the value here to ensure that we are using the default values used in decoding.
-  private static let defaultSettings = try! JSONDecoder().decode(Settings.self, from: "{}".utf8Data)
+  private let defaultSettings = Settings(externalSettings: .defaultSettings, internalSettings: .defaultSettings)
 
   private let settings: CurrentValueSubject<Settings, Never>
   private var notificationObserver: AnyCancellable?
 
+  private let fileManager: FileManagerI
   private let sharedUserDefaults: UserDefaultsI
   private let releaseSharedUserDefaults: UserDefaultsI?
 
-  private static func loadSettings(from userDefaults: UserDefaultsI) -> Settings {
-    if let data = userDefaults.data(forKey: Keys.appWideSettings) {
+  private var globalSettingsLocation: FilePath {
+    "~/.cmd/settings.json"
+  }
+
+  private func loadSettings() -> Settings {
+    if
+      let settings = loadAndMigrateLegacySettings()
+    {
+      return settings
+    }
+
+    var internalSettings: InternalSettings = sharedUserDefaults.data(forKey: Keys.internalSettings).map { data in
       do {
-        var settings = try JSONDecoder().decode(Settings.self, from: data)
-        // Load API keys fromn the keychain.
-        if let anthropicAPIKey = settings.llmProviderSettings[.anthropic]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
-            settings.llmProviderSettings[.anthropic]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .anthropic)
-          }
-        }
-        if let openAIAPIKey = settings.llmProviderSettings[.openAI]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: openAIAPIKey) {
-            settings.llmProviderSettings[.openAI]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .openAI)
-          }
-        }
-        if let openRouterAPIKey = settings.llmProviderSettings[.openRouter]?.apiKey {
-          if let key = userDefaults.loadSecuredValue(forKey: openRouterAPIKey) {
-            settings.llmProviderSettings[.openRouter]?.apiKey = key
-          } else {
-            settings.llmProviderSettings.removeValue(forKey: .openRouter)
-          }
-        }
+        return try JSONDecoder().decode(InternalSettings.self, from: data)
+      } catch {
+        defaultLogger.error("Failed to decode internal settings", error)
+        return nil
+      }
+    } ??? .defaultSettings
 
-        // Load pointReleaseXcodeExtensionToDebugApp that is stored separately
-        settings.pointReleaseXcodeExtensionToDebugApp = userDefaults.bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+    // Load pointReleaseXcodeExtensionToDebugApp that is stored separately
+    internalSettings.pointReleaseXcodeExtensionToDebugApp = sharedUserDefaults
+      .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
+    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: URL(filePath: globalSettingsLocation)!))
+      .map { data in
+        do {
+          return try JSONDecoder().decode(ExternalSettings.self, from: data)
+        } catch {
+          defaultLogger.error("Failed to decode external settings", error)
+          return nil
+        }
+      } ??? .defaultSettings
+
+    // Load API keys from the keychain.
+    for provider in LLMProvider.allCases {
+      if let apiKey = externalSettings.llmProviderSettings[provider]?.apiKey {
+        if let key = sharedUserDefaults.loadSecuredValue(forKey: apiKey) {
+          externalSettings.llmProviderSettings[provider]?.apiKey = key
+        } else {
+          externalSettings.llmProviderSettings.removeValue(forKey: provider)
+        }
+      }
+    }
+
+    return Settings(externalSettings: externalSettings, internalSettings: internalSettings)
+  }
+
+  private func loadAndMigrateLegacySettings() -> Settings? {
+    if let data = sharedUserDefaults.data(forKey: Keys.appWideSettings) {
+      do {
+        let settings: Settings = try {
+          var settings = try JSONDecoder().decode(Settings.self, from: data)
+          // Load API keys from the keychain.
+          for provider in LLMProvider.allCases {
+            if let apiKey = settings.llmProviderSettings[provider]?.apiKey {
+              if let key = sharedUserDefaults.loadSecuredValue(forKey: apiKey) {
+                settings.llmProviderSettings[provider]?.apiKey = key
+              } else {
+                settings.llmProviderSettings.removeValue(forKey: provider)
+              }
+            }
+          }
+
+          // Load pointReleaseXcodeExtensionToDebugApp that is stored separately
+          settings.pointReleaseXcodeExtensionToDebugApp = sharedUserDefaults
+            .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+          return settings
+        }()
+
+        // Migrate to new storage locations.
+        Task { @MainActor in
+          do {
+            // Deactivate notifications from user defaults while migrating.
+            notificationObserver = nil
+            try persist(settings: settings)
+            self.observeChangesToUserDefaults()
+            sharedUserDefaults.removeObject(forKey: Keys.appWideSettings)
+          } catch {
+            defaultLogger.error("Failed to migrate settings to new location", error)
+            self.observeChangesToUserDefaults()
+          }
+        }
         return settings
       } catch {
         defaultLogger.error(error)
       }
     }
-    return Self.defaultSettings
+    return nil
   }
 
-  /// This can be mobed back to init once https://github.com/swiftlang/swift/issues/80050 is fixed.
+  @MainActor
+  private func persist(settings: Settings) throws {
+    // Persist settings, but move keys to the keychain.
+    var publicSettings = settings
+
+    var privateKeys = [String: String?]()
+
+    let keychainKeyPrefix = "cmd-keychain-key-"
+    for provider in LLMProvider.allCases {
+      let keychainKey = keychainKeyPrefix + provider.keychainKey
+      if let settings = settings.llmProviderSettings[provider] {
+        privateKeys[keychainKey] = settings.apiKey
+        publicSettings.llmProviderSettings[provider]?.apiKey = keychainKey
+      } else {
+        privateKeys[keychainKey] = nil
+      }
+    }
+
+    // keys are written to the keychain.
+    for (key, value) in privateKeys {
+      if let value {
+        sharedUserDefaults.securelySave(value, forKey: key)
+      } else {
+        sharedUserDefaults.removeSecuredValue(forKey: key)
+      }
+    }
+
+    // Internal settings are written to user defaults.
+    let internalSettings = try JSONEncoder.sortingKeys.encode(publicSettings.internalSettings)
+    sharedUserDefaults.set(internalSettings, forKey: Keys.internalSettings)
+
+    // External settings are written to json files at known locations, that can easily be edited by users.
+    try publicSettings.externalSettings.writeNonDefaultValues(to: globalSettingsLocation, fileManager: fileManager)
+
+    // Store this value separately in user defaults, as it can also be accessed by the release version.
+    sharedUserDefaults.set(
+      settings.pointReleaseXcodeExtensionToDebugApp,
+      forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+    #if DEBUG
+    /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
+
+    let releaseUserDefaults = releaseSharedUserDefaults
+    releaseUserDefaults?.set(
+      settings.pointReleaseXcodeExtensionToDebugApp,
+      forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+    #endif
+  }
+
+  /// This can be moved back to init once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func observeChangesToUserDefaults() {
     notificationObserver = sharedUserDefaults.onChange { [weak self] in
       guard let self else { return }
 
-      let newSettings = Self.loadSettings(from: sharedUserDefaults)
+      let newSettings = loadSettings()
       settings.send(newSettings)
-    }
-  }
-
-  private func persist(settings: Settings) {
-    Task { @MainActor in
-      do {
-        // Persist settings to user defaults, but move keys to the keychain.
-        var publicSettings = settings
-
-        var privateKeys = [String: String?]()
-
-        for provider in LLMProvider.allCases {
-          if let settings = settings.llmProviderSettings[provider] {
-            privateKeys[provider.keychainKey] = settings.apiKey
-            publicSettings.llmProviderSettings[provider]?.apiKey = provider.keychainKey
-          } else {
-            privateKeys[provider.keychainKey] = nil
-          }
-        }
-        let value = try JSONEncoder.sortingKeys.encode(publicSettings)
-        sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
-
-        for (key, value) in privateKeys {
-          if let value {
-            sharedUserDefaults.securelySave(value, forKey: key)
-          } else {
-            sharedUserDefaults.removeSecuredValue(forKey: key)
-          }
-        }
-
-        // Store this value separately in the keychain, as it can also be accessed by the release version.
-        sharedUserDefaults.set(
-          settings.pointReleaseXcodeExtensionToDebugApp,
-          forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
-      } catch {
-        defaultLogger.error(error)
-      }
-      #if DEBUG
-      /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
-
-      let releaseUserDefaults = releaseSharedUserDefaults
-      releaseUserDefaults?.set(
-        settings.pointReleaseXcodeExtensionToDebugApp,
-        forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
-      #endif
     }
   }
 
@@ -183,7 +251,7 @@ final class DefaultSettingsService: SettingsService {
 
 // MARK: - Dependency Registration
 
-extension BaseProviding where Self: UserDefaultsProviding {
+extension BaseProviding where Self: UserDefaultsProviding, Self: FileManagerProviding {
   public var settingsService: SettingsService {
     shared {
       let releaseSharedUserDefaults: UserDefaultsI? = {
@@ -199,7 +267,10 @@ extension BaseProviding where Self: UserDefaultsProviding {
         #endif
       }()
 
-      return DefaultSettingsService(sharedUserDefaults: sharedUserDefaults, releaseSharedUserDefaults: releaseSharedUserDefaults)
+      return DefaultSettingsService(
+        fileManager: fileManager,
+        sharedUserDefaults: sharedUserDefaults,
+        releaseSharedUserDefaults: releaseSharedUserDefaults)
     }
   }
 }

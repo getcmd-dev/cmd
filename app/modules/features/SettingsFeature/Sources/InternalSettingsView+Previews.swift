@@ -12,7 +12,8 @@ import SwiftUI
     pointReleaseXcodeExtensionToDebugApp: .constant(false),
     showInternalSettingsInRelease: .constant(false),
     defaultChatPositionIsInverted: .constant(false),
-    enableAnalyticsAndCrashReporting: .constant(false))
+    enableAnalyticsAndCrashReporting: .constant(false),
+    enableNetworkProxy: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -24,7 +25,8 @@ import SwiftUI
     pointReleaseXcodeExtensionToDebugApp: .constant(true),
     showInternalSettingsInRelease: .constant(true),
     defaultChatPositionIsInverted: .constant(true),
-    enableAnalyticsAndCrashReporting: .constant(false))
+    enableAnalyticsAndCrashReporting: .constant(false),
+    enableNetworkProxy: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }

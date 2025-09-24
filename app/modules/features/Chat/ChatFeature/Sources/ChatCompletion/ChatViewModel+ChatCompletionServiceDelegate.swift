@@ -43,7 +43,10 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
         }
       }
 
-      continuation.onTermination = { _ in
+      continuation.onTermination = { @Sendable _ in
+        Task { @MainActor in
+          thread.cancelCurrentMessage()
+        }
         cancellable.cancel()
       }
     }
@@ -81,6 +84,8 @@ extension [ChatEvent] {
   }
 }
 
+// MARK: - ChatMessageContent + StreamRepresentable
+
 extension ChatMessageContent: StreamRepresentable {
   @MainActor
   var streamRepresentation: String? {
@@ -96,18 +101,27 @@ extension ChatMessageContent: StreamRepresentable {
 
     case .reasoning(let reasoning):
       if reasoning.isStreaming { return nil }
-      return reasoning.text
+      return reasoning.text.withTrailingNewline
 
     case .text(let text):
       if text.isStreaming { return nil }
-      return text.text
+      return text.text.withTrailingNewline
 
     case .toolUse(let toolUse):
       if let streamableToolUse = toolUse.toolUse as? (any StreamRepresentable) {
-        return streamableToolUse.streamRepresentation
+        return streamableToolUse.streamRepresentation?.withTrailingNewline
       } else {
         return nil
       }
     }
+  }
+}
+
+extension String {
+  var withTrailingNewline: String {
+    if last == "\n" {
+      return self
+    }
+    return self + "\n"
   }
 }

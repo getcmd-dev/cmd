@@ -11,7 +11,8 @@ import XcodeControllerServiceInterface
 // MARK: - BuildTool.Use + DisplayableToolUse
 
 extension BuildTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       buildType: input.for,
       status: status))

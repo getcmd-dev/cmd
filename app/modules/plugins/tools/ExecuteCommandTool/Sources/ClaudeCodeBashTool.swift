@@ -16,7 +16,7 @@ public final class ClaudeCodeBashTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeBashTool,
       toolUseId: String,
@@ -44,6 +44,8 @@ public final class ClaudeCodeBashTool: ExternalTool {
     }
 
     public typealias Output = ExecuteCommandTool.Use.Output
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = false
 
@@ -137,7 +139,8 @@ public final class ClaudeCodeBashTool: ExternalTool {
 // MARK: - ClaudeCodeBashTool.Use + DisplayableToolUse
 
 extension ClaudeCodeBashTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)
     Task {
       let output = await self.status.lastValue

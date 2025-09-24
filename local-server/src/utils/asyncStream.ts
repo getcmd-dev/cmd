@@ -91,6 +91,26 @@ export class AsyncStream<T> implements AsyncIterator<T> {
 	}
 
 	/**
+	 * Consumes an async iterable and yields its values to this stream.
+	 * This method runs in the background and does not block.
+	 * It also handles errors and completion of the source iterable.
+	 * @param iterable The async iterable to consume.
+	 */
+	pipeFrom(iterable: AsyncIterable<T>): void {
+		void (async () => {
+			try {
+				for await (const value of iterable) {
+					this.yield(value)
+				}
+			} catch (e) {
+				this.error(e as Error)
+			} finally {
+				this.done()
+			}
+		})()
+	}
+
+	/**
 	 * Marks the stream as finished.
 	 * All pending resolvers will receive a done result, and future calls to next()
 	 * will immediately return done results.

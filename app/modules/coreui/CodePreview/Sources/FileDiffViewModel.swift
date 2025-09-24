@@ -116,12 +116,12 @@ public final class FileDiffViewModel: Sendable {
     self.xcodeObserver = xcodeObserver
     self.xcodeController = xcodeController
 
-    cancellable = diffingTasks.sink { @Sendable newValue in
-      Task { @MainActor [weak self] in
+    cancellable = diffingTasks.sink { @Sendable [weak self] newValue in
+      Task { @MainActor in
         guard let self, let newValue else { return }
         self.canBeApplied = newValue.canBeApplied
         self.formattedDiff = newValue.formattedDiff
-        _targetContent = newValue.targetContent
+        self._targetContent = newValue.targetContent
       }
     }
   }

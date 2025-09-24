@@ -261,4 +261,83 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
         "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
       ])
   }
+
+  func testThreadSafeMacro_handleComplexArraySyntax() {
+    // Test that the Sendable macro adds the correct attributes and members
+    assertMacroExpansion(
+      """
+      @ThreadSafe
+      final class Example {
+          private var eventHandlers = [@Sendable (_ appEvent: AppEvent) async -> Bool]()
+      }
+      """,
+      expandedSource: """
+        final class Example {
+            private var eventHandlers {
+                get {
+                    _internalState.value.eventHandlers
+                }
+                set {
+                    _ = _internalState.set(\\.eventHandlers, to: newValue)
+                }
+            }
+
+            private let _internalState: Atomic<_InternalState>
+
+            private struct _InternalState: Sendable {
+              var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool]
+            }
+
+            @discardableResult
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+                _internalState.mutate(mutation)
+              }
+        }
+        """,
+      macros: [
+        "ThreadSafe": ThreadSafeMacro.self,
+        "ThreadSafeProperty": ThreadSafePropertyMacro.self,
+        "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
+      ])
+  }
+
+  func testThreadSafeMacro_noMutableProperties() {
+    // Test that the Sendable macro adds the correct attributes and members
+    assertMacroExpansion(
+      """
+      @ThreadSafe
+      final class Example {
+          init(value: Int) {
+            self.value = value
+          }
+
+          let value: Int
+      }
+      """,
+      expandedSource: """
+        final class Example {
+            init(value: Int) {
+                self._internalState = Atomic<_InternalState>(_InternalState())
+                self.value = value
+            }
+
+            let value: Int
+
+            private let _internalState: Atomic<_InternalState>
+
+            private struct _InternalState: Sendable {
+            }
+
+            @discardableResult
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+                _internalState.mutate(mutation)
+              }
+        }
+        """,
+      macros: [
+        "ThreadSafe": ThreadSafeMacro.self,
+        "ThreadSafeProperty": ThreadSafePropertyMacro.self,
+        "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
+      ])
+  }
 }

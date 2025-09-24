@@ -18,7 +18,9 @@ public final class LSTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+    @unchecked Sendable
+  {
     public init(
       callingTool: LSTool,
       toolUseId: String,
@@ -60,6 +62,8 @@ public final class LSTool: NonStreamableTool {
         public let size: String?
       }
     }
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
 
@@ -161,7 +165,8 @@ extension Schema.ListFilesToolOutput {
 // MARK: - LSTool.Use + DisplayableToolUse
 
 extension LSTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       directoryPath: directoryPath,

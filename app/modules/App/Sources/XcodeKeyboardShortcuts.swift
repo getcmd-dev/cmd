@@ -27,7 +27,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     observeSettings()
   }
 
-  private var cancellables: Set<AnyCancellable> = []
+  private var cancellables = Set<AnyCancellable>()
 
   private var enabledShortcutNames = Set<String>()
 
@@ -74,8 +74,6 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   private func registerActions() {
     on(.addContext, trigger: AddCodeToChatEvent(newThread: false, chatMode: nil))
     on(.addContextToNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: nil))
-    on(.edit, trigger: EditEvent())
-    on(.generate, trigger: GenerateEvent())
     on(.hideChat, trigger: HideChatEvent())
     on(.new, trigger: NewChatEvent())
   }
@@ -104,11 +102,11 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   }
 
   private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
-    KeyboardShortcuts.onKeyUp(for: keyEvent) {
-      Task { [weak self] in
+    KeyboardShortcuts.onKeyUp(for: keyEvent) { @Sendable [weak self] in
+      Task {
         guard let self else { return }
-        if enabledShortcutNames.contains(keyEvent.rawValue) {
-          _ = await appEventHandlerRegistry.handle(event: event)
+        if self.enabledShortcutNames.contains(keyEvent.rawValue) {
+          _ = await self.appEventHandlerRegistry.handle(event: event)
         }
       }
     }
@@ -120,20 +118,18 @@ extension KeyboardShortcuts.Name {
   // Xcode shortcuts
   static let addContext = Self("addContext", default: .init(.i, modifiers: [.command]))
   static let addContextToNewThread = Self("addContextToNewThread", default: .init(.i, modifiers: [.command, .shift]))
-  static let edit = Self("edit", default: .init(.k, modifiers: [.command, .shift]))
-  static let generate = Self("generate", default: .init(.k, modifiers: [.command]))
 
   static let xcodeShortcuts = [
     Self.addContext,
     Self.addContextToNewThread,
-    Self.edit,
-    Self.generate,
   ]
   /// Host app shortcuts
   static let new = Self("new", default: .init(.n, modifiers: [.command]))
 
   static let hostAppShortcuts = [
     Self.new,
+    Self.addContext,
+    Self.addContextToNewThread,
   ]
 }
 

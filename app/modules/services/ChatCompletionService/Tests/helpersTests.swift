@@ -160,7 +160,7 @@ enum DefaultChatCompletionServiceHelpersTests {
     @Test
     func test_returnsEmptyForEmptyArray() {
       // Given
-      let messages: [ChatQuery.ChatCompletionMessageParam] = []
+      let messages = [ChatQuery.ChatCompletionMessageParam]()
 
       // Test
       let newUserMessages = messages.newUserMessages

@@ -12,14 +12,18 @@ extension Observable where Self: Sendable {
     perform action: @Sendable @escaping (Value) -> Void)
     -> AnyCancellable
   {
-    let cancellable = AnyCancellable { }
+    let isCancelled = Atomic(false)
+    let cancellable = AnyCancellable {
+      isCancelled.set(to: true)
+    }
     withObservationTracking(
       {
         _ = self[keyPath: keyPath]
       },
-      token: { [weak cancellable] in
-        guard let cancellable else { return nil }
-        _ = cancellable
+      token: {
+        guard !isCancelled.value else {
+          return nil
+        }
         return ""
       },
       willChange: nil,
@@ -57,7 +61,10 @@ extension Observable where Self: Sendable {
   {
     let isFirstObservation = Atomic<Bool>(true)
 
-    let cancellable = AnyCancellable { }
+    let isCancelled = Atomic(false)
+    let cancellable = AnyCancellable {
+      isCancelled.set(to: true)
+    }
 
     withObservationTracking(
       {
@@ -67,9 +74,10 @@ extension Observable where Self: Sendable {
           action(value)
         }
       },
-      token: { [weak cancellable] in
-        guard let cancellable else { return nil }
-        _ = cancellable
+      token: {
+        guard !isCancelled.value else {
+          return nil
+        }
         return ""
       },
       willChange: nil,
@@ -101,6 +109,8 @@ func withObservationTracking(
     }
   }
 }
+
+// MARK: - ObservablePublisher
 
 public final class ObservablePublisher<Object: Observable, Output>: Publisher, Sendable {
   init(observable: Object, computedValue: @Sendable @escaping (Object) -> Output) {

@@ -53,12 +53,36 @@ enum ObservableHelpersTests {
       #expect(receivedValues.value == [])
     }
 
-    @MainActor @Test("Is called each time the value changes")
-    func test_didSet_isEachTimeTheValueChanges() async throws {
+    @MainActor @Test("didSet is called once")
+    func test_didSet_isCalledOnlyOnce() async throws {
       // given
       let receivedValues = Atomic<[Int]>([])
       let sut = ObservableValue(int: 1)
       let cancellable: Cancellable? = sut.didSet(\.int, perform: { newValue in
+        receivedValues.mutate { $0.append(newValue) }
+      })
+
+      // when
+      sut.int = 2
+      await nextTick()
+      sut.int = 3
+      await nextTick()
+      sut.int = 4
+      await nextTick()
+
+      // then
+      #expect(receivedValues.value == [2])
+
+      // clean up
+      _ = cancellable
+    }
+
+    @MainActor @Test("observeChanges is called each time the value changes")
+    func test_observeChanges_isCalledEachTimeTheValueChanges() async throws {
+      // given
+      let receivedValues = Atomic<[Int]>([])
+      let sut = ObservableValue(int: 1)
+      let cancellable: Cancellable? = sut.observeChanges(to: \.int, perform: { newValue in
         receivedValues.mutate { $0.append(newValue) }
       })
 
@@ -122,7 +146,7 @@ enum ObservableHelpersTests {
     }
 
     @MainActor @Test("observeChanges is called once when the nested read attributes change")
-    func test_observeChanges_isCalledOnceWhenTheReadAttributesChange2() async throws {
+    func test_observeChanges_isCalledOnceWhenTheNestedReadAttributesChange() async throws {
       // given
       let sut = ObservableValue(int: 1)
       let receivedValues = Atomic<[Int]>([])

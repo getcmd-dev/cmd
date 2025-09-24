@@ -10,6 +10,7 @@ import Foundation
 import FoundationInterfaces
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import SettingsServiceInterface
 
 // MARK: - DefaultLocalServer
 
@@ -32,7 +33,7 @@ final class DefaultLocalServer: LocalServer {
     self.fileManager = fileManager
     hasCopiedFiles = false
     applicationSupportPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent("command").path
+      .appendingPathComponent(Bundle.main.hostAppBundleId).path
 
     let delegate = LocalServerDelegate()
     let configuration = URLSessionConfiguration.default
@@ -54,7 +55,12 @@ final class DefaultLocalServer: LocalServer {
 
   var serverConnection: URLSessionWebSocketTask?
 
-  func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> Data {
+  func getRequest(
+    path: String,
+    configure: (inout URLRequest) -> Void,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> Data
+  {
     let port = try await connectionStatus.port
     guard let url = URL(string: "http://localhost:\(port)/\(path)") else {
       throw APIError("Invalid URL: http://localhost:\(port)/\(path)")
@@ -62,6 +68,7 @@ final class DefaultLocalServer: LocalServer {
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
     request.timeoutInterval = 60
+    configure(&request)
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
     try assertIsSuccess(response: response, data: data)
@@ -71,6 +78,7 @@ final class DefaultLocalServer: LocalServer {
   func postRequest(
     path: String,
     data: Data,
+    configure: (inout URLRequest) -> Void,
     onReceiveJSONData: (@Sendable (Data) -> Void)?)
     async throws -> Data
   {
@@ -85,6 +93,7 @@ final class DefaultLocalServer: LocalServer {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
     request.httpBody = data
+    configure(&request)
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
     try assertIsSuccess(response: response, data: data)
@@ -170,7 +179,7 @@ final class DefaultLocalServer: LocalServer {
   private let sharedUserDefaults: UserDefaultsI
   private var hasCopiedFiles: Bool
 
-  private var inflightTasks: [URLSessionTask: TaskHandler] = [:]
+  private var inflightTasks = [URLSessionTask: TaskHandler]()
 
   private let delegate: LocalServerDelegate
 
@@ -195,14 +204,20 @@ final class DefaultLocalServer: LocalServer {
       // In debug, load the interactive shell to allow for local env parameters to be passed in.
       process.arguments = ["-ilc"] + ["'\(mainPath)' --attachTo \(getpid())"]
       #else
-      process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      let enableNetworkProxy = sharedUserDefaults.bool(forKey: .enableNetworkProxy)
+      if enableNetworkProxy {
+        // In release with network proxy enabled, load the interactive shell to allow for local env parameters to be passed in.
+        process.arguments = ["-ilc"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      } else {
+        process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      }
       #endif
 
       let stdout = Pipe()
       process.standardOutput = stdout
       let connectionResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
         ConnectionResponse,
-        Error
+        Error,
       >) in
         let hasResponded = Atomic(false)
 
@@ -369,7 +384,5 @@ extension BaseProviding where
     }
   }
 }
-
-extension URLResponse: @unchecked @retroactive Sendable { }
 
 private let resourceBundle = Bundle.module

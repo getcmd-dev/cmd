@@ -17,7 +17,7 @@ public final class ClaudeCodeLSTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeLSTool,
       toolUseId: String,
@@ -45,6 +45,8 @@ public final class ClaudeCodeLSTool: ExternalTool {
     }
 
     public typealias Output = LSTool.Use.Output
+
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
 
@@ -165,7 +167,8 @@ public final class ClaudeCodeLSTool: ExternalTool {
 // MARK: - ClaudeCodeLSTool.Use + DisplayableToolUse
 
 extension ClaudeCodeLSTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
       directoryPath: directoryPath,

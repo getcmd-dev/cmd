@@ -9,10 +9,23 @@ reset() {
 trap reset EXIT
 
 lint_swift_command() {
+	# files: if an arg is provided use it, otherwise .
+	# convert arg to a relative path from app/
+	echo $1 >~/Downloads/tmp.log
+	if [ -z "$1" ]; then
+		files="."
+	else
+		# make path absolute
+		if [[ "$1" != /* ]]; then
+			files="$(current_dir)/$1"
+		else
+			files="$1"
+		fi
+	fi
 	cd "$(git rev-parse --show-toplevel)/app" &&
 		mkdir -p .build/caches/swiftformat &&
-		swiftformat --config rules-header.swiftformat . &&
-		swiftformat --config rules.swiftformat . --cache .build/caches/swiftformat
+		swiftformat --config rules-header.swiftformat "$files" &&
+		swiftformat --config rules.swiftformat "$files" --cache .build/caches/swiftformat
 }
 
 lint_ts_command() {
@@ -23,6 +36,11 @@ lint_shell_command() {
 	cd "$(git rev-parse --show-toplevel)" &&
 		git ls-files '*.sh' |
 		while read file; do shfmt -w "$file"; done
+}
+
+lint_ruby_command() {
+	cd "$(git rev-parse --show-toplevel)" &&
+		git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
 }
 
 sync_dependencies_command() {
@@ -102,10 +120,14 @@ lint:ts)
 lint:shell)
 	lint_shell_command "$@"
 	;;
+lint:rb)
+	lint_ruby_command "$@"
+	;;
 lint)
 	lint_swift_command &&
 		lint_ts_command &&
-		lint_shell_command
+		lint_shell_command &&
+		lint_ruby_command
 	;;
 test:swift)
 	test_swift_command "$@"

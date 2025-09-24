@@ -30,13 +30,14 @@ extension ThreadSafeMacro: MemberMacro {
   public static func expansion(
     of _: AttributeSyntax,
     providingMembersOf declaration: some DeclSyntaxProtocol,
+    conformingTo _: [TypeSyntax],
     in _: some MacroExpansionContext)
     throws -> [DeclSyntax]
   {
     guard let classDecl = declaration.as(ClassDeclSyntax.self) else { return [] }
     let storedVariables = classDecl.storedVariables
 
-    var members: [DeclSyntax] = []
+    var members = [DeclSyntax]()
 
     // Generate _internalState property
     let internalStateProperty = DeclSyntax("""
@@ -165,12 +166,12 @@ extension ThreadSafeInitializerMacro: BodyMacro {
 
     // Parse arguments
     guard
-      let dictExpr = argument.expression.as(DictionaryExprSyntax.self),
-      let elements = dictExpr.content.as(DictionaryElementListSyntax.self)
+      let dictExpr = argument.expression.as(DictionaryExprSyntax.self)
     else {
       // Not a dictionary => do nothing
       return decl.statements.compactMap { CodeBlockItemSyntax($0) }
     }
+    let elements = dictExpr.content.as(DictionaryElementListSyntax.self) ?? DictionaryElementListSyntax()
 
     let storedVariables: [(key: String, type: String, defaultValue: String?)] = elements.compactMap { element in
       // Parse the key
@@ -314,7 +315,7 @@ extension DiagnosticsError {
 extension ClassDeclSyntax {
   /// Returns the list of mutable stored properties in the class.
   var storedVariables: [(name: String, type: String, defaultValue: String?)] {
-    var storedVars: [(String, String, String?)] = []
+    var storedVars = [(String, String, String?)]()
 
     for member in memberBlock.members {
       guard
@@ -336,7 +337,7 @@ extension ClassDeclSyntax {
             storedVars.append((name, type, defaultValue))
           } else if let defaultValue {
             // Heuristically tries to infer the type from the default value
-            let value = defaultValue.replacing(/\(.*\)/, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let value = defaultValue.replacing(/\([^)]*\)$/, with: "").trimmingCharacters(in: .whitespacesAndNewlines)
 
             let type: String =
               if value == "true" || value == "false" {
