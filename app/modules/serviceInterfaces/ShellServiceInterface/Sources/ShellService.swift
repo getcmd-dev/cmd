@@ -35,20 +35,19 @@ public protocol StandardInputWriter: Sendable {
   /// - Parameter data: The data to write to stdin
   /// - Throws: I/O errors if writing fails
   func write(_ data: Data) async throws
-  
-  /// Writes a string to the standard input stream.
-  /// - Parameter string: The string to write to stdin (will be encoded as UTF-8)
-  /// - Throws: I/O errors if writing fails
-  func write(string: String) async throws
-  
+
   /// Closes the standard input stream, signaling end-of-input to the process.
   /// - Throws: I/O errors if closing the stream fails
   func finish() async throws
 }
 
 extension StandardInputWriter {
+
+  /// Writes a string to the standard input stream.
+  /// - Parameter string: The string to write to stdin (will be encoded as UTF-8)
+  /// - Throws: I/O errors if writing fails
   public func write(_ string: String) async throws {
-    try await write(string: string)
+    try await write(Data(string.utf8))
   }
 }
 

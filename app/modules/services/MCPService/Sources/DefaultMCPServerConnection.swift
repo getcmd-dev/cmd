@@ -17,7 +17,6 @@ final class DefaultMCPServerConnection: MCPServerConnection {
     let initializationResults = try await client.connect(transport: transport)
     serverInfo = .init(name: initializationResults.serverInfo.name, version: initializationResults.serverInfo.version)
     mcpTools = try await client.listAllTools().map { MCPTool(tool: $0, client: client) }
-    print("\(client.name):\(serverInfo.name) connected")
   }
 
   let mcpTools: [MCPTool]

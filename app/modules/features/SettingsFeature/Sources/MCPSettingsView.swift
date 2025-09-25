@@ -22,8 +22,9 @@ struct MCPSettingsView: View {
           cancel: {
             isCreatingNewServer = false
           },
-          add: { server in
-            print("adding \(server)")
+          add: { serverConfiguration in
+            mcpServers[serverConfiguration.name] = serverConfiguration
+            isCreatingNewServer = false
           })
       } else {
         HoveredButton(
@@ -41,7 +42,7 @@ struct MCPSettingsView: View {
 
         ScrollView {
           LazyVStack(spacing: 16) {
-            ForEach(sampleMCPServers, id: \.name) { server in
+            ForEach(Array(mcpServers.values), id: \.name) { server in
               MCPServerCard(
                 server: server,
                 onToggle: { isEnabled in
@@ -63,19 +64,6 @@ struct MCPSettingsView: View {
 
 }
 
-// MARK: - Sample Data
-
-private let sampleMCPServers: [MCPServerConfiguration] = [
-  MCPServerConfiguration.http(.init(
-    name: "Github",
-    url: "https://github.com")),
-  MCPServerConfiguration.stdio(.init(
-    name: "sqlite",
-    command: "sqlite",
-    args: ["--init", "./sqlite/init.sql"],
-    env: ["API_KEY": "foo"])),
-]
-
 // MARK: - NewMCPServerCard
 
 private struct NewMCPServerCard: View {
@@ -87,17 +75,9 @@ private struct NewMCPServerCard: View {
       "args": ["-y", "mcp-ripgrep@latest"]
     }
     """
-  @State private var serverName = "foo"
 
   var body: some View {
     VStack(alignment: .leading) {
-      Text("Server name")
-      TextField("", text: $serverName)
-      if hasMissingNameError {
-        Text("Server name is missing")
-          .foregroundColor(colorScheme.redError)
-      }
-
       HStack {
         Text("Server config")
 
@@ -173,90 +153,143 @@ private struct NewMCPServerCard: View {
             backgroundColor: colorScheme.tertiarySystemBackground,
             borderColor: Color.gray.opacity(0.2),
             borderWidth: 1)
+          Text("Note: you can refer to env variables available in the interactive shell when specifying the headers or args.")
+            .font(.callout)
+            .foregroundColor(.secondary)
         }
         .padding(.vertical, 8)
       }
 
-      HStack {
-        HoveredButton(
-          action: {
-            Task {
-              _ = await testServer()
+      if isConnecting {
+        ThreeDotsLoadingAnimation(baseText: "Connecting")
+      } else if isValidating {
+        ThreeDotsLoadingAnimation(baseText: "Validating")
+      } else {
+        HStack {
+          HoveredButton(
+            action: {
+              Task {
+                do {
+                  errorMessage = nil
+                  isConnecting = true
+                  mcpServerConnection = nil
+                  mcpServerConnection = try await connectToServer()
+                  isConnecting = false
+                } catch {
+                  isConnecting = false
+                  errorMessage = error.localizedDescription
+                }
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 5,
+            cornerRadius: 6)
+          {
+            Text("Test")
+          }
+          HoveredButton(
+            action: {
+              Task {
+                do {
+                  isValidating = true
+                  _ = try await addServer()
+                  isValidating = false
+                } catch {
+                  isValidating = false
+                }
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 5,
+            cornerRadius: 6)
+          {
+            Text("Add")
+          }
+          HoveredButton(
+            action: {
+              cancel()
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 5,
+            cornerRadius: 6)
+          {
+            Text("Cancel")
+          }
+        }
+      }
+      if let connection = mcpServerConnection {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Connection successful!")
+            .foregroundColor(colorScheme.greenSuccess)
+          Text("\(connection.serverInfo.name) (\(connection.serverInfo.version))")
+            .textSelection(.enabled)
+          if connection.tools.isEmpty {
+            Text("No tool found")
+              .foregroundColor(colorScheme.redError)
+          } else {
+            Text("Tools:")
+              .font(.headline)
+            ScrollView {
+              LazyVStack(alignment: .leading) {
+                ForEach(connection.tools, id: \.name) { tool in
+                  VStack(alignment: .leading) {
+                    Text(tool.name)
+                      .textSelection(.enabled)
+                      .font(.headline)
+                    Text(tool.description)
+                      .textSelection(.enabled)
+                      .foregroundColor(.secondary)
+                  }
+                  .padding(.bottom, 4)
+                }
+              }
             }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 5,
-          cornerRadius: 6)
-        {
-          Text("Test")
+          }
         }
-        HoveredButton(
-          action: {
-            Task {
-              _ = await addServer()
-            }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 5,
-          cornerRadius: 6)
-        {
-          Text("Add")
-        }
-        HoveredButton(
-          action: {
-            cancel()
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 5,
-          cornerRadius: 6)
-        {
-          Text("Cancel")
-        }
+        .padding(.top, 16)
       }
       Spacer()
     }
   }
 
-  private func addServer() async {
-    guard let mcpServer = await testServer() else { return }
-    add(mcpServer)
+  private func addServer() async throws {
+    let mcpServerConnection = try await connectToServer()
+    // Read the server name from the connection info
+    let serverName = mcpServerConnection.serverInfo.name
+    guard
+      let data = "{ \"\(serverName)\": \(raw) }".data(using: .utf8),
+      let mcpServerConfig = try JSONDecoder().decode(MCPServerConfigurations.self, from: data).configurations[serverName]
+    else {
+      throw AppError("Could not parse content")
+    }
+    add(mcpServerConfig)
   }
 
-  private func testServer() async -> MCPServerConfiguration? {
-    errorMessage = nil
-    hasMissingNameError = false
-
-    let name = serverName
-    if name.isEmpty {
-      hasMissingNameError = true
-      return nil
+  private func connectToServer() async throws -> MCPServerConnection {
+    let tmpConfigurationName = "tmp-mcp-server"
+    guard
+      let data = "{ \"\(tmpConfigurationName)\": \(raw) }".data(using: .utf8),
+      let mcpServerConfig = try JSONDecoder().decode(MCPServerConfigurations.self, from: data)
+        .configurations[tmpConfigurationName]
+    else {
+      throw AppError("Could not parse content")
     }
-    do {
-      guard
-        let data = "{ \"\(name)\": \(raw) }".data(using: .utf8),
-        let mcpServer = try JSONDecoder().decode(MCPServerConfigurations.self, from: data).configurations[name]
-      else {
-        throw AppError("Could not parse content")
-      }
 
-      _ = try await mcpService.connect(to: mcpServer)
-      return mcpServer
-    } catch {
-      errorMessage = error.debugDescription
-      return nil
-    }
+    return try await mcpService.connect(to: mcpServerConfig)
   }
 
   @Dependency(\.mcpService) private var mcpService
+  @State private var serverName: String? = nil
 
+  @State private var isConnecting = false
+  @State private var isValidating = false
+  @State private var mcpServerConnection: MCPServerConnection? = nil
   @State private var errorMessage: String?
-  @State private var hasMissingNameError = false
   @State private var isShowingExamples = false
   @Environment(\.colorScheme) private var colorScheme
-  @State private var name = ""
   @State private var url = ""
   @State private var command = ""
 
@@ -293,9 +326,7 @@ private struct MCPServerCard: View {
         // Toggle switch
         if isHovered {
           HoveredButton(
-            action: {
-//                      editingShortcut = shortcut
-            },
+            action: { },
             onHoverColor: colorScheme.secondarySystemBackground,
             padding: 6,
             cornerRadius: 6)
@@ -353,24 +384,6 @@ private struct MCPServerCard: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @State private var isHovered = false
-}
-
-extension MCPServerConfiguration {
-  var transportDescription: String {
-    switch self {
-    case .http:
-      "HTTP"
-    case .stdio:
-      "STDIO"
-    }
-  }
-}
-
-// MARK: - MCPTransport
-
-private enum MCPTransport {
-  case stdio
-  case http
 }
 
 // MARK: - EnvVariable

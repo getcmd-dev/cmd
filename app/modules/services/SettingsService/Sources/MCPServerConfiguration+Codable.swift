@@ -134,6 +134,10 @@ public struct MCPServerConfigurations: Codable {
     configurations = result
   }
 
+  public init(configurations: [String: MCPServerConfiguration]) {
+    self.configurations = configurations
+  }
+
   public var configurations: [String: MCPServerConfiguration]
 
   public func encode(to encoder: Encoder) throws {
@@ -143,4 +147,5 @@ public struct MCPServerConfigurations: Codable {
       try value.encode(to: nestedContainer.superEncoder())
     }
   }
+
 }

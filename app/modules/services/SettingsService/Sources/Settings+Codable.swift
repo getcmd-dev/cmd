@@ -75,6 +75,7 @@ extension Settings: Codable {
     try container.encode(toolPreferences, forKey: "toolPreferences")
     try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
     try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
+    try container.encode(MCPServerConfigurations(configurations: mcpServers), forKey: "mcpServers")
   }
 }
 
