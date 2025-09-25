@@ -126,7 +126,7 @@ extension MCPServerConfiguration.MCPServerHttpConfiguration {
 
 // MARK: - MCPServerConfigurations
 
-public struct MCPServerConfigurations: Codable {
+public struct MCPServerConfigurations: Codable, Sendable, Equatable {
   public init(from decoder: Decoder) throws {
     var result = [String: MCPServerConfiguration]()
 
@@ -139,13 +139,16 @@ public struct MCPServerConfigurations: Codable {
     configurations = result
   }
 
+  public init(configurations: [String: MCPServerConfiguration]) {
+    self.configurations = configurations
+  }
+
   public var configurations: [String: MCPServerConfiguration]
 
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
     for (key, value) in configurations {
-      var nestedContainer = container.nestedContainer(keyedBy: String.self, forKey: key)
-      try value.encode(to: nestedContainer.superEncoder())
+      try value.encode(to: container.superEncoder(forKey: key))
     }
   }
 }

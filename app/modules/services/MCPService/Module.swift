@@ -14,8 +14,4 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
-    "MCPServiceInterface",
-    "SettingsServiceInterface",
-    "SwiftTesting",
-  ])
+  testDependencies: [])

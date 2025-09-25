@@ -1076,11 +1076,7 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
-    "MCPServiceInterface",
-    "SettingsServiceInterface",
-    "SwiftTesting",
-  ],
+  testDependencies: [],
   path: "./services/MCPService"))
 
 targets.append(contentsOf: Target.module(
