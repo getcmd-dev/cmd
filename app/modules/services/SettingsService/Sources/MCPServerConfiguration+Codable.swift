@@ -119,11 +119,11 @@ extension MCPServerConfiguration.MCPServerHttpConfiguration {
   }
 }
 
-// MARK: - Dictionary Decoding Support
+// MARK: - MCPServerConfigurations
 
 public struct MCPServerConfigurations: Codable {
   public init(from decoder: Decoder) throws {
-    var result: [String: MCPServerConfiguration] = [:]
+    var result = [String: MCPServerConfiguration]()
 
     let container = try decoder.container(keyedBy: String.self)
     let serverNames = container.allKeys

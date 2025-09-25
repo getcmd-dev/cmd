@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+@preconcurrency import Combine
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -10,6 +11,8 @@ import LoggingServiceInterface
 import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
+import ToolFoundation
 
 // MARK: - DefaultMCPService
 
@@ -19,15 +22,39 @@ final class DefaultMCPService: MCPService {
 
   init(
     settingsService: SettingsService,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    shellService: ShellService)
   {
     self.settingsService = settingsService
     self.fileManager = fileManager
+    self.shellService = shellService
   }
 
-  func connect(to _: MCPServerConfiguration) async throws {
-    // TODO.
+  func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {
+    let transport: Transport = try {
+      switch server {
+      case .stdio(let config):
+        return shellService.transport(command: config.command + (config.args?.map { " " + $0 }.joined() ?? ""))
+      case .http(let config):
+        guard let endpoint = URL(string: config.url) else {
+          throw AppError("Invalid URL: \(config.url)")
+        }
+        return HTTPClientTransport(
+          endpoint: endpoint,
+          requestModifier: { request in
+            var modifiedRequest = request
+            config.headers?.forEach({ key, value in
+              modifiedRequest.addValue(value, forHTTPHeaderField: key)
+            })
+            return modifiedRequest
+          })
+      }
+    }()
+
+    return try await DefaultMCPServerConnection(transport: transport, configuration: server)
   }
+
+  private let shellService: ShellService
 
   // MARK: - MCPService
 
@@ -67,13 +94,21 @@ final class DefaultMCPService: MCPService {
 
 extension BaseProviding where
   Self: SettingsServiceProviding,
-  Self: FileManagerProviding
+  Self: FileManagerProviding,
+  Self: ShellServiceProviding
 {
   public var mcpService: MCPService {
     shared {
       DefaultMCPService(
         settingsService: settingsService,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        shellService: shellService)
     }
+  }
+}
+
+extension ShellService {
+  func transport(command: String) -> Transport {
+    StdioTransport(command: command, shellService: self)
   }
 }

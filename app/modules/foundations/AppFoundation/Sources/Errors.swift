@@ -99,17 +99,13 @@ extension AppError: Codable {
   }
 }
 
-// MARK: detailedDescription
-
-// public protocol CustomErrorDescription {
-//     var detailedDescription: String { get }
-// }
-
 extension Error {
   public var debugDescription: String {
     (self as CustomDebugStringConvertible).debugDescription
   }
 }
+
+// MARK: - DecodingError + @retroactive CustomDebugStringConvertible
 
 extension DecodingError: @retroactive CustomDebugStringConvertible {
   /// A detailed description that describes clearly the decoding error.

@@ -3,6 +3,7 @@
 
 import Foundation
 import MCPServiceInterface
+import SettingsServiceInterface
 import SwiftTesting
 import Testing
 

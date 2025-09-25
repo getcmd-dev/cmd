@@ -1,0 +1,205 @@
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+import AppFoundation
+import ChatFoundation
+import Foundation
+import JSONFoundation
+import MCP
+import ThreadSafe
+import ToolFoundation
+
+// MARK: - MCPTool
+
+final class MCPTool: NonStreamableTool {
+  init(tool: MCP.Tool, client: MCP.Client) {
+    wrappedTool = tool
+    self.client = client
+  }
+
+  @ThreadSafe
+  final class Use: NonStreamableToolUse, UpdatableToolUse {
+
+    public init(
+      callingTool: MCPTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolFoundation.ToolExecutionContext,
+      internalState _: InternalState? = nil,
+      initialStatus: Status.Element? = nil)
+    {
+      self.callingTool = callingTool
+      self.toolUseId = toolUseId
+      self.input = input
+      self.context = context
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      if case .completed = stream.value { updateStatus.finish() }
+      status = stream
+      self.updateStatus = updateStatus
+    }
+
+    public typealias InternalState = EmptyObject
+
+    public typealias Input = [String: JSON.Value]
+
+    public typealias Output = JSON.Value
+
+    public let context: ToolFoundation.ToolExecutionContext
+
+    public let callingTool: MCPTool
+    public let toolUseId: String
+    public let input: Input
+
+    public let status: Status
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public var isReadonly: Bool {
+      callingTool.isReadonly
+    }
+
+    public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+
+      Task {
+        do {
+          let response = try await callingTool.client.callTool(name: callingTool.name, arguments: input.mapValues { $0.asValue })
+          if response.isError == true {
+            var errorDescription = "unknown error"
+            errorDescription = (try? JSONEncoder().encode(response.content))
+              .map { String(data: $0, encoding: .utf8) } ??? errorDescription
+            updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(errorDescription)")))
+          } else {
+            updateStatus.complete(with: .success(.array(response.content.map(\.jsonValue))))
+          }
+        } catch { }
+      }
+    }
+
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+    }
+
+  }
+
+  var name: String {
+    wrappedTool.name
+  }
+
+  var description: String {
+    wrappedTool.description ?? "MCP tool \(name) (no description)"
+  }
+
+  var inputSchema: JSON {
+    switch wrappedTool.inputSchema.jsonValue {
+    case .object(let value):
+      return .object(value)
+    case .array(let value):
+      return .array(value)
+    default:
+      break
+    }
+    return .object([:])
+  }
+
+  var isReadonly: Bool {
+    if wrappedTool.annotations.destructiveHint == true {
+      return false
+    }
+    if wrappedTool.annotations.readOnlyHint == true {
+      return true
+    }
+    // Not specified, err on on the side of caution.
+    return false
+  }
+
+  var displayName: String {
+    "\(wrappedTool.name) (MCP)"
+  }
+
+  var shortDescription: String {
+    description
+  }
+
+  func isAvailable(in mode: ChatMode) -> Bool {
+    isReadonly ? true : mode == .agent
+  }
+
+  private let client: MCP.Client
+  private let wrappedTool: MCP.Tool
+
+}
+
+extension MCP.Value {
+  var jsonValue: JSON.Value? {
+    switch self {
+    case .null:
+      return .null
+
+    case .bool(let value):
+      return .bool(value)
+
+    case .int(let value):
+      return .number(Double(value))
+
+    case .double(let value):
+      return .number(value)
+
+    case .string(let value):
+      return .string(value)
+
+    case .data:
+      assertionFailure("Data value cannot be represented in JSON")
+      return nil
+
+    case .array(let array):
+      return .array(array.compactMap(\.jsonValue))
+
+    case .object(let object):
+      return .object(object.compactMapValues { $0.jsonValue })
+    }
+  }
+}
+
+extension JSON.Value {
+  var asValue: MCP.Value {
+    switch self {
+    case .null:
+      .null
+    case .bool(let value):
+      .bool(value)
+    case .number(let value):
+      .double(value)
+    case .string(let value):
+      .string(value)
+    case .array(let array):
+      .array(array.map(\.asValue))
+    case .object(let object):
+      .object(object.mapValues { $0.asValue })
+    }
+  }
+}
+
+extension MCP.Tool.Content {
+  var jsonValue: JSON.Value {
+    switch self {
+    case .text(let text):
+      return .string(text)
+
+    case .audio:
+      assertionFailure("Audio content cannot be represented in JSON")
+      return .string("<audio content>")
+
+    case .image(data: let data, mimeType: let mimeType, metadata: let metadata):
+      assertionFailure("Image content cannot be represented in JSON")
+      return .string("<image content>")
+
+    case .resource(uri: let uri, mimeType: let mimeType, text: let text):
+      assertionFailure("Resource content cannot be represented in JSON")
+      return .string("<resource content>")
+    }
+  }
+}

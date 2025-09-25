@@ -3,6 +3,7 @@
 
 import DependencyFoundation
 import SettingsServiceInterface
+import ToolFoundation
 
 // MARK: - MCPService
 
@@ -18,7 +19,30 @@ public protocol MCPService: Sendable {
 //  /// Save MCP settings to persistent storage.
 //  func saveSettings(_ settings: MCPSettings) async throws
 
-  func connect(to server: MCPServerConfiguration) async throws
+  func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection
+}
+
+// MARK: - MCPServerConnection
+
+public protocol MCPServerConnection: Sendable {
+  var tools: [any Tool] { get }
+  var serverInfo: ServerInfo { get }
+  var configuration: MCPServerConfiguration { get }
+}
+
+// MARK: - ServerInfo
+
+/// Implementation information
+public struct ServerInfo: Hashable, Codable, Sendable {
+  /// The server name
+  public let name: String
+  /// The server version
+  public let version: String
+
+  public init(name: String, version: String) {
+    self.name = name
+    self.version = version
+  }
 }
 
 // MARK: - MCPServiceProviding

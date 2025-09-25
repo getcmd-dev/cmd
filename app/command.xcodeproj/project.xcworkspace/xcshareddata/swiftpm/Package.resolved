@@ -1,5 +1,5 @@
 {
-  "originHash" : "d2866eb097de980e52b53b6de0d48136d8d5cd0ef4e881ba3b6e3a40c873b1cb",
+  "originHash" : "c9917cb2f7ae9d825c2df41fbcd3be53101e27e20edd293f879b3c86fa49cb26",
   "pins" : [
     {
       "identity" : "aexml",
@@ -303,7 +303,7 @@
       "location" : "https://github.com/pointfreeco/swift-dependencies",
       "state" : {
         "revision" : "a10f9feeb214bc72b5337b6ef6d5a029360db4cc",
-        "version" : "1.9.5"
+        "version" : "1.10.0"
       }
     },
     {

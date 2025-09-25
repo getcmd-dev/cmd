@@ -4,4 +4,5 @@ Target.module(
     "DependencyFoundation",
     "SettingsServiceInterface",
     "ThreadSafe",
+    "ToolFoundation",
   ])

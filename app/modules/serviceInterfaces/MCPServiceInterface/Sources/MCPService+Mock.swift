@@ -3,6 +3,7 @@
 
 import SettingsServiceInterface
 import ThreadSafe
+import ToolFoundation
 
 #if DEBUG
 @ThreadSafe
@@ -16,7 +17,9 @@ public final class MockMCPService: MCPService {
 
   public var onSaveSettings: @Sendable (MCPSettings) async throws -> Void = { _ in }
 
-  public var onConnect: @Sendable (MCPServerConfiguration) async throws -> Void = { _ in }
+  public var onConnect: @Sendable (MCPServerConfiguration) async throws -> MCPServerConnection = { _ in
+    MockMCPServerConnection()
+  }
 
   public func loadSettings() async throws -> MCPSettings {
     try await onLoadSettings()
@@ -26,8 +29,16 @@ public final class MockMCPService: MCPService {
     try await onSaveSettings(settings)
   }
 
-  public func connect(to server: MCPServerConfiguration) async throws {
+  public func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {
     try await onConnect(server)
   }
+}
+
+public struct MockMCPServerConnection: MCPServerConnection {
+  public init() { }
+
+  public let tools = [any Tool]()
+  public let serverInfo = ServerInfo(name: "Mock Server", version: "1.0.0")
+  public let configuration = MCPServerConfiguration.stdio(.init(name: "Mock", command: "mock"))
 }
 #endif

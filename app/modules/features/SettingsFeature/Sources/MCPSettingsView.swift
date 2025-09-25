@@ -83,9 +83,11 @@ private struct NewMCPServerCard: View {
   let add: (MCPServerConfiguration) -> Void
   @State private var raw = """
     {
+      "command": "npx",
+      "args": ["-y", "mcp-ripgrep@latest"]
     }
     """
-  @State private var serverName = ""
+  @State private var serverName = "foo"
 
   var body: some View {
     VStack(alignment: .leading) {
@@ -364,10 +366,14 @@ extension MCPServerConfiguration {
   }
 }
 
+// MARK: - MCPTransport
+
 private enum MCPTransport {
   case stdio
   case http
 }
+
+// MARK: - EnvVariable
 
 struct EnvVariable: Equatable {
   let key: String

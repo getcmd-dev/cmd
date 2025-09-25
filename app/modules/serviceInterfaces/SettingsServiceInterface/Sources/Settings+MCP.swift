@@ -5,7 +5,13 @@ public enum MCPServerConfiguration: Sendable, Equatable {
   case stdio(_ configuration: MCPServerStdioConfiguration)
   case http(_ configuration: MCPServerHttpConfiguration)
 
+  public enum TransportType: String, Codable, Sendable, Equatable {
+    case stdio
+    case http
+  }
+
   public struct MCPServerStdioConfiguration: Sendable, Equatable {
+
     public init(
       name: String,
       command: String,

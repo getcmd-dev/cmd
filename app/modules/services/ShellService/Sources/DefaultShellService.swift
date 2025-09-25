@@ -33,9 +33,6 @@ final class DefaultShellService: ShellService {
     body: SubprocessHandle? = nil)
     async throws -> CommandExecutionResult
   {
-    let process = Process()
-    process.launchPath = "/bin/zsh"
-
     let environment: Environment = {
       guard useInteractiveShell || env != nil else {
         return .inherit
@@ -44,11 +41,6 @@ final class DefaultShellService: ShellService {
       environment.merge(env ?? [:]) { _, new in new }
       return .custom(environment)
     }()
-
-    process.arguments = ["-c"] + [command]
-    if let cwd {
-      process.currentDirectoryPath = cwd
-    }
 
     let stdoutData = Atomic(Data())
     let stderrData = Atomic(Data())
@@ -159,8 +151,8 @@ extension FileHandle {
 // which are similar but allow to limit imports to consuming modules
 
 extension Subprocess.StandardInputWriter: ShellServiceInterface.StandardInputWriter {
-  public func write(_ string: String) async throws {
-    _ = try await write(string, using: UTF8.self)
+  public func write(_ data: Data) async throws {
+    try await write([UInt8](data))
   }
 
 }

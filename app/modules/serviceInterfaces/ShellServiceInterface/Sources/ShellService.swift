@@ -29,9 +29,27 @@ public protocol Execution: Sendable {
 
 // MARK: - StandardInputWriter
 
+/// Protocol for writing data to a process's standard input stream.
 public protocol StandardInputWriter: Sendable {
-  func write(_ string: String) async throws
+  /// Writes raw data to the standard input stream.
+  /// - Parameter data: The data to write to stdin
+  /// - Throws: I/O errors if writing fails
+  func write(_ data: Data) async throws
+  
+  /// Writes a string to the standard input stream.
+  /// - Parameter string: The string to write to stdin (will be encoded as UTF-8)
+  /// - Throws: I/O errors if writing fails
+  func write(string: String) async throws
+  
+  /// Closes the standard input stream, signaling end-of-input to the process.
+  /// - Throws: I/O errors if closing the stream fails
   func finish() async throws
+}
+
+extension StandardInputWriter {
+  public func write(_ string: String) async throws {
+    try await write(string: string)
+  }
 }
 
 // MARK: - AsyncStringSequence

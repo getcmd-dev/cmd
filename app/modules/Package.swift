@@ -726,6 +726,7 @@ targets.append(contentsOf: Target.module(
     "DependencyFoundation",
     "SettingsServiceInterface",
     "ThreadSafe",
+    "ToolFoundation",
   ],
   path: "./serviceInterfaces/MCPServiceInterface"))
 
@@ -1064,15 +1065,20 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     .product(name: "MCP", package: "swift-sdk"),
     "AppFoundation",
+    "ChatFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
     "LoggingServiceInterface",
     "MCPServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
   ],
   testDependencies: [
     "MCPServiceInterface",
+    "SettingsServiceInterface",
     "SwiftTesting",
   ],
   path: "./services/MCPService"))
