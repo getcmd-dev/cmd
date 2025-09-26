@@ -1068,7 +1068,6 @@ targets.append(contentsOf: Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
-    "FoundationInterfaces",
     "JSONFoundation",
     "LoggingServiceInterface",
     "MCPServiceInterface",
@@ -1077,7 +1076,16 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
   path: "./services/MCPService"))
 
 targets.append(contentsOf: Target.module(

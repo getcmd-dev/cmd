@@ -6,7 +6,6 @@ import AppFoundation
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
-import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import MCP
@@ -25,11 +24,11 @@ final class DefaultMCPService: MCPService {
 
   init(
     settingsService: SettingsService,
-    fileManager: FileManagerI,
-    shellService: ShellService)
+    shellService: ShellService,
+    connect: @Sendable @escaping (Transport, MCPServerConfiguration) async throws -> MCPServerConnection)
   {
+    _connect = connect
     self.settingsService = settingsService
-    self.fileManager = fileManager
     self.shellService = shellService
 
     _servers = CurrentValueSubject([:])
@@ -39,7 +38,7 @@ final class DefaultMCPService: MCPService {
 
   // MARK: - MCPService
 
-  var servers: any Publisher<[MCPServerConfiguration: Result<MCPServerConnection, Error>], Never> {
+  var servers: any Publisher<[MCPServerConfiguration: MCPServerConnectionStatus], Never> {
     _servers.eraseToAnyPublisher()
   }
 
@@ -64,20 +63,22 @@ final class DefaultMCPService: MCPService {
       }
     }()
 
-    return try await DefaultMCPServerConnection(transport: transport, configuration: server)
+    return try await _connect(transport, server)
   }
+
+  private let _connect: @Sendable (Transport, MCPServerConfiguration) async throws -> MCPServerConnection
 
   private let shellService: ShellService
 
   // MARK: - Private Properties
 
-  private let _servers: CurrentValueSubject<[MCPServerConfiguration: Result<MCPServerConnection, Error>], Never>
-  private let reloadTaskQueue = ReplaceableTaskQueue<Void>()
+  private let _servers: CurrentValueSubject<[MCPServerConfiguration: MCPServerConnectionStatus], Never>
   private var settingsObserver: AnyCancellable?
   private var currentSettings = [String: MCPServerConfiguration]()
 
   private let settingsService: SettingsService
-  private let fileManager: FileManagerI
+
+  private var connections = [MCPServerConfiguration: AnyCancellable]()
 
   // MARK: - Private Methods
 
@@ -90,78 +91,63 @@ final class DefaultMCPService: MCPService {
   }
 
   private func handleSettingsChange(_ newSettings: [String: MCPServerConfiguration]) {
-    let changedServers = getChangedServers(from: currentSettings, to: newSettings)
-    currentSettings = newSettings
-
-    if !changedServers.isEmpty {
-      reloadTaskQueue.queue { [weak self] in
-        await self?.reloadServers(changedServers)
-      }
-    }
-  }
-
-  private func getChangedServers(
-    from oldSettings: [String: MCPServerConfiguration],
-    to newSettings: [String: MCPServerConfiguration])
-    -> Set<MCPServerConfiguration>
-  {
-    var changedServers = Set<MCPServerConfiguration>()
-
+    var removed = [MCPServerConfiguration]()
+    var updatedOrAdded = [MCPServerConfiguration]()
+    let oldSettings = currentSettings
     // Check for added or modified servers
     for (name, newConfig) in newSettings {
       if let oldConfig = oldSettings[name] {
         if oldConfig.connectionConfigurationDiffers(from: newConfig) {
-          changedServers.insert(newConfig)
+          updatedOrAdded.append(newConfig)
         }
       } else {
         // New server added
-        changedServers.insert(newConfig)
+        updatedOrAdded.append(newConfig)
       }
     }
 
     // Check for removed servers
     for (name, oldConfig) in oldSettings {
       if newSettings[name] == nil {
-        changedServers.insert(oldConfig)
+        removed.append(oldConfig)
       }
     }
 
-    return changedServers
+    currentSettings = newSettings
+
+    reload(removed: removed, updatedOrAdded: updatedOrAdded)
   }
 
-  private func reloadServers(_ changedServers: Set<MCPServerConfiguration>) async {
-    var updatedServers = _servers.value
-
-    // Remove old connections for changed servers
-    for server in changedServers {
-      let removed = updatedServers.removeValue(forKey: server)
-      Task {
-        try? await removed?.get().disconnet()
-      }
+  private func reload(removed: [MCPServerConfiguration], updatedOrAdded: [MCPServerConfiguration]) {
+    for server in removed {
+      connections.removeValue(forKey: server)
+      _servers.value.removeValue(forKey: server)
     }
+    for server in updatedOrAdded {
+      _servers.value[server] = .loading
 
-    // Only reload servers that are enabled and still in current settings
-    let serversToReload = changedServers.filter { server in
-      !server.disabled && currentSettings.values.contains(server)
-    }
-
-    // Connect to new/updated servers
-    await withTaskGroup(of: (MCPServerConfiguration, Result<MCPServerConnection, Error>).self) { group in
-      for server in serversToReload {
-        group.addTask {
-          let result = await Result {
-            try await self.connect(to: server)
+      let isCancelled = Atomic(false)
+      let task = Task {
+        await withTaskCancellationHandler(operation: { [weak self] in
+          do {
+            if let connection = try await self?.connect(to: server), !isCancelled.value {
+              self?._servers.value[server] = .success(connection)
+              print("added")
+            }
+          } catch {
+            if !isCancelled.value {
+              self?._servers.value[server] = .failure(error)
+            }
           }
-          return (server, result)
-        }
+        }, onCancel: {
+          isCancelled.set(to: true)
+        })
       }
 
-      for await (server, result) in group {
-        updatedServers[server] = result
+      connections[server] = AnyCancellable {
+        task.cancel()
       }
     }
-
-    _servers.send(updatedServers)
   }
 
 }
@@ -170,15 +156,16 @@ final class DefaultMCPService: MCPService {
 
 extension BaseProviding where
   Self: SettingsServiceProviding,
-  Self: FileManagerProviding,
   Self: ShellServiceProviding
 {
   public var mcpService: MCPService {
     shared {
       DefaultMCPService(
         settingsService: settingsService,
-        fileManager: fileManager,
-        shellService: shellService)
+        shellService: shellService,
+        connect: { transport, configuration in
+          try await DefaultMCPServerConnection(transport: transport, configuration: configuration)
+        })
     }
   }
 }

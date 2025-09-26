@@ -14,9 +14,17 @@ public typealias MCPSettings = [String: MCPServerConfiguration]
 
 /// Service for managing MCP (Model Context Protocol) server settings and configuration.
 public protocol MCPService: Sendable {
-  var servers: Publisher<[MCPServerConfiguration: Result<MCPServerConnection, Error>], Never> { get }
+  var servers: any Publisher<[MCPServerConfiguration: MCPServerConnectionStatus], Never> { get }
 
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection
+}
+
+// MARK: - MCPServerConnectionStatus
+
+public enum MCPServerConnectionStatus {
+  case loading
+  case success(_ connection: MCPServerConnection)
+  case failure(_ error: Error)
 }
 
 // MARK: - MCPServerConnection
@@ -25,7 +33,7 @@ public protocol MCPServerConnection: Sendable {
   var tools: [any Tool] { get }
   var serverInfo: ServerInfo { get }
   var configuration: MCPServerConfiguration { get }
-  func disconnet() async
+  func disconnect() async
   func onDisconnection(_ handler: @escaping @Sendable () -> Void)
 }
 

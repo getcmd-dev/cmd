@@ -47,7 +47,7 @@ public struct LLMReasoningSetting: Sendable, Equatable {
 
 public struct Settings: Sendable, Equatable {
   public init(
-    pointReleaseXcodeExtensionToDebugApp: Bool,
+    pointReleaseXcodeExtensionToDebugApp: Bool = false,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,

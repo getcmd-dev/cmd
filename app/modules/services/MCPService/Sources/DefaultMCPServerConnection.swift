@@ -16,9 +16,17 @@ final class DefaultMCPServerConnection: MCPServerConnection {
   init(transport: Transport, configuration: MCPServerConfiguration) async throws {
     self.configuration = configuration
     let client = Client(name: "cmd", version: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1.0.0")
+    self.client = client
     let initializationResults = try await client.connect(transport: transport)
     serverInfo = .init(name: initializationResults.serverInfo.name, version: initializationResults.serverInfo.version)
     mcpTools = try await client.listAllTools().map { MCPTool(tool: $0, client: client) }
+  }
+
+  deinit {
+    let client = self.client
+    Task {
+      await client.disconnect()
+    }
   }
 
   private(set) var mcpTools: [MCPTool]
@@ -29,12 +37,18 @@ final class DefaultMCPServerConnection: MCPServerConnection {
     mcpTools
   }
 
-  func disconnet() async {
+  func disconnect() async {
     // TODO: add test to ensure the client is dereferrenced and disconnected.
     mcpTools.removeAll()
+    let client = client
+    Task {
+      await client.disconnect()
+    }
   }
 
   func onDisconnection(_: @escaping @Sendable () -> Void) { }
+
+  private let client: MCP.Client
 
 }
 

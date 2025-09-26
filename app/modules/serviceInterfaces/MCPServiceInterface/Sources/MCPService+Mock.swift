@@ -11,7 +11,7 @@ import ToolFoundation
 public final class MockMCPService: MCPService {
   public init() { }
 
-  public var _servers = CurrentValueSubject<[MCPServerConfiguration: Result<any MCPServerConnection, any Error>], Never>([:])
+  public var _servers = CurrentValueSubject<[MCPServerConfiguration: MCPServerConnectionStatus], Never>([:])
 
   public var onLoadSettings: @Sendable () async throws -> MCPSettings = {
     [:]
@@ -23,7 +23,7 @@ public final class MockMCPService: MCPService {
     MockMCPServerConnection()
   }
 
-  public var servers: any Publisher<[MCPServerConfiguration: Result<any MCPServerConnection, any Error>], Never> {
+  public var servers: any Publisher<[MCPServerConfiguration: MCPServerConnectionStatus], Never> {
     _servers.eraseToAnyPublisher()
   }
 
@@ -47,7 +47,7 @@ public struct MockMCPServerConnection: MCPServerConnection {
   public let serverInfo = ServerInfo(name: "Mock Server", version: "1.0.0")
   public let configuration = MCPServerConfiguration.stdio(.init(name: "Mock", command: "mock"))
 
-  public func disconnet() async { }
+  public func disconnect() async { }
   public func onDisconnection(_: @escaping @Sendable () -> Void) { }
 }
 #endif

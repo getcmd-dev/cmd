@@ -6,7 +6,6 @@ Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
-    "FoundationInterfaces",
     "JSONFoundation",
     "LoggingServiceInterface",
     "MCPServiceInterface",
@@ -15,4 +14,13 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "ThreadSafe",
+    "ToolFoundation",
+  ])
