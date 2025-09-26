@@ -1066,6 +1066,7 @@ targets.append(contentsOf: Target.module(
     .product(name: "MCP", package: "swift-sdk"),
     "AppFoundation",
     "ChatFoundation",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "JSONFoundation",

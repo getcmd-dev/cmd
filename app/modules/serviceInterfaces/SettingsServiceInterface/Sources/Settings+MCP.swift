@@ -1,7 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-public enum MCPServerConfiguration: Sendable, Equatable {
+public enum MCPServerConfiguration: Sendable, Equatable, Identifiable, Hashable {
+
   case stdio(_ configuration: MCPServerStdioConfiguration)
   case http(_ configuration: MCPServerHttpConfiguration)
 
@@ -18,14 +19,14 @@ public enum MCPServerConfiguration: Sendable, Equatable {
       args: [String]? = nil,
       env: [String: String]? = nil,
       disabled: Bool = false,
-      autoApprove: [String]? = nil)
+      disabledToolNames: [String]? = nil)
     {
       self.name = name
       self.command = command
       self.args = args
       self.env = env
       self.disabled = disabled
-      self.autoApprove = autoApprove
+      self.disabledToolNames = disabledToolNames
     }
 
     public var name: String
@@ -33,31 +34,35 @@ public enum MCPServerConfiguration: Sendable, Equatable {
     public var args: [String]?
     public var env: [String: String]?
     public var disabled: Bool
-    public var autoApprove: [String]?
+    public var disabledToolNames: [String]?
 
   }
 
   public struct MCPServerHttpConfiguration: Sendable, Equatable {
-    public var name: String
-    public var url: String
-    public var headers: [String: String]?
-    public var disabled: Bool
-    public var autoApprove: [String]?
 
     public init(
       name: String,
       url: String,
       headers: [String: String]? = nil,
       disabled: Bool = false,
-      autoApprove: [String]? = nil)
+      disabledToolNames: [String]? = nil)
     {
       self.name = name
       self.url = url
       self.headers = headers
       self.disabled = disabled
-      self.autoApprove = autoApprove
+      self.disabledToolNames = disabledToolNames
     }
+
+    public var name: String
+    public var url: String
+    public var headers: [String: String]?
+    public var disabled: Bool
+    public var disabledToolNames: [String]?
+
   }
+
+  public var id: String { name }
 
   public var name: String {
     switch self {
@@ -90,13 +95,17 @@ public enum MCPServerConfiguration: Sendable, Equatable {
     }
   }
 
-  public var autoApprove: [String]? {
+  public var disabledToolNames: [String]? {
     switch self {
     case .stdio(let config):
-      config.autoApprove
+      config.disabledToolNames
     case .http(let config):
-      config.autoApprove
+      config.disabledToolNames
     }
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
   }
 
 }

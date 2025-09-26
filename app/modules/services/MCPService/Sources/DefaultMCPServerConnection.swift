@@ -5,10 +5,12 @@ import Foundation
 import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - DefaultMCPServerConnection
 
+@ThreadSafe
 final class DefaultMCPServerConnection: MCPServerConnection {
 
   init(transport: Transport, configuration: MCPServerConfiguration) async throws {
@@ -19,13 +21,20 @@ final class DefaultMCPServerConnection: MCPServerConnection {
     mcpTools = try await client.listAllTools().map { MCPTool(tool: $0, client: client) }
   }
 
-  let mcpTools: [MCPTool]
+  private(set) var mcpTools: [MCPTool]
   let serverInfo: ServerInfo
   let configuration: MCPServerConfiguration
 
   var tools: [any ToolFoundation.Tool] {
     mcpTools
   }
+
+  func disconnet() async {
+    // TODO: add test to ensure the client is dereferrenced and disconnected.
+    mcpTools.removeAll()
+  }
+
+  func onDisconnection(_: @escaping @Sendable () -> Void) { }
 
 }
 

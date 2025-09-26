@@ -61,7 +61,7 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
     let args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
     let env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
     let disabled = try container.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
-    let autoApprove = try container.decodeIfPresent([String].self, forKey: .autoApprove)
+    let disabledToolNames = try container.decodeIfPresent([String].self, forKey: .disabledToolNames)
 
     self.init(
       name: name,
@@ -69,7 +69,7 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
       args: args,
       env: env,
       disabled: disabled,
-      autoApprove: autoApprove)
+      disabledToolNames: disabledToolNames)
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -78,7 +78,7 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
     try container.encodeIfPresent(args, forKey: .args)
     try container.encodeIfPresent(env, forKey: .env)
     try container.encode(disabled, forKey: .disabled)
-    try container.encodeIfPresent(autoApprove, forKey: .autoApprove)
+    try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
   }
 
   private enum CodingKeys: String, CodingKey {
@@ -86,7 +86,7 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
     case args
     case env
     case disabled
-    case autoApprove
+    case disabledToolNames
   }
 }
 
@@ -98,14 +98,14 @@ extension MCPServerConfiguration.MCPServerHttpConfiguration {
     let url = try container.decode(String.self, forKey: .url)
     let headers = try container.decodeIfPresent([String: String].self, forKey: .headers)
     let disabled = try container.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
-    let autoApprove = try container.decodeIfPresent([String].self, forKey: .autoApprove)
+    let disabledToolNames = try container.decodeIfPresent([String].self, forKey: .disabledToolNames)
 
     self.init(
       name: name,
       url: url,
       headers: headers,
       disabled: disabled,
-      autoApprove: autoApprove)
+      disabledToolNames: disabledToolNames)
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -113,14 +113,14 @@ extension MCPServerConfiguration.MCPServerHttpConfiguration {
     try container.encode(url, forKey: .url)
     try container.encodeIfPresent(headers, forKey: .headers)
     try container.encode(disabled, forKey: .disabled)
-    try container.encodeIfPresent(autoApprove, forKey: .autoApprove)
+    try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
   }
 
   private enum CodingKeys: String, CodingKey {
     case url
     case headers
     case disabled
-    case autoApprove
+    case disabledToolNames
   }
 }
 
