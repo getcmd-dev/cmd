@@ -38,8 +38,10 @@ final class DefaultMCPService: MCPService {
 
   // MARK: - MCPService
 
-  var servers: any Publisher<[MCPServerConfiguration: MCPServerConnectionStatus], Never> {
-    _servers.eraseToAnyPublisher()
+  var servers: any Publisher<[MCPServerConnectionStatus], Never> {
+    _servers.map {
+      Array($0.values)
+    }.eraseToAnyPublisher()
   }
 
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {
@@ -72,13 +74,13 @@ final class DefaultMCPService: MCPService {
 
   // MARK: - Private Properties
 
-  private let _servers: CurrentValueSubject<[MCPServerConfiguration: MCPServerConnectionStatus], Never>
+  private let _servers: CurrentValueSubject<[String: MCPServerConnectionStatus], Never>
   private var settingsObserver: AnyCancellable?
   private var currentSettings = [String: MCPServerConfiguration]()
 
   private let settingsService: SettingsService
 
-  private var connections = [MCPServerConfiguration: AnyCancellable]()
+  private var connections = [String: AnyCancellable]()
 
   // MARK: - Private Methods
 
@@ -119,24 +121,23 @@ final class DefaultMCPService: MCPService {
   }
 
   private func reload(removed: [MCPServerConfiguration], updatedOrAdded: [MCPServerConfiguration]) {
-    for server in removed {
-      connections.removeValue(forKey: server)
-      _servers.value.removeValue(forKey: server)
+    for serverConfig in removed {
+      connections.removeValue(forKey: serverConfig.name)
+      _servers.value.removeValue(forKey: serverConfig.name)
     }
-    for server in updatedOrAdded {
-      _servers.value[server] = .loading
+    for serverConfig in updatedOrAdded {
+      _servers.value[serverConfig.name] = .loading(serverConfig)
 
       let isCancelled = Atomic(false)
       let task = Task {
         await withTaskCancellationHandler(operation: { [weak self] in
           do {
-            if let connection = try await self?.connect(to: server), !isCancelled.value {
-              self?._servers.value[server] = .success(connection)
-              print("added")
+            if let connection = try await self?.connect(to: serverConfig), !isCancelled.value {
+              self?._servers.value[serverConfig.name] = .success(connection)
             }
           } catch {
             if !isCancelled.value {
-              self?._servers.value[server] = .failure(error)
+              self?._servers.value[serverConfig.name] = .failure(serverConfig, error)
             }
           }
         }, onCancel: {
@@ -144,7 +145,7 @@ final class DefaultMCPService: MCPService {
         })
       }
 
-      connections[server] = AnyCancellable {
+      connections[serverConfig.name] = AnyCancellable {
         task.cancel()
       }
     }

@@ -11,7 +11,7 @@ import ToolFoundation
 public final class MockMCPService: MCPService {
   public init() { }
 
-  public var _servers = CurrentValueSubject<[MCPServerConfiguration: MCPServerConnectionStatus], Never>([:])
+  public var _servers = CurrentValueSubject<[MCPServerConnectionStatus], Never>([])
 
   public var onLoadSettings: @Sendable () async throws -> MCPSettings = {
     [:]
@@ -23,7 +23,7 @@ public final class MockMCPService: MCPService {
     MockMCPServerConnection()
   }
 
-  public var servers: any Publisher<[MCPServerConfiguration: MCPServerConnectionStatus], Never> {
+  public var servers: any Publisher<[MCPServerConnectionStatus], Never> {
     _servers.eraseToAnyPublisher()
   }
 
