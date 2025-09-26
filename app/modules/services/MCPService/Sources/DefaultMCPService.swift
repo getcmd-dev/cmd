@@ -38,10 +38,10 @@ final class DefaultMCPService: MCPService {
 
   // MARK: - MCPService
 
-  var servers: any Publisher<[MCPServerConnectionStatus], Never> {
-    _servers.map {
+  var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
+    ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never>(Array(_servers.value.values), publisher: _servers.map {
       Array($0.values)
-    }.eraseToAnyPublisher()
+    }.eraseToAnyPublisher())
   }
 
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {

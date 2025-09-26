@@ -16,16 +16,18 @@ import ToolFoundation
 
 @Suite("DefaultMCPServiceTests")
 struct DefaultMCPServiceTests {
+
   struct Retention {
     @Test
     func test_connectionIsDereferencedWhenServiceIsDeallocated() async throws {
+      // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
       let didConnect = expectation(description: "did connect")
       let settingsService = MockSettingsService(.init(mcpServers: [
         "test-server": .stdio(.init(name: "test-server", command: "swift test-server")),
       ]))
 
-      var service: DefaultMCPService? = DefaultMCPService(
+      var sut: DefaultMCPService? = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
         connect: { _, configuration in
@@ -34,22 +36,27 @@ struct DefaultMCPServiceTests {
           didConnect.fulfill()
           return connection
         })
+
+      // when
       try await fulfillment(of: didConnect)
       #expect(weakConnection.value != nil)
-      _ = service
-      service = nil
+      _ = sut
+      sut = nil
+
+      // then
       #expect(weakConnection.value == nil)
     }
 
     @Test
     func test_connectionIsDereferencedWhenRemoved() async throws {
+      // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
       let didConnect = expectation(description: "did connect")
       let settingsService = MockSettingsService(.init(mcpServers: [
         "test-server": .stdio(.init(name: "test-server", command: "swift test-server")),
       ]))
 
-      let service = DefaultMCPService(
+      let sut = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
         connect: { _, configuration in
@@ -66,13 +73,17 @@ struct DefaultMCPServiceTests {
         didDeinit.fulfill()
       }
 
+      // when
       settingsService.update(setting: \.mcpServers, to: [:])
+
+      // then
       try await fulfillment(of: didDeinit)
-      _ = service
+      _ = sut
     }
 
     @Test
     func test_connectionIsDereferencedWhenUpdated() async throws {
+      // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
       let didConnectOnce = expectation(description: "did connect once")
       let settingsService = MockSettingsService(.init(mcpServers: [
@@ -81,7 +92,7 @@ struct DefaultMCPServiceTests {
 
       let connectionCreationCount = Atomic(0)
 
-      let service = DefaultMCPService(
+      let sut = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
         connect: { _, configuration in
@@ -101,13 +112,82 @@ struct DefaultMCPServiceTests {
         didDeinit.fulfill()
       }
 
+      // when
       settingsService.update(setting: \.mcpServers, to: [
         "test-server": .stdio(.init(name: "test-server", command: "swift test-server --log-level debug")),
       ])
+
+      // then
       try await fulfillment(of: didDeinit)
-      _ = service
+      _ = sut
     }
   }
+
+  @Test
+  func test_loadServerDefinedInSettings() async throws {
+    // given
+    let didConnectToStdioServer = expectation(description: "did connect to stdio server")
+    let didConnectToHttpServer = expectation(description: "did connect to http server")
+    let settingsService = MockSettingsService(.init(mcpServers: [
+      "test-stdio-server": .stdio(.init(name: "test-stdio-server", command: "swift test-server")),
+      "test-http-server": .http(.init(name: "test-http-server", url: "http://localhost:8080")),
+    ]))
+
+    // when
+    let sut = DefaultMCPService(
+      settingsService: settingsService,
+      shellService: MockShellService(),
+      connect: { _, configuration in
+        switch configuration {
+        case .http:
+          didConnectToHttpServer.fulfill()
+        case .stdio:
+          didConnectToStdioServer.fulfill()
+        }
+        return MockMCPServerConnection(tools: [], configuration: configuration)
+      })
+
+    // then
+    try await fulfillment(of: [didConnectToHttpServer, didConnectToStdioServer])
+    #expect(sut.servers.currentValue.count == 2)
+  }
+
+  @Test
+  func test_reloadServerWhenSettingsChange() async throws {
+    // given
+    let didConnectToStdioServer = expectation(description: "did connect to stdio server")
+    let didConnectToHttpServer = expectation(description: "did connect to http server")
+    let settingsService = MockSettingsService(.init(mcpServers: [
+      "test-stdio-server": .stdio(.init(name: "test-stdio-server", command: "swift test-server")),
+    ]))
+
+    let sut = DefaultMCPService(
+      settingsService: settingsService,
+      shellService: MockShellService(),
+      connect: { _, configuration in
+        switch configuration {
+        case .http:
+          didConnectToHttpServer.fulfill()
+        case .stdio:
+          didConnectToStdioServer.fulfill()
+        }
+        return MockMCPServerConnection(tools: [], configuration: configuration)
+      })
+
+    try await fulfillment(of: didConnectToStdioServer)
+    #expect(sut.servers.currentValue.count == 1)
+
+    // when
+    settingsService.update(setting: \.mcpServers, to: [
+      "test-stdio-server": .stdio(.init(name: "test-stdio-server", command: "swift test-server")),
+      "test-http-server": .http(.init(name: "test-http-server", url: "http://localhost:8080")),
+    ])
+
+    // then
+    try await fulfillment(of: didConnectToHttpServer)
+    #expect(sut.servers.currentValue.count == 2)
+  }
+
 }
 
 // MARK: - WeakBox

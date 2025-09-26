@@ -2,26 +2,45 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Combine
+import ConcurrencyFoundation
 import DependencyFoundation
 import SettingsServiceInterface
 import ToolFoundation
 
 // MARK: - MCPService
 
+/// Type alias for MCP server settings configuration dictionary.
+/// Maps server identifiers to their respective configurations.
 public typealias MCPSettings = [String: MCPServerConfiguration]
 
 // MARK: - MCPService
 
 /// Service for managing MCP (Model Context Protocol) server settings and configuration.
+///
+/// This service handles the lifecycle of MCP server connections, including:
+/// - Establishing connections to configured servers
+/// - Monitoring server connection status
+/// - Managing server reconnection and cleanup
 public protocol MCPService: Sendable {
-  var servers: any Publisher<[MCPServerConnectionStatus], Never> { get }
+  /// A read-only subject that publishes the current status of all MCP server connections.
+  ///
+  /// The array contains the status of each configured server, which can be:
+  /// - `.loading`: Server connection is being established
+  /// - `.success`: Server is connected and operational
+  /// - `.failure`: Server connection failed with an error
+  var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> { get }
 
+  /// Establishes a connection to the specified MCP server.
+  ///
+  /// - Parameter server: The server configuration to connect to
+  /// - Returns: An active connection to the MCP server
+  /// - Throws: Connection errors if the server cannot be reached or configured improperly
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection
 }
 
 // MARK: - MCPServerConnectionStatus
 
-public enum MCPServerConnectionStatus {
+public enum MCPServerConnectionStatus: Sendable {
   case loading(_ configuration: MCPServerConfiguration)
   case success(_ connection: MCPServerConnection)
   case failure(_ configuration: MCPServerConfiguration, _ error: Error)

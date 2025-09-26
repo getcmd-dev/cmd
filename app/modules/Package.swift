@@ -723,6 +723,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "MCPServiceInterface",
   dependencies: [
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "SettingsServiceInterface",
     "ThreadSafe",

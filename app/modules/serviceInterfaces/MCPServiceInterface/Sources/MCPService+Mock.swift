@@ -23,8 +23,8 @@ public final class MockMCPService: MCPService {
     MockMCPServerConnection()
   }
 
-  public var servers: any Publisher<[MCPServerConnectionStatus], Never> {
-    _servers.eraseToAnyPublisher()
+  public var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
+    _servers.readonly()
   }
 
   public func loadSettings() async throws -> MCPSettings {
