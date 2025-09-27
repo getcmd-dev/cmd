@@ -12,9 +12,10 @@ import ToolFoundation
 // MARK: - MCPTool
 
 final class MCPTool: NonStreamableTool {
-  init(tool: MCP.Tool, client: MCP.Client) {
+  init(tool: MCP.Tool, client: MCP.Client, serverName: String) {
     wrappedTool = tool
     self.client = client
+    self.serverName = serverName
   }
 
   @ThreadSafe
@@ -86,7 +87,7 @@ final class MCPTool: NonStreamableTool {
   }
 
   var name: String {
-    wrappedTool.name
+    "mcp__\(serverName)__\(wrappedTool.name)".sanitized
   }
 
   var description: String {
@@ -127,6 +128,8 @@ final class MCPTool: NonStreamableTool {
   func isAvailable(in mode: ChatMode) -> Bool {
     isReadonly ? true : mode == .agent
   }
+
+  private let serverName: String
 
   private let client: MCP.Client
   private let wrappedTool: MCP.Tool
@@ -193,13 +196,25 @@ extension MCP.Tool.Content {
       assertionFailure("Audio content cannot be represented in JSON")
       return .string("<audio content>")
 
-    case .image(data: let data, mimeType: let mimeType, metadata: let metadata):
+    case .image(data: _, mimeType: _, metadata: _):
       assertionFailure("Image content cannot be represented in JSON")
       return .string("<image content>")
 
-    case .resource(uri: let uri, mimeType: let mimeType, text: let text):
+    case .resource(uri: _, mimeType: _, text: _):
       assertionFailure("Resource content cannot be represented in JSON")
       return .string("<resource content>")
     }
+  }
+}
+
+extension String {
+  /// snake case, only alphanumeric and underscores characters
+  var sanitized: String {
+    let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
+    return replacingOccurrences(of: "([a-z])([A-Z])", with: "$1_$2", options: .regularExpression)
+      .lowercased()
+      .replacingOccurrences(of: " ", with: "_")
+      .components(separatedBy: allowedCharacters.inverted)
+      .joined()
   }
 }

@@ -94,6 +94,7 @@ targets.append(contentsOf: Target.module(
     "CheckpointService",
     "CheckpointServiceInterface",
     "ClaudeCodeTools",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "DLS",
     "EditFilesTool",

@@ -18,8 +18,9 @@ final class DefaultMCPServerConnection: MCPServerConnection {
     let client = Client(name: "cmd", version: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1.0.0")
     self.client = client
     let initializationResults = try await client.connect(transport: transport)
-    serverInfo = .init(name: initializationResults.serverInfo.name, version: initializationResults.serverInfo.version)
-    mcpTools = try await client.listAllTools().map { MCPTool(tool: $0, client: client) }
+    let serverInfo = ServerInfo(name: initializationResults.serverInfo.name, version: initializationResults.serverInfo.version)
+    self.serverInfo = serverInfo
+    mcpTools = try await client.listAllTools().map { MCPTool(tool: $0, client: client, serverName: serverInfo.name) }
   }
 
   deinit {

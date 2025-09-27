@@ -93,7 +93,7 @@ struct DefaultMCPServerConnectionTests {
       configuration: .stdio(.init(name: "test-server", command: "swift test-server")))
 
     try await fulfillment(of: didCallConnect)
-    #expect(connection.mcpTools.map(\.name) == ["get_weather"])
+    #expect(connection.mcpTools.map(\.name) == ["mcp__example_server__get_weather"])
   }
 }
 

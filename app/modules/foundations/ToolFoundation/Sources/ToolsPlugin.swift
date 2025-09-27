@@ -25,6 +25,10 @@ public final class ToolsPlugin: Sendable {
     registry[tool.name] = tool
   }
 
+  public func unplug(toolNamed name: String) {
+    registry.removeValue(forKey: name)
+  }
+
   public func tool(named name: String) -> (any Tool)? {
     registry[name]
   }

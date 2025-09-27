@@ -40,31 +40,88 @@ public protocol MCPService: Sendable {
 
 // MARK: - MCPServerConnectionStatus
 
+/// Represents the current status of an MCP server connection.
+///
+/// This enum tracks the lifecycle state of each MCP server connection,
+/// from initial loading through successful connection or failure.
 public enum MCPServerConnectionStatus: Sendable {
+  /// The server connection is currently being established.
+  ///
+  /// - Parameter configuration: The server configuration being connected to
   case loading(_ configuration: MCPServerConfiguration)
+
+  /// The server connection has been successfully established.
+  ///
+  /// - Parameter connection: The active server connection
   case success(_ connection: MCPServerConnection)
+
+  /// The server connection failed to establish.
+  ///
+  /// - Parameters:
+  ///   - configuration: The server configuration that failed to connect
+  ///   - error: The error that caused the connection failure
   case failure(_ configuration: MCPServerConfiguration, _ error: Error)
 }
 
 // MARK: - MCPServerConnection
 
+/// Represents an active connection to an MCP server.
+///
+/// This protocol defines the interface for interacting with a connected MCP server,
+/// providing access to server tools, metadata, and connection management.
 public protocol MCPServerConnection: Sendable {
+  /// The collection of tools provided by the connected MCP server.
+  ///
+  /// These tools can be invoked to perform various operations supported by the server.
   var tools: [any Tool] { get }
+
+  /// Information about the connected server implementation.
+  ///
+  /// Contains metadata such as server name and version.
   var serverInfo: ServerInfo { get }
+
+  /// The configuration used to establish this connection.
+  ///
+  /// Provides access to the original server configuration parameters.
   var configuration: MCPServerConfiguration { get }
-  func disconnect() async
+
+  /// Disconnects from the MCP server.
+  ///
+  /// This method cleanly closes the connection and releases associated resources.
+  /// After calling this method, the connection should not be used for further operations.
+  func disconnect() /// Registers a handler to be called when the connection is disconnected.
+    ///
+    /// The handler will be invoked when the connection is terminated, either by calling
+    /// `disconnect()` or due to an unexpected disconnection from the server.
+    ///
+    /// - Parameter handler: A closure to execute when disconnection occurs
+    async
+
   func onDisconnection(_ handler: @escaping @Sendable () -> Void)
 }
 
 // MARK: - ServerInfo
 
-/// Implementation information
+/// Contains metadata about an MCP server implementation.
+///
+/// This structure provides identification and version information
+/// for connected MCP servers.
 public struct ServerInfo: Hashable, Codable, Sendable {
-  /// The server name
+  /// The name of the MCP server implementation.
+  ///
+  /// This is a human-readable identifier for the server.
   public let name: String
-  /// The server version
+
+  /// The version of the MCP server implementation.
+  ///
+  /// Version string following semantic versioning conventions.
   public let version: String
 
+  /// Creates a new ServerInfo instance.
+  ///
+  /// - Parameters:
+  ///   - name: The server implementation name
+  ///   - version: The server implementation version
   public init(name: String, version: String) {
     self.name = name
     self.version = version
@@ -73,6 +130,11 @@ public struct ServerInfo: Hashable, Codable, Sendable {
 
 // MARK: - MCPServiceProviding
 
+/// Protocol for types that provide access to an MCPService instance.
+///
+/// This protocol is typically implemented by dependency injection containers
+/// or service locators to provide access to MCP functionality.
 public protocol MCPServiceProviding {
+  /// The MCP service instance for managing server connections.
   var mcpService: MCPService { get }
 }

@@ -4,15 +4,18 @@
 import AskFollowUpTool
 import BuildTool
 import ClaudeCodeTools
+import Combine
+import ConcurrencyFoundation
 import EditFilesTool
 import ExecuteCommandTool
 import LSTool
+import MCPServiceInterface
 import ReadFileTool
 import SearchFilesTool
 import ToolFoundation
 
 extension ToolsPlugin {
-  func registerToolsPlugin() {
+  func registerToolsPlugin(mcpService: MCPService) -> AnyCancellable {
     plugIn(tool: LSTool())
     plugIn(tool: ReadFileTool())
     plugIn(tool: SearchFilesTool())
@@ -34,5 +37,49 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeGrepTool())
     plugIn(tool: ClaudeCodeWebFetchTool())
     plugIn(tool: ClaudeCodeWebSearchTool())
+
+    // MCP tools
+    let mcpServerConnections = Atomic([String: [String]]())
+    // Update MCP tools as they change
+    return mcpService.servers.sink { [weak self] servers in
+      guard let self else { return }
+
+      let connectedServers = servers.compactMap { status in
+        if case .success(let connection) = status {
+          return connection
+        }
+        return nil
+      }
+
+      let removedToolNames = mcpServerConnections.mutate { value in
+        // Find removed servers
+        let connectedServerNames = Set(connectedServers.map(\.configuration.name))
+        let removedServerNames = Set(value.keys).subtracting(connectedServerNames)
+        var removedTools = removedServerNames.flatMap { serverName -> [String] in
+          return value[serverName] ?? []
+        }
+        // Find tools removed from existing servers
+        removedTools += connectedServers.flatMap { server -> [String] in
+          let previousToolNames = Set(value[server.configuration.name] ?? [])
+          let currentToolNames = Set(server.tools.map(\.name))
+          return Array(previousToolNames.subtracting(currentToolNames))
+        }
+        value = connectedServers.reduce(into: [String: [String]]()) { dict, server in
+          dict[server.configuration.name] = server.tools.map(\.name)
+        }
+        return removedTools
+      }
+
+      for toolName in removedToolNames {
+        unplug(toolNamed: toolName)
+      }
+      for server in connectedServers {
+        for tool in server.tools {
+          if self.tool(named: tool.name) == nil {
+            plugIn(tool: tool)
+          }
+        }
+      }
+    }
   }
 }

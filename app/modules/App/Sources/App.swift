@@ -37,7 +37,7 @@ public struct commandApp: App {
       windowsViewModel.handle(.showApplication)
     }
     xcodeKeyboardShortcutsManager = XcodeKeyboardShortcutsManager(appsActivationState: appsActivationState)
-    registerColdStartPlugins()
+    registerColdStartPlugins().store(in: &cancellables)
     postLaunchActions()
 
     #if DEBUG
@@ -122,6 +122,8 @@ public struct commandApp: App {
 
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+  private var cancellables = Set<AnyCancellable>()
+
   private let extensionCommandHandler: ExtensionCommandHandler
 
   private let windowsViewModel: WindowsViewModel
@@ -131,8 +133,8 @@ public struct commandApp: App {
 
   private var xcodeKeyboardShortcutsManager: XcodeKeyboardShortcutsManager?
 
-  private func registerColdStartPlugins() {
-    AppScope.shared.toolsPlugin.registerToolsPlugin()
+  private func registerColdStartPlugins() -> AnyCancellable {
+    AppScope.shared.toolsPlugin.registerToolsPlugin(mcpService: AppScope.shared.mcpService)
   }
 
 }
