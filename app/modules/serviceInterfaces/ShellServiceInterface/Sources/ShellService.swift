@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import Foundation
 import LoggingServiceInterface
 
@@ -87,7 +88,7 @@ public protocol ShellService: Sendable {
 
   /// The loaded interactive shell environment variables (from zsh -il).
   /// This is populated asynchronously during service initialization.
-  var env: [String: String] { get }
+  var env: [String: String] { get async }
 }
 
 extension ShellService {

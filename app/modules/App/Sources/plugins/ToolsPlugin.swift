@@ -8,7 +8,9 @@ import Combine
 import ConcurrencyFoundation
 import EditFilesTool
 import ExecuteCommandTool
+import LoggingServiceInterface
 import LSTool
+import MCPService
 import MCPServiceInterface
 import ReadFileTool
 import SearchFilesTool
@@ -41,7 +43,7 @@ extension ToolsPlugin {
     // MCP tools
     let mcpServerConnections = Atomic([String: [String]]())
     // Update MCP tools as they change
-    return mcpService.servers.sink { [weak self] servers in
+    let cancellable = mcpService.servers.sink { [weak self] servers in
       guard let self else { return }
 
       let connectedServers = servers.compactMap { status in
@@ -75,11 +77,16 @@ extension ToolsPlugin {
       }
       for server in connectedServers {
         for tool in server.tools {
-          if self.tool(named: tool.name) == nil {
-            plugIn(tool: tool)
-          }
+          plugIn(tool: tool)
         }
       }
     }
+    plugIn(toolFallBackMatcher: { toolName in
+      if toolName.starts(with: "mcp__") {
+        return UnknownMCPTool(name: toolName)
+      }
+      return nil
+    })
+    return cancellable
   }
 }

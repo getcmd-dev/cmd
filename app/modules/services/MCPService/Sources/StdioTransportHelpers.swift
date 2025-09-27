@@ -5,6 +5,7 @@
 
 import AppFoundation
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import Logging
 import LoggingServiceInterface
@@ -25,7 +26,7 @@ actor StdioTransport: Transport {
 
   struct Connection: Sendable {
     let process: Process
-    let stdinWriter: @Sendable (Data) -> Void
+    let stdinWriter: @Sendable (Data) throws -> Void
   }
 
   var logger: Logging.Logger { .init(label: "cmd.mcp") }
@@ -38,7 +39,7 @@ actor StdioTransport: Transport {
     guard let connection else {
       throw AppError(message: "Not connected")
     }
-    connection.stdinWriter(data)
+    try connection.stdinWriter(data)
   }
 
   func receive() -> AsyncThrowingStream<Data, any Error> {
@@ -52,7 +53,7 @@ actor StdioTransport: Transport {
     // In MacOS, zsh is the default since macOS Catalina 10.15.7. We can safely assume it is available.
     process.launchPath = "/bin/zsh"
     process.arguments = ["-c"] + [command]
-    process.environment = shellService.env
+    process.environment = await shellService.env
 
     // Input/output
     let stdin = Pipe()
@@ -78,8 +79,17 @@ actor StdioTransport: Transport {
       self?.stdoutContinuation.finish()
     }
 
+    let isTerminated = Atomic(false)
     process.terminationHandler = { _ in
-      defaultLogger.info("MCP stdio connection terminated")
+      isTerminated.set(to: true)
+      if
+        let data = (try? stderr.fileHandleForReading.readToEnd()),
+        let err = String(data: data, encoding: .utf8)
+      {
+        defaultLogger.info("MCP stdio connection terminated. Stderr:\n\(err)")
+      } else {
+        defaultLogger.info("MCP stdio connection terminated")
+      }
     }
 
     do {
@@ -88,6 +98,9 @@ actor StdioTransport: Transport {
       continuation(.success(Connection(
         process: process,
         stdinWriter: { data in
+          guard !isTerminated.value else {
+            throw AppError(message: "Process has terminated")
+          }
           defaultLogger.trace("Sending data:\n\(String(data: data, encoding: .utf8) ?? "nil")")
 
           stdin.fileHandleForWriting.write(data)

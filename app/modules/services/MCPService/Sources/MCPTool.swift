@@ -9,6 +9,10 @@ import MCP
 import ThreadSafe
 import ToolFoundation
 
+public typealias MCPToolInput = [String: JSON.Value]
+
+public typealias MCPToolOutput = JSON.Value
+
 // MARK: - MCPTool
 
 final class MCPTool: NonStreamableTool {
@@ -21,7 +25,7 @@ final class MCPTool: NonStreamableTool {
   @ThreadSafe
   final class Use: NonStreamableToolUse, UpdatableToolUse {
 
-    public init(
+    init(
       callingTool: MCPTool,
       toolUseId: String,
       input: Input,
@@ -40,27 +44,27 @@ final class MCPTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public typealias InternalState = EmptyObject
+    typealias InternalState = EmptyObject
 
-    public typealias Input = [String: JSON.Value]
+    typealias Input = MCPToolInput
 
-    public typealias Output = JSON.Value
+    typealias Output = MCPToolOutput
 
-    public let context: ToolFoundation.ToolExecutionContext
+    let context: ToolFoundation.ToolExecutionContext
 
-    public let callingTool: MCPTool
-    public let toolUseId: String
-    public let input: Input
+    let callingTool: MCPTool
+    let toolUseId: String
+    let input: Input
 
-    public let status: Status
+    let status: Status
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public var isReadonly: Bool {
+    var isReadonly: Bool {
       callingTool.isReadonly
     }
 
-    public func startExecuting() {
+    func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
@@ -80,7 +84,7 @@ final class MCPTool: NonStreamableTool {
       }
     }
 
-    public func cancel() {
+    func cancel() {
       updateStatus.complete(with: .failure(CancellationError()))
     }
 
