@@ -52,7 +52,7 @@ public final class MockLocalServer: LocalServer {
 
   private let _onGetRequest =
     Atomic<@Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> LocalServerResponse>
-   { _, _ in
+  { _, _ in
     throw URLError(.badServerResponse)
   }
 
