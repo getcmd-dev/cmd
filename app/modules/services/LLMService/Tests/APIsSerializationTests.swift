@@ -203,7 +203,7 @@ struct APIParamsEncodingTests {
               "role" : "user"
             }
           ],
-          "model" : "claude-sonnet-4-20250514",
+          "model" : "claude-sonnet-4-5-20250929",
           "enableReasoning": true,
           "provider" : {
             "name" : "anthropic",
@@ -254,7 +254,7 @@ struct APIParamsEncodingTests {
               "role" : "user"
             }
           ],
-          "model" : "claude-sonnet-4-20250514",
+          "model" : "claude-sonnet-4-5-20250929",
           "enableReasoning": false,
           "provider" : {
             "name" : "anthropic",

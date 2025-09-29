@@ -44,7 +44,7 @@ platform :mac do
     )
   end
 
-  desc "Build and archive the app for Mac App Store distribution"
+  desc "Build the app in Release configuration"
   lane :build_release do
     setup_ci if ENV["CI"]
 
@@ -54,38 +54,19 @@ platform :mac do
     # Resolve package dependencies first. This is to work around an issue where CI would freeze.
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
-    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-
-    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
-    ENV["MATCH_PASSWORD"] = load_secret("MATCH_PASSWORD")
-    readonly = true
-    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
-    git_url = readonly ? "https://gsabran:#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
-    match(
-      type: "development",
-      team_id: "GP78T2GNXD",
-      readonly: readonly,
-      git_url: git_url,
-    )
-
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
       destination: "platform=macOS,arch=arm64",
       skip_package_dependencies_resolution: true,
       project: "./command.xcodeproj",
       configuration: "Release",
-      export_method: "mac-application",
       output_directory: "#{build_path}/release",
       derived_data_path: "#{build_path}/derived_data",
       output_name: "cmd.app",
       scheme: "command",
-      # silent: true,
       skip_archive: true,
+      skip_codesigning: true,
       xcodebuild_formatter: "xcbeautify --quiet",
-      export_options: {
-        method: "development",
-      },
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end

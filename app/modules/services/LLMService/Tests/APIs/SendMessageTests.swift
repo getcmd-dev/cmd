@@ -161,7 +161,7 @@ final class SendMessageTests {
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"TestTool","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
             ],
-            "model" : "claude-sonnet-4-20250514",
+            "model" : "claude-sonnet-4-5-20250929",
             "enableReasoning": false,
             "provider" : {
               "name" : "anthropic",
@@ -234,7 +234,7 @@ final class SendMessageTests {
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
-            "model" : "claude-sonnet-4-20250514",
+            "model" : "claude-sonnet-4-5-20250929",
             "enableReasoning": false,
             "provider" : {
               "name" : "anthropic",
@@ -481,7 +481,7 @@ final class SendMessageTests {
             ]},
             {"role":"user","content":[{"type":"text","text":"follow up"}]}
           ],
-          "model" : "claude-sonnet-4-20250514",
+          "model" : "claude-sonnet-4-5-20250929",
           "enableReasoning": false,
           "provider" : {
             "name" : "anthropic",

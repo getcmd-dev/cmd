@@ -29,7 +29,7 @@ Build the app in Debug configuration
 [bundle exec] fastlane mac build_release
 ```
 
-Build and archive the app for Mac App Store distribution
+Build the app in Release configuration
 
 ### mac create_and_sign_release
 

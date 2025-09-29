@@ -20,7 +20,7 @@ extension LLMProvider {
     idForModel: { model in
       switch model {
       case .claudeHaiku_3_5: return "claude-3-5-haiku-latest"
-      case .claudeSonnet: return "claude-sonnet-4-20250514"
+      case .claudeSonnet: return "claude-sonnet-4-5-20250929"
       case .claudeOpus: return "claude-opus-4-1-20250805"
       default: throw AppError(message: "Model \(model) is not supported by Anthropic provider.")
       }
