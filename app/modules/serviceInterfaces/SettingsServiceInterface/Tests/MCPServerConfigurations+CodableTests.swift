@@ -15,8 +15,7 @@ struct MCPServerConfigurationsEncodingTests {
         command: "npx",
         args: ["-y", "mcp-ripgrep@latest"],
         env: ["LOGLEVEL": "debug"],
-        disabled: false,
-        autoApprove: ["list-files"])),
+        disabled: false)),
       "http-server": MCPServerConfiguration.http(.init(
         name: "http-server",
         url: "http://localhost:8080",
@@ -27,7 +26,6 @@ struct MCPServerConfigurationsEncodingTests {
     let json = """
       {
         "http-server" : {
-          "disabled" : false,
           "headers" : {
             "Authorization" : "Bearer token"
           },
@@ -39,11 +37,7 @@ struct MCPServerConfigurationsEncodingTests {
             "-y",
             "mcp-ripgrep@latest"
           ],
-          "autoApprove" : [
-            "list-files"
-          ],
           "command" : "npx",
-          "disabled" : false,
           "env" : {
             "LOGLEVEL" : "debug"
           },

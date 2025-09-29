@@ -21,22 +21,22 @@ struct StringSanitizedTests {
   func testSpaces() {
     #expect("hello world".sanitized == "hello_world")
     #expect("multi word string".sanitized == "multi_word_string")
-    #expect("  spaces  ".sanitized == "__spaces__")
+    #expect("  spaces  ".sanitized == "spaces")
   }
 
   @Test("handles special characters")
   func testSpecialCharacters() {
-    #expect("hello@world".sanitized == "helloworld")
-    #expect("test-function".sanitized == "testfunction")
-    #expect("name.extension".sanitized == "nameextension")
-    #expect("mixed!@#$%characters".sanitized == "mixedcharacters")
+    #expect("hello@world".sanitized == "hello_world")
+    #expect("test-function".sanitized == "test_function")
+    #expect("name.extension".sanitized == "name_extension")
+    #expect("mixed!@#$%characters".sanitized == "mixed_characters")
   }
 
   @Test("preserves underscores")
   func testUnderscores() {
     #expect("already_snake_case".sanitized == "already_snake_case")
     #expect("mixed_camelCase".sanitized == "mixed_camel_case")
-    #expect("__double__underscores__".sanitized == "__double__underscores__")
+    #expect("__double__underscores__".sanitized == "double_underscores")
   }
 
   @Test("handles edge cases")
@@ -46,14 +46,14 @@ struct StringSanitizedTests {
     #expect("A".sanitized == "a")
     #expect("123".sanitized == "123")
     #expect("test123".sanitized == "test123")
-    #expect("test123ABC".sanitized == "test123abc")
+    #expect("test123ABC".sanitized == "test123_abc")
   }
 
   @Test("handles consecutive uppercase letters")
   func testConsecutiveUppercase() {
-    #expect("XMLHttpRequest".sanitized == "xmlhttp_request")
-    #expect("HTTPSConnection".sanitized == "httpsconnection")
-    #expect("UIViewController".sanitized == "uiview_controller")
+    #expect("XMLHttpRequest".sanitized == "xml_http_request")
+    #expect("HTTPSConnection".sanitized == "https_connection")
+    #expect("UIViewController".sanitized == "ui_view_controller")
   }
 
 }

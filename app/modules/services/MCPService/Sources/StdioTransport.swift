@@ -107,7 +107,7 @@ actor StdioTransport: DisconnectableTransport {
 
           stdin.fileHandleForWriting.write(data)
           // Send \n to flush the buffer
-          stdin.fileHandleForWriting.write(newLine)
+          stdin.fileHandleForWriting.write(Self.newLine)
         })))
     } catch {
       defaultLogger.error("Error while establishing MCP connection", error)

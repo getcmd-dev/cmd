@@ -32,6 +32,7 @@ struct ExternalSettingsCodableTests {
         "inactiveModels" : [],
         "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
           "gpt-latest" : "openai"
@@ -75,6 +76,7 @@ struct ExternalSettingsCodableTests {
             "createdOrder" : 1
           }
         },
+        "mcpServers" : {},
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
@@ -128,6 +130,7 @@ struct ExternalSettingsCodableTests {
             "createdOrder" : 2
           }
         },
+        "mcpServers" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
@@ -253,6 +256,7 @@ struct ExternalSettingsCodableTests {
         "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
@@ -283,6 +287,7 @@ struct ExternalSettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
@@ -429,6 +434,7 @@ struct ExternalSettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "toolPreferences" : [],
         "preferedProviders" : {},
         "reasoningModels": {},
@@ -465,6 +471,7 @@ struct ExternalSettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
@@ -550,6 +557,7 @@ struct ExternalSettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
@@ -696,6 +704,7 @@ struct ExternalSettingsCodableTests {
         "fileEditMode": "direct I/O",
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "preferedProviders" : {},
         "reasoningModels": {},
         "toolPreferences" : [],

@@ -3,6 +3,8 @@
 
 import Testing
 
+@preconcurrency import Combine
+import ConcurrencyFoundation
 import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
@@ -228,10 +230,17 @@ final class MockMCPServerConnection: MCPServerConnection {
 
   var onDeinit: (@Sendable () -> Void)?
 
+  var connectionStatus: ReadonlyCurrentValueSubject<MCPServiceInterface.MCPConnectionStatus, Never> {
+    mutableConnectionStatus.readonly()
+  }
+
   func disconnect() async {
     onDisconnect?()
   }
 
   func onDisconnection(_: @escaping @Sendable () -> Void) { }
+
+  private let mutableConnectionStatus: CurrentValueSubject<MCPServiceInterface.MCPConnectionStatus, Never> =
+    CurrentValueSubject(.connected)
 
 }

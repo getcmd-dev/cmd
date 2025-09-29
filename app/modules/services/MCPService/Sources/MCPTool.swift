@@ -225,11 +225,32 @@ extension MCP.Tool.Content {
 extension String {
   /// snake case, only alphanumeric and underscores characters
   var sanitized: String {
-    let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_"))
-    return replacingOccurrences(of: "([a-z])([A-Z])", with: "$1_$2", options: .regularExpression)
+    let allowedCharacters = CharacterSet.alphanumerics
+
+    // First handle camelCase to snake_case conversion
+    let camelToSnake = self
+      // Insert underscore between lowercase and uppercase
+      .replacingOccurrences(of: "([a-z])([A-Z])", with: "$1_$2", options: .regularExpression)
+      // Insert underscore between digit and uppercase
+      .replacingOccurrences(of: "([0-9])([A-Z])", with: "$1_$2", options: .regularExpression)
+      // Handle consecutive uppercase letters followed by lowercase
+      .replacingOccurrences(of: "([A-Z])([A-Z][a-z])", with: "$1_$2", options: .regularExpression)
       .lowercased()
-      .replacingOccurrences(of: " ", with: "_")
-      .components(separatedBy: allowedCharacters.inverted)
-      .joined()
+
+    // Replace disallowed characters with underscores, then clean up
+    var result = ""
+    for char in camelToSnake {
+      if allowedCharacters.contains(char.unicodeScalars.first!) {
+        result.append(char)
+      } else {
+        result.append(" ")
+      }
+    }
+    result = result
+      .trimmingCharacters(in: .whitespaces).replacingOccurrences(of: " ", with: "_")
+      // Collapse multiple underscores into one
+      .replacingOccurrences(of: "_+", with: "_", options: .regularExpression)
+
+    return result
   }
 }
