@@ -28,7 +28,7 @@ extension TextInput.Reference {
 extension TextInput {
 
   init(_ string: NSAttributedString) {
-    var newElements: [Element] = []
+    var newElements = [Element]()
 
     string.enumerateAttributes(in: NSRange(location: 0, length: string.length), options: []) { attributes, range, _ in
       let substring = string.attributedSubstring(from: range).string

@@ -29,6 +29,9 @@ public final class MockFileManager: FileManagerI {
 
   public var homeDirectoryForCurrentUser = URL(fileURLWithPath: "/mock/home")
 
+  public private(set) var files = [URL: Data]()
+  public private(set) var directories = [URL]()
+
   public func isDirectory(at path: URL) -> Bool {
     directories.map(\.standardized.path).contains(path.standardized.path)
   }
@@ -156,9 +159,6 @@ public final class MockFileManager: FileManagerI {
   public func fileHandle(forWritingTo _: URL) throws -> FileHandle {
     fatalError("not implemented")
   }
-
-  private(set) var files = [URL: Data]()
-  private(set) var directories = [URL]()
 
   // We use URL as keys to support file properties.
   // Since URL are reference types, for most functions we need to compare path instead of references. Those helpers help do this.

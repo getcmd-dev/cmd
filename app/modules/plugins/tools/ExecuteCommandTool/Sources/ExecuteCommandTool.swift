@@ -18,7 +18,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+    @unchecked Sendable
+  {
     public init(
       callingTool: ExecuteCommandTool,
       toolUseId: String,
@@ -65,6 +67,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
       public let exitCode: Int32
     }
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     // TODO: add support for readonly uses of the terminal.
     public let isReadonly = false
 
@@ -93,7 +97,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
           let shellResult = try await shellService.run(
             input.command,
             cwd: input.cwd ?? context.projectRoot?.path(),
-            useInteractiveShell: true)
+            useInteractiveShell: true,
+            env: nil)
           { execution, _, stdout, stderr in
             self.runningProcess = execution
             self.setStdoutStream(.init(replayStrategy: .replayAll, stdout))
@@ -209,7 +214,8 @@ extension String {
 // MARK: - ExecuteCommandTool.Use + DisplayableToolUse
 
 extension ExecuteCommandTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       command: input.command,
       status: status,

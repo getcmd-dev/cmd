@@ -99,7 +99,7 @@ struct SearchResultsView: View {
   @Binding private var searchInput: String?
   @Binding private var unwrappedSearchInput: String
 
-  @State private var entirelyVisibleRowIndexes: [Int] = []
+  @State private var entirelyVisibleRowIndexes = [Int]()
 
   @Environment(\.colorScheme) private var colorScheme
   @Binding private var selectedRowIndex: Int

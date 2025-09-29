@@ -26,7 +26,7 @@ final class AppScopeStorage<InitialDependencies: Sendable>: @unchecked Sendable 
 
   private let initial: InitialDependencies
 
-  private var dependencies: [String: Sendable] = [:]
+  private var dependencies = [String: Sendable]()
 
   /// The lock that should be used to synchronize access to the dependencies.
   ///

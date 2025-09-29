@@ -17,12 +17,12 @@ final class ChatHistoryViewModel {
 
   typealias ThreadInfo = ChatThreadModelMetadata
 
-  private(set) var threadsByDay: [(key: Int, value: [ThreadInfo])] = []
+  private(set) var threadsByDay = [(key: Int, value: [ThreadInfo])]()
 
   private(set) var isLoading = false
   private(set) var hasMoreThreads = true
 
-  private(set) var threads: [ThreadInfo] = [] {
+  private(set) var threads = [ThreadInfo]() {
     didSet {
       let dict: [Int: [ChatHistoryViewModel.ThreadInfo]] = threads.reduce(into: [:]) { result, thread in
         let dayDiff = Int(Date().timeIntervalSince(thread.createdAt) / 86400)

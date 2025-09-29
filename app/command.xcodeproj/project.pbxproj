@@ -10,7 +10,7 @@
 		F63A9B2B2D6F8635000F805D /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4762D6ECDBC002C9691 /* XcodeKit.framework */; };
 		F63A9B2C2D6F8635000F805D /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4762D6ECDBC002C9691 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F6DA46702D6EDBA100408790 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4742D6ECDBC002C9691 /* Cocoa.framework */; };
-		F6DA467B2D6EDBA100408790 /* ؜command (Debug).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F6DA467B2D6EDBA100408790 /* ؜cmd (Debug).appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F6DA466F2D6EDBA100408790 /* ؜cmd (Debug).appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F6EC34F32D5C165A006E935C /* App in Frameworks */ = {isa = PBXBuildFile; productRef = F6EC34F22D5C165A006E935C /* App */; };
 		F6F389012D6F8933004DAB09 /* AppExtension in Frameworks */ = {isa = PBXBuildFile; productRef = F6F389002D6F8933004DAB09 /* AppExtension */; };
 /* End PBXBuildFile section */
@@ -43,7 +43,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				F6DA467B2D6EDBA100408790 /* ؜command (Debug).appex in Embed Foundation Extensions */,
+				F6DA467B2D6EDBA100408790 /* ؜cmd (Debug).appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -59,7 +59,7 @@
 		F65DBBA72D73B83700E47A41 /* command.shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.shared.xcconfig; sourceTree = "<group>"; };
 		F668BFD52D74DD8F00387742 /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
 		F6B34B892D74E17D00AC0BBA /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
-		F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "؜command (Debug).appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6DA466F2D6EDBA100408790 /* ؜cmd (Debug).appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "؜cmd (Debug).appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "cmd (Debug).app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6F3892C2D6FBE05004DAB09 /* command.debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.debug.xcconfig; sourceTree = "<group>"; };
 		F6F3892D2D6FBE05004DAB09 /* command.release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.release.xcconfig; sourceTree = "<group>"; };
@@ -176,7 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */,
-				F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */,
+				F6DA466F2D6EDBA100408790 /* ؜cmd (Debug).appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -205,7 +205,7 @@
 				F6F389002D6F8933004DAB09 /* AppExtension */,
 			);
 			productName = "command Extension";
-			productReference = F6DA466F2D6EDBA100408790 /* ؜command (Debug).appex */;
+			productReference = F6DA466F2D6EDBA100408790 /* ؜cmd (Debug).appex */;
 			productType = "com.apple.product-type.xcode-extension";
 		};
 		F6EF7DBE2D4C4F2C0074006B /* command */ = {

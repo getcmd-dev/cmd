@@ -53,7 +53,7 @@ class XcodeWindow: NSWindow {
       if trackedWindow != oldValue {
         trackedWindowNumber = nil
         isTrackedWindowMiniaturized = nil
-        showWhenWindowDeminiaturized = false
+        showWhenXcodeWindowDeminiaturized = false
         updatePosition(skippingIfUnchanged: true)
       }
     }
@@ -110,6 +110,16 @@ class XcodeWindow: NSWindow {
     activate()
   }
 
+  override func miniaturize(_ sender: Any?) {
+    isShown = false
+    super.miniaturize(sender)
+  }
+
+  override func deminiaturize(_ sender: Any?) {
+    isShown = true
+    super.deminiaturize(sender)
+  }
+
   // MARK: - Constants
 
   private enum Constants {
@@ -141,7 +151,7 @@ class XcodeWindow: NSWindow {
   private var shouldBeVisibleWhenAutomaticallyManaged = true
 
   private var isTrackedWindowMiniaturized: Bool?
-  private var showWhenWindowDeminiaturized = false
+  private var showWhenXcodeWindowDeminiaturized = false
 
   /// Whether this window is on screen
   private var isOnScreen: Bool {
@@ -263,16 +273,16 @@ class XcodeWindow: NSWindow {
     case .windowMiniaturized:
       isTrackedWindowMiniaturized = true
       // .windowMiniaturized might be called several time for one action, so we preserve the existing value.
-      showWhenWindowDeminiaturized = showWhenWindowDeminiaturized || isShown
+      showWhenXcodeWindowDeminiaturized = showWhenXcodeWindowDeminiaturized || isShown
       hideIfManaged()
 
     case .windowDeminiaturized:
       isTrackedWindowMiniaturized = false
 
-      if isShown || showWhenWindowDeminiaturized {
+      if isShown || showWhenXcodeWindowDeminiaturized {
         showIfManaged()
       }
-      showWhenWindowDeminiaturized = false
+      showWhenXcodeWindowDeminiaturized = false
 
     case .windowMoved:
       updatePosition(skippingIfUnchanged: false)

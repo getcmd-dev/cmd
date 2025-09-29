@@ -31,7 +31,9 @@ public final class MockAppEventHandlerRegistry: AppEventHandlerRegistry {
     get { state.value.onRegisterHandler }
   }
 
-  public var onHandle: @Sendable (_ event: AppEvent) async -> Bool {
+  public var onHandle: @Sendable (_ event: AppEvent)
+    async -> Bool
+  {
     set { state.mutate { $0.onHandle = newValue } }
     get { state.value.onHandle }
   }
@@ -45,7 +47,7 @@ public final class MockAppEventHandlerRegistry: AppEventHandlerRegistry {
   }
 
   private struct State: Sendable {
-    var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool] = []
+    var eventHandlers = [@Sendable (_ appEvent: AppEvent) async -> Bool]()
     var onRegisterHandler: @Sendable (_ handler: @Sendable @escaping (_ appEvent: AppEvent) async -> Bool)
       -> Void = { _ in }
     var onHandle: @Sendable (_ event: AppEvent) async -> Bool = { _ in true }

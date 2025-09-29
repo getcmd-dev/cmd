@@ -125,9 +125,9 @@ final class DefaultPermissionsService: PermissionsService {
       return false
     }
     #if DEBUG
-    let isGranted = output.contains("command (Debug).appex")
+    let isGranted = output.contains("cmd (Debug).appex")
     #else
-    let isGranted = output.contains("command.appex")
+    let isGranted = output.contains("cmd.appex")
     #endif
     return isGranted
   }

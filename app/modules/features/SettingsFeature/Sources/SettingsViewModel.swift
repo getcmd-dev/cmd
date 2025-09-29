@@ -6,9 +6,12 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LoggingServiceInterface
 import SettingsServiceInterface
+import SharedValuesFoundation
 import SwiftUI
 import ToolFoundation
+import XcodeControllerServiceInterface
 
 // MARK: - SettingsViewModel
 
@@ -24,6 +27,8 @@ public final class SettingsViewModel {
     releaseUserDefaults = try? UserDefaults.releaseShared(bundle: .main)
     @Dependency(\.toolsPlugin) var toolsPlugin
     self.toolsPlugin = toolsPlugin
+    @Dependency(\.xcodeController) var xcodeController
+    self.xcodeController = xcodeController
 
     let settings = settingsService.values()
     self.settings = settings
@@ -34,6 +39,7 @@ public final class SettingsViewModel {
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
+    enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -138,6 +144,12 @@ public final class SettingsViewModel {
     }
   }
 
+  var enableNetworkProxy: Bool {
+    didSet {
+      userDefaults.set(enableNetworkProxy, forKey: .enableNetworkProxy)
+    }
+  }
+
   /// For each available model, the associated provider.
   var providerForModels: [LLMModel: LLMProvider] {
     get {
@@ -214,6 +226,28 @@ public final class SettingsViewModel {
     }
   }
 
+  // MARK: - User Defined Xcode Shortcuts
+  var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] {
+    get { settings.userDefinedXcodeShortcuts }
+    set {
+      let oldValue = settings.userDefinedXcodeShortcuts
+      settings.userDefinedXcodeShortcuts = newValue
+      settingsService.update(setting: \.userDefinedXcodeShortcuts, to: newValue)
+
+      // Trigger extension reload if shortcuts changed
+      if oldValue != newValue {
+        Task {
+          do {
+            try await xcodeController.executeExtensionCommand(ExtensionCommandNames.reloadSettings)
+            defaultLogger.log("Successfully triggered extension reload after user defined shortcuts change")
+          } catch {
+            defaultLogger.error("Failed to trigger extension reload: \(error)")
+          }
+        }
+      }
+    }
+  }
+
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModel] {
     settings.availableModels
@@ -230,6 +264,7 @@ public final class SettingsViewModel {
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
   private let toolsPlugin: ToolsPlugin
+  private let xcodeController: XcodeController
 }
 
 public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]

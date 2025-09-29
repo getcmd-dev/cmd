@@ -32,7 +32,9 @@ extension ReadFileToolTests {
           "input": {
             "path": "/src/main.swift"
           },
-          "internalState": null,
+          "internalState" : {
+            "path" : "/src/main.swift"
+          },
           "isInputComplete": true,
           "status": {
             "status": "notStarted"
@@ -64,7 +66,13 @@ extension ReadFileToolTests {
             },
             "path": "/test/file.py"
           },
-          "internalState": null,
+          "internalState": {
+            "lineRange" : {
+              "end" : 15,
+              "start" : 5
+            },
+            "path" : "/test/file.py"
+          },
           "isInputComplete": true,
           "status": {
             "status": "notStarted"
@@ -96,7 +104,13 @@ extension ReadFileToolTests {
             },
             "path": "/config/settings.json"
           },
-          "internalState": null,
+          "internalState": {
+            "lineRange" : {
+              "end" : 25,
+              "start" : 25
+            },
+            "path" : "/config/settings.json"
+          },
           "isInputComplete": true,
           "status": {
             "status": "notStarted"

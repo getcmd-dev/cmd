@@ -143,7 +143,7 @@ extension JSON {
     } catch {
       // Array
       var container = try decoder.unkeyedContainer()
-      var array: [JSON.Value] = []
+      var array = [JSON.Value]()
       while !container.isAtEnd {
         if let value = try? container.decode(JSON.Value.self) {
           array.append(value)
@@ -202,7 +202,7 @@ extension JSON.Value {
       } catch {
         // Array
         var container = try decoder.unkeyedContainer()
-        var array: [JSON.Value] = []
+        var array = [JSON.Value]()
         while !container.isAtEnd {
           if let value = try? container.decode(JSON.Value.self) {
             array.append(value)
@@ -351,7 +351,7 @@ extension JSON.Value {
   }
 }
 
-// MARK: - String + CodingKey
+// MARK: - String + @retroactive CodingKey
 
 extension String: @retroactive CodingKey {
 
@@ -367,21 +367,31 @@ extension String: @retroactive CodingKey {
   public var intValue: Int? { Int(self) }
 }
 
+// MARK: - JSONValueConvertible
+
 public protocol JSONValueConvertible {
   var asJSONValue: JSON.Value { get }
 }
+
+// MARK: - String + JSONValueConvertible
 
 extension String: JSONValueConvertible {
   public var asJSONValue: JSON.Value { .string(self) }
 }
 
+// MARK: - Int + JSONValueConvertible
+
 extension Int: JSONValueConvertible {
   public var asJSONValue: JSON.Value { .number(Double(self)) }
 }
 
+// MARK: - Bool + JSONValueConvertible
+
 extension Bool: JSONValueConvertible {
   public var asJSONValue: JSON.Value { .bool(self) }
 }
+
+// MARK: - Optional + JSONValueConvertible
 
 extension Optional: JSONValueConvertible where Wrapped: JSONValueConvertible {
   public var asJSONValue: JSON.Value {

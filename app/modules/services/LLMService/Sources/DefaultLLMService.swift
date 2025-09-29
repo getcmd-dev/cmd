@@ -95,7 +95,7 @@ final class DefaultLLMService: LLMService {
 
     // At this point all the assistant messages have been received.
     // Return them to the caller.
-    var messages: [AssistantMessage] = []
+    var messages = [AssistantMessage]()
     for message in response.value {
       let finalMessage = await message.lastValue
       messages.append(finalMessage)
@@ -285,7 +285,13 @@ final class DefaultLLMService: LLMService {
       #if DEBUG
       let stream = {
         if supportDebugStreamRepeatInDebug, let stream = try? repeatDebugHelper.repeatStream() { return stream }
-        return server.streamPostRequest(path: "sendMessage", data: data)
+        return server.streamPostRequest(
+          path: "sendMessage",
+          data: data,
+          configure: { request in
+            // For external agents, allow for long timeouts
+            request.timeoutInterval = providerSettings.executable != nil ? 3600 : 120
+          })
       }()
 
       let helper = RequestStreamingHelper(
@@ -297,7 +303,13 @@ final class DefaultLLMService: LLMService {
         localServer: server,
         repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)
       #else
-      let stream = server.streamPostRequest(path: "sendMessage", data: data)
+      let stream = server.streamPostRequest(
+        path: "sendMessage",
+        data: data,
+        configure: { request in
+          // For external agents, allow for long timeouts
+          request.timeoutInterval = providerSettings.executable != nil ? 3600 : 120
+        })
 
       let helper = RequestStreamingHelper(
         stream: stream,

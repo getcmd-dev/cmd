@@ -14,14 +14,14 @@ import Testing
 struct DefaultPermissionsServiceTests {
 
   static let xcodeExtensionNotRunningStdout = """
-    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/command.app/Contents/MacOS/command
+    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/cmd.app/Contents/MacOS/cmd
     me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto command
     """
 
   static let xcodeExtensionRunningStdout = """
-    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/command.app/Contents/MacOS/command
-    me           29834   0.0  0.0 410463600   9984   ??  Ss    2:52PM   0:00.01 /Applications/command.app/Contents/PlugIns/command (Debug).appex/Contents/MacOS/command -AppleLanguages ("en-US")
-    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto command
+    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/cmd.app/Contents/MacOS/cmd
+    me           29834   0.0  0.0 410463600   9984   ??  Ss    2:52PM   0:00.01 /Applications/cmd.app/Contents/PlugIns/cmd (Debug).appex/Contents/MacOS/command -AppleLanguages ("en-US")
+    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto cmd
     """
 
   @Test
@@ -68,8 +68,8 @@ struct DefaultPermissionsServiceTests {
     let pollCount = Atomic(0)
 
     let shellService = MockShellService()
-    shellService.onRun = { command, _, _, _ in
-      #expect(command == "ps aux | grep 'command'")
+    shellService.onRun = { command, _, _, _, _ in
+      #expect(command == "ps aux | grep 'cmd'")
       let count = pollCount.increment()
       return CommandExecutionResult(
         exitCode: 0,

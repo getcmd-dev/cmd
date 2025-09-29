@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		05E0FE242E8459E80022C845 /* TestXcodeProjParsingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05E0FE232E8459E80022C845 /* TestXcodeProjParsingTests.swift */; };
 		F680D0C32DC0458F00EA0CD5 /* Atomic in Frameworks */ = {isa = PBXBuildFile; productRef = F680D0C22DC0458F00EA0CD5 /* Atomic */; };
 /* End PBXBuildFile section */
 
@@ -21,6 +22,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		05E0FE232E8459E80022C845 /* TestXcodeProjParsingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestXcodeProjParsingTests.swift; sourceTree = "<group>"; };
 		F680D0642DC044CB00EA0CD5 /* TestXcodeProjParsing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestXcodeProjParsing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F680D0752DC044CC00EA0CD5 /* TestXcodeProjParsingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TestXcodeProjParsingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -29,11 +31,6 @@
 		F680D0662DC044CB00EA0CD5 /* TestXcodeProjParsing */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TestXcodeProjParsing;
-			sourceTree = "<group>";
-		};
-		F680D0782DC044CC00EA0CD5 /* TestXcodeProjParsingTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = TestXcodeProjParsingTests;
 			sourceTree = "<group>";
 		};
 		F680D0822DC044CC00EA0CD5 /* TestXcodeProjParsingUITests */ = {
@@ -62,11 +59,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		05E0FE252E8459F70022C845 /* TestXcodeProjParsingTests */ = {
+			isa = PBXGroup;
+			children = (
+				05E0FE232E8459E80022C845 /* TestXcodeProjParsingTests.swift */,
+			);
+			path = TestXcodeProjParsingTests;
+			sourceTree = "<group>";
+		};
 		F680D05B2DC044CB00EA0CD5 = {
 			isa = PBXGroup;
 			children = (
 				F680D0662DC044CB00EA0CD5 /* TestXcodeProjParsing */,
-				F680D0782DC044CC00EA0CD5 /* TestXcodeProjParsingTests */,
+				05E0FE252E8459F70022C845 /* TestXcodeProjParsingTests */,
 				F680D0822DC044CC00EA0CD5 /* TestXcodeProjParsingUITests */,
 				F680D0652DC044CB00EA0CD5 /* Products */,
 			);
@@ -119,9 +124,6 @@
 			);
 			dependencies = (
 				F680D0772DC044CC00EA0CD5 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				F680D0782DC044CC00EA0CD5 /* TestXcodeProjParsingTests */,
 			);
 			name = TestXcodeProjParsingTests;
 			packageProductDependencies = (
@@ -201,6 +203,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				05E0FE242E8459E80022C845 /* TestXcodeProjParsingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

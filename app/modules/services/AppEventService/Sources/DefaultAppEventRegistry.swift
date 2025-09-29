@@ -31,7 +31,7 @@ final class DefaultAppEventHandlerRegistry: AppEventHandlerRegistry {
     return false
   }
 
-  private var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool] = []
+  private var eventHandlers = [@Sendable (_ appEvent: AppEvent) async -> Bool]()
 }
 
 extension BaseProviding {

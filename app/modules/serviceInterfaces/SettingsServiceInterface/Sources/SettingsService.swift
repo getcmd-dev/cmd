@@ -50,21 +50,22 @@ public struct Settings: Sendable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
-    fileEditMode: FileEditMode = .directIO,
     automaticallyUpdateXcodeSettings: Bool = false,
+    fileEditMode: FileEditMode = .directIO,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
     reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
-    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts())
+    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
+    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
-    self.fileEditMode = fileEditMode
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
+    self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
@@ -72,6 +73,7 @@ public struct Settings: Sendable, Equatable {
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
+    self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -118,9 +120,9 @@ public struct Settings: Sendable, Equatable {
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var automaticallyCheckForUpdates: Bool
-  public var fileEditMode: FileEditMode
   /// Whether to automatically update Xcode settings to configure `cmd` as an AI backend.
   public var automaticallyUpdateXcodeSettings: Bool
+  public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
@@ -130,6 +132,7 @@ public struct Settings: Sendable, Equatable {
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
+  public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
 
 }
 
@@ -154,6 +157,51 @@ extension Settings {
 }
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings
+
+// MARK: - UserDefinedXcodeShortcut
+
+public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiable {
+  public init(
+    id: UUID = UUID(),
+    name: String,
+    command: String,
+    keyBinding: Settings.KeyboardShortcut? = nil,
+    xcodeCommandIndex: Int)
+  {
+    self.id = id
+    self.name = name
+    self.command = command
+    self.keyBinding = keyBinding
+    self.xcodeCommandIndex = xcodeCommandIndex
+  }
+
+  public let id: UUID
+  public var name: String
+  public var command: String
+
+  public var keyBinding: Settings.KeyboardShortcut?
+  /// The index of the Xcode command this shortcut is associated with.
+  /// Xcode identifies commands by the class name they are mapped to (e.g. `UserDefinedXcodeShortcut0Command` for index 0).
+  /// We keep track to this index to keep it consistently associated with the same command.
+  public let xcodeCommandIndex: Int
+
+  public func encode(to encoder: any Encoder) throws {
+    // The id is not encoded. It is only used in memory to help identify
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(name, forKey: .name)
+    try container.encode(command, forKey: .command)
+    // keyBinding is not encoded as it is not yet supported
+    try container.encode(xcodeCommandIndex, forKey: .xcodeCommandIndex)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case id
+    case name
+    case command
+    case keyBinding
+    case xcodeCommandIndex
+  }
+}
 
 // MARK: - Keyboard Shortcuts
 
@@ -236,7 +284,10 @@ extension UserDefaultsKey {
   public static let defaultChatPositionIsInverted = "defaultChatPositionIsInverted"
   public static let repeatLastLLMInteraction = "llmService.isRepeating"
   public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
+  public static let enableNetworkProxy = "enableNetworkProxy"
 }
+
+// MARK: - KeyEquivalent + Codable
 
 extension KeyEquivalent: Codable {
   public init(from decoder: any Decoder) throws {

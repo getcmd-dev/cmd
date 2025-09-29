@@ -42,7 +42,7 @@ struct CheckpointView: View {
         }
       }
       .onHover(perform: { isHovered in
-        self.isHovered = isHovered
+        self.isHovered = self.isHovered || isHovered
       })
 
       Spacer()

@@ -18,6 +18,7 @@ struct InternalSettingsView: View {
   @Binding var showInternalSettingsInRelease: Bool
   @Binding var defaultChatPositionIsInverted: Bool
   @Binding var enableAnalyticsAndCrashReporting: Bool
+  @Binding var enableNetworkProxy: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -43,6 +44,11 @@ struct InternalSettingsView: View {
           "Invert the default chat position",
           caption: "Useful when using both the Debug and Release apps to avoid overlaps",
           value: $defaultChatPositionIsInverted)
+
+        InternalSettingsRow(
+          "Enable network proxy",
+          caption: "Proxy network requests through a local proxy server",
+          value: $enableNetworkProxy)
 
         #if DEBUG
         InternalSettingsRow(

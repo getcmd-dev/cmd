@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import Dependencies
 import ExtensionEventsInterface
+import Foundation
 import LoggingServiceInterface
 import SharedValuesFoundation
 import ShellServiceInterface
@@ -28,28 +29,22 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     if let appEvent = appEvent as? ExecuteExtensionRequestEvent {
       do {
         switch appEvent.command {
-        case ExtensionCommandKeys.openInCursor:
-          let xcodeState = xcodeObserver.state
-          guard let currentFile = xcodeState.focusedTabURL else {
-            defaultLogger.error("No active file found")
+        case ExtensionCommandKeys.executeUserDefinedXcodeShortcut:
+          let input = try JSONDecoder().decode(ExtensionRequest<UserDefinedXcodeShortcutExecutionInput>.self, from: appEvent.data)
+            .input
+
+          defaultLogger.log("Executing user defined Xcode shortcut: \(input.shortcutId)")
+
+          do {
+            try await input.execute(xcodeObserver: xcodeObserver, shellService: shellService)
+            defaultLogger.log("User defined Xcode shortcut completed successfully: \(input.shortcutId)")
+            appEvent.completion(.success(EmptyResult()))
+            return true
+          } catch {
+            defaultLogger.error("User defined Xcode shortcut execution failed: \(error)")
+            appEvent.completion(.failure(error))
             return false
           }
-          var lineDescriptor = ""
-          if
-            let line = xcodeState.focusedWorkspace?.editors.first(where: {
-              $0.fileName == currentFile.lastPathComponent
-            })?.selections.first?.start.line
-          {
-            lineDescriptor = ":\(line + 1)"
-          }
-
-          try await shellService
-            .run(
-              "/Applications/Cursor.app/Contents/Resources/app/bin/code -g \"\(currentFile.path(percentEncoded: false))\(lineDescriptor)\"",
-              useInteractiveShell: false)
-          defaultLogger.log("Completed command")
-          appEvent.completion(.success(EmptyResult()))
-          return true
 
         default:
           return false

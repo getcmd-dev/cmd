@@ -9,6 +9,7 @@
         <title>Version REPLACE_SPARKLE_VERSION</title>
         <link>https://sparkle-project.org</link>
         <sparkle:version>REPLACE_SPARKLE_VERSION</sparkle:version>
+        <sparkle:channel>stable</sparkle:channel>
         <description>
           <![CDATA[
            REPLACE_SPARKLE_DESCRIPTION

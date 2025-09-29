@@ -49,6 +49,9 @@ public struct RichTextEditor: NSViewRepresentable {
     public func textDidChange(_ notification: Notification) {
       guard let textView = notification.object as? NSTextView else { return }
       if let string = textView.textStorage {
+        // Note: prior to Xcode 26 / Swift 6.2, this triggerred a warning “Modifying state during view update, this will cause undefined behavior.”
+        // If the issue persists, simply wrapping in a Task is buggy as we need to prevent and change to the text in `updateNSView` until the
+        // update has been propagated (ie the View is re-created in between, it'll have the old text value).
         parent.text = string
       }
 
@@ -312,6 +315,9 @@ private class RichTextView: NSTextView {
     if key == KeyEquivalent("\u{19}") {
       // When tab is pressed with shift, the key we get is \u{19} while without the modifier we get \t
       key = .tab
+    } else if key == KeyEquivalent("\u{7F}") {
+      // Somehow not mapped correctly
+      key = .delete
     }
 
     let handled = onKeyDown(key, event.modifierFlags.intersection(.deviceIndependentFlagsMask))

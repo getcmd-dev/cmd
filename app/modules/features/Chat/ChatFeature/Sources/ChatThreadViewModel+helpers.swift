@@ -41,8 +41,8 @@ extension ChatThreadViewModel {
   nonisolated static func formatFileListAsHierarchy(filesInfo: [Schema.ListedFileInfo], projectRoot: URL) -> String {
     let filesInfo = filesInfo
       .sorted { $0.path < $1.path }
-    var result: [String] = []
-    var indentation: [String] = []
+    var result = [String]()
+    var indentation = [String]()
     var processedPaths = Set<String>()
 
     let dirInfoMap = Dictionary(uniqueKeysWithValues: filesInfo.filter { !$0.isFile }.map { ($0.path, $0) })
@@ -186,13 +186,16 @@ extension ChatMessageViewModel {
   /// Converts the content to the API format.
   /// When the content contains a tool use, it will be split across a message from the assistant and a message from the user, hence the array result.
   @MainActor
-  fileprivate var apiFormat: [Schema.Message] {
+  var apiFormat: [Schema.Message] {
     var messages = [Schema.Message]()
     var currentMessage = Schema.Message(role: role.apiFormat, content: [])
     for (role, messageContent) in content.flatMap(\.apiFormat) {
-      if role != currentMessage.role {
-        messages.append(currentMessage)
-        currentMessage = Schema.Message(role: role ?? self.role.apiFormat, content: [])
+      let resolvedRole = role ?? self.role.apiFormat
+      if resolvedRole != currentMessage.role {
+        if !currentMessage.content.isEmpty {
+          messages.append(currentMessage)
+        }
+        currentMessage = Schema.Message(role: resolvedRole, content: [])
       }
       currentMessage = Schema.Message(
         role: currentMessage.role,

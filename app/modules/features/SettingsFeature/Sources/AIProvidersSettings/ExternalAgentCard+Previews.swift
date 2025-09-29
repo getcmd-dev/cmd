@@ -14,7 +14,7 @@ import SwiftUI
 
 func createShellService(installedExecutablePath: String?) -> ShellService {
   let mockShellService = MockShellService()
-  mockShellService.onRun = { _, _, _, _ in
+  mockShellService.onRun = { _, _, _, _, _ in
     if let installedExecutablePath {
       return CommandExecutionResult(
         exitCode: 0,

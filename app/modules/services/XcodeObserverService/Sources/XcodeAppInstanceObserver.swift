@@ -67,9 +67,9 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
 
   private let internalState: CurrentValueSubject<InternalXcodeAppState, Never>
 
-  private var workspaceInspectors: [URL: XcodeWorkspaceObserver] = [:]
+  private var workspaceInspectors = [URL: XcodeWorkspaceObserver]()
 
-  private var workspaceSubscriptions: [URL: AnyCancellable] = [:]
+  private var workspaceSubscriptions = [URL: AnyCancellable]()
 
   private var _onDidReceiveAppActivationNotification: (@MainActor @Sendable (XcodeAppInstanceObserver, Bool) -> Void)?
 

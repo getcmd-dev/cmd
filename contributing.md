@@ -15,22 +15,30 @@ brew install --cask swiftformat-for-xcode
 # Open Settings > General > Login Items & Extensions > Xcode > Enable SwiftFormat for Xcode
 # Set a key binding for SwiftFormat in Xcode > Preferences > Key Bindings > Format File
 
-# Enable using pre-built swift packages, useful for macros
-# https://forums.swift.org/t/preview-swift-syntax-prebuilts-for-macros/80202
-defaults write com.apple.dt.Xcode IDEPackageEnablePrebuilts YES
-
 
 brew install jc
 brew install jq
 brew install shfmt
+brew install yarn
+
 cp -R ./tools/githooks/. .git/hooks
 
 # helper for dev tools to bashrc
 echo '
 # Run helper tools for the cmd app
 function cmd {
-  (cd $(git rev-parse --show-toplevel) && ./cmd.sh "$@")
+  "$(git rev-parse --show-toplevel)/cmd.sh" "$@"
 }' >> ~/.zshrc
+
+# Ruby version management
+brew install chruby ruby-install
+ruby-install ruby
+echo '
+# Ruby
+source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
+source /opt/homebrew/opt/chruby/share/chruby/auto.sh' >>  ~/.zshrc
+source ~/.zshrc
+gem install bundler && bundle install
 ```
 
 ## Architecture overview

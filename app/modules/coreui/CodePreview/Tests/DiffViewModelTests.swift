@@ -318,7 +318,7 @@ struct FileDiffViewModelTests {
     let secondUpdateExpectation = expectation(description: "Second streaming update")
 
     let updateCount = Atomic(0)
-    let cancellable = initialChange.didSet(\.formattedDiff, perform: { _ in
+    let cancellable = initialChange.observeChanges(to: \.formattedDiff, perform: { _ in
       let count = updateCount.mutate { $0 += 1
         return $0
       }

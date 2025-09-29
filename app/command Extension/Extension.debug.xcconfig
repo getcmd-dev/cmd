@@ -4,5 +4,5 @@
 #include "../command.debug.xcconfig"
 
 PRODUCT_NAME = $(XCODE_EXTENSION_PRODUCT_NAME)
-INFOPLIST_KEY_CFBundleDisplayName = command Extension $(DEBUG_SUFFIX)
+INFOPLIST_KEY_CFBundleDisplayName = cmd Extension $(DEBUG_SUFFIX)
 PRODUCT_BUNDLE_IDENTIFIER = $(XCODE_EXTENSION_BUNDLE_IDENTIFIER)

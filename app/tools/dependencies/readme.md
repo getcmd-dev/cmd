@@ -1,6 +1,6 @@
 ## build the tool
 ```bash
-swift build -c release --enable-experimental-prebuilts
+swift build -c release
 ```
 
 ## run the tool

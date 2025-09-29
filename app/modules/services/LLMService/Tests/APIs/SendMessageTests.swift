@@ -46,28 +46,28 @@ final class SendMessageTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
       tools: [])
 
-    var messagesUpdateCount = 0
-    var firstMessageUpdateCount = 0
-    var contentUpdateCount = 0
+    let messagesUpdateCount = Atomic(0)
+    let firstMessageUpdateCount = Atomic(0)
+    let contentUpdateCount = Atomic(0)
     Task {
       for await messages in updatingMessages.futureUpdates {
-        messagesUpdateCount += 1
-        if messagesUpdateCount == 1 {
+        let count = messagesUpdateCount.increment()
+        if count == 1 {
           // First update has one message
           #expect(messages.count == 1)
 
           let updatingMessage = try #require(messages.first)
 
           for await message in updatingMessage.futureUpdates {
-            firstMessageUpdateCount += 1
-            if firstMessageUpdateCount == 1 {
+            let firstCount = firstMessageUpdateCount.increment()
+            if firstCount == 1 {
               // First update has one piece of text content
               #expect(message.content.count == 1)
               let updatingTextContent = try #require(message.content.first?.asText)
 
               for await textContent in updatingTextContent.futureUpdates {
-                contentUpdateCount += 1
-                if contentUpdateCount == 1 {
+                let contentCount = contentUpdateCount.increment()
+                if contentCount == 1 {
                   #expect(textContent.content == "hi what can I do?")
                   #expect(textContent.deltas == ["hi", " what can I do?"])
                 }
@@ -82,9 +82,9 @@ final class SendMessageTests {
     }
 
     try await fulfillment(of: [messagesUpdatesReceived, firstMessageUpdatesReceived, chunksReceived])
-    #expect(messagesUpdateCount == 1)
-    #expect(firstMessageUpdateCount == 1)
-    #expect(contentUpdateCount == 1)
+    #expect(messagesUpdateCount.value == 1)
+    #expect(firstMessageUpdateCount.value == 1)
+    #expect(contentUpdateCount.value == 1)
   }
 
   @Test("SendMessage with long message history")
@@ -423,28 +423,28 @@ final class SendMessageTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
       tools: [])
 
-    var messagesUpdateCount = 0
-    var firstMessageUpdateCount = 0
-    var contentUpdateCount = 0
+    let messagesUpdateCount = Atomic(0)
+    let firstMessageUpdateCount = Atomic(0)
+    let contentUpdateCount = Atomic(0)
     Task {
       for await messages in updatingMessages.futureUpdates {
-        messagesUpdateCount += 1
-        if messagesUpdateCount == 1 {
+        let count = messagesUpdateCount.increment()
+        if count == 1 {
           // First update has one message
           #expect(messages.count == 1)
 
           let updatingMessage = try #require(messages.first)
 
           for await message in updatingMessage.futureUpdates {
-            firstMessageUpdateCount += 1
-            if firstMessageUpdateCount == 1 {
+            let firstCount = firstMessageUpdateCount.increment()
+            if firstCount == 1 {
               // First update has one piece of text content
               #expect(message.content.count == 1)
               let updatingTextContent = try #require(message.content.first?.asReasoning)
 
               for await textContent in updatingTextContent.futureUpdates {
-                contentUpdateCount += 1
-                if contentUpdateCount == 1 {
+                let contentCount = contentUpdateCount.increment()
+                if contentCount == 1 {
                   #expect(textContent.content == "hi what can I do?")
                   #expect(textContent.deltas == ["hi", " what can I do?"])
                 }
@@ -459,9 +459,9 @@ final class SendMessageTests {
     }
 
     try await fulfillment(of: [messagesUpdatesReceived, firstMessageUpdatesReceived, chunksReceived])
-    #expect(messagesUpdateCount == 1)
-    #expect(firstMessageUpdateCount == 1)
-    #expect(contentUpdateCount == 1)
+    #expect(messagesUpdateCount.value == 1)
+    #expect(firstMessageUpdateCount.value == 1)
+    #expect(contentUpdateCount.value == 1)
   }
 
   @Test("SendMessage with message history containing reasoning")
@@ -562,20 +562,20 @@ final class SendMessageTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
       tools: [])
 
-    var messagesUpdateCount = 0
-    var firstMessageUpdateCount = 0
+    let messagesUpdateCount = Atomic(0)
+    let firstMessageUpdateCount = Atomic(0)
     Task {
       for await messages in updatingMessages.futureUpdates {
-        messagesUpdateCount += 1
-        if messagesUpdateCount == 1 {
+        let count = messagesUpdateCount.increment()
+        if count == 1 {
           // First update has one message
           #expect(messages.count == 1)
 
           let updatingMessage = try #require(messages.first)
 
           for await message in updatingMessage.futureUpdates {
-            firstMessageUpdateCount += 1
-            if firstMessageUpdateCount == 1 {
+            let firstCount = firstMessageUpdateCount.increment()
+            if firstCount == 1 {
               var contentUpdateCount = 0
               // First update has one piece of text content
               #expect(message.content.count == 1)
@@ -617,8 +617,8 @@ final class SendMessageTests {
       firstContentChunksReceived,
       secondContentChunksReceived,
     ])
-    #expect(messagesUpdateCount == 1)
-    #expect(firstMessageUpdateCount == 2)
+    #expect(messagesUpdateCount.value == 1)
+    #expect(firstMessageUpdateCount.value == 2)
   }
 
   @Test("SendMessage with tool use that has bad input sends detailed error message")

@@ -31,7 +31,7 @@ struct ExecuteCommandToolTests {
   @Test
   func completesWithTheExpectedOutcome() async throws {
     let shellService = MockShellService()
-    shellService.onRun = { command, cwd, useInteractiveShell, _ in
+    shellService.onRun = { command, cwd, useInteractiveShell, _, _ in
       #expect(command == "ls -la")
       #expect(cwd == "/path/to/root/path/to/dir")
       #expect(useInteractiveShell == true)
@@ -63,7 +63,7 @@ struct ExecuteCommandToolTests {
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
     let shellService = MockShellService()
-    shellService.onRun = { _, _, _, _ in
+    shellService.onRun = { _, _, _, _, _ in
       struct ShellError: Error {
         let message: String
       }

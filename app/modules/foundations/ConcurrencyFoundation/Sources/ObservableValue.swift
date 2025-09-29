@@ -30,7 +30,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
   public convenience init(initial: Value, updates: AsyncStream<Value>) {
     self.init(initial)
 
-    Task {
+    Task { [weak self] in
       for await value in updates {
         Task { @MainActor [weak self] in
           self?.value = value

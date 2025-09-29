@@ -8,7 +8,6 @@ import ThreadSafe
 #if DEBUG
 @ThreadSafe
 public final class MockXcodeController: XcodeController {
-
   public init() { }
 
   public var onApplyFileChange: (@Sendable (FileChange) -> Void)?
@@ -16,6 +15,12 @@ public final class MockXcodeController: XcodeController {
   public var onBuild: (@Sendable (URL, BuildType) async throws -> BuildSection)?
 
   public var onOpen: (@Sendable (URL, Int?, Int?) async throws -> Void)?
+
+  public var onExecuteExtensionCommand: (@Sendable (String) async throws -> Void)?
+
+  public func executeExtensionCommand(_ commandName: String) async throws {
+    try await onExecuteExtensionCommand?(commandName)
+  }
 
   public func apply(fileChange: FileChange) async throws {
     onApplyFileChange?(fileChange)

@@ -8,7 +8,8 @@ import ToolFoundation
 // MARK: - ClaudeCodeGlobTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGlobTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(GlobToolUseViewModel(status: status, input: input))
   }
 }

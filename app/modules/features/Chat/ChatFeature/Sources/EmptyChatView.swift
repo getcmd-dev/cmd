@@ -48,7 +48,7 @@ struct EmptyChatView: View {
     .onReceive(settingsService.liveValue(for: \.keyboardShortcuts), perform: { keyboardShortcuts in
       self.keyboardShortcuts = keyboardShortcuts
     })
-    .onReceive(xcodeObserver.statePublisher, perform: { newXcodeState in
+    .onReceive(xcodeObserver.statePublisher.receive(on: DispatchQueue.main), perform: { newXcodeState in
       hasXcodeOpen = newXcodeState.focusedInstance != nil
     })
   }

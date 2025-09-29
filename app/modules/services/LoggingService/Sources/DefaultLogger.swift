@@ -247,7 +247,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
         return
       }
-      let logDir = applicationSupport.appendingPathComponent("command").appendingPathComponent("logs")
+      let logDir = applicationSupport.appendingPathComponent(Bundle.main.hostAppBundleId).appendingPathComponent("logs")
       try? fileManager.createDirectory(at: logDir, withIntermediateDirectories: true)
 
       let logFilePath = logDir.appendingPathComponent("\(timestamp).txt")

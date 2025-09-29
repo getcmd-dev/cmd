@@ -7,9 +7,9 @@ import Foundation
 // MARK: - ExtensionCommandKeys
 
 public enum ExtensionCommandKeys {
-  public static let openInCursor = "openInCursor"
   public static let getFileChangeToApply = "getFileChangeToApply"
   public static let confirmFileChangeApplied = "confirmFileChangeApplied"
+  public static let executeUserDefinedXcodeShortcut = "executeUserDefinedXcodeShortcut"
 }
 
 // MARK: - ExtensionTimeout
@@ -22,6 +22,7 @@ public enum ExtensionTimeout {
 
 public enum ExtensionCommandNames {
   public static let applyEdit = "Apply Edit"
+  public static let reloadSettings = "Reload Settings"
 }
 
 // MARK: - FileChangeConfirmation
@@ -46,6 +47,26 @@ public struct EmptyInput: Codable {
 
 public struct EmptyResponse: Codable, Sendable {
   public init() { }
+}
+
+// MARK: - UserDefinedXcodeShortcutLimits
+
+public enum UserDefinedXcodeShortcutLimits {
+  /// Maximum number of user defined Xcode shortcuts that can be registered simultaneously
+  public static let maxShortcuts = 10
+}
+
+// MARK: - UserDefinedXcodeShortcutExecutionInput
+
+/// Parameters to execute an Xcode shortcut that has been defined by the user.
+public struct UserDefinedXcodeShortcutExecutionInput: Codable {
+  public let shortcutId: String
+  public let shellCommand: String
+
+  public init(shortcutId: String, shellCommand: String) {
+    self.shortcutId = shortcutId
+    self.shellCommand = shellCommand
+  }
 }
 
 // MARK: - ExtensionRequest

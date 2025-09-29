@@ -52,6 +52,8 @@ public final class ClaudeCodeReadTool: ExternalTool {
 
     public typealias Output = ReadFileTool.Use.Output
 
+    @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
     public let isReadonly = true
 
     public let callingTool: ClaudeCodeReadTool
@@ -175,7 +177,8 @@ public final class ClaudeCodeReadTool: ExternalTool {
 // MARK: - ClaudeCodeReadTool.Use + DisplayableToolUse
 
 extension ClaudeCodeReadTool.Use: DisplayableToolUse {
-  public var viewModel: AnyToolUseViewModel {
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
     let lineRange: ReadFileTool.Use.Input.Range? = {
       if let limit = input.limit {
         if let offset = input.offset {

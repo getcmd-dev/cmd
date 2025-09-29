@@ -86,6 +86,14 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
+  public func executeExtensionCommand(_ commandName: String) async throws {
+    try await DefaultXcodeController.triggerExtensionCommand(
+      commandName: commandName,
+      xcodeObserver: xcodeObserver,
+      shellService: shellService,
+      settingsService: settingsService)
+  }
+
   let shellService: ShellService
   let xcodeObserver: XcodeObserver
   let fileManager: FileManagerI
@@ -257,6 +265,21 @@ extension DefaultXcodeController {
     settingsService: SettingsService)
     async throws
   {
+    try await triggerExtensionCommand(
+      commandName: ExtensionCommandNames.applyEdit,
+      xcodeObserver: xcodeObserver,
+      shellService: shellService,
+      settingsService: settingsService)
+  }
+
+  @MainActor
+  static func triggerExtensionCommand(
+    commandName: String,
+    xcodeObserver: XcodeObserver,
+    shellService: ShellService,
+    settingsService: SettingsService)
+    async throws
+  {
     guard let xcodeApp = await getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
       defaultLogger.error("Could not find running Xcode")
       throw AXError.cannotComplete
@@ -283,16 +306,16 @@ extension DefaultXcodeController {
     #endif
     guard
       let menuItem = menuBar
-        .firstChild(where: { $0.title == ExtensionCommandNames.applyEdit && $0.identifier?.contains(appBundleId) == true })
+        .firstChild(where: { $0.title == commandName && $0.identifier?.contains(appBundleId) == true })
     else {
-      defaultLogger.error("Could not find '\(appBundleId):\(ExtensionCommandNames.applyEdit)' menu")
+      defaultLogger.error("Could not find '\(appBundleId):\(commandName)' menu")
       throw AXError.cannotComplete
     }
 
     if AXUIElementPerformAction(menuItem, kAXPressAction as CFString) == .success {
-      defaultLogger.log("Clicked the menu item")
+      defaultLogger.log("Clicked the \(commandName) menu item")
     } else {
-      defaultLogger.error("Failed to click menu item.")
+      defaultLogger.error("Failed to click \(commandName) menu item.")
       throw AXError.cannotComplete
     }
 

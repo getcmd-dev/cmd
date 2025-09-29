@@ -55,10 +55,10 @@ Build, archive, sign and publish the app for distribution
 
 Strip debug symbols from the binary and resign the app
 
-### mac upload_release_to_sentry
+### mac upload_release_symbols
 
 ```sh
-[bundle exec] fastlane mac upload_release_to_sentry
+[bundle exec] fastlane mac upload_release_symbols
 ```
 
 Upload the new release to Sentry

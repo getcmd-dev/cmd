@@ -65,7 +65,35 @@ struct EditFilesToolEncodingTests {
               }
             ]
           },
-          "internalState" : null,
+          "internalState" : {
+            "convertedInput" : [
+              {
+                "baseLineContent" : "# Old Title",
+                "changes" : [
+                  {
+                    "replace" : "# New Title",
+                    "search" : "# Old Title"
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "file:///project/README.md"
+              }
+            ],
+            "formattedOutput" : {
+              "fileChanges" : [
+                {
+                  "changeCount" : 1,
+                  "isNewFile" : false,
+                  "path" : "/project/README.md",
+                  "status" : {
+                    "pending" : {
+
+                    }
+                  }
+                }
+              ]
+            }
+          },
           "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"
@@ -91,37 +119,71 @@ struct EditFilesToolEncodingTests {
 
     let input = EditFilesTool.Use.Input(files: [fileChange])
     let data = try JSONEncoder().encode(input)
+    try withDependencies {
+      $0.chatContextRegistry = MockChatContextRegistryService([
+        "mock-thread-id": MockChatThreadContext(knownFilesContent: [:]),
+      ])
+      $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager())
+    } operation: {
+      let use = try tool.use(toolUseId: "edit-new-456", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    let use = try tool.use(toolUseId: "edit-new-456", input: data, isInputComplete: true, context: toolExecutionContext)
-
-    try testDecodingEncodingWithTool(of: use, tool: tool, """
-      {
-        "callingTool" : "suggest_files_changes",
-        "context" : {
-          "threadId": "mock-thread-id"
-        },
-        "input" : {
-          "files" : [
-            {
-              "changes" : [
+      try testDecodingEncodingWithTool(of: use, tool: tool, """
+        {
+          "callingTool" : "suggest_files_changes",
+          "context" : {
+            "threadId": "mock-thread-id"
+          },
+          "input" : {
+            "files" : [
+              {
+                "changes" : [
+                  {
+                    "replace" : "{\\"environment\\": \\"production\\"}",
+                    "search" : ""
+                  }
+                ],
+                "isNewFile" : true,
+                "path" : "/config/settings.json"
+              }
+            ]
+          },
+          "internalState" : {
+            "convertedInput" : [
+              {
+                "baseLineContent" : "",
+                "changes" : [
+                  {
+                    "replace" : "{\\"environment\\": \\"production\\"}",
+                    "search" : ""
+                  }
+                ],
+                "isNewFile" : true,
+                "path" : "file:///config/settings.json"
+              }
+            ],
+            "formattedOutput" : {
+              "fileChanges" : [
                 {
-                  "replace" : "{\\"environment\\": \\"production\\"}",
-                  "search" : ""
+                  "changeCount" : 1,
+                  "isNewFile" : true,
+                  "path" : "/config/settings.json",
+                  "status" : {
+                    "pending" : {
+
+                    }
+                  }
                 }
-              ],
-              "isNewFile" : true,
-              "path" : "/config/settings.json"
+              ]
             }
-          ]
-        },
-        "internalState" : null,
-        "isInputComplete" : true,
-        "status" : {
-          "status" : "notStarted"
-        },
-        "toolUseId" : "edit-new-456"
-      }
-      """)
+          },
+          "isInputComplete" : true,
+          "status" : {
+            "status" : "notStarted"
+          },
+          "toolUseId" : "edit-new-456"
+        }
+        """)
+    }
   }
 
   @Test("Tool Use encoding/decoding - multiple files")
@@ -182,7 +244,7 @@ struct EditFilesToolEncodingTests {
               {
                 "changes" : [
                   {
-                    "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    \\/\\/ Test implementation\\n}",
+                    "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    // Test implementation\\n}",
                     "search" : ""
                   }
                 ],
@@ -191,7 +253,56 @@ struct EditFilesToolEncodingTests {
               }
             ]
           },
-          "internalState" : null,
+          "internalState" : {
+            "convertedInput" : [
+              {
+                "baseLineContent" : "let API_URL = \\"dev.example.com\\"",
+                "changes" : [
+                  {
+                    "replace" : "let API_URL = \\"api.example.com\\"",
+                    "search" : "let API_URL = \\"dev.example.com\\""
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "file:///src/constants.swift"
+              },
+              {
+                "baseLineContent" : "",
+                "changes" : [
+                  {
+                    "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    // Test implementation\\n}",
+                    "search" : ""
+                  }
+                ],
+                "isNewFile" : true,
+                "path" : "file:///tests/NewTest.swift"
+              }
+            ],
+            "formattedOutput" : {
+              "fileChanges" : [
+                {
+                  "changeCount" : 1,
+                  "isNewFile" : false,
+                  "path" : "/src/constants.swift",
+                  "status" : {
+                    "pending" : {
+
+                    }
+                  }
+                },
+                {
+                  "changeCount" : 1,
+                  "isNewFile" : true,
+                  "path" : "/tests/NewTest.swift",
+                  "status" : {
+                    "pending" : {
+
+                    }
+                  }
+                }
+              ]
+            }
+          },
           "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"

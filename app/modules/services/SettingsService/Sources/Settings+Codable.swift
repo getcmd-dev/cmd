@@ -7,6 +7,7 @@ import SettingsServiceInterface
 
 // MARK: - Settings + Codable
 
+/// Settings is kept Decodable to maintain backward compatibility with older versions of the app where settings were serialized in different location / formats.
 extension Settings: Codable {
 
   public init(from decoder: any Decoder) throws {
@@ -17,10 +18,10 @@ extension Settings: Codable {
       allowAnonymousAnalytics: container.resilientlyDecodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true,
       automaticallyCheckForUpdates: container
         .resilientlyDecodeIfPresent(Bool.self, forKey: "automaticallyCheckForUpdates") ?? true,
-      fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
       automaticallyUpdateXcodeSettings: container.resilientlyDecodeIfPresent(
         Bool.self,
         forKey: "automaticallyUpdateXcodeSettings") ?? false,
+      fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
       preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [LLMModel: LLMProvider]()) { acc, el in
           guard let model = LLMModel(rawValue: el.key), let provider = LLMProvider(rawValue: el.value) else { return }
@@ -47,7 +48,9 @@ extension Settings: Codable {
       toolPreferences: container
         .resilientlyDecodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [],
       keyboardShortcuts: container
-        .resilientlyDecodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts())
+        .resilientlyDecodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts(),
+      userDefinedXcodeShortcuts: container
+        .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? [])
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -70,6 +73,7 @@ extension Settings: Codable {
     try container.encode(customInstructions, forKey: "customInstructions")
     try container.encode(toolPreferences, forKey: "toolPreferences")
     try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
+    try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
   }
 }
 

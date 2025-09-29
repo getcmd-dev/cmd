@@ -54,7 +54,7 @@ public final class GenerateEntirePackage {
 
   private static func findModuleFiles(in directoryPath: String) -> [String] {
     let fileManager = FileManager.default
-    var moduleFiles: [String] = []
+    var moduleFiles = [String]()
 
     func searchDirectory(_ path: String) {
       let directoryURL = URL(fileURLWithPath: path)
@@ -102,7 +102,7 @@ final class AddTargetToPackage {
   }
 
   func rewrite() -> SourceFileSyntax {
-    var newStatements: [CodeBlockItemSyntax] = []
+    var newStatements = [CodeBlockItemSyntax]()
 
     for item in packageFile.statements {
       guard
@@ -160,7 +160,7 @@ private func rewriteModuleExpression(
   let modulePath = modulePath.replacingOccurrences(of: packageDir, with: ".")
 
   var hadPath = false
-  var newArgs: [LabeledExprSyntax] = []
+  var newArgs = [LabeledExprSyntax]()
 
   if let oldArgList = LabeledExprListSyntax(call.arguments) {
     for arg in oldArgList {

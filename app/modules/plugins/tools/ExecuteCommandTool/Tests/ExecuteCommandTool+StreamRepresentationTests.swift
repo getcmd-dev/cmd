@@ -162,6 +162,57 @@ extension ExecuteCommandToolTests {
 
         """)
     }
+
+    @MainActor
+    @Test("streamRepresentation trims long error messages")
+    func test_streamRepresentationTrimsLongErrorMessages() throws {
+      // given
+      let longErrorMessage = String(repeating: "This is a very long error message that should be trimmed. ", count: 10)
+      let error = AppError(longErrorMessage)
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+
+      let viewModel = ToolUseViewModel(
+        command: "test command",
+        status: status,
+        stdout: .Just(.Just(Data())),
+        stderr: .Just(.Just(Data())),
+        kill: { })
+
+      // when
+      let res = viewModel.streamRepresentation
+
+      // then
+      let result = try #require(res)
+      #expect(result.contains("⎿ Failed:"))
+      let errorMessage = try #require(result.split(separator: "⎿ Failed:").last)
+      #expect(errorMessage.trimmingCharacters(in: .whitespacesAndNewlines) == """
+        This is a very long error message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message ... [280 characters truncated] ...r message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message that should be trimmed.
+        """.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    @MainActor
+    @Test("streamRepresentation preserves short error messages")
+    func test_streamRepresentationPreservesShortErrorMessages() {
+      // given
+      let shortErrorMessage = "Short error"
+      let error = AppError(shortErrorMessage)
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+
+      let viewModel = ToolUseViewModel(
+        command: "test command",
+        status: status,
+        stdout: .Just(.Just(Data())),
+        stderr: .Just(.Just(Data())),
+        kill: { })
+
+      // then
+      #expect(viewModel.streamRepresentation == """
+        ⏺ Bash(test command)
+          ⎿ Failed: Short error
+
+
+        """)
+    }
   }
 
 }
