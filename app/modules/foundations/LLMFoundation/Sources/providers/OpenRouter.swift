@@ -23,7 +23,7 @@ extension LLMProvider {
     idForModel: { model in
       switch model {
       case .claudeHaiku_3_5: return "anthropic/claude-3.5-haiku"
-      case .claudeSonnet: return "anthropic/claude-sonnet-4"
+      case .claudeSonnet: return "anthropic/claude-sonnet-4.5"
       case .claudeOpus: return "anthropic/claude-opus-4.1"
       case .gpt: return "openai/gpt-5"
       case .gpt_mini: return "openai/gpt-5-mini"
