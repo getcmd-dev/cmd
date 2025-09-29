@@ -43,7 +43,7 @@ extension ToolsPlugin {
     // MCP tools
     let mcpServerConnections = Atomic([String: [String]]())
     // Update MCP tools as they change
-    let cancellable = mcpService.servers.sink { [weak self] servers in
+    return mcpService.servers.sink { [weak self] servers in
       guard let self else { return }
 
       let connectedServers = servers.compactMap { status in
@@ -81,12 +81,5 @@ extension ToolsPlugin {
         }
       }
     }
-    plugIn(toolFallBackMatcher: { toolName in
-      if toolName.starts(with: "mcp__") {
-        return UnknownMCPTool(name: toolName)
-      }
-      return nil
-    })
-    return cancellable
   }
 }

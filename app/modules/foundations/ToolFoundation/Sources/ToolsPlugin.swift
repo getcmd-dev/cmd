@@ -32,12 +32,6 @@ public final class ToolsPlugin: Sendable {
     registry[tool.name] = tool
   }
 
-  /// Registers a fallback matcher for tools that are not found in the main registry.
-  /// - Parameter toolFallBackMatcher: A closure that takes a tool name and returns a tool if available, or nil if not found.
-  public func plugIn(toolFallBackMatcher: @escaping @Sendable (String) -> (any Tool)?) {
-    fallbackRegistry.append(toolFallBackMatcher)
-  }
-
   /// Removes a tool from the plugin registry.
   /// - Parameter name: The name of the tool to remove from the registry.
   public func unplug(toolNamed name: String) {
@@ -51,15 +45,9 @@ public final class ToolsPlugin: Sendable {
     if let tool = registry[name] {
       return tool
     }
-    for fallback in fallbackRegistry {
-      if let tool = fallback(name) {
-        return tool
-      }
-    }
     return nil
   }
 
   private var registry = [String: any Tool]()
-  private var fallbackRegistry = [@Sendable (String) -> (any Tool)?]()
 
 }

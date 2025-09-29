@@ -125,10 +125,6 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
       status = .Just(.completed(callingTool.output))
     }
 
-    init(from _: Decoder) throws {
-      fatalError("Decoding not implemented for TestTool.Use")
-    }
-
     typealias InternalState = EmptyObject
 
     typealias Input = I
@@ -149,10 +145,6 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
     func cancel() { }
 
     func waitForApproval() { }
-
-    func encode(to _: Encoder) throws {
-      fatalError("Decoding not implemented for TestTool.Use")
-    }
 
   }
 
@@ -234,10 +226,6 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
     func cancel() { }
 
     func waitForApproval() { }
-
-    func encode(to _: Encoder) throws {
-      fatalError("Decoding not implemented for TestStreamingTool.Use")
-    }
 
   }
 

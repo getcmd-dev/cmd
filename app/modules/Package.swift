@@ -563,7 +563,13 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "SwiftTesting",
+    "ThreadSafe",
+  ],
   path: "./foundations/ToolFoundation"))
 
 targets.append(contentsOf: Target.module(

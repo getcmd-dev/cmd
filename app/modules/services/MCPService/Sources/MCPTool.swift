@@ -95,7 +95,7 @@ final class MCPTool: NonStreamableTool {
   }
 
   var description: String {
-    wrappedTool.description ?? "MCP tool \(name) (no description)"
+    wrappedTool.description
   }
 
   var inputSchema: JSON {
