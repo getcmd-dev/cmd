@@ -16,18 +16,9 @@ fi
 # Get current diff
 current_diff=$(git diff HEAD)
 
-# lint ts files
-cd "$repo_root/local-server"
-yarn lint:fix --quiet
-
-# lint swift files and dependencies
 cd "$repo_root"
+./cmd.sh lint
 ./cmd.sh sync:dependencies
-./cmd.sh lint:swift
-
-cd "$repo_root"
-# lint .sh files
-shfmt -w ./**/*.sh
 
 # Check for created changes
 new_diff=$(git diff HEAD)

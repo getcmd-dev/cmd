@@ -37,9 +37,8 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_apiKeyKeychainMapping() async throws {
     // Setup
-    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     // Test individual provider key mapping
     let groqSettings = LLMProviderSettings(
@@ -79,9 +78,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_updateAndRetrieveValues() {
     // Setup
-    let fileManager = MockFileManager()
-    let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService()
 
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -105,9 +102,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetIndividualSettings() {
     // Setup
-    let fileManager = MockFileManager()
-    let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService()
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -133,9 +128,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetAllSettings() {
     // Setup
-    let fileManager = MockFileManager()
-    let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService()
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -169,9 +162,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_liveValuesUpdate() async throws {
     // Setup
-    let fileManager = MockFileManager()
-    let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService()
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -202,9 +193,8 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_liveValuesUpdateFromDiskChange() async throws {
     // Setup
-    let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -238,9 +228,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_allLiveValuesUpdate() async throws {
     // Setup
-    let fileManager = MockFileManager()
-    let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService()
 
     // Test live all values
     var cancellables = Set<AnyCancellable>()
@@ -274,10 +262,16 @@ struct DefaultSettingsServiceTests {
   func test_allProviderApiKeysStoredSecurely() async throws {
     // Setup
     let fileManager = MockFileManager()
+    let settingsDirLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd")
+    let settingsFileLocation = settingsDirLocation.appending(path: "settings.json")
     // Create the .cmd directory
-    try fileManager.createDirectory(at: URL(filePath: "~/.cmd")!, withIntermediateDirectories: true, attributes: nil)
+    try fileManager.createDirectory(at: settingsDirLocation, withIntermediateDirectories: true, attributes: nil)
     let sharedUserDefaults = MockUserDefaults()
-    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil)
 
     let anthropicSettings = LLMProviderSettings(
       apiKey: "anthropic-secret-key",
@@ -347,8 +341,7 @@ struct DefaultSettingsServiceTests {
       """)
 
     // Verify external settings are written to disk (only non-default values)
-    let settingsFileURL = URL(filePath: "~/.cmd/settings.json")!
-    let externalData = try fileManager.read(dataFrom: settingsFileURL)
+    let externalData = try fileManager.read(dataFrom: settingsFileLocation)
     externalData.expectToMatch("""
       {
         "llmProviderSettings" : {
@@ -383,8 +376,10 @@ struct DefaultSettingsServiceTests {
   func test_apiKeyDeserializationFromNewStorageFormat() async throws {
     // given
     let fileManager = MockFileManager()
+    let settingsDirLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd")
+    let settingsFileLocation = settingsDirLocation.appending(path: "settings.json")
     // Create the .cmd directory
-    try fileManager.createDirectory(at: URL(filePath: "~/.cmd")!, withIntermediateDirectories: true, attributes: nil)
+    try fileManager.createDirectory(at: settingsDirLocation, withIntermediateDirectories: true, attributes: nil)
     let sharedUserDefaults = MockUserDefaults()
 
     // Store API keys in keychain format
@@ -435,11 +430,14 @@ struct DefaultSettingsServiceTests {
       }
       """
 
-    let settingsFileURL = URL(filePath: "~/.cmd/settings.json")!
-    try fileManager.write(string: externalSettingsJSON, to: settingsFileURL, options: [])
+    try fileManager.write(string: externalSettingsJSON, to: settingsFileLocation, options: [])
 
     // when
-    let sut = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let sut = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil)
 
     // then
     // Verify all provider API keys are properly deserialized from keychain
@@ -459,7 +457,7 @@ struct DefaultSettingsServiceTests {
 }
 
 extension DefaultSettingsService {
-  convenience init(
+  fileprivate convenience init(
     fileManager: FileManagerI = MockFileManager(),
     sharedUserDefaults: UserDefaultsI = MockUserDefaults())
   {

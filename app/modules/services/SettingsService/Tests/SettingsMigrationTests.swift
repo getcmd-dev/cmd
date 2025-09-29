@@ -20,6 +20,7 @@ struct SettingsMigrationTests {
     // given
     let fileManager = MockFileManager()
     let sharedUserDefaults = MockUserDefaults()
+    let settingsFileLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
 
     let didRemoveOldEntryFromUserDefaults = expectation(description: "Old entry removed from UserDefaults")
     sharedUserDefaults.onRemoveObjectForKey = { key in
@@ -60,7 +61,11 @@ struct SettingsMigrationTests {
     sharedUserDefaults.set(true, forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
     // when
-    let sut = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let sut = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil)
 
     // Give migration task time to complete
     try await fulfillment(of: didRemoveOldEntryFromUserDefaults)
@@ -97,9 +102,8 @@ struct SettingsMigrationTests {
     #expect(internalSettings.pointReleaseXcodeExtensionToDebugApp == true)
 
     // 3. External settings should be written to disk file
-    let settingsFileURL = URL(filePath: "~/.cmd/settings.json")!
-    #expect(fileManager.fileExists(atPath: settingsFileURL.path))
-    let externalData = try fileManager.read(dataFrom: settingsFileURL)
+    #expect(fileManager.fileExists(atPath: settingsFileLocation.path))
+    let externalData = try fileManager.read(dataFrom: settingsFileLocation)
     let externalSettings = try JSONDecoder().decode(ExternalSettings.self, from: externalData)
     #expect(externalSettings.allowAnonymousAnalytics == false)
     #expect(externalSettings.automaticallyCheckForUpdates == false)

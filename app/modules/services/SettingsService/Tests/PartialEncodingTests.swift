@@ -45,10 +45,10 @@ struct PartialEncodingTests {
     func test_writeNonDefaultValues_writesOnlyNonDefaultValues_whenNoFileExisted() async throws {
       let settings = ExternalSettings(allowAnonymousAnalytics: false)
       let fileManager = MockFileManager()
-      let filePath = FilePath("/path/to/settings.json")
-      try settings.writeNonDefaultValues(to: filePath, fileManager: fileManager)
+      let fileURL = URL(filePath: "/path/to/settings.json")
+      try settings.writeNonDefaultValues(to: fileURL, fileManager: fileManager)
       let file = try #require(fileManager.files.first)
-      #expect(file.key.standardized.absoluteString == "file:///path/to/settings.json")
+      #expect(file.key.standardized.path == "/path/to/settings.json")
       file.value.expectToMatch("""
         {
             "allowAnonymousAnalytics": false
@@ -59,17 +59,17 @@ struct PartialEncodingTests {
     @Test
     func test_writeDefaultValuesWhoseKeysAlreadyExisted() async throws {
       let settings = ExternalSettings(allowAnonymousAnalytics: false)
-      let filePath = FilePath("/path/to/settings.json")
+      let fileURL = URL(filePath: "/path/to/settings.json")
       let fileManager = MockFileManager(files: [
-        filePath.string: """
+        fileURL.path: """
           {
               "automaticallyCheckForUpdates": false
           }
           """,
       ])
-      try settings.writeNonDefaultValues(to: filePath, fileManager: fileManager)
+      try settings.writeNonDefaultValues(to: fileURL, fileManager: fileManager)
       let file = try #require(fileManager.files.first)
-      #expect(file.key.standardized.absoluteString == "file:///path/to/settings.json")
+      #expect(file.key.standardized.path == "/path/to/settings.json")
       file.value.expectToMatch("""
         {
             "allowAnonymousAnalytics": false,
@@ -81,17 +81,17 @@ struct PartialEncodingTests {
     @Test
     func test_keepsNonOverlappingExistingValues() async throws {
       let settings = ExternalSettings(allowAnonymousAnalytics: false)
-      let filePath = FilePath("/path/to/settings.json")
+      let fileURL = URL(filePath: "/path/to/settings.json")
       let fileManager = MockFileManager(files: [
-        filePath.string: """
+        fileURL.path: """
           {
               "someUnknownProperty": 1
           }
           """,
       ])
-      try settings.writeNonDefaultValues(to: filePath, fileManager: fileManager)
+      try settings.writeNonDefaultValues(to: fileURL, fileManager: fileManager)
       let file = try #require(fileManager.files.first)
-      #expect(file.key.standardized.absoluteString == "file:///path/to/settings.json")
+      #expect(file.key.standardized.path == "/path/to/settings.json")
       file.value.expectToMatch("""
         {
             "allowAnonymousAnalytics": false,

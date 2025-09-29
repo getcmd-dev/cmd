@@ -22,12 +22,26 @@ final class DefaultSettingsService: SettingsService {
 
   // MARK: - Initialization
 
-  init(
+  convenience init(
     fileManager: FileManagerI,
     sharedUserDefaults: UserDefaultsI,
     releaseSharedUserDefaults: UserDefaultsI?)
   {
+    self.init(
+      fileManager: fileManager,
+      settingsFileLocation: fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json"),
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: releaseSharedUserDefaults)
+  }
+
+  package init(
+    fileManager: FileManagerI,
+    settingsFileLocation: URL,
+    sharedUserDefaults: UserDefaultsI,
+    releaseSharedUserDefaults: UserDefaultsI?)
+  {
     self.fileManager = fileManager
+    self.settingsFileLocation = settingsFileLocation
     self.sharedUserDefaults = sharedUserDefaults
     self.releaseSharedUserDefaults = releaseSharedUserDefaults
     settings = CurrentValueSubject<Settings, Never>(defaultSettings)
@@ -95,12 +109,9 @@ final class DefaultSettingsService: SettingsService {
   private var notificationObserver: AnyCancellable?
 
   private let fileManager: FileManagerI
+  private let settingsFileLocation: URL
   private let sharedUserDefaults: UserDefaultsI
   private let releaseSharedUserDefaults: UserDefaultsI?
-
-  private var globalSettingsLocation: FilePath {
-    "~/.cmd/settings.json"
-  }
 
   private func loadSettings() -> Settings {
     if
@@ -122,7 +133,7 @@ final class DefaultSettingsService: SettingsService {
     internalSettings.pointReleaseXcodeExtensionToDebugApp = sharedUserDefaults
       .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
-    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: URL(filePath: globalSettingsLocation)!))
+    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: settingsFileLocation))
       .map { data in
         do {
           return try JSONDecoder().decode(ExternalSettings.self, from: data)
@@ -221,7 +232,7 @@ final class DefaultSettingsService: SettingsService {
     sharedUserDefaults.set(internalSettings, forKey: Keys.internalSettings)
 
     // External settings are written to json files at known locations, that can easily be edited by users.
-    try publicSettings.externalSettings.writeNonDefaultValues(to: globalSettingsLocation, fileManager: fileManager)
+    try publicSettings.externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
 
     // Store this value separately in user defaults, as it can also be accessed by the release version.
     sharedUserDefaults.set(

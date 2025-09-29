@@ -165,9 +165,21 @@ final class DefaultFileSuggestionService: FileSuggestionService {
     var files = [URL]()
     let addFileRef: (PBXFileReference) -> Void = { fileRef in
       if
-        let path = fileRef.path.map({ $0.resolvePath(from: projectDir) }),
+        let pathStr = fileRef.path,
+        var path = URL(string: pathStr),
         !["app", "appex", "framework"].contains(path.pathExtension)
       {
+        var parent = fileRef.parent
+        while
+          let parentPathStr = parent?.path,
+          let parentPath = URL(string: parentPathStr)
+        {
+          path = path.resolve(from: parentPath)
+          parent = parent?.parent
+        }
+
+        path = path.resolve(from: projectDir)
+
         if fileRef.lastKnownFileType == "wrapper" {
           files.append(contentsOf: self.listFilesAvailable(inDirectory: path))
         } else {
