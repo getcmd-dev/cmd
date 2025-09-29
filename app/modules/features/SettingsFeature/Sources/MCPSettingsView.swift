@@ -7,6 +7,7 @@ import DLS
 import MCPServiceInterface
 import SettingsServiceInterface
 import SwiftUI
+import ToolFoundation
 
 // MARK: - MCPSettingsView
 
@@ -22,10 +23,11 @@ struct MCPSettingsView: View {
           cancel: {
             isCreatingNewServer = false
           },
-          add: { serverConfiguration in
+          save: { serverConfiguration in
             mcpServers[serverConfiguration.name] = serverConfiguration
             isCreatingNewServer = false
-          })
+          },
+          saveLabel: "Add")
       } else {
         HoveredButton(
           action: {
@@ -49,6 +51,12 @@ struct MCPSettingsView: View {
                   var server = server
                   server.disabled = !isEnabled
                   mcpServers[server.name] = server
+                },
+                onDelete: {
+                  mcpServers.removeValue(forKey: server.name)
+                },
+                onEdit: { serverConfiguration in
+                  mcpServers[serverConfiguration.name] = serverConfiguration
                 })
             }
           }
@@ -68,7 +76,8 @@ struct MCPSettingsView: View {
 
 private struct NewMCPServerCard: View {
   let cancel: () -> Void
-  let add: (MCPServerConfiguration) -> Void
+  let save: (MCPServerConfiguration) -> Void
+  let saveLabel: String
   @State private var raw = """
     {
       "command": "npx",
@@ -193,9 +202,11 @@ private struct NewMCPServerCard: View {
               Task {
                 do {
                   isValidating = true
-                  _ = try await addServer()
+                  errorMessage = nil
+                  _ = try await saveServer()
                   isValidating = false
                 } catch {
+                  errorMessage = error.localizedDescription
                   isValidating = false
                 }
               }
@@ -205,7 +216,7 @@ private struct NewMCPServerCard: View {
             padding: 5,
             cornerRadius: 6)
           {
-            Text("Add")
+            Text(saveLabel)
           }
           HoveredButton(
             action: {
@@ -236,7 +247,7 @@ private struct NewMCPServerCard: View {
               LazyVStack(alignment: .leading) {
                 ForEach(connection.tools, id: \.name) { tool in
                   VStack(alignment: .leading) {
-                    Text(tool.name)
+                    Text(originalName(for: tool))
                       .textSelection(.enabled)
                       .font(.headline)
                     Text(tool.description)
@@ -255,7 +266,12 @@ private struct NewMCPServerCard: View {
     }
   }
 
-  private func addServer() async throws {
+  /// Extracts the original tool name by removing the "mcp__<serverName>__" prefix.
+  private func originalName(for mcpTool: any Tool) -> String {
+    mcpTool.name.replacingOccurrences(of: "mcp__", with: "").components(separatedBy: "__").dropFirst().joined(separator: "__")
+  }
+
+  private func saveServer() async throws {
     let mcpServerConnection = try await connectToServer()
     // Read the server name from the connection info
     let serverName = mcpServerConnection.serverInfo.name
@@ -265,7 +281,7 @@ private struct NewMCPServerCard: View {
     else {
       throw AppError("Could not parse content")
     }
-    add(mcpServerConfig)
+    save(mcpServerConfig)
   }
 
   private func connectToServer() async throws -> MCPServerConnection {
@@ -314,34 +330,56 @@ private struct NewMCPServerCard: View {
 private struct MCPServerCard: View {
   let server: MCPServerConfiguration
   let onToggle: (Bool) -> Void
+  let onDelete: () -> Void
+  let onEdit: (MCPServerConfiguration) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
       HStack(spacing: 0) {
         Text(server.name)
+          .textSelection(.enabled)
           .font(.headline)
           .foregroundColor(.primary)
         Spacer()
 
-        // Toggle switch
-        if isHovered {
-          HoveredButton(
-            action: { },
-            onHoverColor: colorScheme.secondarySystemBackground,
-            padding: 6,
-            cornerRadius: 6)
-          {
-            Image(systemName: "pencil")
-              .font(.system(size: 12, weight: .medium))
+        if isEditing {
+          Text("Editing")
+            .foregroundColor(.secondary)
+        } else {
+          if isHovered {
+            HoveredButton(
+              action: {
+                isEditing = true
+              },
+              onHoverColor: colorScheme.secondarySystemBackground,
+              padding: 6,
+              cornerRadius: 6)
+            {
+              Image(systemName: "pencil")
+                .font(.system(size: 12, weight: .medium))
+            }
+            .padding(.trailing, 6)
+
+            HoveredButton(
+              action: {
+                onDelete()
+              },
+              onHoverColor: colorScheme.secondarySystemBackground,
+              padding: 6,
+              cornerRadius: 6)
+            {
+              Image(systemName: "trash")
+                .font(.system(size: 12, weight: .medium))
+            }
+            .padding(.trailing, 6)
           }
-          .padding(.trailing, 6)
+          Toggle("", isOn: Binding(
+            get: { !server.disabled },
+            set: { newValue in
+              onToggle(newValue)
+            }))
+            .toggleStyle(SwitchToggleStyle())
         }
-        Toggle("", isOn: Binding(
-          get: { !server.disabled },
-          set: { newValue in
-            onToggle(newValue)
-          }))
-          .toggleStyle(SwitchToggleStyle())
       }
       .frame(minHeight: 30)
 
@@ -349,11 +387,13 @@ private struct MCPServerCard: View {
       case .http(let configuration):
         HStack {
           Text(configuration.url)
+            .textSelection(.enabled)
         }
 
       case .stdio(let configuration):
         HStack {
           Text("\(configuration.command) \((configuration.args ?? []).joined(separator: " "))")
+            .textSelection(.enabled)
         }
         if let env = configuration.env, !env.isEmpty {
           VStack(alignment: .leading) {
@@ -367,6 +407,19 @@ private struct MCPServerCard: View {
             }
           }
         }
+      }
+
+      if isEditing {
+        NewMCPServerCard(
+          cancel: {
+            isEditing = false
+          },
+          save: { serverConfiguration in
+            isEditing = false
+            onEdit(serverConfiguration)
+          },
+          saveLabel: "Save")
+          .padding(.top, 16)
       }
     }
 
@@ -384,6 +437,7 @@ private struct MCPServerCard: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @State private var isHovered = false
+  @State private var isEditing = false
 }
 
 // MARK: - EnvVariable

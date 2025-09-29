@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import SettingsServiceInterface
 import ThreadSafe
 import ToolFoundation
@@ -41,6 +42,12 @@ public final class MockMCPService: MCPService {
 }
 
 public struct MockMCPServerConnection: MCPServerConnection {
+  public var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus, Never> {
+    connectionStatusPublisher.readonly()
+  }
+
+  public var connectionStatusPublisher = CurrentValueSubject<MCPConnectionStatus, Never>(.connected)
+
   public init() { }
 
   public let tools = [any Tool]()
@@ -48,6 +55,5 @@ public struct MockMCPServerConnection: MCPServerConnection {
   public let configuration = MCPServerConfiguration.stdio(.init(name: "Mock", command: "mock"))
 
   public func disconnect() async { }
-  public func onDisconnection(_: @escaping @Sendable () -> Void) { }
 }
 #endif

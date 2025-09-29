@@ -87,30 +87,8 @@ extension ToolsPlugin {
 
 // MARK: - UnknownTool.Use + DisplayableToolUse
 
-// TODO: cache the view models, and the string representation of the input to avoid expensive recomputation
-extension UnknownTool.Use: DisplayableToolUse {
-  @MainActor
-  public var viewModel: some StreamRepresentable & ViewRepresentable {
-    createViewModel()
-  }
-
-  @MainActor
-  func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: input))
-  }
-
-}
+extension UnknownTool.Use: DisplayableToolUse { }
 
 // MARK: - MCPTool.Use + DisplayableToolUse
 
-extension MCPTool.Use: DisplayableToolUse {
-  @MainActor
-  public var viewModel: some StreamRepresentable & ViewRepresentable {
-    createViewModel()
-  }
-
-  @MainActor
-  func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: .object(input)))
-  }
-}
+extension MCPTool.Use: DisplayableToolUse { }

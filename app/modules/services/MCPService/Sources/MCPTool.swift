@@ -23,7 +23,7 @@ public final class MCPTool: NonStreamableTool {
   }
 
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
 
     public init(
       callingTool: MCPTool,
@@ -52,6 +52,9 @@ public final class MCPTool: NonStreamableTool {
 
     public let context: ToolFoundation.ToolExecutionContext
 
+    @MainActor
+    public lazy var viewModel = DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: .object(input))
+
     public let callingTool: MCPTool
     public let toolUseId: String
     public let input: Input
@@ -71,7 +74,9 @@ public final class MCPTool: NonStreamableTool {
 
       Task {
         do {
-          let response = try await callingTool.client.callTool(name: callingTool.name, arguments: input.mapValues { $0.asValue })
+          let response = try await callingTool.client.callTool(
+            name: callingTool.externalName,
+            arguments: input.mapValues { $0.asValue })
           if response.isError == true {
             var errorDescription = "unknown error"
             errorDescription = (try? JSONEncoder().encode(response.content))
@@ -80,7 +85,9 @@ public final class MCPTool: NonStreamableTool {
           } else {
             updateStatus.complete(with: .success(.array(response.content.map(\.jsonValue))))
           }
-        } catch { }
+        } catch {
+          updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(error.localizedDescription)")))
+        }
       }
     }
 
@@ -92,6 +99,10 @@ public final class MCPTool: NonStreamableTool {
 
   public var name: String {
     "mcp__\(serverName)__\(wrappedTool.name)".sanitized
+  }
+
+  public var externalName: String {
+    wrappedTool.name
   }
 
   public var description: String {
@@ -111,7 +122,7 @@ public final class MCPTool: NonStreamableTool {
   }
 
   public var displayName: String {
-    "\(wrappedTool.name) (MCP)"
+    "\(serverName):\(wrappedTool.name) (MCP)"
   }
 
   public var shortDescription: String {

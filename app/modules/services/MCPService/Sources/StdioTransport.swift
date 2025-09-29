@@ -14,7 +14,7 @@ import ShellServiceInterface
 
 // MARK: - StdioTransport
 
-actor StdioTransport: Transport {
+actor StdioTransport: DisconnectableTransport {
   init(command: String, shellService: ShellService) {
     self.shellService = shellService
     self.command = command
@@ -29,10 +29,17 @@ actor StdioTransport: Transport {
     let stdinWriter: @Sendable (Data) throws -> Void
   }
 
+  var disconnectionHandler: (@Sendable ((any Error)?) -> Void)?
+
   var logger: Logging.Logger { .init(label: "cmd.mcp") }
+
+  func onDisconnection(_ disconnectionHandler: @escaping @Sendable ((any Error)?) -> Void) {
+    self.disconnectionHandler = disconnectionHandler
+  }
 
   func disconnect() async {
     cancellable = nil
+    disconnectionHandler?(nil)
   }
 
   func send(_ data: Data) async throws {
@@ -80,15 +87,10 @@ actor StdioTransport: Transport {
     }
 
     let isTerminated = Atomic(false)
-    process.terminationHandler = { _ in
+    process.terminationHandler = { process in
       isTerminated.set(to: true)
-      if
-        let data = (try? stderr.fileHandleForReading.readToEnd()),
-        let err = String(data: data, encoding: .utf8)
-      {
-        defaultLogger.info("MCP stdio connection terminated. Stderr:\n\(err)")
-      } else {
-        defaultLogger.info("MCP stdio connection terminated")
+      Task {
+        await self.closeConnection(to: process, stderr: stderr)
       }
     }
 
@@ -121,7 +123,23 @@ actor StdioTransport: Transport {
   private let command: String
   private var connection: Connection?
   private var cancellable: AnyCancellable?
-
+  private func closeConnection(to process: Process, stderr: Pipe) {
+    connection = nil
+    let exitCode = process.terminationStatus
+    if exitCode != 0 {
+      if
+        let data = (try? stderr.fileHandleForReading.readToEnd()),
+        let err = String(data: data, encoding: .utf8)
+      {
+        defaultLogger.info("MCP stdio connection terminated. Stderr:\n\(err)")
+        disconnectionHandler?(AppError(err))
+      } else {
+        defaultLogger.info("MCP stdio connection terminated")
+        disconnectionHandler?(AppError("MCP stdio connection terminated with exit code \(exitCode)"))
+      }
+    }
+    defaultLogger.trace("MCP stdio connection terminated with exit code 0")
+  }
 }
 
 #if os(macOS)

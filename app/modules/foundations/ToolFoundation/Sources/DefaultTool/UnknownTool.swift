@@ -17,7 +17,7 @@ public final class UnknownTool: NonStreamableTool {
   }
 
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
 
     public init(
       callingTool: UnknownTool,
@@ -49,6 +49,8 @@ public final class UnknownTool: NonStreamableTool {
     public let internalState: JSONFoundation.JSON.Value?
 
     public let context: ToolExecutionContext
+
+    @MainActor public lazy var viewModel = DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: input)
 
     public let callingTool: UnknownTool
     public let toolUseId: String

@@ -403,3 +403,18 @@ extension Optional: JSONValueConvertible where Wrapped: JSONValueConvertible {
     }
   }
 }
+
+extension JSON.Value {
+  public var prettyPrintedString: String? {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    if
+      let data = try? encoder.encode(self),
+      let jsonString = String(data: data, encoding: .utf8)
+    {
+      return jsonString
+    } else {
+      return nil
+    }
+  }
+}

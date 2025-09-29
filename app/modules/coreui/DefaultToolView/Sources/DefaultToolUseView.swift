@@ -64,6 +64,7 @@ public struct DefaultToolUseView: View {
         EmptyView()
       case .completed(.failure(let error)):
         Text(error.localizedDescription)
+          .textSelection(.enabled)
           .foregroundColor(colorScheme.redError)
       }
 
@@ -72,13 +73,13 @@ public struct DefaultToolUseView: View {
         VStack(alignment: .leading) {
           Text("Input")
           HStack {
-            Text(toolUse.input.prettyPrintedString)
+            Text(toolUse.input ?? "<invalid JSON>")
               .font(.system(.body, design: .monospaced))
               .textSelection(.enabled)
               .padding(4)
             Spacer(minLength: 0)
           }
-          .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.primaryBackground)
+          .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.secondarySystemBackground)
 
           switch toolUse.status {
           case .notStarted, .pendingApproval, .running, .approvalRejected:
@@ -87,13 +88,13 @@ public struct DefaultToolUseView: View {
           case .completed(.success(let output)):
             Text("Output")
             HStack {
-              Text(output.prettyPrintedString)
+              Text(output ?? "<invalid JSON>")
                 .font(.system(.body, design: .monospaced))
                 .textSelection(.enabled)
                 .padding(4)
               Spacer(minLength: 0)
             }
-            .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.primaryBackground)
+            .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.secondarySystemBackground)
 
           case .completed(.failure):
             EmptyView()
@@ -123,41 +124,6 @@ public struct DefaultToolUseView: View {
       .primary
     } else {
       colorScheme.toolUseForeground
-    }
-  }
-}
-
-// MARK: - JSONDisplayView
-
-struct JSONDisplayView: View {
-  let value: JSON.Value
-
-  var body: some View {
-    ScrollView(.horizontal) {
-      Text(value.prettyPrintedString)
-        .font(.system(.body, design: .monospaced))
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    .background(Color(NSColor.textBackgroundColor))
-    .cornerRadius(8)
-    .overlay(
-      RoundedRectangle(cornerRadius: 8)
-        .stroke(Color.gray.opacity(0.2), lineWidth: 1))
-  }
-}
-
-extension JSON.Value {
-  var prettyPrintedString: String {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    if
-      let data = try? encoder.encode(self),
-      let jsonString = String(data: data, encoding: .utf8)
-    {
-      return jsonString
-    } else {
-      return "<invalid json data>"
     }
   }
 }

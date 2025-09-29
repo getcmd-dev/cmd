@@ -7,32 +7,6 @@ import Observation
 import SwiftUI
 import ToolFoundation
 
-// MARK: - DefaultToolUseViewModel
-
-@Observable
-@MainActor
-public final class DefaultToolUseViewModel {
-
-  public init(
-    toolName: String,
-    status: CurrentValueStream<ToolUseExecutionStatus<JSON.Value>>,
-    input: JSON.Value)
-  {
-    self.toolName = toolName
-    self.status = status.value
-    self.input = input
-    Task {
-      for await status in status.futureUpdates {
-        self.status = status
-      }
-    }
-  }
-
-  let toolName: String
-  let input: JSON.Value
-  private(set) var status: ToolUseExecutionStatus<JSON.Value>
-}
-
 // MARK: ViewRepresentable, StreamRepresentable
 
 extension DefaultToolUseViewModel: ViewRepresentable, StreamRepresentable {

@@ -63,6 +63,19 @@ public enum MCPServerConnectionStatus: Sendable {
   case failure(_ configuration: MCPServerConfiguration, _ error: Error)
 }
 
+// MARK: - MCPConnectionStatus
+
+/// The status of a connection that was previously established.
+public enum MCPConnectionStatus: Sendable {
+  /// The server connection is active and operational.
+  case connected
+
+  /// The server connection has been terminated.
+  ///
+  /// - Parameter error: The error that caused disconnection, if any. `nil` indicates a clean disconnection.
+  case disconnected(error: Error?)
+}
+
 // MARK: - MCPServerConnection
 
 /// Represents an active connection to an MCP server.
@@ -89,15 +102,12 @@ public protocol MCPServerConnection: Sendable {
   ///
   /// This method cleanly closes the connection and releases associated resources.
   /// After calling this method, the connection should not be used for further operations.
-  func disconnect() /// Registers a handler to be called when the connection is disconnected.
+  func disconnect() /// A subject that publishes the current connection status.
     ///
-    /// The handler will be invoked when the connection is terminated, either by calling
-    /// `disconnect()` or due to an unexpected disconnection from the server.
-    ///
-    /// - Parameter handler: A closure to execute when disconnection occurs
+    /// Emits `.connected` when the server is operational and `.disconnected` when the connection is lost.
     async
 
-  func onDisconnection(_ handler: @escaping @Sendable () -> Void)
+  var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus, Never> { get }
 }
 
 // MARK: - ServerInfo

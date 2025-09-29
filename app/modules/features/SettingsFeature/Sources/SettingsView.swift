@@ -156,12 +156,12 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Providers"
     case .models:
       "Models"
-    case .chatModes:
-      "Chat Modes"
     case .tools:
       "Tools"
     case .mcp:
-      "MCP"
+      "MCP (Preview)"
+    case .chatModes:
+      "Chat Modes"
     case .keyboardShortcuts:
       "Keyboard Shortcuts"
     case .userDefinedXcodeShortcuts:
