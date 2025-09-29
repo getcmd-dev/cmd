@@ -2,6 +2,6 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Testing
-@testable import UnknownTool
+@testable import DefaultToolView
 
-struct UnknownToolTests { }
+struct DefaultToolViewTests { }

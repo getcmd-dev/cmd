@@ -15,7 +15,7 @@ public typealias MCPToolOutput = JSON.Value
 
 // MARK: - MCPTool
 
-final class MCPTool: NonStreamableTool {
+public final class MCPTool: NonStreamableTool {
   init(tool: MCP.Tool, client: MCP.Client, serverName: String) {
     wrappedTool = tool
     self.client = client
@@ -23,9 +23,9 @@ final class MCPTool: NonStreamableTool {
   }
 
   @ThreadSafe
-  final class Use: NonStreamableToolUse, UpdatableToolUse {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse {
 
-    init(
+    public init(
       callingTool: MCPTool,
       toolUseId: String,
       input: Input,
@@ -44,27 +44,27 @@ final class MCPTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    typealias InternalState = EmptyObject
+    public typealias InternalState = EmptyObject
 
-    typealias Input = MCPToolInput
+    public typealias Input = MCPToolInput
 
-    typealias Output = MCPToolOutput
+    public typealias Output = MCPToolOutput
 
-    let context: ToolFoundation.ToolExecutionContext
+    public let context: ToolFoundation.ToolExecutionContext
 
-    let callingTool: MCPTool
-    let toolUseId: String
-    let input: Input
+    public let callingTool: MCPTool
+    public let toolUseId: String
+    public let input: Input
 
-    let status: Status
+    public let status: Status
 
-    let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    var isReadonly: Bool {
+    public var isReadonly: Bool {
       callingTool.isReadonly
     }
 
-    func startExecuting() {
+    public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
@@ -84,21 +84,21 @@ final class MCPTool: NonStreamableTool {
       }
     }
 
-    func cancel() {
+    public func cancel() {
       updateStatus.complete(with: .failure(CancellationError()))
     }
 
   }
 
-  var name: String {
+  public var name: String {
     "mcp__\(serverName)__\(wrappedTool.name)".sanitized
   }
 
-  var description: String {
-    wrappedTool.description
+  public var description: String {
+    wrappedTool.description ?? ""
   }
 
-  var inputSchema: JSON {
+  public var inputSchema: JSON {
     switch wrappedTool.inputSchema.jsonValue {
     case .object(let value):
       return .object(value)
@@ -110,6 +110,18 @@ final class MCPTool: NonStreamableTool {
     return .object([:])
   }
 
+  public var displayName: String {
+    "\(wrappedTool.name) (MCP)"
+  }
+
+  public var shortDescription: String {
+    description
+  }
+
+  public func isAvailable(in mode: ChatMode) -> Bool {
+    isReadonly ? true : mode == .agent
+  }
+
   var isReadonly: Bool {
     if wrappedTool.annotations.destructiveHint == true {
       return false
@@ -119,18 +131,6 @@ final class MCPTool: NonStreamableTool {
     }
     // Not specified, err on on the side of caution.
     return false
-  }
-
-  var displayName: String {
-    "\(wrappedTool.name) (MCP)"
-  }
-
-  var shortDescription: String {
-    description
-  }
-
-  func isAvailable(in mode: ChatMode) -> Bool {
-    isReadonly ? true : mode == .agent
   }
 
   private let serverName: String

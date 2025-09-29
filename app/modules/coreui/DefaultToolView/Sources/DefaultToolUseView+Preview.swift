@@ -81,27 +81,27 @@ let shortJSON = try! JSONDecoder().decode(JSON.Value.self, from: """
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
-      ToolUseView(toolUse: ToolUseViewModel(
+      DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
         status: Status.Just(.notStarted),
         input: shortJSON))
 
-      ToolUseView(toolUse: ToolUseViewModel(
+      DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
         status: Status.Just(.pendingApproval),
         input: shortJSON))
 
-      ToolUseView(toolUse: ToolUseViewModel(
+      DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
         status: Status.Just(.running),
         input: shortJSON))
 
-      ToolUseView(toolUse: ToolUseViewModel(
+      DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
         status: Status.Just(.completed(.success(longJSON))),
         input: shortJSON))
 
-      ToolUseView(toolUse: ToolUseViewModel(
+      DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
         status: Status.Just(.completed(.failure(AppError("Tool call failed")))),
         input: shortJSON))

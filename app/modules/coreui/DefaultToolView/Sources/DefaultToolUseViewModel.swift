@@ -1,20 +1,22 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ConcurrencyFoundation
+import JSONFoundation
 import Observation
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ToolUseViewModel
+// MARK: - DefaultToolUseViewModel
 
 @Observable
 @MainActor
-final class ToolUseViewModel {
+public final class DefaultToolUseViewModel {
 
-  init(
+  public init(
     toolName: String,
-    status: UnknownTool.Use.Status,
-    input: UnknownTool.Use.Input)
+    status: CurrentValueStream<ToolUseExecutionStatus<JSON.Value>>,
+    input: JSON.Value)
   {
     self.toolName = toolName
     self.status = status.value
@@ -27,18 +29,18 @@ final class ToolUseViewModel {
   }
 
   let toolName: String
-  let input: UnknownTool.Use.Input
-  private(set) var status: ToolUseExecutionStatus<UnknownTool.Use.Output>
+  let input: JSON.Value
+  private(set) var status: ToolUseExecutionStatus<JSON.Value>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
 
-extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+extension DefaultToolUseViewModel: ViewRepresentable, StreamRepresentable {
   @MainActor
-  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+  public var body: AnyView { AnyView(DefaultToolUseView(toolUse: self)) }
 
   @MainActor
-  var streamRepresentation: String? {
+  public var streamRepresentation: String? {
     guard case .completed(let result) = status else { return nil }
     switch result {
     case .success(let output):

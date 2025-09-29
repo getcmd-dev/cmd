@@ -1,5 +1,5 @@
 Target.module(
-  name: "UnknownTool",
+  name: "DefaultToolView",
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
@@ -9,4 +9,3 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [])
-public

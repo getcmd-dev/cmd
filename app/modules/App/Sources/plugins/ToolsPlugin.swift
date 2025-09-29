@@ -6,6 +6,7 @@ import BuildTool
 import ClaudeCodeTools
 import Combine
 import ConcurrencyFoundation
+import DefaultToolView
 import EditFilesTool
 import ExecuteCommandTool
 import LoggingServiceInterface
@@ -15,7 +16,6 @@ import MCPServiceInterface
 import ReadFileTool
 import SearchFilesTool
 import ToolFoundation
-import UnknownTool
 
 extension ToolsPlugin {
   func registerToolsPlugin(mcpService: MCPService) -> AnyCancellable {
@@ -82,5 +82,35 @@ extension ToolsPlugin {
         }
       }
     }
+  }
+}
+
+// MARK: - UnknownTool.Use + DisplayableToolUse
+
+// TODO: cache the view models, and the string representation of the input to avoid expensive recomputation
+extension UnknownTool.Use: DisplayableToolUse {
+  @MainActor
+  public var viewModel: some StreamRepresentable & ViewRepresentable {
+    createViewModel()
+  }
+
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
+    AnyToolUseViewModel(DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: input))
+  }
+
+}
+
+// MARK: - MCPTool.Use + DisplayableToolUse
+
+extension MCPTool.Use: DisplayableToolUse {
+  @MainActor
+  public var viewModel: some StreamRepresentable & ViewRepresentable {
+    createViewModel()
+  }
+
+  @MainActor
+  func createViewModel() -> AnyToolUseViewModel {
+    AnyToolUseViewModel(DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: .object(input)))
   }
 }

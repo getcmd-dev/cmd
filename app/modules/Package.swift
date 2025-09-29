@@ -95,6 +95,7 @@ targets.append(contentsOf: Target.module(
     "CheckpointServiceInterface",
     "ClaudeCodeTools",
     "ConcurrencyFoundation",
+    "DefaultToolView",
     "DependencyFoundation",
     "DLS",
     "EditFilesTool",
@@ -125,7 +126,6 @@ targets.append(contentsOf: Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
-    "UnknownTool",
     "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverService",
@@ -145,6 +145,19 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./App"))
+
+targets.append(contentsOf: Target.module(
+  name: "DefaultToolView",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "LocalServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [],
+  path: "./coreui/DefaultToolView"))
 
 targets.append(contentsOf: Target.module(
   name: "DLS",
@@ -369,19 +382,6 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   path: "./plugins/tools/SearchFilesTool"))
-
-targets.append(contentsOf: Target.module(
-  name: "UnknownTool",
-  dependencies: [
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "DLS",
-    "JSONFoundation",
-    "LocalServerServiceInterface",
-    "ToolFoundation",
-  ],
-  testDependencies: [],
-  path: "./plugins/tools/UnknownTool"))
 
 targets.append(contentsOf: Target.module(
   name: "ExtensionCommandHandler",

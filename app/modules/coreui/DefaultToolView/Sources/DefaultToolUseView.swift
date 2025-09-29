@@ -7,13 +7,11 @@ import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ToolUseView
+// MARK: - DefaultToolUseView
 
-struct ToolUseView: View {
+public struct DefaultToolUseView: View {
 
-  @Bindable var toolUse: ToolUseViewModel
-
-  var body: some View {
+  public var body: some View {
     VStack(alignment: .leading) {
       // First row
       HStack {
@@ -108,6 +106,8 @@ struct ToolUseView: View {
     }
     .onHover { isHovered = $0 }
   }
+
+  @Bindable var toolUse: DefaultToolUseViewModel
 
   private enum Constants {
     static let cornerRadius: CGFloat = 5
