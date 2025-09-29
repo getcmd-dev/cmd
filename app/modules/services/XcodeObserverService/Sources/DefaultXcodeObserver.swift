@@ -31,6 +31,9 @@ final class DefaultXcodeObserver: XcodeObserver {
     update(with: accessibilityPermissionStatus.currentValue)
     let accessibilitySubscription = accessibilityPermissionStatus.sink(receiveValue: update(with:))
     inLock { state in state.accessibilitySubscription = accessibilitySubscription }
+
+    // Set global accessibility timeout to 250ms
+    AXUIElement.setGlobalMessagingTimeout(0.25)
   }
 
   deinit {

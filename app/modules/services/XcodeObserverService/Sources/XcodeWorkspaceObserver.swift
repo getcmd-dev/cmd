@@ -45,20 +45,30 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   /// Parse the workspace AX tree. Ensure that we are observing any visible editor, and collect tab information.
   @MainActor
   func refresh() {
-    guard let editorArea = workspace.firstChild(where: { $0.description == "editor area" }) else {
+      guard let editorArea = workspace.caching(
+        cacheKey: "editor-area",
+        fetcher: {
+          $0.firstChild(where: { $0.description == "editor area" })
+      }) else {
       return
     }
-    let editorContexts = editorArea
-      .children(where: { $0.identifier == "editor context" })
-      .compactMap { el in el.firstParent(where: { $0.description?.starts(with: el.description ?? "<NA>") == true }) }
-    let editorsContainer = editorContexts.first?.firstParent(
-      where: { $0.role == kAXSplitGroupRole })
+      let editorContexts = editorArea.caching(
+        cacheKey: "editor-contexts",
+        fetcher: {
+            $0.children(where: { $0.identifier == "editor context" })
+                .compactMap { el in el.firstParent(where: { $0.description?.starts(with: el.description ?? "<NA>") == true }) }
+        })
+      
+    let editorsContainer = editorContexts.first?.caching(cacheKey: "editors-container", fetcher: {
+      $0.firstParent(where: { $0.role == kAXSplitGroupRole })
+    })
 
     // Update editor inspectors.
     guard
-      let editorInspectors = editorsContainer?.children.compactMap({ editorContainer in
-        editorInspector(for: editorContainer)
-      })
+      let editorInspectors = editorsContainer?.caching(cacheKey: "editor-containers", fetcher: { $0.children })
+        .compactMap({ editorContainer in
+          editorInspector(for: editorContainer)
+        })
     else {
       return
     }
@@ -69,12 +79,16 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     self.editorInspectors = editorInspectors
 
     // Update tabs
-    let tabEls = editorsContainer?.children.flatMap { $0
-      .firstChild(where: { $0.roleDescription == "tab group" })?
-      .children(where: { $0.roleDescription == "tab" }) ?? []
-    } ?? []
+      let tabEls = editorsContainer?.caching(cacheKey: "tabs", fetcher: {
+          $0.children.flatMap { $0
+            .firstChild(where: { $0.roleDescription == "tab group" })?
+            .children(where: { $0.roleDescription == "tab" }) ?? []
+          }
+      }) ?? []
     // When in tabless mode, there are no tab elements. Use the editor context name instead.
-    let fallbackFocusTabName = editorContexts.first?.firstChild(where: { $0.identifier == "editor context" })?.description
+    let fallbackFocusTabName = editorContexts.first?.caching(cacheKey: "fallback-tab-name", fetcher: {
+      $0.firstChild(where: { $0.identifier == "editor context" })
+    })?.description
     // Use a set as there are several hierachies of tabs that can contain the same file.
     // Sort to avoid unnucessary state updates.
     let tabNames = Array(Set(tabEls.compactMap(\.title) + (fallbackFocusTabName.map { [$0] } ?? []))).sorted()
