@@ -23,7 +23,7 @@ The best AI in Xcode, open source.
 ## Installation
 
 <ul>
-    <li><code>brew install cmd</code> (or alternatievly <a href="https://github.com/getcmd-dev/cmd/releases/download/v0.1.20/cmd.dmg">download the latest release</a>)</li><!-- version automatically updated during release -->
+    <li><code>brew install cmd</code> (or alternatievly <a href="https://github.com/getcmd-dev/cmd/releases/download/v0.1.21/cmd.dmg">download the latest release</a>)</li><!-- version automatically updated during release -->
     <li>Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)</li>
     <li>
         <details>
