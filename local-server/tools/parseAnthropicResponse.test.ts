@@ -139,7 +139,7 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
 
 	test("should parse Anthropic tool_use format correctly (new format)", () => {
 		const input = `event: message_start
-data: {"type":"message_start","message":{"id":"msg_01GvGCSfBuw5L5Tx3DcCd1p8","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":11,"cache_creation_input_tokens":825,"cache_read_input_tokens":45481,"output_tokens":1,"service_tier":"standard"}}     }
+data: {"type":"message_start","message":{"id":"msg_01GvGCSfBuw5L5Tx3DcCd1p8","type":"message","role":"assistant","model":"claude-sonnet-4-5-20250929","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":11,"cache_creation_input_tokens":825,"cache_read_input_tokens":45481,"output_tokens":1,"service_tier":"standard"}}     }
 
 event: content_block_start
 data: {"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}           }
@@ -247,7 +247,7 @@ data: {"type":"message_stop"             }`
 
 	test("should parse Anthropic tool_use format correctly (new format)", () => {
 		const input = `event: message_start
-data: {"type":"message_start","message":{"id":"msg_01PL6rwJ1WrYYMV9iaKLqjvo","type":"message","role":"assistant","model":"claude-sonnet-4-20250514","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":8,"cache_creation_input_tokens":369,"cache_read_input_tokens":27639,"output_tokens":33,"service_tier":"standard"}}     }
+data: {"type":"message_start","message":{"id":"msg_01PL6rwJ1WrYYMV9iaKLqjvo","type":"message","role":"assistant","model":"claude-sonnet-4-5-20250929","content":[],"stop_reason":null,"stop_sequence":null,"usage":{"input_tokens":8,"cache_creation_input_tokens":369,"cache_read_input_tokens":27639,"output_tokens":33,"service_tier":"standard"}}     }
 
 event: content_block_start
 data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_01SbTMMA8keHrNzVv4DPHpbn","name":"Read","input":{}}             }
