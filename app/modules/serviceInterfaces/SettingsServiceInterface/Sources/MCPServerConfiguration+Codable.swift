@@ -58,8 +58,8 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
   public init(from decoder: any Decoder, name: String) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let command = try container.decode(String.self, forKey: .command)
-    let args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
-    let env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
+    let args = try container.decodeIfPresent([String].self, forKey: .args)
+    let env = try container.decodeIfPresent([String: String].self, forKey: .env)
     let disabled = try container.decodeIfPresent(Bool.self, forKey: .disabled) ?? false
     let disabledToolNames = try container.decodeIfPresent([String].self, forKey: .disabledToolNames)
 
@@ -76,9 +76,15 @@ extension MCPServerConfiguration.MCPServerStdioConfiguration {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(command, forKey: .command)
     try container.encodeIfPresent(args, forKey: .args)
-    try container.encodeIfPresent(env, forKey: .env)
-    try container.encode(disabled, forKey: .disabled)
-    try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
+    if env?.isEmpty == false {
+      try container.encodeIfPresent(env, forKey: .env)
+    }
+    if disabled {
+      try container.encode(disabled, forKey: .disabled)
+    }
+    if disabledToolNames?.isEmpty == false {
+      try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
+    }
   }
 
   private enum CodingKeys: String, CodingKey {
@@ -111,9 +117,15 @@ extension MCPServerConfiguration.MCPServerHttpConfiguration {
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(url, forKey: .url)
-    try container.encodeIfPresent(headers, forKey: .headers)
-    try container.encode(disabled, forKey: .disabled)
-    try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
+    if headers?.isEmpty == false {
+      try container.encodeIfPresent(headers, forKey: .headers)
+    }
+    if disabled {
+      try container.encode(disabled, forKey: .disabled)
+    }
+    if disabledToolNames?.isEmpty == false {
+      try container.encodeIfPresent(disabledToolNames, forKey: .disabledToolNames)
+    }
   }
 
   private enum CodingKeys: String, CodingKey {

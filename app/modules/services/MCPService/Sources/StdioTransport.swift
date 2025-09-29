@@ -107,7 +107,7 @@ actor StdioTransport: DisconnectableTransport {
 
           stdin.fileHandleForWriting.write(data)
           // Send \n to flush the buffer
-          stdin.fileHandleForWriting.write(Data("\n".utf8))
+          stdin.fileHandleForWriting.write(newLine)
         })))
     } catch {
       defaultLogger.error("Error while establishing MCP connection", error)
@@ -116,6 +116,8 @@ actor StdioTransport: DisconnectableTransport {
     connection = try await promise.value
   }
 
+  private static let newLine = Data("\n".utf8)
+
   private let stdoutStream: AsyncThrowingStream<Data, Error>
   private let stdoutContinuation: AsyncThrowingStream<Data, Error>.Continuation
 
@@ -123,6 +125,7 @@ actor StdioTransport: DisconnectableTransport {
   private let command: String
   private var connection: Connection?
   private var cancellable: AnyCancellable?
+
   private func closeConnection(to process: Process, stderr: Pipe) {
     connection = nil
     let exitCode = process.terminationStatus
