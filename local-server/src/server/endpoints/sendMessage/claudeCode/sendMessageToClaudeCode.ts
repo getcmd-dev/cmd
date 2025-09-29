@@ -246,6 +246,13 @@ const createClaudeCodeEventStream = async (
 
 	const abortController = new AbortController()
 	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)
+
+	// Try to remove env variable that might lead to CC exiting with status 1
+	// See https://github.com/anthropics/claude-code/issues/4619#issuecomment-3217014571
+	const env = { ...localExecutable.env }
+	delete env.NODE_OPTIONS
+	delete env.VSCODE_INSPECTOR_OPTIONS
+
 	const runningQuery = query({
 		prompt: arrayToAsyncIterable(userMessages),
 		options: {
@@ -259,7 +266,7 @@ const createClaudeCodeEventStream = async (
 			pathToClaudeCodeExecutable,
 			executableArgs,
 			cwd: localExecutable.cwd,
-			env: localExecutable.env,
+			env,
 			abortController,
 			includePartialMessages: true,
 			maxTurns: 100,
