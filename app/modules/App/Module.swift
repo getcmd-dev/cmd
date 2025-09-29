@@ -52,6 +52,7 @@ Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "UnknownTool",
     "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverService",

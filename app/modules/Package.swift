@@ -125,6 +125,7 @@ targets.append(contentsOf: Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "UnknownTool",
     "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverService",
@@ -368,6 +369,19 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   path: "./plugins/tools/SearchFilesTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "UnknownTool",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "LocalServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [],
+  path: "./plugins/tools/UnknownTool"))
 
 targets.append(contentsOf: Target.module(
   name: "ExtensionCommandHandler",

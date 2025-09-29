@@ -11,15 +11,15 @@ import ThreadSafe
 
 /// Represents a tool that was previously used but is no longer available in the current application state.
 /// This type enables deserialization and representation of legacy tool usage data when the original tool type is unavailable.
-final class UnknownTool: NonStreamableTool {
-  init(name: String) {
+public final class UnknownTool: NonStreamableTool {
+  public init(name: String) {
     self.name = name
   }
 
   @ThreadSafe
-  final class Use: NonStreamableToolUse, UpdatableToolUse {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse {
 
-    init(
+    public init(
       callingTool: UnknownTool,
       toolUseId: String,
       input: Input,
@@ -40,71 +40,71 @@ final class UnknownTool: NonStreamableTool {
       rawData = internalState ?? .object([:])
     }
 
-    typealias InternalState = JSON.Value
+    public typealias InternalState = JSON.Value
 
-    typealias Input = JSON.Value
+    public typealias Input = JSON.Value
 
-    typealias Output = JSON.Value
+    public typealias Output = JSON.Value
 
-    let internalState: JSONFoundation.JSON.Value?
+    public let internalState: JSONFoundation.JSON.Value?
+
+    public let context: ToolExecutionContext
+
+    public let callingTool: UnknownTool
+    public let toolUseId: String
+    public let input: Input
+
+    public let status: Status
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public var isReadonly: Bool {
+      callingTool.isReadonly
+    }
+
+    public func startExecuting() {
+      // Not supported
+    }
+
+    public func cancel() {
+      // Not supported
+    }
 
     /// The raw data that represented the missing tool use when serialized.
     let rawData: JSON.Value
 
-    let context: ToolExecutionContext
-
-    let callingTool: UnknownTool
-    let toolUseId: String
-    let input: Input
-
-    let status: Status
-
-    let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-
-    var isReadonly: Bool {
-      callingTool.isReadonly
-    }
-
-    func startExecuting() {
-      // Not supported
-    }
-
-    func cancel() {
-      // Not supported
-    }
-
   }
 
-  let name: String
+  public let name: String
 
-  var description: String {
+  public var description: String {
     "Unknown tool \(name)"
   }
 
-  var inputSchema: JSON {
+  public var inputSchema: JSON {
     .object([:])
   }
 
-  var displayName: String {
+  public var displayName: String {
     name
   }
 
-  var shortDescription: String {
+  public var shortDescription: String {
     description
+  }
+
+  public func isAvailable(in _: ChatMode) -> Bool {
+    false
   }
 
   var isReadonly: Bool {
     false
   }
 
-  func isAvailable(in _: ChatMode) -> Bool {
-    false
-  }
-
 }
 
 extension UnknownTool.Use {
-  convenience init(from decoder: Decoder) throws {
+  public convenience init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
 
     let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
@@ -126,7 +126,7 @@ extension UnknownTool.Use {
       initialStatus: statusValue)
   }
 
-  func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: Encoder) throws {
     try rawData.encode(to: encoder)
   }
 }

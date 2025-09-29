@@ -15,6 +15,7 @@ import MCPServiceInterface
 import ReadFileTool
 import SearchFilesTool
 import ToolFoundation
+import UnknownTool
 
 extension ToolsPlugin {
   func registerToolsPlugin(mcpService: MCPService) -> AnyCancellable {
