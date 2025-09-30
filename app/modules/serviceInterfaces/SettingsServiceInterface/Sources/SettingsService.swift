@@ -287,6 +287,7 @@ extension UserDefaultsKey {
   public static let repeatLastLLMInteraction = "llmService.isRepeating"
   public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
   public static let enableNetworkProxy = "enableNetworkProxy"
+  public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
 }
 
 // MARK: - KeyEquivalent + Codable

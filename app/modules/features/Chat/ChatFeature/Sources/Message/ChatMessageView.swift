@@ -162,29 +162,38 @@ struct ToolUseView: View {
           }
           .padding(3)
         }
-        #if DEBUG
-        Spacer()
-        IconButton(
-          action: {
-            if let debugInput {
-              NSPasteboard.general.clearContents()
-              NSPasteboard.general.setString(debugInput, forType: .string)
-            }
-          },
-          systemName: "doc.on.doc",
-          cornerRadius: 0,
-          withCheckMark: true)
-          .frame(width: 10, height: 10)
-          .font(.system(size: 10))
-          .foregroundColor(.orange)
-        #endif
+        if shouldShowToolInputCopyButton {
+          Spacer()
+          IconButton(
+            action: {
+              if let debugInput {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(debugInput, forType: .string)
+              }
+            },
+            systemName: "doc.on.doc",
+            cornerRadius: 0,
+            withCheckMark: true)
+            .frame(width: 10, height: 10)
+            .font(.system(size: 10))
+            .foregroundColor(.orange)
+        }
       }
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
 
-  #if DEBUG
+  @Dependency(\.userDefaults) private var userDefaults
+
+  private var shouldShowToolInputCopyButton: Bool {
+    #if DEBUG
+    return true
+    #else
+    return userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
+    #endif
+  }
+
   private var debugInput: String? {
     if
       let data = try? JSONEncoder().encode(toolUse.input),
@@ -194,7 +203,6 @@ struct ToolUseView: View {
     }
     return nil
   }
-  #endif
 }
 
 // MARK: - CodeBlockContentView

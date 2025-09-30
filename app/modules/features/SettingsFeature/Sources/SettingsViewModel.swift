@@ -40,6 +40,7 @@ public final class SettingsViewModel {
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
     enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
+    showToolInputCopyButtonInRelease = userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -147,6 +148,12 @@ public final class SettingsViewModel {
   var enableNetworkProxy: Bool {
     didSet {
       userDefaults.set(enableNetworkProxy, forKey: .enableNetworkProxy)
+    }
+  }
+
+  var showToolInputCopyButtonInRelease: Bool {
+    didSet {
+      userDefaults.set(showToolInputCopyButtonInRelease, forKey: .showToolInputCopyButtonInRelease)
     }
   }
 

@@ -116,7 +116,8 @@ public struct SettingsView: View {
           showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease,
           defaultChatPositionIsInverted: $viewModel.defaultChatPositionIsInverted,
           enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
-          enableNetworkProxy: $viewModel.enableNetworkProxy)
+          enableNetworkProxy: $viewModel.enableNetworkProxy,
+          showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease)
 
       case .about:
         AboutSettingsView(

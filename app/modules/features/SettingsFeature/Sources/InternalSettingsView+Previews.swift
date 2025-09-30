@@ -13,7 +13,8 @@ import SwiftUI
     showInternalSettingsInRelease: .constant(false),
     defaultChatPositionIsInverted: .constant(false),
     enableAnalyticsAndCrashReporting: .constant(false),
-    enableNetworkProxy: .constant(false))
+    enableNetworkProxy: .constant(false),
+    showToolInputCopyButtonInRelease: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -26,7 +27,8 @@ import SwiftUI
     showInternalSettingsInRelease: .constant(true),
     defaultChatPositionIsInverted: .constant(true),
     enableAnalyticsAndCrashReporting: .constant(false),
-    enableNetworkProxy: .constant(true))
+    enableNetworkProxy: .constant(true),
+    showToolInputCopyButtonInRelease: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }
