@@ -202,6 +202,13 @@ final class UpdateChecker: NSObject, Sendable {
 // MARK: SPUUpdaterDelegate
 
 extension UpdateChecker: SPUUpdaterDelegate {
+
+  func allowedChannels(for _: SPUUpdater) -> Set<String> {
+    let channel = Bundle.main.appType
+    updateLogger.info("allowedChannels(for:) - using channel: \(channel)")
+    return [channel]
+  }
+
   func updaterShouldPromptForPermissionToCheck(forUpdates _: SPUUpdater) -> Bool {
     updateLogger.info("updaterShouldPromptForPermissionToCheck(forUpdates:)")
     return false

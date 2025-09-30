@@ -20,6 +20,11 @@ extension Bundle {
   public var releaseHostAppBundleId: String {
     infoDictionary?["RELEASE_APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
   }
+
+  /// The app type, which maps to the Sparkle update channel (e.g., "stable" or "dev")
+  public var appType: String {
+    infoDictionary?["APP_DISTRIBUTION_CHANNEL"] as? String ?? "stable"
+  }
 }
 
 extension String {

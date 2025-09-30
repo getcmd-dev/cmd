@@ -9,4 +9,7 @@ INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName = $(DEBUG_SHARED_USER_DEFAULTS_SU
 APP_VERSION=0.1.21
 MARKETING_VERSION=$(APP_VERSION)
 
+// App type maps to Sparkle update channel (e.g., "stable" or "dev")
+APP_DISTRIBUTION_CHANNEL=dev
+
 RELEASE_APP_BUNDLE_IDENTIFIER = dev.getcmd.command

@@ -4,6 +4,8 @@
 <dict>
 	<key>APP_BUNDLE_IDENTIFIER</key>
 	<string>$(HOST_APP_BUNDLE_IDENTIFIER)</string>
+	<key>APP_DISTRIBUTION_CHANNEL</key>
+	<string>$(APP_DISTRIBUTION_CHANNEL)</string>
 	<key>DebugUserDefaultsSharedSuiteName</key>
 	<string>$(INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName)</string>
 	<key>RELEASE_APP_BUNDLE_IDENTIFIER</key>

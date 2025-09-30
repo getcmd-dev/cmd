@@ -115,8 +115,6 @@ platform :mac do
 
     # Create a new build
     sh("rm -rf #{build_path}")
-    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
-    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
 
     build_mac_app(
@@ -204,7 +202,10 @@ platform :mac do
     skip_github_release = !options[:skip_github_release].nil?
 
     setup_ci if ENV["CI"]
+    # Set APP_DISTRIBUTION_CHANNEL to stable for release builds
     app_config_path = File.absolute_path("../command.shared.xcconfig")
+    sh("sed -i '' 's/APP_DISTRIBUTION_CHANNEL=.*/APP_DISTRIBUTION_CHANNEL=stable/' #{app_config_path}")
+
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
     # Look for an existing version tag. If one exist, bump the version.
     existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
