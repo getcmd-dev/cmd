@@ -1,12 +1,50 @@
-import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import {
+	ModelModality,
+	ModelProvider,
+	ModelProviderInput,
+	ModelProviderOutput,
+	ModelRichInfo,
+	ProviderConfig,
+} from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
+import { UserFacingError } from "../errors"
+
+export type OpenRoutedModel = {
+	id: string
+	canonical_slug: string
+	name: string
+	description: string
+	context_length: number
+	architecture: {
+		input_modalities: ModelModality[]
+		output_modalities: ModelModality[]
+	}
+	top_provider: {
+		context_length: number
+		max_completion_tokens: number | undefined
+	}
+	pricing: {
+		prompt: string
+		completion: string
+		image: string
+		request: string
+		web_search: string
+		internal_reasoning: string
+		input_cache_read: string | undefined
+		input_cache_write: string | undefined
+	}
+}
 
 export class OpenRouterModelProvider implements ModelProvider {
 	name: APIProviderName = "openrouter"
 	build(params: ModelProviderInput): ModelProviderOutput {
-		const { modelName, apiKey, baseUrl, reasoningBudget } = params
+		const {
+			provider: { apiKey, baseUrl },
+			modelName,
+			reasoningBudget,
+		} = params
 		const provider = createOpenRouter({
 			apiKey: apiKey,
 			baseURL: process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? baseUrl,
@@ -29,8 +67,56 @@ export class OpenRouterModelProvider implements ModelProvider {
 				: undefined,
 		}
 	}
-	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
-		return []
+	async listReferenceModels(): Promise<OpenRoutedModel[]> {
+		// https://openrouter.ai/docs/api-reference/list-available-models
+		const baseUrl = process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? "https://openrouter.ai/api/v1"
+
+		const url = new URL(`${baseUrl}/models`)
+		const headers = {}
+		const response = await fetch(url.toString(), {
+			headers,
+		})
+		if (!response.ok) {
+			throw new UserFacingError({
+				message: response.statusText,
+				statusCode: response.status,
+				underlyingError: new Error(`Failed to fetch models for provider`),
+			})
+		}
+		const data = await response.json()
+		return data.data?.map((model: OpenRoutedModel): OpenRoutedModel => model) || []
+	}
+	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+		// https://openrouter.ai/docs/api-reference/list-available-models
+		const baseUrl =
+			process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://openrouter.ai/api/v1"
+
+		const url = new URL(`${baseUrl}/models`)
+		const headers = {}
+		if (params.apiKey) {
+			headers["Authorization"] = `Bearer ${params.apiKey}`
+		}
+		const response = await fetch(url.toString(), {
+			headers,
+		})
+		if (!response.ok) {
+			throw new UserFacingError({
+				message: response.statusText,
+				statusCode: response.status,
+				underlyingError: new Error(`Failed to fetch models for provider`),
+			})
+		}
+		const data = await response.json()
+		return (
+			data.data?.map(
+				(model: OpenRoutedModel): ModelRichInfo => ({
+					...model,
+					providerId: model.id,
+					globalId: model.canonical_slug,
+					max_completion_tokens: model.top_provider.max_completion_tokens,
+				}),
+			) || []
+		)
 	}
 }
 

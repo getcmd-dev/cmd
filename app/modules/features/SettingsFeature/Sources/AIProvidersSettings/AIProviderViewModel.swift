@@ -17,11 +17,11 @@ public final class AIProviderViewModel {
   public init(
     provider: LLMProvider,
     settings: LLMProviderSettings,
-    saveSettings: @escaping (LLMProviderSettings) -> Void
-  ) {
+    saveSettings: @escaping (LLMProviderSettings) -> Void)
+  {
     self.provider = provider
     self.settings = settings
-      self.saveSettings = saveSettings
+    self.saveSettings = saveSettings
 
     @Dependency(\.localServer) var localServer
     self.localServer = localServer
@@ -32,14 +32,14 @@ public final class AIProviderViewModel {
     }
   }
 
-    private let saveSettings:  (LLMProviderSettings) -> Void
   public let provider: LLMProvider
   public var settings: LLMProviderSettings
+
+  private let saveSettings: (LLMProviderSettings) -> Void
 
   private let localServer: LocalServer
 
   private func fetchAvailableModels() async {
-
     do {
       let apiProviderName = convertToAPIProviderName(provider)
 
@@ -47,23 +47,20 @@ public final class AIProviderViewModel {
       let providerSettings = Schema.APIProvider.Settings(
         apiKey: settings.apiKey.isEmpty ? nil : settings.apiKey,
         baseUrl: settings.baseUrl,
-        localExecutable: nil
-      )
+        localExecutable: nil)
       let apiProvider = Schema.APIProvider(
         name: apiProviderName,
-        settings: providerSettings
-      )
+        settings: providerSettings)
       let input = Schema.ListModelsInput(provider: apiProvider)
 
       let inputData = try JSONEncoder().encode(input)
       let output: Schema.ListModelsOutput = try await localServer.postRequest(
         path: "/models",
-        data: inputData
-      )
+        data: inputData)
+        defaultLogger.log("Received \(output.models.count) models for provider \(provider.name)")
 
-      defaultLogger.log("Fetched \(output.models.count) models for provider \(provider.name): \(output.models.map(\.displayName).joined(separator: ", "))")
     } catch {
-      defaultLogger.error("Failed to fetch models for provider \(provider.name): \(error)")
+      defaultLogger.error("Failed to fetch models for provider \(provider.name)", error)
     }
   }
 
@@ -82,8 +79,8 @@ public final class AIProviderViewModel {
     case .gemini:
       return .gemini
     default:
-        defaultLogger.error("Provider \(provider.name) is not supported by the local server, defaulting to Anthropic")
-        return .anthropic
+      defaultLogger.error("Provider \(provider.name) is not supported by the local server, defaulting to Anthropic")
+      return .anthropic
     }
   }
 }

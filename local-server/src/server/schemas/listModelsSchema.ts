@@ -4,11 +4,31 @@ export interface ListModelsInput {
 	provider: APIProvider
 }
 
-export interface Models {
-	id: string
-	displayName: string
+export interface ListModelsOutput {
+	models: Model[]
 }
 
-export interface ListModelsOutput {
-	models: Models[]
+export interface ModelPricing {
+	prompt: number
+	completion: number
+	image: number | undefined
+	request: number | undefined
+	web_search: number | undefined
+	internal_reasoning: number | undefined
+	input_cache_read: number | undefined
+	input_cache_write: number | undefined
+}
+
+export type ModelModality = "text" | "image" | "file" | "audio"
+
+export type Model = {
+	providerId: string
+	globalId: string
+	name: string
+	description: string
+	contextLength: number
+	maxCompletionTokens: number | undefined
+	inputModalities: ModelModality[]
+	outputModalities: ModelModality[]
+	pricing: ModelPricing
 }

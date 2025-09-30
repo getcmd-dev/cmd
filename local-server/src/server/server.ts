@@ -8,6 +8,7 @@ import { registerEndpoint as registerListFilesEndpoint } from "./endpoints/tools
 import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/tools/searchFiles/endpoint"
 import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/checkpoint"
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
+import { registerEndpoint as registerListModelsEndpoint } from "./endpoints/listModels"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -38,20 +39,17 @@ app.get("/launch", (_, res) => {
 app.get("/error", () => {
 	throw new Error("test error")
 })
-
-registerSendMessageEndpoint(
-	router,
-	[
-		new AnthropicModelProvider(),
-		new OpenAIModelProvider(),
-		new OpenRouterModelProvider(),
-		new GroqModelProvider(),
-		new GeminiModelProvider(),
-	],
-	() => {
-		return connectionInfo.port
-	},
-)
+const aiProviders = [
+	new AnthropicModelProvider(),
+	new OpenAIModelProvider(),
+	new OpenRouterModelProvider(),
+	new GroqModelProvider(),
+	new GeminiModelProvider(),
+]
+registerSendMessageEndpoint(router, aiProviders, () => {
+	return connectionInfo.port
+})
+registerListModelsEndpoint(router, aiProviders)
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)

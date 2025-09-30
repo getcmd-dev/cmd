@@ -80,8 +80,6 @@ actor StdioTransport: DisconnectableTransport {
     Task { [weak self] in
       for await data in stdout.fileHandleForReading.dataStream.jsonStream {
         self?.stdoutContinuation.yield(data)
-
-        defaultLogger.trace("Received data:\n\(String(data: data, encoding: .utf8) ?? "nil")")
       }
       self?.stdoutContinuation.finish()
     }
@@ -103,7 +101,6 @@ actor StdioTransport: DisconnectableTransport {
           guard !isTerminated.value else {
             throw AppError(message: "Process has terminated")
           }
-          defaultLogger.trace("Sending data:\n\(String(data: data, encoding: .utf8) ?? "nil")")
 
           stdin.fileHandleForWriting.write(data)
           // Send \n to flush the buffer

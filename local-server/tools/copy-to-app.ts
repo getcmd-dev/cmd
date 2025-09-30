@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const copyJSCodeToApp = async () => {
 	const destinations = [
-		path.join(os.homedir(), "Library/Application Support/command"),
+		path.join(os.homedir(), "Library/Application Support/dev.getcmd.debug.command"),
 		path.join(__dirname, "../../app/modules/services/LocalServerService/Sources/Resources"),
 	]
 	const sources = ["./dist/main.bundle.cjs.gz", "./dist/main.bundle.cjs.map", "./build.sha256"]

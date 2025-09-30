@@ -97,7 +97,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			const modelName = body.model
 			const { model, generalProviderOptions, addProviderOptionsToMessages, addProviderOptionsToTools } =
 				await modelProvider.build({
-					...body.provider.settings,
+					provider: body.provider.settings,
 					modelName,
 					reasoningBudget: body.enableReasoning ? 12000 : undefined,
 				})

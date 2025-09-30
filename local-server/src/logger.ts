@@ -77,7 +77,10 @@ const logError = (error: unknown) => {
 	}
 }
 
-const logInfo = (info: string) => {
+const logInfo = (info: string | object) => {
+	if (typeof info !== "string") {
+		info = JSON.stringify(info, null, 2)
+	}
 	writeToLog("INFO", info)
 	if (process.env.LOG_TO_CONSOLE) {
 		console.log(info)

@@ -1,13 +1,25 @@
-import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { ModelProvider, ModelProviderInput, ModelProviderOutput, ModelRichInfo, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
 import { ModelMessage } from "ai"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
+import { UserFacingError } from "../errors"
+import { OpenRoutedModel } from "./open-router"
+import { notUndefined } from "@/utils/typeChecks"
+
+type ModelBaseInfo = {
+	id: string
+	display_name: string
+}
 
 export class AnthropicModelProvider implements ModelProvider {
 	name: APIProviderName = "anthropic"
 	build(params: ModelProviderInput): ModelProviderOutput {
-		const { modelName, apiKey, baseUrl, reasoningBudget } = params
+		const {
+			provider: { apiKey, baseUrl },
+			modelName,
+			reasoningBudget,
+		} = params
 		const provider = createAnthropic({
 			apiKey: apiKey,
 			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? baseUrl,
@@ -25,13 +37,13 @@ export class AnthropicModelProvider implements ModelProvider {
 			addProviderOptionsToTools: (tools) => addCacheControlToTools(tools, this.name),
 		}
 	}
-	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
-		const baseUrl = process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com"
+	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+		const baseUrl = process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com/v1"
 		const allModels: ModelBaseInfo[] = []
 		let afterId: string | undefined = undefined
 
 		do {
-			const url = new URL(`${baseUrl}/v1/models`)
+			const url = new URL(`${baseUrl}/models`)
 			if (afterId) {
 				url.searchParams.set("after_id", afterId)
 			}
@@ -42,22 +54,39 @@ export class AnthropicModelProvider implements ModelProvider {
 				},
 			})
 			if (!response.ok) {
-				throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+				throw new UserFacingError({
+					message: response.statusText,
+					statusCode: response.status,
+					underlyingError: new Error(`Failed to fetch models for provider`),
+				})
 			}
 			const data = await response.json()
-			const models: ModelBaseInfo[] =
-				data.data?.map(
-					(model: { id: string; display_name: string }): ModelBaseInfo => ({
-						id: model.id,
-						displayName: model.display_name,
-					}),
-				) || []
+			const models: ModelBaseInfo[] = data.data?.map((model: ModelBaseInfo): ModelBaseInfo => model) || []
 			allModels.push(...models)
 
 			afterId = data.has_more ? data.last_id : undefined
 		} while (afterId)
 
-		return allModels
+		return allModels.map((model) => this.identifyModel(model, referenceModels)).filter(notUndefined)
+	}
+	identifyModel(model: ModelBaseInfo, models: OpenRoutedModel[]): ModelRichInfo | undefined {
+		// Anthropic.model.id claude-sonnet-4-5-20250929
+		// OpenRoutermodel.id: anthropic/claude-sonnet-4.5
+		// OpenRoutermodel.canonical_slug: anthropic/claude-4.5-sonnet-20250929
+		const modelIdWithoutDate = model.id.replace(/-[0-9]{8}$/, "")
+		const modelWithDotId = modelIdWithoutDate.replace(/([0-9]+)-([0-9]+)/g, "$1.$2")
+		const slug = `anthropic/${modelWithDotId}`
+		const match = models.find((m) => m.id === slug)
+		if (match) {
+			return {
+				...match,
+				providerId: model.id,
+				globalId: match.canonical_slug,
+				name: model.display_name || match.name,
+				max_completion_tokens: match.top_provider.max_completion_tokens,
+			}
+		}
+		return undefined
 	}
 }
 

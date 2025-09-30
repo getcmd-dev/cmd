@@ -42,6 +42,7 @@ public struct SettingsView: View {
 
   @Environment(\.colorScheme) private var colorScheme
   @State private var viewModel: SettingsViewModel
+
   @State private var currentView = SettingsSection.landing
 
   private let onDismiss: @MainActor () -> Void
@@ -83,10 +84,7 @@ public struct SettingsView: View {
 
       switch currentView {
       case .providers:
-        ProvidersView(
-            providers: viewModel.aiProviderViewModels,
-            addProvider: { _ in },
-            removeProvider: { _ in })
+        ProvidersView(providerSettings: $viewModel.providerSettings)
 
       case .models:
         ModelsView(

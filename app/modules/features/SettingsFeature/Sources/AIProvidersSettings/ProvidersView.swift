@@ -11,18 +11,23 @@ import SwiftUI
 // MARK: - ProvidersView
 
 public struct ProvidersView: View {
-  public init(
-    providers: [AIProviderViewModel],
-    addProvider: @escaping (LLMProvider) -> Void,
-    removeProvider: @escaping (LLMProvider) -> Void) {
-        self.providers = providers.reduce(into: [:]) { $0[$1.provider] = $1 }
-        self.addProvider = addProvider
-        self.removeProvider = removeProvider
+  // TODO: fix issue with @State property getting initialized twice.
+  public init(providerSettings: Binding<AllLLMProviderSettings>) {
+    _providerSettings = providerSettings
+
+    // Remove providers that are no longer supported
+    var providers = providers.filter { key, _ in
+      self.providerSettings.keys.contains(key)
+    }
+    // Add new providers that are supported but not yet tracked
+    for (provider, providerSettings) in self.providerSettings {
+      if providers[provider] == nil {
+        providers[provider] = AIProviderViewModel(provider: provider, settings: providerSettings, saveSettings: { _ in
+        })
+      }
+    }
+    self.providers = providers
   }
-    
-    private let providers: [LLMProvider: AIProviderViewModel]
-    private let addProvider: (LLMProvider) -> Void
-    private let removeProvider: (LLMProvider) -> Void
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -62,7 +67,9 @@ public struct ProvidersView: View {
     }
   }
 
-//  @Binding var providerSettings: AllLLMProviderSettings
+  @Binding var providerSettings: AllLLMProviderSettings
+
+  @State private var providers = [LLMProvider: AIProviderViewModel]()
 
   @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 
@@ -70,7 +77,7 @@ public struct ProvidersView: View {
 
   private var filteredProviders: [ProviderInfo] {
     let allProviders = orderedProviders.map { provider in
-        let existingSettings = providers[provider]?.settings
+      let existingSettings = providerSettings[provider]
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
@@ -86,7 +93,7 @@ public struct ProvidersView: View {
 
   private func setInitialOrder() {
     orderedProviders = LLMProvider.allCases.map { provider in
-        (provider, provider.isConnected(providers[provider]?.settings))
+      (provider, provider.isConnected(providerSettings[provider]))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
@@ -100,17 +107,15 @@ public struct ProvidersView: View {
   private func updateProviderSettings(for provider: LLMProvider, with newSettings: LLMProviderSettings?) {
     // Add new settings if provided
     if let newSettings {
-        addProvider(provider)
-//        let createdOrder = providers[provider]?.settings.createdOrder ?? providerSettings.nextCreatedOrder
-//        providers[provider] = .init(
-//        apiKey: newSettings.apiKey,
-//        baseUrl: newSettings.baseUrl,
-//        executable: newSettings.executable,
-//        createdOrder: createdOrder)
+      let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
+      providerSettings[provider] = .init(
+        apiKey: newSettings.apiKey,
+        baseUrl: newSettings.baseUrl,
+        executable: newSettings.executable,
+        createdOrder: createdOrder)
     } else {
-        removeProvider(provider)
       // Remove existing settings for this provider
-//      providerSettings.removeValue(forKey: provider)
+      providerSettings.removeValue(forKey: provider)
     }
   }
 }

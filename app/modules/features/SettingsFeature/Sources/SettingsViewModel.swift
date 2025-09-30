@@ -33,7 +33,7 @@ public final class SettingsViewModel {
     let settings = settingsService.values()
     self.settings = settings
 
-//    providerSettings = settings.llmProviderSettings
+    providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: .repeatLastLLMInteraction)
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
@@ -45,7 +45,6 @@ public final class SettingsViewModel {
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
       toolsPlugin: toolsPlugin)
-      syncAIProviderViewModels()
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -59,35 +58,12 @@ public final class SettingsViewModel {
 
   // MARK: - Initialization
 
-//  public var providerSettings: AllLLMProviderSettings {
-//    didSet {
-//      settings.llmProviderSettings = providerSettings
-//      settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
-//        syncAIProviderViewModels()
-//    }
-//  }
-    
-    private func syncAIProviderViewModels() {
-        let settings = settings.llmProviderSettings
-        let supportedProviders = settings.map { $0.key }
-        var viewModels = aiProviderViewModels.filter { supportedProviders.contains($0.provider) }
-        settings
-            .filter { (provider, _) in !viewModels.contains(where: { $0.provider == provider }) }
-            .forEach { (provider, providerSettings) in
-                let viewModel = AIProviderViewModel(
-                    provider: provider,
-                    settings: providerSettings,
-                saveSettings: { [weak self] newSettings in
-                    guard let self else { return }
-                    self.settings.llmProviderSettings[provider] = newSettings
-                    self.settingsService.update(setting: \.llmProviderSettings, to: self.settings.llmProviderSettings)
-                })
-            viewModels.append(viewModel)
-        }
-        aiProviderViewModels = viewModels
+  public var providerSettings: AllLLMProviderSettings {
+    didSet {
+      settings.llmProviderSettings = providerSettings
+      settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
     }
-    
-    public private(set) var aiProviderViewModels = [AIProviderViewModel]()
+  }
 
   private(set) var settings: SettingsServiceInterface.Settings
 
