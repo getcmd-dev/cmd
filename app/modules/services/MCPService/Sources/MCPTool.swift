@@ -98,7 +98,7 @@ public final class MCPTool: NonStreamableTool {
   }
 
   public var name: String {
-    "mcp__\(serverName)__\(wrappedTool.name)".sanitized
+    "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"
   }
 
   public var externalName: String {

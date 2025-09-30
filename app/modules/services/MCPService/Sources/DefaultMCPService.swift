@@ -39,9 +39,11 @@ final class DefaultMCPService: MCPService {
   // MARK: - MCPService
 
   var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
-    ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never>(Array(_servers.value.values), publisher: _servers.map {
-      Array($0.values)
-    }.eraseToAnyPublisher())
+    ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never>(
+      Array(_servers.value.values),
+      publisher: _servers.map {
+        Array($0.values)
+      }.eraseToAnyPublisher())
   }
 
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {
@@ -82,6 +84,8 @@ final class DefaultMCPService: MCPService {
 
   private var connections = [String: AnyCancellable]()
 
+  private var reloadId: UUID?
+
   // MARK: - Private Methods
 
   private func observeSettingsChanges() {
@@ -121,8 +125,23 @@ final class DefaultMCPService: MCPService {
   }
 
   private func reload(removed: [MCPServerConfiguration], updatedOrAdded: [MCPServerConfiguration]) {
+    inLock { state in
+      self.reload(removed: removed, updatedOrAdded: updatedOrAdded, isolating: &state)
+    }
+  }
+
+  /// This manual isolation is a bit heavy. As some test have shown through their flakiness, it is possible that when `reload` is called twice in a row that the second call finishes first.
+  /// Without proper isolation, the first call can update the state after the second call, leading to stale data.
+  private func reload(
+    removed: [MCPServerConfiguration],
+    updatedOrAdded: [MCPServerConfiguration],
+    isolating state: inout _InternalState)
+  {
+    let reloadId = UUID()
+    state.reloadId = reloadId
+
     for serverConfig in removed {
-      connections.removeValue(forKey: serverConfig.name)
+      state.connections.removeValue(forKey: serverConfig.name)
       _servers.value.removeValue(forKey: serverConfig.name)
     }
     for serverConfig in updatedOrAdded {
@@ -130,14 +149,26 @@ final class DefaultMCPService: MCPService {
 
       let isCancelled = Atomic(false)
       let task = Task {
-        await withTaskCancellationHandler(operation: { [weak self] in
+        try await withTaskCancellationHandler(operation: { [weak self] in
           do {
             if let connection = try await self?.connect(to: serverConfig), !isCancelled.value {
-              self?._servers.value[serverConfig.name] = .success(connection)
+              try Task.checkCancellation()
+              let _servers = self?._servers
+              self?.inLock { state in
+                if state.reloadId == reloadId {
+                  _servers?.value[serverConfig.name] = .success(connection)
+                }
+              }
             }
           } catch {
             if !isCancelled.value {
-              self?._servers.value[serverConfig.name] = .failure(serverConfig, error)
+              try Task.checkCancellation()
+              let _servers = self?._servers
+              self?.inLock { state in
+                if state.reloadId == reloadId {
+                  _servers?.value[serverConfig.name] = .failure(serverConfig, error)
+                }
+              }
             }
           }
         }, onCancel: {
@@ -145,7 +176,7 @@ final class DefaultMCPService: MCPService {
         })
       }
 
-      connections[serverConfig.name] = AnyCancellable {
+      state.connections[serverConfig.name] = AnyCancellable {
         task.cancel()
       }
     }

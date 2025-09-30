@@ -5,6 +5,7 @@ import Testing
 
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Foundation
 import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
@@ -20,7 +21,7 @@ import ToolFoundation
 struct DefaultMCPServiceTests {
 
   struct Retention {
-    @Test
+    @Test @MainActor
     func test_connectionIsDereferencedWhenServiceIsDeallocated() async throws {
       // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
@@ -35,7 +36,9 @@ struct DefaultMCPServiceTests {
         connect: { _, configuration in
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
           weakConnection.value = connection
-          didConnect.fulfill()
+          Task { @MainActor in
+            didConnect.fulfill()
+          }
           return connection
         })
 
@@ -49,7 +52,7 @@ struct DefaultMCPServiceTests {
       #expect(weakConnection.value == nil)
     }
 
-    @Test
+    @Test @MainActor
     func test_connectionIsDereferencedWhenRemoved() async throws {
       // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
@@ -64,7 +67,9 @@ struct DefaultMCPServiceTests {
         connect: { _, configuration in
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
           weakConnection.value = connection
-          didConnect.fulfill()
+          Task { @MainActor in
+            didConnect.fulfill()
+          }
           return connection
         })
       try await fulfillment(of: didConnect)
@@ -83,7 +88,7 @@ struct DefaultMCPServiceTests {
       _ = sut
     }
 
-    @Test
+    @Test @MainActor
     func test_connectionIsDereferencedWhenUpdated() async throws {
       // given
       let weakConnection = WeakBox<MockMCPServerConnection>(nil)
@@ -102,7 +107,9 @@ struct DefaultMCPServiceTests {
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
           if counter == 1 {
             weakConnection.value = connection
-            didConnectOnce.fulfill()
+            Task { @MainActor in
+              didConnectOnce.fulfill()
+            }
           }
           return connection
         })
@@ -130,6 +137,7 @@ struct DefaultMCPServiceTests {
     // given
     let didConnectToStdioServer = expectation(description: "did connect to stdio server")
     let didConnectToHttpServer = expectation(description: "did connect to http server")
+    let didConnectToBothServers = expectation(description: "did connect to both servers")
     let settingsService = MockSettingsService(.init(mcpServers: [
       "test-stdio-server": .stdio(.init(name: "test-stdio-server", command: "swift test-server")),
       "test-http-server": .http(.init(name: "test-http-server", url: "http://localhost:8080")),
@@ -148,9 +156,15 @@ struct DefaultMCPServiceTests {
         }
         return MockMCPServerConnection(tools: [], configuration: configuration)
       })
+    let cancellable = sut.servers.sink { servers in
+      if servers.count == 2 {
+        didConnectToBothServers.fulfillAtMostOnce()
+      }
+    }
 
     // then
-    try await fulfillment(of: [didConnectToHttpServer, didConnectToStdioServer])
+    try await fulfillment(of: [didConnectToHttpServer, didConnectToStdioServer, didConnectToBothServers])
+    _ = cancellable
     #expect(sut.servers.currentValue.count == 2)
   }
 
@@ -159,6 +173,7 @@ struct DefaultMCPServiceTests {
     // given
     let didConnectToStdioServer = expectation(description: "did connect to stdio server")
     let didConnectToHttpServer = expectation(description: "did connect to http server")
+    let didConnectToBothServers = expectation(description: "did connect to both servers")
     let settingsService = MockSettingsService(.init(mcpServers: [
       "test-stdio-server": .stdio(.init(name: "test-stdio-server", command: "swift test-server")),
     ]))
@@ -175,6 +190,11 @@ struct DefaultMCPServiceTests {
         }
         return MockMCPServerConnection(tools: [], configuration: configuration)
       })
+    let cancellable = sut.servers.sink { servers in
+      if servers.count == 2 {
+        didConnectToBothServers.fulfillAtMostOnce()
+      }
+    }
 
     try await fulfillment(of: didConnectToStdioServer)
     #expect(sut.servers.currentValue.count == 1)
@@ -186,7 +206,8 @@ struct DefaultMCPServiceTests {
     ])
 
     // then
-    try await fulfillment(of: didConnectToHttpServer)
+    try await fulfillment(of: [didConnectToHttpServer, didConnectToBothServers])
+    _ = cancellable
     #expect(sut.servers.currentValue.count == 2)
   }
 

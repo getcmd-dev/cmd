@@ -21,7 +21,7 @@ enum MCPToolTests {
         tool: tool,
         """
         {
-          "callingTool" : "mcp__testserver__testtool",
+          "callingTool" : "mcp__test_server__test_tool",
           "context" : {
             "threadId" : "mock-thread-id"
           },
