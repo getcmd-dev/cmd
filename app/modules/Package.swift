@@ -1092,6 +1092,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],

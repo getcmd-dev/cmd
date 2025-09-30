@@ -14,6 +14,15 @@ public protocol XcodeObserver: Sendable {
   /// Return the content of the file.
   /// The read strategy (IDE version / from disk) should match the write strategy defined in `fileEditMode`.
   func getContent(of file: URL) throws -> String
+  func listFiles(in workspace: URL) async throws -> ([URL], WorkspaceType)
+}
+
+// MARK: - WorkspaceType
+
+public enum WorkspaceType {
+  case xcodeProject
+  case swiftPackage
+  case directory
 }
 
 extension XcodeObserver {

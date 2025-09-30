@@ -9,6 +9,7 @@ Target.module(
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],
