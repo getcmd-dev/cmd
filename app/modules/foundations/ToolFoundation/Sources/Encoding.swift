@@ -51,7 +51,7 @@ extension ToolUse {
 
 // MARK: - ToolUseCodingKeys
 
-private enum ToolUseCodingKeys: String, CodingKey {
+enum ToolUseCodingKeys: String, CodingKey {
   case callingTool
   case toolUseId
   case input
@@ -96,10 +96,7 @@ extension KeyedDecodingContainer {
         in: self,
         debugDescription: "The tools plugin was not set in the decoder. Make sure to call `decoder.userInfo.set(toolPlugin:)` before decoding tools.")
     }
-    guard let tool = toolsPlugin.tool(named: toolName) else {
-      throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "Tool \(toolName) not found")
-    }
-    return tool
+    return toolsPlugin.tool(named: toolName) ?? UnknownTool(name: toolName)
   }
 }
 

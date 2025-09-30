@@ -11,6 +11,7 @@ Target.module(
     "LLMFoundation",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "MCPServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ShellServiceInterface",

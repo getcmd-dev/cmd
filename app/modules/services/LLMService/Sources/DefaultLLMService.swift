@@ -46,7 +46,6 @@ final class DefaultLLMService: LLMService {
 
     do {
       var messageHistory = messageHistory
-
       // Iterate until we have received a response with no tool use request.
       while true {
         let newMessage = try await sendOneMessage(
@@ -255,7 +254,7 @@ final class DefaultLLMService: LLMService {
   {
     let settings = settingsService.values()
     let (provider, providerSettings) = try settings.provider(for: model)
-    let params = try Schema.SendMessageRequestParams(
+    let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
@@ -370,7 +369,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) throws {
+  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -389,12 +388,13 @@ extension Schema.APIProvider {
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    let localExecutable = settings.executable.map {
-      Schema.LocalExecutable(
-        executable: $0,
+    let localExecutable: Schema.LocalExecutable? = await {
+      guard let executable = settings.executable else { return nil }
+      return await Schema.LocalExecutable(
+        executable: executable,
         env: JSON(shellService.env),
         cwd: projectRoot)
-    }
+    }()
     self = .init(
       name: apiProviderName,
       settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))

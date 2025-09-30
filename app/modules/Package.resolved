@@ -1,5 +1,5 @@
 {
-  "originHash" : "4dd8e640c681594c65b17dcf6e63cddffd3f4ed9e8e093e7d555c87facd84fef",
+  "originHash" : "c9917cb2f7ae9d825c2df41fbcd3be53101e27e20edd293f879b3c86fa49cb26",
   "pins" : [
     {
       "identity" : "aexml",
@@ -70,6 +70,15 @@
       "location" : "https://github.com/gsabran/Down",
       "state" : {
         "revision" : "14309dd8781c7613063344727454ffbbebc8e8bd"
+      }
+    },
+    {
+      "identity" : "eventsource",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mattt/eventsource.git",
+      "state" : {
+        "revision" : "a2965424a4babeb0c8e4b5ec9708c3939bc52449",
+        "version" : "1.2.0"
       }
     },
     {
@@ -403,6 +412,15 @@
       "state" : {
         "revision" : "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
         "version" : "1.0.3"
+      }
+    },
+    {
+      "identity" : "swift-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/modelcontextprotocol/swift-sdk",
+      "state" : {
+        "revision" : "c0407a0b52677cb395d824cac2879b963075ba8c",
+        "version" : "0.10.2"
       }
     },
     {

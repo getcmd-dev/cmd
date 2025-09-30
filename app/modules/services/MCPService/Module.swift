@@ -1,0 +1,26 @@
+Target.module(
+  name: "MCPService",
+  dependencies: [
+    .product(name: "MCP", package: "swift-sdk"),
+    "AppFoundation",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "LoggingServiceInterface",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "ThreadSafe",
+    "ToolFoundation",
+  ])

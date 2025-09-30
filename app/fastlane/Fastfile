@@ -114,7 +114,9 @@ platform :mac do
     archive_path = "#{build_path}/release/#{app_name}.xcarchive"
 
     # Create a new build
-    # sh("rm -rf #{build_path}")
+    sh("rm -rf #{build_path}")
+    # Resolve package dependencies first. This is to work around an issue where CI would freeze.
+    sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
 
     build_mac_app(

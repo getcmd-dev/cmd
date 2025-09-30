@@ -23,7 +23,10 @@ public struct AppError: LocalizedError {
       self = appError
       return
     }
-    self.init(message: error.localizedDescription, debugDescription: (error as CustomDebugStringConvertible).debugDescription)
+    self.init(
+      message: error.localizedDescription,
+      debugDescription: (error as CustomDebugStringConvertible).debugDescription,
+      underlyingError: error)
   }
 
   public init(_ message: String) {
@@ -93,5 +96,55 @@ extension AppError: Codable {
   private enum CodingKeys: String, CodingKey {
     case message
     case debugDescription
+  }
+}
+
+extension Error {
+  public var debugDescription: String {
+    (self as CustomDebugStringConvertible).debugDescription
+  }
+}
+
+// MARK: - DecodingError + @retroactive CustomDebugStringConvertible
+
+extension DecodingError: @retroactive CustomDebugStringConvertible {
+  /// A detailed description that describes clearly the decoding error.
+  public var debugDescription: String {
+    switch self {
+    case .valueNotFound(_, let context):
+      return context.detailedDescription
+    case .dataCorrupted(let context):
+      return context.detailedDescription
+    case .typeMismatch(_, let context):
+      return context.detailedDescription
+    case .keyNotFound(_, let context):
+      return context.detailedDescription
+    @unknown default:
+      return localizedDescription
+    }
+  }
+}
+
+extension DecodingError.Context {
+  var detailedDescription: String {
+    var description = "Error at coding path: '\(codingPath.description)': " + debugDescription
+    if let underlyingError, let debugDescription = (underlyingError as NSError).userInfo[NSDebugDescriptionErrorKey] as? String {
+      description += " Underlying error: \(debugDescription)"
+    }
+    return description
+  }
+}
+
+extension [any CodingKey] {
+  var description: String {
+    var description = ""
+    for key in self {
+      if let i = key.intValue {
+        description += "[\(i)]"
+      } else {
+        description += ".\(key.stringValue)"
+      }
+    }
+    return description
   }
 }

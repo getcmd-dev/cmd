@@ -9,6 +9,7 @@ reset() {
 trap reset EXIT
 
 lint_swift_command() {
+	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
 	echo $1 >~/Downloads/tmp.log
@@ -24,8 +25,8 @@ lint_swift_command() {
 	fi
 	cd "$(git rev-parse --show-toplevel)/app" &&
 		mkdir -p .build/caches/swiftformat &&
-		swiftformat --config rules-header.swiftformat "$files" &&
-		swiftformat --config rules.swiftformat "$files" --cache .build/caches/swiftformat
+		$SWIFTFORMAT_PATH --config rules-header.swiftformat "$files" &&
+		$SWIFTFORMAT_PATH --config rules.swiftformat "$files" --cache .build/caches/swiftformat
 }
 
 lint_ts_command() {
@@ -72,6 +73,48 @@ focus_dependency_command() {
 build_release_command() {
 	cd "$(git rev-parse --show-toplevel)/app" &&
 		./tools/release/release.sh "$@"
+}
+
+# Install swift format using a specific version (brew doesn't support this).
+install_swiftformat() {
+	local version="0.58.0"
+	local force=false
+	if [ "$1" = "--force" ]; then
+		force=true
+	fi
+
+	local target_dir="$(git rev-parse --show-toplevel)/app/tmp/swiftformat/$version"
+	local target_path="$target_dir/swiftformat"
+
+	# Check if already installed
+	if [ -f "$target_path" ] && [ "$force" = false ]; then
+		# Set environment variable with binary location
+		export SWIFTFORMAT_PATH="$target_path"
+
+		return 0
+	fi
+
+	echo "Installing swiftformat $version..."
+
+	# Create tmp directory if needed
+	mkdir -p "$target_dir"
+
+	# Download swiftformat
+	local download_url="https://github.com/nicklockwood/SwiftFormat/releases/download/$version/swiftformat.zip"
+	local tmp_zip="$target_dir/swiftformat.zip"
+
+	curl -L -o "$tmp_zip" "$download_url"
+
+	# Unzip
+	unzip -o "$tmp_zip" -d "$target_dir"
+
+	# Clean up zip file
+	rm "$tmp_zip"
+
+	# Set environment variable with binary location
+	export SWIFTFORMAT_PATH="$target_path"
+
+	echo "✅ swiftformat $($SWIFTFORMAT_PATH --version) installed at $target_path."
 }
 
 clean_command() {
@@ -134,6 +177,9 @@ test:swift)
 	;;
 test:ts)
 	test_ts_command "$@"
+	;;
+install:swiftformat)
+	install_swiftformat "$@"
 	;;
 test)
 	test_swift_command &&

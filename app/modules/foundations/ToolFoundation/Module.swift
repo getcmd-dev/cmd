@@ -10,4 +10,10 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "SwiftTesting",
+    "ThreadSafe",
+  ])

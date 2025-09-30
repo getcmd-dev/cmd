@@ -1,7 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import Combine
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -19,10 +19,17 @@ import ThreadSafe
 final class DefaultShellService: ShellService {
 
   init() {
+    let (promise, continuation) = Future<[String: String], Never>.make()
+    _env = promise
+    setEnv = continuation
     loadZshEnvironmentInBackground()
   }
 
-  public private(set) var env = [String: String]()
+  public var env: [String: String] {
+    get async {
+      await _env.value
+    }
+  }
 
   @discardableResult
   func run(
@@ -33,22 +40,14 @@ final class DefaultShellService: ShellService {
     body: SubprocessHandle? = nil)
     async throws -> CommandExecutionResult
   {
-    let process = Process()
-    process.launchPath = "/bin/zsh"
-
-    let environment: Environment = {
+    let environment: Environment = await {
       guard useInteractiveShell || env != nil else {
         return .inherit
       }
-      var environment = useInteractiveShell ? self.env : ProcessInfo.processInfo.environment
+      var environment = useInteractiveShell ? await self.env : ProcessInfo.processInfo.environment
       environment.merge(env ?? [:]) { _, new in new }
       return .custom(environment)
     }()
-
-    process.arguments = ["-c"] + [command]
-    if let cwd {
-      process.currentDirectoryPath = cwd
-    }
 
     let stdoutData = Atomic(Data())
     let stderrData = Atomic(Data())
@@ -93,6 +92,9 @@ final class DefaultShellService: ShellService {
       mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 
+  private let _env: Future<[String: String], Never>
+  private let setEnv: @Sendable (Result<[String: String], Never>) -> Void
+
   private static func loadZshEnvironment(userEnv: [String: String]? = nil) async throws -> [String: String] {
     let result = try await Subprocess.run(
       .path("/bin/zsh"),
@@ -119,7 +121,13 @@ final class DefaultShellService: ShellService {
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func loadZshEnvironmentInBackground() {
     Task.detached { [weak self] in
-      self?.env = try await Self.loadZshEnvironment()
+      do {
+        let env = try await Self.loadZshEnvironment()
+        self?.setEnv(.success(env))
+      } catch {
+        defaultLogger.error("Failed to load zsh environment", error)
+        self?.setEnv(.success([:]))
+      }
     }
   }
 
@@ -159,8 +167,8 @@ extension FileHandle {
 // which are similar but allow to limit imports to consuming modules
 
 extension Subprocess.StandardInputWriter: ShellServiceInterface.StandardInputWriter {
-  public func write(_ string: String) async throws {
-    _ = try await write(string, using: UTF8.self)
+  public func write(_ data: Data) async throws {
+    _ = try await write([UInt8](data))
   }
 
 }

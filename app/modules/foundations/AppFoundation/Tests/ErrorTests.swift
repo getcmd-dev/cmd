@@ -3,35 +3,12 @@
 
 import Foundation
 import Testing
-@testable import LLMService
+@testable import AppFoundation
 
-// MARK: - BadToolInputTests
+// MARK: - ErrorTests
 
-@Suite("Bad Tool Input Handling Tests")
-struct BadToolInputTests {
-
-  @Test("DecodingError provides detailed LLM error description")
-  func testDecodingErrorLLMDescription() throws {
-    // Test keyNotFound error
-    let keyNotFoundContext = DecodingError.Context(
-      codingPath: [MockCodingKey(stringValue: "files"), MockCodingKey(intValue: 0), MockCodingKey(stringValue: "path")],
-      debugDescription: "No value associated with key 'path'")
-    let keyNotFoundError = DecodingError.keyNotFound(MockCodingKey(stringValue: "path"), keyNotFoundContext)
-
-    let errorDescription = keyNotFoundError.llmErrorDescription
-    #expect(errorDescription.contains("files[0].path"))
-    #expect(errorDescription.contains("No value associated with key 'path'"))
-
-    // Test typeMismatch error
-    let typeMismatchContext = DecodingError.Context(
-      codingPath: [MockCodingKey(stringValue: "files"), MockCodingKey(intValue: 0), MockCodingKey(stringValue: "changes")],
-      debugDescription: "Expected to decode Array but found a string")
-    let typeMismatchError = DecodingError.typeMismatch([String].self, typeMismatchContext)
-
-    let typeMismatchDescription = typeMismatchError.llmErrorDescription
-    #expect(typeMismatchDescription.contains("files[0].changes"))
-    #expect(typeMismatchDescription.contains("Expected to decode Array but found a string"))
-  }
+@Suite("Error Tests")
+struct ErrorTests {
 
   @Test("DecodingError context coding path description is formatted correctly")
   func testCodingPathDescription() throws {
@@ -85,7 +62,7 @@ struct BadToolInputTests {
       debugDescription: "Expected String value but found null")
     let error = DecodingError.valueNotFound(String.self, context)
 
-    let description = error.llmErrorDescription
+    let description = error.debugDescription
     #expect(description.contains("required_field"))
     #expect(description.contains("Expected String value but found null"))
   }
@@ -97,7 +74,7 @@ struct BadToolInputTests {
       debugDescription: "The given data was not valid JSON")
     let error = DecodingError.dataCorrupted(context)
 
-    let description = error.llmErrorDescription
+    let description = error.debugDescription
     #expect(description.contains("malformed_json"))
     #expect(description.contains("The given data was not valid JSON"))
   }
@@ -115,7 +92,7 @@ struct BadToolInputTests {
       underlyingError: underlyingError)
 
     let error = DecodingError.dataCorrupted(context)
-    let description = error.llmErrorDescription
+    let description = error.debugDescription
     #expect(description.contains("Main error description"))
     #expect(description.contains("Underlying error details"))
     #expect(description.contains("test"))

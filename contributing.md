@@ -1,6 +1,14 @@
 # Setup
 
 ```
+# helper for dev tools to bashrc
+echo '
+# Run helper tools for the cmd app
+function cmd {
+  "$(git rev-parse --show-toplevel)/cmd.sh" "$@"
+}' >> ~/.zshrc
+source ~/.zshrc
+
 # install brew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
@@ -8,13 +16,7 @@ brew install nvm
 # complete nvm installation as per instructions
 
 (cd ./local-server && nvm use)
-brew install swiftformat
-brew install --cask swiftformat-for-xcode
-# Open Applications > SwiftFormat for Xcode
-# > File > Open > ./app/rules.swiftformat
-# Open Settings > General > Login Items & Extensions > Xcode > Enable SwiftFormat for Xcode
-# Set a key binding for SwiftFormat in Xcode > Preferences > Key Bindings > Format File
-
+cmd install:swiftformat
 
 brew install jc
 brew install jq
@@ -22,13 +24,6 @@ brew install shfmt
 brew install yarn
 
 cp -R ./tools/githooks/. .git/hooks
-
-# helper for dev tools to bashrc
-echo '
-# Run helper tools for the cmd app
-function cmd {
-  "$(git rev-parse --show-toplevel)/cmd.sh" "$@"
-}' >> ~/.zshrc
 
 # Ruby version management
 brew install chruby ruby-install

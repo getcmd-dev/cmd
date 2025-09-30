@@ -47,7 +47,7 @@ final class DefaultLocalServer: LocalServer {
     delegate.owner = self
 
     Task {
-      try await self.connect()
+      await self.connect()
     }
   }
 
@@ -187,8 +187,25 @@ final class DefaultLocalServer: LocalServer {
 
   private let session: URLSession
 
+  private var retryCount = 0
+  private let maxRetryDelay: TimeInterval = 10.0
+
   /// Connect to the server, and return the port where the server is running.
-  private func connect() async throws {
+  private func connect() async {
+    do {
+      try await performConnect()
+      retryCount = 0 // Reset retry count on successful connection
+    } catch {
+      defaultLogger.error("Connection failed, will retry with backoff", error)
+
+      retryCount += 1
+      let delay = min(pow(2.0, Double(retryCount - 1)), maxRetryDelay)
+      try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+      await connect()
+    }
+  }
+
+  private func performConnect() async throws {
     var onConnection: Future<ConnectionResponse, Error>.Promise?
     connectionStatus = .waitingOnConnection(.init { onConnection = $0 })
 
@@ -214,7 +231,9 @@ final class DefaultLocalServer: LocalServer {
       #endif
 
       let stdout = Pipe()
+      let stderr = Pipe()
       process.standardOutput = stdout
+      process.standardError = stderr
       let connectionResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
         ConnectionResponse,
         Error,
@@ -234,6 +253,19 @@ final class DefaultLocalServer: LocalServer {
             }
           }
         }
+        let stderrData = Atomic(Data())
+        Task {
+          for await data in stderr.fileHandleForReading.dataStream {
+            stderrData.mutate { stderrData in
+              stderrData += data
+              // Ensure that we are not keeping too much data in memory (max 1MB)
+              let maxStderrDataSize = 1024 * 1024
+              if stderrData.count > maxStderrDataSize {
+                stderrData = stderrData.suffix(maxStderrDataSize)
+              }
+            }
+          }
+        }
 
         do {
           try process.run()
@@ -241,8 +273,10 @@ final class DefaultLocalServer: LocalServer {
             process.waitUntilExit()
             if let self {
               // The server crashed or was killed, restart it.
-              defaultLogger.error("Restarting server. This should not happen.")
-              try await connect()
+              defaultLogger
+                .error(
+                  "Restarting server. This should not happen. Stderr: \(String(data: stderrData.value, encoding: .utf8) ?? "<no data>")")
+              await connect()
             }
           }
         } catch {

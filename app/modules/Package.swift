@@ -94,6 +94,8 @@ targets.append(contentsOf: Target.module(
     "CheckpointService",
     "CheckpointServiceInterface",
     "ClaudeCodeTools",
+    "ConcurrencyFoundation",
+    "DefaultToolView",
     "DependencyFoundation",
     "DLS",
     "EditFilesTool",
@@ -110,6 +112,8 @@ targets.append(contentsOf: Target.module(
     "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
+    "MCPService",
+    "MCPServiceInterface",
     "Onboarding",
     "PermissionsService",
     "PermissionsServiceInterface",
@@ -141,6 +145,19 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./App"))
+
+targets.append(contentsOf: Target.module(
+  name: "DefaultToolView",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "LocalServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [],
+  path: "./coreui/DefaultToolView"))
 
 targets.append(contentsOf: Target.module(
   name: "DLS",
@@ -466,6 +483,7 @@ targets.append(contentsOf: Target.module(
     "LLMFoundation",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "MCPServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ShellServiceInterface",
@@ -559,7 +577,13 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "SwiftTesting",
+    "ThreadSafe",
+  ],
   path: "./foundations/ToolFoundation"))
 
 targets.append(contentsOf: Target.module(
@@ -716,6 +740,17 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./serviceInterfaces/PermissionsServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "MCPServiceInterface",
+  dependencies: [
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "SettingsServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  path: "./serviceInterfaces/MCPServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "LLMServiceInterface",
@@ -1048,6 +1083,34 @@ targets.append(contentsOf: Target.module(
   path: "./services/FileSuggestionService"))
 
 targets.append(contentsOf: Target.module(
+  name: "MCPService",
+  dependencies: [
+    .product(name: "MCP", package: "swift-sdk"),
+    "AppFoundation",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "LoggingServiceInterface",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  path: "./services/MCPService"))
+
+targets.append(contentsOf: Target.module(
   name: "AppEventService",
   dependencies: [
     "AppEventServiceInterface",
@@ -1183,6 +1246,7 @@ let package = Package(
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
+    .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.1"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),

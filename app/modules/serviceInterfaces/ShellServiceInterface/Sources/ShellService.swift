@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import Foundation
 import LoggingServiceInterface
 
@@ -29,9 +30,26 @@ public protocol Execution: Sendable {
 
 // MARK: - StandardInputWriter
 
+/// Protocol for writing data to a process's standard input stream.
 public protocol StandardInputWriter: Sendable {
-  func write(_ string: String) async throws
+  /// Writes raw data to the standard input stream.
+  /// - Parameter data: The data to write to stdin
+  /// - Throws: I/O errors if writing fails
+  func write(_ data: Data) async throws
+
+  /// Closes the standard input stream, signaling end-of-input to the process.
+  /// - Throws: I/O errors if closing the stream fails
   func finish() async throws
+}
+
+extension StandardInputWriter {
+
+  /// Writes a string to the standard input stream.
+  /// - Parameter string: The string to write to stdin (will be encoded as UTF-8)
+  /// - Throws: I/O errors if writing fails
+  public func write(_ string: String) async throws {
+    try await write(Data(string.utf8))
+  }
 }
 
 // MARK: - AsyncStringSequence
@@ -70,7 +88,7 @@ public protocol ShellService: Sendable {
 
   /// The loaded interactive shell environment variables (from zsh -il).
   /// This is populated asynchronously during service initialization.
-  var env: [String: String] { get }
+  var env: [String: String] { get async }
 }
 
 extension ShellService {

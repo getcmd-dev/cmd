@@ -27,7 +27,8 @@ struct ExternalSettings: Sendable, Equatable {
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
-    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [])
+    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
+    mcpServers: [String: MCPServerConfiguration] = [:])
   {
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
@@ -41,25 +42,27 @@ struct ExternalSettings: Sendable, Equatable {
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
+    self.mcpServers = mcpServers
   }
 
   static let defaultSettings = ExternalSettings()
 
-  var allowAnonymousAnalytics: Bool
-  var automaticallyCheckForUpdates: Bool
+  let allowAnonymousAnalytics: Bool
+  let automaticallyCheckForUpdates: Bool
   /// Whether to automatically update Xcode settings to configure `cmd` as an AI backend.
-  var automaticallyUpdateXcodeSettings: Bool
-  var fileEditMode: FileEditMode
+  let automaticallyUpdateXcodeSettings: Bool
+  let fileEditMode: FileEditMode
   // LLM settings
-  var preferedProviders: [LLMModel: LLMProvider]
+  let preferedProviders: [LLMModel: LLMProvider]
   var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-  var reasoningModels: [LLMModel: LLMReasoningSetting]
+  let reasoningModels: [LLMModel: LLMReasoningSetting]
 
-  var inactiveModels: [LLMModel]
-  var customInstructions: CustomInstructions
-  var toolPreferences: [ToolPreference]
-  var keyboardShortcuts: KeyboardShortcuts
-  var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
+  let inactiveModels: [LLMModel]
+  let customInstructions: CustomInstructions
+  let toolPreferences: [ToolPreference]
+  let keyboardShortcuts: KeyboardShortcuts
+  let userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
+  let mcpServers: [String: MCPServerConfiguration]
 
 }
 
@@ -122,7 +125,8 @@ extension ExternalSettings: Codable {
         .keyboardShortcuts,
       userDefinedXcodeShortcuts: container
         .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? Self.defaultSettings
-        .userDefinedXcodeShortcuts)
+        .userDefinedXcodeShortcuts,
+      mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:])
   }
 
   func encode(to encoder: any Encoder) throws {
@@ -170,6 +174,9 @@ extension ExternalSettings: Codable {
     }
     if encodeAllValues || userDefinedXcodeShortcuts != Self.defaultSettings.userDefinedXcodeShortcuts {
       try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
+    }
+    if encodeAllValues || mcpServers != Self.defaultSettings.mcpServers {
+      try container.encode(MCPServerConfigurations(configurations: mcpServers), forKey: "mcpServers")
     }
   }
 }
@@ -253,7 +260,8 @@ extension Settings {
       customInstructions: externalSettings.customInstructions,
       toolPreferences: externalSettings.toolPreferences,
       keyboardShortcuts: externalSettings.keyboardShortcuts,
-      userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts)
+      userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
+      mcpServers: externalSettings.mcpServers)
   }
 
   var externalSettings: ExternalSettings {
@@ -269,7 +277,8 @@ extension Settings {
       customInstructions: customInstructions,
       toolPreferences: toolPreferences,
       keyboardShortcuts: keyboardShortcuts,
-      userDefinedXcodeShortcuts: userDefinedXcodeShortcuts)
+      userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
+      mcpServers: mcpServers)
   }
 
   var internalSettings: InternalSettings {
