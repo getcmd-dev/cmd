@@ -199,123 +199,15 @@ extension AXUIElement {
     try? copyValue(key: kAXVerticalScrollBarAttribute)
   }
 
-  public func child(
-    identifier: String? = nil,
-    title: String? = nil,
-    role: String? = nil)
-    -> AXUIElement?
-  {
-    for child in children {
-      let match = {
-        if let identifier, child.identifier != identifier { return false }
-        if let title, child.title != title { return false }
-        if let role, child.role != role { return false }
-        return true
-      }()
-      if match { return child }
-    }
-    for child in children {
-      if
-        let target = child.child(
-          identifier: identifier,
-          title: title,
-          role: role) { return target }
-    }
-    return nil
-  }
-
-  /// Get children that match the requirement
-  ///
-  /// - important: If the element has a lot of descendant nodes, it will heavily affect the
-  /// **performance of Xcode**. Please make use ``AXUIElement\traverse(_:)`` instead.
-  @available(
-    *,
-    deprecated,
-    renamed: "traverse(_:)",
-    message: "Please make use ``AXUIElement\traverse(_:)`` instead.")
-  public func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
-    var all = [AXUIElement]()
-    for child in children {
-      if match(child) { all.append(child) }
-    }
-    for child in children {
-      all.append(contentsOf: child.children(where: match))
-    }
-    return all
-  }
-
-  public func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-    guard let parent else { return nil }
-    if match(parent) { return parent }
-    return parent.firstParent(where: match)
-  }
-
-  public func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-    for child in children {
-      if match(child) { return child }
-    }
-    for child in children {
-      if let target = child.firstChild(where: match) {
-        return target
-      }
-    }
-    return nil
-  }
-
-  public func visibleChild(identifier: String) -> AXUIElement? {
-    for child in visibleChildren {
-      if child.identifier == identifier { return child }
-      if let target = child.visibleChild(identifier: identifier) { return target }
-    }
-    return nil
-  }
-
 }
 
-extension AXUIElement {
-  public enum SearchNextStep {
-    case skipDescendants
-    case skipSiblings
-    case skipDescendantsAndSiblings
-    case continueSearching
-    case stopSearching
-  }
+// MARK: - AXUIElement + Tree
 
-  /// Traversing the element tree.
-  ///
-  /// - important: Traversing the element tree is resource consuming and will affect the
-  /// **performance of Xcode**. Please make sure to skip as much as possible.
-  ///
-  /// - todo: Make it not recursive.
-  public func traverse(_ handle: (_ element: AXUIElement, _ level: Int) -> SearchNextStep) {
-    func _traverse(
-      element: AXUIElement,
-      level: Int,
-      handle: (AXUIElement, Int) -> SearchNextStep)
-      -> SearchNextStep
-    {
-      let nextStep = handle(element, level)
-      switch nextStep {
-      case .stopSearching: return .stopSearching
-      case .skipDescendants: return .continueSearching
-      case .skipDescendantsAndSiblings: return .skipSiblings
-      case .continueSearching, .skipSiblings:
-        for child in element.children {
-          switch _traverse(element: child, level: level + 1, handle: handle) {
-          case .skipSiblings, .skipDescendantsAndSiblings:
-            break
-          case .stopSearching:
-            return .stopSearching
-          case .continueSearching, .skipDescendants:
-            continue
-          }
-        }
-        return nextStep
-      }
-    }
-    _ = _traverse(element: self, level: 0, handle: handle)
-  }
+extension AXUIElement: Tree {
+  public typealias Child = AXUIElement
 }
+
+public typealias SearchNextStep = TreeSearchNextStep
 
 // MARK: - Helper
 
@@ -325,7 +217,7 @@ extension AXUIElement {
       let desc: String = try copyValue(key: kAXDescriptionAttribute)
       _ = desc
       return true
-    } catch AXError.invalidUIElement {
+    } catch AXError.invalidUIElement, AXError.noValue {
       return false
     } catch AXError.attributeUnsupported {
       return true

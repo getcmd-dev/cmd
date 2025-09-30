@@ -20,7 +20,11 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
     self.runningApplication = runningApplication
     self.editorElement = editorElement
 
-    guard let fileName = editorElement.firstParent(where: { $0.identifier == "editor context" })?.description else {
+    guard
+      let fileName = editorElement.caching({
+        $0.firstParent(where: { $0.identifier == "editor context" })
+      }, cacheKey: "editor-context-parent")?.description
+    else {
       logger.error("Failed to get file name from editor element")
       return nil
     }
@@ -100,7 +104,9 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
       return []
     }()
 
-    let lineAnnotationElements = editorElement.children.filter { $0.identifier == "Line Annotation" }
+    let lineAnnotationElements = editorElement.caching({
+      $0.children.filter { $0.identifier == "Line Annotation" }
+    }, cacheKey: "line-annotations")
     let lineAnnotations = lineAnnotationElements.compactMap(\.description)
 
     updateStateWith(

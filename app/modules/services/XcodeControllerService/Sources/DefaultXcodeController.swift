@@ -306,7 +306,12 @@ extension DefaultXcodeController {
     #endif
     guard
       let menuItem = menuBar
-        .firstChild(where: { $0.title == commandName && $0.identifier?.contains(appBundleId) == true })
+        .firstChild(where: { el, _ in
+          if el.title == commandName, el.identifier?.contains(appBundleId) == true {
+            return .stopSearching
+          }
+          return .continueSearching
+        })
     else {
       defaultLogger.error("Could not find '\(appBundleId):\(commandName)' menu")
       throw AXError.cannotComplete
