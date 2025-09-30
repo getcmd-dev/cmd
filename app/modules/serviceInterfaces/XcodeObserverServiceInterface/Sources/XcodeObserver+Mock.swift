@@ -33,7 +33,7 @@ public final class MockXcodeObserver: XcodeObserver {
 
   public let mutableStatePublisher: CurrentValueSubject<AXState<XcodeState>, Never>
   public var onGetContent: @Sendable (URL) throws -> String = { _ in throw AppError("Could not read content of file") }
-  public var onListFiles: @Sendable (URL) throws -> ([URL], WorkspaceType) = { _ in
+  public var onListFiles: @Sendable (URL) async throws -> ([URL], WorkspaceType) = { _ in
     throw AppError("Could not list files in workspace")
   }
 
@@ -49,8 +49,8 @@ public final class MockXcodeObserver: XcodeObserver {
     try onGetContent(file)
   }
 
-  public func listFiles(in workspace: URL) throws -> ([URL], WorkspaceType) {
-    try onListFiles(workspace)
+  public func listFiles(in workspace: URL) async throws -> ([URL], WorkspaceType) {
+    try await onListFiles(workspace)
   }
 
 }

@@ -1025,25 +1025,17 @@ targets.append(contentsOf: Target.module(
   name: "FileSuggestionService",
   dependencies: [
     .product(name: "Ifrit", package: "Ifrit"),
-    .product(name: "XcodeProj", package: "XcodeProj"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FileSuggestionServiceInterface",
-    "FoundationInterfaces",
-    "ShellServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
     "ConcurrencyFoundation",
-    "FoundationInterfaces",
-    "ShellServiceInterface",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
-  ],
-  testResources: [
-    .copy("resources/"),
   ],
   path: "./services/FileSuggestionService"))
 
@@ -1084,6 +1076,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "XcodeObserverService",
   dependencies: [
+    .product(name: "XcodeProj", package: "XcodeProj"),
     "AccessibilityFoundation",
     "AppFoundation",
     "ConcurrencyFoundation",
@@ -1096,7 +1089,19 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "PermissionsServiceInterface",
+    "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "XcodeObserverServiceInterface",
+  ],
+  testResources: [
+    .copy("resources/"),
+  ],
   path: "./services/XcodeObserverService"))
 
 targets.append(contentsOf: Target.module(

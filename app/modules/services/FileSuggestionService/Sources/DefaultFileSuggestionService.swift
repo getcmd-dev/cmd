@@ -9,7 +9,6 @@ import Foundation
 import Ifrit
 import ThreadSafe
 import XcodeObserverServiceInterface
-import XcodeProj
 
 // MARK: - DefaultFileSuggestionService
 
