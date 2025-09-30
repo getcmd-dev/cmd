@@ -12,13 +12,11 @@ import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
-import ThreadSafe
 import ToolFoundation
 
 // MARK: - DefaultMCPService
 
-@ThreadSafe
-final class DefaultMCPService: MCPService {
+actor DefaultMCPService: MCPService {
 
   // MARK: - Initialization
 
@@ -33,12 +31,14 @@ final class DefaultMCPService: MCPService {
 
     _servers = CurrentValueSubject([:])
 
-    observeSettingsChanges()
+    Task {
+      await observeSettingsChanges()
+    }
   }
 
   // MARK: - MCPService
 
-  var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
+  nonisolated var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
     ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never>(
       Array(_servers.value.values),
       publisher: _servers.map {
@@ -76,7 +76,7 @@ final class DefaultMCPService: MCPService {
 
   // MARK: - Private Properties
 
-  private let _servers: CurrentValueSubject<[String: MCPServerConnectionStatus], Never>
+  nonisolated private let _servers: CurrentValueSubject<[String: MCPServerConnectionStatus], Never>
   private var settingsObserver: AnyCancellable?
   private var currentSettings = [String: MCPServerConfiguration]()
 
@@ -84,6 +84,7 @@ final class DefaultMCPService: MCPService {
 
   private var connections = [String: AnyCancellable]()
 
+  /// An identifier to help track which is the most recent reload operation.
   private var reloadId: UUID?
 
   // MARK: - Private Methods
@@ -92,7 +93,9 @@ final class DefaultMCPService: MCPService {
     settingsObserver = settingsService
       .liveValue(for: \.mcpServers)
       .sink { [weak self] newSettings in
-        self?.handleSettingsChange(newSettings)
+        Task { @Sendable [weak self] in
+          await self?.handleSettingsChange(newSettings)
+        }
       }
   }
 
@@ -124,24 +127,15 @@ final class DefaultMCPService: MCPService {
     reload(removed: removed, updatedOrAdded: updatedOrAdded)
   }
 
-  private func reload(removed: [MCPServerConfiguration], updatedOrAdded: [MCPServerConfiguration]) {
-    inLock { state in
-      self.reload(removed: removed, updatedOrAdded: updatedOrAdded, isolating: &state)
-    }
-  }
-
-  /// This manual isolation is a bit heavy. As some test have shown through their flakiness, it is possible that when `reload` is called twice in a row that the second call finishes first.
-  /// Without proper isolation, the first call can update the state after the second call, leading to stale data.
   private func reload(
     removed: [MCPServerConfiguration],
-    updatedOrAdded: [MCPServerConfiguration],
-    isolating state: inout _InternalState)
+    updatedOrAdded: [MCPServerConfiguration])
   {
     let reloadId = UUID()
-    state.reloadId = reloadId
+    self.reloadId = reloadId
 
     for serverConfig in removed {
-      state.connections.removeValue(forKey: serverConfig.name)
+      connections.removeValue(forKey: serverConfig.name)
       _servers.value.removeValue(forKey: serverConfig.name)
     }
     for serverConfig in updatedOrAdded {
@@ -153,22 +147,12 @@ final class DefaultMCPService: MCPService {
           do {
             if let connection = try await self?.connect(to: serverConfig), !isCancelled.value {
               try Task.checkCancellation()
-              let _servers = self?._servers
-              self?.inLock { state in
-                if state.reloadId == reloadId {
-                  _servers?.value[serverConfig.name] = .success(connection)
-                }
-              }
+              await self?.updateServerState(reloadId: reloadId, serverConfig: serverConfig, connection: connection)
             }
           } catch {
             if !isCancelled.value {
               try Task.checkCancellation()
-              let _servers = self?._servers
-              self?.inLock { state in
-                if state.reloadId == reloadId {
-                  _servers?.value[serverConfig.name] = .failure(serverConfig, error)
-                }
-              }
+              await self?.updateServerState(reloadId: reloadId, serverConfig: serverConfig, error: error)
             }
           }
         }, onCancel: {
@@ -176,9 +160,21 @@ final class DefaultMCPService: MCPService {
         })
       }
 
-      state.connections[serverConfig.name] = AnyCancellable {
+      connections[serverConfig.name] = AnyCancellable {
         task.cancel()
       }
+    }
+  }
+
+  private func updateServerState(reloadId: UUID, serverConfig: MCPServerConfiguration, connection: MCPServerConnection) {
+    if self.reloadId == reloadId {
+      _servers.value[serverConfig.name] = .success(connection)
+    }
+  }
+
+  private func updateServerState(reloadId: UUID, serverConfig: MCPServerConfiguration, error: Error) {
+    if self.reloadId == reloadId {
+      _servers.value[serverConfig.name] = .failure(serverConfig, error)
     }
   }
 

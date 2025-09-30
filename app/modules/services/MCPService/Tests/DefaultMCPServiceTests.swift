@@ -45,11 +45,16 @@ struct DefaultMCPServiceTests {
       // when
       try await fulfillment(of: didConnect)
       #expect(weakConnection.value != nil)
+      let didDeinit = expectation(description: "did deinit connection")
+      weakConnection.value?.onDeinit = {
+        didDeinit.fulfill()
+      }
+
       _ = sut
       sut = nil
 
       // then
-      #expect(weakConnection.value == nil)
+      try await fulfillment(of: didDeinit)
     }
 
     @Test @MainActor
