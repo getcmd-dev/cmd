@@ -28,7 +28,6 @@ struct DefaultMCPServerConnectionTests {
       send: { transport, data in
         let count = callsCount.increment()
         let message = try JSONDecoder().decode(BaseMCPJRPCMessage.self, from: data)
-        print("data: \(String(data: data, encoding: .utf8) ?? "<invalid utf8>"), count: \(count)")
         if count == 1 {
           let id = try #require(message.id)
           await transport.write(string: """

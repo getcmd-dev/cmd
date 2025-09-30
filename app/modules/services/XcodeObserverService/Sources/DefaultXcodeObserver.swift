@@ -10,6 +10,7 @@ import FoundationInterfaces
 import LoggingServiceInterface
 import PermissionsServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 import ThreadSafe
 import XcodeObserverServiceInterface
 
@@ -21,11 +22,13 @@ final class DefaultXcodeObserver: XcodeObserver {
   init(
     permissionsService: PermissionsService,
     fileManager: FileManagerI,
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    shellService: ShellService)
   {
     self.permissionsService = permissionsService
     self.fileManager = fileManager
     self.settingsService = settingsService
+    self.shellService = shellService
 
     let accessibilityPermissionStatus = permissionsService.status(for: .accessibility)
     update(with: accessibilityPermissionStatus.currentValue)
@@ -39,6 +42,9 @@ final class DefaultXcodeObserver: XcodeObserver {
   deinit {
     observationsCancellable?.cancel()
   }
+
+  let fileManager: FileManagerI
+  let shellService: ShellService
 
   var axNotifications: AnyPublisher<AXNotification, Never> {
     axNotificationPublisher.eraseToAnyPublisher()
@@ -62,7 +68,6 @@ final class DefaultXcodeObserver: XcodeObserver {
   private let internalState = CurrentValueSubject<AXState<InternalXcodeState>, Never>(.unknown)
   private let axNotificationPublisher = PassthroughSubject<AXNotification, Never>()
   private let permissionsService: PermissionsService
-  private let fileManager: FileManagerI
   private let settingsService: SettingsService
   private var accessibilitySubscription: AnyCancellable? = nil
 
@@ -345,14 +350,16 @@ final class DefaultXcodeObserver: XcodeObserver {
 extension BaseProviding where
   Self: PermissionsServiceProviding,
   Self: FileManagerProviding,
-  Self: SettingsServiceProviding
+  Self: SettingsServiceProviding,
+  Self: ShellServiceProviding
 {
   public var xcodeObserver: XcodeObserver {
     shared {
       MainActor.assumeIsolated { DefaultXcodeObserver(
         permissionsService: permissionsService,
         fileManager: fileManager,
-        settingsService: settingsService) }
+        settingsService: settingsService,
+        shellService: shellService) }
     }
   }
 }

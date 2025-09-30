@@ -3,19 +3,15 @@
 
 import DependencyFoundation
 import FileSuggestionServiceInterface
-import FoundationInterfaces
-import ShellServiceInterface
 import XcodeObserverServiceInterface
 
 extension BaseProviding where
-  Self: ShellServiceProviding,
-  Self: FileManagerProviding
+  Self: XcodeObserverProviding
 {
   public var fileSuggestionService: FileSuggestionService {
     shared {
       DefaultFileSuggestionService(
-        fileManager: fileManager,
-        shellService: shellService)
+        xcodeObserver: xcodeObserver)
     }
   }
 }

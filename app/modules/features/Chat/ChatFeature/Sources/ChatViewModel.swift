@@ -209,7 +209,7 @@ public class ChatViewModel {
       self.tab.input.textInputNeedsFocus = true
 
       if let workspace = xcodeObserver.state.focusedWorkspace {
-        let handled = addCodeSelection(from: workspace)
+        let handled = await addCodeSelection(from: workspace)
         if !handled {
           // Add log for debugging.
           if
@@ -225,7 +225,7 @@ public class ChatViewModel {
     }
   }
 
-  private func addCodeSelection(from workspace: XcodeWorkspaceState) -> Bool {
+  private func addCodeSelection(from workspace: XcodeWorkspaceState) async -> Bool {
     let inputModel = tab.input
     let editor = workspace.editors.first(where: { $0.isFocused })
     if editor?.fileName != workspace.document?.lastPathComponent {
@@ -244,7 +244,22 @@ public class ChatViewModel {
       defaultLogger.log("No content found in the focus editor to handle add to code to chat event")
       return false
     }
-    guard let filePath = workspace.tabs.first(where: { $0.fileName == editor.fileName })?.knownPath else {
+    var filePath: URL?
+    if let path = workspace.tabs.first(where: { $0.fileName == editor.fileName })?.knownPath {
+      filePath = path
+    } else if
+      // The Accessibility API, which xcode observer uses to set the `knownPath`,
+      // only gives the absolute path for the file focussed on the first editor tab.
+      // So in split screen mode, if the user focuses on the second tab, this value is missing.
+      // We therefore perform a more expensive operation to list all files in the workspace to find a match.
+      let matchingFiles = try? await xcodeObserver.listFiles(in: workspace.url).0
+        .filter({ $0.lastPathComponent == editor.fileName }),
+      matchingFiles.count == 1,
+      let path = matchingFiles.first
+    {
+      filePath = path
+    }
+    guard let filePath else {
       defaultLogger.log("Could not resolve file path for file \(editor.fileName) to handle add to code to chat event")
       return false
     }

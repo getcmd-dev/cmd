@@ -138,7 +138,7 @@ public final class MockFileManager: FileManagerI {
   public func enumerator(
     at url: URL,
     includingPropertiesForKeys _: [URLResourceKey]?,
-    options _: FileManager.DirectoryEnumerationOptions,
+    options: FileManager.DirectoryEnumerationOptions,
     errorHandler _: ((URL, any Error) -> Bool)?)
     -> FileManager.DirectoryEnumerator?
   {
@@ -149,8 +149,15 @@ public final class MockFileManager: FileManagerI {
     }
 
     // Get all files and directories that are under this URL
-    let allPaths = files.keys.filter { fileURL in
+    var allPaths = files.keys.filter { fileURL in
       fileURL.path.hasPrefix(url.path)
+    }
+
+    // Respect skipsHiddenFiles option
+    if options.contains(.skipsHiddenFiles) {
+      allPaths = allPaths.filter { fileURL in
+        !fileURL.lastPathComponent.hasPrefix(".")
+      }
     }
 
     return MockDirectoryEnumerator(urls: allPaths.sorted { $0.path < $1.path })

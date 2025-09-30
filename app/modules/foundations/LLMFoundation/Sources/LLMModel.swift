@@ -49,7 +49,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeSonnet = LLMModel(
-    name: "claude-4-sonnet",
+    name: "claude-4.5-sonnet",
     id: "claude-sonnet-4",
     contextSize: 200_000,
     maxOutputTokens: 64_000,

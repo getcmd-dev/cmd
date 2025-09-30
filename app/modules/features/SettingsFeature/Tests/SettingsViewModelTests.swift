@@ -167,6 +167,23 @@ struct SettingsViewModelTests {
     #expect(mockSettingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
   }
 
+  @Test("showToolInputCopyButtonInRelease setter updates user defaults")
+  func test_showToolInputCopyButtonInRelease_setter() {
+    let mockSettingsService = MockSettingsService()
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    viewModel.showToolInputCopyButtonInRelease = true
+
+    #expect(mockUserDefaults.bool(forKey: .showToolInputCopyButtonInRelease) == true)
+  }
+
   @Test("fileEditMode setter updates settings service")
   func test_fileEditMode_setter() {
     let mockSettingsService = MockSettingsService()

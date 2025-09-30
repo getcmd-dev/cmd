@@ -19,6 +19,7 @@ struct InternalSettingsView: View {
   @Binding var defaultChatPositionIsInverted: Bool
   @Binding var enableAnalyticsAndCrashReporting: Bool
   @Binding var enableNetworkProxy: Bool
+  @Binding var showToolInputCopyButtonInRelease: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -49,6 +50,11 @@ struct InternalSettingsView: View {
           "Enable network proxy",
           caption: "Proxy network requests through a local proxy server",
           value: $enableNetworkProxy)
+
+        InternalSettingsRow(
+          "Show tool input copy button in Release",
+          caption: "Display the copy button for tool inputs in Release builds",
+          value: $showToolInputCopyButtonInRelease)
 
         #if DEBUG
         InternalSettingsRow(
