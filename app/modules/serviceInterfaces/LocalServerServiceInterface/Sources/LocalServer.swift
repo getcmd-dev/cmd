@@ -12,11 +12,13 @@ public protocol LocalServer: Sendable {
   ///   - path: The URL path to send the GET request to
   ///   - configure: A closure that allows customization of the URLRequest before sending
   ///   - onReceiveJSONData: An optional closure called when JSON data is received during streaming
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The response data from the server
   func getRequest(
     path: String,
     configure: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout: TimeInterval)
     async throws -> Data
   /// Performs a POST request to the specified path with the provided data
   /// - Parameters:
@@ -24,12 +26,14 @@ public protocol LocalServer: Sendable {
   ///   - data: The data to include in the request body
   ///   - configure: A closure that allows customization of the URLRequest before sending
   ///   - onReceiveJSONData: An optional closure called when JSON data is received during streaming
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The response data from the server
   func postRequest(
     path: String,
     data: Data,
     configure: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout: TimeInterval)
     async throws -> Data
 }
 
@@ -39,19 +43,22 @@ extension LocalServer {
   /// - Parameters:
   ///   - path: The URL path to send the GET request to
   ///   - configure: A closure that allows customization of the URLRequest before sending
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The response data from the server, or nil if no data was received
-  public func getRequest(path: String, configure: (inout URLRequest) -> Void = { _ in }) async throws -> Data? {
-    try await getRequest(path: path, configure: configure, onReceiveJSONData: nil)
+  public func getRequest(path: String, configure: (inout URLRequest) -> Void = { _ in
+  }, idleTimeout: TimeInterval = 60) async throws -> Data? {
+    try await getRequest(path: path, configure: configure, onReceiveJSONData: nil, idleTimeout: idleTimeout)
   }
 
   /// Performs a GET request and decodes the response as a specific type
   /// - Parameters:
   ///   - path: The URL path to send the GET request to
   ///   - configure: A closure that allows customization of the URLRequest before sending
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The decoded response object of the specified type
   public func getRequest<Response: Decodable>(path: String, configure: (inout URLRequest) -> Void = { _ in
-  }) async throws -> Response {
-    let data = try await getRequest(path: path, configure: configure, onReceiveJSONData: nil)
+  }, idleTimeout: TimeInterval = 60) async throws -> Response {
+    let data = try await getRequest(path: path, configure: configure, onReceiveJSONData: nil, idleTimeout: idleTimeout)
     return try decode(data)
   }
 
@@ -60,9 +67,16 @@ extension LocalServer {
   ///   - path: The URL path to send the POST request to
   ///   - data: The data to include in the request body
   ///   - configure: A closure that allows customization of the URLRequest before sending
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The response data from the server, or nil if no data was received
-  public func postRequest(path: String, data: Data, configure: (inout URLRequest) -> Void = { _ in }) async throws -> Data? {
-    try await postRequest(path: path, data: data, configure: configure, onReceiveJSONData: nil)
+  public func postRequest(
+    path: String,
+    data: Data,
+    configure: (inout URLRequest) -> Void = { _ in },
+    idleTimeout: TimeInterval = 60)
+    async throws -> Data?
+  {
+    try await postRequest(path: path, data: data, configure: configure, onReceiveJSONData: nil, idleTimeout: idleTimeout)
   }
 
   /// Performs a POST request and decodes the response as a specific type
@@ -70,10 +84,16 @@ extension LocalServer {
   ///   - path: The URL path to send the POST request to
   ///   - data: The data to include in the request body
   ///   - configure: A closure that allows customization of the URLRequest before sending
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: The decoded response object of the specified type
   public func postRequest<Response: Decodable>(path: String, data: Data, configure: (inout URLRequest) -> Void = { _ in
-  }) async throws -> Response {
-    let data = try await postRequest(path: path, data: data, configure: configure, onReceiveJSONData: nil)
+  }, idleTimeout: TimeInterval = 60) async throws -> Response {
+    let data = try await postRequest(
+      path: path,
+      data: data,
+      configure: configure,
+      onReceiveJSONData: nil,
+      idleTimeout: idleTimeout)
     if let err: SerializedError = try? decode(data) {
       throw APIError(
         statusCode: err.statusCode,
@@ -88,15 +108,16 @@ extension LocalServer {
   ///   - path: The URL path to send the POST request to
   ///   - data: The data to include in the request body
   ///   - configure: A closure that allows customization of the URLRequest before sending
+  ///   - idleTimeout: The number of seconds to wait without receiving data before timing out (default: 60s)
   /// - Returns: An async stream that yields data chunks as they are received
   public func streamPostRequest(path: String, data: Data, configure: @Sendable @escaping (inout URLRequest) -> Void = { _ in
-  }) -> AsyncThrowingStream<Data, Error> {
+  }, idleTimeout: TimeInterval = 60) -> AsyncThrowingStream<Data, Error> {
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
     let task = Task {
       do {
-        _ = try await postRequest(path: path, data: data, configure: configure) { data in
+        _ = try await postRequest(path: path, data: data, configure: configure, onReceiveJSONData: { data in
           continuation.yield(data)
-        }
+        }, idleTimeout: idleTimeout)
         continuation.finish()
       } catch {
         continuation.finish(throwing: error)

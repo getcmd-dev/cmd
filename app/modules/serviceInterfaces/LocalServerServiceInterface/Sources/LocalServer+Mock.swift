@@ -30,7 +30,8 @@ public final class MockLocalServer: LocalServer {
   public func getRequest(
     path: String,
     configure _: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout _: TimeInterval)
     async throws -> LocalServerResponse
   {
     try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
@@ -42,7 +43,8 @@ public final class MockLocalServer: LocalServer {
     path: String,
     data: Data,
     configure _: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout _: TimeInterval)
     async throws -> LocalServerResponse
   {
     try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in

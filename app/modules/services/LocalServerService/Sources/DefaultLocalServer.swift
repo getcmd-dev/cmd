@@ -38,8 +38,9 @@ final class DefaultLocalServer: LocalServer {
     let delegate = LocalServerDelegate()
     let configuration = URLSessionConfiguration.default
     configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-    configuration.timeoutIntervalForRequest = 600 // 10mn for an entire request
-    configuration.timeoutIntervalForResource = 600 // 10mn for an entire request
+    // Set to infinity to allow custom idle timeout management
+    configuration.timeoutIntervalForRequest = .infinity
+    configuration.timeoutIntervalForResource = .infinity
     session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     connectionStatus = .waitingOnConnection(.init { _ in })
 
@@ -58,7 +59,8 @@ final class DefaultLocalServer: LocalServer {
   func getRequest(
     path: String,
     configure: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout: TimeInterval = 60)
     async throws -> Data
   {
     let port = try await connectionStatus.port
@@ -67,10 +69,13 @@ final class DefaultLocalServer: LocalServer {
     }
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
-    request.timeoutInterval = 60
+    request.timeoutInterval = idleTimeout
     configure(&request)
+    // Use custom idle timeout management
+    let idleTimeout = request.timeoutInterval
+    request.timeoutInterval = .infinity
 
-    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
+    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
     return data
   }
@@ -79,7 +84,8 @@ final class DefaultLocalServer: LocalServer {
     path: String,
     data: Data,
     configure: (inout URLRequest) -> Void,
-    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout: TimeInterval = 60)
     async throws -> Data
   {
     var path = path
@@ -89,13 +95,16 @@ final class DefaultLocalServer: LocalServer {
     let port = try await connectionStatus.port
     var request = URLRequest(url: URL(string: "http://localhost:\(port)/\(path)")!)
     request.httpMethod = "POST"
-    request.timeoutInterval = 60
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
     request.httpBody = data
+    request.timeoutInterval = idleTimeout
     configure(&request)
+    // Use custom idle timeout management
+    let idleTimeout = request.timeoutInterval
+    request.timeoutInterval = .infinity
 
-    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
+    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
     return data
   }
@@ -130,6 +139,8 @@ final class DefaultLocalServer: LocalServer {
         }
         defer { self.inflightTasks[dataTask] = handler }
 
+        // Update timestamp to reflect that data was received
+        handler.timeoutTask = scheduleTimeout(for: dataTask, idleTimeout: handler.idleTimeout)
         handler.totalData.append(data)
 
         if let onReceiveJSONData = handler.onReceiveJSONData {
@@ -152,6 +163,10 @@ final class DefaultLocalServer: LocalServer {
     var incompletedJSONData = Data()
     /// All the data received from the server since the beginning of the task.
     var totalData = Data()
+    /// Timestamp of when data was last received (or when the task started).
+    var timeoutTask: AnyCancellable?
+    /// The idle timeout interval for this request.
+    let idleTimeout: TimeInterval
   }
 
   private enum ConnectionStatus: Sendable {
@@ -328,7 +343,12 @@ final class DefaultLocalServer: LocalServer {
     }
   }
 
-  private func send(request: URLRequest, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> (Data, URLResponse) {
+  private func send(
+    request: URLRequest,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    idleTimeout: TimeInterval)
+    async throws -> (Data, URLResponse)
+  {
     let task = session.dataTask(with: request)
 
     return try await withTaskCancellationHandler(operation: {
@@ -337,8 +357,10 @@ final class DefaultLocalServer: LocalServer {
           continuation: continuation,
           onReceiveJSONData: onReceiveJSONData,
           incompletedJSONData: Data(),
-          totalData: Data())
-        inLock { state in
+          totalData: Data(),
+          timeoutTask: scheduleTimeout(for: task, idleTimeout: idleTimeout),
+          idleTimeout: idleTimeout)
+        inLock { @Sendable state in
           state.inflightTasks[task] = taskHandler
         }
 
@@ -347,6 +369,25 @@ final class DefaultLocalServer: LocalServer {
     }, onCancel: {
       task.cancel()
     })
+  }
+
+  private func scheduleTimeout(for task: URLSessionDataTask, idleTimeout: TimeInterval) -> AnyCancellable? {
+    let task = Task { [weak self] in
+      try await Task.sleep(for: .microseconds(Int(idleTimeout * 1_000_000)))
+      try Task.checkCancellation()
+
+      // No data received during timeout period - fail with timeout error
+      defaultLogger.error("Request timed out after \(idleTimeout)s of idle time")
+
+      // Remove the handler and resume with timeout error before cancelling the task
+      if let handler = self?.inflightTasks.removeValue(forKey: task) {
+        handler.continuation.resume(throwing: URLError(.timedOut))
+      }
+      task.cancel()
+    }
+    return AnyCancellable {
+      task.cancel()
+    }
   }
 
   private func assertIsSuccess(response: URLResponse, data: Data) throws {
