@@ -64,7 +64,7 @@ final class DefaultFileSuggestionService: FileSuggestionService {
     let cachedAt: Date
   }
 
-  /// The strategy to list avaialble files without overloading the system.
+  /// The strategy to list available files without overloading the system.
   /// The enum is only used to help with compilation.
   private enum HowToListAvailableFiles {
     case inflightTask(_ task: Future<[FileSuggestion], Error>)

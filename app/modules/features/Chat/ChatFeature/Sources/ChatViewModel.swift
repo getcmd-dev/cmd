@@ -252,9 +252,10 @@ public class ChatViewModel {
       // only gives the absolute path for the file focussed on the first editor tab.
       // So in split screen mode, if the user focuses on the second tab, this value is missing.
       // We therefore perform a more expensive operation to list all files in the workspace to find a match.
-      let paths = try? await xcodeObserver.listFiles(in: workspace.url).0.filter({ $0.lastPathComponent == editor.fileName }),
-      paths.count == 1,
-      let path = paths.first
+      let matchingFiles = try? await xcodeObserver.listFiles(in: workspace.url).0
+        .filter({ $0.lastPathComponent == editor.fileName }),
+      matchingFiles.count == 1,
+      let path = matchingFiles.first
     {
       filePath = path
     }

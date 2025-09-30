@@ -72,7 +72,7 @@ struct ClaudeCodeReadToolTests {
          3→## High level structure
          4→The app has two targets. A standard MacOS target for the host app, and an Xcode extension. The host app bundles and boots a local Node server. Most of the logic lives in the host app. The host app talks to the Xcode extension through the AX API (ie programatically tapping buttons in Xcode's menu) and the extension talks to the host app trough the local server that relays messages.
          5→
-         6→When open source implementations for some isolated features are avaialble in Typescript, we might include them in the local Node server and trigger them from the host app over http. An example is the creation and restauration of Checkpoints. This save development time and we can always port those features to Swift at a later time.
+         6→When open source implementations for some isolated features are available in Typescript, we might include them in the local Node server and trigger them from the host app over http. An example is the creation and restauration of Checkpoints. This save development time and we can always port those features to Swift at a later time.
          7→
          8→## Modularization
          9→We favor a highly modularized code base. The motivation is to promote isolation and testing. It should also help with faster rebuild times and SwiftUI previews.
