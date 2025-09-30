@@ -284,13 +284,11 @@ final class DefaultLLMService: LLMService {
       #if DEBUG
       let stream = {
         if supportDebugStreamRepeatInDebug, let stream = try? repeatDebugHelper.repeatStream() { return stream }
+        // For external agents, allow for long timeouts
         return server.streamPostRequest(
           path: "sendMessage",
           data: data,
-          configure: { request in
-            // For external agents, allow for long timeouts
-            request.timeoutInterval = providerSettings.executable != nil ? 3600 : 120
-          })
+          idleTimeout: providerSettings.executable != nil ? 3600 : 120)
       }()
 
       let helper = RequestStreamingHelper(
@@ -302,13 +300,11 @@ final class DefaultLLMService: LLMService {
         localServer: server,
         repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)
       #else
+      /// For external agents, allow for long timeouts
       let stream = server.streamPostRequest(
         path: "sendMessage",
         data: data,
-        configure: { request in
-          // For external agents, allow for long timeouts
-          request.timeoutInterval = providerSettings.executable != nil ? 3600 : 120
-        })
+        idleTimeout: providerSettings.executable != nil ? 3600 : 120)
 
       let helper = RequestStreamingHelper(
         stream: stream,

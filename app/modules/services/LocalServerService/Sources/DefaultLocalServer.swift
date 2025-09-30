@@ -69,11 +69,7 @@ final class DefaultLocalServer: LocalServer {
     }
     var request = URLRequest(url: url)
     request.httpMethod = "GET"
-    request.timeoutInterval = idleTimeout
     configure(&request)
-    // Use custom idle timeout management
-    let idleTimeout = request.timeoutInterval
-    request.timeoutInterval = .infinity
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
@@ -98,11 +94,7 @@ final class DefaultLocalServer: LocalServer {
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
     request.addValue("application/json", forHTTPHeaderField: "Accept")
     request.httpBody = data
-    request.timeoutInterval = idleTimeout
     configure(&request)
-    // Use custom idle timeout management
-    let idleTimeout = request.timeoutInterval
-    request.timeoutInterval = .infinity
 
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
