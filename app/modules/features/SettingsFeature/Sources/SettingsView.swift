@@ -83,7 +83,10 @@ public struct SettingsView: View {
 
       switch currentView {
       case .providers:
-        ProvidersView(providerSettings: $viewModel.providerSettings)
+        ProvidersView(
+            providers: viewModel.aiProviderViewModels,
+            addProvider: { _ in },
+            removeProvider: { _ in })
 
       case .models:
         ModelsView(

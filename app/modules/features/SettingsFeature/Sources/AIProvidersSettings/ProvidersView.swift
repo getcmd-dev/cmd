@@ -11,9 +11,18 @@ import SwiftUI
 // MARK: - ProvidersView
 
 public struct ProvidersView: View {
-  public init(providerSettings: Binding<AllLLMProviderSettings>) {
-    _providerSettings = providerSettings
+  public init(
+    providers: [AIProviderViewModel],
+    addProvider: @escaping (LLMProvider) -> Void,
+    removeProvider: @escaping (LLMProvider) -> Void) {
+        self.providers = providers.reduce(into: [:]) { $0[$1.provider] = $1 }
+        self.addProvider = addProvider
+        self.removeProvider = removeProvider
   }
+    
+    private let providers: [LLMProvider: AIProviderViewModel]
+    private let addProvider: (LLMProvider) -> Void
+    private let removeProvider: (LLMProvider) -> Void
 
   public var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -53,7 +62,7 @@ public struct ProvidersView: View {
     }
   }
 
-  @Binding var providerSettings: AllLLMProviderSettings
+//  @Binding var providerSettings: AllLLMProviderSettings
 
   @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 
@@ -61,7 +70,7 @@ public struct ProvidersView: View {
 
   private var filteredProviders: [ProviderInfo] {
     let allProviders = orderedProviders.map { provider in
-      let existingSettings = providerSettings[provider]
+        let existingSettings = providers[provider]?.settings
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
@@ -77,7 +86,7 @@ public struct ProvidersView: View {
 
   private func setInitialOrder() {
     orderedProviders = LLMProvider.allCases.map { provider in
-      (provider, provider.isConnected(providerSettings[provider]))
+        (provider, provider.isConnected(providers[provider]?.settings))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
@@ -91,15 +100,17 @@ public struct ProvidersView: View {
   private func updateProviderSettings(for provider: LLMProvider, with newSettings: LLMProviderSettings?) {
     // Add new settings if provided
     if let newSettings {
-      let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
-      providerSettings[provider] = .init(
-        apiKey: newSettings.apiKey,
-        baseUrl: newSettings.baseUrl,
-        executable: newSettings.executable,
-        createdOrder: createdOrder)
+        addProvider(provider)
+//        let createdOrder = providers[provider]?.settings.createdOrder ?? providerSettings.nextCreatedOrder
+//        providers[provider] = .init(
+//        apiKey: newSettings.apiKey,
+//        baseUrl: newSettings.baseUrl,
+//        executable: newSettings.executable,
+//        createdOrder: createdOrder)
     } else {
+        removeProvider(provider)
       // Remove existing settings for this provider
-      providerSettings.removeValue(forKey: provider)
+//      providerSettings.removeValue(forKey: provider)
     }
   }
 }
