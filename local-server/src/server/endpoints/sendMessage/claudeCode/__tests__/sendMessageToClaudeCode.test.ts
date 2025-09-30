@@ -645,6 +645,7 @@ describe("sendMessageToClaudeCode", () => {
 							cacheReadInputTokens: 0,
 							webSearchRequests: 0,
 							costUSD: 0.01,
+							contextWindow: 0,
 						},
 					},
 					permission_denials: [],
