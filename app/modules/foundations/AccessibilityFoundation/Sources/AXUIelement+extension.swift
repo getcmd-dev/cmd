@@ -199,100 +199,15 @@ extension AXUIElement {
     try? copyValue(key: kAXVerticalScrollBarAttribute)
   }
 
-  /// Get children that match the requirements. When a children matches, its descendants will not be searched.
-  public func children(where match: (AXUIElement, Int) -> SearchNextStep) -> [AXUIElement] {
-    func _children(element: AXUIElement, where match: (AXUIElement, Int) -> SearchNextStep, level: Int) -> [AXUIElement] {
-      var all = [AXUIElement]()
-      var unmatchedChildren = [AXUIElement]()
-      for child in element.children {
-        switch match(child, level) {
-        case .stopSearching:
-          all.append(child)
-        case .skipDescendants:
-          break
-        case .skipDescendantsAndSiblings:
-          return all
-        case .skipSiblings:
-          return all
-        case .continueSearching:
-          unmatchedChildren.append(child)
-        }
-      }
-      for child in unmatchedChildren {
-        all.append(contentsOf: _children(element: child, where: match, level: level + 1))
-      }
-      return all
-    }
-    return _children(element: self, where: match, level: 1) // 1 as we start from the children, not the current element.
-  }
-
-  public func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
-    guard let parent else { return nil }
-    if match(parent) { return parent }
-    return parent.firstParent(where: match)
-  }
-
-  public func firstChild(where match: (AXUIElement, Int) -> SearchNextStep) -> AXUIElement? {
-    var result: AXUIElement?
-    for child in children {
-      child.traverse { element, level in
-        let nextStep = match(element, level + 1) // +1 as we start from the children, not the current element.
-        if nextStep == .stopSearching {
-          result = element
-        }
-        return nextStep
-      }
-      if let result { return result }
-    }
-    return nil
-  }
-
 }
 
-extension AXUIElement {
-  public enum SearchNextStep {
-    case skipDescendants
-    case skipSiblings
-    case skipDescendantsAndSiblings
-    case continueSearching
-    case stopSearching
-  }
+// MARK: - AXUIElement + Tree
 
-  /// Traversing the element tree.
-  ///
-  /// - important: Traversing the element tree is resource consuming and will affect the
-  /// **performance of Xcode**. Please make sure to skip as much as possible.
-  ///
-  /// - todo: Make it not recursive.
-  public func traverse(_ handle: (_ element: AXUIElement, _ level: Int) -> SearchNextStep) {
-    func _traverse(
-      element: AXUIElement,
-      level: Int,
-      handle: (AXUIElement, Int) -> SearchNextStep)
-      -> SearchNextStep
-    {
-      let nextStep = handle(element, level)
-      switch nextStep {
-      case .stopSearching: return .stopSearching
-      case .skipDescendants: return .continueSearching
-      case .skipDescendantsAndSiblings: return .skipSiblings
-      case .continueSearching, .skipSiblings:
-        for child in element.children {
-          switch _traverse(element: child, level: level + 1, handle: handle) {
-          case .skipSiblings, .skipDescendantsAndSiblings:
-            break
-          case .stopSearching:
-            return .stopSearching
-          case .continueSearching, .skipDescendants:
-            continue
-          }
-        }
-        return nextStep
-      }
-    }
-    _ = _traverse(element: self, level: 0, handle: handle)
-  }
+extension AXUIElement: Tree {
+  public typealias Child = AXUIElement
 }
+
+public typealias SearchNextStep = TreeSearchNextStep
 
 // MARK: - Helper
 
