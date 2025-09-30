@@ -15,7 +15,12 @@ export type ModelProviderInput = {
 	modelName: string
 	reasoningBudget?: number
 }
+export type ModelBaseInfo = {
+	id: string
+	displayName: string
+}
 export interface ModelProvider {
 	build: (params: ModelProviderInput) => ModelProviderOutput
 	name: APIProviderName
+	listAllModels: (ModelProviderInput) => Promise<ModelBaseInfo[]>
 }

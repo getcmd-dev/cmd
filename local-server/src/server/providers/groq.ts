@@ -1,4 +1,4 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGroq } from "@ai-sdk/groq"
 import { JSONValue, LanguageModel } from "ai"
@@ -26,5 +26,8 @@ export class GroqModelProvider implements ModelProvider {
 				groq: providerOptions,
 			},
 		}
+	}
+	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
+		return []
 	}
 }

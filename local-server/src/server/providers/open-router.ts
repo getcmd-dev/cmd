@@ -1,4 +1,4 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
@@ -28,6 +28,9 @@ export class OpenRouterModelProvider implements ModelProvider {
 				? (messages) => addCacheControlToMessages(messages, this.name)
 				: undefined,
 		}
+	}
+	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
+		return []
 	}
 }
 

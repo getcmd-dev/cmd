@@ -1,4 +1,4 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { JSONValue, LanguageModel } from "ai"
@@ -24,5 +24,8 @@ export class GeminiModelProvider implements ModelProvider {
 				google: providerOptions,
 			},
 		}
+	}
+	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
+		return []
 	}
 }

@@ -1,4 +1,4 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { ModelBaseInfo, ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenAI, OpenAIResponsesProviderOptions } from "@ai-sdk/openai"
 
@@ -25,6 +25,42 @@ export class OpenAIModelProvider implements ModelProvider {
 				openai: providerOptions,
 			},
 		}
+	}
+	async listAllModels(params: ModelProviderInput): Promise<ModelBaseInfo[]> {
+		const baseUrl = process.env["OPENAI_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.openai.com"
+		const allModels: ModelBaseInfo[] = []
+		let afterId: string | undefined = undefined
+
+		const headers = {}
+		if (params.apiKey) {
+			headers["Authorization"] = `Bearer ${params.apiKey}`
+		}
+
+		do {
+			const url = new URL(`${baseUrl}/v1/models`)
+			if (afterId) {
+				url.searchParams.set("after_id", afterId)
+			}
+			const response = await fetch(url.toString(), {
+				headers,
+			})
+			if (!response.ok) {
+				throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+			}
+			const data = await response.json()
+			const models: ModelBaseInfo[] =
+				data.data?.map(
+					(model: { id: string; display_name: string }): ModelBaseInfo => ({
+						id: model.id,
+						displayName: model.display_name,
+					}),
+				) || []
+			allModels.push(...models)
+
+			afterId = data.has_more ? data.last_id : undefined
+		} while (afterId)
+
+		return allModels
 	}
 }
 
