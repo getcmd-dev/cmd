@@ -113,20 +113,21 @@ const createClaudeCodeEventStream = async (
 	}
 	logInfo(`First new user messages index: ${firstNewUserMessagesIdx} / Total messages: ${messages.length}`)
 
+	// Merge all the user messages into a single message with several content parts
+	// as since 2.0 Claude Code responds to each received message before processing the next ones.
 	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
-	const userMessages: SDKUserMessage[] = []
+	const userMessageContents: ContentBlockParam[] = []
 
 	newUserMessages.forEach((message) => {
-		const content: Array<ContentBlockParam> = message.content.flatMap((content) => {
-			const result: ContentBlockParam[] = []
+		message.content.forEach((content) => {
 			if (content.type === "text") {
-				result.push({
+				userMessageContents.push({
 					text: content.text,
 					type: "text",
 				})
 				content.attachments?.forEach((attachment) => {
 					if (attachment.type === "file_attachment") {
-						result.push({
+						userMessageContents.push({
 							text: `<file_attachment>
 									<path>${attachment.path}</path>
 									<content>${attachment.content}</content>
@@ -135,7 +136,7 @@ const createClaudeCodeEventStream = async (
 							type: "text",
 						})
 					} else if (attachment.type === "file_selection_attachment") {
-						result.push({
+						userMessageContents.push({
 							text: `<file_selection_attachment>
 									<path>${attachment.path}</path>
 									<selection>${attachment.content}</selection>
@@ -163,7 +164,7 @@ const createClaudeCodeEventStream = async (
 									return "image/png"
 							}
 						})()
-						result.push({
+						userMessageContents.push({
 							type: "image",
 							source: {
 								data: base64Data,
@@ -174,18 +175,17 @@ const createClaudeCodeEventStream = async (
 					}
 				})
 			}
-			return result
-		})
-		userMessages.push({
-			type: "user",
-			message: {
-				role: "user",
-				content,
-			},
-			parent_tool_use_id: null,
-			session_id: sessionId,
 		})
 	})
+	const userMessage: SDKUserMessage = {
+		type: "user",
+		message: {
+			role: "user",
+			content: userMessageContents,
+		},
+		parent_tool_use_id: null,
+		session_id: sessionId,
+	}
 
 	// Create a tmp file for the mcp config used to receive permission requests
 	const mcpEndpoint = `/mcp/${threadId}`
@@ -254,7 +254,7 @@ const createClaudeCodeEventStream = async (
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
 	const runningQuery = query({
-		prompt: arrayToAsyncIterable(userMessages),
+		prompt: arrayToAsyncIterable([userMessage]),
 		options: {
 			mcpServers: {
 				command: {
