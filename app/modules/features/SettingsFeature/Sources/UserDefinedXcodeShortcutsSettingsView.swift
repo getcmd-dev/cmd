@@ -12,12 +12,14 @@ import XcodeObserverServiceInterface
 
 // MARK: - UserDefinedXcodeShortcutsSettingsView
 
-public struct UserDefinedXcodeShortcutsSettingsView: View {
-  public init(userDefinedXcodeShortcuts: Binding<[UserDefinedXcodeShortcut]>) {
+struct UserDefinedXcodeShortcutsSettingsView: View {
+  init(userDefinedXcodeShortcuts: Binding<[UserDefinedXcodeShortcut]>) {
     _userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
   }
 
-  public var body: some View {
+  @Binding var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
+
+  var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       VStack(alignment: .leading) {
         Text("Easily create new shortcuts in Xcode")
@@ -129,8 +131,6 @@ public struct UserDefinedXcodeShortcutsSettingsView: View {
       Spacer()
     }
   }
-
-  @Binding var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
 
   @State private var editingShortcut: UserDefinedXcodeShortcut?
   @State private var showingAddForm = false

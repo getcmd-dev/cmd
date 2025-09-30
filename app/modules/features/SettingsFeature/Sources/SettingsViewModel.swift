@@ -248,6 +248,15 @@ public final class SettingsViewModel {
     }
   }
 
+  // MARK: - MCP Servers
+  var mcpServers: [String: MCPServerConfiguration] {
+    get { settings.mcpServers }
+    set {
+      settings.mcpServers = newValue
+      settingsService.update(setting: \.mcpServers, to: newValue)
+    }
+  }
+
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModel] {
     settings.availableModels

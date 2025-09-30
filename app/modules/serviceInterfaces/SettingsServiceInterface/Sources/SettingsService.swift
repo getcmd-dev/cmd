@@ -47,7 +47,7 @@ public struct LLMReasoningSetting: Sendable, Equatable {
 
 public struct Settings: Sendable, Equatable {
   public init(
-    pointReleaseXcodeExtensionToDebugApp: Bool,
+    pointReleaseXcodeExtensionToDebugApp: Bool = false,
     allowAnonymousAnalytics: Bool = false,
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
@@ -59,7 +59,8 @@ public struct Settings: Sendable, Equatable {
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
-    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [])
+    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
+    mcpServers: [String: MCPServerConfiguration] = [:])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -74,6 +75,7 @@ public struct Settings: Sendable, Equatable {
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
+    self.mcpServers = mcpServers
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -133,7 +135,7 @@ public struct Settings: Sendable, Equatable {
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
-
+  public var mcpServers: [String: MCPServerConfiguration]
 }
 
 // MARK: - Settings + Tool Preferences Helpers

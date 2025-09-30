@@ -50,7 +50,8 @@ extension Settings: Codable {
       keyboardShortcuts: container
         .resilientlyDecodeIfPresent(Settings.KeyboardShortcuts.self, forKey: "keyboardShortcuts") ?? Settings.KeyboardShortcuts(),
       userDefinedXcodeShortcuts: container
-        .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? [])
+        .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? [],
+      mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:])
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -74,6 +75,7 @@ extension Settings: Codable {
     try container.encode(toolPreferences, forKey: "toolPreferences")
     try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
     try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
+    try container.encode(MCPServerConfigurations(configurations: mcpServers), forKey: "mcpServers")
   }
 }
 

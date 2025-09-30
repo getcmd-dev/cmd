@@ -104,6 +104,14 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       writeToFile: writeToFile)
   }
 
+  /// Logs a trace message to the console and file.
+  /// - Parameter message: The debug message to log
+  public func trace(_ message: String) {
+    let formattedMessage = "[Trace] \(message)"
+    logger.trace("\(formattedMessage, privacy: .public)")
+    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+  }
+
   /// Logs a debug message to the console and file.
   /// - Parameter message: The debug message to log
   public func debug(_ message: String) {

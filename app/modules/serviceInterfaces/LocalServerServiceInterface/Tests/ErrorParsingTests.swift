@@ -55,7 +55,8 @@ struct ErrorParsingTests {
       // Assert
       #expect(error.statusCode == 404)
       #expect(error.localizedDescription == "User not found")
-      #expect(error.debugDescription == "Error stack trace information")
+      let debugDescription = error.debugDescription
+      #expect(debugDescription == "Error stack trace information")
     }
   }
 

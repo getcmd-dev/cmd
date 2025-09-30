@@ -33,6 +33,7 @@ struct SettingsCodableTests {
         "inactiveModels" : [],
         "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
@@ -78,6 +79,7 @@ struct SettingsCodableTests {
             "createdOrder" : 1
           }
         },
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
@@ -133,6 +135,7 @@ struct SettingsCodableTests {
             "createdOrder" : 2
           }
         },
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
@@ -266,6 +269,7 @@ struct SettingsCodableTests {
         "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
@@ -298,6 +302,7 @@ struct SettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
@@ -451,6 +456,7 @@ struct SettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "toolPreferences" : [],
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
@@ -489,6 +495,7 @@ struct SettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
@@ -580,6 +587,7 @@ struct SettingsCodableTests {
         "keyboardShortcuts" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
@@ -735,6 +743,7 @@ struct SettingsCodableTests {
         "inactiveModels" : [],
         "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
+        "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {},
         "reasoningModels": {},

@@ -12,6 +12,8 @@ public protocol Logger: Sendable {
   /// Creates a sub-logger with an extended subsystem name.
   func subLogger(subsystem: String) -> Logger
 
+  /// Logs a trace message.
+  func trace(_ message: String)
   /// Logs a debug message.
   func debug(_ message: String)
   /// Logs an informational message.

@@ -28,6 +28,12 @@ public final class TransientLogger: Logger {
     return TransientLogger(subsystem: subsystem, category: category)
   }
 
+  public func trace(_ message: String) {
+    let formattedMessage = "[Trace] \(message)"
+    logger.trace("\(formattedMessage, privacy: .public)")
+    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+  }
+
   public func debug(_ message: String) {
     let formattedMessage = "[Debug] \(message)"
     logger.debug("\(formattedMessage, privacy: .public)")

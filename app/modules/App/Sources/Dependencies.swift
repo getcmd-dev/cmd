@@ -24,6 +24,8 @@ import LLMServiceInterface
 import LocalServerService
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import MCPService
+import MCPServiceInterface
 import PermissionsService
 import PermissionsServiceInterface
 import SettingsService
@@ -74,6 +76,12 @@ extension ChatContextRegistryServiceDependencyKey: DependencyKey {
 
 extension ChatCompletionServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }
+}
+
+// MARK: - MCPServiceDependencyKey + DependencyKey
+
+extension MCPServiceDependencyKey: DependencyKey {
+  public static var liveValue: MCPService { AppScope.shared.mcpService }
 }
 
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
@@ -179,6 +187,10 @@ extension AppScope: ChatContextRegistryServiceProviding { }
 // MARK: - AppScope + ChatCompletionServiceProviding
 
 extension AppScope: ChatCompletionServiceProviding { }
+
+// MARK: - AppScope + MCPServiceProviding
+
+extension AppScope: MCPServiceProviding { }
 
 // MARK: - AppScope + CheckpointServiceProviding
 
