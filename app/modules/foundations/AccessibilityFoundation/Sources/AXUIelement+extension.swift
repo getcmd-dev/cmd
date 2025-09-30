@@ -199,49 +199,31 @@ extension AXUIElement {
     try? copyValue(key: kAXVerticalScrollBarAttribute)
   }
 
-  public func child(
-    identifier: String? = nil,
-    title: String? = nil,
-    role: String? = nil)
-    -> AXUIElement?
-  {
-    for child in children {
-      let match = {
-        if let identifier, child.identifier != identifier { return false }
-        if let title, child.title != title { return false }
-        if let role, child.role != role { return false }
-        return true
-      }()
-      if match { return child }
+  /// Get children that match the requirements. When a children matches, its descendants will not be searched.
+  public func children(where match: (AXUIElement, Int) -> SearchNextStep) -> [AXUIElement] {
+    func _children(element: AXUIElement, where match: (AXUIElement, Int) -> SearchNextStep, level: Int) -> [AXUIElement] {
+      var all = [AXUIElement]()
+      var unmatchedChildren = [AXUIElement]()
+      for child in element.children {
+        switch match(child, level) {
+        case .stopSearching:
+          all.append(child)
+        case .skipDescendants:
+          break
+        case .skipDescendantsAndSiblings:
+          return all
+        case .skipSiblings:
+          return all
+        case .continueSearching:
+          unmatchedChildren.append(child)
+        }
+      }
+      for child in unmatchedChildren {
+        all.append(contentsOf: _children(element: child, where: match, level: level + 1))
+      }
+      return all
     }
-    for child in children {
-      if
-        let target = child.child(
-          identifier: identifier,
-          title: title,
-          role: role) { return target }
-    }
-    return nil
-  }
-
-  /// Get children that match the requirement
-  ///
-  /// - important: If the element has a lot of descendant nodes, it will heavily affect the
-  /// **performance of Xcode**. Please make use ``AXUIElement\traverse(_:)`` instead.
-  @available(
-    *,
-    deprecated,
-    renamed: "traverse(_:)",
-    message: "Please make use ``AXUIElement\traverse(_:)`` instead.")
-  public func children(where match: (AXUIElement) -> Bool) -> [AXUIElement] {
-    var all = [AXUIElement]()
-    for child in children {
-      if match(child) { all.append(child) }
-    }
-    for child in children {
-      all.append(contentsOf: child.children(where: match))
-    }
-    return all
+    return _children(element: self, where: match, level: 1) // 1 as we start from the children, not the current element.
   }
 
   public func firstParent(where match: (AXUIElement) -> Bool) -> AXUIElement? {
@@ -250,22 +232,17 @@ extension AXUIElement {
     return parent.firstParent(where: match)
   }
 
-  public func firstChild(where match: (AXUIElement) -> Bool) -> AXUIElement? {
+  public func firstChild(where match: (AXUIElement, Int) -> SearchNextStep) -> AXUIElement? {
+    var result: AXUIElement?
     for child in children {
-      if match(child) { return child }
-    }
-    for child in children {
-      if let target = child.firstChild(where: match) {
-        return target
+      child.traverse { element, level in
+        let nextStep = match(element, level + 1) // +1 as we start from the children, not the current element.
+        if nextStep == .stopSearching {
+          result = element
+        }
+        return nextStep
       }
-    }
-    return nil
-  }
-
-  public func visibleChild(identifier: String) -> AXUIElement? {
-    for child in visibleChildren {
-      if child.identifier == identifier { return child }
-      if let target = child.visibleChild(identifier: identifier) { return target }
+      if let result { return result }
     }
     return nil
   }
@@ -325,7 +302,7 @@ extension AXUIElement {
       let desc: String = try copyValue(key: kAXDescriptionAttribute)
       _ = desc
       return true
-    } catch AXError.invalidUIElement {
+    } catch AXError.invalidUIElement, AXError.noValue {
       return false
     } catch AXError.attributeUnsupported {
       return true

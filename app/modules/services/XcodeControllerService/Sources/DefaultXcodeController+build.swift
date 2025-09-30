@@ -72,7 +72,9 @@ extension DefaultXcodeController {
 
     guard
       let menuItem = menuBar
-        .firstChild(where: { $0.identifier == menuIdentifier })
+        .firstChild(where: { el, _ in
+          el.identifier == menuIdentifier ? .stopSearching : .continueSearching
+        })
     else {
       defaultLogger.error("Could not find build menu")
       throw AXError.cannotComplete

@@ -31,10 +31,10 @@ final class AXCache: Sendable {
   ///
   /// - Parameters:
   ///   - from: The AX UI element to query from
+  ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query (e.g., "children", "windows")
-  ///   - fetcher: A closure that performs the expensive AX API query when cache misses occur
   /// - Returns: An array of AX UI elements, either from cache or freshly fetched
-  func caching(from: AXUIElement, cacheKey: String, fetcher: @Sendable (AXUIElement) -> [AXUIElement]) -> [AXUIElement] {
+  func caching(from: AXUIElement, _ operation: @Sendable (AXUIElement) -> [AXUIElement], cacheKey: String) -> [AXUIElement] {
     inLock { state in
       defer {
         // Schedule a cleanup task to remove the cached value after 10 minutes, to avoid keeping things in memory for too long while providing good caching.
@@ -65,7 +65,7 @@ final class AXCache: Sendable {
       if let cachedValue {
         return cachedValue
       }
-      let fetched = fetcher(from)
+      let fetched = operation(from)
       state.cache[from, default: [:]][cacheKey] = fetched
       return fetched
     }
@@ -85,11 +85,11 @@ extension AXUIElement {
   /// Convenience method that calls the shared AX cache with this element as the source.
   ///
   /// - Parameters:
+  ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query
-  ///   - fetcher: A closure that performs the expensive AX API query when cache misses occur
   /// - Returns: An array of AX UI elements, either from cache or freshly fetched
-  func caching(cacheKey: String, fetcher: @Sendable (AXUIElement) -> [AXUIElement]) -> [AXUIElement] {
-    AXCache.shared.caching(from: self, cacheKey: cacheKey, fetcher: fetcher)
+  func caching(_ operation: @Sendable (AXUIElement) -> [AXUIElement], cacheKey: String) -> [AXUIElement] {
+    AXCache.shared.caching(from: self, operation, cacheKey: cacheKey)
   }
 
   /// Retrieves or computes a cached optional AX UI element for this element.
@@ -98,28 +98,28 @@ extension AXUIElement {
   /// in an array for caching and extracts the first element.
   ///
   /// - Parameters:
+  ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query
-  ///   - fetcher: A closure that performs the expensive AX API query when cache misses occur
   /// - Returns: An optional AX UI element, either from cache or freshly fetched
-  func caching(cacheKey: String, fetcher: @Sendable (AXUIElement) -> AXUIElement?) -> AXUIElement? {
-    AXCache.shared.caching(from: self, cacheKey: cacheKey, fetcher: {
-      [fetcher($0)].compactMap(\.self)
-    }).first
+  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement?, cacheKey: String) -> AXUIElement? {
+    AXCache.shared.caching(from: self, {
+      [operation($0)].compactMap(\.self)
+    }, cacheKey: cacheKey).first
   }
 
   /// Retrieves or computes a cached AX UI element for this element.
   ///
   /// Convenience method for queries that always return a single element. Internally wraps the result
-  /// in an array for caching and extracts the first element. Falls back to calling the fetcher if
+  /// in an array for caching and extracts the first element. Falls back to calling the operation if
   /// the cache returns an empty array (though this should not occur in practice).
   ///
   /// - Parameters:
+  ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query
-  ///   - fetcher: A closure that performs the expensive AX API query when cache misses occur
   /// - Returns: An AX UI element, either from cache or freshly fetched
-  func caching(cacheKey: String, fetcher: @Sendable (AXUIElement) -> AXUIElement) -> AXUIElement {
-    AXCache.shared.caching(from: self, cacheKey: cacheKey, fetcher: {
-      [fetcher($0)].compactMap(\.self)
-    }).first ?? fetcher(self) // The later fallback cannot be executed, but it reads better than `!`.
+  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement, cacheKey: String) -> AXUIElement {
+    AXCache.shared.caching(from: self, {
+      [operation($0)].compactMap(\.self)
+    }, cacheKey: cacheKey).first ?? operation(self) // The later fallback cannot be executed, but it reads better than `!`.
   }
 }
