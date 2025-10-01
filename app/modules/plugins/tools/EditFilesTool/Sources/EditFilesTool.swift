@@ -67,7 +67,11 @@ public final class EditFilesTool: Tool {
       if let error, isInputComplete {
         updateStatus.complete(with: .failure(error))
       }
-      chatContextRegistry.persist(thread: context.threadId)
+
+      if initialStatus == nil {
+        // New tool use, save chat state
+        chatContextRegistry.persist(thread: context.threadId)
+      }
     }
 
     public struct InternalState: Codable, Sendable {

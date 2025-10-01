@@ -50,7 +50,11 @@ public final class ClaudeCodeWriteTool: ExternalTool {
         defaultLogger
           .error("Claude Code wrote a file with no known baseline content. This is unexpected. \(err.localizedDescription)")
       }
-      chatContextRegistry.persist(thread: context.threadId)
+
+      if initialStatus == nil {
+        // New tool use, save chat state
+        chatContextRegistry.persist(thread: context.threadId)
+      }
     }
 
     public typealias InternalState = [EditFilesTool.Use.FileChange]
