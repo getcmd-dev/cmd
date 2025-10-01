@@ -39,7 +39,7 @@ public protocol LLMService: Sendable {
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
-    model: LLMModel,
+    model: LLMModelInfo,
     chatMode: ChatMode,
     context: ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -49,7 +49,23 @@ public protocol LLMService: Sendable {
   func nameConversation(firstMessage: String) async throws -> String
 
   /// Generate a summary of a conversation based on the message history.
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel) async throws -> String
+  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String
+
+  func listModelAvailable(for provider: LLMProvider) -> [LLMModel]
+
+  func getModel(by providerId: String) -> LLMModel?
+
+  func getModelInfo(by slug: String) -> LLMModelInfo?
+
+  func fetchModelAvailable(for provider: LLMProvider) async throws -> [LLMModel]
+
+  func fetchModel(by id: String) async throws -> LLMModel?
+
+  func provider(for model: LLMModelInfo) -> LLMProvider?
+
+  func fetchProvider(for model: LLMModelInfo) -> LLMProvider?
+
+  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> { get }
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage

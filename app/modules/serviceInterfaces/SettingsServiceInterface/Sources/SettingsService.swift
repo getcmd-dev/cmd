@@ -52,10 +52,10 @@ public struct Settings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [LLMModel: LLMProvider] = [:],
+    preferedProviders: [String: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
-    inactiveModels: [LLMModel] = [],
-    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
+//    inactiveModels: [LLMModel] = [],
+//    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -69,8 +69,8 @@ public struct Settings: Sendable, Equatable {
     self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
-    self.inactiveModels = inactiveModels
-    self.reasoningModels = reasoningModels
+//    self.inactiveModels = inactiveModels
+//    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
@@ -126,11 +126,11 @@ public struct Settings: Sendable, Equatable {
   public var automaticallyUpdateXcodeSettings: Bool
   public var fileEditMode: FileEditMode
   // LLM settings
-  public var preferedProviders: [LLMModel: LLMProvider]
+  public var preferedProviders: [String: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-  public var reasoningModels: [LLMModel: LLMReasoningSetting]
+//  public var reasoningModels: [LLMModel: LLMReasoningSetting] // TODO: deal with this
 
-  public var inactiveModels: [LLMModel]
+//  public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts

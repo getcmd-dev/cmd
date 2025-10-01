@@ -1,6 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+@preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import LLMFoundation
 import LocalServerServiceInterface
@@ -10,13 +12,14 @@ import ToolFoundation
 #if DEBUG
 @ThreadSafe
 public final class MockLLMService: LLMService {
-
   public init() { }
+
+  public var mutableActiveModels = CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>([])
 
   public var onSendMessage: (@Sendable (
     [Schema.Message],
     [any Tool],
-    LLMModel,
+    LLMModelInfo,
     ChatMode,
     ChatContext,
     (UpdateStream) -> Void)
@@ -24,43 +27,83 @@ public final class MockLLMService: LLMService {
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
 
-  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModel) async throws -> String)?
+  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModelInfo) async throws -> String)?
+
+  public var onListModelAvailable: (@Sendable (LLMProvider) async throws -> [LLMModel])?
+
+  public var onGetModel: (@Sendable (String) async throws -> LLMModel?)?
+
+  public var onGetModelInfo: (@Sendable (String) -> LLMModelInfo?)?
+
+  public var onListModelAvailableSync: (@Sendable (LLMProvider) -> [LLMModel])?
+
+  public var onGetModelSync: (@Sendable (String) -> LLMModel?)?
+
+  public var onProviderForModel: (@Sendable (LLMModelInfo) -> LLMProvider?)?
+
+  public var onFetchModelAvailable: (@Sendable (LLMProvider) async throws -> [LLMModel])?
+
+  public var onFetchModel: (@Sendable (String) async throws -> LLMModel?)?
+
+  public var onFetchProvider: (@Sendable (LLMModelInfo) -> LLMProvider?)?
+
+  public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
+    mutableActiveModels.readonly()
+  }
 
   // MARK: - LLMService
 
   public func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
-    model: LLMModel,
+    model: LLMModelInfo,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
   {
-    if let onSendMessage {
-      return try await onSendMessage(messageHistory, tools, model, chatMode, context, handleUpdateStream)
-    }
-
-    // Default implementation returning empty array if no handler is set
-    return SendMessageResponse(newMessages: [], usageInfo: nil)
+    try await onSendMessage?(messageHistory, tools, model, chatMode, context, handleUpdateStream)
+      ?? SendMessageResponse(newMessages: [], usageInfo: nil)
   }
 
   public func nameConversation(firstMessage: String) async throws -> String {
-    if let onNameConversation {
-      return try await onNameConversation(firstMessage)
-    }
-    return "Unnamed Conversation"
+    try await onNameConversation?(firstMessage) ?? "Unnamed Conversation"
   }
 
   public func summarizeConversation(
     messageHistory: [Schema.Message],
-    model: LLMModel)
+    model: LLMModelInfo)
     async throws -> String
   {
-    if let onSummarizeConversation {
-      return try await onSummarizeConversation(messageHistory, model)
-    }
-    return "Mock conversation summary"
+    try await onSummarizeConversation?(messageHistory, model) ?? "Mock conversation summary"
+  }
+
+  public func listModelAvailable(for provider: LLMProvider) -> [LLMModel] {
+    onListModelAvailableSync?(provider) ?? []
+  }
+
+  public func getModel(by providerId: String) -> LLMModel? {
+    onGetModelSync?(providerId)
+  }
+
+  public func getModelInfo(by slug: String) -> LLMModelInfo? {
+    onGetModelInfo?(slug)
+  }
+
+  public func provider(for model: LLMModelInfo) -> LLMProvider? {
+    onProviderForModel?(model)
+  }
+
+  public func fetchModelAvailable(for provider: LLMProvider) async throws -> [LLMModel] {
+    try await onFetchModelAvailable?(provider) ?? []
+  }
+
+  public func fetchModel(by id: String) async throws -> LLMModel? {
+    try await onFetchModel?(id)
+  }
+
+  public func fetchProvider(for model: LLMModelInfo) -> LLMProvider? {
+    onFetchProvider?(model)
   }
 
 }

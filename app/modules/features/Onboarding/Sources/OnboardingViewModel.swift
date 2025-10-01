@@ -4,6 +4,7 @@
 import Combine
 import Dependencies
 import FoundationInterfaces
+import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
 import PermissionsServiceInterface
@@ -34,14 +35,14 @@ final class OnboardingViewModel {
 
     @Dependency(\.userDefaults) var userDefaults
     self.userDefaults = userDefaults
-    @Dependency(\.settingsService) var settingsService
-    self.settingsService = settingsService
+    @Dependency(\.llmService) var llmService
+    self.llmService = llmService
     @Dependency(\.permissionsService) var permissionsService
     self.permissionsService = permissionsService
 
     isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).currentValue == true
     isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).currentValue == true
-    canSkipProviderSetup = !settingsService.value(for: \.availableModels).isEmpty
+    canSkipProviderSetup = !llmService.activeModels.currentValue.isEmpty
 
     currentStep = .welcome
     currentStep = getStep()
@@ -78,7 +79,7 @@ final class OnboardingViewModel {
       }
     }.store(in: &cancellables)
 
-    settingsService.liveValue(for: \.availableModels).sink { @Sendable [weak self] models in
+    llmService.activeModels.sink { @Sendable [weak self] models in
       Task { @MainActor in
         guard let self else { return }
         if !models.isEmpty {
@@ -146,7 +147,7 @@ final class OnboardingViewModel {
   private var skipXcodeExtension = false
 
   private let userDefaults: UserDefaultsI
-  private let settingsService: SettingsService
+  private let llmService: LLMService
   private let permissionsService: PermissionsService
   private var hasSkippedWelcomeScreen = false
 

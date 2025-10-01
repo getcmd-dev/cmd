@@ -4,6 +4,7 @@ Target.module(
     .product(name: "Dependencies", package: "swift-dependencies"),
     "DLS",
     "FoundationInterfaces",
+    "LLMServiceInterface",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "SettingsServiceInterface",

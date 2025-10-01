@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
-import Combine
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -30,10 +30,14 @@ final class DefaultLLMService: LLMService {
     #endif
   }
 
+  var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
+    mutableActiveModels.readonly()
+  }
+
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModel,
+    model: LLMModelInfo,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -112,7 +116,7 @@ final class DefaultLLMService: LLMService {
   func sendOneMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModel,
+    model: LLMModelInfo,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
@@ -131,7 +135,7 @@ final class DefaultLLMService: LLMService {
       messageHistory: messageHistory,
       tools: tools,
       model: model,
-      enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
+      enableReasoning: false, // model.canReason && settings.reasoningModels[model]?.isEnabled == true,
       context: context,
       supportDebugStreamRepeatInDebug: true,
       handleUpdateStream: handleUpdateStream,
@@ -144,7 +148,7 @@ final class DefaultLLMService: LLMService {
       defaultLogger.error("Unable to name conversation: no low tier model available")
       return "New conversation"
     }
-    if (try? settings.provider(for: lowTierModel))?.0.isExternalAgent == true {
+    if provider(for: lowTierModel.modelInfo)?.isExternalAgent == true {
       // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
       return "New conversation"
     }
@@ -160,7 +164,7 @@ final class DefaultLLMService: LLMService {
         role: .user,
         content: [.textMessage(.init(text: "Please write a 5-10 word title the following conversation:\n\n\(firstMessage)"))])],
       tools: [],
-      model: lowTierModel,
+      model: lowTierModel.modelInfo,
       enableReasoning: false,
       context: nil,
       handleUpdateStream: { _ in },
@@ -169,7 +173,7 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel) async throws -> String {
+  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String {
     var messages = messageHistory
     messages.append(.init(
       role: .user,
@@ -190,6 +194,36 @@ final class DefaultLLMService: LLMService {
 
     return assistantMessage.content.first?.asText?.content ?? ""
   }
+
+  func listModelAvailable(for _: LLMProvider) -> [LLMModel] {
+    []
+  }
+
+  func getModel(by _: String) -> LLMModel? {
+    nil
+  }
+
+  func getModelInfo(by _: String) -> LLMModelInfo? {
+    nil
+  }
+
+  func provider(for _: LLMModelInfo) -> LLMProvider? {
+    nil
+  }
+
+  func fetchProvider(for _: LLMModelInfo) -> LLMProvider? {
+    nil
+  }
+
+  func fetchModelAvailable(for _: LLMProvider) async throws -> [LLMModel] {
+    []
+  }
+
+  func fetchModel(by _: String) async throws -> LLMModel? {
+    nil
+  }
+
+  private let mutableActiveModels = CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>([])
 
   private let settingsService: SettingsService
 
@@ -244,7 +278,7 @@ final class DefaultLLMService: LLMService {
     system: String,
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool],
-    model: LLMModel,
+    model: LLMModelInfo,
     enableReasoning: Bool,
     context: (any ChatContext)?,
     supportDebugStreamRepeatInDebug: Bool = false,
@@ -253,7 +287,14 @@ final class DefaultLLMService: LLMService {
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
-    let (provider, providerSettings) = try settings.provider(for: model)
+    guard
+      let provider = provider(for: model),
+      let providerSettings = settings.llmProviderSettings[provider],
+      let providerModel = listModelAvailable(for: provider).first(where: { $0.modelInfo == model })
+    else {
+      throw AppError("Oups")
+    }
+
     let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: system,
@@ -261,7 +302,7 @@ final class DefaultLLMService: LLMService {
       tools: tools
         .filter { !$0.isExternalTool }
         .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
-      model: provider.id(for: model),
+      model: providerModel.id,
       enableReasoning: enableReasoning,
       provider: .init(
         provider: provider,

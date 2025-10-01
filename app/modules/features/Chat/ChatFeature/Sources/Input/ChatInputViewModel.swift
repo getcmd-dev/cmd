@@ -13,6 +13,7 @@ import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LLMServiceInterface
 import LoggingServiceInterface
 import PDFKit
 import SettingsServiceInterface
@@ -58,8 +59,8 @@ final class ChatInputViewModel {
 
   #if DEBUG
   convenience init(
-    selectedModel: LLMModel? = nil,
-    activeModels: [LLMModel]? = nil,
+    selectedModel: LLMModelInfo? = nil,
+    activeModels: [LLMModelInfo]? = nil,
     mode: ChatMode = .agent,
     attachments: [AttachmentModel] = [])
   {
@@ -74,9 +75,11 @@ final class ChatInputViewModel {
 
   convenience init() {
     @Dependency(\.userDefaults) var userDefaults
-    let selectedModel: LLMModel? =
-      if let modelName = userDefaults.string(forKey: Self.userDefaultsSelectLLMModelKey) {
-        LLMModel(rawValue: modelName)
+    @Dependency(\.llmService) var llmService
+    let selectedModel: LLMModelInfo? =
+      if let modelId = userDefaults.string(forKey: Self.userDefaultsSelectLLMModelKey) {
+        llmService.getModelInfo(by: modelId)
+//        LLMModel(rawValue: modelName)
       } else {
         nil
       }
@@ -100,8 +103,8 @@ final class ChatInputViewModel {
   ///   - activeModels: The available LLM models. When nil, this value is resolved from the settings and changes to the settings will be observed.
   private init(
     textInput: TextInput,
-    selectedModel: LLMModel? = nil,
-    activeModels: [LLMModel]?,
+    selectedModel: LLMModelInfo? = nil,
+    activeModels: [LLMModelInfo]?,
     mode: ChatMode = .agent,
     attachments: [AttachmentModel])
   {
@@ -114,13 +117,13 @@ final class ChatInputViewModel {
       self.activeModels = activeModels
       updateSelectedModel()
     } else {
-      @Dependency(\.settingsService) var settingsService
-      let settings = settingsService.liveValues()
-      self.activeModels = settings.currentValue.activeModels
+      @Dependency(\.llmService) var llmService
+//      let settings = settingsService.liveValues()
+      self.activeModels = llmService.activeModels.currentValue
       updateSelectedModel()
-      settingsService.liveValues().sink { [weak self] settings in
+      llmService.activeModels.sink { [weak self] activeModels in
         guard let self else { return }
-        self.activeModels = settings.activeModels
+        self.activeModels = activeModels
         updateSelectedModel()
       }.store(in: &cancellables)
     }
@@ -133,7 +136,7 @@ final class ChatInputViewModel {
   }
 
   /// The list of available LLM models that can be selected.
-  private(set) var activeModels: [LLMModel]
+  private(set) var activeModels: [LLMModelInfo]
   /// Attachments selected by the user as explicit context for the next message.
   var attachments: [AttachmentModel]
   /// Whether the text input needs to be focused on. This will be reset to false once focus has been updated.
@@ -153,7 +156,7 @@ final class ChatInputViewModel {
   var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
   /// Which LLM model is selected to respond to the next message.
-  var selectedModel: LLMModel? {
+  var selectedModel: LLMModelInfo? {
     didSet {
       if let selectedModel {
         userDefaults.set(selectedModel.id, forKey: Self.userDefaultsSelectLLMModelKey)

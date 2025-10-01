@@ -7,14 +7,14 @@ import LLMFoundation
 // MARK: - ModelsView+Previews
 
 #if DEBUG
-#Preview {
-  ModelsView(
-    availableModels: LLMModel.allCases,
-    availableProviders: LLMProvider.allCases,
-    providerForModels: .constant([:]),
-    inactiveModels: .constant([]),
-    reasoningModels: .constant([:]))
-    .frame(width: 600, height: 800)
-}
+// #Preview {
+//  ModelsView(
+//    availableModels: LLMModel.allCases,
+//    availableProviders: LLMProvider.allCases,
+//    providerForModels: .constant([:]),
+//    inactiveModels: .constant([]),
+//    reasoningModels: .constant([:]))
+//    .frame(width: 600, height: 800)
+// }
 
 #endif

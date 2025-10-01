@@ -8,6 +8,7 @@ Target.module(
     "DependencyFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
+    "LLMServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ThreadSafe",

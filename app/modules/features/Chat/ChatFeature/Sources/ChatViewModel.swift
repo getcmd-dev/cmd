@@ -12,6 +12,7 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
 import SwiftUI
@@ -40,7 +41,7 @@ public class ChatViewModel {
 
   private init(
     tab: ChatThreadViewModel,
-    currentModel: LLMModel)
+    currentModel: LLMModelInfo)
   {
     self.tab = tab
     self.currentModel = currentModel
@@ -50,11 +51,13 @@ public class ChatViewModel {
     @Dependency(\.fileManager) var fileManager
     @Dependency(\.chatHistoryService) var chatHistoryService
     @Dependency(\.userDefaults) var userDefaults
+    @Dependency(\.llmService) var llmService
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.xcodeObserver = xcodeObserver
     self.fileManager = fileManager
     self.chatHistoryService = chatHistoryService
     self.userDefaults = userDefaults
+    self.llmService = llmService
 
     registerAsAppEventHandler()
 
@@ -72,13 +75,14 @@ public class ChatViewModel {
     }
   }
 
-  var currentModel: LLMModel
+  var currentModel: LLMModelInfo
   var selectedFile: URL?
   private(set) var focusedWorkspacePath: URL? = nil
   private(set) var showChatHistory = false
 
   let chatHistoryService: ChatHistoryService
   let userDefaults: UserDefaultsI
+  let llmService: LLMService
 
   let chatHistory = ChatHistoryViewModel()
 

@@ -2,8 +2,10 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import LLMFoundation
+import LLMServiceInterface
 import SettingsServiceInterface
 import SwiftUI
 
@@ -11,16 +13,16 @@ import SwiftUI
 
 struct ModelsView: View {
   init(
-    availableModels: [LLMModel],
+    availableModels: [LLMModelInfo],
     availableProviders: [LLMProvider],
-    providerForModels: Binding<[LLMModel: LLMProvider]>,
-    inactiveModels: Binding<[LLMModel]>,
-    reasoningModels: Binding<[LLMModel: LLMReasoningSetting]>)
+    providerForModels: Binding<[LLMModelInfo: LLMProvider]>,
+//    inactiveModels: Binding<[LLMModelInfo]>,
+    reasoningModels: Binding<[LLMModelInfo: LLMReasoningSetting]>)
   {
     self.availableModels = availableModels
     self.availableProviders = availableProviders
     _providerForModels = providerForModels
-    _inactiveModels = inactiveModels
+//    _inactiveModels = inactiveModels
     _reasoningModels = reasoningModels
   }
 
@@ -48,7 +50,7 @@ struct ModelsView: View {
               model: model,
               provider: provider(for: model),
               isActive: isActive(for: model),
-              availableProviders: availableProviders.filter { $0.supportedModels.contains(model) },
+              availableProviders: providersAvailable(for: model),
               reasoningSetting: reasoningSetting(for: model))
           }
         }
@@ -58,15 +60,17 @@ struct ModelsView: View {
     }
   }
 
-  @Binding private var providerForModels: [LLMModel: LLMProvider]
-  @Binding private var inactiveModels: [LLMModel]
-  @Binding private var reasoningModels: [LLMModel: LLMReasoningSetting]
+  @Binding private var providerForModels: [LLMModelInfo: LLMProvider]
+//  @Binding private var inactiveModels: [LLMModelInfo]
+  @Binding private var reasoningModels: [LLMModelInfo: LLMReasoningSetting]
   @State private var searchText = ""
 
-  private let availableModels: [LLMModel]
+  @Dependency(\.llmService) private var llmService
+
+  private let availableModels: [LLMModelInfo]
   private let availableProviders: [LLMProvider]
 
-  private var filteredModels: [LLMModel] {
+  private var filteredModels: [LLMModelInfo] {
     searchText.isEmpty
       ? availableModels
       : availableModels.filter {
@@ -74,7 +78,13 @@ struct ModelsView: View {
       }
   }
 
-  private func provider(for model: LLMModel) -> Binding<LLMProvider> {
+  private func providersAvailable(for model: LLMModelInfo) -> [LLMProvider] {
+    availableProviders.filter { provider in
+      llmService.listModelAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
+    }
+  }
+
+  private func provider(for model: LLMModelInfo) -> Binding<LLMProvider> {
     .init(get: {
       providerForModels[model] ?? LLMProvider.openAI
     }, set: { provider in
@@ -82,19 +92,22 @@ struct ModelsView: View {
     })
   }
 
-  private func isActive(for model: LLMModel) -> Binding<Bool> {
-    .init(get: { !inactiveModels.contains(model) }, set: { isActive in
-      if isActive {
-        inactiveModels.removeAll { $0 == model }
-      } else {
-        if !inactiveModels.contains(model) {
-          inactiveModels.append(model)
-        }
-      }
+  private func isActive(for _: LLMModelInfo) -> Binding<Bool> {
+    .init(get: {
+      true // TODO
+//          !inactiveModels.contains(model)
+    }, set: { _ in
+//      if isActive {
+//        inactiveModels.removeAll { $0 == model }
+//      } else {
+//        if !inactiveModels.contains(model) {
+//          inactiveModels.append(model)
+//        }
+//      }
     })
   }
 
-  private func reasoningSetting(for model: LLMModel) -> Binding<LLMReasoningSetting>? {
+  private func reasoningSetting(for model: LLMModelInfo) -> Binding<LLMReasoningSetting>? {
     guard let reasoning = reasoningModels[model] else { return nil }
     return .init(get: { reasoning }, set: { reasoningModels[model] = $0 })
   }
@@ -105,7 +118,7 @@ struct ModelsView: View {
 
 private struct ModelCard: View {
   init(
-    model: LLMModel,
+    model: LLMModelInfo,
     provider: Binding<LLMProvider>,
     isActive: Binding<Bool>,
     availableProviders: [LLMProvider],
@@ -202,7 +215,7 @@ private struct ModelCard: View {
         .padding(.top, 8)
       }
 
-      if let pricing = provider.price(for: model) ?? model.defaultPricing {
+      if let pricing = model.defaultPricing {
         HStack {
           Text("Pricing:")
             .font(.headline)
@@ -234,7 +247,7 @@ private struct ModelCard: View {
 
   private let reasoningSetting: Binding<LLMReasoningSetting>?
 
-  private let model: LLMModel
+  private let model: LLMModelInfo
   private let availableProviders: [LLMProvider]
 
   private var otherProviderOptions: [LLMProvider] {

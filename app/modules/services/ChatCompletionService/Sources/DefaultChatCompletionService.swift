@@ -9,6 +9,7 @@ import DependencyFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import LLMServiceInterface
 import LoggingServiceInterface
 import SettingsServiceInterface
 import ThreadSafe
@@ -24,10 +25,12 @@ final class DefaultChatCompletionService: ChatCompletionService {
   init(
     settingsService: SettingsService,
     userDefaults: UserDefaultsI,
-    xcodeUserDefaults: UserDefaultsI? = UserDefaults(suiteName: "com.apple.dt.Xcode"))
+    llmService: LLMService,
+    xcodeUserDefaults: UserDefaultsI?)
   {
     self.settingsService = settingsService
     self.userDefaults = userDefaults
+    self.llmService = llmService
     self.xcodeUserDefaults = xcodeUserDefaults
   }
 
@@ -70,6 +73,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
   private var port: Int?
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
+  private let llmService: LLMService
   private let xcodeUserDefaults: UserDefaultsI?
 
   /// Find an available port where to start the HTTP server.
@@ -132,7 +136,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
   private func getAvailableModels(req _: Request) -> ModelsResult {
     ModelsResult(
       data:
-      settingsService.liveValues().currentValue.availableModels.map { model in
+      llmService.activeModels.currentValue.map { model in
         ModelResult(id: model.name, created: 0, object: "model", ownedBy: "cmd")
       },
       object: "list")
@@ -389,13 +393,16 @@ private struct XcodeIDEChatUserChatModelProvider: Codable {
 
 extension BaseProviding where
   Self: SettingsServiceProviding,
-  Self: UserDefaultsProviding
+  Self: UserDefaultsProviding,
+  Self: LLMServiceProviding
 {
   public var chatCompletionService: ChatCompletionService {
     shared {
       DefaultChatCompletionService(
         settingsService: settingsService,
-        userDefaults: sharedUserDefaults)
+        userDefaults: sharedUserDefaults,
+        llmService: llmService,
+        xcodeUserDefaults: UserDefaults(suiteName: "com.apple.dt.Xcode"))
     }
   }
 }

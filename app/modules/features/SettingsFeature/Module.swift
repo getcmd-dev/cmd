@@ -9,6 +9,7 @@ Target.module(
     "ExtensionEventsInterface",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "MCPServiceInterface",

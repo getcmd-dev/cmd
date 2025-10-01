@@ -57,7 +57,7 @@ public final class AIProviderViewModel {
       let output: Schema.ListModelsOutput = try await localServer.postRequest(
         path: "/models",
         data: inputData)
-        defaultLogger.log("Received \(output.models.count) models for provider \(provider.name)")
+      defaultLogger.log("Received \(output.models.count) models for provider \(provider.name)")
 
     } catch {
       defaultLogger.error("Failed to fetch models for provider \(provider.name)", error)
