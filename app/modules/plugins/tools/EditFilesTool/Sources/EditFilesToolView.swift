@@ -145,6 +145,13 @@ struct FileChangeView: View {
               .foregroundColor(colorScheme.primaryForeground)
               .lineLimit(1)
               .truncationMode(.head)
+              .onHover { isHovering in
+                if isHovering {
+                  NSCursor.pointingHand.push()
+                } else {
+                  NSCursor.pop()
+                }
+              }
           }
           .buttonStyle(PlainButtonStyle())
           .help("Open file")
