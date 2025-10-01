@@ -116,7 +116,7 @@ struct ModelsView: View {
 
 // MARK: - ModelCard
 
-private struct ModelCard: View {
+struct ModelCard: View {
   init(
     model: LLMModelInfo,
     provider: Binding<LLMProvider>,

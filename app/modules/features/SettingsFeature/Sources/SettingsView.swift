@@ -52,21 +52,7 @@ public struct SettingsView: View {
     VStack(spacing: 0) {
       // Header with back button
       HStack {
-        HoveredButton(
-          action: {
-            currentView = .landing
-          },
-          onHoverColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8)
-        {
-          HStack(spacing: 6) {
-            Image(systemName: "chevron.left")
-              .font(.system(size: 12, weight: .medium))
-            Text("Back")
-          }
-        }
-
+        BackButton { currentView = .landing }
         Spacer()
       }
 
@@ -211,21 +197,7 @@ private struct SettingsLandingView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      // Back button
-      HoveredButton(
-        action: {
-          onDismiss()
-        },
-        onHoverColor: colorScheme.secondarySystemBackground,
-        padding: 6,
-        cornerRadius: 8)
-      {
-        HStack(spacing: 6) {
-          Image(systemName: "chevron.left")
-            .font(.system(size: 12, weight: .medium))
-          Text("Back")
-        }
-      }
+      BackButton { onDismiss() }
 
       // Header
       HStack {

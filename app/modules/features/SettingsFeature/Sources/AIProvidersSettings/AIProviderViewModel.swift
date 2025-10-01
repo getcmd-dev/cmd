@@ -16,11 +16,11 @@ import SwiftUI
 public final class AIProviderViewModel {
   public init(
     provider: LLMProvider,
-    settings: LLMProviderSettings,
+    providerSettings: LLMProviderSettings,
     saveSettings: @escaping (LLMProviderSettings) -> Void)
   {
     self.provider = provider
-    self.settings = settings
+    self.providerSettings = providerSettings
     self.saveSettings = saveSettings
 
     @Dependency(\.localServer) var localServer
@@ -33,7 +33,7 @@ public final class AIProviderViewModel {
   }
 
   public let provider: LLMProvider
-  public var settings: LLMProviderSettings
+  public var providerSettings: LLMProviderSettings
 
   private let saveSettings: (LLMProviderSettings) -> Void
 
@@ -45,8 +45,8 @@ public final class AIProviderViewModel {
 
       // Create the API provider settings
       let providerSettings = Schema.APIProvider.Settings(
-        apiKey: settings.apiKey.isEmpty ? nil : settings.apiKey,
-        baseUrl: settings.baseUrl,
+        apiKey: providerSettings.apiKey.isEmpty ? nil : providerSettings.apiKey,
+        baseUrl: providerSettings.baseUrl,
         localExecutable: nil)
       let apiProvider = Schema.APIProvider(
         name: apiProviderName,

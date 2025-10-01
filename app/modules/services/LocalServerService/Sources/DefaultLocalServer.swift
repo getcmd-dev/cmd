@@ -102,7 +102,7 @@ final class DefaultLocalServer: LocalServer {
   }
 
   func handle(task: URLSessionTask, didCompleteWithError error: Error?) {
-    guard let handler = inflightTasks.removeValue(forKey: task) else {
+    guard let handler = inLock({ $0.inflightTasks.removeValue(forKey: task) }) else {
       return
     }
     let response = task.response
@@ -372,7 +372,7 @@ final class DefaultLocalServer: LocalServer {
       defaultLogger.error("Request timed out after \(idleTimeout)s of idle time")
 
       // Remove the handler and resume with timeout error before cancelling the task
-      if let handler = self?.inflightTasks.removeValue(forKey: task) {
+      if let handler = self?.inLock({ $0.inflightTasks.removeValue(forKey: task) }) {
         handler.continuation.resume(throwing: URLError(.timedOut))
       }
       task.cancel()

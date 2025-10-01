@@ -4,6 +4,7 @@
 import Dependencies
 import DLS
 import LLMFoundation
+import LLMServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import SwiftUI
@@ -22,7 +23,7 @@ public struct ProvidersView: View {
     // Add new providers that are supported but not yet tracked
     for (provider, providerSettings) in self.providerSettings {
       if providers[provider] == nil {
-        providers[provider] = AIProviderViewModel(provider: provider, settings: providerSettings, saveSettings: { _ in
+        providers[provider] = AIProviderViewModel(provider: provider, providerSettings: providerSettings, saveSettings: { _ in
         })
       }
     }
@@ -30,36 +31,51 @@ public struct ProvidersView: View {
   }
 
   public var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      // Search bar
-      HStack {
-        Image(systemName: "magnifyingglass")
-          .foregroundColor(.secondary)
-          .frame(width: 16, height: 16)
-        TextField("Search providers...", text: $searchText)
-          .textFieldStyle(.plain)
-      }
-      .padding(.horizontal, 12)
-      .padding(.vertical, 8)
-      .background(Color(NSColor.controlBackgroundColor))
-      .cornerRadius(8)
-      .padding(.bottom, 20)
-
-      // Provider cards
-      ScrollView {
-        LazyVStack(spacing: 16) {
-          ForEach(filteredProviders, id: \.provider) { providerInfo in
-            ProviderCard(
-              provider: providerInfo.provider,
-              settings: providerInfo.settings,
-              isConnected: providerInfo.isConnected,
-              onSettingsChanged: { newSettings in
-                updateProviderSettings(for: providerInfo.provider, with: newSettings)
-              })
-              .id(providerInfo.provider)
-          }
+    ZStack {
+      VStack(alignment: .leading, spacing: 0) {
+        // Search bar
+        HStack {
+          Image(systemName: "magnifyingglass")
+            .foregroundColor(.secondary)
+            .frame(width: 16, height: 16)
+          TextField("Search providers...", text: $searchText)
+            .textFieldStyle(.plain)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
         .padding(.bottom, 20)
+
+        // Provider cards
+        ScrollView {
+          LazyVStack(spacing: 16) {
+            ForEach(filteredProviders, id: \.provider) { providerInfo in
+              ProviderCard(
+                provider: providerInfo.provider,
+                providerSettings: providerInfo.settings,
+                isConnected: providerInfo.isConnected,
+                onSettingsChanged: { newSettings in
+                  updateProviderSettings(for: providerInfo.provider, with: newSettings)
+                },
+                onSelectModels: {
+                  providerToShowModelSelectionFor = providerInfo
+                })
+                .id(providerInfo.provider)
+            }
+          }
+          .padding(.bottom, 20)
+        }
+      }
+      if let providerInfo = providerToShowModelSelectionFor {
+        ProviderModelSelectionView(
+          provider: providerInfo.provider,
+          providerSettings: providerInfo.settings,
+          onSettingsChanged: { _ in
+          },
+          dismiss: {
+            providerToShowModelSelectionFor = nil
+          })
       }
     }
     .onAppear {
@@ -68,6 +84,8 @@ public struct ProvidersView: View {
   }
 
   @Binding var providerSettings: AllLLMProviderSettings
+
+  @State private var providerToShowModelSelectionFor: ProviderInfo?
 
   @State private var providers = [LLMProvider: AIProviderViewModel]()
 
@@ -133,20 +151,19 @@ private struct ProviderInfo {
 private struct ProviderCard: View {
   init(
     provider: LLMProvider,
-    settings: LLMProviderSettings?,
+    providerSettings: LLMProviderSettings?,
     isConnected: Bool,
-    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void)
+    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void,
+    onSelectModels: (() -> Void)?,
+    isConfigurable: Bool = true)
   {
     self.provider = provider
-    self.settings = settings
+    self.providerSettings = providerSettings
     self.isConnected = isConnected
     self.onSettingsChanged = onSettingsChanged
+    self.onSelectModels = onSelectModels
+    self.isConfigurable = isConfigurable
   }
-
-  let provider: LLMProvider
-  let settings: LLMProviderSettings?
-  let isConnected: Bool
-  let onSettingsChanged: (LLMProviderSettings?) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -175,53 +192,78 @@ private struct ProviderCard: View {
         }
       }
 
-      // API Key section
-      if provider.needsAPIKey {
-        VStack(alignment: .leading, spacing: 8) {
+      if isConfigurable {
+        // API Key section
+        if provider.needsAPIKey {
+          VStack(alignment: .leading, spacing: 8) {
+            HStack {
+              Text("API Key")
+                .font(.subheadline)
+                .fontWeight(.medium)
+              Spacer(minLength: 0)
+              if let apiKeyCreationURL = provider.apiKeyCreationURL {
+                PlainLink("open API keys page", destination: apiKeyCreationURL)
+                  .font(.subheadline)
+                  .foregroundColor(.secondary)
+                  .fontWeight(.medium)
+              }
+            }
+
+            HStack {
+              if showAPIKey {
+                TextField("Enter API key...", text: $apiKey)
+                  .textFieldStyle(.plain)
+              } else {
+                SecureField("Enter API key...", text: $apiKey)
+                  .textFieldStyle(.plain)
+              }
+
+              if !apiKey.isEmpty {
+                Button(action: { showAPIKey.toggle() }) {
+                  Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                    .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+              }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Color(NSColor.textBackgroundColor))
+            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
+
+            Text("API keys are stored securely in the keychain")
+              .font(.footnote)
+              .foregroundColor(.secondary)
+          }
+        }
+
+        // Local executable section (for providers that are local)
+        if let externalAgent = provider.externalAgent {
+          ExternalAgentCard(externalAgent: externalAgent, executable: $executable)
+        }
+      }
+
+      // Models button
+      if isConnected, let onSelectModels, provider.externalAgent == nil {
+        Button(action: {
+          onSelectModels()
+//          showingModelSelection = true
+        }) {
           HStack {
-            Text("API Key")
+            Text("\(enabledModelsCount) models enabled")
               .font(.subheadline)
               .fontWeight(.medium)
-            Spacer(minLength: 0)
-            if let apiKeyCreationURL = provider.apiKeyCreationURL {
-              PlainLink("open API keys page", destination: apiKeyCreationURL)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .fontWeight(.medium)
-            }
+            Spacer()
+            Image(systemName: "chevron.right")
+              .font(.caption)
           }
-
-          HStack {
-            if showAPIKey {
-              TextField("Enter API key...", text: $apiKey)
-                .textFieldStyle(.plain)
-            } else {
-              SecureField("Enter API key...", text: $apiKey)
-                .textFieldStyle(.plain)
-            }
-
-            if !apiKey.isEmpty {
-              Button(action: { showAPIKey.toggle() }) {
-                Image(systemName: showAPIKey ? "eye.slash" : "eye")
-                  .foregroundColor(.secondary)
-              }
-              .buttonStyle(.plain)
-            }
-          }
+          .foregroundColor(.primary)
           .padding(.horizontal, 12)
           .padding(.vertical, 8)
           .background(Color(NSColor.textBackgroundColor))
           .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
-
-          Text("API keys are stored securely in the keychain")
-            .font(.footnote)
-            .foregroundColor(.secondary)
         }
-      }
-
-      // Local executable section (for providers that are local)
-      if let externalAgent = provider.externalAgent {
-        ExternalAgentCard(externalAgent: externalAgent, executable: $executable)
+        .buttonStyle(.plain)
       }
     }
     .padding(16)
@@ -245,10 +287,25 @@ private struct ProviderCard: View {
   @State private var executable = ""
   @State private var showAPIKey = false
 
+  private let provider: LLMProvider
+  private let providerSettings: LLMProviderSettings?
+  private let isConnected: Bool
+  private let onSettingsChanged: (LLMProviderSettings?) -> Void
+  private let onSelectModels: (() -> Void)?
+  private let isConfigurable: Bool
+
+  @Dependency(\.llmService) private var llmService
+
+  private var enabledModelsCount: Int {
+    llmService.modelsAvailable(for: provider)
+      .filter { _ in true }
+      .count
+  }
+
   private func loadCurrentSettings() {
-    apiKey = settings?.apiKey ?? ""
-    baseURL = settings?.baseUrl ?? ""
-    executable = settings?.executable ?? ""
+    apiKey = providerSettings?.apiKey ?? ""
+    baseURL = providerSettings?.baseUrl ?? ""
+    executable = providerSettings?.executable ?? ""
   }
 
   private func saveSettings() {
@@ -268,12 +325,12 @@ private struct ProviderCard: View {
       }
     }
 
-    let settings = LLMProviderSettings(
+    let providerSettings = LLMProviderSettings(
       apiKey: trimmedAPIKey,
       baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL,
       executable: trimmedExecutable.isEmpty ? nil : trimmedExecutable,
       createdOrder: -1)
-    onSettingsChanged(settings)
+    onSettingsChanged(providerSettings)
 
     if let externalAgent = provider.externalAgent, !trimmedExecutable.isEmpty {
       externalAgent.markHasBeenEnabledOnce()
@@ -308,11 +365,103 @@ extension LLMProvider {
     externalAgent == nil
   }
 
-  func isConnected(_ settings: LLMProviderSettings?) -> Bool {
+  func isConnected(_ providerSettings: LLMProviderSettings?) -> Bool {
     if externalAgent != nil {
-      settings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+      providerSettings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     } else {
-      settings?.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+      providerSettings?.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
   }
+}
+
+// MARK: - ProviderModelSelectionView
+
+private struct ProviderModelSelectionView: View {
+  init(
+    provider: LLMProvider,
+    providerSettings: LLMProviderSettings?,
+    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void,
+    dismiss: @escaping () -> Void)
+  {
+    self.provider = provider
+    self.providerSettings = providerSettings
+    self.onSettingsChanged = onSettingsChanged
+    self.dismiss = dismiss
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      VStack(alignment: .leading, spacing: 16) {
+        BackButton { dismiss() }
+
+        ProviderCard(
+          provider: provider,
+          providerSettings: providerSettings,
+          isConnected: true,
+          onSettingsChanged: onSettingsChanged,
+          onSelectModels: nil,
+          isConfigurable: false)
+      }
+      .padding(.bottom, 16)
+
+      if shouldShowSearch {
+        HStack {
+          Image(systemName: "magnifyingglass")
+            .foregroundColor(.secondary)
+            .frame(width: 16, height: 16)
+          TextField("Search models...", text: $searchText)
+            .textFieldStyle(.plain)
+        }
+      }
+
+      ScrollView {
+        LazyVStack(spacing: 16) {
+          ForEach(filteredModels, id: \.modelInfo.id) { model in
+            ModelCard(
+              model: model.modelInfo,
+              provider: .constant(provider),
+              isActive: Binding<Bool>(
+                get: { true }, // TODO
+                set: { activate(model: model, isActive: $0) }),
+              availableProviders: [provider],
+              reasoningSetting: nil) // TODO
+          }
+        }
+      }
+      Spacer(minLength: 0)
+    }
+    .onKeyPress(.escape) {
+      dismiss()
+      return .handled
+    }.background(colorScheme.primaryBackground)
+  }
+
+  @State private var searchText = ""
+  @Environment(\.colorScheme) private var colorScheme
+
+  private let provider: LLMProvider
+  private let providerSettings: LLMProviderSettings?
+  private let onSettingsChanged: (LLMProviderSettings?) -> Void
+  private let dismiss: () -> Void
+
+  @Dependency(\.llmService) private var llmService
+
+  private var availableModels: [LLMModel] {
+    llmService.modelsAvailable(for: provider)
+  }
+
+  private var shouldShowSearch: Bool {
+    availableModels.count > 5
+  }
+
+  private var filteredModels: [LLMModel] {
+    searchText.isEmpty
+      ? availableModels
+      : availableModels.filter {
+        $0.modelInfo.name.localizedCaseInsensitiveContains(searchText)
+      }
+  }
+
+  private func activate(model _: LLMModel, isActive _: Bool) { }
+
 }

@@ -59,22 +59,24 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				inputModalities: model.architecture.input_modalities,
 				outputModalities: model.architecture.output_modalities,
 				pricing: {
-					prompt: parseFloat(model.pricing.prompt),
-					completion: parseFloat(model.pricing.completion),
-					image: model.pricing.image ? parseFloat(model.pricing.image) : undefined,
-					request: model.pricing.request ? parseFloat(model.pricing.request) : undefined,
-					web_search: model.pricing.web_search ? parseFloat(model.pricing.web_search) : undefined,
-					internal_reasoning: model.pricing.internal_reasoning
-						? parseFloat(model.pricing.internal_reasoning)
-						: undefined,
-					input_cache_read: model.pricing.input_cache_read
-						? parseFloat(model.pricing.input_cache_read)
-						: undefined,
-					input_cache_write: model.pricing.input_cache_write
-						? parseFloat(model.pricing.input_cache_write)
-						: undefined,
+					prompt: parseTokenCost(model.pricing.prompt),
+					completion: parseTokenCost(model.pricing.completion),
+					image: parseTokenCost(model.pricing.image),
+					request: parseTokenCost(model.pricing.request),
+					web_search: parseTokenCost(model.pricing.web_search),
+					internal_reasoning: parseTokenCost(model.pricing.internal_reasoning),
+					input_cache_read: parseTokenCost(model.pricing.input_cache_read),
+					input_cache_write: parseTokenCost(model.pricing.input_cache_write),
 				},
 			})),
 		} satisfies ListModelsOutput)
 	})
+}
+
+/** Parses a string representation of token cost, to a cost per million of tokens */
+function parseTokenCost(cost: string): number
+function parseTokenCost(cost: undefined): undefined
+function parseTokenCost(cost: string | undefined): number | undefined
+function parseTokenCost(cost: string | undefined): number | undefined {
+	return cost ? parseFloat(cost) * 1000000 : undefined
 }
