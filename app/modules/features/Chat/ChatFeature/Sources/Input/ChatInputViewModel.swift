@@ -118,13 +118,14 @@ final class ChatInputViewModel {
       updateSelectedModel()
     } else {
       @Dependency(\.llmService) var llmService
-//      let settings = settingsService.liveValues()
       self.activeModels = llmService.activeModels.currentValue
       updateSelectedModel()
-      llmService.activeModels.sink { [weak self] activeModels in
-        guard let self else { return }
-        self.activeModels = activeModels
-        updateSelectedModel()
+      llmService.activeModels.sink { @Sendable [weak self] activeModels in
+        Task { @MainActor in
+          guard let self else { return }
+          self.activeModels = activeModels
+          self.updateSelectedModel()
+        }
       }.store(in: &cancellables)
     }
 

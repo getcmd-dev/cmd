@@ -80,7 +80,7 @@ struct ModelsView: View {
 
   private func providersAvailable(for model: LLMModelInfo) -> [LLMProvider] {
     availableProviders.filter { provider in
-      llmService.listModelAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
+      llmService.modelsAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
     }
   }
 

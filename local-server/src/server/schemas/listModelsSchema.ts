@@ -26,8 +26,14 @@ export type Model = {
 	globalId: string
 	name: string
 	description: string
+	/**
+	 * @format integer
+	 */
 	contextLength: number
-	maxCompletionTokens: number | undefined
+	/**
+	 * @format integer
+	 */
+	maxCompletionTokens: number
 	inputModalities: ModelModality[]
 	outputModalities: ModelModality[]
 	pricing: ModelPricing

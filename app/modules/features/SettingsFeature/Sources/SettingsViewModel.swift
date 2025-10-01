@@ -274,7 +274,7 @@ public final class SettingsViewModel {
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModelInfo] {
     let models = settings.llmProviderSettings.keys.flatMap { provider in
-      llmService.listModelAvailable(for: provider)
+      llmService.modelsAvailable(for: provider)
     }.reduce(into: Set<LLMModelInfo>(), { acc, value in
       acc.insert(value.modelInfo)
     })

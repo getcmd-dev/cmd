@@ -55,7 +55,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				name: model.name,
 				description: model.description,
 				contextLength: model.context_length,
-				maxCompletionTokens: model.max_completion_tokens,
+				maxCompletionTokens: model.max_completion_tokens || 16384,
 				inputModalities: model.architecture.input_modalities,
 				outputModalities: model.architecture.output_modalities,
 				pricing: {

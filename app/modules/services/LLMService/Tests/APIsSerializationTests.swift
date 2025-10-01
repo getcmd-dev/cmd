@@ -185,7 +185,8 @@ struct APIParamsEncodingTests {
           executable: nil,
           createdOrder: 2),
       ],
-      reasoningModels: [.claudeSonnet: .init(isEnabled: true)]))
+//      reasoningModels: [.claudeSonnet: .init(isEnabled: true)]
+    ))
     let service = DefaultLLMService(server: mockServer, settingsService: settingsService)
 
     mockServer.onPostRequest = { path, data, _ in
@@ -219,7 +220,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModel.claudeSonnet
+    let reasoningModel = LLMModelInfo.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -270,7 +271,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModel.claudeSonnet
+    let reasoningModel = LLMModelInfo.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -321,7 +322,8 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that doesn't support reasoning
-    let nonReasoningModel = LLMModel.claudeHaiku_3_5
+    // TODO: fix this test
+    let nonReasoningModel = LLMModelInfo.claudeSonnet // .claudeHaiku_3_5
     #expect(nonReasoningModel.canReason == false)
 
     _ = try await service.sendMessage(

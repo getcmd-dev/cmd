@@ -20,19 +20,28 @@ import ToolFoundation
 
 final class DefaultLLMService: LLMService {
 
-  init(server: LocalServer, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
+  init(
+    server: LocalServer,
+    settingsService: SettingsService,
+    userDefaults: UserDefaultsI,
+    shellService: ShellService,
+    fileManager: FileManagerI)
+  {
     self.server = server
     self.settingsService = settingsService
     self.shellService = shellService
+    llmModelsManager = LLMModelManager(
+      localServer: server,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: shellService)
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
     #endif
   }
 
-  var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
-    mutableActiveModels.readonly()
-  }
+  let llmModelsManager: LLMModelManager
 
   func sendMessage(
     messageHistory: [Schema.Message],
@@ -195,36 +204,6 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? ""
   }
 
-  func listModelAvailable(for _: LLMProvider) -> [LLMModel] {
-    []
-  }
-
-  func getModel(by _: String) -> LLMModel? {
-    nil
-  }
-
-  func getModelInfo(by _: String) -> LLMModelInfo? {
-    nil
-  }
-
-  func provider(for _: LLMModelInfo) -> LLMProvider? {
-    nil
-  }
-
-  func fetchProvider(for _: LLMModelInfo) -> LLMProvider? {
-    nil
-  }
-
-  func fetchModelAvailable(for _: LLMProvider) async throws -> [LLMModel] {
-    []
-  }
-
-  func fetchModel(by _: String) async throws -> LLMModel? {
-    nil
-  }
-
-  private let mutableActiveModels = CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>([])
-
   private let settingsService: SettingsService
 
   private let shellService: ShellService
@@ -290,7 +269,7 @@ final class DefaultLLMService: LLMService {
     guard
       let provider = provider(for: model),
       let providerSettings = settings.llmProviderSettings[provider],
-      let providerModel = listModelAvailable(for: provider).first(where: { $0.modelInfo == model })
+      let providerModel = modelsAvailable(for: provider).first(where: { $0.modelInfo == model })
     else {
       throw AppError("Oups")
     }
@@ -386,7 +365,8 @@ extension BaseProviding where
   Self: LocalServerProviding,
   Self: SettingsServiceProviding,
   Self: UserDefaultsProviding,
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: FileManagerProviding
 {
   public var llmService: LLMService {
     shared {
@@ -394,7 +374,8 @@ extension BaseProviding where
         server: localServer,
         settingsService: settingsService,
         userDefaults: sharedUserDefaults,
-        shellService: shellService)
+        shellService: shellService,
+        fileManager: fileManager)
     }
   }
 }

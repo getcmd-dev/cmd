@@ -57,8 +57,8 @@ extension Schema {
     public let globalId: String
     public let name: String
     public let description: String
-    public let contextLength: Double
-    public let maxCompletionTokens: Double?
+    public let contextLength: Int
+    public let maxCompletionTokens: Int
     public let inputModalities: [ModelModality]
     public let outputModalities: [ModelModality]
     public let pricing: ModelPricing
@@ -80,8 +80,8 @@ extension Schema {
         globalId: String,
         name: String,
         description: String,
-        contextLength: Double,
-        maxCompletionTokens: Double? = nil,
+        contextLength: Int,
+        maxCompletionTokens: Int,
         inputModalities: [ModelModality],
         outputModalities: [ModelModality],
         pricing: ModelPricing
@@ -103,8 +103,8 @@ extension Schema {
       globalId = try container.decode(String.self, forKey: .globalId)
       name = try container.decode(String.self, forKey: .name)
       description = try container.decode(String.self, forKey: .description)
-      contextLength = try container.decode(Double.self, forKey: .contextLength)
-      maxCompletionTokens = try container.decodeIfPresent(Double?.self, forKey: .maxCompletionTokens)
+      contextLength = try container.decode(Int.self, forKey: .contextLength)
+      maxCompletionTokens = try container.decode(Int.self, forKey: .maxCompletionTokens)
       inputModalities = try container.decode([ModelModality].self, forKey: .inputModalities)
       outputModalities = try container.decode([ModelModality].self, forKey: .outputModalities)
       pricing = try container.decode(ModelPricing.self, forKey: .pricing)
@@ -117,7 +117,7 @@ extension Schema {
       try container.encode(name, forKey: .name)
       try container.encode(description, forKey: .description)
       try container.encode(contextLength, forKey: .contextLength)
-      try container.encodeIfPresent(maxCompletionTokens, forKey: .maxCompletionTokens)
+      try container.encode(maxCompletionTokens, forKey: .maxCompletionTokens)
       try container.encode(inputModalities, forKey: .inputModalities)
       try container.encode(outputModalities, forKey: .outputModalities)
       try container.encode(pricing, forKey: .pricing)

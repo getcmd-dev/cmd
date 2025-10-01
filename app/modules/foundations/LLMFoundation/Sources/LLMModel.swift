@@ -5,11 +5,11 @@ import Foundation
 
 // MARK: - LLMReasoning
 
-public struct LLMReasoning: Sendable, Hashable { }
+public struct LLMReasoning: Sendable, Hashable, Codable { }
 
 // MARK: - LLMModel
 
-public struct LLMModel: Hashable, Identifiable, Sendable {
+public struct LLMModel: Hashable, Identifiable, Sendable, Codable {
   public let providerId: String
   public let provider: LLMProvider
   public let modelInfo: LLMModelInfo
@@ -29,8 +29,8 @@ public struct LLMModel: Hashable, Identifiable, Sendable {
 
 /// An LLM model.
 /// Each model might be provided by differetent providers. For instance both Anthropic and OpenRouter can provide Claude models.
-public struct LLMModelInfo: Hashable, Identifiable, Sendable {
-  init(
+public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
+  public init(
     name: String,
     slug: String,
     description: String? = nil,

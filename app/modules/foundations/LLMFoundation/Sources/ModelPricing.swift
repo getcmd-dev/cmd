@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 public struct ModelPricing: Sendable, Codable {
-  init(input: Double, output: Double, cacheWrite: Double, cachedInput: Double, inputImage: Double? = nil) {
+  public init(input: Double, output: Double, cacheWrite: Double, cachedInput: Double, inputImage: Double? = nil) {
     self.input = input
     self.output = output
     self.cacheWrite = cacheWrite
@@ -10,7 +10,7 @@ public struct ModelPricing: Sendable, Codable {
     self.inputImage = inputImage
   }
 
-  init(input: Double, output: Double, cacheWriteMult: Double, cachedInputMult: Double, inputImage: Double? = nil) {
+  public init(input: Double, output: Double, cacheWriteMult: Double, cachedInputMult: Double, inputImage: Double? = nil) {
     self.input = input
     self.output = output
     cacheWrite = input * (1 + cacheWriteMult)

@@ -78,7 +78,7 @@ public final class MockLLMService: LLMService {
     try await onSummarizeConversation?(messageHistory, model) ?? "Mock conversation summary"
   }
 
-  public func listModelAvailable(for provider: LLMProvider) -> [LLMModel] {
+  public func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
     onListModelAvailableSync?(provider) ?? []
   }
 
@@ -92,18 +92,6 @@ public final class MockLLMService: LLMService {
 
   public func provider(for model: LLMModelInfo) -> LLMProvider? {
     onProviderForModel?(model)
-  }
-
-  public func fetchModelAvailable(for provider: LLMProvider) async throws -> [LLMModel] {
-    try await onFetchModelAvailable?(provider) ?? []
-  }
-
-  public func fetchModel(by id: String) async throws -> LLMModel? {
-    try await onFetchModel?(id)
-  }
-
-  public func fetchProvider(for model: LLMModelInfo) -> LLMProvider? {
-    onFetchProvider?(model)
   }
 
 }
