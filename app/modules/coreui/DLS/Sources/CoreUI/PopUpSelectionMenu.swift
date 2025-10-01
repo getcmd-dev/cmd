@@ -16,12 +16,14 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - availableItems: The list of items to display in the menu.
   ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
   ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
+  ///   - maxHeight: The maximum height the popup menu can take. If nil it will fit all items. If set it will use a scroll view when needed.
   ///   - viewBuilder: Returns a view to display an item.
   public init(
     selectedItem: Binding<Item>,
     availableItems: [Item],
     searchKey: ((Item) -> String)? = nil,
     isExpanded: Binding<Bool>? = nil,
+    maxHeight: CGFloat? = nil,
     @ViewBuilder viewBuilder: @escaping (Item) -> Content)
   {
     _selectedItem = .init(
@@ -35,6 +37,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     self.searchKey = searchKey
     emptySelectionText = "Select an item"
     self.viewBuilder = viewBuilder
+    self.maxHeight = maxHeight
 
     _isExpandedBinding = .init(
       get: { isExpanded?.wrappedValue },
@@ -52,6 +55,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
   ///   - emptySelectionText: The text to display when no item is selected.
   ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
+  ///   - maxHeight: The maximum height the popup menu can take. If nil it will fit all items. If set it will use a scroll view when needed.
   ///   - viewBuilder: Returns a view to display an item.
   public init(
     selectedItem: Binding<Item?>,
@@ -59,6 +63,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     searchKey: ((Item) -> String)? = nil,
     emptySelectionText: String,
     isExpanded: Binding<Bool>? = nil,
+    maxHeight: CGFloat? = nil,
     @ViewBuilder viewBuilder: @escaping (Item) -> Content)
   {
     _selectedItem = selectedItem
@@ -66,6 +71,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     self.searchKey = searchKey
     self.emptySelectionText = emptySelectionText
     self.viewBuilder = viewBuilder
+    self.maxHeight = maxHeight
 
     _isExpandedBinding = .init(
       get: { isExpanded?.wrappedValue },
@@ -103,33 +109,24 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
             Divider()
           }
 
-          // Items list
-          VStack(spacing: 0) {
-            ForEach(filteredItems) { item in
-              Button {
-                selectedItem = item
-                isExpanded = false
-                searchText = ""
-              } label: {
-                HStack {
-                  viewBuilder(item)
-                  Spacer()
-                  if item == selectedItem {
-                    Icon(systemName: "checkmark")
-                      .frame(width: 8, height: 8)
-                  }
+          Group {
+            if let maxHeight {
+              if maxHeight < contentHeight ?? 0 {
+                ScrollView {
+                  itemsList
+                    .readingSize { size in
+                      contentHeight = size.height
+                    }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(
-                  colorScheme.secondarySystemBackground
-                    .opacity(item == selectedItem ? 1 : 0.001))
+                .frame(height: maxHeight)
+              } else {
+                itemsList
+                  .readingSize { size in
+                    contentHeight = size.height
+                  }
               }
-              .buttonStyle(.plain)
-
-              if item != filteredItems.last {
-                Divider()
-              }
+            } else {
+              itemsList
             }
           }
         }
@@ -149,6 +146,8 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     }
   }
 
+  @State private var contentHeight: CGFloat?
+
   @Binding private var selectedItem: Item?
 
   @Environment(\.colorScheme) private var colorScheme
@@ -161,6 +160,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   private let searchKey: ((Item) -> String)?
   private let emptySelectionText: String
   private let viewBuilder: (Item) -> Content
+  private let maxHeight: CGFloat?
 
   private var isExpanded: Bool {
     get {
@@ -177,6 +177,37 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
       return availableItems
     }
     return availableItems.filter { searchKey?($0).localizedCaseInsensitiveContains(searchText) == true }
+  }
+
+  private var itemsList: some View {
+    VStack(spacing: 0) {
+      ForEach(filteredItems) { item in
+        Button {
+          selectedItem = item
+          isExpanded = false
+          searchText = ""
+        } label: {
+          HStack {
+            viewBuilder(item)
+            Spacer()
+            if item == selectedItem {
+              Icon(systemName: "checkmark")
+                .frame(width: 8, height: 8)
+            }
+          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .background(
+            colorScheme.secondarySystemBackground
+              .opacity(item == selectedItem ? 1 : 0.001))
+        }
+        .buttonStyle(.plain)
+
+        if item != filteredItems.last {
+          Divider()
+        }
+      }
+    }
   }
 
 }
