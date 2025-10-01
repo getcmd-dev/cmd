@@ -6,7 +6,6 @@ import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
-import LLMServiceInterface
 import LoggingServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
@@ -30,8 +29,6 @@ public final class SettingsViewModel {
     self.toolsPlugin = toolsPlugin
     @Dependency(\.xcodeController) var xcodeController
     self.xcodeController = xcodeController
-    @Dependency(\.llmService) var llmService
-    self.llmService = llmService
 
     let settings = settingsService.values()
     self.settings = settings
@@ -57,6 +54,8 @@ public final class SettingsViewModel {
       .store(in: &cancellables)
   }
 
+  public let llmSettings = LLMSettingsViewModel()
+
   public let toolConfigurationViewModel: ToolConfigurationViewModel
 
   // MARK: - Initialization
@@ -69,8 +68,6 @@ public final class SettingsViewModel {
   }
 
   private(set) var settings: SettingsServiceInterface.Settings
-
-  let llmService: LLMService
 
   var allowAnonymousAnalytics: Bool {
     get {
@@ -162,65 +159,6 @@ public final class SettingsViewModel {
     }
   }
 
-  /// For each available model, the associated provider.
-  var providerForModels: [LLMModelInfo: LLMProvider] {
-    get {
-      var providerForModels = [LLMModelInfo: LLMProvider]()
-      for model in availableModels {
-        providerForModels[model] = llmService.provider(for: model) ?? .anthropic
-      }
-      for (key, value) in settings.preferedProviders(llmService: llmService) {
-        providerForModels[key] = value
-      }
-
-      return providerForModels
-    }
-    set {
-      let oldValue = providerForModels
-      for (model, provider) in newValue {
-        if oldValue[model] != provider {
-          settings.preferedProviders[model.id] = provider
-        }
-      }
-      settingsService.update(setting: \.preferedProviders, to: settings.preferedProviders)
-    }
-  }
-
-  /// Reasoning settings for the model that suport reasoning.
-  var reasoningModels: [LLMModelInfo: LLMReasoningSetting] {
-    get {
-      [:] // TODO
-//      var reasoningModels = [LLMModelInfo: LLMReasoningSetting]()
-//      for model in availableModels.filter(\.canReason) {
-//        reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
-//      }
-//      for (key, value) in settings.reasoningModels {
-//        reasoningModels[key] = value
-//      }
-//      return reasoningModels
-    }
-    set {
-      // TODO
-//      let oldValue = settings.reasoningModels
-//      for (model, provider) in newValue {
-//        if oldValue[model] != provider {
-//          settings.reasoningModels[model] = provider
-//        }
-//      }
-//      settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
-    }
-  }
-
-//  var inactiveModels: [LLMModelInfo] {
-//    get {
-//      settings.inactiveModels
-//    }
-//    set {
-//      settings.inactiveModels = newValue
-//      settingsService.update(setting: \.inactiveModels, to: newValue)
-//    }
-//  }
-
   var customInstructions: SettingsServiceInterface.Settings.CustomInstructions {
     get {
       settings.customInstructions
@@ -271,21 +209,6 @@ public final class SettingsViewModel {
     }
   }
 
-  /// All the models that are available, based on the available providers.
-  var availableModels: [LLMModelInfo] {
-    let models = settings.llmProviderSettings.keys.flatMap { provider in
-      llmService.modelsAvailable(for: provider)
-    }.reduce(into: Set<LLMModelInfo>(), { acc, value in
-      acc.insert(value.modelInfo)
-    })
-    return Array(models)
-  }
-
-  /// The LLM providers that have been configured.
-  var availableProviders: [LLMProvider] {
-    Array(settings.llmProviderSettings.keys)
-  }
-
   private var cancellables = Set<AnyCancellable>()
 
   private let settingsService: SettingsService
@@ -293,20 +216,4 @@ public final class SettingsViewModel {
   private let releaseUserDefaults: UserDefaultsI?
   private let toolsPlugin: ToolsPlugin
   private let xcodeController: XcodeController
-}
-
-public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
-extension AllLLMProviderSettings {
-  var nextCreatedOrder: Int {
-    (values.map(\.createdOrder).max() ?? 0) + 1
-  }
-}
-
-extension SettingsServiceInterface.Settings {
-  func preferedProviders(llmService: LLMService) -> [LLMModelInfo: LLMProvider] {
-    preferedProviders.reduce(into: [LLMModelInfo: LLMProvider]()) { acc, el in
-      guard let model = llmService.getModelInfo(by: el.key) else { return }
-      acc[model] = el.value
-    }
-  }
 }

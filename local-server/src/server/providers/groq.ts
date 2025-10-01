@@ -77,7 +77,7 @@ export class GroqModelProvider implements ModelProvider {
 			return {
 				...match,
 				providerId: model.id,
-				globalId: match.canonical_slug,
+				globalId: match.id,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
 			}
 		}

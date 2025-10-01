@@ -25,10 +25,9 @@ final class SetupWindow: NSWindow {
       onDone: {
         onComplete()
       },
-      createLLMProvidersView: { _ in
-        AnyView(ProvidersView(providerSettings: .init(
-          get: { self.settingsViewModel.providerSettings },
-          set: { self.settingsViewModel.providerSettings = $0 })))
+      createLLMProvidersView: { [weak self] onComplete in
+        guard let self else { return AnyView(EmptyView()) }
+        return AnyView(ProvidersView(viewModel: settingsViewModel, onComplete: onComplete))
       }))
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -53,5 +52,5 @@ final class SetupWindow: NSWindow {
     center()
   }
 
-  private let settingsViewModel = SettingsViewModel()
+  private let settingsViewModel = LLMSettingsViewModel()
 }

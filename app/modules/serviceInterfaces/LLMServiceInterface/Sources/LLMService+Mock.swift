@@ -6,6 +6,7 @@ import ConcurrencyFoundation
 import Foundation
 import LLMFoundation
 import LocalServerServiceInterface
+import SettingsServiceInterface
 import ThreadSafe
 import ToolFoundation
 
@@ -29,23 +30,17 @@ public final class MockLLMService: LLMService {
 
   public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModelInfo) async throws -> String)?
 
-  public var onListModelAvailable: (@Sendable (LLMProvider) async throws -> [LLMModel])?
+  public var onListModelsAvailable: (@Sendable (LLMProvider) -> [LLMModel])?
+
+  public var onRefetchModelsAvailable: (@Sendable (LLMProvider, Settings.LLMProviderSettings) async throws -> [LLMModel])?
 
   public var onGetModel: (@Sendable (String) async throws -> LLMModel?)?
 
   public var onGetModelInfo: (@Sendable (String) -> LLMModelInfo?)?
 
-  public var onListModelAvailableSync: (@Sendable (LLMProvider) -> [LLMModel])?
-
   public var onGetModelSync: (@Sendable (String) -> LLMModel?)?
 
   public var onProviderForModel: (@Sendable (LLMModelInfo) -> LLMProvider?)?
-
-  public var onFetchModelAvailable: (@Sendable (LLMProvider) async throws -> [LLMModel])?
-
-  public var onFetchModel: (@Sendable (String) async throws -> LLMModel?)?
-
-  public var onFetchProvider: (@Sendable (LLMModelInfo) -> LLMProvider?)?
 
   public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
     mutableActiveModels.readonly()
@@ -79,7 +74,15 @@ public final class MockLLMService: LLMService {
   }
 
   public func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
-    onListModelAvailableSync?(provider) ?? []
+    onListModelsAvailable?(provider) ?? []
+  }
+
+  public func refetchModelsAvailable(
+    for provider: LLMProvider,
+    newSettings: Settings.LLMProviderSettings)
+    async throws -> [LLMModel]
+  {
+    try await onRefetchModelsAvailable?(provider, newSettings) ?? modelsAvailable(for: provider)
   }
 
   public func getModel(by providerId: String) -> LLMModel? {

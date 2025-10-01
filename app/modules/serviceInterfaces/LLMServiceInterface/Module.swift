@@ -7,6 +7,7 @@ Target.module(
     "JSONFoundation",
     "LLMFoundation",
     "LocalServerServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],

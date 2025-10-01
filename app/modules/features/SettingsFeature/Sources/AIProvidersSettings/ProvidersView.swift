@@ -12,22 +12,9 @@ import SwiftUI
 // MARK: - ProvidersView
 
 public struct ProvidersView: View {
-  // TODO: fix issue with @State property getting initialized twice.
-  public init(providerSettings: Binding<AllLLMProviderSettings>) {
-    _providerSettings = providerSettings
-
-    // Remove providers that are no longer supported
-    var providers = providers.filter { key, _ in
-      self.providerSettings.keys.contains(key)
-    }
-    // Add new providers that are supported but not yet tracked
-    for (provider, providerSettings) in self.providerSettings {
-      if providers[provider] == nil {
-        providers[provider] = AIProviderViewModel(provider: provider, providerSettings: providerSettings, saveSettings: { _ in
-        })
-      }
-    }
-    self.providers = providers
+  public init(viewModel: LLMSettingsViewModel, onComplete: (@MainActor () -> Void)?) {
+    self.viewModel = viewModel
+    self.onComplete = onComplete
   }
 
   public var body: some View {
@@ -52,9 +39,11 @@ public struct ProvidersView: View {
           LazyVStack(spacing: 16) {
             ForEach(filteredProviders, id: \.provider) { providerInfo in
               ProviderCard(
+                viewModel: viewModel,
                 provider: providerInfo.provider,
                 providerSettings: providerInfo.settings,
                 isConnected: providerInfo.isConnected,
+                enabledModels: viewModel.enabledModels,
                 onSettingsChanged: { newSettings in
                   updateProviderSettings(for: providerInfo.provider, with: newSettings)
                 },
@@ -69,10 +58,9 @@ public struct ProvidersView: View {
       }
       if let providerInfo = providerToShowModelSelectionFor {
         ProviderModelSelectionView(
+          viewModel: viewModel,
           provider: providerInfo.provider,
           providerSettings: providerInfo.settings,
-          onSettingsChanged: { _ in
-          },
           dismiss: {
             providerToShowModelSelectionFor = nil
           })
@@ -83,19 +71,23 @@ public struct ProvidersView: View {
     }
   }
 
-  @Binding var providerSettings: AllLLMProviderSettings
+//  @Binding var providerSettings: AllLLMProviderSettings
 
   @State private var providerToShowModelSelectionFor: ProviderInfo?
 
-  @State private var providers = [LLMProvider: AIProviderViewModel]()
+//  @State private var providers = [LLMProvider: AIProviderViewModel]()
 
   @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 
   @State private var searchText = ""
 
+  @Bindable private var viewModel: LLMSettingsViewModel
+
+  private let onComplete: (@MainActor () -> Void)? // TODO
+
   private var filteredProviders: [ProviderInfo] {
     let allProviders = orderedProviders.map { provider in
-      let existingSettings = providerSettings[provider]
+      let existingSettings = viewModel.providerSettings[provider]
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
@@ -109,9 +101,13 @@ public struct ProvidersView: View {
       }
   }
 
+  private var providerSettings: [LLMProvider: LLMProviderSettings] {
+    viewModel.providerSettings
+  }
+
   private func setInitialOrder() {
     orderedProviders = LLMProvider.allCases.map { provider in
-      (provider, provider.isConnected(providerSettings[provider]))
+      (provider, provider.isConnected(viewModel.providerSettings[provider]))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
@@ -126,14 +122,15 @@ public struct ProvidersView: View {
     // Add new settings if provided
     if let newSettings {
       let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
-      providerSettings[provider] = .init(
+      let providerSettings = LLMProviderSettings(
         apiKey: newSettings.apiKey,
         baseUrl: newSettings.baseUrl,
         executable: newSettings.executable,
         createdOrder: createdOrder)
+      viewModel.save(providerSettings: providerSettings, for: provider)
     } else {
       // Remove existing settings for this provider
-      providerSettings.removeValue(forKey: provider)
+      viewModel.remove(provider: provider)
     }
   }
 }
@@ -150,19 +147,25 @@ private struct ProviderInfo {
 
 private struct ProviderCard: View {
   init(
+    viewModel: LLMSettingsViewModel,
     provider: LLMProvider,
     providerSettings: LLMProviderSettings?,
     isConnected: Bool,
-    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void,
-    onSelectModels: (() -> Void)?,
-    isConfigurable: Bool = true)
+    enabledModels: [ModelInfoId],
+    onSettingsChanged: ((LLMProviderSettings?) -> Void)?,
+    onSelectModels: (() -> Void)?)
   {
+    self.viewModel = viewModel
     self.provider = provider
     self.providerSettings = providerSettings
     self.isConnected = isConnected
+    self.enabledModels = enabledModels
     self.onSettingsChanged = onSettingsChanged
     self.onSelectModels = onSelectModels
-    self.isConfigurable = isConfigurable
+  }
+
+  var isConfigurable: Bool {
+    onSettingsChanged != nil
   }
 
   var body: some View {
@@ -280,6 +283,7 @@ private struct ProviderCard: View {
     }
   }
 
+  @Bindable private var viewModel: LLMSettingsViewModel
   @Environment(\.colorScheme) private var colorScheme
 
   @State private var apiKey = ""
@@ -287,18 +291,17 @@ private struct ProviderCard: View {
   @State private var executable = ""
   @State private var showAPIKey = false
 
+  private let enabledModels: [ModelInfoId]
+
   private let provider: LLMProvider
   private let providerSettings: LLMProviderSettings?
   private let isConnected: Bool
-  private let onSettingsChanged: (LLMProviderSettings?) -> Void
+  private let onSettingsChanged: ((LLMProviderSettings?) -> Void)?
   private let onSelectModels: (() -> Void)?
-  private let isConfigurable: Bool
-
-  @Dependency(\.llmService) private var llmService
 
   private var enabledModelsCount: Int {
-    llmService.modelsAvailable(for: provider)
-      .filter { _ in true }
+    viewModel.modelsAvailable(for: provider)
+      .filter { model in enabledModels.contains(model.modelInfo.id) }
       .count
   }
 
@@ -309,6 +312,7 @@ private struct ProviderCard: View {
   }
 
   private func saveSettings() {
+    guard let onSettingsChanged else { return }
     let trimmedAPIKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedExecutable = executable.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -378,14 +382,14 @@ extension LLMProvider {
 
 private struct ProviderModelSelectionView: View {
   init(
+    viewModel: LLMSettingsViewModel,
     provider: LLMProvider,
     providerSettings: LLMProviderSettings?,
-    onSettingsChanged: @escaping (LLMProviderSettings?) -> Void,
     dismiss: @escaping () -> Void)
   {
+    self.viewModel = viewModel
     self.provider = provider
     self.providerSettings = providerSettings
-    self.onSettingsChanged = onSettingsChanged
     self.dismiss = dismiss
   }
 
@@ -395,39 +399,17 @@ private struct ProviderModelSelectionView: View {
         BackButton { dismiss() }
 
         ProviderCard(
+          viewModel: viewModel,
           provider: provider,
           providerSettings: providerSettings,
           isConnected: true,
-          onSettingsChanged: onSettingsChanged,
-          onSelectModels: nil,
-          isConfigurable: false)
+          enabledModels: viewModel.enabledModels,
+          onSettingsChanged: nil,
+          onSelectModels: nil)
       }
       .padding(.bottom, 16)
 
-      if shouldShowSearch {
-        HStack {
-          Image(systemName: "magnifyingglass")
-            .foregroundColor(.secondary)
-            .frame(width: 16, height: 16)
-          TextField("Search models...", text: $searchText)
-            .textFieldStyle(.plain)
-        }
-      }
-
-      ScrollView {
-        LazyVStack(spacing: 16) {
-          ForEach(filteredModels, id: \.modelInfo.id) { model in
-            ModelCard(
-              model: model.modelInfo,
-              provider: .constant(provider),
-              isActive: Binding<Bool>(
-                get: { true }, // TODO
-                set: { activate(model: model, isActive: $0) }),
-              availableProviders: [provider],
-              reasoningSetting: nil) // TODO
-          }
-        }
-      }
+      ModelsView(viewModel: viewModel, availableModels: viewModel.modelsAvailable(for: provider).map(\.modelInfo))
       Spacer(minLength: 0)
     }
     .onKeyPress(.escape) {
@@ -436,32 +418,12 @@ private struct ProviderModelSelectionView: View {
     }.background(colorScheme.primaryBackground)
   }
 
+  @Bindable private var viewModel: LLMSettingsViewModel
+
   @State private var searchText = ""
   @Environment(\.colorScheme) private var colorScheme
 
   private let provider: LLMProvider
   private let providerSettings: LLMProviderSettings?
-  private let onSettingsChanged: (LLMProviderSettings?) -> Void
   private let dismiss: () -> Void
-
-  @Dependency(\.llmService) private var llmService
-
-  private var availableModels: [LLMModel] {
-    llmService.modelsAvailable(for: provider)
-  }
-
-  private var shouldShowSearch: Bool {
-    availableModels.count > 5
-  }
-
-  private var filteredModels: [LLMModel] {
-    searchText.isEmpty
-      ? availableModels
-      : availableModels.filter {
-        $0.modelInfo.name.localizedCaseInsensitiveContains(searchText)
-      }
-  }
-
-  private func activate(model _: LLMModel, isActive _: Bool) { }
-
 }

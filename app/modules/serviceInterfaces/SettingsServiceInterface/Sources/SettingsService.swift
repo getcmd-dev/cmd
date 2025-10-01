@@ -43,6 +43,8 @@ public struct LLMReasoningSetting: Sendable, Equatable {
   }
 }
 
+public typealias ModelInfoId = String
+
 // MARK: - Settings
 
 public struct Settings: Sendable, Equatable {
@@ -52,8 +54,9 @@ public struct Settings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [String: LLMProvider] = [:],
+    preferedProviders: [ModelInfoId: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
+    enabledModels: [ModelInfoId] = [],
 //    inactiveModels: [LLMModel] = [],
 //    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
@@ -69,6 +72,7 @@ public struct Settings: Sendable, Equatable {
     self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
+    self.enabledModels = enabledModels
 //    self.inactiveModels = inactiveModels
 //    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
@@ -126,10 +130,11 @@ public struct Settings: Sendable, Equatable {
   public var automaticallyUpdateXcodeSettings: Bool
   public var fileEditMode: FileEditMode
   // LLM settings
-  public var preferedProviders: [String: LLMProvider]
+  public var preferedProviders: [ModelInfoId: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
 //  public var reasoningModels: [LLMModel: LLMReasoningSetting] // TODO: deal with this
 
+  public var enabledModels: [ModelInfoId]
 //  public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]

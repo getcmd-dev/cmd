@@ -112,7 +112,7 @@ export class OpenRouterModelProvider implements ModelProvider {
 				(model: OpenRoutedModel): ModelRichInfo => ({
 					...model,
 					providerId: model.id,
-					globalId: model.canonical_slug,
+					globalId: model.id,
 					max_completion_tokens: model.top_provider.max_completion_tokens,
 				}),
 			) || []

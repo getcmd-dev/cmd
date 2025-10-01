@@ -523,7 +523,12 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "AppExtension",
   dependencies: [
+    "AccessibilityFoundation",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
+    "ExtensionEventsInterface",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "LoggingService",
     "LoggingServiceInterface",
@@ -763,6 +768,7 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "LLMFoundation",
     "LocalServerServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
   ],

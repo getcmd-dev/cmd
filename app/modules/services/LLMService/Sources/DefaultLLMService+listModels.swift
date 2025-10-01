@@ -51,6 +51,10 @@ final class LLMModelManager: Sendable {
     llmModelByProvider[provider] ?? []
   }
 
+  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel] {
+    try await fetchModelAvailable(for: provider, settings: newSettings)
+  }
+
   func getModel(by modelId: String) -> LLMModel? {
     modelsById[modelId]
   }
@@ -144,6 +148,9 @@ final class LLMModelManager: Sendable {
           output: $0.pricing.completion,
           cacheWrite: $0.pricing.inputCacheWrite ?? 0,
           cachedInput: $0.pricing.inputCacheRead ?? 0))) }
+      .enumerated() // TODO: remove once model selection is handled
+      .filter { idx, _ in idx < 5 }
+      .map(\.element)
 
     let llmModelByProvider = inLock { state in
       // First remove old models to avoid keeping stale data.
@@ -158,6 +165,13 @@ final class LLMModelManager: Sendable {
     } catch {
       defaultLogger.error("Failed to persist models", error)
     }
+
+    let modelInfos: [LLMModelInfo] = inLock { state in
+      Self.remove(provider: provider, from: &state)
+      Self.add(models: models, for: provider, to: &state)
+      return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
+    } ?? []
+    mutableActiveModels.send(modelInfos)
 
     return models
   }
@@ -201,12 +215,6 @@ final class LLMModelManager: Sendable {
           group.addTask { @Sendable in
             do {
               let models = try await self.fetchModelAvailable(for: provider, settings: providerSettings)
-              let modelInfos: [LLMModelInfo] = self.inLock { state in
-                Self.remove(provider: provider, from: &state)
-                Self.add(models: models, for: provider, to: &state)
-                return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
-              } ?? []
-              self.mutableActiveModels.send(modelInfos)
             } catch {
               defaultLogger.error("Failed to fetch models for provider \(provider.id)", error)
             }
@@ -237,6 +245,10 @@ extension DefaultLLMService {
 
   func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
     llmModelsManager.listModelAvailable(for: provider)
+  }
+
+  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel] {
+    try await llmModelsManager.refetchModelsAvailable(for: provider, newSettings: newSettings)
   }
 
   func getModel(by modelId: String) -> LLMModel? {

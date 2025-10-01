@@ -6,6 +6,7 @@ import ConcurrencyFoundation
 import Foundation
 import LLMFoundation
 import LocalServerServiceInterface
+import SettingsServiceInterface
 import ToolFoundation
 
 /// Note: this stream of update replays all past updates when enumerated (including for the wrapped array)
@@ -52,6 +53,8 @@ public protocol LLMService: Sendable {
   func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String
 
   func modelsAvailable(for provider: LLMProvider) -> [LLMModel]
+
+  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel]
 
   func getModel(by providerId: String) -> LLMModel?
 

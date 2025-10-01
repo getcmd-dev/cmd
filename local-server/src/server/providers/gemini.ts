@@ -89,7 +89,7 @@ export class GeminiModelProvider implements ModelProvider {
 			return {
 				...match,
 				providerId: model.name,
-				globalId: match.canonical_slug,
+				globalId: match.id,
 				name: model.displayName || match.name,
 				description: model.description || match.description,
 				context_length: model.inputTokenLimit || match.context_length,

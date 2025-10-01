@@ -13,17 +13,22 @@ import SwiftUI
 
 struct ModelsView: View {
   init(
-    availableModels: [LLMModelInfo],
-    availableProviders: [LLMProvider],
-    providerForModels: Binding<[LLMModelInfo: LLMProvider]>,
-//    inactiveModels: Binding<[LLMModelInfo]>,
-    reasoningModels: Binding<[LLMModelInfo: LLMReasoningSetting]>)
+    viewModel: LLMSettingsViewModel,
+    availableModels: [LLMModelInfo]? = nil)
+//    availableModels: [LLMModelInfo],
+//    availableProviders: [LLMProvider],
+//    providerForModels: Binding<[LLMModelInfo: LLMProvider]>,
+  ////    inactiveModels: Binding<[LLMModelInfo]>,
+//    reasoningModels: Binding<[LLMModelInfo: LLMReasoningSetting]>)
   {
-    self.availableModels = availableModels
-    self.availableProviders = availableProviders
-    _providerForModels = providerForModels
-//    _inactiveModels = inactiveModels
-    _reasoningModels = reasoningModels
+    self.viewModel = viewModel
+    self.availableModels = availableModels ?? viewModel.availableModels
+    _initialModelsOrder = .init(initialValue: self.availableModels.sorted(by: viewModel.enabledModels))
+//    self.availableModels = availableModels
+//    self.availableProviders = availableProviders
+//    _providerForModels = providerForModels
+    ////    _inactiveModels = inactiveModels
+//    _reasoningModels = reasoningModels
   }
 
   var body: some View {
@@ -48,10 +53,10 @@ struct ModelsView: View {
           ForEach(filteredModels, id: \.id) { model in
             ModelCard(
               model: model,
-              provider: provider(for: model),
-              isActive: isActive(for: model),
-              availableProviders: providersAvailable(for: model),
-              reasoningSetting: reasoningSetting(for: model))
+              provider: viewModel.provider(for: model),
+              isActive: viewModel.isActive(for: model),
+              availableProviders: viewModel.providersAvailable(for: model),
+              reasoningSetting: viewModel.reasoningSetting(for: model))
           }
         }
         .padding(.bottom, 20)
@@ -60,56 +65,26 @@ struct ModelsView: View {
     }
   }
 
-  @Binding private var providerForModels: [LLMModelInfo: LLMProvider]
-//  @Binding private var inactiveModels: [LLMModelInfo]
-  @Binding private var reasoningModels: [LLMModelInfo: LLMReasoningSetting]
+  @State private var initialModelsOrder: [ModelInfoId: Int]
+  @Bindable private var viewModel: LLMSettingsViewModel
+  ///  @Binding private var providerForModels: [LLMModelInfo: LLMProvider]
+  ///  @Binding private var inactiveModels: [LLMModelInfo]
+  ///  @Binding private var reasoningModels: [LLMModelInfo: LLMReasoningSetting]
   @State private var searchText = ""
+
+  private let availableModels: [LLMModelInfo]
 
   @Dependency(\.llmService) private var llmService
 
-  private let availableModels: [LLMModelInfo]
-  private let availableProviders: [LLMProvider]
+//  private let availableModels: [LLMModelInfo]
+//  private let availableProviders: [LLMProvider]
 
   private var filteredModels: [LLMModelInfo] {
-    searchText.isEmpty
-      ? availableModels
-      : availableModels.filter {
-        $0.name.localizedCaseInsensitiveContains(searchText)
+    availableModels
+      .filter {
+        searchText.isEmpty ? true : $0.name.localizedCaseInsensitiveContains(searchText)
       }
-  }
-
-  private func providersAvailable(for model: LLMModelInfo) -> [LLMProvider] {
-    availableProviders.filter { provider in
-      llmService.modelsAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
-    }
-  }
-
-  private func provider(for model: LLMModelInfo) -> Binding<LLMProvider> {
-    .init(get: {
-      providerForModels[model] ?? LLMProvider.openAI
-    }, set: { provider in
-      providerForModels[model] = provider
-    })
-  }
-
-  private func isActive(for _: LLMModelInfo) -> Binding<Bool> {
-    .init(get: {
-      true // TODO
-//          !inactiveModels.contains(model)
-    }, set: { _ in
-//      if isActive {
-//        inactiveModels.removeAll { $0 == model }
-//      } else {
-//        if !inactiveModels.contains(model) {
-//          inactiveModels.append(model)
-//        }
-//      }
-    })
-  }
-
-  private func reasoningSetting(for model: LLMModelInfo) -> Binding<LLMReasoningSetting>? {
-    guard let reasoning = reasoningModels[model] else { return nil }
-    return .init(get: { reasoning }, set: { reasoningModels[model] = $0 })
+      .sorted(respecting: initialModelsOrder)
   }
 
 }
@@ -261,4 +236,28 @@ struct ModelCard: View {
     return "$\(String(format: "%.2f", price))"
   }
 
+}
+
+extension [LLMModelInfo] {
+  func sorted(by enabled: [ModelInfoId]) -> [ModelInfoId: Int] {
+    sorted(by: { a, b in
+      switch (enabled.contains(a.id), enabled.contains(b.id)) {
+      case (true, false):
+        true
+      case (false, true):
+        false
+      default:
+        true
+      }
+    })
+    .reduce(into: [:], { acc, model in
+      acc[model.id] = acc.count
+    })
+  }
+
+  func sorted(respecting initialOrder: [ModelInfoId: Int]) -> [LLMModelInfo] {
+    sorted(by: { a, b in
+      (initialOrder[a.id] ?? Int.max) < (initialOrder[b.id] ?? Int.max)
+    })
+  }
 }

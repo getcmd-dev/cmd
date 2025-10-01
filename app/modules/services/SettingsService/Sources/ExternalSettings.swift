@@ -22,6 +22,7 @@ struct ExternalSettings: Sendable, Equatable {
     fileEditMode: FileEditMode = .directIO,
     preferedProviders: [String: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
+    enabledModels: [ModelInfoId] = [],
 //    inactiveModels: [LLMModel] = [],
     reasoningModels _: [String: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
@@ -36,6 +37,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
+    self.enabledModels = enabledModels
 //    self.inactiveModels = inactiveModels
 //    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
@@ -57,6 +59,7 @@ struct ExternalSettings: Sendable, Equatable {
   var llmProviderSettings: [LLMProvider: LLMProviderSettings]
 //  let reasoningModels: [String: LLMReasoningSetting]
 
+  let enabledModels: [ModelInfoId]
 //  let inactiveModels: [LLMModel]
   let customInstructions: CustomInstructions
   let toolPreferences: [ToolPreference]
@@ -105,6 +108,8 @@ extension ExternalSettings: Codable {
           guard let provider = LLMProvider(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? Self.defaultSettings.llmProviderSettings,
+      enabledModels: container.resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? Self.defaultSettings
+        .enabledModels,
 //      inactiveModels: container
 //        .resilientlyDecodeIfPresent([String].self, forKey: "inactiveModels")?
 //        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? Self.defaultSettings.inactiveModels,
@@ -149,9 +154,12 @@ extension ExternalSettings: Codable {
         acc[el.key.rawValue] = el.value
       }, forKey: "llmProviderSettings")
     }
-//    if encodeAllValues || inactiveModels != Self.defaultSettings.inactiveModels {
-//      try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
-//    }
+    if encodeAllValues || enabledModels != Self.defaultSettings.enabledModels {
+      try container.encode(enabledModels, forKey: "enabledModels")
+    }
+    //    if encodeAllValues || inactiveModels != Self.defaultSettings.inactiveModels {
+    //      try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
+    //    }
 //    if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
 //      try container.encode(reasoningModels, forKey: "reasoningModels")
 //    }
@@ -247,6 +255,7 @@ extension Settings {
       fileEditMode: externalSettings.fileEditMode,
       preferedProviders: externalSettings.preferedProviders,
       llmProviderSettings: externalSettings.llmProviderSettings,
+      enabledModels: externalSettings.enabledModels,
 //      inactiveModels: externalSettings.inactiveModels,
 //      reasoningModels: externalSettings.reasoningModels,
       customInstructions: externalSettings.customInstructions,
@@ -264,6 +273,7 @@ extension Settings {
       fileEditMode: fileEditMode,
       preferedProviders: preferedProviders,
       llmProviderSettings: llmProviderSettings,
+      enabledModels: enabledModels,
 //      inactiveModels: inactiveModels,
 //      reasoningModels: reasoningModels,
       customInstructions: customInstructions,

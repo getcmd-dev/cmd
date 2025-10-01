@@ -1,7 +1,12 @@
 Target.module(
   name: "AppExtension",
   dependencies: [
+    "AccessibilityFoundation",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
+    "ExtensionEventsInterface",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "LoggingService",
     "LoggingServiceInterface",

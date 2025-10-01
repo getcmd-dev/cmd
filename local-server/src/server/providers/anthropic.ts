@@ -81,7 +81,7 @@ export class AnthropicModelProvider implements ModelProvider {
 			return {
 				...match,
 				providerId: model.id,
-				globalId: match.canonical_slug,
+				globalId: match.id,
 				name: model.display_name || match.name,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
 			}

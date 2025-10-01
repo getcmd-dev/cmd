@@ -9,7 +9,7 @@ import SwiftUI
 
 public struct SettingsView: View {
   public init(viewModel: SettingsViewModel, onDismiss: @MainActor @escaping () -> Void = { }) {
-    _viewModel = State(initialValue: viewModel)
+    self.viewModel = viewModel
     self.onDismiss = onDismiss
   }
 
@@ -21,7 +21,7 @@ public struct SettingsView: View {
             currentView = section
           },
           onDismiss: onDismiss,
-          hasAvailableLLMModels: !viewModel.availableModels.isEmpty,
+          hasAvailableLLMModels: !viewModel.llmSettings.availableModels.isEmpty,
           showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
       }
 
@@ -41,7 +41,7 @@ public struct SettingsView: View {
   }
 
   @Environment(\.colorScheme) private var colorScheme
-  @State private var viewModel: SettingsViewModel
+  @Bindable private var viewModel: SettingsViewModel
 
   @State private var currentView = SettingsSection.landing
 
@@ -70,15 +70,15 @@ public struct SettingsView: View {
 
       switch currentView {
       case .providers:
-        ProvidersView(providerSettings: $viewModel.providerSettings)
+        ProvidersView(viewModel: viewModel.llmSettings, onComplete: nil)
 
       case .models:
-        ModelsView(
-          availableModels: viewModel.availableModels,
-          availableProviders: viewModel.availableProviders,
-          providerForModels: $viewModel.providerForModels,
-//          inactiveModels: $viewModel.inactiveModels,
-          reasoningModels: $viewModel.reasoningModels)
+        ModelsView(viewModel: viewModel.llmSettings)
+//          availableModels: viewModel.llmSettings.availableModels,
+//          availableProviders: viewModel.llmSettings.availableProviders,
+//          providerForModels: $viewModel.llmSettings.providerForModels,
+////          inactiveModels: $viewModel.inactiveModels,
+//          reasoningModels: $viewModel.llmSettings.reasoningModels)
 
       case .chatModes:
         ChatModeView(customInstructions: $viewModel.customInstructions)
