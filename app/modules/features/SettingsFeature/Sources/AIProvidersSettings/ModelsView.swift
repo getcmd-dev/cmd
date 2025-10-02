@@ -12,6 +12,8 @@ import SwiftUI
 // MARK: - ModelsView
 
 struct ModelsView: View {
+  /// - Parameters:
+  ///   - availableModels: When provided, only those models are shown in the view. Otherwise all available models are shown.
   init(
     viewModel: LLMSettingsViewModel,
     availableModels: [LLMModelInfo]? = nil)

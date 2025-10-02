@@ -82,28 +82,6 @@ public final class LLMSettingsViewModel {
     }
   }
 
-//    {
-//    get {
-//            var reasoningModels = [LLMModelInfo: LLMReasoningSetting]()
-//            for model in availableModels.filter(\.canReason) {
-//              reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
-//            }
-//            for (key, value) in _reasoningModels {
-//              reasoningModels[] = value
-//            }
-//            return reasoningModels
-//    }
-//    set {
-//            let oldValue = _reasoningModels
-//            for (model, provider) in newValue {
-//              if oldValue[model] != provider {
-//                  _reasoningModels[model] = provider
-//              }
-//            }
-//            settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
-//    }
-//  }
-
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModelInfo] {
     let models = providerSettings.keys.flatMap { provider in

@@ -22,7 +22,6 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
     }
     let thread = try await loadThread(withId: threadId)
     thread.input.selectedModel = llmService.activeModels.currentValue.first(where: { $0.name == chatCompletion.modelName })
-    // LLMModel.allCases.first { $0.name == chatCompletion.modelName }
     @Dependency(\.xcodeObserver) var xcodeObserver
     let projectRoot = xcodeObserver.state.focusedWorkspace?.url
 

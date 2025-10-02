@@ -75,6 +75,10 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     createdAt: 1759161676,
     rankForProgramming: 1)
 
+  #if DEBUG
+  public static let allTestCases: [LLMModelInfo] = [.claudeHaiku_3_5, .claudeSonnet]
+  #endif
+
   public let name: String
   public let slug: String
   public let description: String?

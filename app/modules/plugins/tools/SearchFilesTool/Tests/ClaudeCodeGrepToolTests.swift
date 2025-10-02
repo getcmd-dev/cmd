@@ -67,7 +67,7 @@ struct ClaudeCodeGrepToolTests {
 
     toolUse.startExecuting()
     let outputWithoutLineNumber = """
-      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-    thread.input.selectedModel = LLMModel.allCases.first { $0.name == chatCompletion.modelName }
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-    thread.input.selectedModel = LLMModelInfo.allTestCases.first { $0.name == chatCompletion.modelName }
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    @Dependency(\\.xcodeObserver) var xcodeObserver
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    let projectRoot = xcodeObserver.state.focusedWorkspace?.url
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-
