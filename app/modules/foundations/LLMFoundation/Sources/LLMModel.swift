@@ -76,6 +76,37 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     rankForProgramming: 1)
 
   #if DEBUG
+    public static let gpt = LLMModelInfo(
+        name: "gpt-5",
+        slug: "gpt-latest",
+        contextSize: 400_000,
+        maxOutputTokens: 128_000,
+        defaultPricing: .init(input: 1.25, output: 10, cacheWrite: 0, cachedInput: 0.125, inputImage: 1.25),
+        documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5"),
+        reasoning: LLMReasoning(),
+        createdAt: 1759161676,
+        rankForProgramming: 3)
+    public static let gpt_mini = LLMModelInfo(
+        name: "gpt-5-mini",
+        slug: "gpt-mini-latest",
+        contextSize: 400_000,
+        maxOutputTokens: 128_000,
+        defaultPricing: .init(input: 0.25, output: 2, cacheWrite: 0, cachedInput: 0.025, inputImage: 0.25),
+        documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-mini"),
+        reasoning: LLMReasoning(),
+        createdAt: 1759161676,
+        rankForProgramming: 3)
+    public static let claudeOpus = LLMModelInfo(
+      name: "claude-4.1-opus",
+      slug: "claude-opus-4",
+      contextSize: 200_000,
+      maxOutputTokens: 32_000,
+      defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
+      documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+      reasoning: LLMReasoning(),
+      createdAt: 1759161676,
+      rankForProgramming: 3)
+    
   public static let allTestCases: [LLMModelInfo] = [.claudeHaiku_3_5, .claudeSonnet]
   #endif
 

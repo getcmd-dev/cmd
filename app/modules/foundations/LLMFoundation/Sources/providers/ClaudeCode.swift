@@ -10,16 +10,6 @@ extension LLMProvider {
     id: "claudeCode",
     name: "Claude Code",
     keychainKey: "CLAUDE_CODE_PATH",
-//    supportedModels: [
-//      .claudeCode_default,
-//    ],
     websiteURL: URL(string: "https://www.anthropic.com/claude-code"),
-//    idForModel: { model in
-//      switch model {
-//      case .claudeCode_default: return ""
-//      default: throw AppError(message: "Model \(model) is not supported by Claude Code provider.")
-//      }
-//    },
-//    priceForModel: { _ in nil }
   )
 }

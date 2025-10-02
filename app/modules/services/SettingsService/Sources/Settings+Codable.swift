@@ -34,6 +34,8 @@ extension Settings: Codable {
           guard let provider = LLMProvider(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? [:],
+      enabledModels: container
+              .resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? [],
       reasoningModels: container
         .resilientlyDecodeIfPresent([ModelInfoId: LLMReasoningSetting].self, forKey: "reasoningModels") ?? [:],
       customInstructions: container
@@ -61,6 +63,7 @@ extension Settings: Codable {
     try container.encode(llmProviderSettings.reduce(into: [String: LLMProviderSettings]()) { acc, el in
       acc[el.key.rawValue] = el.value
     }, forKey: "llmProviderSettings")
+      try container.encode(enabledModels, forKey: "enabledModels")
     try container.encode(reasoningModels, forKey: "reasoningModels")
     try container.encode(customInstructions, forKey: "customInstructions")
     try container.encode(toolPreferences, forKey: "toolPreferences")

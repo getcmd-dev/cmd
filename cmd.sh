@@ -67,7 +67,6 @@ focus_dependency_command() {
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	./tools/dependencies/focus.sh "$@"
-	echo "👉 Don't forget to use 'cmd open:app' the next time you re-open the app's xcodeproj, instead of opening it manually."
 }
 
 build_release_command() {
