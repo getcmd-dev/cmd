@@ -1,3 +1,7 @@
+## Instructions
+### Tests
+To run tests, prefer to use `./cmd.sh test:swift`, or to run tests for a single module: `./cmd.sh test:swift --module LLMService`.
+(./cmd.sh is to be run from the root of this repo, ie at `../` from this file's location)
 
 ## Coding style
 ### Tests

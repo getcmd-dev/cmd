@@ -11,6 +11,5 @@ extension LLMProvider {
     name: "OpenRouter",
     keychainKey: "OPENROUTER_API_KEY",
     websiteURL: URL(string: "https://openrouter.ai"),
-    apiKeyCreationURL: URL(string: "https://openrouter.ai/keys"),
-  )
+    apiKeyCreationURL: URL(string: "https://openrouter.ai/keys"))
 }

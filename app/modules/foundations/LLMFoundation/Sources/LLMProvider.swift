@@ -19,8 +19,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     name: String,
     keychainKey: String,
     websiteURL: URL? = nil,
-    apiKeyCreationURL: URL? = nil,
-  ) {
+    apiKeyCreationURL: URL? = nil)
+  {
     self.id = id
     self.name = name
     self.keychainKey = keychainKey
@@ -51,11 +51,9 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     lhs.id == rhs.id
   }
 
-
   public func hash(into hasher: inout Hasher) {
     hasher.combine(id)
   }
-
 
 }
 

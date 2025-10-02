@@ -141,7 +141,29 @@ clean_command() {
 }
 
 test_swift_command() {
-	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "$@"
+	# Extract --module value if provided
+	focussed_module=""
+	parsed_args=()
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--module)
+			focussed_module="$2"
+			shift 2 # Skip both --module and its value
+			;;
+		*)
+			parsed_args+=("$1")
+			shift
+			;;
+		esac
+	done
+	if [ -n "$focussed_module" ]; then
+		package_swift=$(focus_dependency_command --module "$focussed_module")
+		cd $(dirname $package_swift) && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+	else
+		# run all tests
+		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+	fi
 }
 
 test_ts_command() {

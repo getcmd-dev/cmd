@@ -11,11 +11,11 @@ cd "${ROOT_DIR}/app/tools/dependencies"
 should_open_in_xcode=false
 parsed_args=()
 for arg in "$@"; do
-    if [ "$arg" = "--open" ]; then
-        should_open_in_xcode=true
-    else
-        parsed_args+=("$arg")
-    fi
+	if [ "$arg" = "--open" ]; then
+		should_open_in_xcode=true
+	else
+		parsed_args+=("$arg")
+	fi
 done
 
 # Cache the built binary, as for some reasons it gets rebuilt every time otherwise.

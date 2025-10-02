@@ -11,6 +11,5 @@ extension LLMProvider {
     name: "Groq",
     keychainKey: "GROQ_API_KEY",
     websiteURL: URL(string: "https://groq.com/"),
-    apiKeyCreationURL: URL(string: "https://console.groq.com/keys"),
-  )
+    apiKeyCreationURL: URL(string: "https://console.groq.com/keys"))
 }
