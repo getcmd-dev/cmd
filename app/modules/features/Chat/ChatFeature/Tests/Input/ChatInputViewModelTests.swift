@@ -8,6 +8,7 @@ import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LLMServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
 import Testing
@@ -21,8 +22,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is in available models keeps that model")
   func test_initialization_withSelectedModelInAvailableModels() {
-    let selectedModel = LLMModel.gpt
-    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
+    let selectedModel = LLMModelInfo.gpt
+    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -40,8 +41,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
-    let selectedModel = LLMModel.claudeOpus
-    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
+    let selectedModel = LLMModelInfo.claudeOpus
+    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -59,7 +60,7 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
-    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
+    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -123,7 +124,9 @@ struct ChatInputViewModelTests {
 
   @MainActor
   @Test("updating available models changes selected model if it's no longer available")
-  func test_updatingAvailableModels_changesSelectedModelIfNoLongerAvailable() {
+  func test_updatingAvailableModels_changesSelectedModelIfNoLongerAvailable() async throws {
+    // given
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet, .gpt])
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
@@ -140,7 +143,8 @@ struct ChatInputViewModelTests {
       ]))
     let mockUserDefaults = MockUserDefaults()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
+      $0.llmService = mockLLMService
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
@@ -148,19 +152,30 @@ struct ChatInputViewModelTests {
         selectedModel: .claudeSonnet,
         activeModels: nil)
     }
+    let hasChangedModelToGpt = expectation(description: "Has changed model to gpt")
+    let cancellable = sut.observeChanges(to: \.selectedModel) { newValue in
+      if newValue == .gpt {
+        hasChangedModelToGpt.fulfillAtMostOnce()
+      }
+    }
+    #expect(sut.selectedModel == .claudeSonnet)
 
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    // when
+    mockLLMService.mutableActiveModels.send([.gpt])
 
-    var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
-    newSettings[.anthropic] = nil
-    mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    // then
+    try await fulfillment(of: hasChangedModelToGpt)
+    _ = cancellable
 
-    #expect(viewModel.selectedModel == .gpt)
+    // then
+    #expect(sut.selectedModel == .gpt)
   }
 
   @MainActor
   @Test("updating available models to empty array sets selected model to nil")
-  func test_updatingAvailableModels_toEmptyArray() {
+  func test_updatingAvailableModels_toEmptyArray() async throws {
+    // given
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
@@ -177,7 +192,8 @@ struct ChatInputViewModelTests {
       ]))
     let mockUserDefaults = MockUserDefaults()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
+      $0.llmService = mockLLMService
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
@@ -185,25 +201,43 @@ struct ChatInputViewModelTests {
         selectedModel: .claudeSonnet,
         activeModels: nil)
     }
+    #expect(sut.selectedModel == .claudeSonnet)
 
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    // Prepare observation to changes in propeerties
+    let hasChangedActiveModels = expectation(description: "Has changed active models")
+    let hasChangedSelectedModels = expectation(description: "Has changed selected model")
+    var cancellables = Set<AnyCancellable>()
+    sut.observeChanges(to: \.activeModels) { _ in
+      hasChangedActiveModels.fulfillAtMostOnce()
+    }.store(in: &cancellables)
+    sut.observeChanges(to: \.selectedModel) { _ in
+      hasChangedSelectedModels.fulfillAtMostOnce()
+    }.store(in: &cancellables)
 
-    var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
-    newSettings[.openAI] = nil
-    mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
-
-    #expect(viewModel.activeModels.sorted(by: { $0.id < $1.id }) == [
+    // when - simulate removing openAI provider (anthropic models remain)
+    mockLLMService.mutableActiveModels.send([
       .claudeHaiku_3_5,
       .claudeOpus,
       .claudeSonnet,
     ])
-    #expect(viewModel.selectedModel == .claudeSonnet)
 
-    newSettings[.anthropic] = nil
-    mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    // then
+    try await fulfillment(of: hasChangedActiveModels)
+    #expect(sut.activeModels.sorted(by: { $0.id < $1.id }) == [
+      .claudeHaiku_3_5,
+      .claudeOpus,
+      .claudeSonnet,
+    ])
+    #expect(sut.selectedModel == .claudeSonnet)
 
-    #expect(viewModel.activeModels.isEmpty)
-    #expect(viewModel.selectedModel == nil)
+    // when - simulate removing all providers
+    mockLLMService.mutableActiveModels.send([])
+    try await fulfillment(of: hasChangedSelectedModels)
+
+    // then
+    #expect(sut.activeModels.isEmpty)
+    #expect(sut.selectedModel == nil)
+    _ = cancellables
   }
 }
 

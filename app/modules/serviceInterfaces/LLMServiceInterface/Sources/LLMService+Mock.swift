@@ -13,9 +13,11 @@ import ToolFoundation
 #if DEBUG
 @ThreadSafe
 public final class MockLLMService: LLMService {
-  public init() { }
+  public init(activeModels: [LLMFoundation.LLMModelInfo] = []) {
+    mutableActiveModels = .init(activeModels)
+  }
 
-  public var mutableActiveModels = CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>([])
+  public var mutableActiveModels: CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>
 
   public var onSendMessage: (@Sendable (
     [Schema.Message],

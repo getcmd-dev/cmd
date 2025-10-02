@@ -5,6 +5,7 @@ import ChatCompletionServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DependenciesTestSupport
 import Foundation
 import LLMServiceInterface
 import SwiftTesting
@@ -14,22 +15,18 @@ import Testing
 extension ChatViewModelTests {
 
   @MainActor
-  @Test("client cancellation behavior is properly implemented")
+  @Test("client cancellation behavior is properly implemented", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_clientCancellation_behaviorImplemented() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
 
     let testThreadId = UUID()
-
-    let (threadViewModel, chatViewModel) = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      let thread = ChatThreadViewModel(id: testThreadId)
-      let sut = ChatViewModel()
-      sut.tab = thread
-      return (thread, sut)
-    }
+    let threadViewModel = ChatThreadViewModel(id: testThreadId)
+    let chatViewModel = ChatViewModel()
+    chatViewModel.tab = threadViewModel
 
     let isDoneStreaming = expectation(description: "is done streaming")
     let hasReceivedOneStreamedChunk = expectation(description: "has received one streamed chunk")

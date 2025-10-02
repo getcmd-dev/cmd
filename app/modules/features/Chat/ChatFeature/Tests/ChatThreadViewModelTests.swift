@@ -193,7 +193,7 @@ struct ChatThreadViewModelTests {
   @Test("receiving messages updates state")
   func test_receivingMessages_updatesState() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
 
     let testThreadId = UUID()
 
@@ -271,7 +271,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file")
   func sendMessageIncludesFocussedFile() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
@@ -306,7 +306,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file only once if it doesn't change")
   func sendMessageIncludesFocussedFileOnlyOnceIfItDoesNotChange() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
@@ -343,7 +343,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file twice if it changed")
   func sendMessageIncludesFocussedFileTwiceIfItChanged() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in

@@ -793,9 +793,12 @@ struct ChatViewModelTests {
   // MARK: - Summarization Tests
 
   @MainActor
-  @Test("conversation summarization is triggered when token usage exceeds 80% of context size")
+  @Test("conversation summarization is triggered when token usage exceeds 80% of context size", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_conversationSummarization_triggeredWhenTokensExceedThreshold() async throws {
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     let summarizeConversationCalled = Atomic(false)
     let expectedSummary = "This is a conversation summary"
 
@@ -818,12 +821,7 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let viewModel = ChatThreadViewModel()
 
     viewModel.input.textInput = TextInput([.text("Test message")])
     await viewModel.sendMessage()
@@ -845,7 +843,8 @@ struct ChatViewModelTests {
   @MainActor
   @Test("conversation summarization is not triggered when token usage is below threshold")
   func test_conversationSummarization_notTriggeredWhenTokensBelowThreshold() async throws {
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     let summarizeConversationCalled = Atomic(false)
 
     mockLLMService.onSummarizeConversation = { _, _ in
@@ -867,12 +866,7 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let viewModel = ChatThreadViewModel()
 
     viewModel.input.textInput = TextInput([.text("Test message")])
     await viewModel.sendMessage()
@@ -892,11 +886,15 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("summarization uses correct model and message history")
+  @Test("summarization uses correct model and message history", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_conversationSummarization_usesCorrectParameters() async throws {
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    mockLLMService.mutableActiveModels.send([.gpt])
     let capturedMessageHistory = Atomic<[Schema.Message]?>(nil)
-    let capturedModel = Atomic<LLMModel?>(nil)
+    let capturedModel = Atomic<LLMModelInfo?>(nil)
 
     mockLLMService.onSummarizeConversation = { messageHistory, model in
       capturedModel.set(to: model)
@@ -918,12 +916,7 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let viewModel = ChatThreadViewModel()
 
     viewModel.input.textInput = TextInput([.text("User message")])
     await viewModel.sendMessage()
@@ -934,9 +927,12 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("summarization handles errors gracefully")
+  @Test("summarization handles errors gracefully", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_conversationSummarization_handlesErrorsGracefully() async throws {
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
 
     mockLLMService.onSummarizeConversation = { _, _ in
       throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Summarization failed"])
@@ -956,12 +952,7 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let viewModel = ChatThreadViewModel()
 
     let initialMessageCount = viewModel.messages.count
 
@@ -984,9 +975,12 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("message sent during summarization waits for completion and uses summarized context")
+  @Test("message sent during summarization waits for completion and uses summarized context", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_messageDuringSummarization_waitsAndUsesSummarizedContext() async throws {
-    let mockLLMService = MockLLMService()
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     let summarizationStarted = expectation(description: "Summarization started")
     let secondMessageSentByUser = expectation(description: "Second message sent by user")
 
@@ -1029,12 +1023,7 @@ struct ChatViewModelTests {
       }
     }
 
-    let viewModel = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let viewModel = ChatThreadViewModel()
 
     // Send first message that will trigger summarization
     viewModel.input.textInput = TextInput([.text("First message")])
@@ -1091,6 +1080,7 @@ extension DependencyValues {
     let mockUserDefaults = MockUserDefaults(initialValues: [
       "selectedLLMModel": "gpt-latest",
     ])
+    llmService = MockLLMService(activeModels: [.claudeSonnet, .gpt])
     self.settingsService = settingsService
     userDefaults = mockUserDefaults
   }

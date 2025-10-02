@@ -33,13 +33,15 @@ extension DefaultLLMService {
           executable: nil,
           createdOrder: 2),
       ])),
-    shellService: MockShellService = MockShellService())
+    shellService: MockShellService = MockShellService(),
+    fileManager: MockFileManager = MockFileManager())
   {
     self.init(
       server: server as LocalServer,
       settingsService: settingsService as SettingsService,
       userDefaults: MockUserDefaults(),
-      shellService: shellService)
+      shellService: shellService,
+      fileManager: fileManager)
   }
 
   func sendMessage(
