@@ -125,25 +125,27 @@ final class DefaultLocalServer: LocalServer {
       await Task.detached(priority: .userInitiated) { [weak self] in
         guard let self else { return }
 
-        // TODO: Make this async, and serial.
-        guard var handler = inflightTasks[dataTask] else {
-          return
-        }
-        defer { self.inflightTasks[dataTask] = handler }
+          // TODO: move this class to an actor to avoid this locking.
+          self.inLock { state in
+              guard var handler = state.inflightTasks[dataTask] else {
+              return
+            }
 
-        // Update timestamp to reflect that data was received
-        handler.timeoutTask = scheduleTimeout(for: dataTask, idleTimeout: handler.idleTimeout)
-        handler.totalData.append(data)
+            // Update timestamp to reflect that data was received
+            handler.timeoutTask = scheduleTimeout(for: dataTask, idleTimeout: handler.idleTimeout)
+            handler.totalData.append(data)
 
-        if let onReceiveJSONData = handler.onReceiveJSONData {
-          handler.incompletedJSONData.append(data)
-          let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
-          handler.incompletedJSONData = newImcompleteData ?? Data()
+            if let onReceiveJSONData = handler.onReceiveJSONData {
+              handler.incompletedJSONData.append(data)
+              let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
+              handler.incompletedJSONData = newImcompleteData ?? Data()
 
-          for jsonObject in jsonObjects {
-            onReceiveJSONData(jsonObject)
+              for jsonObject in jsonObjects {
+                onReceiveJSONData(jsonObject)
+              }
+            }
+              state.inflightTasks[dataTask] = handler
           }
-        }
       }.value
     }
   }

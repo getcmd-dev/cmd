@@ -62,6 +62,8 @@ extension Schema {
     public let inputModalities: [ModelModality]
     public let outputModalities: [ModelModality]
     public let pricing: ModelPricing
+    public let createdAt: Double
+    public let rankForProgramming: Int
   
     private enum CodingKeys: String, CodingKey {
       case providerId = "providerId"
@@ -73,6 +75,8 @@ extension Schema {
       case inputModalities = "inputModalities"
       case outputModalities = "outputModalities"
       case pricing = "pricing"
+      case createdAt = "createdAt"
+      case rankForProgramming = "rankForProgramming"
     }
   
     public init(
@@ -84,7 +88,9 @@ extension Schema {
         maxCompletionTokens: Int,
         inputModalities: [ModelModality],
         outputModalities: [ModelModality],
-        pricing: ModelPricing
+        pricing: ModelPricing,
+        createdAt: Double,
+        rankForProgramming: Int
     ) {
       self.providerId = providerId
       self.globalId = globalId
@@ -95,6 +101,8 @@ extension Schema {
       self.inputModalities = inputModalities
       self.outputModalities = outputModalities
       self.pricing = pricing
+      self.createdAt = createdAt
+      self.rankForProgramming = rankForProgramming
     }
   
     public init(from decoder: Decoder) throws {
@@ -108,6 +116,8 @@ extension Schema {
       inputModalities = try container.decode([ModelModality].self, forKey: .inputModalities)
       outputModalities = try container.decode([ModelModality].self, forKey: .outputModalities)
       pricing = try container.decode(ModelPricing.self, forKey: .pricing)
+      createdAt = try container.decode(Double.self, forKey: .createdAt)
+      rankForProgramming = try container.decode(Int.self, forKey: .rankForProgramming)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -121,6 +131,8 @@ extension Schema {
       try container.encode(inputModalities, forKey: .inputModalities)
       try container.encode(outputModalities, forKey: .outputModalities)
       try container.encode(pricing, forKey: .pricing)
+      try container.encode(createdAt, forKey: .createdAt)
+      try container.encode(rankForProgramming, forKey: .rankForProgramming)
     }
   }
   public enum ModelModality: String, Codable, Sendable {

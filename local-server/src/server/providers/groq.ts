@@ -3,8 +3,8 @@ import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGroq } from "@ai-sdk/groq"
 import { JSONValue, LanguageModel } from "ai"
 import { UserFacingError } from "../errors"
-import { OpenRoutedModel } from "./open-router"
-import { notUndefined } from "@/utils/typeChecks"
+import { OpenRouterModel } from "./open-router"
+import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
 	id: string
@@ -41,7 +41,7 @@ export class GroqModelProvider implements ModelProvider {
 			},
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
 		// https://console.groq.com/docs/api-reference#models-retrieve
 		const baseUrl = process.env["GROQ_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.groq.com/openai/v1"
 
@@ -65,9 +65,13 @@ export class GroqModelProvider implements ModelProvider {
 			data.data?.flatMap((model: ModelBaseInfo): ModelBaseInfo | undefined =>
 				model.active != false ? model : undefined,
 			) || []
-		return allModels.map((model) => this.identifyModel(model, referenceModels)).filter(notUndefined)
+		return matchModelData(
+			allModels.map((model) => model.id),
+			referenceModels,
+			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRoutedModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
 		// Groq                                       ->  OpenRouter
 		// meta-llama/llama-4-scout-17b-16e-instruct  ->  meta-llama/llama-4-scout
 		// moonshotai/kimi-k2-instruct                ->  moonshotai/kimi-k2

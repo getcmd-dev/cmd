@@ -4,8 +4,8 @@ import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
 import { ModelMessage } from "ai"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
 import { UserFacingError } from "../errors"
-import { OpenRoutedModel } from "./open-router"
-import { notUndefined } from "@/utils/typeChecks"
+import { OpenRouterModel } from "./open-router"
+import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
 	id: string
@@ -37,7 +37,7 @@ export class AnthropicModelProvider implements ModelProvider {
 			addProviderOptionsToTools: (tools) => addCacheControlToTools(tools, this.name),
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
 		const baseUrl = process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com/v1"
 		const allModels: ModelBaseInfo[] = []
 		let afterId: string | undefined = undefined
@@ -67,9 +67,14 @@ export class AnthropicModelProvider implements ModelProvider {
 			afterId = data.has_more ? data.last_id : undefined
 		} while (afterId)
 
-		return allModels.map((model) => this.identifyModel(model, referenceModels)).filter(notUndefined)
+		return matchModelData(
+			allModels.map((model) => model.id),
+			this.name,
+			referenceModels,
+			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRoutedModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
 		// Anthropic.model.id claude-sonnet-4-5-20250929
 		// OpenRoutermodel.id: anthropic/claude-sonnet-4.5
 		// OpenRoutermodel.canonical_slug: anthropic/claude-4.5-sonnet-20250929

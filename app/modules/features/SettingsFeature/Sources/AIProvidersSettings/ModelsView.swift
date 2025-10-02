@@ -247,7 +247,7 @@ extension [LLMModelInfo] {
       case (false, true):
         false
       default:
-        true
+          a.rankForProgramming < b.rankForProgramming
       }
     })
     .reduce(into: [:], { acc, model in

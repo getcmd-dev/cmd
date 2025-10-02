@@ -1,4 +1,8 @@
+import { logInfo } from "@/logger"
+import { UserFacingError } from "../errors"
+import { OpenRouterModel } from "./open-router"
 import { ModelRichInfo } from "./provider"
+import { notUndefined } from "@/utils/typeChecks"
 
 export const deduplicate = (models: ModelRichInfo[]): ModelRichInfo[] => {
 	const modelsById: { [id: string]: ModelRichInfo } = {}
@@ -55,4 +59,58 @@ const stringSimilarity = (str1: string, str2: string): number => {
 	// Convert to similarity score (0 to 1)
 	const maxLength = Math.max(str1.length, str2.length)
 	return 1 - distance / maxLength
+}
+
+/** Fetch a request that returns a list of items under .data */
+export const fetchDataRequest = async <Response>(
+	url: string,
+	getData: (unknown) => Response[] | undefined = (response) => response.data,
+): Promise<Response[]> => {
+	const response = await fetch(new URL(url).toString())
+	if (!response.ok) {
+		throw new UserFacingError({
+			message: response.statusText,
+			statusCode: response.status,
+			underlyingError: new Error(`Failed to fetch models for provider`),
+		})
+	}
+	const data = await response.json()
+	return getData(data) || []
+}
+
+export const matchModelData = (
+	modelIds: string[],
+	provider: string,
+	referenceModels: OpenRouterModel[],
+	fallback?: (modelId: string, idx: number) => ModelRichInfo | undefined,
+): ModelRichInfo[] => {
+	const modelBySlug: { [id: string]: OpenRouterModel } = {}
+	referenceModels.forEach((model) => {
+		model.providers.forEach((provider) => {
+			provider.slugs.forEach((modelSlug) => {
+				modelBySlug[modelSlug.toLowerCase()] = model
+			})
+		})
+	})
+	return modelIds
+		.map((modelId, idx) => {
+			const reference = modelBySlug[modelId.toLowerCase()] || modelBySlug[`${provider}/${modelId}`.toLowerCase()]
+			if (!reference) {
+				const fb = fallback?.(modelId, idx)
+				if (!fb) {
+					logInfo(`Could not match model ${provider}/${modelId}`)
+				} else {
+					logInfo(`Identified ${modelId} with fallback`)
+				}
+				return fb
+			}
+			return {
+				...reference,
+
+				providerId: modelId,
+				globalId: reference.id,
+				max_completion_tokens: reference.top_provider.max_completion_tokens,
+			}
+		})
+		.filter(notUndefined)
 }

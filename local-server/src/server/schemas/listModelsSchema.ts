@@ -37,4 +37,9 @@ export type Model = {
 	inputModalities: ModelModality[]
 	outputModalities: ModelModality[]
 	pricing: ModelPricing
+	createdAt: number
+	/**
+	 * @format integer
+	 */
+	rankForProgramming: number
 }

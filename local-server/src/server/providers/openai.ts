@@ -3,8 +3,8 @@ import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenAI, OpenAIResponsesProviderOptions } from "@ai-sdk/openai"
 import { UserFacingError } from "../errors"
 import { Model } from "openai/resources/models.mjs"
-import { OpenRoutedModel } from "./open-router"
-import { notUndefined } from "@/utils/typeChecks"
+import { OpenRouterModel } from "./open-router"
+import { matchModelData } from "./provider-utils"
 
 export class OpenAIModelProvider implements ModelProvider {
 	name: APIProviderName = "openai"
@@ -34,7 +34,7 @@ export class OpenAIModelProvider implements ModelProvider {
 			},
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
 		const baseUrl = process.env["OPENAI_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.openai.com"
 
 		const headers = {}
@@ -54,9 +54,15 @@ export class OpenAIModelProvider implements ModelProvider {
 		}
 		const data = await response.json()
 		const allModels = data.data?.map((model: Model): Model => model) || []
-		return allModels.map((model) => this.identifyModel(model, referenceModels)).filter(notUndefined)
+
+		return matchModelData(
+			allModels.map((model) => model.id),
+			this.name,
+			referenceModels,
+			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+		)
 	}
-	identifyModel(model: Model, models: OpenRoutedModel[]): ModelRichInfo | undefined {
+	identifyModel(model: Model, models: OpenRouterModel[]): ModelRichInfo | undefined {
 		// OpenAI                  ->  OpenRouter
 		// gpt-3.5-turbo           ->  openai/gpt-3.5-turbo
 		// gpt-3.5-turbo-instruct  ->  openai/gpt-3.5-turbo-instruct

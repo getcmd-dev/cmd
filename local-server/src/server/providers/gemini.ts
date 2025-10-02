@@ -3,8 +3,8 @@ import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { JSONValue, LanguageModel } from "ai"
 import { UserFacingError } from "../errors"
-import { OpenRoutedModel } from "./open-router"
-import { notUndefined } from "@/utils/typeChecks"
+import { OpenRouterModel } from "./open-router"
+import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
 	name: string
@@ -40,7 +40,7 @@ export class GeminiModelProvider implements ModelProvider {
 			},
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
 		// https://ai.google.dev/api/models#endpoint_1
 		const baseUrl =
 			process.env["GEMINI_LOCAL_SERVER_PROXY"] ??
@@ -75,9 +75,14 @@ export class GeminiModelProvider implements ModelProvider {
 			nextPageToken = data.nextPageToken
 		} while (nextPageToken)
 
-		return allModels.map((model) => this.identifyModel(model, referenceModels)).filter(notUndefined)
+		return matchModelData(
+			allModels.map((model) => model.name.replace("models/", "")),
+			this.name,
+			referenceModels,
+			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRoutedModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
 		// Gemini                                ->  OpenRouter
 		// models/gemini-2.0-flash-live-001      ->  google/gemini-2.0-flash-001
 		// models/gemini-2.5-flash-live-preview  ->  google/gemini-2.5-flash-preview-09-2025

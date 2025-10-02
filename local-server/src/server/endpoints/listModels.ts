@@ -2,17 +2,17 @@ import { Request, Response, Router } from "express"
 import { UserFacingError } from "../errors"
 import { ListModelsInput, ListModelsOutput } from "../schemas/listModelsSchema"
 import { ModelProvider } from "../providers/provider"
-import { OpenRoutedModel, OpenRouterModelProvider } from "../providers/open-router"
+import { OpenRouterModel, OpenRouterModelProvider } from "../providers/open-router"
 import { deduplicate } from "../providers/provider-utils"
 
 let cachedRequest:
 	| {
 			expiresAt: number
-			models: Promise<OpenRoutedModel[]>
+			models: Promise<OpenRouterModel[]>
 	  }
 	| undefined = undefined
 
-const getOpenRouterModelsWithCaching = async (): Promise<OpenRoutedModel[]> => {
+const getOpenRouterModelsWithCaching = async (): Promise<OpenRouterModel[]> => {
 	if (cachedRequest && cachedRequest.expiresAt > Date.now()) {
 		return cachedRequest.models
 	}
@@ -68,6 +68,8 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					input_cache_read: parseTokenCost(model.pricing.input_cache_read),
 					input_cache_write: parseTokenCost(model.pricing.input_cache_write),
 				},
+				createdAt: model.created,
+				rankForProgramming: model.rankForProgramming,
 			})),
 		} satisfies ListModelsOutput)
 	})

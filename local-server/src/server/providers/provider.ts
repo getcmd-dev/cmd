@@ -1,7 +1,7 @@
 import { ModelMessage, JSONValue, LanguageModel } from "ai"
 import { APIProviderName } from "../schemas/sendMessageSchema"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
-import { OpenRoutedModel } from "./open-router"
+import { OpenRouterModel } from "./open-router"
 
 export type ModelProviderOutput = {
 	model?: LanguageModel
@@ -29,7 +29,7 @@ export type ModelRichInfo = {
 	name: string
 	description: string
 	context_length: number
-	max_completion_tokens: number | undefined
+	max_completion_tokens?: number
 	architecture: {
 		input_modalities: ModelModality[]
 		output_modalities: ModelModality[]
@@ -37,18 +37,22 @@ export type ModelRichInfo = {
 	pricing: {
 		prompt: string
 		completion: string
-		image: string | undefined
-		request: string | undefined
-		web_search: string | undefined
-		internal_reasoning: string | undefined
-		input_cache_read: string | undefined
-		input_cache_write: string | undefined
+		image?: string
+		request?: string
+		web_search?: string
+		internal_reasoning?: string
+		input_cache_read?: string
+		input_cache_write?: string
 	}
+	/** The creation unix timestamp, in seconds */
+	created: number
+	rankForProgramming: number
+	supportsReasoning: boolean
 }
 
 export interface ModelProvider {
 	build: (params: ModelProviderInput) => ModelProviderOutput
 	name: APIProviderName
 	/** List available models */
-	listModels: (config: ProviderConfig, referenceModels: OpenRoutedModel[]) => Promise<ModelRichInfo[]>
+	listModels: (config: ProviderConfig, referenceModels: OpenRouterModel[]) => Promise<ModelRichInfo[]>
 }

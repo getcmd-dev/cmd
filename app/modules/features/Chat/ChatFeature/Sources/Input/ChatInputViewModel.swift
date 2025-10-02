@@ -79,7 +79,6 @@ final class ChatInputViewModel {
     let selectedModel: LLMModelInfo? =
       if let modelId = userDefaults.string(forKey: Self.userDefaultsSelectLLMModelKey) {
         llmService.getModelInfo(by: modelId)
-//        LLMModel(rawValue: modelName)
       } else {
         nil
       }

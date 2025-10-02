@@ -9,9 +9,11 @@ import {
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
-import { UserFacingError } from "../errors"
+import { notEmpty, notUndefined } from "@/utils/typeChecks"
+import { writeFileSync } from "fs"
+import { fetchDataRequest } from "./provider-utils"
 
-export type OpenRoutedModel = {
+export type OpenRouterModel = {
 	id: string
 	canonical_slug: string
 	name: string
@@ -23,7 +25,7 @@ export type OpenRoutedModel = {
 	}
 	top_provider: {
 		context_length: number
-		max_completion_tokens: number | undefined
+		max_completion_tokens?: number
 	}
 	pricing: {
 		prompt: string
@@ -32,9 +34,67 @@ export type OpenRoutedModel = {
 		request: string
 		web_search: string
 		internal_reasoning: string
-		input_cache_read: string | undefined
-		input_cache_write: string | undefined
+		input_cache_read?: string
+		input_cache_write?: string
 	}
+	providers: {
+		slug: string
+		displayName: string
+		baseUrl: string
+		iconUrl?: string
+		/** Various ways the model can be referred to. Helps get more matches and seems safe */
+		slugs: string[]
+	}[]
+	created: number
+	rankForProgramming: number
+	supportsReasoning: boolean
+}
+
+type OpenRouterModelResponse = {
+	id: string
+	canonical_slug: string
+	name: string
+	description: string
+	context_length: number
+	architecture: {
+		input_modalities: ModelModality[]
+		output_modalities: ModelModality[]
+	}
+	top_provider: {
+		context_length: number
+		max_completion_tokens?: number
+	}
+	pricing: {
+		prompt: string
+		completion: string
+		image: string
+		request: string
+		web_search: string
+		internal_reasoning: string
+		input_cache_read?: string
+		input_cache_write?: string
+	}
+	created: number
+}
+
+type ModelProviderInfo = {
+	provider_model_id: string
+	supported_parameters: string[]
+	supports_reasoning: boolean
+	provider_info: {
+		displayName: string
+		slug: string
+		baseUrl: string
+		icon?: {
+			url?: string
+		}
+	}
+}
+type OpenRouterFindResponse = {
+	permaslug: string
+	slug: string
+	hf_slug?: string
+	endpoint?: ModelProviderInfo
 }
 
 export class OpenRouterModelProvider implements ModelProvider {
@@ -67,55 +127,75 @@ export class OpenRouterModelProvider implements ModelProvider {
 				: undefined,
 		}
 	}
-	async listReferenceModels(): Promise<OpenRoutedModel[]> {
+	async listReferenceModels(): Promise<OpenRouterModel[]> {
 		// https://openrouter.ai/docs/api-reference/list-available-models
 		const baseUrl = process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? "https://openrouter.ai/api/v1"
 
-		const url = new URL(`${baseUrl}/models`)
-		const headers = {}
-		const response = await fetch(url.toString(), {
-			headers,
-		})
-		if (!response.ok) {
-			throw new UserFacingError({
-				message: response.statusText,
-				statusCode: response.status,
-				underlyingError: new Error(`Failed to fetch models for provider`),
-			})
+		// To help with sorting, first fetch models that are popular for programming, then everything else.
+		const [programmingModels, allModels, modelsWithProviderInfo] = await Promise.all([
+			await fetchDataRequest<OpenRouterModelResponse>(`${baseUrl}/models?category=programming`),
+			await fetchDataRequest<OpenRouterModelResponse>(`${baseUrl}/models`),
+			await fetchDataRequest<OpenRouterFindResponse>(
+				`https://openrouter.ai/api/frontend/models/find`,
+				(response) => response.data?.models,
+			),
+		])
+		writeFileSync("/Users/guigui/dev/cmd/log.json", JSON.stringify(modelsWithProviderInfo, null, 2))
+		const programmingRankById = Object.fromEntries(programmingModels.map((model, idx) => [model.id, idx]))
+		const rankedModels = allModels.map((model, idx) => ({
+			...model,
+			rankForProgramming: programmingRankById[model.id] ?? idx + programmingModels.length,
+		}))
+		const providersInfoByModelSlug: { [modelSlug: string]: OpenRouterFindResponse[] } = {}
+		for (const providerInfo of modelsWithProviderInfo) {
+			const modelSlug = providerInfo.permaslug
+			if (!providersInfoByModelSlug[modelSlug]) {
+				providersInfoByModelSlug[modelSlug] = []
+			}
+			providersInfoByModelSlug[modelSlug].push(providerInfo)
 		}
-		const data = await response.json()
-		return data.data?.map((model: OpenRoutedModel): OpenRoutedModel => model) || []
-	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRoutedModel[]): Promise<ModelRichInfo[]> {
-		// https://openrouter.ai/docs/api-reference/list-available-models
-		const baseUrl =
-			process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://openrouter.ai/api/v1"
 
-		const url = new URL(`${baseUrl}/models`)
-		const headers = {}
-		if (params.apiKey) {
-			headers["Authorization"] = `Bearer ${params.apiKey}`
-		}
-		const response = await fetch(url.toString(), {
-			headers,
-		})
-		if (!response.ok) {
-			throw new UserFacingError({
-				message: response.statusText,
-				statusCode: response.status,
-				underlyingError: new Error(`Failed to fetch models for provider`),
-			})
-		}
-		const data = await response.json()
-		return (
-			data.data?.map(
-				(model: OpenRoutedModel): ModelRichInfo => ({
+		return rankedModels
+			.map((model) => {
+				const modelWithProviders = providersInfoByModelSlug[model.canonical_slug]
+				if (!modelWithProviders) {
+					return undefined
+				}
+				return {
 					...model,
-					providerId: model.id,
-					globalId: model.id,
-					max_completion_tokens: model.top_provider.max_completion_tokens,
-				}),
-			) || []
+					supportsReasoning: !!modelWithProviders.find((provider) => provider.endpoint?.supports_reasoning),
+					providers: modelWithProviders
+						.map((modelWithProvider) => {
+							if (!modelWithProvider.endpoint) {
+								return undefined
+							}
+							return {
+								slug: modelWithProvider.endpoint.provider_info.slug,
+								displayName: modelWithProvider.endpoint.provider_info.displayName,
+								baseUrl: modelWithProvider.endpoint.provider_info.baseUrl,
+								iconUrl: modelWithProvider.endpoint.provider_info.icon?.url,
+								slugs: [
+									modelWithProvider.endpoint.provider_model_id,
+									model.canonical_slug,
+									modelWithProvider.slug,
+									modelWithProvider.permaslug,
+									modelWithProvider.hf_slug,
+								].filter(notEmpty),
+							}
+						})
+						.filter(notUndefined),
+				}
+			})
+			.filter(notUndefined)
+	}
+	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
+		return referenceModels.map(
+			(model): ModelRichInfo => ({
+				...model,
+				providerId: model.id,
+				globalId: model.id,
+				max_completion_tokens: model.top_provider.max_completion_tokens,
+			}),
 		)
 	}
 }
