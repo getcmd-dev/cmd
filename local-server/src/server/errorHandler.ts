@@ -7,7 +7,7 @@ const errorHandler = (err: Error & { statusCode?: number }, req: Request, res: R
 	const errStatus = err.statusCode || 500
 	const errMsg = err.message || "Something went wrong"
 
-	logError(`Request failed: ${errMsg}`)
+	logError(`Request failed: ${errMsg}`, err)
 	const errorInfo = {
 		type: "error",
 		success: false,
@@ -26,7 +26,7 @@ const errorHandler = (err: Error & { statusCode?: number }, req: Request, res: R
 				res.end()
 			} catch (writeError) {
 				// If we can't write to the response, just log the error
-				logError(`Failed to write SSE error: ${writeError}`)
+				logError(`Failed to write SSE error`, writeError)
 			}
 		} else {
 			// For regular responses where headers are already sent, we can't do much

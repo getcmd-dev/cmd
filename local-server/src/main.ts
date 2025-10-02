@@ -7,7 +7,7 @@ process.on("unhandledRejection", (reason, promise) => {
 	logError(`Unhandled Rejection at: ${promise}, reason: ${reason}`)
 })
 process.on("uncaughtException", (err) => {
-	logError("Caught exception: " + err)
+	logError("Caught exception: ", err)
 })
 
 startNewLogSession()

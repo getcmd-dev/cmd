@@ -43,8 +43,19 @@ final class LLMModelManager: Sendable {
     observerChangesToSettings()
   }
 
-  var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
-    mutableActiveModels.readonly()
+  var models: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
+    mutableModels.readonly()
+  }
+
+  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
+    ReadonlyCurrentValueSubject<[LLMModelInfo], Never>(
+      models.currentValue.filter { settingsService.value(for: \.enabledModels).contains($0.id) },
+      publisher: models.map { @Sendable [weak self] models in
+        guard let self else { return [] }
+        return models.filter { self.settingsService.value(for: \.enabledModels).contains($0.id) }
+      }
+      .removeDuplicates()
+      .eraseToAnyPublisher())
   }
 
   func listModelAvailable(for provider: LLMProvider) -> [LLMModel] {
@@ -78,7 +89,7 @@ final class LLMModelManager: Sendable {
   private var modelInfosByModelSlug: [String: LLMModelInfo]
   private var cancellables = Set<AnyCancellable>()
 
-  private let mutableActiveModels = CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>([])
+  private let mutableModels = CurrentValueSubject<[LLMModelInfo], Never>([])
 
   private let queue = TaskQueue<Void, Never>()
 
@@ -147,10 +158,9 @@ final class LLMModelManager: Sendable {
           input: $0.pricing.prompt,
           output: $0.pricing.completion,
           cacheWrite: $0.pricing.inputCacheWrite ?? 0,
-          cachedInput: $0.pricing.inputCacheRead ?? 0))) }
-      .enumerated() // TODO: remove once model selection is handled
-      .filter { idx, _ in idx < 5 }
-      .map(\.element)
+          cachedInput: $0.pricing.inputCacheRead ?? 0),
+        createdAt: $0.createdAt,
+        rankForProgramming: $0.rankForProgramming)) }
 
     let llmModelByProvider = inLock { state in
       // First remove old models to avoid keeping stale data.
@@ -171,7 +181,7 @@ final class LLMModelManager: Sendable {
       Self.add(models: models, for: provider, to: &state)
       return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
     } ?? []
-    mutableActiveModels.send(modelInfos)
+    mutableModels.send(modelInfos)
 
     return models
   }
@@ -183,6 +193,10 @@ final class LLMModelManager: Sendable {
       Task {
         await self?.updateModels(from: previous, to: llmProviderSettings)
       }
+    }.store(in: &cancellables)
+    settingsService.liveValue(for: \.enabledModels).sink { @Sendable [weak self] _ in
+      guard let self else { return }
+      mutableModels.send(mutableModels.value) // This will trigger a new filtering of active models
     }.store(in: &cancellables)
   }
 
@@ -205,7 +219,7 @@ final class LLMModelManager: Sendable {
         }
         return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
       }
-      mutableActiveModels.send(modelInfos)
+      mutableModels.send(modelInfos)
 
       // Fetch models for updated providers.
       let updatedProviders = (current ?? [:]).filter { previous?[$0.key] != $0.value }
@@ -214,7 +228,7 @@ final class LLMModelManager: Sendable {
         for (provider, providerSettings) in updatedProviders {
           group.addTask { @Sendable in
             do {
-              let models = try await self.fetchModelAvailable(for: provider, settings: providerSettings)
+              _ = try await self.fetchModelAvailable(for: provider, settings: providerSettings)
             } catch {
               defaultLogger.error("Failed to fetch models for provider \(provider.id)", error)
             }
@@ -239,7 +253,7 @@ final class LLMModelManager: Sendable {
 
 extension DefaultLLMService {
 
-  var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
+  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
     llmModelsManager.activeModels
   }
 

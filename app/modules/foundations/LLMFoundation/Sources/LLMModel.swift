@@ -50,11 +50,11 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     self.defaultPricing = defaultPricing
     self.documentationURL = documentationURL
     self.reasoning = reasoning
-      self.createdAt = createdAt
-      self.rankForProgramming = rankForProgramming
+    self.createdAt = createdAt
+    self.rankForProgramming = rankForProgramming
   }
 
-  // A few models for debugging and providing default values.
+  /// A few models for debugging and providing default values.
   public static let claudeHaiku_3_5 = LLMModelInfo(
     name: "claude-3.5-haiku",
     slug: "claude-haiku-35",
@@ -75,7 +75,6 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     createdAt: 1759161676,
     rankForProgramming: 1)
 
-
   public let name: String
   public let slug: String
   public let description: String?
@@ -84,9 +83,8 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   public let defaultPricing: ModelPricing?
   public let documentationURL: URL?
   public let reasoning: LLMReasoning?
-    public let createdAt: TimeInterval
-    public let rankForProgramming: Int
-
+  public let createdAt: TimeInterval
+  public let rankForProgramming: Int
 
   public var id: String {
     slug

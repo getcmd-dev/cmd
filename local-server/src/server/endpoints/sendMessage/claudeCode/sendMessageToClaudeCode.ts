@@ -294,7 +294,7 @@ const createClaudeCodeEventStream = async (
 		if (!responseCompletedByServer) {
 			logInfo("Response closed (client disconnected), killing Claude Code process.")
 			runningQuery.interrupt().catch((err) => {
-				logError(`Error interrupting running query: ${err.message}`)
+				logError(`Error interrupting running query`, err)
 			})
 			abortController.abort()
 		}

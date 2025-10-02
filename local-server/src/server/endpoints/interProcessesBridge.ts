@@ -123,11 +123,11 @@ export const startInterProcessesBridge = (server: http.Server) => {
 			})
 
 			ws.on("error", (error) => {
-				logError(`WebSocket error: ${error}`)
+				logError(`WebSocket error:`, error)
 			})
 		})
 	} catch (error) {
-		logError(`Error starting extension bridge ${error as Error}`)
+		logError(`Error starting extension bridge`, error as Error)
 	}
 }
 

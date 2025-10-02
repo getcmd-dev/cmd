@@ -47,10 +47,36 @@ const writeToLog = (level: LogLevel, message: unknown) => {
 	}
 }
 
-const logError = (error: unknown) => {
+/** Detect if the parameter is an error, otherwise create a new error with the parameter as the message */
+const convertToError = (error: unknown): Error => {
+	if (isUserFacingError(error)) {
+		return error
+	}
 	if (error instanceof Error) {
-		writeToLog("ERROR", error.stack)
-		return
+		return error
+	}
+	if (typeof error === "object" && error !== null) {
+		try {
+			return new Error(JSON.stringify(error))
+		} catch {
+			return new Error(`${error}`)
+		}
+	}
+	return new Error(`${error}`)
+}
+
+/** Log the error, and record it appropriately */
+function logError(message: string, error: unknown): void
+function logError(error: unknown): void
+function logError(errorOrMessage: unknown, error?: unknown): void {
+	let err: Error
+	let message: string
+	if (error !== undefined) {
+		err = convertToError(error)
+		message = errorOrMessage as string
+	} else {
+		err = convertToError(errorOrMessage)
+		message = ""
 	}
 	if (process.env.NODE_ENV === "production") {
 		if (isUserFacingError(error)) {
@@ -59,21 +85,9 @@ const logError = (error: unknown) => {
 			captureException(error)
 		}
 	}
-	const stackTrace = new Error("").stack
-	if (typeof error === "object" && error !== null) {
-		try {
-			writeToLog("ERROR", JSON.stringify(error))
-			writeToLog("ERROR", stackTrace)
-		} catch {
-			writeToLog("ERROR", error)
-			writeToLog("ERROR", stackTrace)
-		}
-	} else {
-		writeToLog("ERROR", error)
-		writeToLog("ERROR", stackTrace)
-	}
+	writeToLog("ERROR", `${message}\n${err.message}\n${err.stack}`)
 	if (process.env.LOG_TO_CONSOLE) {
-		console.error(error, error instanceof Error ? error.stack : undefined)
+		console.error(err, err.stack)
 	}
 }
 

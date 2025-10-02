@@ -74,11 +74,6 @@ public struct SettingsView: View {
 
       case .models:
         ModelsView(viewModel: viewModel.llmSettings)
-//          availableModels: viewModel.llmSettings.availableModels,
-//          availableProviders: viewModel.llmSettings.availableProviders,
-//          providerForModels: $viewModel.llmSettings.providerForModels,
-////          inactiveModels: $viewModel.inactiveModels,
-//          reasoningModels: $viewModel.llmSettings.reasoningModels)
 
       case .chatModes:
         ChatModeView(customInstructions: $viewModel.customInstructions)

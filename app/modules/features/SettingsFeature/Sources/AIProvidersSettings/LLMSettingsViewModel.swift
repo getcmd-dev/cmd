@@ -27,12 +27,14 @@ public final class LLMSettingsViewModel {
     providerSettings = settings.llmProviderSettings
     enabledModels = settings.enabledModels
     preferedProviders = settings.preferedProviders
+    reasoningModels = settings.reasoningModels
 
     settingsService.liveValues()
       .map({ LLMSettings(
         enabledModels: $0.enabledModels,
         providerSettings: $0.llmProviderSettings,
-        preferedProviders: $0.preferedProviders) })
+        preferedProviders: $0.preferedProviders,
+        reasoningModels: $0.reasoningModels) })
       .removeDuplicates()
       .sink { @Sendable [weak self] llmSettings in
         Task { @MainActor in
@@ -46,6 +48,9 @@ public final class LLMSettingsViewModel {
           if self.preferedProviders != llmSettings.preferedProviders {
             self.preferedProviders = llmSettings.preferedProviders
           }
+          if self.reasoningModels != llmSettings.reasoningModels { [
+            self.reasoningModels = llmSettings.reasoningModels,
+          ] }
         }
       }.store(in: &cancellables)
   }
@@ -53,6 +58,9 @@ public final class LLMSettingsViewModel {
   private(set) var providerSettings: [LLMProvider: LLMProviderSettings]
 
   private(set) var enabledModels: [ModelInfoId]
+
+  /// Reasoning settings for the model that suport reasoning.
+  private(set) var reasoningModels: [ModelInfoId: LLMReasoningSetting]
 
   /// For each available model, the associated provider.
   var providerForModels: [LLMModelInfo: LLMProvider] {
@@ -74,40 +82,27 @@ public final class LLMSettingsViewModel {
     }
   }
 
-  /// Reasoning settings for the model that suport reasoning.
-  var reasoningModels: [LLMModelInfo: LLMReasoningSetting] {
-    get {
-      [:] // TODO
-      //      var reasoningModels = [LLMModelInfo: LLMReasoningSetting]()
-      //      for model in availableModels.filter(\.canReason) {
-      //        reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
-      //      }
-      //      for (key, value) in settings.reasoningModels {
-      //        reasoningModels[key] = value
-      //      }
-      //      return reasoningModels
-    }
-    set {
-      // TODO
-      //      let oldValue = settings.reasoningModels
-      //      for (model, provider) in newValue {
-      //        if oldValue[model] != provider {
-      //          settings.reasoningModels[model] = provider
-      //        }
-      //      }
-      //      settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
-    }
-  }
-
-  //  var inactiveModels: [LLMModelInfo] {
-  //    get {
-  //      settings.inactiveModels
-  //    }
-  //    set {
-  //      settings.inactiveModels = newValue
-  //      settingsService.update(setting: \.inactiveModels, to: newValue)
-  //    }
-  //  }
+//    {
+//    get {
+//            var reasoningModels = [LLMModelInfo: LLMReasoningSetting]()
+//            for model in availableModels.filter(\.canReason) {
+//              reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
+//            }
+//            for (key, value) in _reasoningModels {
+//              reasoningModels[] = value
+//            }
+//            return reasoningModels
+//    }
+//    set {
+//            let oldValue = _reasoningModels
+//            for (model, provider) in newValue {
+//              if oldValue[model] != provider {
+//                  _reasoningModels[model] = provider
+//              }
+//            }
+//            settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
+//    }
+//  }
 
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModelInfo] {
@@ -122,6 +117,16 @@ public final class LLMSettingsViewModel {
   /// The LLM providers that have been configured.
   var availableProviders: [LLMProvider] {
     Array(providerSettings.keys)
+  }
+
+  func enableReasoning(for model: LLMModelInfo) {
+    reasoningModels[model.id] = .init(isEnabled: true)
+    settingsService.update(setting: \.reasoningModels, to: reasoningModels)
+  }
+
+  func disableReasoning(for model: LLMModelInfo) {
+    reasoningModels.removeValue(forKey: model.id)
+    settingsService.update(setting: \.reasoningModels, to: reasoningModels)
   }
 
   func enable(model: LLMModelInfo) {
@@ -183,11 +188,17 @@ public final class LLMSettingsViewModel {
   }
 
   func reasoningSetting(for model: LLMModelInfo) -> Binding<LLMReasoningSetting>? {
-    guard let reasoning = reasoningModels[model] else { return nil }
-    return .init(get: { reasoning }, set: { self.reasoningModels[model] = $0 })
+    guard model.canReason else { return nil }
+    return .init(
+      get: { self.reasoningModels[model.id] ?? .init(isEnabled: false) },
+      set: { reasoningSettings in
+        if reasoningSettings.isEnabled {
+          self.enableReasoning(for: model)
+        } else {
+          self.disableReasoning(for: model)
+        }
+      })
   }
-
-//  private func save(enabledModels _: [LLMModel]) { }
 
   private var preferedProviders: [ModelInfoId: LLMProvider]
 
@@ -221,4 +232,5 @@ private struct LLMSettings: Sendable, Equatable {
   let enabledModels: [ModelInfoId]
   let providerSettings: [LLMProvider: LLMProviderSettings]
   let preferedProviders: [ModelInfoId: LLMProvider]
+  let reasoningModels: [ModelInfoId: LLMReasoningSetting]
 }

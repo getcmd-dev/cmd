@@ -34,15 +34,8 @@ extension Settings: Codable {
           guard let provider = LLMProvider(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? [:],
-//      inactiveModels: container
-//        .resilientlyDecodeIfPresent([String].self, forKey: "inactiveModels")?
-//        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? [],
-//      reasoningModels: container
-//        .resilientlyDecodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels")?
-//        .reduce(into: [LLMModel: LLMReasoningSetting]()) { acc, el in
-//          guard let provider = LLMModel(rawValue: el.key) else { return }
-//          acc[provider] = el.value
-//        } ?? [:],
+      reasoningModels: container
+        .resilientlyDecodeIfPresent([ModelInfoId: LLMReasoningSetting].self, forKey: "reasoningModels") ?? [:],
       customInstructions: container
         .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings
         .CustomInstructions(),
@@ -68,10 +61,7 @@ extension Settings: Codable {
     try container.encode(llmProviderSettings.reduce(into: [String: LLMProviderSettings]()) { acc, el in
       acc[el.key.rawValue] = el.value
     }, forKey: "llmProviderSettings")
-//    try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
-//    try container.encode(reasoningModels.reduce(into: [String: LLMReasoningSetting]()) { acc, el in
-//      acc[el.key.rawValue] = el.value
-//    }, forKey: "reasoningModels")
+    try container.encode(reasoningModels, forKey: "reasoningModels")
     try container.encode(customInstructions, forKey: "customInstructions")
     try container.encode(toolPreferences, forKey: "toolPreferences")
     try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")

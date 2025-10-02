@@ -23,8 +23,7 @@ struct ExternalSettings: Sendable, Equatable {
     preferedProviders: [String: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     enabledModels: [ModelInfoId] = [],
-//    inactiveModels: [LLMModel] = [],
-    reasoningModels _: [String: LLMReasoningSetting] = [:],
+    reasoningModels: [ModelInfoId: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -38,8 +37,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
-//    self.inactiveModels = inactiveModels
-//    self.reasoningModels = reasoningModels
+    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
@@ -57,10 +55,9 @@ struct ExternalSettings: Sendable, Equatable {
   // LLM settings
   let preferedProviders: [String: LLMProvider]
   var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-//  let reasoningModels: [String: LLMReasoningSetting]
+  let reasoningModels: [ModelInfoId: LLMReasoningSetting]
 
   let enabledModels: [ModelInfoId]
-//  let inactiveModels: [LLMModel]
   let customInstructions: CustomInstructions
   let toolPreferences: [ToolPreference]
   let keyboardShortcuts: KeyboardShortcuts
@@ -110,11 +107,9 @@ extension ExternalSettings: Codable {
         } ?? Self.defaultSettings.llmProviderSettings,
       enabledModels: container.resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? Self.defaultSettings
         .enabledModels,
-//      inactiveModels: container
-//        .resilientlyDecodeIfPresent([String].self, forKey: "inactiveModels")?
-//        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? Self.defaultSettings.inactiveModels,
-//      reasoningModels: container
-//        .resilientlyDecodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings.reasoningModels,
+      reasoningModels: container
+        .resilientlyDecodeIfPresent([ModelInfoId: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings
+        .reasoningModels,
       customInstructions: container
         .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Self.defaultSettings
         .customInstructions,
@@ -157,12 +152,9 @@ extension ExternalSettings: Codable {
     if encodeAllValues || enabledModels != Self.defaultSettings.enabledModels {
       try container.encode(enabledModels, forKey: "enabledModels")
     }
-    //    if encodeAllValues || inactiveModels != Self.defaultSettings.inactiveModels {
-    //      try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
-    //    }
-//    if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
-//      try container.encode(reasoningModels, forKey: "reasoningModels")
-//    }
+    if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
+      try container.encode(reasoningModels, forKey: "reasoningModels")
+    }
     if encodeAllValues || customInstructions != Self.defaultSettings.customInstructions {
       try container.encode(customInstructions, forKey: "customInstructions")
     }
@@ -256,8 +248,7 @@ extension Settings {
       preferedProviders: externalSettings.preferedProviders,
       llmProviderSettings: externalSettings.llmProviderSettings,
       enabledModels: externalSettings.enabledModels,
-//      inactiveModels: externalSettings.inactiveModels,
-//      reasoningModels: externalSettings.reasoningModels,
+      reasoningModels: externalSettings.reasoningModels,
       customInstructions: externalSettings.customInstructions,
       toolPreferences: externalSettings.toolPreferences,
       keyboardShortcuts: externalSettings.keyboardShortcuts,
@@ -274,8 +265,7 @@ extension Settings {
       preferedProviders: preferedProviders,
       llmProviderSettings: llmProviderSettings,
       enabledModels: enabledModels,
-//      inactiveModels: inactiveModels,
-//      reasoningModels: reasoningModels,
+      reasoningModels: reasoningModels,
       customInstructions: customInstructions,
       toolPreferences: toolPreferences,
       keyboardShortcuts: keyboardShortcuts,

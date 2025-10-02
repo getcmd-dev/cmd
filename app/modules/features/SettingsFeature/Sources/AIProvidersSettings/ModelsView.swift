@@ -15,20 +15,10 @@ struct ModelsView: View {
   init(
     viewModel: LLMSettingsViewModel,
     availableModels: [LLMModelInfo]? = nil)
-//    availableModels: [LLMModelInfo],
-//    availableProviders: [LLMProvider],
-//    providerForModels: Binding<[LLMModelInfo: LLMProvider]>,
-  ////    inactiveModels: Binding<[LLMModelInfo]>,
-//    reasoningModels: Binding<[LLMModelInfo: LLMReasoningSetting]>)
   {
     self.viewModel = viewModel
     self.availableModels = availableModels ?? viewModel.availableModels
     _initialModelsOrder = .init(initialValue: self.availableModels.sorted(by: viewModel.enabledModels))
-//    self.availableModels = availableModels
-//    self.availableProviders = availableProviders
-//    _providerForModels = providerForModels
-    ////    _inactiveModels = inactiveModels
-//    _reasoningModels = reasoningModels
   }
 
   var body: some View {
@@ -67,17 +57,9 @@ struct ModelsView: View {
 
   @State private var initialModelsOrder: [ModelInfoId: Int]
   @Bindable private var viewModel: LLMSettingsViewModel
-  ///  @Binding private var providerForModels: [LLMModelInfo: LLMProvider]
-  ///  @Binding private var inactiveModels: [LLMModelInfo]
-  ///  @Binding private var reasoningModels: [LLMModelInfo: LLMReasoningSetting]
   @State private var searchText = ""
 
   private let availableModels: [LLMModelInfo]
-
-  @Dependency(\.llmService) private var llmService
-
-//  private let availableModels: [LLMModelInfo]
-//  private let availableProviders: [LLMProvider]
 
   private var filteredModels: [LLMModelInfo] {
     availableModels
@@ -247,7 +229,7 @@ extension [LLMModelInfo] {
       case (false, true):
         false
       default:
-          a.rankForProgramming < b.rankForProgramming
+        a.rankForProgramming < b.rankForProgramming
       }
     })
     .reduce(into: [:], { acc, model in

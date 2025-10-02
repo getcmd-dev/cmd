@@ -57,8 +57,7 @@ public struct Settings: Sendable, Equatable {
     preferedProviders: [ModelInfoId: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     enabledModels: [ModelInfoId] = [],
-//    inactiveModels: [LLMModel] = [],
-//    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
+    reasoningModels: [ModelInfoId: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -73,8 +72,7 @@ public struct Settings: Sendable, Equatable {
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
-//    self.inactiveModels = inactiveModels
-//    self.reasoningModels = reasoningModels
+    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
@@ -132,10 +130,9 @@ public struct Settings: Sendable, Equatable {
   // LLM settings
   public var preferedProviders: [ModelInfoId: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-//  public var reasoningModels: [LLMModel: LLMReasoningSetting] // TODO: deal with this
+  public var reasoningModels: [ModelInfoId: LLMReasoningSetting]
 
   public var enabledModels: [ModelInfoId]
-//  public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts

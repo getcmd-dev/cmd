@@ -67,6 +67,7 @@ export class GroqModelProvider implements ModelProvider {
 			) || []
 		return matchModelData(
 			allModels.map((model) => model.id),
+			this.name,
 			referenceModels,
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)

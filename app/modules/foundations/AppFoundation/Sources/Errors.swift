@@ -16,6 +16,13 @@ public struct AppError: LocalizedError {
     self.llmMessage = llmMessage ?? message
     self.underlyingError = underlyingError
     _debugDescription = debugDescription
+
+    #if DEBUG
+    let addresses = Thread.callStackReturnAddresses
+    // You would typically need a more sophisticated way to symbolize these addresses
+    // For debugging, you might print them directly or use a tool to symbolize later.
+    stack = addresses.map { String(describing: $0) }.joined(separator: "\n")
+    #endif
   }
 
   public init(_ error: Error) {
@@ -38,6 +45,10 @@ public struct AppError: LocalizedError {
   /// A message that can be sent to an LLM to help it understand/fix the error.
   public let llmMessage: String
   public let underlyingError: Error?
+
+  #if DEBUG
+  public let stack: String
+  #endif
 
   private let _debugDescription: String?
 }
