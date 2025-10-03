@@ -127,7 +127,7 @@ clean_command() {
 	cd "$(git rev-parse --show-toplevel)/app/modules"
 
 	# Remove derived files from swift packages
-	swift package clean
+	find . -type d -name '.build' -exec sh -c 'rm -rf "$1"' _ {} \;
 	find . -not -path './.git/*' 2>/dev/null |
 		# Don't remove files in ./services/LocalServerService/Sources/Resources
 		grep -v 'services/LocalServerService/Sources/Resources' |

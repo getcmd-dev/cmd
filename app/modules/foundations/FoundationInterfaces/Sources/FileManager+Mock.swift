@@ -171,7 +171,6 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func fileHandle(forWritingTo _: URL) throws -> FileHandle {
-    // fatalError("fileHandle(forWritingTo:) not implemented")
     FileHandle()
   }
 

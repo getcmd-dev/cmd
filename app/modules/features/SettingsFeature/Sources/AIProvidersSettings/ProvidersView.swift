@@ -250,7 +250,6 @@ private struct ProviderCard: View {
       if isConnected, let onSelectModels, provider.externalAgent == nil {
         Button(action: {
           onSelectModels()
-//          showingModelSelection = true
         }) {
           HStack {
             Text("\(enabledModelsCount) models enabled")
