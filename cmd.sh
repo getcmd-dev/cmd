@@ -118,6 +118,9 @@ install_swiftformat() {
 	echo "✅ swiftformat $($SWIFTFORMAT_PATH --version) installed at $target_path."
 }
 
+# Xcode has a weird bug where when opening the Xcode project it will not show most files.
+# This seems to happen when there's lingering files from nested Swift packages.
+# This function attempts to remove such files.
 clean_command() {
 	# Signal to the file watcher that is should not regenerate files.
 	touch "$(git rev-parse --show-toplevel)/.build/disable-watcher"

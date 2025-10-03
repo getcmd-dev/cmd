@@ -8,3 +8,6 @@ The MacOS app is built mostly with Swift 6 / SwiftUI. It embedes a local typescr
 - Make sure to write meaningful tests whenever relevant but don't write tests that are straightforward (ex: testing a default value). Verify that those new tests pass.
 - Make sure to verify that the code compiles.
 - Respect the existing modularization structure.
+
+## App
+When modifying files in `./app` be sure to first read `./app/Claude.md`
