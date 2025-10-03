@@ -55,9 +55,11 @@ final class LLMModelManager: LLMModelManagerProtocol {
     modelByModelSlug = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.modelInfo.id, default: []].append(model)
     }
-    modelInfosByModelSlug = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
+    let modelInfosByModelSlug = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.modelInfo.id] = model.modelInfo
     }
+    self.modelInfosByModelSlug = modelInfosByModelSlug
+    mutableModels = .init(modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name }))
     observerChangesToSettings()
   }
 
@@ -107,7 +109,7 @@ final class LLMModelManager: LLMModelManagerProtocol {
   private var modelInfosByModelSlug: [String: LLMModelInfo]
   private var cancellables = Set<AnyCancellable>()
 
-  private let mutableModels = CurrentValueSubject<[LLMModelInfo], Never>([])
+  private let mutableModels: CurrentValueSubject<[LLMModelInfo], Never>
 
   private let queue = TaskQueue<Void, Never>()
 

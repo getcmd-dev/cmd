@@ -19,7 +19,7 @@ import ThreadSafe
 // MARK: - LLMModelManagerTests
 
 @Suite("LLMModelManager Tests")
-struct LLMModelManagerTests {
+class LLMModelManagerTests {
 
   // MARK: - Initialization Tests
 
@@ -277,8 +277,18 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "claude-haiku-new", globalId: "claude-haiku-35", name: "Claude Haiku"),
     ])
     let server = MockLocalServer()
-    server.onPostRequest = { path, _, _ in
+    server.onPostRequest = { path, data, _ in
       #expect(path == "models")
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "test-key"
+            }
+          }
+        }
+        """)
       return try JSONEncoder().encode(serverModelsResponse)
     }
     let fileManager = MockFileManager()
@@ -313,8 +323,18 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "new-model", globalId: "new-slug", name: "New Model"),
     ])
     let server = MockLocalServer()
-    server.onPostRequest = { _, _, _ in
-      try JSONEncoder().encode(serverModelsResponse)
+    server.onPostRequest = { _, data, _ in
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "test-key"
+            }
+          }
+        }
+        """)
+      return try JSONEncoder().encode(serverModelsResponse)
     }
 
     let sut = LLMModelManager(
@@ -342,8 +362,18 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
     ])
     let server = MockLocalServer()
-    server.onPostRequest = { _, _, _ in
-      try JSONEncoder().encode(serverModelsResponse)
+    server.onPostRequest = { _, data, _ in
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "test-key"
+            }
+          }
+        }
+        """)
+      return try JSONEncoder().encode(serverModelsResponse)
     }
     let fileManager = MockFileManager()
     let sut = LLMModelManager(
@@ -415,23 +445,21 @@ struct LLMModelManagerTests {
 
     let receivedUpdates = expectation(description: "Received activeModels update")
     let updateCount = Atomic(0)
-    var cancellable: AnyCancellable?
 
-    cancellable = sut.activeModels.sink { models in
+    sut.activeModels.sink { models in
       let count = updateCount.increment()
       if count == 2 { // First update is initial value, second is after our change
         #expect(models.count == 2)
         #expect(models.map(\.slug).sorted() == ["claude-haiku-35", "claude-sonnet-4"])
         receivedUpdates.fulfill()
       }
-    }
+    }.store(in: &cancellables)
 
     // when
     settingsService.update(setting: \.enabledModels, to: ["claude-sonnet-4", "claude-haiku-35"])
 
     // then
     try await fulfillment(of: [receivedUpdates])
-    _ = cancellable
   }
 
   // MARK: - Settings Observation Tests
@@ -444,7 +472,17 @@ struct LLMModelManagerTests {
     ])
     let server = MockLocalServer()
     let requestReceived = expectation(description: "Server request received")
-    server.onPostRequest = { _, _, _ in
+    server.onPostRequest = { _, data, _ in
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "test-key"
+            }
+          }
+        }
+        """)
       requestReceived.fulfill()
       return try JSONEncoder().encode(serverModelsResponse)
     }
@@ -456,14 +494,20 @@ struct LLMModelManagerTests {
       fileManager: fileManager,
       shellService: MockShellService())
 
+    let modelsUpdated = expectation(description: "Models updated")
+    sut.models.sink { models in
+      if !models.isEmpty {
+        modelsUpdated.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
+
     // when
     settingsService.update(
       setting: \.llmProviderSettings,
       to: [.anthropic: Settings.LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1)])
 
     // then
-    try await fulfillment(of: [requestReceived], timeout: 2)
-    try await Task.sleep(for: .milliseconds(50))
+    try await fulfillment(of: [requestReceived, modelsUpdated])
     #expect(sut.modelsAvailable(for: .anthropic).count == 1)
   }
 
@@ -475,9 +519,33 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
     ])
     let server = MockLocalServer()
+    let firstRequestReceived = expectation(description: "First server request received")
     let secondRequestReceived = expectation(description: "Second server request received")
-    server.onPostRequest = { _, _, _ in
-      if requestCount.increment() == 2 {
+    server.onPostRequest = { _, data, _ in
+      let count = requestCount.increment()
+      if count == 1 {
+        data.expectToMatch("""
+          {
+            "provider" : {
+              "name" : "anthropic",
+              "settings" : {
+                "apiKey" : "old-key"
+              }
+            }
+          }
+          """)
+        firstRequestReceived.fulfill()
+      } else if count == 2 {
+        data.expectToMatch("""
+          {
+            "provider" : {
+              "name" : "anthropic",
+              "settings" : {
+                "apiKey" : "new-key"
+              }
+            }
+          }
+          """)
         secondRequestReceived.fulfill()
       }
       return try JSONEncoder().encode(serverModelsResponse)
@@ -493,8 +561,7 @@ struct LLMModelManagerTests {
       fileManager: fileManager,
       shellService: MockShellService())
 
-    // Wait for initial fetch
-    try await Task.sleep(for: .milliseconds(50))
+    try await fulfillment(of: [firstRequestReceived])
 
     // when
     settingsService.update(
@@ -504,6 +571,7 @@ struct LLMModelManagerTests {
     // then
     try await fulfillment(of: [secondRequestReceived], timeout: 2)
     #expect(requestCount.value == 2)
+    _ = sut
   }
 
   @Test("Removes models when provider is removed from settings")
@@ -526,13 +594,20 @@ struct LLMModelManagerTests {
       fileManager: fileManager,
       shellService: MockShellService())
 
+    let modelsUpdated = expectation(description: "Models updated after provider removal")
+    sut.models.sink { models in
+      if !models.contains(where: { $0.slug == "claude-sonnet-4" }) {
+        modelsUpdated.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
+
     // when
     settingsService.update(
       setting: \.llmProviderSettings,
       to: [.openAI: Settings.LLMProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2)])
-    try await Task.sleep(for: .milliseconds(50))
 
     // then
+    try await fulfillment(of: [modelsUpdated])
     #expect(sut.modelsAvailable(for: .anthropic).isEmpty)
     #expect(sut.modelsAvailable(for: .openAI).count == 1)
     #expect(sut.getModel(by: "claude-sonnet") == nil)
@@ -585,8 +660,18 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
     ])
     let server = MockLocalServer()
-    server.onPostRequest = { _, _, _ in
-      try JSONEncoder().encode(anthropicResponse)
+    server.onPostRequest = { _, data, _ in
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "key1"
+            }
+          }
+        }
+        """)
+      return try JSONEncoder().encode(anthropicResponse)
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
@@ -601,13 +686,20 @@ struct LLMModelManagerTests {
       fileManager: fileManager,
       shellService: MockShellService())
 
-    // Wait for models to be fetched
-    try await Task.sleep(for: .milliseconds(100))
-
-    // when
-    let activeModels = sut.activeModels.currentValue
+    let modelsReady = expectation(description: "Both models are active")
+    sut.models.sink { models in
+      if
+        models.count == 2,
+        models.contains(where: { $0.slug == "claude-sonnet-4" }),
+        models.contains(where: { $0.slug == "claudeCode" })
+      {
+        modelsReady.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
 
     // then
+    try await fulfillment(of: [modelsReady])
+    let activeModels = sut.activeModels.currentValue
     #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
     #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
     #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
@@ -620,8 +712,18 @@ struct LLMModelManagerTests {
       makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
     ])
     let server = MockLocalServer()
-    server.onPostRequest = { _, _, _ in
-      try JSONEncoder().encode(anthropicResponse)
+    server.onPostRequest = { _, data, _ in
+      data.expectToMatch("""
+        {
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : {
+              "apiKey" : "key1"
+            }
+          }
+        }
+        """)
+      return try JSONEncoder().encode(anthropicResponse)
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
@@ -636,14 +738,18 @@ struct LLMModelManagerTests {
       fileManager: fileManager,
       shellService: MockShellService())
 
-    // Wait for initial models to be fetched
-    try await Task.sleep(for: .milliseconds(100))
+    let initialModelsReady = expectation(description: "Initial models are ready")
+    sut.models.sink { models in
+      if models.count == 2 {
+        initialModelsReady.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
+    try await fulfillment(of: [initialModelsReady])
 
     let receivedUpdates = expectation(description: "Received activeModels update")
     let updateCount = Atomic(0)
-    var cancellable: AnyCancellable?
 
-    cancellable = sut.activeModels.sink { models in
+    sut.activeModels.sink { models in
       let count = updateCount.increment()
       if count == 2 { // First update is initial value, second is after our change
         // Even when enabledModels is empty, claudeCode should still be active
@@ -651,14 +757,13 @@ struct LLMModelManagerTests {
         #expect(models.first?.slug == "claudeCode")
         receivedUpdates.fulfill()
       }
-    }
+    }.store(in: &cancellables)
 
     // when
     settingsService.update(setting: \.enabledModels, to: []) // Clear all enabled models
 
     // then
     try await fulfillment(of: [receivedUpdates])
-    _ = cancellable
   }
 
   // MARK: - Low Tier Model Tests
@@ -774,6 +879,9 @@ struct LLMModelManagerTests {
     // then
     #expect(lowTierModel == nil)
   }
+
+  private var cancellables = Set<AnyCancellable>()
+
 }
 
 // MARK: - Test Helpers
