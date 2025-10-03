@@ -18,6 +18,7 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
     "AppFoundation",
     "ConcurrencyFoundation",

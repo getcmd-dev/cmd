@@ -328,6 +328,7 @@ targets.append(contentsOf: Target.module(
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AppFoundation",
     "ChatServiceInterface",
     "CodePreview",
@@ -1139,7 +1140,6 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
-    "LLMServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",
@@ -1197,6 +1197,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
     "AppFoundation",
     "ConcurrencyFoundation",

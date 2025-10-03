@@ -56,13 +56,17 @@ public protocol LLMService: Sendable {
 
   func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel]
 
-  func getModel(by providerId: String) -> LLMModel?
+  func getModel(by providerModelId: String) -> LLMModel?
 
-  func getModelInfo(by slug: String) -> LLMModelInfo?
+  func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo?
 
   func provider(for model: LLMModelInfo) -> LLMProvider?
 
   var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> { get }
+
+  /// Returns the low tier model from configured providers with the cheapest input cost.
+  /// Low tier models are suitable for simple queries that favor speed & low cost over accuracy.
+  func lowTierModel() -> LLMModel?
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage

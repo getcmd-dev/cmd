@@ -25,23 +25,22 @@ final class DefaultLLMService: LLMService {
     settingsService: SettingsService,
     userDefaults: UserDefaultsI,
     shellService: ShellService,
-    fileManager: FileManagerI)
+    fileManager _: FileManagerI,
+    llmModelsManager: LLMModelManagerProtocol)
   {
     self.server = server
     self.settingsService = settingsService
     self.shellService = shellService
-    llmModelsManager = LLMModelManager(
-      localServer: server,
-      settingsService: settingsService,
-      fileManager: fileManager,
-      shellService: shellService)
+    self.llmModelsManager = llmModelsManager
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
     #endif
   }
 
-  let llmModelsManager: LLMModelManager
+  let llmModelsManager: LLMModelManagerProtocol
+
+  let settingsService: SettingsService
 
   func sendMessage(
     messageHistory: [Schema.Message],
@@ -144,7 +143,7 @@ final class DefaultLLMService: LLMService {
       messageHistory: messageHistory,
       tools: tools,
       model: model,
-      enableReasoning: false, // model.canReason && settings.reasoningModels[model]?.isEnabled == true,
+      enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
       context: context,
       supportDebugStreamRepeatInDebug: true,
       handleUpdateStream: handleUpdateStream,
@@ -152,8 +151,7 @@ final class DefaultLLMService: LLMService {
   }
 
   func nameConversation(firstMessage: String) async throws -> String {
-    let settings = settingsService.values()
-    guard let lowTierModel = settings.lowTierModel else {
+    guard let lowTierModel = lowTierModel() else {
       defaultLogger.error("Unable to name conversation: no low tier model available")
       return "New conversation"
     }
@@ -203,8 +201,6 @@ final class DefaultLLMService: LLMService {
 
     return assistantMessage.content.first?.asText?.content ?? ""
   }
-
-  private let settingsService: SettingsService
 
   private let shellService: ShellService
 
@@ -271,7 +267,7 @@ final class DefaultLLMService: LLMService {
       let providerSettings = settings.llmProviderSettings[provider],
       let providerModel = modelsAvailable(for: provider).first(where: { $0.modelInfo == model })
     else {
-      throw AppError("Oups")
+      throw AppError("Unsupported model \(model.id)")
     }
 
     let params = try await Schema.SendMessageRequestParams(
@@ -375,7 +371,12 @@ extension BaseProviding where
         settingsService: settingsService,
         userDefaults: sharedUserDefaults,
         shellService: shellService,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        llmModelsManager: LLMModelManager(
+          localServer: localServer,
+          settingsService: settingsService,
+          fileManager: fileManager,
+          shellService: shellService))
     }
   }
 }

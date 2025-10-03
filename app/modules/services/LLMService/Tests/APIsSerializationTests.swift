@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import DependenciesTestSupport
 import Foundation
 import LLMFoundation
 import LocalServerServiceInterface
@@ -185,8 +186,7 @@ struct APIParamsEncodingTests {
           executable: nil,
           createdOrder: 2),
       ],
-//      reasoningModels: [.claudeSonnet: .init(isEnabled: true)]
-    ))
+      reasoningModels: .init([.claudeSonnet: .init(isEnabled: true)])))
     let service = DefaultLLMService(server: mockServer, settingsService: settingsService)
 
     mockServer.onPostRequest = { path, data, _ in
@@ -323,7 +323,7 @@ struct APIParamsEncodingTests {
 
     // Use a model that doesn't support reasoning
     // TODO: fix this test
-    let nonReasoningModel = LLMModelInfo.claudeSonnet // .claudeHaiku_3_5
+    let nonReasoningModel = LLMModelInfo.claudeHaiku_3_5
     #expect(nonReasoningModel.canReason == false)
 
     _ = try await service.sendMessage(

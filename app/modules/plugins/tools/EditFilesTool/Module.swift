@@ -18,6 +18,7 @@ Target.module(
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AppFoundation",
     "ChatServiceInterface",
     "CodePreview",

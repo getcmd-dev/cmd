@@ -34,14 +34,16 @@ extension DefaultLLMService {
           createdOrder: 2),
       ])),
     shellService: MockShellService = MockShellService(),
-    fileManager: MockFileManager = MockFileManager())
+    fileManager: MockFileManager = MockFileManager(),
+    llmModelsManager: MockLLMModelManager = MockLLMModelManager())
   {
     self.init(
       server: server as LocalServer,
       settingsService: settingsService as SettingsService,
       userDefaults: MockUserDefaults(),
       shellService: shellService,
-      fileManager: fileManager)
+      fileManager: fileManager,
+      llmModelsManager: llmModelsManager)
   }
 
   func sendMessage(

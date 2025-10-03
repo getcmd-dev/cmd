@@ -44,6 +44,8 @@ public final class MockLLMService: LLMService {
 
   public var onProviderForModel: (@Sendable (LLMModelInfo) -> LLMProvider?)?
 
+  public var onLowTierModel: (@Sendable () -> LLMModel?)?
+
   public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
     mutableActiveModels.readonly()
   }
@@ -87,16 +89,20 @@ public final class MockLLMService: LLMService {
     try await onRefetchModelsAvailable?(provider, newSettings) ?? modelsAvailable(for: provider)
   }
 
-  public func getModel(by providerId: String) -> LLMModel? {
-    onGetModelSync?(providerId)
+  public func getModel(by providerModelId: String) -> LLMModel? {
+    onGetModelSync?(providerModelId)
   }
 
-  public func getModelInfo(by slug: String) -> LLMModelInfo? {
-    onGetModelInfo?(slug)
+  public func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo? {
+    onGetModelInfo?(modelInfoId)
   }
 
   public func provider(for model: LLMModelInfo) -> LLMProvider? {
     onProviderForModel?(model)
+  }
+
+  public func lowTierModel() -> LLMModel? {
+    onLowTierModel?()
   }
 
 }

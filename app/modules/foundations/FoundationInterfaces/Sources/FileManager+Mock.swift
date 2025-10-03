@@ -41,7 +41,7 @@ public final class MockFileManager: FileManagerI {
     onChange _: @escaping @Sendable (String?) -> Void)
     -> AnyCancellable
   {
-    fatalError("not implemented")
+    fatalError("observeChangesToContent(of:onChange:) not implemented")
   }
 
   public func read(contentsOf url: URL, encoding _: String.Encoding) throws -> String {
@@ -81,7 +81,14 @@ public final class MockFileManager: FileManagerI {
     in _: FileManager.SearchPathDomainMask)
     -> [URL]
   {
-    files.keys.filter { $0.hasDirectoryPath == (directory == .documentDirectory) }
+    if directory == .documentDirectory {
+      return [URL(fileURLWithPath: "/mock/documents")]
+    } else if directory == .applicationSupportDirectory {
+      return [URL(fileURLWithPath: "/mock/applicationSupport")]
+    } else if directory == .cachesDirectory {
+      return [URL(fileURLWithPath: "/mock/caches")]
+    }
+    return []
   }
 
   public func createDirectory(
@@ -164,7 +171,8 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func fileHandle(forWritingTo _: URL) throws -> FileHandle {
-    fatalError("not implemented")
+    // fatalError("fileHandle(forWritingTo:) not implemented")
+    FileHandle()
   }
 
   // We use URL as keys to support file properties.

@@ -62,7 +62,9 @@ close_xcode() {
 
 focus_dependency_command() {
 	cd "$(git rev-parse --show-toplevel)/app"
-	close_xcode
+	if [ "$SKIP_CLOSE_XCODE" != "true" ]; then
+		close_xcode
+	fi
 	# Reset xcode state
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
@@ -158,7 +160,7 @@ test_swift_command() {
 		esac
 	done
 	if [ -n "$focussed_module" ]; then
-		package_swift=$(focus_dependency_command --module "$focussed_module")
+		SKIP_CLOSE_XCODE=true package_swift=$(focus_dependency_command --module "$focussed_module")
 		cd $(dirname $package_swift) && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
 	else
 		# run all tests

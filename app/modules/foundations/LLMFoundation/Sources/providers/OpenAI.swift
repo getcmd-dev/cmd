@@ -11,5 +11,6 @@ extension LLMProvider {
     name: "OpenAI",
     keychainKey: "OPENAI_API_KEY",
     websiteURL: URL(string: "https://platform.openai.com/docs/models"),
-    apiKeyCreationURL: URL(string: "https://platform.openai.com/api-keys"))
+    apiKeyCreationURL: URL(string: "https://platform.openai.com/api-keys"),
+    lowTierModelId: "openai/gpt-4o-mini")
 }

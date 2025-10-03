@@ -13,10 +13,27 @@ import SettingsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
 
+// MARK: - LLMModelManagerProtocol
+
+protocol LLMModelManagerProtocol: Sendable {
+
+  func modelsAvailable(for provider: LLMProvider) -> [LLMModel]
+
+  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel]
+
+  func getModel(by providerModelId: String) -> LLMModel?
+
+  func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo?
+
+  func provider(for model: LLMModelInfo) -> LLMProvider?
+
+  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> { get }
+}
+
 // MARK: - LLMModelManager
 
 @ThreadSafe
-final class LLMModelManager: Sendable {
+final class LLMModelManager: LLMModelManagerProtocol {
 
   init(
     localServer: LocalServer,
@@ -58,7 +75,7 @@ final class LLMModelManager: Sendable {
       .eraseToAnyPublisher())
   }
 
-  func listModelAvailable(for provider: LLMProvider) -> [LLMModel] {
+  func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
     llmModelByProvider[provider] ?? []
   }
 
@@ -66,11 +83,11 @@ final class LLMModelManager: Sendable {
     try await fetchModelAvailable(for: provider, settings: newSettings)
   }
 
-  func getModel(by modelId: String) -> LLMModel? {
-    modelsById[modelId]
+  func getModel(by providerModelId: String) -> LLMModel? {
+    modelsById[providerModelId]
   }
 
-  func getModelInfo(by modelInfoId: String) -> LLMModelInfo? {
+  func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo? {
     modelInfosByModelSlug[modelInfoId]
   }
 
@@ -258,23 +275,55 @@ extension DefaultLLMService {
   }
 
   func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
-    llmModelsManager.listModelAvailable(for: provider)
+    llmModelsManager.modelsAvailable(for: provider)
   }
 
   func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel] {
     try await llmModelsManager.refetchModelsAvailable(for: provider, newSettings: newSettings)
   }
 
-  func getModel(by modelId: String) -> LLMModel? {
-    llmModelsManager.getModel(by: modelId)
+  func getModel(by providerModelId: String) -> LLMModel? {
+    llmModelsManager.getModel(by: providerModelId)
   }
 
-  func getModelInfo(by modelInfoId: String) -> LLMModelInfo? {
+  func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo? {
     llmModelsManager.getModelInfo(by: modelInfoId)
   }
 
   func provider(for model: LLMModelInfo) -> LLMProvider? {
     llmModelsManager.provider(for: model)
+  }
+
+  func lowTierModel() -> LLMModel? {
+    let settings = settingsService.values()
+
+    // Get low tier model candidates from configured providers
+    let lowTierCandidates: [(provider: LLMProvider, modelInfo: LLMModelInfo)] = settings.llmProviderSettings.keys
+      .compactMap { provider in
+        guard
+          let lowTierModelId = provider.lowTierModelId,
+          let modelInfo = getModelInfo(by: lowTierModelId),
+          settings.enabledModels.contains(modelInfo.id)
+        else {
+          return nil
+        }
+        return (provider, modelInfo)
+      }
+
+    // Sort by input cost (ascending) and return the cheapest
+    guard
+      let (provider, modelInfo) = lowTierCandidates.sorted(by: { a, b in
+        let costA = a.modelInfo.defaultPricing?.input ?? .greatestFiniteMagnitude
+        let costB = b.modelInfo.defaultPricing?.input ?? .greatestFiniteMagnitude
+        return costA < costB
+      }).first
+    else {
+      return nil
+    }
+
+    // Construct the LLMModel using the actual model from the provider
+    let models = modelsAvailable(for: provider)
+    return models.first(where: { $0.modelInfo.id == modelInfo.id })
   }
 }
 

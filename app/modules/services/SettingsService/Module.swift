@@ -16,7 +16,6 @@ Target.module(
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
-    "LLMServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",

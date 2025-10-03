@@ -38,116 +38,130 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("initializing with default parameters creates a tab")
-  func test_initialization_withDefaultParameters() {
-    let viewModel = ChatViewModel()
+  func initializationWithDefaultParameters() {
+    // given/when
+    let sut = ChatViewModel()
 
-    #expect(viewModel.tab.messages == [])
-    #expect(viewModel.currentModel == .claudeSonnet)
+    // then
+    #expect(sut.tab.messages == [])
+    #expect(sut.currentModel == .claudeSonnet)
   }
 
   @MainActor
   @Test("adding a new tab replaces the current one", .dependencies {
     $0.withAllModelAvailable()
   })
-  func test_addTab_increasesTabCount() async {
-    let viewModel = ChatViewModel()
-    let firstTab = viewModel.tab
+  func addingNewTabReplacesCurrentOne() async {
+    // given
+    let sut = ChatViewModel()
+    let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
     await firstTab.sendMessage()
-    #expect(viewModel.tab.messages.count == 1)
-    viewModel.addTab()
+    #expect(sut.tab.messages.count == 1)
 
-    #expect(viewModel.tab.messages.count == 0)
-    #expect(viewModel.tab != firstTab)
+    // when
+    sut.addTab()
+
+    // then
+    #expect(sut.tab.messages.count == 0)
+    #expect(sut.tab != firstTab)
   }
 
   @MainActor
   @Test("adding a new tab with copyingCurrentInput copies the input")
-  func test_addTab_withCopyingCurrentInput() {
-    let viewModel = ChatViewModel()
-    let initialTab = viewModel.tab
-
-    // Set some input on the initial tab
+  func addingNewTabWithCopyingCurrentInput() {
+    // given
+    let sut = ChatViewModel()
+    let initialTab = sut.tab
     initialTab.input.textInput = TextInput([.text("Test input")])
 
-    viewModel.addTab(copyingCurrentInput: true)
+    // when
+    sut.addTab(copyingCurrentInput: true)
 
-    #expect(viewModel.tab != initialTab)
-    #expect(viewModel.tab.input.textInput.string.string == "Test input")
+    // then
+    #expect(sut.tab != initialTab)
+    #expect(sut.tab.input.textInput.string.string == "Test input")
   }
 
   @MainActor
   @Test("handling NewChatEvent adds a new tab")
-  func test_handleNewChatEvent() async {
+  func handlingNewChatEventAddsNewTab() async {
+    // given
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.withAllModelAvailable()
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
     } operation: {
       ChatViewModel()
     }
 
-    let firstTab = viewModel.tab
+    let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
     await firstTab.sendMessage()
     #expect(firstTab.events.count == 1)
 
+    // when
     let handled = await mockAppEventHandlerRegistry.handle(event: NewChatEvent())
-    #expect(handled == true)
 
-    // Verify a new tab was added
-    #expect(viewModel.tab != firstTab)
+    // then
+    #expect(handled == true)
+    #expect(sut.tab != firstTab)
   }
 
   @MainActor
   @Test("handling AddCodeToChatEvent with newThread creates a new tab")
-  func test_handleAddCodeToChatEvent_withNewThread() async {
+  func handlingAddCodeToChatEventWithNewThread() async {
+    // given
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.unknown)
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.withAllModelAvailable()
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ChatViewModel()
     }
-    let firstTab = viewModel.tab
+    let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
     await firstTab.sendMessage()
     #expect(firstTab.events.count == 1)
 
+    // when
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: true, chatMode: .ask))
-    #expect(handled == true)
 
-    // Verify a new tab was added
-    #expect(viewModel.tab != firstTab)
+    // then
+    #expect(handled == true)
+    #expect(sut.tab != firstTab)
   }
 
   @MainActor
   @Test("handling AddCodeToChatEvent with chatMode updates the selected tab's mode")
-  func test_handleAddCodeToChatEvent_withChatMode() async {
+  func handlingAddCodeToChatEventWithChatMode() async {
+    // given
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.unknown)
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ChatViewModel()
     }
 
+    // when
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: false, chatMode: .ask))
-    #expect(handled == true)
 
-    // Verify the selected tab's mode was updated
-    #expect(viewModel.tab.input.mode == .ask)
+    // then
+    #expect(handled == true)
+    #expect(sut.tab.input.mode == .ask)
   }
 
   @MainActor
   @Test("addCodeSelection adds file attachment when no editor is focused")
-  func test_addCodeSelection_addsFileAttachment() async throws {
+  func addCodeSelectionAddsFileAttachment() async throws {
+    // given
     let documentURL = try #require(URL(string: "file:///test/file.swift"))
     let documentContent = "Test file content"
     let mockFileManager = MockFileManager(files: [
@@ -172,7 +186,7 @@ struct ChatViewModelTests {
       ])
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.state(xcodeState))
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
       $0.fileManager = mockFileManager
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
@@ -180,12 +194,13 @@ struct ChatViewModelTests {
       ChatViewModel()
     }
 
-    // Call the method through the event handler
+    // when
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: false, chatMode: nil))
+
+    // then
     #expect(handled)
-    // Verify a file attachment was added
-    #expect(viewModel.tab.input.attachments.count == 1)
-    if case .file(let fileAttachment) = viewModel.tab.input.attachments.first {
+    #expect(sut.tab.input.attachments.count == 1)
+    if case .file(let fileAttachment) = sut.tab.input.attachments.first {
       #expect(fileAttachment.path == documentURL)
       #expect(fileAttachment.content == documentContent)
     } else {
@@ -195,7 +210,8 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("addCodeSelection adds file selection attachment when editor has selection")
-  func test_addCodeSelection_addsFileSelectionAttachment() async throws {
+  func addCodeSelectionAddsFileSelectionAttachment() async throws {
+    // given
     let filePath = try #require(URL(string: "file:///test/file.swift"))
     let content = "Test file content"
     let mockFileManager = MockFileManager(files: [
@@ -229,7 +245,7 @@ struct ChatViewModelTests {
       ])
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.state(xcodeState))
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.xcodeObserver = mockXcodeObserver
       $0.fileManager = mockFileManager
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
@@ -237,12 +253,13 @@ struct ChatViewModelTests {
       ChatViewModel()
     }
 
+    // when
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: false, chatMode: nil))
-    #expect(handled)
 
-    // Verify a file selection attachment was added
-    #expect(viewModel.tab.input.attachments.count == 1)
-    if case .fileSelection(let selectionAttachment) = viewModel.tab.input.attachments.first {
+    // then
+    #expect(handled)
+    #expect(sut.tab.input.attachments.count == 1)
+    if case .fileSelection(let selectionAttachment) = sut.tab.input.attachments.first {
       #expect(selectionAttachment.file.path == filePath)
       #expect(selectionAttachment.file.content == content)
       #expect(selectionAttachment.startLine == 1) // 0-based to 1-based
@@ -256,7 +273,8 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("loadPersistedChatThreads loads the most recent thread")
-  func test_loadPersistedChatThreads_loadsRecentThread() async {
+  func loadPersistedChatThreadsLoadsRecentThread() async {
+    // given
     let threadId = UUID()
     let testThread = ChatThreadModel(
       id: threadId,
@@ -268,60 +286,71 @@ struct ChatViewModelTests {
 
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel.loadPersistedChatThreads()
+    // when
+    await sut.loadPersistedChatThreads()
 
-    #expect(viewModel.tab.id == threadId)
-    #expect(viewModel.tab.name == "Test Thread")
+    // then
+    #expect(sut.tab.id == threadId)
+    #expect(sut.tab.name == "Test Thread")
   }
 
   @MainActor
   @Test("loadPersistedChatThreads handles empty history gracefully")
-  func test_loadPersistedChatThreads_handlesEmptyHistory() async {
+  func loadPersistedChatThreadsHandlesEmptyHistory() async {
+    // given
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    let originalTabId = viewModel.tab.id
-    await viewModel.loadPersistedChatThreads()
+    let originalTabId = sut.tab.id
 
+    // when
+    await sut.loadPersistedChatThreads()
+
+    // then
     // Should keep the original tab when no persisted threads exist
-    #expect(viewModel.tab.id == originalTabId)
+    #expect(sut.tab.id == originalTabId)
   }
 
   @MainActor
   @Test("loadPersistedChatThreads handles service errors gracefully")
-  func test_loadPersistedChatThreads_handlesErrors() async {
+  func loadPersistedChatThreadsHandlesErrors() async {
+    // given
     let mockChatHistoryService = MockChatHistoryService()
     mockChatHistoryService.onLoadLastChatThreads = { _, _ in
       throw NSError(domain: "TestError", code: 1, userInfo: nil)
     }
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    let originalTabId = viewModel.tab.id
-    await viewModel.loadPersistedChatThreads()
+    let originalTabId = sut.tab.id
 
+    // when
+    await sut.loadPersistedChatThreads()
+
+    // then
     // Should keep the original tab when loading fails
-    #expect(viewModel.tab.id == originalTabId)
+    #expect(sut.tab.id == originalTabId)
   }
 
   @MainActor
   @Test("handleSelectChatThread loads and switches to selected thread")
-  func test_handleSelectChatThread_loadsAndSwitches() async throws {
+  func handleSelectChatThreadLoadsAndSwitches() async throws {
+    // given
     let threadId = UUID()
     let testThread = ChatThreadModel(
       id: threadId,
@@ -333,129 +362,146 @@ struct ChatViewModelTests {
 
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    viewModel.handleShowChatHistory()
-    #expect(viewModel.showChatHistory == true)
+    sut.handleShowChatHistory()
+    #expect(sut.showChatHistory == true)
 
     let exp = expectation(description: "tab changed")
-    let cancellable = viewModel.didSet(\.tab) { tab in
+    let cancellable = sut.didSet(\.tab) { tab in
       Task { @MainActor in
         if tab.id == threadId {
           exp.fulfillAtMostOnce()
         }
       }
     }
-    viewModel.handleSelectChatThread(id: threadId)
 
+    // when
+    sut.handleSelectChatThread(id: threadId)
+
+    // then
     // Wait for async operation to complete
     try await fulfillment(of: exp)
     _ = cancellable
 
-    #expect(viewModel.tab.id == threadId)
-    #expect(viewModel.tab.name == "Selected Thread")
-    #expect(viewModel.showChatHistory == false)
+    #expect(sut.tab.id == threadId)
+    #expect(sut.tab.name == "Selected Thread")
+    #expect(sut.showChatHistory == false)
   }
 
   @MainActor
   @Test("handleSelectChatThread handles missing thread gracefully")
-  func test_handleSelectChatThread_handlesMissingThread() async throws {
+  func handleSelectChatThreadHandlesMissingThread() async throws {
+    // given
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    let originalTabId = viewModel.tab.id
-    viewModel.handleShowChatHistory()
-    #expect(viewModel.showChatHistory == true)
+    let originalTabId = sut.tab.id
+    sut.handleShowChatHistory()
+    #expect(sut.showChatHistory == true)
 
     let didChangeShowChatHistory = expectation(description: "didChangeShowChatHistory")
-    let cancellable = viewModel.didSet(\.showChatHistory, perform: { _ in
+    let cancellable = sut.didSet(\.showChatHistory, perform: { _ in
       didChangeShowChatHistory.fulfill()
     })
 
-    viewModel.handleSelectChatThread(id: UUID())
+    // when
+    sut.handleSelectChatThread(id: UUID())
 
+    // then
     try await fulfillment(of: didChangeShowChatHistory)
 
     // Should keep original tab and hide chat history
-    #expect(viewModel.tab.id == originalTabId)
-    #expect(viewModel.showChatHistory == false)
+    #expect(sut.tab.id == originalTabId)
+    #expect(sut.showChatHistory == false)
     _ = cancellable
   }
 
   @MainActor
   @Test("handleSelectChatThread handles service errors gracefully")
-  func test_handleSelectChatThread_handlesErrors() async throws {
+  func handleSelectChatThreadHandlesErrors() async throws {
+    // given
     let mockChatHistoryService = MockChatHistoryService()
     mockChatHistoryService.onLoadChatThread = { _ in
       throw NSError(domain: "TestError", code: 1, userInfo: nil)
     }
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    let originalTabId = viewModel.tab.id
-    viewModel.handleShowChatHistory()
-    #expect(viewModel.showChatHistory == true)
+    let originalTabId = sut.tab.id
+    sut.handleShowChatHistory()
+    #expect(sut.showChatHistory == true)
 
     let exp = expectation(description: "tab changed")
-    let cancellable = viewModel.didSet(\.showChatHistory) { showChatHistory in
+    let cancellable = sut.didSet(\.showChatHistory) { showChatHistory in
       Task { @MainActor in
         if showChatHistory == false {
           exp.fulfillAtMostOnce()
         }
       }
     }
-    viewModel.handleSelectChatThread(id: UUID())
 
+    // when
+    sut.handleSelectChatThread(id: UUID())
+
+    // then
     // Wait for async operation to complete
     try await fulfillment(of: exp)
     _ = cancellable
 
     // Should keep original tab and hide chat history
-    #expect(viewModel.tab.id == originalTabId)
-    #expect(viewModel.showChatHistory == false)
+    #expect(sut.tab.id == originalTabId)
+    #expect(sut.showChatHistory == false)
   }
 
   @MainActor
   @Test("handleShowChatHistory sets showChatHistory to true")
-  func test_handleShowChatHistory() {
-    let viewModel = ChatViewModel()
+  func handleShowChatHistory() {
+    // given
+    let sut = ChatViewModel()
 
-    #expect(viewModel.showChatHistory == false)
+    // when
+    #expect(sut.showChatHistory == false)
 
-    viewModel.handleShowChatHistory()
+    sut.handleShowChatHistory()
 
-    #expect(viewModel.showChatHistory == true)
+    // then
+    #expect(sut.showChatHistory == true)
   }
 
   @MainActor
   @Test("handleHideChatHistory sets showChatHistory to false")
-  func test_handleHideChatHistory() {
-    let viewModel = ChatViewModel()
-    viewModel.handleShowChatHistory()
+  func handleHideChatHistory() {
+    // given
+    let sut = ChatViewModel()
+    sut.handleShowChatHistory()
 
-    #expect(viewModel.showChatHistory == true)
+    // when
+    #expect(sut.showChatHistory == true)
 
-    viewModel.handleHideChatHistory()
+    sut.handleHideChatHistory()
 
-    #expect(viewModel.showChatHistory == false)
+    // then
+    #expect(sut.showChatHistory == false)
   }
 
   @MainActor
   @Test("chat history integration with multiple threads")
-  func test_chatHistoryIntegration_multipleThreads() async {
+  func chatHistoryIntegrationMultipleThreads() async {
+    // given
     let thread1Id = UUID()
     let thread2Id = UUID()
     let thread1 = ChatThreadModel(
@@ -477,35 +523,43 @@ struct ChatViewModelTests {
 
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [thread1, thread2])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
+    // when
     // Load persisted threads (should load most recent)
-    await viewModel.loadPersistedChatThreads()
-    #expect(viewModel.tab.id == thread2Id)
-    #expect(viewModel.tab.name == "Thread 2")
+    await sut.loadPersistedChatThreads()
 
+    // then
+    #expect(sut.tab.id == thread2Id)
+    #expect(sut.tab.name == "Thread 2")
+
+    // when
     // Switch to older thread
-    viewModel.handleSelectChatThread(id: thread1Id)
+    sut.handleSelectChatThread(id: thread1Id)
     try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
-    #expect(viewModel.tab.id == thread1Id)
-    #expect(viewModel.tab.name == "Thread 1")
+    // then
+    #expect(sut.tab.id == thread1Id)
+    #expect(sut.tab.name == "Thread 1")
 
+    // when
     // Switch back to newer thread
-    viewModel.handleSelectChatThread(id: thread2Id)
+    sut.handleSelectChatThread(id: thread2Id)
     try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
-    #expect(viewModel.tab.id == thread2Id)
-    #expect(viewModel.tab.name == "Thread 2")
+    // then
+    #expect(sut.tab.id == thread2Id)
+    #expect(sut.tab.name == "Thread 2")
   }
 
   @MainActor
   @Test("chat history service interactions are called correctly")
-  func test_chatHistoryServiceInteractions() async {
+  func chatHistoryServiceInteractions() async {
+    // given
     let loadLastChatThreadsCalled = Atomic(false)
     let loadChatThreadCalled = Atomic(false)
     let loadChatThreadId = Atomic<UUID?>(nil)
@@ -535,15 +589,20 @@ struct ChatViewModelTests {
     } operation: {
       ChatViewModel()
     }
+
+    // when
     await sut.loadPersistedChatThreads()
 
+    // then
     // Test loadPersistedChatThreads
     #expect(loadLastChatThreadsCalled.value == true)
 
+    // when
     // Test handleSelectChatThread
     sut.handleSelectChatThread(id: threadId)
     try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
+    // then
     #expect(loadChatThreadCalled.value == true)
     #expect(loadChatThreadId.value == threadId)
   }
@@ -552,43 +611,52 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("setting tab saves thread ID to UserDefaults")
-  func test_settingTab_savesThreadIdToUserDefaults() {
+  func settingTabSavesThreadIdToUserDefaults() {
+    // given
     let mockUserDefaults = MockUserDefaults()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatViewModel()
     }
 
     let newTab = ChatThreadViewModel()
-    viewModel.tab = newTab
 
+    // when
+    sut.tab = newTab
+
+    // then
     #expect(mockUserDefaults.string(forKey: "lastOpenChatThreadId") == newTab.id.uuidString)
   }
 
   @MainActor
   @Test("addTab saves new thread ID to UserDefaults")
-  func test_addTab_savesNewThreadIdToUserDefaults() {
+  func addTabSavesNewThreadIdToUserDefaults() {
+    // given
     let mockUserDefaults = MockUserDefaults()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatViewModel()
     }
 
-    let originalTabId = viewModel.tab.id
-    viewModel.addTab()
+    let originalTabId = sut.tab.id
 
+    // when
+    sut.addTab()
+
+    // then
     let savedThreadId = mockUserDefaults.string(forKey: "lastOpenChatThreadId")
     #expect(savedThreadId != originalTabId.uuidString)
-    #expect(savedThreadId == viewModel.tab.id.uuidString)
+    #expect(savedThreadId == sut.tab.id.uuidString)
   }
 
   @MainActor
   @Test("loadPersistedChatThreads uses UserDefaults thread ID first")
-  func test_loadPersistedChatThreads_usesUserDefaultsFirst() async {
+  func loadPersistedChatThreadsUsesUserDefaultsFirst() async {
+    // given
     let savedThreadId = UUID()
     let testThread = ChatThreadModel(
       id: savedThreadId,
@@ -611,23 +679,26 @@ struct ChatViewModelTests {
     ])
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread, recentThread])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel.loadPersistedChatThreads()
+    // when
+    await sut.loadPersistedChatThreads()
 
+    // then
     // Should load the saved thread, not the most recent one
-    #expect(viewModel.tab.id == savedThreadId)
-    #expect(viewModel.tab.name == "Saved Thread")
+    #expect(sut.tab.id == savedThreadId)
+    #expect(sut.tab.name == "Saved Thread")
   }
 
   @MainActor
   @Test("loadPersistedChatThreads falls back to most recent when UserDefaults has invalid ID")
-  func test_loadPersistedChatThreads_fallsBackToMostRecent() async {
+  func loadPersistedChatThreadsFallsBackToMostRecent() async {
+    // given
     let recentThreadId = UUID()
     let recentThread = ChatThreadModel(
       id: recentThreadId,
@@ -642,23 +713,26 @@ struct ChatViewModelTests {
     ])
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
 
-    let viewModel = await withDependencies {
+    // when
+    let sut = await withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
-      let viewModel = ChatViewModel()
-      await viewModel.loadPersistedChatThreads()
-      return viewModel
+      let sut = ChatViewModel()
+      await sut.loadPersistedChatThreads()
+      return sut
     }
 
+    // then
     // Should fall back to most recent thread
-    #expect(viewModel.tab.id == recentThreadId)
-    #expect(viewModel.tab.name == "Recent Thread")
+    #expect(sut.tab.id == recentThreadId)
+    #expect(sut.tab.name == "Recent Thread")
   }
 
   @MainActor
   @Test("loadPersistedChatThreads falls back to most recent when saved thread not found")
-  func test_loadPersistedChatThreads_fallsBackWhenSavedThreadNotFound() async {
+  func loadPersistedChatThreadsFallsBackWhenSavedThreadNotFound() async {
+    // given
     let missingThreadId = UUID()
     let recentThreadId = UUID()
     let recentThread = ChatThreadModel(
@@ -674,23 +748,26 @@ struct ChatViewModelTests {
     ])
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel.loadPersistedChatThreads()
+    // when
+    await sut.loadPersistedChatThreads()
 
+    // then
     // Should fall back to most recent thread since saved one doesn't exist
-    #expect(viewModel.tab.id == recentThreadId)
-    #expect(viewModel.tab.name == "Recent Thread")
+    #expect(sut.tab.id == recentThreadId)
+    #expect(sut.tab.name == "Recent Thread")
   }
 
   @MainActor
   @Test("loadPersistedChatThreads handles missing UserDefaults and uses most recent")
-  func test_loadPersistedChatThreads_handlesMissingUserDefaults() async {
+  func loadPersistedChatThreadsHandlesMissingUserDefaults() async {
+    // given
     let recentThreadId = UUID()
     let recentThread = ChatThreadModel(
       id: recentThreadId,
@@ -703,23 +780,26 @@ struct ChatViewModelTests {
     let mockUserDefaults = MockUserDefaults() // No saved thread ID
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [recentThread])
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel.loadPersistedChatThreads()
+    // when
+    await sut.loadPersistedChatThreads()
 
+    // then
     // Should use most recent thread
-    #expect(viewModel.tab.id == recentThreadId)
-    #expect(viewModel.tab.name == "Recent Thread")
+    #expect(sut.tab.id == recentThreadId)
+    #expect(sut.tab.name == "Recent Thread")
   }
 
   @MainActor
   @Test("tab persistence works end-to-end")
-  func test_tabPersistenceEndToEnd() async {
+  func tabPersistenceEndToEnd() async {
+    // given
     let thread1Id = UUID()
     let thread2Id = UUID()
 
@@ -742,312 +822,65 @@ struct ChatViewModelTests {
     let mockUserDefaults = MockUserDefaults()
     let mockChatHistoryService = MockChatHistoryService(chatThreads: [thread1, thread2])
 
+    // when
     // First instance - should load most recent (thread2)
-    let viewModel1 = withDependencies {
+    let sut1 = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel1.loadPersistedChatThreads()
-    #expect(viewModel1.tab.id == thread2Id)
+    await sut1.loadPersistedChatThreads()
 
+    // then
+    #expect(sut1.tab.id == thread2Id)
+
+    // when
     // Switch to thread1
-    viewModel1.handleSelectChatThread(id: thread1Id)
+    sut1.handleSelectChatThread(id: thread1Id)
     try? await Task.sleep(nanoseconds: 100_000_000) // Allow async operation to complete
-    #expect(viewModel1.tab.id == thread1Id)
 
+    // then
+    #expect(sut1.tab.id == thread1Id)
+
+    // when
     // Create second instance - should load thread1 (the last saved one)
-    let viewModel2 = withDependencies {
+    let sut2 = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    await viewModel2.loadPersistedChatThreads()
-    #expect(viewModel2.tab.id == thread1Id)
-    #expect(viewModel2.tab.name == "Thread 1")
+    await sut2.loadPersistedChatThreads()
+
+    // then
+    #expect(sut2.tab.id == thread1Id)
+    #expect(sut2.tab.name == "Thread 1")
   }
 
   @MainActor
   @Test("UserDefaults key constant is correct")
-  func test_userDefaultsKeyConstant() {
+  func userDefaultsKeyConstant() {
+    // given
     let mockUserDefaults = MockUserDefaults()
 
-    let viewModel = withDependencies {
+    let sut = withDependencies {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatViewModel()
     }
 
     let newTab = ChatThreadViewModel()
-    viewModel.tab = newTab
 
+    // when
+    sut.tab = newTab
+
+    // then
     // Verify the specific key used
     #expect(mockUserDefaults.string(forKey: "lastOpenChatThreadId") == newTab.id.uuidString)
     #expect(mockUserDefaults.string(forKey: "wrongKey") == nil)
-  }
-
-  // MARK: - Summarization Tests
-
-  @MainActor
-  @Test("conversation summarization is triggered when token usage exceeds 80% of context size", .dependencies {
-    $0.withAllModelAvailable()
-  })
-  func test_conversationSummarization_triggeredWhenTokensExceedThreshold() async throws {
-    @Dependency(\.llmService) var llmService
-    let mockLLMService = try #require(llmService as? MockLLMService)
-    let summarizeConversationCalled = Atomic(false)
-    let expectedSummary = "This is a conversation summary"
-
-    mockLLMService.onSummarizeConversation = { _, _ in
-      summarizeConversationCalled.set(to: true)
-      return expectedSummary
-    }
-
-    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
-      let assistantMessage = AssistantMessage("Test response")
-      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-
-      handleUpdateStream(updateStream)
-
-      return SendMessageResponse(
-        newMessages: [assistantMessage],
-        usageInfo: LLMUsageInfo(
-          inputTokens: model.contextSize * 4 / 5, // 80% of context
-          outputTokens: 15000, // Total > 80% of context
-          idx: 0))
-    }
-
-    let viewModel = ChatThreadViewModel()
-
-    viewModel.input.textInput = TextInput([.text("Test message")])
-    await viewModel.sendMessage()
-
-    #expect(summarizeConversationCalled.value == true)
-
-    // Verify summary message was added
-    let summaryMessages = viewModel.messages.filter { message in
-      message.content.contains { content in
-        if case .conversationSummary(let summary) = content {
-          return summary.text == expectedSummary
-        }
-        return false
-      }
-    }
-    #expect(summaryMessages.count == 1)
-  }
-
-  @MainActor
-  @Test("conversation summarization is not triggered when token usage is below threshold")
-  func test_conversationSummarization_notTriggeredWhenTokensBelowThreshold() async throws {
-    @Dependency(\.llmService) var llmService
-    let mockLLMService = try #require(llmService as? MockLLMService)
-    let summarizeConversationCalled = Atomic(false)
-
-    mockLLMService.onSummarizeConversation = { _, _ in
-      summarizeConversationCalled.set(to: true)
-      return "This should not be called"
-    }
-
-    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
-      let assistantMessage = AssistantMessage("Test response")
-      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-
-      handleUpdateStream(updateStream)
-
-      return SendMessageResponse(
-        newMessages: [assistantMessage],
-        usageInfo: LLMUsageInfo(
-          inputTokens: model.contextSize * 3 / 5, // 60% of context
-          outputTokens: 10000, // Total < 80% of context
-          idx: 0))
-    }
-
-    let viewModel = ChatThreadViewModel()
-
-    viewModel.input.textInput = TextInput([.text("Test message")])
-    await viewModel.sendMessage()
-
-    #expect(summarizeConversationCalled.value == false)
-
-    // Verify no summary message was added
-    let summaryMessages = viewModel.messages.filter { message in
-      message.content.contains { content in
-        if case .conversationSummary = content {
-          return true
-        }
-        return false
-      }
-    }
-    #expect(summaryMessages.count == 0)
-  }
-
-  @MainActor
-  @Test("summarization uses correct model and message history", .dependencies {
-    $0.withAllModelAvailable()
-  })
-  func test_conversationSummarization_usesCorrectParameters() async throws {
-    @Dependency(\.llmService) var llmService
-    let mockLLMService = try #require(llmService as? MockLLMService)
-    mockLLMService.mutableActiveModels.send([.gpt])
-    let capturedMessageHistory = Atomic<[Schema.Message]?>(nil)
-    let capturedModel = Atomic<LLMModelInfo?>(nil)
-
-    mockLLMService.onSummarizeConversation = { messageHistory, model in
-      capturedModel.set(to: model)
-      capturedMessageHistory.set(to: messageHistory)
-      return "Summary"
-    }
-
-    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
-      let assistantMessage = AssistantMessage("Assistant response")
-      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-
-      handleUpdateStream(updateStream)
-
-      return SendMessageResponse(
-        newMessages: [assistantMessage],
-        usageInfo: LLMUsageInfo(
-          inputTokens: model.contextSize * 4 / 5, // 80% of context
-          outputTokens: 15000, // Total > 80% of context
-          idx: 0))
-    }
-
-    let viewModel = ChatThreadViewModel()
-
-    viewModel.input.textInput = TextInput([.text("User message")])
-    await viewModel.sendMessage()
-
-    // Verify correct parameters were passed to summarization
-    #expect(capturedModel.value == .gpt)
-    #expect(capturedMessageHistory.value?.first?.role == .user)
-  }
-
-  @MainActor
-  @Test("summarization handles errors gracefully", .dependencies {
-    $0.withAllModelAvailable()
-  })
-  func test_conversationSummarization_handlesErrorsGracefully() async throws {
-    @Dependency(\.llmService) var llmService
-    let mockLLMService = try #require(llmService as? MockLLMService)
-
-    mockLLMService.onSummarizeConversation = { _, _ in
-      throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Summarization failed"])
-    }
-
-    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
-      let assistantMessage = AssistantMessage("Test response")
-      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-
-      handleUpdateStream(updateStream)
-
-      return SendMessageResponse(
-        newMessages: [assistantMessage],
-        usageInfo: LLMUsageInfo(
-          inputTokens: model.contextSize * 4 / 5, // 80% of context
-          outputTokens: 15000, // Total > 80% of context
-          idx: 0))
-    }
-
-    let viewModel = ChatThreadViewModel()
-
-    let initialMessageCount = viewModel.messages.count
-
-    viewModel.input.textInput = TextInput([.text("Test message")])
-    await viewModel.sendMessage()
-
-    // Verify the conversation continues normally despite summarization error
-    #expect(viewModel.messages.count > initialMessageCount)
-
-    // Verify no summary message was added due to error
-    let summaryMessages = viewModel.messages.filter { message in
-      message.content.contains { content in
-        if case .conversationSummary = content {
-          return true
-        }
-        return false
-      }
-    }
-    #expect(summaryMessages.count == 0)
-  }
-
-  @MainActor
-  @Test("message sent during summarization waits for completion and uses summarized context", .dependencies {
-    $0.withAllModelAvailable()
-  })
-  func test_messageDuringSummarization_waitsAndUsesSummarizedContext() async throws {
-    @Dependency(\.llmService) var llmService
-    let mockLLMService = try #require(llmService as? MockLLMService)
-    let summarizationStarted = expectation(description: "Summarization started")
-    let secondMessageSentByUser = expectation(description: "Second message sent by user")
-
-    let messagesSent = Atomic<[[Schema.Message]]>([])
-
-    mockLLMService.onSummarizeConversation = { _, _ in
-      summarizationStarted.fulfill()
-      // Complete summarization after the second message is sent to test concurrent behavior.
-      try await fulfillment(of: secondMessageSentByUser)
-      return "Conversation summary of previous messages"
-    }
-
-    let sendMessageCallCount = Atomic(0)
-    mockLLMService.onSendMessage = { messageHistory, _, model, _, _, handleUpdateStream in
-      messagesSent.mutate { $0.append(messageHistory) }
-
-      switch sendMessageCallCount.increment() {
-      case 1:
-        // First message - trigger summarization
-        let assistantMessage = AssistantMessage("First response")
-        let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-        handleUpdateStream(updateStream)
-
-        return SendMessageResponse(
-          newMessages: [assistantMessage],
-          usageInfo: LLMUsageInfo(
-            inputTokens: model.contextSize * 4 / 5, // 80% of context - triggers summarization
-            outputTokens: 15000,
-            idx: 0))
-
-      default:
-        // Second message - should only be called after summarization completes
-        let assistantMessage = AssistantMessage("Second response")
-        let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
-        handleUpdateStream(updateStream)
-
-        return SendMessageResponse(
-          newMessages: [assistantMessage],
-          usageInfo: nil)
-      }
-    }
-
-    let viewModel = ChatThreadViewModel()
-
-    // Send first message that will trigger summarization
-    viewModel.input.textInput = TextInput([.text("First message")])
-    async let firstMessage: Void = viewModel.sendMessage()
-    try await fulfillment(of: summarizationStarted)
-
-    viewModel.input.textInput = TextInput([.text("Second message")])
-    async let secondMessage: Void = viewModel.sendMessage()
-    secondMessageSentByUser.fulfill()
-
-    _ = await firstMessage
-    _ = await secondMessage
-
-    let messages = messagesSent.value.map { $0.flatMap { $0.content.map(\.text) } }
-    #expect(messages.count == 2)
-    #expect(messages == [
-      [
-        "First message",
-      ],
-      [
-        "Conversation summary of previous messages",
-        "Second message",
-      ],
-    ])
   }
 }
 
