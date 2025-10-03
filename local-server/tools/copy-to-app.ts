@@ -63,7 +63,7 @@ const copyIconsToApp = async () => {
 	await new Promise<void>((resolve, reject) => {
 		const tarProcess = spawn("sh", [
 			"-c",
-			`cd ${tmpDir} && find . -type f | sort | tar -cf - -T - | gzip -n > ${archivePath}`,
+			`cd ${tmpDir} && find . -type f | sort | tar -cf - -T - --uid 0 --gid 0 --uname root --gname root --no-mac-metadata --no-xattrs | gzip -n > ${archivePath}`,
 		])
 		tarProcess.on("error", reject)
 		tarProcess.on("close", (code) => {
