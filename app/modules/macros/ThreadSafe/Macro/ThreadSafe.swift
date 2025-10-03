@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import RegexBuilder
 import SwiftCompilerPlugin
 import SwiftDiagnostics
 import SwiftSyntax
@@ -213,8 +214,8 @@ extension ThreadSafeInitializerMacro: BodyMacro {
       for (key, _, _) in storedVariables.filter({ $0.defaultValue == nil }) {
         let trimmedStatement = statement.description.trimmingCharacters(in: .whitespacesAndNewlines)
         if
-          trimmedStatement.starts(with: "self.\(key) = ") ||
-          trimmedStatement.starts(with: "\(key) = ")
+          trimmedStatement.contains(selfDotPropertyEqual(key, isAtStart: true)) ||
+          trimmedStatement.contains(propertyEqual(key, isAtStart: true))
         {
           return (offset: offset, element: key)
         }
@@ -230,16 +231,16 @@ extension ThreadSafeInitializerMacro: BodyMacro {
       }
       let trimmedStatement = statement.description.trimmingCharacters(in: .whitespacesAndNewlines)
       for (key, _, _) in storedVariables {
-        if trimmedStatement.starts(with: "self.\(key) = ") {
+        if trimmedStatement.contains(selfDotPropertyEqual(key, isAtStart: true)) {
           mutatedProperties.insert(key)
           return [
-            CodeBlockItemSyntax(stringLiteral: statement.description.replacing("self.\(key) = ", with: "_\(key) = ")),
+            CodeBlockItemSyntax(stringLiteral: statement.description.replacing(selfDotPropertyEqual(key), with: "_\(key) =")),
           ]
         }
-        if trimmedStatement.starts(with: "\(key) = ") {
+        if trimmedStatement.contains(propertyEqual(key, isAtStart: true)) {
           mutatedProperties.insert(key)
           return [
-            CodeBlockItemSyntax(stringLiteral: statement.description.replacing("\(key) = ", with: "_\(key) = ")),
+            CodeBlockItemSyntax(stringLiteral: statement.description.replacing(propertyEqual(key), with: "_\(key) =")),
           ]
         }
       }
@@ -264,6 +265,48 @@ extension ThreadSafeInitializerMacro: BodyMacro {
     }
 
     return statements.compactMap(\.self)
+  }
+
+  /// Regex to match "self.key = "
+  private static func selfDotPropertyEqual(
+    _ propertyName: String,
+    isAtStart: Bool = false)
+    -> Regex<Regex<Substring>.RegexOutput>
+  {
+    if isAtStart {
+      Regex {
+        Anchor.startOfLine
+        "self."
+        propertyName
+        OneOrMore(.whitespace)
+        "="
+      }
+    } else {
+      Regex {
+        "self."
+        propertyName
+        OneOrMore(.whitespace)
+        "="
+      }
+    }
+  }
+
+  /// Regex to match "key = "
+  private static func propertyEqual(_ propertyName: String, isAtStart: Bool = false) -> Regex<Regex<Substring>.RegexOutput> {
+    if isAtStart {
+      Regex {
+        Anchor.startOfLine
+        propertyName
+        OneOrMore(.whitespace)
+        "="
+      }
+    } else {
+      Regex {
+        propertyName
+        OneOrMore(.whitespace)
+        "="
+      }
+    }
   }
 }
 
