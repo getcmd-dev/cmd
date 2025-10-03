@@ -15,6 +15,7 @@ import ThreadSafe
 
 // MARK: - LLMModelManagerProtocol
 
+/// Internal protocol used to test different functionalities in DefaultLLMService independently.
 protocol LLMModelManagerProtocol: Sendable {
 
   func modelsAvailable(for provider: LLMProvider) -> [LLMModel]
@@ -66,10 +67,10 @@ final class LLMModelManager: LLMModelManagerProtocol {
 
   var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
     ReadonlyCurrentValueSubject<[LLMModelInfo], Never>(
-      models.currentValue.filter { settingsService.value(for: \.enabledModels).contains($0.id) },
+      filterActiveModels(models.currentValue),
       publisher: models.map { @Sendable [weak self] models in
         guard let self else { return [] }
-        return models.filter { self.settingsService.value(for: \.enabledModels).contains($0.id) }
+        return filterActiveModels(models)
       }
       .removeDuplicates()
       .eraseToAnyPublisher())
@@ -80,7 +81,7 @@ final class LLMModelManager: LLMModelManagerProtocol {
   }
 
   func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel] {
-    try await fetchModelAvailable(for: provider, settings: newSettings)
+    try await fetchAndSaveModelsAvailable(for: provider, settings: newSettings)
   }
 
   func getModel(by providerModelId: String) -> LLMModel? {
@@ -152,32 +153,8 @@ final class LLMModelManager: LLMModelManagerProtocol {
     }
   }
 
-  private func fetchModelAvailable(for provider: LLMProvider, settings: LLMProviderSettings) async throws -> [LLMModel] {
-    let apiProvider = try await Schema.APIProvider(
-      provider: provider,
-      settings: settings,
-      shellService: shellService,
-      projectRoot: nil)
-
-    let data = try JSONEncoder().encode(Schema.ListModelsInput(provider: .init(
-      name: apiProvider.name,
-      settings: apiProvider.settings)))
-    let response: Schema.ListModelsOutput = try await localServer.postRequest(path: "models", data: data)
-    let models = response.models.map { LLMModel(
-      providerId: $0.providerId,
-      provider: provider,
-      modelInfo: .init(
-        name: $0.name,
-        slug: $0.globalId,
-        contextSize: $0.contextLength,
-        maxOutputTokens: $0.maxCompletionTokens,
-        defaultPricing: .init(
-          input: $0.pricing.prompt,
-          output: $0.pricing.completion,
-          cacheWrite: $0.pricing.inputCacheWrite ?? 0,
-          cachedInput: $0.pricing.inputCacheRead ?? 0),
-        createdAt: $0.createdAt,
-        rankForProgramming: $0.rankForProgramming)) }
+  private func fetchAndSaveModelsAvailable(for provider: LLMProvider, settings: LLMProviderSettings) async throws -> [LLMModel] {
+    let models = try await fetchModelsAvailable(for: provider, settings: settings)
 
     let llmModelByProvider = inLock { state in
       // First remove old models to avoid keeping stale data.
@@ -201,6 +178,49 @@ final class LLMModelManager: LLMModelManagerProtocol {
     mutableModels.send(modelInfos)
 
     return models
+  }
+
+  private func fetchModelsAvailable(for provider: LLMProvider, settings: LLMProviderSettings) async throws -> [LLMModel] {
+    if provider.isExternalAgent {
+      return [.init(
+        providerId: provider.id,
+        provider: provider,
+        modelInfo:
+        .init(
+          name: provider.name,
+          slug: provider.id,
+          contextSize: .max,
+          maxOutputTokens: .max,
+          defaultPricing: nil,
+          createdAt: 0,
+          rankForProgramming: 0))]
+    }
+
+    let apiProvider = try await Schema.APIProvider(
+      provider: provider,
+      settings: settings,
+      shellService: shellService,
+      projectRoot: nil)
+
+    let data = try JSONEncoder().encode(Schema.ListModelsInput(provider: .init(
+      name: apiProvider.name,
+      settings: apiProvider.settings)))
+    let response: Schema.ListModelsOutput = try await localServer.postRequest(path: "models", data: data)
+    return response.models.map { LLMModel(
+      providerId: $0.providerId,
+      provider: provider,
+      modelInfo: .init(
+        name: $0.name,
+        slug: $0.globalId,
+        contextSize: $0.contextLength,
+        maxOutputTokens: $0.maxCompletionTokens,
+        defaultPricing: .init(
+          input: $0.pricing.prompt,
+          output: $0.pricing.completion,
+          cacheWrite: $0.pricing.inputCacheWrite ?? 0,
+          cachedInput: $0.pricing.inputCacheRead ?? 0),
+        createdAt: $0.createdAt,
+        rankForProgramming: $0.rankForProgramming)) }
   }
 
   private func observerChangesToSettings() {
@@ -245,7 +265,7 @@ final class LLMModelManager: LLMModelManagerProtocol {
         for (provider, providerSettings) in updatedProviders {
           group.addTask { @Sendable in
             do {
-              _ = try await self.fetchModelAvailable(for: provider, settings: providerSettings)
+              _ = try await self.fetchAndSaveModelsAvailable(for: provider, settings: providerSettings)
             } catch {
               defaultLogger.error("Failed to fetch models for provider \(provider.id)", error)
             }
@@ -264,6 +284,15 @@ final class LLMModelManager: LLMModelManagerProtocol {
     await queue.queue {
       await _updateModels(from: previous, to: current)
     }.value
+  }
+
+  private func filterActiveModels(_ models: [LLMModelInfo]) -> [LLMModelInfo] {
+    models.filter { model in
+      settingsService.value(for: \.enabledModels).contains(model.id) ||
+        // The model that represent an external agent should always be considered active.
+        // To disable it, the user can disable the provider instead.
+        modelByModelSlug[model.id]?.first?.provider.isExternalAgent == true
+    }
   }
 
 }
@@ -329,7 +358,7 @@ extension DefaultLLMService {
 
 // MARK: - PersistedLLMModels
 
-private struct PersistedLLMModels: Codable {
+struct PersistedLLMModels: Codable {
   init(models: [LLMProvider: [LLMModel]]) {
     self.models = models
   }

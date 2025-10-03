@@ -52,16 +52,42 @@ public protocol LLMService: Sendable {
   /// Generate a summary of a conversation based on the message history.
   func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String
 
+  /// Returns the list of available models for the specified provider.
+  ///
+  /// - Parameter provider: The LLM provider to get models for.
+  /// - Returns: An array of available models for the provider.
   func modelsAvailable(for provider: LLMProvider) -> [LLMModel]
 
+  /// Refetches and returns the list of available models for the specified provider with new settings.
+  ///
+  /// - Parameters:
+  ///   - provider: The LLM provider to refetch models for.
+  ///   - newSettings: The updated provider settings to use when fetching models.
+  /// - Returns: An array of newly fetched models for the provider.
+  /// - Throws: An error if the models cannot be fetched.
   func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel]
 
+  /// Retrieves a model by its provider-specific model identifier.
+  ///
+  /// - Parameter providerModelId: The provider-specific identifier for the model.
+  /// - Returns: The model if found, otherwise nil.
   func getModel(by providerModelId: String) -> LLMModel?
 
+  /// Retrieves model information by its model info identifier.
+  ///
+  /// - Parameter modelInfoId: The unique identifier for the model info.
+  /// - Returns: The model information if found, otherwise nil.
   func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo?
 
+  /// Determines which provider is associated with the given model.
+  ///
+  /// - Parameter model: The model information to find the provider for.
+  /// - Returns: The provider that owns the model, or nil if not found.
   func provider(for model: LLMModelInfo) -> LLMProvider?
 
+  /// A read-only subject that publishes the currently active models.
+  ///
+  /// This provides reactive updates whenever the set of active models changes.
   var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> { get }
 
   /// Returns the low tier model from configured providers with the cheapest input cost.

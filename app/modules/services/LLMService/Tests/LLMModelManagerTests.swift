@@ -360,9 +360,9 @@ struct LLMModelManagerTests {
     // then
     let persistedPath = URL(fileURLWithPath: "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json")
     let persistedData = try #require(fileManager.files[persistedPath])
-    let decoded = try JSONDecoder().decode(PersistedModelsWrapper.self, from: persistedData)
-    #expect(decoded.anthropic?.count == 1)
-    #expect(decoded.anthropic?.first?.providerId == "claude-sonnet")
+    let decoded = try JSONDecoder().decode(PersistedLLMModels.self, from: persistedData)
+    #expect(decoded.models[.anthropic]?.count == 1)
+    #expect(decoded.models[.anthropic]?.first?.providerId == "claude-sonnet")
   }
 
   // MARK: - Active Models Tests
@@ -539,6 +539,128 @@ struct LLMModelManagerTests {
     #expect(sut.getModel(by: "gpt-5") != nil)
   }
 
+  // MARK: - External Agent Tests
+
+  @Test("External agent models are created with special properties")
+  func test_externalAgent_createsModelWithSpecialProperties() async throws {
+    // given
+    let server = MockLocalServer()
+    server.onPostRequest = { _, _, _ in
+      // Should not be called for external agents
+      Issue.record("Should not fetch models from server for external agents")
+      return Data()
+    }
+    let settingsService = MockSettingsService(Settings(
+      llmProviderSettings: [
+        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1),
+      ]))
+    let fileManager = MockFileManager()
+    let sut = LLMModelManager(
+      localServer: server,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    // when
+    let models = try await sut.refetchModelsAvailable(
+      for: .claudeCode,
+      newSettings: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1))
+
+    // then
+    #expect(models.count == 1)
+    let model = try #require(models.first)
+    #expect(model.providerId == "claudeCode")
+    #expect(model.provider == .claudeCode)
+    #expect(model.modelInfo.name == "Claude Code")
+    #expect(model.modelInfo.slug == "claudeCode")
+    #expect(model.modelInfo.contextSize == .max)
+    #expect(model.modelInfo.maxOutputTokens == .max)
+    #expect(model.modelInfo.defaultPricing == nil)
+  }
+
+  @Test("External agent models are always active regardless of enabledModels")
+  func test_externalAgent_alwaysActiveRegardlessOfEnabledModels() async throws {
+    // given
+    let anthropicResponse = makeListModelsOutput(models: [
+      makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
+    ])
+    let server = MockLocalServer()
+    server.onPostRequest = { _, _, _ in
+      try JSONEncoder().encode(anthropicResponse)
+    }
+    let settingsService = MockSettingsService(Settings(
+      llmProviderSettings: [
+        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
+      ],
+      enabledModels: ["claude-sonnet-4"])) // Only enable claude-sonnet, NOT claudeCode
+    let fileManager = MockFileManager()
+    let sut = LLMModelManager(
+      localServer: server,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    // Wait for models to be fetched
+    try await Task.sleep(for: .milliseconds(100))
+
+    // when
+    let activeModels = sut.activeModels.currentValue
+
+    // then
+    #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
+    #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
+    #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
+  }
+
+  @Test("External agent models remain active when enabledModels changes")
+  func test_externalAgent_remainsActiveWhenEnabledModelsChange() async throws {
+    // given
+    let anthropicResponse = makeListModelsOutput(models: [
+      makeSchemaModel(providerId: "claude-sonnet", globalId: "claude-sonnet-4", name: "Claude Sonnet"),
+    ])
+    let server = MockLocalServer()
+    server.onPostRequest = { _, _, _ in
+      try JSONEncoder().encode(anthropicResponse)
+    }
+    let settingsService = MockSettingsService(Settings(
+      llmProviderSettings: [
+        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
+      ],
+      enabledModels: ["claude-sonnet-4"]))
+    let fileManager = MockFileManager()
+    let sut = LLMModelManager(
+      localServer: server,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    // Wait for initial models to be fetched
+    try await Task.sleep(for: .milliseconds(100))
+
+    let receivedUpdates = expectation(description: "Received activeModels update")
+    let updateCount = Atomic(0)
+    var cancellable: AnyCancellable?
+
+    cancellable = sut.activeModels.sink { models in
+      let count = updateCount.increment()
+      if count == 2 { // First update is initial value, second is after our change
+        // Even when enabledModels is empty, claudeCode should still be active
+        #expect(models.count == 1)
+        #expect(models.first?.slug == "claudeCode")
+        receivedUpdates.fulfill()
+      }
+    }
+
+    // when
+    settingsService.update(setting: \.enabledModels, to: []) // Clear all enabled models
+
+    // then
+    try await fulfillment(of: [receivedUpdates])
+    _ = cancellable
+  }
+
   // MARK: - Low Tier Model Tests
 
   @Test("lowTierModel returns cheapest model from configured providers")
@@ -709,50 +831,13 @@ private func makePersistedModelsJSON(
   openRouter: [LLMModel] = [])
   -> String
 {
-  var dict = [String: [LLMModel]]()
-  if !anthropic.isEmpty { dict["anthropic"] = anthropic }
-  if !openAI.isEmpty { dict["openai"] = openAI }
-  if !openRouter.isEmpty { dict["openrouter"] = openRouter }
+  var dict = [LLMProvider: [LLMModel]]()
+  if !anthropic.isEmpty { dict[.anthropic] = anthropic }
+  if !openAI.isEmpty { dict[.openAI] = openAI }
+  if !openRouter.isEmpty { dict[.openRouter] = openRouter }
 
   let encoder = JSONEncoder()
   encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-  let data = try! encoder.encode(PersistedModelsWrapper(dict: dict))
+  let data = try! encoder.encode(PersistedLLMModels(models: dict))
   return String(data: data, encoding: .utf8)!
-}
-
-// MARK: - PersistedModelsWrapper
-
-/// Helper struct for encoding/decoding persisted models
-private struct PersistedModelsWrapper: Codable {
-  init(dict: [String: [LLMModel]]) {
-    anthropic = dict["anthropic"]
-    openai = dict["openai"]
-    openrouter = dict["openrouter"]
-  }
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: String.self)
-    let keys = container.allKeys
-    for key in keys {
-      let models = try container.decode([LLMModel].self, forKey: key)
-      if key.caseInsensitiveCompare("anthropic") == .orderedSame {
-        anthropic = models
-      } else if key.caseInsensitiveCompare("openai") == .orderedSame {
-        openai = models
-      } else if key.caseInsensitiveCompare("openrouter") == .orderedSame {
-        openrouter = models
-      }
-    }
-  }
-
-  var anthropic: [LLMModel]?
-  var openai: [LLMModel]?
-  var openrouter: [LLMModel]?
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: String.self)
-    if let anthropic { try container.encode(anthropic, forKey: "anthropic") }
-    if let openai { try container.encode(openai, forKey: "openai") }
-    if let openrouter { try container.encode(openrouter, forKey: "openrouter") }
-  }
 }
