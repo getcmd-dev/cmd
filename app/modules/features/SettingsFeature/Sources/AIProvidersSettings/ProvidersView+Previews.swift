@@ -13,7 +13,7 @@ import SwiftUI
   withDependencies({
     $0.settingsService = MockSettingsService(anthropicAPIKey: nil, openAIAPIKey: nil)
   }) {
-    ProvidersView(viewModel: LLMSettingsViewModel(), onComplete: nil)
+    ProvidersView(viewModel: LLMSettingsViewModel())
       .frame(width: 600, height: 400)
       .padding()
   }

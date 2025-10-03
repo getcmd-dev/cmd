@@ -11,5 +11,12 @@ extension LLMProvider {
     name: "OpenRouter",
     keychainKey: "OPENROUTER_API_KEY",
     websiteURL: URL(string: "https://openrouter.ai"),
-    apiKeyCreationURL: URL(string: "https://openrouter.ai/keys"))
+    apiKeyCreationURL: URL(string: "https://openrouter.ai/keys"),
+    lowTierModelId: "openai/gpt-3.5-turbo",
+    modelsEnabledByDefault: [
+      "anthropic/claude-opus-4.1",
+      "anthropic/claude-sonnet-4.5",
+      "google/gemini-2.5-pro",
+      "openai/gpt-5",
+    ])
 }

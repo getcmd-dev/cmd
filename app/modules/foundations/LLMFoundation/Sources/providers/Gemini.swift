@@ -12,5 +12,9 @@ extension LLMProvider {
     keychainKey: "GEMINI_API_KEY",
     websiteURL: URL(string: "https://ai.google.dev/"),
     apiKeyCreationURL: URL(string: "https://aistudio.google.com/app/apikey"),
-    lowTierModelId: "google/gemini-2.5-flash")
+    lowTierModelId: "google/gemini-2.5-flash-lite",
+    modelsEnabledByDefault: [
+      "google/gemini-2.5-pro",
+      "google/gemini-2.5-flash-lite",
+    ])
 }

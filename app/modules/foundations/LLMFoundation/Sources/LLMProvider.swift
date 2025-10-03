@@ -20,7 +20,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     keychainKey: String,
     websiteURL: URL? = nil,
     apiKeyCreationURL: URL? = nil,
-    lowTierModelId: String? = nil)
+    lowTierModelId: ModelInfoId? = nil,
+    modelsEnabledByDefault: [ModelInfoId])
   {
     self.id = id
     self.name = name
@@ -28,6 +29,7 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     self.websiteURL = websiteURL
     self.apiKeyCreationURL = apiKeyCreationURL
     self.lowTierModelId = lowTierModelId
+    self.modelsEnabledByDefault = modelsEnabledByDefault
   }
 
   public static var allCases: [LLMProvider] {
@@ -46,7 +48,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
   public let keychainKey: String
   public let websiteURL: URL?
   public let apiKeyCreationURL: URL?
-  public let lowTierModelId: String?
+  public let lowTierModelId: ModelInfoId?
+  public let modelsEnabledByDefault: [ModelInfoId]
 
   public var rawValue: String { id }
 

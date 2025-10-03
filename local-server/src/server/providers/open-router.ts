@@ -140,7 +140,6 @@ export class OpenRouterModelProvider implements ModelProvider {
 				(response) => response.data?.models,
 			),
 		])
-		writeFileSync("/Users/guigui/dev/cmd/log.json", JSON.stringify(modelsWithProviderInfo, null, 2))
 		const programmingRankById = Object.fromEntries(programmingModels.map((model, idx) => [model.id, idx]))
 		const rankedModels = allModels.map((model, idx) => ({
 			...model,

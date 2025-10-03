@@ -16,7 +16,7 @@ import Testing
 // MARK: - LLMSettingsViewModelTests
 
 @MainActor
-struct LLMSettingsViewModelTests {
+class LLMSettingsViewModelTests {
 
   // MARK: - Initialization Tests
 
@@ -366,6 +366,117 @@ struct LLMSettingsViewModelTests {
     #expect(mockSettingsService.value(for: \.llmProviderSettings)[.openAI] != nil)
   }
 
+  // MARK: - Default Models Tests
+
+  @Test("saves new provider and enables default models")
+  func saveNewProviderEnablesDefaultModels() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    @Dependency(\.settingsService) var settingsService
+    let mockSettingsService = try #require(settingsService as? MockSettingsService)
+
+    let models: [LLMModelInfo] = [.claudeOpus, .claudeSonnet]
+    mockLLMService.onRefetchModelsAvailable = { provider, _ in
+      #expect(provider == .anthropic)
+      return models.map { .init(
+        providerId: provider.name,
+        provider: provider,
+        modelInfo: $0) }
+    }
+    mockLLMService.onGetModelInfo = { modelId in
+      models.first { $0.id == modelId }
+    }
+    let hasEnabledModels = expectation(description: "has enabled models")
+    mockSettingsService.liveValue(for: \.enabledModels).sink { models in
+      if !models.isEmpty { hasEnabledModels.fulfillAtMostOnce() }
+    }.store(in: &cancellables)
+
+    let sut = LLMSettingsViewModel()
+    let newSettings = LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
+
+    // when
+    sut.save(providerSettings: newSettings, for: .anthropic)
+
+    try await fulfillment(of: hasEnabledModels)
+
+    // then
+    #expect(mockSettingsService.value(for: \.enabledModels).contains(LLMModelInfo.claudeOpus.id))
+    #expect(mockSettingsService.value(for: \.enabledModels).contains(LLMModelInfo.claudeSonnet.id))
+  }
+
+  @Test("updates existing provider without enabling default models again", .dependencies {
+    let providerSettings: [LLMProvider: LLMProviderSettings] = [
+      .anthropic: LLMProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    ]
+    $0.settingsService = MockSettingsService(.init(llmProviderSettings: providerSettings))
+  })
+  func updateExistingProviderDoesNotEnableDefaultModels() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    @Dependency(\.settingsService) var settingsService
+    let mockSettingsService = try #require(settingsService as? MockSettingsService)
+
+    let hasFetchedNewModels = expectation(description: "has fetched new models")
+    mockLLMService.onRefetchModelsAvailable = { provider, _ in
+      #expect(provider == .anthropic)
+      hasFetchedNewModels.fulfill()
+      return []
+    }
+
+    let sut = LLMSettingsViewModel()
+    let updatedSettings = LLMProviderSettings(apiKey: "updated-key", baseUrl: nil, executable: nil, createdOrder: 1)
+
+    // when
+    sut.save(providerSettings: updatedSettings, for: .anthropic)
+
+    // Wait for async refetch to complete
+    try await fulfillment(of: hasFetchedNewModels)
+    await nextTick()
+
+    // then
+    #expect(mockSettingsService.value(for: \.enabledModels).isEmpty)
+  }
+
+  @Test("does not duplicate already enabled default models", .dependencies {
+    $0.settingsService = MockSettingsService(.init(enabledModels: [LLMModelInfo.claudeOpus.id]))
+  })
+  func saveNewProviderDoesNotDuplicateEnabledModels() async throws {
+    // given
+    let defaultModel = LLMModelInfo.claudeOpus
+
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    let hasFetchedNewModels = expectation(description: "has fetched new models")
+    mockLLMService.onRefetchModelsAvailable = { provider, _ in
+      #expect(provider == .anthropic)
+      hasFetchedNewModels.fulfill()
+      return []
+    }
+    mockLLMService.onGetModelInfo = { modelId in
+      modelId == defaultModel.id ? defaultModel : nil
+    }
+
+    @Dependency(\.settingsService) var settingsService
+    let mockSettingsService = try #require(settingsService as? MockSettingsService)
+
+    let sut = LLMSettingsViewModel()
+    let newSettings = LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
+
+    // when
+    sut.save(providerSettings: newSettings, for: .anthropic)
+
+    // Wait for async refetch to complete
+    try await fulfillment(of: hasFetchedNewModels)
+    await nextTick()
+
+    // then
+    let enabledModels = mockSettingsService.value(for: \.enabledModels)
+    let modelCount = enabledModels.filter { $0 == defaultModel.id }.count
+    #expect(modelCount == 1)
+  }
+
   // MARK: - Computed Properties Tests
 
   @Test("availableProviders returns configured providers", .dependencies {
@@ -621,6 +732,9 @@ struct LLMSettingsViewModelTests {
     // then
     #expect(providerForModels[model1] == .openAI)
   }
+
+  private var cancellables = Set<AnyCancellable>()
+
 }
 
 // MARK: - Helpers

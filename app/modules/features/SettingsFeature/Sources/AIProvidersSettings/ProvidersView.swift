@@ -12,9 +12,8 @@ import SwiftUI
 // MARK: - ProvidersView
 
 public struct ProvidersView: View {
-  public init(viewModel: LLMSettingsViewModel, onComplete: (@MainActor () -> Void)?) {
+  public init(viewModel: LLMSettingsViewModel) {
     self.viewModel = viewModel
-    self.onComplete = onComplete
   }
 
   public var body: some View {
@@ -71,19 +70,13 @@ public struct ProvidersView: View {
     }
   }
 
-//  @Binding var providerSettings: AllLLMProviderSettings
-
   @State private var providerToShowModelSelectionFor: ProviderInfo?
-
-//  @State private var providers = [LLMProvider: AIProviderViewModel]()
 
   @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 
   @State private var searchText = ""
 
   @Bindable private var viewModel: LLMSettingsViewModel
-
-  private let onComplete: (@MainActor () -> Void)? // TODO
 
   private var filteredProviders: [ProviderInfo] {
     let allProviders = orderedProviders.map { provider in

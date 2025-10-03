@@ -43,8 +43,6 @@ public struct LLMReasoningSetting: Sendable, Equatable {
   }
 }
 
-public typealias ModelInfoId = String
-
 // MARK: - Settings
 
 public struct Settings: Sendable, Equatable {

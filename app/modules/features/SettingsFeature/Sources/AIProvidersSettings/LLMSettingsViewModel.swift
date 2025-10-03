@@ -48,9 +48,9 @@ public final class LLMSettingsViewModel {
           if self.preferedProviders != llmSettings.preferedProviders {
             self.preferedProviders = llmSettings.preferedProviders
           }
-          if self.reasoningModels != llmSettings.reasoningModels { [
-            self.reasoningModels = llmSettings.reasoningModels,
-          ] }
+          if self.reasoningModels != llmSettings.reasoningModels {
+            self.reasoningModels = llmSettings.reasoningModels
+          }
         }
       }.store(in: &cancellables)
   }
@@ -118,12 +118,21 @@ public final class LLMSettingsViewModel {
   }
 
   func save(providerSettings: LLMProviderSettings, for provider: LLMProvider) {
+    let isNew = self.providerSettings[provider] == nil
     self.providerSettings[provider] = providerSettings
     settingsService.update(setting: \.llmProviderSettings, to: self.providerSettings)
 
     Task {
       do {
         _ = try await llmService.refetchModelsAvailable(for: provider, newSettings: providerSettings)
+        if isNew {
+          // Enable default models.
+          for modelId in provider.modelsEnabledByDefault {
+            if let model = llmService.getModelInfo(by: modelId), !enabledModels.contains(modelId) {
+              enable(model: model)
+            }
+          }
+        }
       } catch {
         defaultLogger.error("Failed to fetch AI provider models after updating settings", error)
       }

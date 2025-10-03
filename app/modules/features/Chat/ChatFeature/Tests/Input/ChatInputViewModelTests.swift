@@ -116,7 +116,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: .gpt,
-        activeModels: [.claudeSonnet, .gpt, .gpt_mini])
+        activeModels: [.claudeSonnet, .gpt, .gpt_turbo])
     }
 
     #expect(viewModel.selectedModel == .gpt)

@@ -12,7 +12,7 @@ struct OnboardingView: View {
   /// - Parameter showLLMProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
   init(
     viewModel: OnboardingViewModel,
-    createLLMProvidersView: @MainActor @escaping (@MainActor @escaping () -> Void) -> AnyView)
+    createLLMProvidersView: @MainActor @escaping () -> AnyView)
   {
     self.viewModel = viewModel
     self.createLLMProvidersView = createLLMProvidersView
@@ -50,7 +50,7 @@ struct OnboardingView: View {
 
   @Bindable private var viewModel: OnboardingViewModel
 
-  private let createLLMProvidersView: @MainActor (@MainActor @escaping () -> Void) -> AnyView
+  private let createLLMProvidersView: @MainActor () -> AnyView
 
   @ViewBuilder
   private var llmProviderSetupView: some View {
@@ -67,9 +67,7 @@ struct OnboardingView: View {
         Spacer(minLength: 0)
       }
 
-      createLLMProvidersView {
-        viewModel.handleMoveToNextStep()
-      }
+      createLLMProvidersView()
 
       if viewModel.canSkipProviderSetup {
         HoveredButton(

@@ -10,5 +10,6 @@ extension LLMProvider {
     id: "claudeCode",
     name: "Claude Code",
     keychainKey: "CLAUDE_CODE_PATH",
-    websiteURL: URL(string: "https://www.anthropic.com/claude-code"))
+    websiteURL: URL(string: "https://www.anthropic.com/claude-code"),
+    modelsEnabledByDefault: [])
 }

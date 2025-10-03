@@ -396,7 +396,7 @@ struct SettingsCodableTests {
       preferedProviders: .init([
         .claudeSonnet: .anthropic,
         .gpt: .openAI,
-        .gpt_mini: .openAI,
+        .gpt_turbo: .openAI,
         .claudeHaiku_3_5: .anthropic,
       ]),
       llmProviderSettings: [

@@ -11,5 +11,10 @@ extension LLMProvider {
     name: "Groq",
     keychainKey: "GROQ_API_KEY",
     websiteURL: URL(string: "https://groq.com/"),
-    apiKeyCreationURL: URL(string: "https://console.groq.com/keys"))
+    apiKeyCreationURL: URL(string: "https://console.groq.com/keys"),
+    lowTierModelId: "openai/gpt-oss-120b",
+    modelsEnabledByDefault: [
+      "moonshotai/kimi-k2-instruct-0905",
+      "openai/gpt-oss-120b",
+    ])
 }

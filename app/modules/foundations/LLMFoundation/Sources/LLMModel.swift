@@ -25,6 +25,8 @@ public struct LLMModel: Hashable, Identifiable, Sendable, Codable {
   }
 }
 
+public typealias ModelInfoId = String
+
 // MARK: - LLMModelInfo
 
 /// An LLM model.
@@ -32,7 +34,7 @@ public struct LLMModel: Hashable, Identifiable, Sendable, Codable {
 public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   public init(
     name: String,
-    slug: String,
+    slug: ModelInfoId,
     description: String? = nil,
     contextSize: Int,
     maxOutputTokens: Int,
@@ -57,7 +59,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   /// A few models for debugging and providing default values.
   public static let claudeHaiku_3_5 = LLMModelInfo(
     name: "claude-3.5-haiku",
-    slug: "claude-haiku-35",
+    slug: "anthropic/claude-3.5-haiku",
     contextSize: 200_000,
     maxOutputTokens: 8_192,
     defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1),
@@ -66,7 +68,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     rankForProgramming: 2)
   public static let claudeSonnet = LLMModelInfo(
     name: "claude-4.5-sonnet",
-    slug: "claude-sonnet-4",
+    slug: "anthropic/claude-sonnet-4.5",
     contextSize: 200_000,
     maxOutputTokens: 64_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
@@ -78,7 +80,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   #if DEBUG
   public static let gpt = LLMModelInfo(
     name: "gpt-5",
-    slug: "gpt-latest",
+    slug: "openai/gpt-5",
     contextSize: 400_000,
     maxOutputTokens: 128_000,
     defaultPricing: .init(input: 1.25, output: 10, cacheWrite: 0, cachedInput: 0.125, inputImage: 1.25),
@@ -86,19 +88,19 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     reasoning: LLMReasoning(),
     createdAt: 1759161676,
     rankForProgramming: 3)
-  public static let gpt_mini = LLMModelInfo(
-    name: "gpt-5-mini",
-    slug: "gpt-mini-latest",
+  public static let gpt_turbo = LLMModelInfo(
+    name: "gpt-3.5-turbo",
+    slug: "openai/gpt-3.5-turbo",
     contextSize: 400_000,
     maxOutputTokens: 128_000,
     defaultPricing: .init(input: 0.25, output: 2, cacheWrite: 0, cachedInput: 0.025, inputImage: 0.25),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-5-mini"),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-3.5-turbo"),
     reasoning: LLMReasoning(),
     createdAt: 1759161676,
     rankForProgramming: 3)
   public static let claudeOpus = LLMModelInfo(
     name: "claude-4.1-opus",
-    slug: "claude-opus-4",
+    slug: "anthropic/claude-opus-4.1",
     contextSize: 200_000,
     maxOutputTokens: 32_000,
     defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
@@ -111,7 +113,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   #endif
 
   public let name: String
-  public let slug: String
+  public let slug: ModelInfoId
   public let description: String?
   public let contextSize: Int
   public let maxOutputTokens: Int

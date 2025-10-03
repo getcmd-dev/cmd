@@ -70,7 +70,7 @@ public struct SettingsView: View {
 
       switch currentView {
       case .providers:
-        ProvidersView(viewModel: viewModel.llmSettings, onComplete: nil)
+        ProvidersView(viewModel: viewModel.llmSettings)
 
       case .models:
         ModelsView(viewModel: viewModel.llmSettings)

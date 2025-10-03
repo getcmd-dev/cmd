@@ -25,9 +25,9 @@ final class SetupWindow: NSWindow {
       onDone: {
         onComplete()
       },
-      createLLMProvidersView: { [weak self] onComplete in
+      createLLMProvidersView: { [weak self] in
         guard let self else { return AnyView(EmptyView()) }
-        return AnyView(ProvidersView(viewModel: settingsViewModel, onComplete: onComplete))
+        return AnyView(ProvidersView(viewModel: settingsViewModel))
       }))
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

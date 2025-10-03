@@ -132,14 +132,9 @@ clean_command() {
 	# Remove derived files from swift packages
 	find . -type d -name '.build' -exec sh -c 'rm -rf "$1"' _ {} \;
 	find . -not -path './.git/*' 2>/dev/null |
-		# Don't remove files in ./services/LocalServerService/Sources/Resources
-		grep -v 'services/LocalServerService/Sources/Resources' |
-		# Remove all git-ignored files
 		git check-ignore --stdin |
+		grep 'Package.swift\|Package.resolved' |
 		while read file; do rm -rf "$file"; done
-	# Reset xcode state
-	cd "$(git rev-parse --show-toplevel)/app" &&
-		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	# Remove lock file
 	rm "$(git rev-parse --show-toplevel)/.build/disable-watcher"

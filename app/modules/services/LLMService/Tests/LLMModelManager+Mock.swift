@@ -63,14 +63,14 @@ final class MockLLMModelManager: LLMModelManagerProtocol {
       ],
       .openAI: [
         .init(providerId: "gpt-5-2025-08-07", provider: .openAI, modelInfo: .gpt),
-        .init(providerId: "gpt-5-mini-2025-08-07", provider: .openAI, modelInfo: .gpt_mini),
+        .init(providerId: "gpt-5-mini-2025-08-07", provider: .openAI, modelInfo: .gpt_turbo),
       ],
       .openRouter: [
         .init(providerId: "anthropic/claude-sonnet-4.5", provider: .anthropic, modelInfo: .claudeSonnet),
         .init(providerId: "anthropic/claude-opus-4.1", provider: .anthropic, modelInfo: .claudeOpus),
         .init(providerId: "anthropic/claude-3.5-haiku", provider: .anthropic, modelInfo: .claudeHaiku_3_5),
         .init(providerId: "openai/gpt-5-2025-08-07", provider: .openAI, modelInfo: .gpt),
-        .init(providerId: "openai/gpt-5-mini-2025-08-07", provider: .openAI, modelInfo: .gpt_mini),
+        .init(providerId: "openai/gpt-5-mini-2025-08-07", provider: .openAI, modelInfo: .gpt_turbo),
       ],
     ]
 

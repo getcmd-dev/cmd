@@ -10,14 +10,15 @@ Note: you might see existing code that doesn't follow the patterns described her
 - When testing @Observable objects, use `wait` from `Observable+onChange` of helpers from `Observable+helpers.swift`
 - When working with a class that has dependencies:
   * always import `DependenciesTestSupport`. This will ensure each test is injected with isolated dependencies.
-  * Prefer to use the syntax
+  * Do not set dependencies when the default value (ie `MockSomeDependency()`) is fine. This is done by importing `DependenciesTestSupport`
+  * When setting **initial** properties for a dependency to use the syntax
 ```swift
 @Test("some test", .dependencies {
   $0.llmService = MockLLMService(availableModels: [...])
 })
 ```
-over using `withDependencies` within the function code. Note that you do not need to set dependencies to their default values (which is always `MockSomeDependency()`). This is done by importing `DependenciesTestSupport`
-  * If you need to access the mock dependency within the test function, you can do so like:
+over using `withDependencies` within the function code.
+  * When stubbing method calls, or needing to access the dependency within the test function, do this as so:
 ```swift
 @Test("some test", .dependencies {
   $0.llmService = MockLLMService(availableModels: [...])
@@ -25,6 +26,7 @@ over using `withDependencies` within the function code. Note that you do not nee
 func something() async throws {
   @Dependency(\.llmService) var llmService
   let mockLLMService = try #require(llmService as? MockLLMService)
+  mockLLMService.onFetchModels = ...
 }
 - Never use force unwrapping. Either use `try #require(...)` or `guard` / `throw`.
 ```

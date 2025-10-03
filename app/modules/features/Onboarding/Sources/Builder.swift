@@ -9,12 +9,12 @@ import SwiftUI
 public struct Input {
   let bringWindowToFront: @MainActor () -> Void
   let onDone: @MainActor () -> Void
-  let createLLMProvidersView: @MainActor (@MainActor @escaping () -> Void) -> AnyView
+  let createLLMProvidersView: @MainActor () -> AnyView
 
   public init(
     bringWindowToFront: @MainActor @escaping () -> Void,
     onDone: @MainActor @escaping () -> Void,
-    createLLMProvidersView: @MainActor @escaping (@MainActor @escaping () -> Void) -> AnyView)
+    createLLMProvidersView: @MainActor @escaping () -> AnyView)
   {
     self.bringWindowToFront = bringWindowToFront
     self.onDone = onDone
