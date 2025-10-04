@@ -255,10 +255,6 @@ class PropertyModel {
 			})
 		} else if (definition.$ref) {
 			const ref = definition.$ref.replace("#/definitions/", "")
-			const referencedType = generator.schema.definitions?.[ref]
-			if (!referencedType) {
-				throw new Error(`Referenced type ${ref} not found`)
-			}
 			this.typeName = `${ref}${isRequired ? "" : "?"}`
 		} else if (definition.anyOf) {
 			// handle when this is actually an optional type.
