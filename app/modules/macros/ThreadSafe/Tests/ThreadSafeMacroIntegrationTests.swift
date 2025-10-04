@@ -340,4 +340,98 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
         "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
       ])
   }
+
+  func testThreadSafeMacro_handleNonStandardSpacing() {
+    // Test that the Sendable macro adds the correct attributes and members
+    assertMacroExpansion(
+      """
+      @ThreadSafe
+      final class AIModelsManager {
+        init(localServer: LocalServer)
+        {
+          self.localServer = localServer
+
+          let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
+          self.llmModelByProvider = llmModelByProvider
+          let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+            acc[model.modelInfo.id] = model.modelInfo
+          }
+          modelInfosByModelSlug  = modelInfos // double space here
+          mutableModels = .init(modelInfos.values.sorted(by: { $0.name < $1.name }))
+        }
+
+        var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
+          mutableModels.readonly()
+        }
+
+        private let localServer: LocalServer
+
+        private var llmModelByProvider: [AIProvider: [AIProviderModel]]
+        private var modelInfosByModelSlug: [String: AIModel]
+
+        private let mutableModels: CurrentValueSubject<[AIModel], Never>
+      }
+      """,
+      expandedSource: """
+        final class AIModelsManager {
+          init(localServer: LocalServer){
+              var _llmModelByProvider: [AIProvider: [AIProviderModel]]
+              var _modelInfosByModelSlug: [String: AIModel]
+              self.localServer = localServer
+              let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
+              _llmModelByProvider = llmModelByProvider
+              let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+                    acc[model.modelInfo.id] = model.modelInfo
+                  }
+              _modelInfosByModelSlug = modelInfos // double space here
+              self._internalState = Atomic<_InternalState>(_InternalState(llmModelByProvider: _llmModelByProvider, modelInfosByModelSlug: _modelInfosByModelSlug))
+              mutableModels = .init(modelInfos.values.sorted(by: {
+                          $0.name < $1.name
+                      }))
+          }
+
+          var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
+            mutableModels.readonly()
+          }
+
+          private let localServer: LocalServer
+
+          private var llmModelByProvider: [AIProvider: [AIProviderModel]] {
+              get {
+                  _internalState.value.llmModelByProvider
+              }
+              set {
+                  _ = _internalState.set(\\.llmModelByProvider, to: newValue)
+              }
+          }
+          private var modelInfosByModelSlug: [String: AIModel] {
+              get {
+                  _internalState.value.modelInfosByModelSlug
+              }
+              set {
+                  _ = _internalState.set(\\.modelInfosByModelSlug, to: newValue)
+              }
+          }
+
+          private let mutableModels: CurrentValueSubject<[AIModel], Never>
+
+            private let _internalState: Atomic<_InternalState>
+
+            private struct _InternalState: Sendable {
+              var llmModelByProvider: [AIProvider: [AIProviderModel]]
+              var modelInfosByModelSlug: [String: AIModel]
+            }
+
+            @discardableResult
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+                _internalState.mutate(mutation)
+              }
+        }
+        """,
+      macros: [
+        "ThreadSafe": ThreadSafeMacro.self,
+        "ThreadSafeProperty": ThreadSafePropertyMacro.self,
+        "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
+      ])
+  }
 }
