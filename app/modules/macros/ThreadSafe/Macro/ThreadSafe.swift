@@ -267,7 +267,8 @@ extension ThreadSafeInitializerMacro: BodyMacro {
     return statements.compactMap(\.self)
   }
 
-  /// Regex to match "self.key = "
+  /// Regex to match "self.key = " with flexible whitespace
+  /// Handles standard spacing, multiple spaces, tabs, etc.
   private static func selfDotPropertyEqual(
     _ propertyName: String,
     isAtStart: Bool = false)
@@ -291,7 +292,8 @@ extension ThreadSafeInitializerMacro: BodyMacro {
     }
   }
 
-  /// Regex to match "key = "
+  /// Regex to match "key = " with flexible whitespace
+  /// Handles standard spacing, multiple spaces, tabs, etc.
   private static func propertyEqual(_ propertyName: String, isAtStart: Bool = false) -> Regex<Regex<Substring>.RegexOutput> {
     if isAtStart {
       Regex {

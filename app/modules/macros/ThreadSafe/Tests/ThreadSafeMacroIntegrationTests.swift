@@ -52,7 +52,6 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testSimpleInitializers() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
