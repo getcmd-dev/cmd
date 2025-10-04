@@ -6,8 +6,8 @@ import Dependencies
 import DependenciesTestSupport
 import Foundation
 import FoundationInterfaces
+import LLMServiceInterface
 import PermissionsServiceInterface
-import SettingsServiceInterface
 import SwiftTesting
 import Testing
 @testable import Onboarding
@@ -46,21 +46,13 @@ struct OnboardingViewModelTests {
 
   @MainActor
   @Test("moving to next step from setupComplete calls onDone and sets user defaults", .dependencies {
-    $0.settingsService = MockSettingsService(Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      llmProviderSettings: [
-        .openAI: AIProviderSettings(
-          apiKey: "test",
-          baseUrl: nil,
-          executable: nil,
-          createdOrder: 1),
-      ]))
     $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.llmService = MockLLMService(activeModels: [.gpt])
   })
   func test_handleMoveToNextStep_fromSetupComplete() throws {
     @Dependency(\.userDefaults) var userDefaults
     let mockUserDefaults = try #require(userDefaults as? MockUserDefaults)
-      
+
     var onDoneCalled = false
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
 
@@ -119,18 +111,10 @@ struct OnboardingViewModelTests {
 
   @MainActor
   @Test("step progression moves to setupComplete when models are available", .dependencies {
-    $0.settingsService = MockSettingsService(Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      llmProviderSettings: [
-        .openAI: AIProviderSettings(
-          apiKey: "test",
-          baseUrl: nil,
-          executable: nil,
-          createdOrder: 1),
-      ]))
     $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.llmService = MockLLMService(activeModels: [.gpt])
   })
-  func test_stepProgression_withAvailableModels() {
+  func test_stepProgression_withAvailableModels() async throws {
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
@@ -238,8 +222,8 @@ struct OnboardingViewModelTests {
     $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
   })
   func test_availableModelsChanges() async throws {
-    @Dependency(\.settingsService) var settingsService
-    let mockSettingsService = try #require(settingsService as? MockSettingsService)
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
 
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
@@ -247,14 +231,8 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
 
-    // Add a provider with API key
-    var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
-    newSettings[.openAI] = AIProviderSettings(
-      apiKey: "test",
-      baseUrl: nil,
-      executable: nil,
-      createdOrder: 1)
-    mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    // Add an active model
+    mockLLMService.mutableActiveModels.send([.gpt])
     try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
 
     viewModel.handleMoveToNextStep()
@@ -285,7 +263,7 @@ struct OnboardingViewModelTests {
 extension DependencyValues {
   fileprivate mutating func setupDefaultDependencies() {
     userDefaults = MockUserDefaults()
-    settingsService = MockSettingsService()
     permissionsService = MockPermissionsService()
+    llmService = MockLLMService()
   }
 }

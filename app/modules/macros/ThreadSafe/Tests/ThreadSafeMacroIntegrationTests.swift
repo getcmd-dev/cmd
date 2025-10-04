@@ -376,14 +376,14 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
         final class AIModelsManager {
           init(localServer: LocalServer){
               var _llmModelByProvider: [AIProvider: [AIProviderModel]]
-              let _modelInfosByModelSlug: [String: AIModel]
+              var _modelInfosByModelSlug: [String: AIModel]
               self.localServer = localServer
               let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
               _llmModelByProvider = llmModelByProvider
               let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
                     acc[model.modelInfo.id] = model.modelInfo
                   }
-              _modelInfosByModelSlug = modelInfosByModelSlug // double space here
+              _modelInfosByModelSlug = modelInfos // double space here
               self._internalState = Atomic<_InternalState>(_InternalState(llmModelByProvider: _llmModelByProvider, modelInfosByModelSlug: _modelInfosByModelSlug))
               mutableModels = .init(modelInfos.values.sorted(by: {
                           $0.name < $1.name

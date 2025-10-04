@@ -519,8 +519,8 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "FoundationInterfaces",
+    "LLMServiceInterface",
     "PermissionsServiceInterface",
-    "SettingsServiceInterface",
     "SwiftTesting",
   ],
   path: "./features/Onboarding"))

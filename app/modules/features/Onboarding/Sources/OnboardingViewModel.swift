@@ -12,7 +12,7 @@ import SettingsServiceInterface
 
 // MARK: - OnboardingStep
 
-enum OnboardingStep {
+enum OnboardingStep: Equatable {
   case welcome
   case accessibilityPermission
   case providersSetup
