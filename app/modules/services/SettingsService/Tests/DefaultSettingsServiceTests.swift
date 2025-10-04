@@ -41,12 +41,12 @@ struct DefaultSettingsServiceTests {
     let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     // Test individual provider key mapping
-    let groqSettings = LLMProviderSettings(
+    let groqSettings = AIProviderSettings(
       apiKey: "test-groq-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 1)
-    let geminiSettings = LLMProviderSettings(
+    let geminiSettings = AIProviderSettings(
       apiKey: "test-gemini-key",
       baseUrl: nil,
       executable: nil,
@@ -83,7 +83,7 @@ struct DefaultSettingsServiceTests {
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
 
-    let anthropicSettings = LLMProviderSettings(
+    let anthropicSettings = AIProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
       executable: nil,
@@ -106,7 +106,7 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    let anthropicSettings = LLMProviderSettings(
+    let anthropicSettings = AIProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
       executable: nil,
@@ -132,12 +132,12 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    let anthropicSettings = LLMProviderSettings(
+    let anthropicSettings = AIProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test",
       executable: nil,
       createdOrder: 1)
-    let openAISettings = LLMProviderSettings(
+    let openAISettings = AIProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com/test",
       executable: nil,
@@ -273,27 +273,27 @@ struct DefaultSettingsServiceTests {
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
 
-    let anthropicSettings = LLMProviderSettings(
+    let anthropicSettings = AIProviderSettings(
       apiKey: "anthropic-secret-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 1)
-    let openAISettings = LLMProviderSettings(
+    let openAISettings = AIProviderSettings(
       apiKey: "openai-secret-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 2)
-    let openRouterSettings = LLMProviderSettings(
+    let openRouterSettings = AIProviderSettings(
       apiKey: "openrouter-secret-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 3)
-    let groqSettings = LLMProviderSettings(
+    let groqSettings = AIProviderSettings(
       apiKey: "groq-secret-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 4)
-    let geminiSettings = LLMProviderSettings(
+    let geminiSettings = AIProviderSettings(
       apiKey: "gemini-secret-key",
       baseUrl: nil,
       executable: nil,

@@ -16,7 +16,7 @@ struct ModelsView: View {
   ///   - availableModels: When provided, only those models are shown in the view. Otherwise all available models are shown.
   init(
     viewModel: LLMSettingsViewModel,
-    availableModels: [LLMModelInfo]? = nil)
+    availableModels: [AIModel]? = nil)
   {
     self.viewModel = viewModel
     self.availableModels = availableModels ?? viewModel.availableModels
@@ -61,9 +61,9 @@ struct ModelsView: View {
   @Bindable private var viewModel: LLMSettingsViewModel
   @State private var searchText = ""
 
-  private let availableModels: [LLMModelInfo]
+  private let availableModels: [AIModel]
 
-  private var filteredModels: [LLMModelInfo] {
+  private var filteredModels: [AIModel] {
     availableModels
       .filter {
         searchText.isEmpty ? true : $0.name.localizedCaseInsensitiveContains(searchText)
@@ -77,10 +77,10 @@ struct ModelsView: View {
 
 struct ModelCard: View {
   init(
-    model: LLMModelInfo,
-    provider: Binding<LLMProvider>,
+    model: AIModel,
+    provider: Binding<AIProvider>,
     isActive: Binding<Bool>,
-    availableProviders: [LLMProvider],
+    availableProviders: [AIProvider],
     reasoningSetting: Binding<LLMReasoningSetting>?)
   {
     self.model = model
@@ -199,17 +199,17 @@ struct ModelCard: View {
     .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.2))
   }
 
-  @Binding private var provider: LLMProvider
+  @Binding private var provider: AIProvider
   @Binding private var isActive: Bool
   @Environment(\.colorScheme) private var colorScheme
   @State private var isSelectingProvider = false
 
   private let reasoningSetting: Binding<LLMReasoningSetting>?
 
-  private let model: LLMModelInfo
-  private let availableProviders: [LLMProvider]
+  private let model: AIModel
+  private let availableProviders: [AIProvider]
 
-  private var otherProviderOptions: [LLMProvider] {
+  private var otherProviderOptions: [AIProvider] {
     availableProviders.filter { $0 != provider }
   }
 
@@ -222,7 +222,7 @@ struct ModelCard: View {
 
 }
 
-extension [LLMModelInfo] {
+extension [AIModel] {
   func sorted(by enabled: [ModelInfoId]) -> [ModelInfoId: Int] {
     sorted(by: { a, b in
       switch (enabled.contains(a.id), enabled.contains(b.id)) {
@@ -239,7 +239,7 @@ extension [LLMModelInfo] {
     })
   }
 
-  func sorted(respecting initialOrder: [ModelInfoId: Int]) -> [LLMModelInfo] {
+  func sorted(respecting initialOrder: [ModelInfoId: Int]) -> [AIModel] {
     sorted(by: { a, b in
       (initialOrder[a.id] ?? Int.max) < (initialOrder[b.id] ?? Int.max)
     })

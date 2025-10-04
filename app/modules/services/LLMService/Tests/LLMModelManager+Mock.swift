@@ -9,49 +9,53 @@ import ThreadSafe
 @testable import LLMService
 
 @ThreadSafe
-final class MockLLMModelManager: LLMModelManagerProtocol {
-  init(activeModels: [LLMModelInfo] = []) {
+final class MockAIModelsManager: AIModelsManagerProtocol {
+  init(activeModels: [AIModel] = []) {
     mutableActiveModels = .init(activeModels)
     setDefaultValues()
   }
 
-  var onModelsAvailableForProvider: @Sendable (LLMProvider) -> [LLMModel] = { _ in [] }
+  var onModelsAvailableForProvider: @Sendable (AIProvider) -> [AIProviderModel] = { _ in [] }
 
-  var onRefetchModelsAvailableForProvider: @Sendable (LLMProvider, Settings.LLMProviderSettings) async throws
-    -> [LLMModel] = { _, _ in [] }
+  var onRefetchModelsAvailableForProvider: @Sendable (AIProvider, Settings.AIProviderSettings) async throws
+    -> [AIProviderModel] = { _, _ in [] }
 
-  var onGetModelByProviderModelId: @Sendable (String) -> LLMModel? = { _ in nil }
+  var onGetModelByProviderModelId: @Sendable (String) -> AIProviderModel? = { _ in nil }
 
-  var onGetModelInfoById: @Sendable (ModelInfoId) -> LLMModelInfo? = { _ in nil }
-  var onProviderForModel: @Sendable (LLMModelInfo) -> LLMProvider? = { _ in nil }
+  var onGetModelInfoById: @Sendable (ModelInfoId) -> AIModel? = { _ in nil }
+  var onProviderForModel: @Sendable (AIModel) -> AIProvider? = { _ in nil }
 
-  let mutableActiveModels: CurrentValueSubject<[LLMModelInfo], Never>
+  let mutableActiveModels: CurrentValueSubject<[AIModel], Never>
 
-  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
     mutableActiveModels.readonly()
   }
 
-  func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
+  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
     onModelsAvailableForProvider(provider)
   }
 
-  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel] {
+  func refetchModelsAvailable(
+    for provider: AIProvider,
+    newSettings: Settings.AIProviderSettings)
+    async throws -> [AIProviderModel]
+  {
     try await onRefetchModelsAvailableForProvider(provider, newSettings)
   }
 
-  func getModel(by providerModelId: String) -> LLMModel? {
+  func getModel(by providerModelId: String) -> AIProviderModel? {
     onGetModelByProviderModelId(providerModelId)
   }
 
-  func getModelInfo(by id: ModelInfoId) -> LLMModelInfo? {
+  func getModelInfo(by id: ModelInfoId) -> AIModel? {
     onGetModelInfoById(id)
   }
 
-  func provider(for model: LLMModelInfo) -> LLMProvider? {
+  func provider(for model: AIModel) -> AIProvider? {
     onProviderForModel(model)
   }
 
-  private var modelsByProviders = [LLMProvider: [LLMModel]]()
+  private var modelsByProviders = [AIProvider: [AIProviderModel]]()
 
   /// Initialize the mock with some reasonable default values that should work for most cases.
   private func setDefaultValues() {

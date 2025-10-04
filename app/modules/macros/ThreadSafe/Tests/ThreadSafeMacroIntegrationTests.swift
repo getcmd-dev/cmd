@@ -346,7 +346,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
     assertMacroExpansion(
       """
       @ThreadSafe
-      final class LLMModelManager {
+      final class AIModelsManager {
         init(localServer: LocalServer)
         {
           self.localServer = localServer
@@ -360,23 +360,23 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
           mutableModels = .init(modelInfos.values.sorted(by: { $0.name < $1.name }))
         }
 
-        var models: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
+        var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
           mutableModels.readonly()
         }
 
         private let localServer: LocalServer
 
-        private var llmModelByProvider: [LLMProvider: [LLMModel]]
-        private var modelInfosByModelSlug: [String: LLMModelInfo]
+        private var llmModelByProvider: [AIProvider: [AIProviderModel]]
+        private var modelInfosByModelSlug: [String: AIModel]
 
-        private let mutableModels: CurrentValueSubject<[LLMModelInfo], Never>
+        private let mutableModels: CurrentValueSubject<[AIModel], Never>
       }
       """,
       expandedSource: """
-        final class LLMModelManager {
+        final class AIModelsManager {
           init(localServer: LocalServer){
-              var _llmModelByProvider: [LLMProvider: [LLMModel]]
-              let _modelInfosByModelSlug: [String: LLMModelInfo]
+              var _llmModelByProvider: [AIProvider: [AIProviderModel]]
+              let _modelInfosByModelSlug: [String: AIModel]
               self.localServer = localServer
               let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
               _llmModelByProvider = llmModelByProvider
@@ -390,13 +390,13 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
                       }))
           }
 
-          var models: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> {
+          var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
             mutableModels.readonly()
           }
 
           private let localServer: LocalServer
 
-          private var llmModelByProvider: [LLMProvider: [LLMModel]] {
+          private var llmModelByProvider: [AIProvider: [AIProviderModel]] {
               get {
                   _internalState.value.llmModelByProvider
               }
@@ -404,7 +404,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
                   _ = _internalState.set(\\.llmModelByProvider, to: newValue)
               }
           }
-          private var modelInfosByModelSlug: [String: LLMModelInfo] {
+          private var modelInfosByModelSlug: [String: AIModel] {
               get {
                   _internalState.value.modelInfosByModelSlug
               }
@@ -413,13 +413,13 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
               }
           }
 
-          private let mutableModels: CurrentValueSubject<[LLMModelInfo], Never>
+          private let mutableModels: CurrentValueSubject<[AIModel], Never>
 
             private let _internalState: Atomic<_InternalState>
 
             private struct _InternalState: Sendable {
-              var llmModelByProvider: [LLMProvider: [LLMModel]]
-              var modelInfosByModelSlug: [String: LLMModelInfo]
+              var llmModelByProvider: [AIProvider: [AIProviderModel]]
+              var modelInfosByModelSlug: [String: AIModel]
             }
 
             @discardableResult

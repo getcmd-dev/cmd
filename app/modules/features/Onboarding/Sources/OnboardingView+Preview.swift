@@ -38,11 +38,11 @@ struct ProvidersView: View {
 
 extension OnboardingView {
   init(
-    createLLMProvidersView: @Sendable @escaping () -> AnyView)
+    createAIProvidersView: @Sendable @escaping () -> AnyView)
   {
     self.init(
       viewModel: OnboardingViewModel(),
-      createLLMProvidersView: createLLMProvidersView)
+      createAIProvidersView: createAIProvidersView)
   }
 }
 
@@ -50,7 +50,7 @@ extension OnboardingView {
   withDependencies {
     $0.permissionsService = createMockPermissionService()
   } operation: {
-    OnboardingView(createLLMProvidersView: {
+    OnboardingView(createAIProvidersView: {
       AnyView(ProvidersView())
     })
   }

@@ -7,18 +7,18 @@ import Foundation
 
 public struct LLMReasoning: Sendable, Hashable, Codable { }
 
-// MARK: - LLMModel
+// MARK: - AIProviderModel
 
-public struct LLMModel: Hashable, Identifiable, Sendable, Codable {
+public struct AIProviderModel: Hashable, Identifiable, Sendable, Codable {
   public let providerId: String
-  public let provider: LLMProvider
-  public let modelInfo: LLMModelInfo
+  public let provider: AIProvider
+  public let modelInfo: AIModel
 
   public var id: String {
     providerId
   }
 
-  public init(providerId: String, provider: LLMProvider, modelInfo: LLMModelInfo) {
+  public init(providerId: String, provider: AIProvider, modelInfo: AIModel) {
     self.providerId = providerId
     self.provider = provider
     self.modelInfo = modelInfo
@@ -27,11 +27,11 @@ public struct LLMModel: Hashable, Identifiable, Sendable, Codable {
 
 public typealias ModelInfoId = String
 
-// MARK: - LLMModelInfo
+// MARK: - AIModel
 
 /// An LLM model.
 /// Each model might be provided by differetent providers. For instance both Anthropic and OpenRouter can provide Claude models.
-public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
+public struct AIModel: Hashable, Identifiable, Sendable, Codable {
   public init(
     name: String,
     slug: ModelInfoId,
@@ -57,7 +57,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
   }
 
   /// A few models for debugging and providing default values.
-  public static let claudeHaiku_3_5 = LLMModelInfo(
+  public static let claudeHaiku_3_5 = AIModel(
     name: "claude-3.5-haiku",
     slug: "anthropic/claude-3.5-haiku",
     contextSize: 200_000,
@@ -66,7 +66,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
     createdAt: 1730678400,
     rankForProgramming: 2)
-  public static let claudeSonnet = LLMModelInfo(
+  public static let claudeSonnet = AIModel(
     name: "claude-4.5-sonnet",
     slug: "anthropic/claude-sonnet-4.5",
     contextSize: 200_000,
@@ -78,7 +78,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     rankForProgramming: 1)
 
   #if DEBUG
-  public static let gpt = LLMModelInfo(
+  public static let gpt = AIModel(
     name: "gpt-5",
     slug: "openai/gpt-5",
     contextSize: 400_000,
@@ -88,7 +88,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     reasoning: LLMReasoning(),
     createdAt: 1759161676,
     rankForProgramming: 3)
-  public static let gpt_turbo = LLMModelInfo(
+  public static let gpt_turbo = AIModel(
     name: "gpt-3.5-turbo",
     slug: "openai/gpt-3.5-turbo",
     contextSize: 400_000,
@@ -98,7 +98,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     reasoning: LLMReasoning(),
     createdAt: 1759161676,
     rankForProgramming: 3)
-  public static let claudeOpus = LLMModelInfo(
+  public static let claudeOpus = AIModel(
     name: "claude-4.1-opus",
     slug: "anthropic/claude-opus-4.1",
     contextSize: 200_000,
@@ -109,7 +109,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     createdAt: 1759161676,
     rankForProgramming: 3)
 
-  public static let allTestCases: [LLMModelInfo] = [.claudeHaiku_3_5, .claudeSonnet]
+  public static let allTestCases: [AIModel] = [.claudeHaiku_3_5, .claudeSonnet]
   #endif
 
   public let name: String
@@ -136,7 +136,7 @@ public struct LLMModelInfo: Hashable, Identifiable, Sendable, Codable {
     reasoning != nil
   }
 
-  public static func ==(lhs: LLMModelInfo, rhs: LLMModelInfo) -> Bool {
+  public static func ==(lhs: AIModel, rhs: AIModel) -> Bool {
     lhs.slug == rhs.slug
   }
 

@@ -154,20 +154,20 @@ struct GetColoredDiffTests {
         var inputSchema: JSON { get }
       }
 
-      // MARK: - LLMModel
+      // MARK: - AIProviderModel
 
-      public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
-        public static var allCases: [LLMModel] {
+      public struct AIProviderModel: Hashable, Identifiable, CaseIterable, Sendable {
+        public static var allCases: [AIProviderModel] {
           [.claudeSonnet, .gpt4o, .gpt4o_mini, .o1]
         }
 
         public let displayName: String
         public let id: String
 
-        public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
-        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
-        public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
+        public static let claudeSonnet = AIProviderModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
+        public static let gpt4o = AIProviderModel(displayName: "gpt-latest", id: "gpt-latest")
+        public static let gpt4o_mini = AIProviderModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
+        public static let o1 = AIProviderModel(displayName: "o1", id: "o1-preview")
       }
 
       """
@@ -205,22 +205,22 @@ struct GetColoredDiffTests {
       >>>>>>> REPLACE
 
       <<<<<<< SEARCH
-      // MARK: - LLMModel
+      // MARK: - AIProviderModel
 
-      public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
-        public static var allCases: [LLMModel] {
+      public struct AIProviderModel: Hashable, Identifiable, CaseIterable, Sendable {
+        public static var allCases: [AIProviderModel] {
           [.claudeSonnet, .gpt4o, .gpt4o_mini, .o1]
         }
 
         public let displayName: String
         public let id: String
       =======
-      // MARK: - LLMModel
+      // MARK: - AIProviderModel
 
       /// Represents a Large Language Model available for use in the application
-      public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
+      public struct AIProviderModel: Hashable, Identifiable, CaseIterable, Sendable {
         /// All available LLM models in the application
-        public static var allCases: [LLMModel] {
+        public static var allCases: [AIProviderModel] {
           [.claudeSonnet, .gpt4o, .gpt4o_mini, .o1]
         }
 
@@ -232,22 +232,22 @@ struct GetColoredDiffTests {
       >>>>>>> REPLACE
 
       <<<<<<< SEARCH
-        public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
-        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
-        public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
+        public static let claudeSonnet = AIProviderModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
+        public static let gpt4o = AIProviderModel(displayName: "gpt-latest", id: "gpt-latest")
+        public static let gpt4o_mini = AIProviderModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
+        public static let o1 = AIProviderModel(displayName: "o1", id: "o1-preview")
       =======
         /// Claude 3.7 Sonnet model by Anthropic
-        public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
+        public static let claudeSonnet = AIProviderModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
 
         /// gpt-latest model by OpenAI
-        public static let gpt4o = LLMModel(displayName: "gpt-latest", id: "gpt-latest")
+        public static let gpt4o = AIProviderModel(displayName: "gpt-latest", id: "gpt-latest")
 
         /// gpt-latest-mini model by OpenAI
-        public static let gpt4o_mini = LLMModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
+        public static let gpt4o_mini = AIProviderModel(displayName: "gpt-latest-mini", id: "gpt-latest-mini")
 
         /// o1 preview model by Deepmind
-        public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
+        public static let o1 = AIProviderModel(displayName: "o1", id: "o1-preview")
       >>>>>>> REPLACE
       """
     let new = try FileDiff.apply(searchReplacePattern: llmDiff, to: previous)

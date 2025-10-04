@@ -40,7 +40,7 @@ public protocol LLMService: Sendable {
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
-    model: LLMModelInfo,
+    model: AIModel,
     chatMode: ChatMode,
     context: ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -50,13 +50,13 @@ public protocol LLMService: Sendable {
   func nameConversation(firstMessage: String) async throws -> String
 
   /// Generate a summary of a conversation based on the message history.
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String
+  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String
 
   /// Returns the list of available models for the specified provider.
   ///
   /// - Parameter provider: The LLM provider to get models for.
   /// - Returns: An array of available models for the provider.
-  func modelsAvailable(for provider: LLMProvider) -> [LLMModel]
+  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel]
 
   /// Refetches and returns the list of available models for the specified provider with new settings.
   ///
@@ -65,34 +65,37 @@ public protocol LLMService: Sendable {
   ///   - newSettings: The updated provider settings to use when fetching models.
   /// - Returns: An array of newly fetched models for the provider.
   /// - Throws: An error if the models cannot be fetched.
-  func refetchModelsAvailable(for provider: LLMProvider, newSettings: Settings.LLMProviderSettings) async throws -> [LLMModel]
+  func refetchModelsAvailable(
+    for provider: AIProvider,
+    newSettings: Settings.AIProviderSettings)
+    async throws -> [AIProviderModel]
 
   /// Retrieves a model by its provider-specific model identifier.
   ///
   /// - Parameter providerModelId: The provider-specific identifier for the model.
   /// - Returns: The model if found, otherwise nil.
-  func getModel(by providerModelId: String) -> LLMModel?
+  func getModel(by providerModelId: String) -> AIProviderModel?
 
   /// Retrieves model information by its model info identifier.
   ///
   /// - Parameter modelInfoId: The unique identifier for the model info.
   /// - Returns: The model information if found, otherwise nil.
-  func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo?
+  func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel?
 
   /// Determines which provider is associated with the given model.
   ///
   /// - Parameter model: The model information to find the provider for.
   /// - Returns: The provider that owns the model, or nil if not found.
-  func provider(for model: LLMModelInfo) -> LLMProvider?
+  func provider(for model: AIModel) -> AIProvider?
 
   /// A read-only subject that publishes the currently active models.
   ///
   /// This provides reactive updates whenever the set of active models changes.
-  var activeModels: ReadonlyCurrentValueSubject<[LLMModelInfo], Never> { get }
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 
   /// Returns the low tier model from configured providers with the cheapest input cost.
   /// Low tier models are suitable for simple queries that favor speed & low cost over accuracy.
-  func lowTierModel() -> LLMModel?
+  func lowTierModel() -> AIProviderModel?
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage
@@ -137,7 +140,7 @@ extension LLMServiceError: LocalizedError {
 //  func sendMessage(
 //    messageHistory: [Schema.Message],
 //    tools: [any Tool],
-//    model: LLMModel,
+//    model: AIProviderModel,
 //    chatMode: ChatMode,
 //    context: ChatContext,
 //    handleUpdateStream: (UpdateStream) -> Void)

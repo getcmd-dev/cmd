@@ -3,11 +3,11 @@
 
 import Foundation
 
-// MARK: - LLMProvider
+// MARK: - AIProvider
 
-public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
+public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
   public init?(rawValue: String) {
-    if let provider = LLMProvider.allCases.first(where: { $0.id == rawValue }) {
+    if let provider = AIProvider.allCases.first(where: { $0.id == rawValue }) {
       self = provider
     } else {
       return nil
@@ -32,7 +32,7 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     self.modelsEnabledByDefault = modelsEnabledByDefault
   }
 
-  public static var allCases: [LLMProvider] {
+  public static var allCases: [AIProvider] {
     [
       .openRouter,
       .anthropic,
@@ -53,7 +53,7 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
 
   public var rawValue: String { id }
 
-  public static func ==(lhs: LLMProvider, rhs: LLMProvider) -> Bool {
+  public static func ==(lhs: AIProvider, rhs: AIProvider) -> Bool {
     lhs.id == rhs.id
   }
 
@@ -65,12 +65,12 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
 
 // MARK: Codable
 
-extension LLMProvider: Codable {
+extension AIProvider: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.singleValueContainer()
     let id = try container.decode(String.self)
-    guard let provider = LLMProvider(rawValue: id) else {
-      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid LLMProvider \(id)")
+    guard let provider = AIProvider(rawValue: id) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid AIProvider \(id)")
     }
     self = provider
   }

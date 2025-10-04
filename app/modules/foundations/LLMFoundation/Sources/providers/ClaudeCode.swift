@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let claudeCode = LLMProvider(
+  public static let claudeCode = AIProvider(
     id: "claudeCode",
     name: "Claude Code",
     keychainKey: "CLAUDE_CODE_PATH",

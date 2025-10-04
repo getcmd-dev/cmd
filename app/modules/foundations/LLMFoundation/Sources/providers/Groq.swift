@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let groq = LLMProvider(
+  public static let groq = AIProvider(
     id: "groq",
     name: "Groq",
     keychainKey: "GROQ_API_KEY",

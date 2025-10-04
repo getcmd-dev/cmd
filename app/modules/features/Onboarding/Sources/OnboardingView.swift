@@ -9,13 +9,13 @@ import SwiftUI
 
 struct OnboardingView: View {
   /// Create a view to guide the user through a few onboarding steps.
-  /// - Parameter showLLMProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
+  /// - Parameter showAIProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
   init(
     viewModel: OnboardingViewModel,
-    createLLMProvidersView: @MainActor @escaping () -> AnyView)
+    createAIProvidersView: @MainActor @escaping () -> AnyView)
   {
     self.viewModel = viewModel
-    self.createLLMProvidersView = createLLMProvidersView
+    self.createAIProvidersView = createAIProvidersView
   }
 
   enum Constants {
@@ -50,7 +50,7 @@ struct OnboardingView: View {
 
   @Bindable private var viewModel: OnboardingViewModel
 
-  private let createLLMProvidersView: @MainActor () -> AnyView
+  private let createAIProvidersView: @MainActor () -> AnyView
 
   @ViewBuilder
   private var llmProviderSetupView: some View {
@@ -67,7 +67,7 @@ struct OnboardingView: View {
         Spacer(minLength: 0)
       }
 
-      createLLMProvidersView()
+      createAIProvidersView()
 
       if viewModel.canSkipProviderSetup {
         HoveredButton(

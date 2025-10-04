@@ -99,7 +99,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
   var isStreamingResponse = false
-  var hasSomeLLMModelsAvailable = true
+  var hasSomeModelsAvailable = true
 
   private(set) var messages = [ChatMessageViewModel]()
 
@@ -466,7 +466,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     llmService.activeModels.sink { @Sendable [weak self] activeModels in
       Task { @MainActor in
-        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
+        self?.hasSomeModelsAvailable = !activeModels.isEmpty
       }
     }.store(in: &cancellables)
 
@@ -510,7 +510,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       ])
   }
 
-  private func handle(usageInfo: LLMUsageInfo, model: LLMModelInfo) async throws {
+  private func handle(usageInfo: LLMUsageInfo, model: AIModel) async throws {
     // Handle usage info, including if the conversation needs compatcing
     if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
       defaultLogger.log("Summarizing conversation")

@@ -180,7 +180,7 @@ struct APIParamsEncodingTests {
     let settingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
           executable: nil,
@@ -220,7 +220,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModelInfo.claudeSonnet
+    let reasoningModel = AIModel.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -271,7 +271,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModelInfo.claudeSonnet
+    let reasoningModel = AIModel.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -323,7 +323,7 @@ struct APIParamsEncodingTests {
 
     // Use a model that doesn't support reasoning
     // TODO: fix this test
-    let nonReasoningModel = LLMModelInfo.claudeHaiku_3_5
+    let nonReasoningModel = AIModel.claudeHaiku_3_5
     #expect(nonReasoningModel.canReason == false)
 
     _ = try await service.sendMessage(

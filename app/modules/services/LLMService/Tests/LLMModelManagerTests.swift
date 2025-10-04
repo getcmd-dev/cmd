@@ -16,10 +16,10 @@ import Testing
 import ThreadSafe
 @testable import LLMService
 
-// MARK: - LLMModelManagerTests
+// MARK: - AIModelsManagerTests
 
-@Suite("LLMModelManager Tests")
-class LLMModelManagerTests {
+@Suite("AIModelsManager Tests")
+class AIModelsManagerTests {
 
   // MARK: - Initialization Tests
 
@@ -35,7 +35,7 @@ class LLMModelManagerTests {
     let settingsService = MockSettingsService()
 
     // when
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -55,7 +55,7 @@ class LLMModelManagerTests {
     let settingsService = MockSettingsService()
 
     // when
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -75,7 +75,7 @@ class LLMModelManagerTests {
     let settingsService = MockSettingsService()
 
     // when
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -100,7 +100,7 @@ class LLMModelManagerTests {
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -124,7 +124,7 @@ class LLMModelManagerTests {
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -148,7 +148,7 @@ class LLMModelManagerTests {
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -167,7 +167,7 @@ class LLMModelManagerTests {
   func test_getModel_returnsNilForNonExistentId() throws {
     // given
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -188,7 +188,7 @@ class LLMModelManagerTests {
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -206,7 +206,7 @@ class LLMModelManagerTests {
   func test_getModelInfo_returnsNilForNonExistentSlug() throws {
     // given
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -230,7 +230,7 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       preferedProviders: ["claude-sonnet-4": .openRouter]))
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -253,7 +253,7 @@ class LLMModelManagerTests {
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
     let settingsService = MockSettingsService()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -293,7 +293,7 @@ class LLMModelManagerTests {
     }
     let fileManager = MockFileManager()
     let settingsService = MockSettingsService()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -302,7 +302,7 @@ class LLMModelManagerTests {
     // when
     let models = try await sut.refetchModelsAvailable(
       for: .anthropic,
-      newSettings: Settings.LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
+      newSettings: Settings.AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
 
     // then
     #expect(models.count == 2)
@@ -337,7 +337,7 @@ class LLMModelManagerTests {
       return try JSONEncoder().encode(serverModelsResponse)
     }
 
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -346,7 +346,7 @@ class LLMModelManagerTests {
     // when
     _ = try await sut.refetchModelsAvailable(
       for: .anthropic,
-      newSettings: Settings.LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
+      newSettings: Settings.AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
 
     // then
     let anthropicModels = sut.modelsAvailable(for: .anthropic)
@@ -376,7 +376,7 @@ class LLMModelManagerTests {
       return try JSONEncoder().encode(serverModelsResponse)
     }
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: MockSettingsService(),
       fileManager: fileManager,
@@ -385,12 +385,12 @@ class LLMModelManagerTests {
     // when
     _ = try await sut.refetchModelsAvailable(
       for: .anthropic,
-      newSettings: Settings.LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
+      newSettings: Settings.AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
 
     // then
     let persistedPath = URL(fileURLWithPath: "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json")
     let persistedData = try #require(fileManager.files[persistedPath])
-    let decoded = try JSONDecoder().decode(PersistedLLMModels.self, from: persistedData)
+    let decoded = try JSONDecoder().decode(PersistedAIProviderModels.self, from: persistedData)
     #expect(decoded.models[.anthropic]?.count == 1)
     #expect(decoded.models[.anthropic]?.first?.providerId == "claude-sonnet")
   }
@@ -410,7 +410,7 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       enabledModels: ["claude-sonnet-4"]))
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -437,7 +437,7 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       enabledModels: ["claude-sonnet-4"]))
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -488,7 +488,7 @@ class LLMModelManagerTests {
     }
     let settingsService = MockSettingsService(Settings(llmProviderSettings: [:]))
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -504,7 +504,7 @@ class LLMModelManagerTests {
     // when
     settingsService.update(
       setting: \.llmProviderSettings,
-      to: [.anthropic: Settings.LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1)])
+      to: [.anthropic: Settings.AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1)])
 
     // then
     try await fulfillment(of: [requestReceived, modelsUpdated])
@@ -552,10 +552,10 @@ class LLMModelManagerTests {
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
+        .anthropic: Settings.AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
       ]))
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -566,7 +566,7 @@ class LLMModelManagerTests {
     // when
     settingsService.update(
       setting: \.llmProviderSettings,
-      to: [.anthropic: Settings.LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)])
+      to: [.anthropic: Settings.AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)])
 
     // then
     try await fulfillment(of: [secondRequestReceived], timeout: 2)
@@ -585,10 +585,10 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
-        .openAI: Settings.LLMProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2),
+        .anthropic: Settings.AIProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .openAI: Settings.AIProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2),
       ]))
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -604,7 +604,7 @@ class LLMModelManagerTests {
     // when
     settingsService.update(
       setting: \.llmProviderSettings,
-      to: [.openAI: Settings.LLMProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2)])
+      to: [.openAI: Settings.AIProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2)])
 
     // then
     try await fulfillment(of: [modelsUpdated])
@@ -627,10 +627,10 @@ class LLMModelManagerTests {
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1),
+        .claudeCode: Settings.AIProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1),
       ]))
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -639,7 +639,7 @@ class LLMModelManagerTests {
     // when
     let models = try await sut.refetchModelsAvailable(
       for: .claudeCode,
-      newSettings: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1))
+      newSettings: Settings.AIProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 1))
 
     // then
     #expect(models.count == 1)
@@ -675,12 +675,12 @@ class LLMModelManagerTests {
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
-        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
+        .anthropic: Settings.AIProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .claudeCode: Settings.AIProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
       ],
       enabledModels: ["claude-sonnet-4"])) // Only enable claude-sonnet, NOT claudeCode
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -727,12 +727,12 @@ class LLMModelManagerTests {
     }
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
-        .claudeCode: Settings.LLMProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
+        .anthropic: Settings.AIProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .claudeCode: Settings.AIProviderSettings(apiKey: "", baseUrl: nil, executable: "/path/to/claude", createdOrder: 2),
       ],
       enabledModels: ["claude-sonnet-4"]))
     let fileManager = MockFileManager()
-    let sut = LLMModelManager(
+    let sut = AIModelsManager(
       localServer: server,
       settingsService: settingsService,
       fileManager: fileManager,
@@ -771,18 +771,20 @@ class LLMModelManagerTests {
   @Test("lowTierModel returns cheapest model from configured providers")
   func test_lowTierModel_returnsCheapestModel() async throws {
     // given
+    let anthropicLowTier = try #require(AIProvider.anthropic.lowTierModelId)
+    let openAILowTier = try #require(AIProvider.openAI.lowTierModelId)
     let modelsData = makePersistedModelsJSON(
       anthropic: [
         makeTestModel(
           providerId: "claude-3.5-haiku",
-          slug: "anthropic/claude-3.5-haiku", // Match the lowTierModelId from Anthropic provider
+          slug: anthropicLowTier,
           provider: .anthropic,
           pricing: ModelPricing(input: 0.8, output: 4, cacheWrite: 0.2, cachedInput: 0.08)),
       ],
       openAI: [
         makeTestModel(
-          providerId: "gpt-4o-mini",
-          slug: "openai/gpt-4o-mini", // Match the lowTierModelId from OpenAI provider
+          providerId: "gpt-3.5-turbo",
+          slug: openAILowTier,
           provider: .openAI,
           pricing: ModelPricing(input: 0.25, output: 2, cacheWrite: 0.0625, cachedInput: 0.025)),
       ])
@@ -791,11 +793,11 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
-        .openAI: Settings.LLMProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2),
+        .anthropic: Settings.AIProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .openAI: Settings.AIProviderSettings(apiKey: "key2", baseUrl: nil, executable: nil, createdOrder: 2),
       ],
-      enabledModels: ["anthropic/claude-3.5-haiku", "openai/gpt-4o-mini"]))
-    let llmModelManager = LLMModelManager(
+      enabledModels: [anthropicLowTier, openAILowTier]))
+    let llmModelManager = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -812,7 +814,7 @@ class LLMModelManagerTests {
     let lowTierModel = llmService.lowTierModel()
 
     // then
-    #expect(lowTierModel?.id == "gpt-4o-mini")
+    #expect(lowTierModel?.modelInfo.slug == openAILowTier)
     #expect(lowTierModel?.provider == .openAI)
   }
 
@@ -832,10 +834,10 @@ class LLMModelManagerTests {
     ])
     let settingsService = MockSettingsService(Settings(
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
+        .anthropic: Settings.AIProviderSettings(apiKey: "key1", baseUrl: nil, executable: nil, createdOrder: 1),
       ],
       enabledModels: [])) // No models enabled
-    let llmModelManager = LLMModelManager(
+    let llmModelManager = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -860,7 +862,7 @@ class LLMModelManagerTests {
     // given
     let fileManager = MockFileManager()
     let settingsService = MockSettingsService(Settings(llmProviderSettings: [:]))
-    let llmModelManager = LLMModelManager(
+    let llmModelManager = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
       fileManager: fileManager,
@@ -889,14 +891,14 @@ class LLMModelManagerTests {
 private func makeTestModel(
   providerId: String,
   slug: String,
-  provider: LLMProvider,
+  provider: AIProvider,
   pricing: ModelPricing? = nil)
-  -> LLMModel
+  -> AIProviderModel
 {
-  LLMModel(
+  AIProviderModel(
     providerId: providerId,
     provider: provider,
-    modelInfo: LLMModelInfo(
+    modelInfo: AIModel(
       name: "Test Model",
       slug: slug,
       contextSize: 200_000,
@@ -934,18 +936,18 @@ private func makeListModelsOutput(models: [Schema.Model]) -> Schema.ListModelsOu
 }
 
 private func makePersistedModelsJSON(
-  anthropic: [LLMModel] = [],
-  openAI: [LLMModel] = [],
-  openRouter: [LLMModel] = [])
+  anthropic: [AIProviderModel] = [],
+  openAI: [AIProviderModel] = [],
+  openRouter: [AIProviderModel] = [])
   -> String
 {
-  var dict = [LLMProvider: [LLMModel]]()
+  var dict = [AIProvider: [AIProviderModel]]()
   if !anthropic.isEmpty { dict[.anthropic] = anthropic }
   if !openAI.isEmpty { dict[.openAI] = openAI }
   if !openRouter.isEmpty { dict[.openRouter] = openRouter }
 
   let encoder = JSONEncoder()
   encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-  let data = try! encoder.encode(PersistedLLMModels(models: dict))
+  let data = try! encoder.encode(PersistedAIProviderModels(models: dict))
   return String(data: data, encoding: .utf8)!
 }

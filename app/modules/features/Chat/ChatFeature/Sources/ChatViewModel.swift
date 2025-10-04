@@ -41,7 +41,7 @@ public class ChatViewModel {
 
   private init(
     tab: ChatThreadViewModel,
-    currentModel: LLMModelInfo)
+    currentModel: AIModel)
   {
     self.tab = tab
     self.currentModel = currentModel
@@ -75,7 +75,7 @@ public class ChatViewModel {
     }
   }
 
-  var currentModel: LLMModelInfo
+  var currentModel: AIModel
   var selectedFile: URL?
   private(set) var focusedWorkspacePath: URL? = nil
   private(set) var showChatHistory = false

@@ -59,8 +59,8 @@ final class ChatInputViewModel {
 
   #if DEBUG
   convenience init(
-    selectedModel: LLMModelInfo? = nil,
-    activeModels: [LLMModelInfo]? = nil,
+    selectedModel: AIModel? = nil,
+    activeModels: [AIModel]? = nil,
     mode: ChatMode = .agent,
     attachments: [AttachmentModel] = [])
   {
@@ -76,7 +76,7 @@ final class ChatInputViewModel {
   convenience init() {
     @Dependency(\.userDefaults) var userDefaults
     @Dependency(\.llmService) var llmService
-    let selectedModel: LLMModelInfo? =
+    let selectedModel: AIModel? =
       if let modelId = userDefaults.string(forKey: Self.userDefaultsSelectLLMModelKey) {
         llmService.getModelInfo(by: modelId)
       } else {
@@ -102,8 +102,8 @@ final class ChatInputViewModel {
   ///   - activeModels: The available LLM models. When nil, this value is resolved from the settings and changes to the settings will be observed.
   private init(
     textInput: TextInput,
-    selectedModel: LLMModelInfo? = nil,
-    activeModels: [LLMModelInfo]?,
+    selectedModel: AIModel? = nil,
+    activeModels: [AIModel]?,
     mode: ChatMode = .agent,
     attachments: [AttachmentModel])
   {
@@ -136,7 +136,7 @@ final class ChatInputViewModel {
   }
 
   /// The list of available LLM models that can be selected.
-  private(set) var activeModels: [LLMModelInfo]
+  private(set) var activeModels: [AIModel]
   /// Attachments selected by the user as explicit context for the next message.
   var attachments: [AttachmentModel]
   /// Whether the text input needs to be focused on. This will be reset to false once focus has been updated.
@@ -156,7 +156,7 @@ final class ChatInputViewModel {
   var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
   /// Which LLM model is selected to respond to the next message.
-  var selectedModel: LLMModelInfo? {
+  var selectedModel: AIModel? {
     didSet {
       if let selectedModel {
         userDefaults.set(selectedModel.id, forKey: Self.userDefaultsSelectLLMModelKey)

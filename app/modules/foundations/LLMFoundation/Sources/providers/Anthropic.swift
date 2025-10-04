@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let anthropic = LLMProvider(
+  public static let anthropic = AIProvider(
     id: "anthropic",
     name: "Anthropic",
     keychainKey: "ANTHROPIC_API_KEY",

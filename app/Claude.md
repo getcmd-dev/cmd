@@ -10,7 +10,16 @@ Note: you might see existing code that doesn't follow the patterns described her
 - When testing @Observable objects, use `wait` from `Observable+onChange` of helpers from `Observable+helpers.swift`
 - When working with a class that has dependencies:
   * always import `DependenciesTestSupport`. This will ensure each test is injected with isolated dependencies.
-  * Do not set dependencies when the default value (ie `MockSomeDependency()`) is fine. This is done by importing `DependenciesTestSupport`
+  * When relevant, prefer to define and use a helper to set default dependencies on the test suite:
+```swift
+@Suite("LLMSettingsViewModelTests", .dependencies { $0.setDefaulfMockValues() }) { ... }
+extension DependencyValues {
+  fileprivate mutating func setDefaulfMockValues() {
+    llmService = MockLLMService()
+    settingsService = MockSettingsService()
+  }
+}
+```
   * When setting **initial** properties for a dependency to use the syntax
 ```swift
 @Test("some test", .dependencies {

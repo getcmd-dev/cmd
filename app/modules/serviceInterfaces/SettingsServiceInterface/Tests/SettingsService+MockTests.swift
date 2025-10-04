@@ -15,7 +15,7 @@ struct SettingsServiceMockTests {
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
           executable: nil,
@@ -33,7 +33,7 @@ struct SettingsServiceMockTests {
     // Test updating values
     sut.update(setting: \Settings.pointReleaseXcodeExtensionToDebugApp, to: true)
 
-    let newAnthropicSettings = LLMProviderSettings(
+    let newAnthropicSettings = AIProviderSettings(
       apiKey: "new-key",
       baseUrl: "https://api.anthropic.com/v1",
       executable: nil,
@@ -66,7 +66,7 @@ struct SettingsServiceMockTests {
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
           executable: nil,
@@ -94,7 +94,7 @@ struct SettingsServiceMockTests {
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
           executable: nil,
@@ -137,7 +137,7 @@ struct SettingsServiceMockTests {
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "default-key",
           baseUrl: "https://api.anthropic.com",
           executable: nil,

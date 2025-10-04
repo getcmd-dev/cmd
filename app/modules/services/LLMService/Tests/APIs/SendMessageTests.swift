@@ -391,7 +391,7 @@ final class SendMessageTests {
         handleUpdateStream: { _ in })
       Issue.record("Expected sendMessage to throw error")
     } catch {
-      #expect(error.localizedDescription == "Unsupported model claude-sonnet-4")
+      #expect(error.localizedDescription == "Unsupported model anthropic/claude-sonnet-4.5")
     }
   }
 

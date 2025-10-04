@@ -16,17 +16,18 @@ import Testing
 // MARK: - LLMSettingsViewModelTests
 
 @MainActor
+@Suite("LLMSettingsViewModelTests", .dependencies { $0.setDefaulfMockValues() })
 class LLMSettingsViewModelTests {
 
   // MARK: - Initialization Tests
 
   @Test("initializes with settings from service", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     let enabledModels: [ModelInfoId] = ["model1", "model2"]
     let reasoningModels: [ModelInfoId: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
-    let preferedProviders: [ModelInfoId: LLMProvider] = ["model1": .anthropic]
+    let preferedProviders: [ModelInfoId: AIProvider] = ["model1": .anthropic]
 
     let initialSettings = SettingsServiceInterface.Settings(
       preferedProviders: preferedProviders,
@@ -39,8 +40,8 @@ class LLMSettingsViewModelTests {
   })
   func initializationWithSettings() {
     // given
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     let enabledModels: [ModelInfoId] = ["model1", "model2"]
     let reasoningModels: [ModelInfoId: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
@@ -63,8 +64,8 @@ class LLMSettingsViewModelTests {
     let sut = LLMSettingsViewModel()
 
     // when
-    let newProviderSettings: [LLMProvider: LLMProviderSettings] = [
-      .openAI: LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let newProviderSettings: [AIProvider: AIProviderSettings] = [
+      .openAI: AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     let newSettings = SettingsServiceInterface.Settings(llmProviderSettings: newProviderSettings)
     mockSettingsService.update(to: newSettings)
@@ -81,7 +82,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
@@ -94,7 +95,7 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("disable model removes from enabled models and updates settings", .dependencies {
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
     let initialSettings = SettingsServiceInterface.Settings(
       enabledModels: [model.id, "other-model"])
 
@@ -104,7 +105,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
@@ -118,14 +119,14 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("isActive binding returns correct state", .dependencies {
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
     let initialSettings = SettingsServiceInterface.Settings(enabledModels: [model.id])
 
     $0.settingsService = MockSettingsService(initialSettings)
   })
   func isActiveBindingGetter() {
     // given
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -140,7 +141,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
@@ -154,7 +155,7 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("isActive binding setter disables model", .dependencies {
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
     let initialSettings = SettingsServiceInterface.Settings(enabledModels: [model.id])
 
     $0.settingsService = MockSettingsService(initialSettings)
@@ -163,7 +164,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
@@ -183,7 +184,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
 
     let sut = LLMSettingsViewModel()
 
@@ -196,7 +197,7 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("disable reasoning removes from reasoning models and updates settings", .dependencies {
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
     let initialSettings = SettingsServiceInterface.Settings(
       reasoningModels: [model.id: .init(isEnabled: true)])
 
@@ -207,7 +208,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
 
     let sut = LLMSettingsViewModel()
 
@@ -222,7 +223,7 @@ class LLMSettingsViewModelTests {
   @Test("reasoningSetting binding returns nil for non-reasoning model")
   func reasoningSettingBindingNilForNonReasoningModel() {
     // given
-    let model = LLMModelInfo.claudeHaiku_3_5
+    let model = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -233,7 +234,7 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("reasoningSetting binding returns correct state for reasoning model", .dependencies {
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
     let initialSettings = SettingsServiceInterface.Settings(
       reasoningModels: [model.id: .init(isEnabled: true)])
 
@@ -242,7 +243,7 @@ class LLMSettingsViewModelTests {
   })
   func reasoningSettingBindingGetter() {
     // given
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
     let sut = LLMSettingsViewModel()
 
     // when
@@ -257,7 +258,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
 
     let sut = LLMSettingsViewModel()
 
@@ -271,7 +272,7 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("reasoningSetting binding setter disables reasoning", .dependencies {
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
     let initialSettings = SettingsServiceInterface.Settings(
       reasoningModels: [model.id: .init(isEnabled: true)])
 
@@ -281,7 +282,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model = LLMModelInfo.claudeSonnet
+    let model = AIModel.claudeSonnet
 
     let sut = LLMSettingsViewModel()
 
@@ -325,7 +326,7 @@ class LLMSettingsViewModelTests {
     }
 
     let sut = LLMSettingsViewModel()
-    let newSettings = LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
+    let newSettings = AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
 
     // when
     sut.save(providerSettings: newSettings, for: .anthropic)
@@ -340,9 +341,9 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("remove provider updates settings", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
-      .openAI: LLMProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
@@ -376,7 +377,7 @@ class LLMSettingsViewModelTests {
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
 
-    let models: [LLMModelInfo] = [.claudeOpus, .claudeSonnet]
+    let models: [AIModel] = [.claudeOpus, .claudeSonnet]
     mockLLMService.onRefetchModelsAvailable = { provider, _ in
       #expect(provider == .anthropic)
       return models.map { .init(
@@ -393,7 +394,7 @@ class LLMSettingsViewModelTests {
     }.store(in: &cancellables)
 
     let sut = LLMSettingsViewModel()
-    let newSettings = LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
+    let newSettings = AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
 
     // when
     sut.save(providerSettings: newSettings, for: .anthropic)
@@ -401,13 +402,13 @@ class LLMSettingsViewModelTests {
     try await fulfillment(of: hasEnabledModels)
 
     // then
-    #expect(mockSettingsService.value(for: \.enabledModels).contains(LLMModelInfo.claudeOpus.id))
-    #expect(mockSettingsService.value(for: \.enabledModels).contains(LLMModelInfo.claudeSonnet.id))
+    #expect(mockSettingsService.value(for: \.enabledModels).contains(AIModel.claudeOpus.id))
+    #expect(mockSettingsService.value(for: \.enabledModels).contains(AIModel.claudeSonnet.id))
   }
 
   @Test("updates existing provider without enabling default models again", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     $0.settingsService = MockSettingsService(.init(llmProviderSettings: providerSettings))
   })
@@ -426,7 +427,7 @@ class LLMSettingsViewModelTests {
     }
 
     let sut = LLMSettingsViewModel()
-    let updatedSettings = LLMProviderSettings(apiKey: "updated-key", baseUrl: nil, executable: nil, createdOrder: 1)
+    let updatedSettings = AIProviderSettings(apiKey: "updated-key", baseUrl: nil, executable: nil, createdOrder: 1)
 
     // when
     sut.save(providerSettings: updatedSettings, for: .anthropic)
@@ -440,11 +441,11 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("does not duplicate already enabled default models", .dependencies {
-    $0.settingsService = MockSettingsService(.init(enabledModels: [LLMModelInfo.claudeOpus.id]))
+    $0.settingsService = MockSettingsService(.init(enabledModels: [AIModel.claudeOpus.id]))
   })
   func saveNewProviderDoesNotDuplicateEnabledModels() async throws {
     // given
-    let defaultModel = LLMModelInfo.claudeOpus
+    let defaultModel = AIModel.claudeOpus
 
     @Dependency(\.llmService) var llmService
     let mockLLMService = try #require(llmService as? MockLLMService)
@@ -462,7 +463,7 @@ class LLMSettingsViewModelTests {
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
 
     let sut = LLMSettingsViewModel()
-    let newSettings = LLMProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
+    let newSettings = AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)
 
     // when
     sut.save(providerSettings: newSettings, for: .anthropic)
@@ -480,9 +481,9 @@ class LLMSettingsViewModelTests {
   // MARK: - Computed Properties Tests
 
   @Test("availableProviders returns configured providers", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
-      .openAI: LLMProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
@@ -503,21 +504,21 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("availableModels returns unique models from all providers", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
-      .openAI: LLMProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
     let mockLLMService = MockLLMService()
-    let model1 = LLMModelInfo.claudeHaiku_3_5
-    let model2 = LLMModelInfo.claudeSonnet
+    let model1 = AIModel.claudeHaiku_3_5
+    let model2 = AIModel.claudeSonnet
 
     mockLLMService.onListModelsAvailable = { provider in
       if provider == .anthropic {
-        return [LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
+        return [AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
       } else if provider == .openAI {
-        return [LLMModel(providerId: model2.id, provider: .openAI, modelInfo: model2)]
+        return [AIProviderModel(providerId: model2.id, provider: .openAI, modelInfo: model2)]
       }
       return []
     }
@@ -527,8 +528,8 @@ class LLMSettingsViewModelTests {
   })
   func availableModels() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
-    let model2 = LLMModelInfo.claudeSonnet
+    let model1 = AIModel.claudeHaiku_3_5
+    let model2 = AIModel.claudeSonnet
     let sut = LLMSettingsViewModel()
 
     // when
@@ -542,8 +543,8 @@ class LLMSettingsViewModelTests {
 
   @Test("modelsAvailable returns models for specific provider", .dependencies {
     let mockLLMService = MockLLMService()
-    let model1 = LLMModelInfo.claudeHaiku_3_5
-    let anthropicModel = LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)
+    let model1 = AIModel.claudeHaiku_3_5
+    let anthropicModel = AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)
 
     mockLLMService.onListModelsAvailable = { provider in
       provider == .anthropic ? [anthropicModel] : []
@@ -554,7 +555,7 @@ class LLMSettingsViewModelTests {
   })
   func modelsAvailable() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -566,18 +567,18 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("providersAvailable returns providers that support given model", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
-      .openAI: LLMProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
     let mockLLMService = MockLLMService()
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
 
     mockLLMService.onListModelsAvailable = { provider in
       if provider == .anthropic {
-        return [LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
+        return [AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
       }
       return []
     }
@@ -587,7 +588,7 @@ class LLMSettingsViewModelTests {
   })
   func providersAvailable() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -600,17 +601,17 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("providerForModels getter returns default provider from service", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
     let mockLLMService = MockLLMService()
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
 
     mockLLMService.onListModelsAvailable = { provider in
       if provider == .anthropic {
-        return [LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
+        return [AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
       }
       return []
     }
@@ -621,7 +622,7 @@ class LLMSettingsViewModelTests {
   })
   func providerForModelsGetter() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -636,7 +637,7 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
@@ -648,17 +649,17 @@ class LLMSettingsViewModelTests {
   }
 
   @Test("provider binding returns correct provider", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
     let initialSettings = SettingsServiceInterface.Settings(llmProviderSettings: providerSettings)
 
     let mockLLMService = MockLLMService()
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
 
     mockLLMService.onListModelsAvailable = { provider in
       if provider == .anthropic {
-        return [LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
+        return [AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
       }
       return []
     }
@@ -669,7 +670,7 @@ class LLMSettingsViewModelTests {
   })
   func providerBindingGetter() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -684,25 +685,25 @@ class LLMSettingsViewModelTests {
     // given
     @Dependency(\.settingsService) var settingsService
     let mockSettingsService = try #require(settingsService as? MockSettingsService)
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
 
     let sut = LLMSettingsViewModel()
 
     // when
     let binding = sut.provider(for: model1)
-    binding.wrappedValue = LLMProvider.openAI
+    binding.wrappedValue = AIProvider.openAI
 
     // then
     #expect(mockSettingsService.value(for: \.preferedProviders)[model1.id] == .openAI)
   }
 
   @Test("providerForModels respects preferred providers over defaults", .dependencies {
-    let providerSettings: [LLMProvider: LLMProviderSettings] = [
-      .anthropic: LLMProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
-      .openAI: LLMProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    let providerSettings: [AIProvider: AIProviderSettings] = [
+      .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
-    let model1 = LLMModelInfo.claudeHaiku_3_5
-    let preferedProviders: [ModelInfoId: LLMProvider] = [model1.id: .openAI]
+    let model1 = AIModel.claudeHaiku_3_5
+    let preferedProviders: [ModelInfoId: AIProvider] = [model1.id: .openAI]
 
     let initialSettings = SettingsServiceInterface.Settings(
       preferedProviders: preferedProviders,
@@ -711,7 +712,7 @@ class LLMSettingsViewModelTests {
     let mockLLMService = MockLLMService()
     mockLLMService.onListModelsAvailable = { provider in
       if provider == .anthropic {
-        return [LLMModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
+        return [AIProviderModel(providerId: model1.id, provider: .anthropic, modelInfo: model1)]
       }
       return []
     }
@@ -723,7 +724,7 @@ class LLMSettingsViewModelTests {
   })
   func providerForModelsPrefersUserChoice() {
     // given
-    let model1 = LLMModelInfo.claudeHaiku_3_5
+    let model1 = AIModel.claudeHaiku_3_5
     let sut = LLMSettingsViewModel()
 
     // when
@@ -746,5 +747,12 @@ private func nextTick() async {
         continuation.resume(returning: ())
       }
     }
+  }
+}
+
+extension DependencyValues {
+  fileprivate mutating func setDefaulfMockValues() {
+    llmService = MockLLMService()
+    settingsService = MockSettingsService()
   }
 }

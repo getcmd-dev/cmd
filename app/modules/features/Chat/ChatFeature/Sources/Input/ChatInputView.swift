@@ -300,9 +300,9 @@ struct ChatInputView: View {
   }
 }
 
-// MARK: - LLMModelInfo + MenuItem
+// MARK: - AIModel + MenuItem
 
-extension LLMModelInfo: MenuItem { }
+extension AIModel: MenuItem { }
 
 // MARK: - ChatMode + MenuItem
 

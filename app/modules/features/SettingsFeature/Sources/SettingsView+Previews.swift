@@ -7,7 +7,7 @@ import SwiftUI
 
 #if DEBUG
 
-extension LLMProviderSettings {
+extension AIProviderSettings {
   init(apiKey: String, baseUrl: String? = nil, executable: String? = nil) {
     self.init(apiKey: apiKey, baseUrl: baseUrl, executable: executable, createdOrder: 0)
   }

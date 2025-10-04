@@ -55,7 +55,7 @@ public final class LLMSettingsViewModel {
       }.store(in: &cancellables)
   }
 
-  private(set) var providerSettings: [LLMProvider: LLMProviderSettings]
+  private(set) var providerSettings: [AIProvider: AIProviderSettings]
 
   private(set) var enabledModels: [ModelInfoId]
 
@@ -63,9 +63,9 @@ public final class LLMSettingsViewModel {
   private(set) var reasoningModels: [ModelInfoId: LLMReasoningSetting]
 
   /// For each available model, the associated provider.
-  var providerForModels: [LLMModelInfo: LLMProvider] {
+  var providerForModels: [AIModel: AIProvider] {
     get { // TODO: cache this computation? Do if when the value changes in settings.
-      var providerForModels = [LLMModelInfo: LLMProvider]()
+      var providerForModels = [AIModel: AIProvider]()
       for model in availableModels {
         providerForModels[model] = llmService.provider(for: model) ?? .anthropic
       }
@@ -83,41 +83,41 @@ public final class LLMSettingsViewModel {
   }
 
   /// All the models that are available, based on the available providers.
-  var availableModels: [LLMModelInfo] {
+  var availableModels: [AIModel] {
     let models = providerSettings.keys.flatMap { provider in
       llmService.modelsAvailable(for: provider)
-    }.reduce(into: Set<LLMModelInfo>(), { acc, value in
+    }.reduce(into: Set<AIModel>(), { acc, value in
       acc.insert(value.modelInfo)
     })
     return Array(models)
   }
 
   /// The LLM providers that have been configured.
-  var availableProviders: [LLMProvider] {
+  var availableProviders: [AIProvider] {
     Array(providerSettings.keys)
   }
 
-  func enableReasoning(for model: LLMModelInfo) {
+  func enableReasoning(for model: AIModel) {
     reasoningModels[model.id] = .init(isEnabled: true)
     settingsService.update(setting: \.reasoningModels, to: reasoningModels)
   }
 
-  func disableReasoning(for model: LLMModelInfo) {
+  func disableReasoning(for model: AIModel) {
     reasoningModels.removeValue(forKey: model.id)
     settingsService.update(setting: \.reasoningModels, to: reasoningModels)
   }
 
-  func enable(model: LLMModelInfo) {
+  func enable(model: AIModel) {
     enabledModels.append(model.id)
     settingsService.update(setting: \.enabledModels, to: enabledModels)
   }
 
-  func disable(model: LLMModelInfo) {
+  func disable(model: AIModel) {
     enabledModels.removeAll(where: { $0 == model.id })
     settingsService.update(setting: \.enabledModels, to: enabledModels)
   }
 
-  func save(providerSettings: LLMProviderSettings, for provider: LLMProvider) {
+  func save(providerSettings: AIProviderSettings, for provider: AIProvider) {
     let isNew = self.providerSettings[provider] == nil
     self.providerSettings[provider] = providerSettings
     settingsService.update(setting: \.llmProviderSettings, to: self.providerSettings)
@@ -139,30 +139,30 @@ public final class LLMSettingsViewModel {
     }
   }
 
-  func remove(provider: LLMProvider) {
+  func remove(provider: AIProvider) {
     providerSettings.removeValue(forKey: provider)
     settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
   }
 
-  func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
+  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
     llmService.modelsAvailable(for: provider)
   }
 
-  func providersAvailable(for model: LLMModelInfo) -> [LLMProvider] {
+  func providersAvailable(for model: AIModel) -> [AIProvider] {
     availableProviders.filter { provider in
       llmService.modelsAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
     }
   }
 
-  func provider(for model: LLMModelInfo) -> Binding<LLMProvider> {
+  func provider(for model: AIModel) -> Binding<AIProvider> {
     .init(get: {
-      self.providerForModels[model] ?? LLMProvider.openAI
+      self.providerForModels[model] ?? AIProvider.openAI
     }, set: { provider in
       self.providerForModels[model] = provider
     })
   }
 
-  func isActive(for model: LLMModelInfo) -> Binding<Bool> {
+  func isActive(for model: AIModel) -> Binding<Bool> {
     .init(get: {
       self.enabledModels.contains(model.id)
     }, set: { isActive in
@@ -174,7 +174,7 @@ public final class LLMSettingsViewModel {
     })
   }
 
-  func reasoningSetting(for model: LLMModelInfo) -> Binding<LLMReasoningSetting>? {
+  func reasoningSetting(for model: AIModel) -> Binding<LLMReasoningSetting>? {
     guard model.canReason else { return nil }
     return .init(
       get: { self.reasoningModels[model.id] ?? .init(isEnabled: false) },
@@ -187,7 +187,7 @@ public final class LLMSettingsViewModel {
       })
   }
 
-  private var preferedProviders: [ModelInfoId: LLMProvider]
+  private var preferedProviders: [ModelInfoId: AIProvider]
 
   private let settingsService: SettingsService
 
@@ -197,16 +197,16 @@ public final class LLMSettingsViewModel {
 
 }
 
-public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
-extension AllLLMProviderSettings {
+public typealias AllAIProviderSettings = [AIProvider: AIProviderSettings]
+extension AllAIProviderSettings {
   var nextCreatedOrder: Int {
     (values.map(\.createdOrder).max() ?? 0) + 1
   }
 }
 
 extension SettingsServiceInterface.Settings {
-  func preferedProviders(llmService: LLMService) -> [LLMModelInfo: LLMProvider] {
-    preferedProviders.reduce(into: [LLMModelInfo: LLMProvider]()) { acc, el in
+  func preferedProviders(llmService: LLMService) -> [AIModel: AIProvider] {
+    preferedProviders.reduce(into: [AIModel: AIProvider]()) { acc, el in
       guard let model = llmService.getModelInfo(by: el.key) else { return }
       acc[model] = el.value
     }
@@ -217,7 +217,7 @@ extension SettingsServiceInterface.Settings {
 
 private struct LLMSettings: Sendable, Equatable {
   let enabledModels: [ModelInfoId]
-  let providerSettings: [LLMProvider: LLMProviderSettings]
-  let preferedProviders: [ModelInfoId: LLMProvider]
+  let providerSettings: [AIProvider: AIProviderSettings]
+  let preferedProviders: [ModelInfoId: AIProvider]
   let reasoningModels: [ModelInfoId: LLMReasoningSetting]
 }

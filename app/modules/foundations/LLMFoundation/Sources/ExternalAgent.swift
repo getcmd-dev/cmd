@@ -14,10 +14,10 @@ public struct ExternalAgent: Sendable {
   /// A link to instructions on how to install the agent.
   public let installationInstructions: URL
   /// Additional information about this agent's provider.
-  public let llmProvider: LLMProvider
+  public let llmProvider: AIProvider
 }
 
-extension LLMProvider {
+extension AIProvider {
   /// When the LLM provider is an external agent, ie an agent that can use tools when reponding to a prompt,
   /// this value describes properties related to how to use it.
   public var externalAgent: ExternalAgent? {

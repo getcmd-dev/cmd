@@ -37,12 +37,12 @@ struct SettingsMigrationTests {
       fileEditMode: .xcodeExtension,
       preferedProviders: .init([.claudeHaiku_3_5: .anthropic, .gpt: .openAI]),
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "ANTHROPIC_API_KEY", // Legacy keychain reference
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "OPENAI_API_KEY", // Legacy keychain reference
           baseUrl: nil,
           executable: nil,

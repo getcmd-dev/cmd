@@ -144,7 +144,7 @@ final class DefaultSettingsService: SettingsService {
       } ??? .defaultSettings
 
     // Load API keys from the keychain.
-    for provider in LLMProvider.allCases {
+    for provider in AIProvider.allCases {
       if let apiKey = externalSettings.llmProviderSettings[provider]?.apiKey {
         if let key = sharedUserDefaults.loadSecuredValue(forKey: apiKey) {
           externalSettings.llmProviderSettings[provider]?.apiKey = key
@@ -163,7 +163,7 @@ final class DefaultSettingsService: SettingsService {
         let settings: Settings = try {
           var settings = try JSONDecoder().decode(Settings.self, from: data)
           // Load API keys from the keychain.
-          for provider in LLMProvider.allCases {
+          for provider in AIProvider.allCases {
             if let apiKey = settings.llmProviderSettings[provider]?.apiKey {
               if let key = sharedUserDefaults.loadSecuredValue(forKey: apiKey) {
                 settings.llmProviderSettings[provider]?.apiKey = key
@@ -208,7 +208,7 @@ final class DefaultSettingsService: SettingsService {
     var privateKeys = [String: String?]()
 
     let keychainKeyPrefix = "cmd-keychain-key-"
-    for provider in LLMProvider.allCases {
+    for provider in AIProvider.allCases {
       let keychainKey = keychainKeyPrefix + provider.keychainKey
       if let settings = settings.llmProviderSettings[provider] {
         privateKeys[keychainKey] = settings.apiKey

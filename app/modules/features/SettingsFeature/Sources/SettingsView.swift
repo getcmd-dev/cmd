@@ -21,7 +21,7 @@ public struct SettingsView: View {
             currentView = section
           },
           onDismiss: onDismiss,
-          hasAvailableLLMModels: !viewModel.llmSettings.availableModels.isEmpty,
+          hasAvailableModels: !viewModel.llmSettings.availableModels.isEmpty,
           showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
       }
 
@@ -187,7 +187,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
   let onDismiss: () -> Void
-  let hasAvailableLLMModels: Bool
+  let hasAvailableModels: Bool
   let showInternalSettingsInRelease: Bool
 
   var body: some View {
@@ -214,7 +214,7 @@ private struct SettingsLandingView: View {
             description: "Manage API keys and setup LLM providers",
             action: onNavigate)
 
-          if hasAvailableLLMModels {
+          if hasAvailableModels {
             SettingsCard(
               section: .models,
               description: "Models configuration",

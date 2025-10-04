@@ -13,16 +13,16 @@ import ToolFoundation
 #if DEBUG
 @ThreadSafe
 public final class MockLLMService: LLMService {
-  public init(activeModels: [LLMFoundation.LLMModelInfo] = []) {
+  public init(activeModels: [LLMFoundation.AIModel] = []) {
     mutableActiveModels = .init(activeModels)
   }
 
-  public var mutableActiveModels: CurrentValueSubject<[LLMFoundation.LLMModelInfo], Never>
+  public var mutableActiveModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
 
   public var onSendMessage: (@Sendable (
     [Schema.Message],
     [any Tool],
-    LLMModelInfo,
+    AIModel,
     ChatMode,
     ChatContext,
     (UpdateStream) -> Void)
@@ -30,23 +30,23 @@ public final class MockLLMService: LLMService {
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
 
-  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModelInfo) async throws -> String)?
+  public var onSummarizeConversation: (@Sendable ([Schema.Message], AIModel) async throws -> String)?
 
-  public var onListModelsAvailable: (@Sendable (LLMProvider) -> [LLMModel])?
+  public var onListModelsAvailable: (@Sendable (AIProvider) -> [AIProviderModel])?
 
-  public var onRefetchModelsAvailable: (@Sendable (LLMProvider, Settings.LLMProviderSettings) async throws -> [LLMModel])?
+  public var onRefetchModelsAvailable: (@Sendable (AIProvider, Settings.AIProviderSettings) async throws -> [AIProviderModel])?
 
-  public var onGetModel: (@Sendable (String) async throws -> LLMModel?)?
+  public var onGetModel: (@Sendable (String) async throws -> AIProviderModel?)?
 
-  public var onGetModelInfo: (@Sendable (String) -> LLMModelInfo?)?
+  public var onGetModelInfo: (@Sendable (String) -> AIModel?)?
 
-  public var onGetModelSync: (@Sendable (String) -> LLMModel?)?
+  public var onGetModelSync: (@Sendable (String) -> AIProviderModel?)?
 
-  public var onProviderForModel: (@Sendable (LLMModelInfo) -> LLMProvider?)?
+  public var onProviderForModel: (@Sendable (AIModel) -> AIProvider?)?
 
-  public var onLowTierModel: (@Sendable () -> LLMModel?)?
+  public var onLowTierModel: (@Sendable () -> AIProviderModel?)?
 
-  public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.LLMModelInfo], Never> {
+  public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> {
     mutableActiveModels.readonly()
   }
 
@@ -55,7 +55,7 @@ public final class MockLLMService: LLMService {
   public func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any Tool],
-    model: LLMModelInfo,
+    model: AIModel,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -71,37 +71,37 @@ public final class MockLLMService: LLMService {
 
   public func summarizeConversation(
     messageHistory: [Schema.Message],
-    model: LLMModelInfo)
+    model: AIModel)
     async throws -> String
   {
     try await onSummarizeConversation?(messageHistory, model) ?? "Mock conversation summary"
   }
 
-  public func modelsAvailable(for provider: LLMProvider) -> [LLMModel] {
+  public func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
     onListModelsAvailable?(provider) ?? []
   }
 
   public func refetchModelsAvailable(
-    for provider: LLMProvider,
-    newSettings: Settings.LLMProviderSettings)
-    async throws -> [LLMModel]
+    for provider: AIProvider,
+    newSettings: Settings.AIProviderSettings)
+    async throws -> [AIProviderModel]
   {
     try await onRefetchModelsAvailable?(provider, newSettings) ?? modelsAvailable(for: provider)
   }
 
-  public func getModel(by providerModelId: String) -> LLMModel? {
+  public func getModel(by providerModelId: String) -> AIProviderModel? {
     onGetModelSync?(providerModelId)
   }
 
-  public func getModelInfo(by modelInfoId: ModelInfoId) -> LLMModelInfo? {
+  public func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel? {
     onGetModelInfo?(modelInfoId)
   }
 
-  public func provider(for model: LLMModelInfo) -> LLMProvider? {
+  public func provider(for model: AIModel) -> AIProvider? {
     onProviderForModel?(model)
   }
 
-  public func lowTierModel() -> LLMModel? {
+  public func lowTierModel() -> AIProviderModel? {
     onLowTierModel?()
   }
 

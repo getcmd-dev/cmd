@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let gemini = LLMProvider(
+  public static let gemini = AIProvider(
     id: "gemini",
     name: "Google Gemini",
     keychainKey: "GEMINI_API_KEY",

@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let openRouter = LLMProvider(
+  public static let openRouter = AIProvider(
     id: "openrouter",
     name: "OpenRouter",
     keychainKey: "OPENROUTER_API_KEY",

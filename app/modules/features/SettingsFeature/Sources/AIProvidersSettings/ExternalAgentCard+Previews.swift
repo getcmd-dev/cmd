@@ -29,7 +29,7 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
 
 #Preview("Agent enabled") {
   ExternalAgentCard(
-    externalAgent: LLMProvider.claudeCode.externalAgent!,
+    externalAgent: AIProvider.claudeCode.externalAgent!,
     executable: enabledExecutable.binding)
     .frame(minHeight: 300)
 }
@@ -40,7 +40,7 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
   }
   operation: {
     ExternalAgentCard(
-      externalAgent: LLMProvider.claudeCode.externalAgent!,
+      externalAgent: AIProvider.claudeCode.externalAgent!,
       executable: disabledExecutable.binding)
       .frame(minHeight: 300)
   }
@@ -52,7 +52,7 @@ func createShellService(installedExecutablePath: String?) -> ShellService {
   }
   operation: {
     ExternalAgentCard(
-      externalAgent: LLMProvider.claudeCode.externalAgent!,
+      externalAgent: AIProvider.claudeCode.externalAgent!,
       executable: executableWithCustomPath.binding)
       .frame(minHeight: 300)
   }

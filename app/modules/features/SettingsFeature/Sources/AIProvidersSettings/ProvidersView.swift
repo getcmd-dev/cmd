@@ -72,7 +72,7 @@ public struct ProvidersView: View {
 
   @State private var providerToShowModelSelectionFor: ProviderInfo?
 
-  @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
+  @State private var orderedProviders: [AIProvider] = AIProvider.allCases
 
   @State private var searchText = ""
 
@@ -94,12 +94,12 @@ public struct ProvidersView: View {
       }
   }
 
-  private var providerSettings: [LLMProvider: LLMProviderSettings] {
+  private var providerSettings: [AIProvider: AIProviderSettings] {
     viewModel.providerSettings
   }
 
   private func setInitialOrder() {
-    orderedProviders = LLMProvider.allCases.map { provider in
+    orderedProviders = AIProvider.allCases.map { provider in
       (provider, provider.isConnected(viewModel.providerSettings[provider]))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
@@ -111,11 +111,11 @@ public struct ProvidersView: View {
     .map(\.0)
   }
 
-  private func updateProviderSettings(for provider: LLMProvider, with newSettings: LLMProviderSettings?) {
+  private func updateProviderSettings(for provider: AIProvider, with newSettings: AIProviderSettings?) {
     // Add new settings if provided
     if let newSettings {
       let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
-      let providerSettings = LLMProviderSettings(
+      let providerSettings = AIProviderSettings(
         apiKey: newSettings.apiKey,
         baseUrl: newSettings.baseUrl,
         executable: newSettings.executable,
@@ -131,8 +131,8 @@ public struct ProvidersView: View {
 // MARK: - ProviderInfo
 
 private struct ProviderInfo {
-  let provider: LLMProvider
-  let settings: LLMProviderSettings?
+  let provider: AIProvider
+  let settings: AIProviderSettings?
   let isConnected: Bool
 }
 
@@ -141,11 +141,11 @@ private struct ProviderInfo {
 private struct ProviderCard: View {
   init(
     viewModel: LLMSettingsViewModel,
-    provider: LLMProvider,
-    providerSettings: LLMProviderSettings?,
+    provider: AIProvider,
+    providerSettings: AIProviderSettings?,
     isConnected: Bool,
     enabledModels: [ModelInfoId],
-    onSettingsChanged: ((LLMProviderSettings?) -> Void)?,
+    onSettingsChanged: ((AIProviderSettings?) -> Void)?,
     onSelectModels: (() -> Void)?)
   {
     self.viewModel = viewModel
@@ -285,10 +285,10 @@ private struct ProviderCard: View {
 
   private let enabledModels: [ModelInfoId]
 
-  private let provider: LLMProvider
-  private let providerSettings: LLMProviderSettings?
+  private let provider: AIProvider
+  private let providerSettings: AIProviderSettings?
   private let isConnected: Bool
-  private let onSettingsChanged: ((LLMProviderSettings?) -> Void)?
+  private let onSettingsChanged: ((AIProviderSettings?) -> Void)?
   private let onSelectModels: (() -> Void)?
 
   private var enabledModelsCount: Int {
@@ -321,7 +321,7 @@ private struct ProviderCard: View {
       }
     }
 
-    let providerSettings = LLMProviderSettings(
+    let providerSettings = AIProviderSettings(
       apiKey: trimmedAPIKey,
       baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL,
       executable: trimmedExecutable.isEmpty ? nil : trimmedExecutable,
@@ -336,7 +336,7 @@ private struct ProviderCard: View {
 
 // MARK: - APIProvider Extensions
 
-extension LLMProvider {
+extension AIProvider {
   var description: String {
     switch self {
     case .anthropic:
@@ -361,7 +361,7 @@ extension LLMProvider {
     externalAgent == nil
   }
 
-  func isConnected(_ providerSettings: LLMProviderSettings?) -> Bool {
+  func isConnected(_ providerSettings: AIProviderSettings?) -> Bool {
     if externalAgent != nil {
       providerSettings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     } else {
@@ -375,8 +375,8 @@ extension LLMProvider {
 private struct ProviderModelSelectionView: View {
   init(
     viewModel: LLMSettingsViewModel,
-    provider: LLMProvider,
-    providerSettings: LLMProviderSettings?,
+    provider: AIProvider,
+    providerSettings: AIProviderSettings?,
     dismiss: @escaping () -> Void)
   {
     self.viewModel = viewModel
@@ -415,7 +415,7 @@ private struct ProviderModelSelectionView: View {
   @State private var searchText = ""
   @Environment(\.colorScheme) private var colorScheme
 
-  private let provider: LLMProvider
-  private let providerSettings: LLMProviderSettings?
+  private let provider: AIProvider
+  private let providerSettings: AIProviderSettings?
   private let dismiss: () -> Void
 }

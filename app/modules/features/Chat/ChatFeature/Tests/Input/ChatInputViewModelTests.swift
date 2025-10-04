@@ -22,8 +22,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is in available models keeps that model")
   func test_initialization_withSelectedModelInAvailableModels() {
-    let selectedModel = LLMModelInfo.gpt
-    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
+    let selectedModel = AIModel.gpt
+    let activeModels: [AIModel] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -41,8 +41,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
-    let selectedModel = LLMModelInfo.claudeOpus
-    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
+    let selectedModel = AIModel.claudeOpus
+    let activeModels: [AIModel] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -60,7 +60,7 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
-    let activeModels: [LLMModelInfo] = [.claudeSonnet, .gpt]
+    let activeModels: [AIModel] = [.claudeSonnet, .gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -97,12 +97,12 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
@@ -130,12 +130,12 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
@@ -179,12 +179,12 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "",
           baseUrl: nil,
           executable: nil,
@@ -246,12 +246,12 @@ extension MockSettingsService {
     MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "test",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "test",
           baseUrl: nil,
           executable: nil,

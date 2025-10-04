@@ -22,12 +22,12 @@ extension DefaultLLMService {
     settingsService: MockSettingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "openai-key",
           baseUrl: nil,
           executable: nil,
@@ -35,7 +35,7 @@ extension DefaultLLMService {
       ])),
     shellService: MockShellService = MockShellService(),
     fileManager: MockFileManager = MockFileManager(),
-    llmModelsManager: MockLLMModelManager = MockLLMModelManager())
+    llmModelsManager: MockAIModelsManager = MockAIModelsManager())
   {
     self.init(
       server: server as LocalServer,

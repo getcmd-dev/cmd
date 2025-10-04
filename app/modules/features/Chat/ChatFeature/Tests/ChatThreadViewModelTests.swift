@@ -510,7 +510,7 @@ struct ChatThreadViewModelTests {
     let mockLLMService = try #require(llmService as? MockLLMService)
     mockLLMService.mutableActiveModels.send([.gpt])
     let capturedMessageHistory = Atomic<[Schema.Message]?>(nil)
-    let capturedModel = Atomic<LLMModelInfo?>(nil)
+    let capturedModel = Atomic<AIModel?>(nil)
 
     mockLLMService.onSummarizeConversation = { messageHistory, model in
       capturedModel.set(to: model)

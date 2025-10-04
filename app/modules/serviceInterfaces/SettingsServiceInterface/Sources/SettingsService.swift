@@ -52,8 +52,8 @@ public struct Settings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [ModelInfoId: LLMProvider] = [:],
-    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
+    preferedProviders: [ModelInfoId: AIProvider] = [:],
+    llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
     enabledModels: [ModelInfoId] = [],
     reasoningModels: [ModelInfoId: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
@@ -78,7 +78,7 @@ public struct Settings: Sendable, Equatable {
     self.mcpServers = mcpServers
   }
 
-  public struct LLMProviderSettings: Sendable, Codable, Equatable {
+  public struct AIProviderSettings: Sendable, Codable, Equatable {
     /// To help keep track of which Provider was setup first, we use an incrementing order.
     /// This order can be useful for determining which provider to default to when multiple are available.
     public let createdOrder: Int
@@ -126,8 +126,8 @@ public struct Settings: Sendable, Equatable {
   public var automaticallyUpdateXcodeSettings: Bool
   public var fileEditMode: FileEditMode
   // LLM settings
-  public var preferedProviders: [ModelInfoId: LLMProvider]
-  public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
+  public var preferedProviders: [ModelInfoId: AIProvider]
+  public var llmProviderSettings: [AIProvider: AIProviderSettings]
   public var reasoningModels: [ModelInfoId: LLMReasoningSetting]
 
   public var enabledModels: [ModelInfoId]
@@ -158,7 +158,7 @@ extension Settings {
   }
 }
 
-public typealias LLMProviderSettings = Settings.LLMProviderSettings
+public typealias AIProviderSettings = Settings.AIProviderSettings
 
 // MARK: - UserDefinedXcodeShortcut
 

@@ -37,7 +37,7 @@ struct ClaudeCodeGrepToolTests {
       /serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
       /services/ChatHistoryService/Sources/Serialization.swift
       /foundations/JSONFoundation/Sources/JSON.swift
-      /foundations/LLMFoundation/Sources/LLMProvider.swift
+      /foundations/LLMFoundation/Sources/AIProvider.swift
       /services/LLMService/Sources/JSON+partialParsing.swift
       /services/ChatHistoryService/Sources/AttachmentSerializer.swift
       /serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift
@@ -49,7 +49,7 @@ struct ClaudeCodeGrepToolTests {
       "/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift",
       "/services/ChatHistoryService/Sources/Serialization.swift",
       "/foundations/JSONFoundation/Sources/JSON.swift",
-      "/foundations/LLMFoundation/Sources/LLMProvider.swift",
+      "/foundations/LLMFoundation/Sources/AIProvider.swift",
       "/services/LLMService/Sources/JSON+partialParsing.swift",
       "/services/ChatHistoryService/Sources/AttachmentSerializer.swift",
       "/serviceInterfaces/LocalServerServiceInterface/Tests/ErrorParsingTests.swift",
@@ -67,7 +67,7 @@ struct ClaudeCodeGrepToolTests {
 
     toolUse.startExecuting()
     let outputWithoutLineNumber = """
-      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-    thread.input.selectedModel = LLMModelInfo.allTestCases.first { $0.name == chatCompletion.modelName }
+      /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-    thread.input.selectedModel = AIModel.allTestCases.first { $0.name == chatCompletion.modelName }
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    @Dependency(\\.xcodeObserver) var xcodeObserver
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift:    let projectRoot = xcodeObserver.state.focusedWorkspace?.url
       /features/Chat/ChatFeature/Sources/ChatCompletion/ChatViewModel+ChatCompletionServiceDelegate.swift-

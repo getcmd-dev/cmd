@@ -26,7 +26,7 @@ final class DefaultLLMService: LLMService {
     userDefaults: UserDefaultsI,
     shellService: ShellService,
     fileManager _: FileManagerI,
-    llmModelsManager: LLMModelManagerProtocol)
+    llmModelsManager: AIModelsManagerProtocol)
   {
     self.server = server
     self.settingsService = settingsService
@@ -38,14 +38,14 @@ final class DefaultLLMService: LLMService {
     #endif
   }
 
-  let llmModelsManager: LLMModelManagerProtocol
+  let llmModelsManager: AIModelsManagerProtocol
 
   let settingsService: SettingsService
 
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModelInfo,
+    model: AIModel,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -124,7 +124,7 @@ final class DefaultLLMService: LLMService {
   func sendOneMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModelInfo,
+    model: AIModel,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
@@ -180,7 +180,7 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModelInfo) async throws -> String {
+  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String {
     var messages = messageHistory
     messages.append(.init(
       role: .user,
@@ -253,7 +253,7 @@ final class DefaultLLMService: LLMService {
     system: String,
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool],
-    model: LLMModelInfo,
+    model: AIModel,
     enableReasoning: Bool,
     context: (any ChatContext)?,
     supportDebugStreamRepeatInDebug: Bool = false,
@@ -372,7 +372,7 @@ extension BaseProviding where
         userDefaults: sharedUserDefaults,
         shellService: shellService,
         fileManager: fileManager,
-        llmModelsManager: LLMModelManager(
+        llmModelsManager: AIModelsManager(
           localServer: localServer,
           settingsService: settingsService,
           fileManager: fileManager,
@@ -388,7 +388,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
+  init(provider: AIProvider, settings: AIProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:

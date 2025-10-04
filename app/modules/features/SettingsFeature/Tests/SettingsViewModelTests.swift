@@ -250,18 +250,18 @@ struct SettingsViewModelTests {
     #expect(viewModel.settings.allowAnonymousAnalytics == true)
   }
 
-  @Test("AllLLMProviderSettings nextCreatedOrder returns correct value")
+  @Test("AllAIProviderSettings nextCreatedOrder returns correct value")
   func test_nextCreatedOrder() {
-    let emptySettings: AllLLMProviderSettings = [:]
+    let emptySettings: AllAIProviderSettings = [:]
     #expect(emptySettings.nextCreatedOrder == 1)
 
-    let settingsWithProviders: AllLLMProviderSettings = [
-      LLMProvider.openAI: LLMProviderSettings(
+    let settingsWithProviders: AllAIProviderSettings = [
+      AIProvider.openAI: AIProviderSettings(
         apiKey: "key1",
         baseUrl: nil,
         executable: nil,
         createdOrder: 5),
-      LLMProvider.anthropic: LLMProviderSettings(
+      AIProvider.anthropic: AIProviderSettings(
         apiKey: "key2",
         baseUrl: nil,
         executable: nil,

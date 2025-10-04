@@ -103,7 +103,7 @@ struct ModelsViewExtensionTests {
 
   @Test("handles empty models array")
   func test_sortedRespectingInitialOrder_emptyModels() {
-    let models = [LLMModelInfo]()
+    let models = [AIModel]()
     let initialOrder = ["model-a": 0]
 
     let result = models.sorted(respecting: initialOrder)
@@ -130,7 +130,7 @@ struct ModelsViewExtensionTests {
 
   // MARK: - Test Data
 
-  private let modelA = LLMModelInfo(
+  private let modelA = AIModel(
     name: "Model A",
     slug: "model-a",
     contextSize: 1000,
@@ -139,7 +139,7 @@ struct ModelsViewExtensionTests {
     createdAt: 0,
     rankForProgramming: 3)
 
-  private let modelB = LLMModelInfo(
+  private let modelB = AIModel(
     name: "Model B",
     slug: "model-b",
     contextSize: 2000,
@@ -148,7 +148,7 @@ struct ModelsViewExtensionTests {
     createdAt: 0,
     rankForProgramming: 1)
 
-  private let modelC = LLMModelInfo(
+  private let modelC = AIModel(
     name: "Model C",
     slug: "model-c",
     contextSize: 3000,

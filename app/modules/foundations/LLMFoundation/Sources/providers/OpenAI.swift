@@ -4,9 +4,9 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let openAI = LLMProvider(
+  public static let openAI = AIProvider(
     id: "openai",
     name: "OpenAI",
     keychainKey: "OPENAI_API_KEY",

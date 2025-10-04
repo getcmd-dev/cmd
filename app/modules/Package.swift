@@ -517,6 +517,7 @@ targets.append(contentsOf: Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "FoundationInterfaces",
     "PermissionsServiceInterface",
     "SettingsServiceInterface",

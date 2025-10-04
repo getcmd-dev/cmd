@@ -17,7 +17,7 @@ extension ChatInputViewModel {
 
 #Preview("Waiting for permission", traits: .sizeThatFitsLayout) {
   ChatInputView(
-    inputViewModel: ChatInputViewModel(activeModels: LLMModelInfo.allTestCases, mode: .ask)
+    inputViewModel: ChatInputViewModel(activeModels: AIModel.allTestCases, mode: .ask)
       .withApproval(for: TestTool().use()),
     isStreamingResponse: .constant(false))
     .frame(minHeight: 300)
@@ -25,21 +25,21 @@ extension ChatInputViewModel {
 
 #Preview("Ask mode") {
   ChatInputView(
-    inputViewModel: ChatInputViewModel(activeModels: LLMModelInfo.allTestCases, mode: .ask),
+    inputViewModel: ChatInputViewModel(activeModels: AIModel.allTestCases, mode: .ask),
     isStreamingResponse: .constant(false))
 }
 
 #Preview("Agent mode") {
   ChatInputView(
     inputViewModel: ChatInputViewModel(
-      activeModels: LLMModelInfo.allTestCases,
+      activeModels: AIModel.allTestCases,
       mode: .agent),
     isStreamingResponse: .constant(false))
 }
 
 #Preview("streaming") {
   ChatInputView(
-    inputViewModel: .init(activeModels: LLMModelInfo.allTestCases),
+    inputViewModel: .init(activeModels: AIModel.allTestCases),
     isStreamingResponse: .constant(true))
 }
 #endif

@@ -22,7 +22,7 @@ struct ExternalAgentCard: View {
   }
 
   let externalAgent: ExternalAgent
-  let provider: LLMProvider
+  let provider: AIProvider
 
   var executablePath: String? {
     executable.isEmpty ? nil : executable

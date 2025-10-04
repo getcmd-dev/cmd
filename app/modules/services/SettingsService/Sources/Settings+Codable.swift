@@ -23,15 +23,15 @@ extension Settings: Codable {
         forKey: "automaticallyUpdateXcodeSettings") ?? false,
       fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
       preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
-        .reduce(into: [String: LLMProvider]()) { acc, el in
-          guard let provider = LLMProvider(rawValue: el.value) else { return }
+        .reduce(into: [String: AIProvider]()) { acc, el in
+          guard let provider = AIProvider(rawValue: el.value) else { return }
           acc[el.key] = provider
         }
         ?? [:],
       llmProviderSettings: container
-        .resilientlyDecodeIfPresent([String: LLMProviderSettings].self, forKey: "llmProviderSettings")?
-        .reduce(into: [LLMProvider: LLMProviderSettings]()) { acc, el in
-          guard let provider = LLMProvider(rawValue: el.key) else { return }
+        .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
+        .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
+          guard let provider = AIProvider(rawValue: el.key) else { return }
           acc[provider] = el.value
         } ?? [:],
       enabledModels: container
@@ -60,7 +60,7 @@ extension Settings: Codable {
     try container.encode(preferedProviders.reduce(into: [String: String]()) { acc, el in
       acc[el.key] = el.value.rawValue
     }, forKey: "preferedProviders")
-    try container.encode(llmProviderSettings.reduce(into: [String: LLMProviderSettings]()) { acc, el in
+    try container.encode(llmProviderSettings.reduce(into: [String: AIProviderSettings]()) { acc, el in
       acc[el.key.rawValue] = el.value
     }, forKey: "llmProviderSettings")
     try container.encode(enabledModels, forKey: "enabledModels")

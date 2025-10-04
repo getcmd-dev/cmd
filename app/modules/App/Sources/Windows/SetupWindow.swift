@@ -25,7 +25,7 @@ final class SetupWindow: NSWindow {
       onDone: {
         onComplete()
       },
-      createLLMProvidersView: { [weak self] in
+      createAIProvidersView: { [weak self] in
         guard let self else { return AnyView(EmptyView()) }
         return AnyView(ProvidersView(viewModel: settingsViewModel))
       }))

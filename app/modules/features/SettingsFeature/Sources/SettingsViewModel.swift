@@ -60,7 +60,7 @@ public final class SettingsViewModel {
 
   // MARK: - Initialization
 
-  public var providerSettings: AllLLMProviderSettings {
+  public var providerSettings: AllAIProviderSettings {
     didSet {
       settings.llmProviderSettings = providerSettings
       settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
@@ -110,7 +110,7 @@ public final class SettingsViewModel {
     didSet {
       userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
       if showOnboardingScreenAgain {
-        LLMProvider.allCases
+        AIProvider.allCases
           .compactMap(\.externalAgent)
           .forEach {
             $0.unmarkHasBeenEnabledOnce()
