@@ -102,7 +102,7 @@ final class DefaultLocalServer: LocalServer {
   }
 
   func handle(task: URLSessionTask, didCompleteWithError error: Error?) {
-    guard let handler = inflightTasks.removeValue(forKey: task) else {
+    guard let handler = inLock({ $0.inflightTasks.removeValue(forKey: task) }) else {
       return
     }
     let response = task.response
@@ -125,24 +125,26 @@ final class DefaultLocalServer: LocalServer {
       await Task.detached(priority: .userInitiated) { [weak self] in
         guard let self else { return }
 
-        // TODO: Make this async, and serial.
-        guard var handler = inflightTasks[dataTask] else {
-          return
-        }
-        defer { self.inflightTasks[dataTask] = handler }
-
-        // Update timestamp to reflect that data was received
-        handler.timeoutTask = scheduleTimeout(for: dataTask, idleTimeout: handler.idleTimeout)
-        handler.totalData.append(data)
-
-        if let onReceiveJSONData = handler.onReceiveJSONData {
-          handler.incompletedJSONData.append(data)
-          let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
-          handler.incompletedJSONData = newImcompleteData ?? Data()
-
-          for jsonObject in jsonObjects {
-            onReceiveJSONData(jsonObject)
+        // TODO: move this class to an actor to avoid this locking.
+        inLock { state in
+          guard var handler = state.inflightTasks[dataTask] else {
+            return
           }
+
+          // Update timestamp to reflect that data was received
+          handler.timeoutTask = scheduleTimeout(for: dataTask, idleTimeout: handler.idleTimeout)
+          handler.totalData.append(data)
+
+          if let onReceiveJSONData = handler.onReceiveJSONData {
+            handler.incompletedJSONData.append(data)
+            let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
+            handler.incompletedJSONData = newImcompleteData ?? Data()
+
+            for jsonObject in jsonObjects {
+              onReceiveJSONData(jsonObject)
+            }
+          }
+          state.inflightTasks[dataTask] = handler
         }
       }.value
     }
@@ -372,7 +374,7 @@ final class DefaultLocalServer: LocalServer {
       defaultLogger.error("Request timed out after \(idleTimeout)s of idle time")
 
       // Remove the handler and resume with timeout error before cancelling the task
-      if let handler = self?.inflightTasks.removeValue(forKey: task) {
+      if let handler = self?.inLock({ $0.inflightTasks.removeValue(forKey: task) }) {
         handler.continuation.resume(throwing: URLError(.timedOut))
       }
       task.cancel()
