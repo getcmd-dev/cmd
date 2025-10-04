@@ -66,9 +66,9 @@ export const generateJSONSchema = (params: { path: string } | { content: string 
 	// Only generate types defined in the current file (not imported types)
 	const definitions = schema.definitions
 	if (config.path && definitions) {
-		const typeNames = getTypeNamesDefinedInFile(config.path)
+		const typeNames = new Set(getTypeNamesDefinedInFile(config.path))
 		Object.keys(definitions).forEach((key) => {
-			if (!typeNames.includes(key)) {
+			if (!typeNames.has(key)) {
 				delete definitions[key]
 			}
 		})
