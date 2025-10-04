@@ -12,7 +12,6 @@ lint_swift_command() {
 	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	echo $1 >~/Downloads/tmp.log
 	if [ -z "$1" ]; then
 		files="."
 	else
@@ -62,12 +61,13 @@ close_xcode() {
 
 focus_dependency_command() {
 	cd "$(git rev-parse --show-toplevel)/app"
-	close_xcode
+	if [ "$SKIP_CLOSE_XCODE" != "true" ]; then
+		close_xcode
+	fi
 	# Reset xcode state
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	./tools/dependencies/focus.sh "$@"
-	echo "👉 Don't forget to use 'cmd open:app' the next time you re-open the app's xcodeproj, instead of opening it manually."
 }
 
 build_release_command() {
@@ -117,6 +117,9 @@ install_swiftformat() {
 	echo "✅ swiftformat $($SWIFTFORMAT_PATH --version) installed at $target_path."
 }
 
+# Xcode has a weird bug where when opening the Xcode project it will not show most files.
+# This seems to happen when there's lingering files from nested Swift packages.
+# This function attempts to remove such files.
 clean_command() {
 	# Signal to the file watcher that is should not regenerate files.
 	touch "$(git rev-parse --show-toplevel)/.build/disable-watcher"
@@ -126,23 +129,40 @@ clean_command() {
 	cd "$(git rev-parse --show-toplevel)/app/modules"
 
 	# Remove derived files from swift packages
-	swift package clean
+	find . -type d -name '.build' -exec sh -c 'rm -rf "$1"' _ {} \; 2>/dev/null
 	find . -not -path './.git/*' 2>/dev/null |
-		# Don't remove files in ./services/LocalServerService/Sources/Resources
-		grep -v 'services/LocalServerService/Sources/Resources' |
-		# Remove all git-ignored files
 		git check-ignore --stdin |
+		grep 'Package.swift\|Package.resolved' |
 		while read file; do rm -rf "$file"; done
-	# Reset xcode state
-	cd "$(git rev-parse --show-toplevel)/app" &&
-		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	# Remove lock file
 	rm "$(git rev-parse --show-toplevel)/.build/disable-watcher"
 }
 
 test_swift_command() {
-	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "$@"
+	# Extract --module value if provided
+	focussed_module=""
+	parsed_args=()
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+		--module)
+			focussed_module="$2"
+			shift 2 # Skip both --module and its value
+			;;
+		*)
+			parsed_args+=("$1")
+			shift
+			;;
+		esac
+	done
+	if [ -n "$focussed_module" ]; then
+		SKIP_CLOSE_XCODE=true package_swift=$(focus_dependency_command --module "$focussed_module")
+		cd $(dirname $package_swift) && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+	else
+		# run all tests
+		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+	fi
 }
 
 test_ts_command() {
