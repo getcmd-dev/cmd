@@ -158,7 +158,7 @@ test_swift_command() {
 	done
 	if [ -n "$focussed_module" ]; then
 		SKIP_CLOSE_XCODE=true package_swift=$(focus_dependency_command --module "$focussed_module")
-		cd $(dirname $package_swift) && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+		cd "$(dirname $package_swift)" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
 	else
 		# run all tests
 		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"

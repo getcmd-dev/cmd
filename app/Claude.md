@@ -12,9 +12,9 @@ Note: you might see existing code that doesn't follow the patterns described her
   * always import `DependenciesTestSupport`. This will ensure each test is injected with isolated dependencies.
   * When relevant, prefer to define and use a helper to set default dependencies on the test suite:
 ```swift
-@Suite("LLMSettingsViewModelTests", .dependencies { $0.setDefaulfMockValues() }) { ... }
+@Suite("LLMSettingsViewModelTests", .dependencies { $0.setDefaultMockValues() }) { ... }
 extension DependencyValues {
-  fileprivate mutating func setDefaulfMockValues() {
+  fileprivate mutating func setDefaultMockValues() {
     llmService = MockLLMService()
     settingsService = MockSettingsService()
   }
@@ -37,8 +37,8 @@ func something() async throws {
   let mockLLMService = try #require(llmService as? MockLLMService)
   mockLLMService.onFetchModels = ...
 }
-- Never use force unwrapping. Either use `try #require(...)` or `guard` / `throw`.
 ```
+- Never use force unwrapping. Either use `try #require(...)` or `guard` / `throw`.
 
 ## Coding style
 ### Tests
