@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const copyJSCodeToApp = async () => {
 	const destinations = [
-		path.join(os.homedir(), "Library/Application Support/command"),
+		path.join(os.homedir(), "Library/Application Support/dev.getcmd.debug.command"),
 		path.join(__dirname, "../../app/modules/services/LocalServerService/Sources/Resources"),
 	]
 	const sources = ["./dist/main.bundle.cjs.gz", "./dist/main.bundle.cjs.map", "./build.sha256"]
@@ -63,7 +63,7 @@ const copyIconsToApp = async () => {
 	await new Promise<void>((resolve, reject) => {
 		const tarProcess = spawn("sh", [
 			"-c",
-			`cd ${tmpDir} && find . -type f | sort | tar -cf - -T - | gzip -n > ${archivePath}`,
+			`cd ${tmpDir} && find . -type f | sort | tar -cf - -T - --uid 0 --gid 0 --uname root --gname root --no-mac-metadata --no-xattrs | gzip -n > ${archivePath}`,
 		])
 		tarProcess.on("error", reject)
 		tarProcess.on("close", (code) => {

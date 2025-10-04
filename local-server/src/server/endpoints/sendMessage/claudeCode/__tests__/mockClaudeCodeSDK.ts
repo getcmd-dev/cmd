@@ -31,8 +31,8 @@ export type MockQueryCallback = (
  * @returns MockedQuery instance with mocked SDK methods and event streaming
  */
 const mockClaudeCodeSDKOnce = ({
-	prompt,
-	options,
+	prompt: _prompt,
+	options: _options,
 }: {
 	prompt: string | AsyncIterable<SDKUserMessage>
 	options?: Options

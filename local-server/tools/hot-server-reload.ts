@@ -32,7 +32,7 @@ const hotServerReload = async () => {
 	// This file is created by the server when it starts up
 	const connectionInfoFilePath = path.join(
 		os.homedir(),
-		"Library/Application Support/command/last-connection-info.json",
+		"Library/Application Support/dev.getcmd.debug.command/last-connection-info.json",
 	)
 	const connectionInfo = JSON.parse(fs.readFileSync(connectionInfoFilePath, "utf8")) as ConnectionInfo
 	const port = connectionInfo.port
@@ -42,18 +42,22 @@ const hotServerReload = async () => {
 		// Using lsof (list open files) to find what's listening on the port
 		// jc converts the output to JSON format for easier parsing
 		let processInfoString = await execute(`lsof -i :${port} | jc --lsof`)
-		let processInfo = JSON.parse(processInfoString) as {
-			pid: number
-			name: string
-		}[]
+		let processInfo = JSON.parse(processInfoString) as
+			| {
+					pid: number
+					name: string
+					command: string
+			  }[]
+			| undefined
 
 		// Check if any process was found on the port
-		if (!processInfo || processInfo.length === 0) {
+		const nodeProcess = processInfo?.filter((process) => process.command === "node")[0]
+		if (!nodeProcess) {
 			console.log(`No process found on port ${port}`)
 			return
 		}
 
-		const pid = processInfo[0].pid
+		const pid = nodeProcess.pid
 
 		// Step 2: Verify this is actually an command server process
 		// Get more detailed info about the process to check its path
@@ -61,6 +65,7 @@ const hotServerReload = async () => {
 		processInfo = JSON.parse(processInfoString) as {
 			pid: number
 			name: string
+			command: string
 		}[]
 
 		// Double-check that we found process info
@@ -73,7 +78,7 @@ const hotServerReload = async () => {
 
 		// Safety check: only kill processes that are clearly command related
 		// This prevents accidentally killing other processes that might be using the same port
-		if (!processName.includes("/Library/Application Support/command")) {
+		if (!processName.includes("dev.getcmd")) {
 			console.log(`Process ${processName} is not a command process`)
 			return
 		}
