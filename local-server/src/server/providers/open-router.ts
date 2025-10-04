@@ -10,7 +10,6 @@ import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
 import { notEmpty, notUndefined } from "@/utils/typeChecks"
-import { writeFileSync } from "fs"
 import { fetchDataRequest } from "./provider-utils"
 
 export type OpenRouterModel = {

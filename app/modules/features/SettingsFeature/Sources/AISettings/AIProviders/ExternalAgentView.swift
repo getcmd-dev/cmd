@@ -25,7 +25,7 @@ struct ExternalAgentView: View {
 
   /// The external agent configuration.
   let externalAgent: ExternalAgent
-  
+
   /// The AI provider associated with this external agent.
   let provider: AIProvider
 
