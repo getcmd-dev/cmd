@@ -12,7 +12,6 @@ lint_swift_command() {
 	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	echo $1 >~/Downloads/tmp.log
 	if [ -z "$1" ]; then
 		files="."
 	else
@@ -130,7 +129,7 @@ clean_command() {
 	cd "$(git rev-parse --show-toplevel)/app/modules"
 
 	# Remove derived files from swift packages
-	find . -type d -name '.build' -exec sh -c 'rm -rf "$1"' _ {} \;
+	find . -type d -name '.build' -exec sh -c 'rm -rf "$1"' _ {} \; 2>/dev/null
 	find . -not -path './.git/*' 2>/dev/null |
 		git check-ignore --stdin |
 		grep 'Package.swift\|Package.resolved' |

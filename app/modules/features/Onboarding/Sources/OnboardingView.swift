@@ -12,10 +12,10 @@ struct OnboardingView: View {
   /// - Parameter showAIProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
   init(
     viewModel: OnboardingViewModel,
-    createAIProvidersView: @MainActor @escaping () -> AnyView)
+    createAIAIProvidersView: @MainActor @escaping () -> AnyView)
   {
     self.viewModel = viewModel
-    self.createAIProvidersView = createAIProvidersView
+    self.createAIAIProvidersView = createAIAIProvidersView
   }
 
   enum Constants {
@@ -50,7 +50,7 @@ struct OnboardingView: View {
 
   @Bindable private var viewModel: OnboardingViewModel
 
-  private let createAIProvidersView: @MainActor () -> AnyView
+  private let createAIAIProvidersView: @MainActor () -> AnyView
 
   @ViewBuilder
   private var llmProviderSetupView: some View {
@@ -67,7 +67,7 @@ struct OnboardingView: View {
         Spacer(minLength: 0)
       }
 
-      createAIProvidersView()
+      createAIAIProvidersView()
 
       if viewModel.canSkipProviderSetup {
         HoveredButton(

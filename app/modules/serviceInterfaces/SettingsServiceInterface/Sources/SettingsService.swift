@@ -52,10 +52,10 @@ public struct Settings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [ModelInfoId: AIProvider] = [:],
+    preferedProviders: [AIModelID: AIProvider] = [:],
     llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
-    enabledModels: [ModelInfoId] = [],
-    reasoningModels: [ModelInfoId: LLMReasoningSetting] = [:],
+    enabledModels: [AIModelID] = [],
+    reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -126,11 +126,11 @@ public struct Settings: Sendable, Equatable {
   public var automaticallyUpdateXcodeSettings: Bool
   public var fileEditMode: FileEditMode
   // LLM settings
-  public var preferedProviders: [ModelInfoId: AIProvider]
+  public var preferedProviders: [AIModelID: AIProvider]
   public var llmProviderSettings: [AIProvider: AIProviderSettings]
-  public var reasoningModels: [ModelInfoId: LLMReasoningSetting]
+  public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
-  public var enabledModels: [ModelInfoId]
+  public var enabledModels: [AIModelID]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts

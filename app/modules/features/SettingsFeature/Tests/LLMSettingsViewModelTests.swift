@@ -25,9 +25,9 @@ class LLMSettingsViewModelTests {
     let providerSettings: [AIProvider: AIProviderSettings] = [
       .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
-    let enabledModels: [ModelInfoId] = ["model1", "model2"]
-    let reasoningModels: [ModelInfoId: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
-    let preferedProviders: [ModelInfoId: AIProvider] = ["model1": .anthropic]
+    let enabledModels: [AIModelID] = ["model1", "model2"]
+    let reasoningModels: [AIModelID: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
+    let preferedProviders: [AIModelID: AIProvider] = ["model1": .anthropic]
 
     let initialSettings = SettingsServiceInterface.Settings(
       preferedProviders: preferedProviders,
@@ -43,8 +43,8 @@ class LLMSettingsViewModelTests {
     let providerSettings: [AIProvider: AIProviderSettings] = [
       .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
     ]
-    let enabledModels: [ModelInfoId] = ["model1", "model2"]
-    let reasoningModels: [ModelInfoId: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
+    let enabledModels: [AIModelID] = ["model1", "model2"]
+    let reasoningModels: [AIModelID: LLMReasoningSetting] = ["model1": .init(isEnabled: true)]
 
     // when
     let sut = LLMSettingsViewModel()
@@ -703,7 +703,7 @@ class LLMSettingsViewModelTests {
       .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
     ]
     let model1 = AIModel.claudeHaiku_3_5
-    let preferedProviders: [ModelInfoId: AIProvider] = [model1.id: .openAI]
+    let preferedProviders: [AIModelID: AIProvider] = [model1.id: .openAI]
 
     let initialSettings = SettingsServiceInterface.Settings(
       preferedProviders: preferedProviders,

@@ -25,9 +25,9 @@ final class SetupWindow: NSWindow {
       onDone: {
         onComplete()
       },
-      createAIProvidersView: { [weak self] in
+      createAIAIProvidersView: { [weak self] in
         guard let self else { return AnyView(EmptyView()) }
-        return AnyView(ProvidersView(viewModel: settingsViewModel))
+        return AnyView(AIProvidersView(viewModel: settingsViewModel))
       }))
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

@@ -37,7 +37,7 @@ extension Settings: Codable {
       enabledModels: container
         .resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? [],
       reasoningModels: container
-        .resilientlyDecodeIfPresent([ModelInfoId: LLMReasoningSetting].self, forKey: "reasoningModels") ?? [:],
+        .resilientlyDecodeIfPresent([AIModelID: LLMReasoningSetting].self, forKey: "reasoningModels") ?? [:],
       customInstructions: container
         .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings
         .CustomInstructions(),

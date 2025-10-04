@@ -22,8 +22,8 @@ struct ExternalSettings: Sendable, Equatable {
     fileEditMode: FileEditMode = .directIO,
     preferedProviders: [String: AIProvider] = [:],
     llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
-    enabledModels: [ModelInfoId] = [],
-    reasoningModels: [ModelInfoId: LLMReasoningSetting] = [:],
+    enabledModels: [AIModelID] = [],
+    reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -55,9 +55,9 @@ struct ExternalSettings: Sendable, Equatable {
   // LLM settings
   let preferedProviders: [String: AIProvider]
   var llmProviderSettings: [AIProvider: AIProviderSettings]
-  let reasoningModels: [ModelInfoId: LLMReasoningSetting]
+  let reasoningModels: [AIModelID: LLMReasoningSetting]
 
-  let enabledModels: [ModelInfoId]
+  let enabledModels: [AIModelID]
   let customInstructions: CustomInstructions
   let toolPreferences: [ToolPreference]
   let keyboardShortcuts: KeyboardShortcuts
@@ -108,7 +108,7 @@ extension ExternalSettings: Codable {
       enabledModels: container.resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? Self.defaultSettings
         .enabledModels,
       reasoningModels: container
-        .resilientlyDecodeIfPresent([ModelInfoId: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings
+        .resilientlyDecodeIfPresent([AIModelID: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings
         .reasoningModels,
       customInstructions: container
         .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Self.defaultSettings

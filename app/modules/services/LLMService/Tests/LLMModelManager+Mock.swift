@@ -22,7 +22,7 @@ final class MockAIModelsManager: AIModelsManagerProtocol {
 
   var onGetModelByProviderModelId: @Sendable (String) -> AIProviderModel? = { _ in nil }
 
-  var onGetModelInfoById: @Sendable (ModelInfoId) -> AIModel? = { _ in nil }
+  var onGetModelInfoById: @Sendable (AIModelID) -> AIModel? = { _ in nil }
   var onProviderForModel: @Sendable (AIModel) -> AIProvider? = { _ in nil }
 
   let mutableActiveModels: CurrentValueSubject<[AIModel], Never>
@@ -47,7 +47,7 @@ final class MockAIModelsManager: AIModelsManagerProtocol {
     onGetModelByProviderModelId(providerModelId)
   }
 
-  func getModelInfo(by id: ModelInfoId) -> AIModel? {
+  func getModelInfo(by id: AIModelID) -> AIModel? {
     onGetModelInfoById(id)
   }
 

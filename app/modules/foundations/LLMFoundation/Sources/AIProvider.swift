@@ -20,8 +20,8 @@ public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRep
     keychainKey: String,
     websiteURL: URL? = nil,
     apiKeyCreationURL: URL? = nil,
-    lowTierModelId: ModelInfoId? = nil,
-    modelsEnabledByDefault: [ModelInfoId])
+    lowTierModelId: AIModelID? = nil,
+    modelsEnabledByDefault: [AIModelID])
   {
     self.id = id
     self.name = name
@@ -48,8 +48,8 @@ public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRep
   public let keychainKey: String
   public let websiteURL: URL?
   public let apiKeyCreationURL: URL?
-  public let lowTierModelId: ModelInfoId?
-  public let modelsEnabledByDefault: [ModelInfoId]
+  public let lowTierModelId: AIModelID?
+  public let modelsEnabledByDefault: [AIModelID]
 
   public var rawValue: String { id }
 

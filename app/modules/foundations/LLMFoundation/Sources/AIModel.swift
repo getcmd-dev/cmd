@@ -25,7 +25,7 @@ public struct AIProviderModel: Hashable, Identifiable, Sendable, Codable {
   }
 }
 
-public typealias ModelInfoId = String
+public typealias AIModelID = String
 
 // MARK: - AIModel
 
@@ -34,7 +34,7 @@ public typealias ModelInfoId = String
 public struct AIModel: Hashable, Identifiable, Sendable, Codable {
   public init(
     name: String,
-    slug: ModelInfoId,
+    slug: AIModelID,
     description: String? = nil,
     contextSize: Int,
     maxOutputTokens: Int,
@@ -113,7 +113,7 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
   #endif
 
   public let name: String
-  public let slug: ModelInfoId
+  public let slug: AIModelID
   public let description: String?
   public let contextSize: Int
   public let maxOutputTokens: Int

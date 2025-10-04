@@ -93,7 +93,7 @@ public final class MockLLMService: LLMService {
     onGetModelSync?(providerModelId)
   }
 
-  public func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel? {
+  public func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
     onGetModelInfo?(modelInfoId)
   }
 

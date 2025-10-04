@@ -13,9 +13,11 @@ import SwiftUI
 
 // MARK: - LLMSettingsViewModel
 
+/// Manages all settings related to AI providers and models, and persists changes when needed.
 @Observable
 @MainActor
 public final class LLMSettingsViewModel {
+  /// Initializes the view model by loading current settings and subscribing to live updates.
   public init() {
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
@@ -55,12 +57,14 @@ public final class LLMSettingsViewModel {
       }.store(in: &cancellables)
   }
 
+  /// Settings for each configured AI provider.
   private(set) var providerSettings: [AIProvider: AIProviderSettings]
 
-  private(set) var enabledModels: [ModelInfoId]
+  /// List of model IDs that are currently enabled.
+  private(set) var enabledModels: [AIModelID]
 
   /// Reasoning settings for the model that suport reasoning.
-  private(set) var reasoningModels: [ModelInfoId: LLMReasoningSetting]
+  private(set) var reasoningModels: [AIModelID: LLMReasoningSetting]
 
   /// For each available model, the associated provider.
   var providerForModels: [AIModel: AIProvider] {
@@ -82,7 +86,7 @@ public final class LLMSettingsViewModel {
     }
   }
 
-  /// All the models that are available, based on the available providers.
+  /// Returns all models that are available based on the configured providers.
   var availableModels: [AIModel] {
     let models = providerSettings.keys.flatMap { provider in
       llmService.modelsAvailable(for: provider)
@@ -92,31 +96,36 @@ public final class LLMSettingsViewModel {
     return Array(models)
   }
 
-  /// The LLM providers that have been configured.
+  /// Returns the list of LLM providers that have been configured.
   var availableProviders: [AIProvider] {
     Array(providerSettings.keys)
   }
 
+  /// Enables reasoning mode for the specified model and persists the change.
   func enableReasoning(for model: AIModel) {
     reasoningModels[model.id] = .init(isEnabled: true)
     settingsService.update(setting: \.reasoningModels, to: reasoningModels)
   }
 
+  /// Disables reasoning mode for the specified model and persists the change.
   func disableReasoning(for model: AIModel) {
     reasoningModels.removeValue(forKey: model.id)
     settingsService.update(setting: \.reasoningModels, to: reasoningModels)
   }
 
+  /// Enables the specified model and persists the change.
   func enable(model: AIModel) {
     enabledModels.append(model.id)
     settingsService.update(setting: \.enabledModels, to: enabledModels)
   }
 
+  /// Disables the specified model and persists the change.
   func disable(model: AIModel) {
     enabledModels.removeAll(where: { $0 == model.id })
     settingsService.update(setting: \.enabledModels, to: enabledModels)
   }
 
+  /// Saves provider settings, refetches available models, and enables default models for new providers.
   func save(providerSettings: AIProviderSettings, for provider: AIProvider) {
     let isNew = self.providerSettings[provider] == nil
     self.providerSettings[provider] = providerSettings
@@ -139,21 +148,25 @@ public final class LLMSettingsViewModel {
     }
   }
 
+  /// Removes the specified provider and its settings.
   func remove(provider: AIProvider) {
     providerSettings.removeValue(forKey: provider)
     settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
   }
 
+  /// Returns the list of models available for the specified provider.
   func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
     llmService.modelsAvailable(for: provider)
   }
 
+  /// Returns the list of providers that support the specified model.
   func providersAvailable(for model: AIModel) -> [AIProvider] {
     availableProviders.filter { provider in
       llmService.modelsAvailable(for: provider).contains(where: { $0.modelInfo.id == model.id })
     }
   }
 
+  /// Returns a binding to the provider for the specified model.
   func provider(for model: AIModel) -> Binding<AIProvider> {
     .init(get: {
       self.providerForModels[model] ?? AIProvider.openAI
@@ -162,6 +175,7 @@ public final class LLMSettingsViewModel {
     })
   }
 
+  /// Returns a binding to the enabled state of the specified model.
   func isActive(for model: AIModel) -> Binding<Bool> {
     .init(get: {
       self.enabledModels.contains(model.id)
@@ -174,6 +188,7 @@ public final class LLMSettingsViewModel {
     })
   }
 
+  /// Returns a binding to the reasoning settings for the specified model, or nil if the model doesn't support reasoning.
   func reasoningSetting(for model: AIModel) -> Binding<LLMReasoningSetting>? {
     guard model.canReason else { return nil }
     return .init(
@@ -187,12 +202,16 @@ public final class LLMSettingsViewModel {
       })
   }
 
-  private var preferedProviders: [ModelInfoId: AIProvider]
+  /// Maps model IDs to their preferred provider.
+  private var preferedProviders: [AIModelID: AIProvider]
 
+  /// Service for persisting and retrieving settings.
   private let settingsService: SettingsService
 
+  /// Stores cancellables for Combine subscriptions.
   private var cancellables = Set<AnyCancellable>()
 
+  /// Service for interacting with LLM providers and models.
   private let llmService: LLMService
 
 }
@@ -216,8 +235,8 @@ extension SettingsServiceInterface.Settings {
 // MARK: - LLMSettings
 
 private struct LLMSettings: Sendable, Equatable {
-  let enabledModels: [ModelInfoId]
+  let enabledModels: [AIModelID]
   let providerSettings: [AIProvider: AIProviderSettings]
-  let preferedProviders: [ModelInfoId: AIProvider]
-  let reasoningModels: [ModelInfoId: LLMReasoningSetting]
+  let preferedProviders: [AIModelID: AIProvider]
+  let reasoningModels: [AIModelID: LLMReasoningSetting]
 }

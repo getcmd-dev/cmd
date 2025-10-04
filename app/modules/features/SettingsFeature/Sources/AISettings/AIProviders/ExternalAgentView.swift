@@ -7,10 +7,12 @@ import LLMFoundation
 import ShellServiceInterface
 import SwiftUI
 
-// MARK: - ExternalAgentCard
+// MARK: - ExternalAgentView
 
-struct ExternalAgentCard: View {
+/// Represents an external agent card for configuring third-party agents that handle their own agentic behavior, such as Claude Code.
+struct ExternalAgentView: View {
 
+  /// Initializes the card with the external agent configuration and a binding to its executable path.
   init(
     externalAgent: ExternalAgent,
     executable: Binding<String>)
@@ -21,9 +23,13 @@ struct ExternalAgentCard: View {
     _executableFinder = .init(initialValue: ExecutableFinder(defaultExecutable: externalAgent.defaultExecutableName))
   }
 
+  /// The external agent configuration.
   let externalAgent: ExternalAgent
+  
+  /// The AI provider associated with this external agent.
   let provider: AIProvider
 
+  /// Returns the executable path if set, or nil if empty.
   var executablePath: String? {
     executable.isEmpty ? nil : executable
   }
@@ -103,8 +109,10 @@ struct ExternalAgentCard: View {
     }
   }
 
+  /// Binding to the executable path or launch command.
   @Binding private var executable: String
 
+  /// Helper to locate the executable on disk.
   @State private var executableFinder: ExecutableFinder
 
   @Environment(\.colorScheme) private var colorScheme
@@ -115,6 +123,7 @@ struct ExternalAgentCard: View {
 /// A helper that finds where a given executable is located on disk by running `which`.
 @MainActor @Observable
 private final class ExecutableFinder {
+  /// Initializes the finder and attempts to locate the executable using `which`.
   init(defaultExecutable: String) {
     @Dependency(\.shellService) var shellService
 
@@ -131,6 +140,7 @@ private final class ExecutableFinder {
     }
   }
 
+  /// The path where the executable was found, or nil if not found.
   private(set) var executablePath: String?
 }
 

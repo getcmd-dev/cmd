@@ -13,7 +13,7 @@ import SwiftUI
   withDependencies({
     $0.settingsService = MockSettingsService(anthropicAPIKey: nil, openAIAPIKey: nil)
   }) {
-    ProvidersView(viewModel: LLMSettingsViewModel())
+    AIProvidersView(viewModel: LLMSettingsViewModel())
       .frame(width: 600, height: 400)
       .padding()
   }
@@ -23,7 +23,7 @@ import SwiftUI
 //  withDependencies({
 //    $0.settingsService = MockSettingsService(anthropicAPIKey: "test", openAIAPIKey: nil)
 //  }) {
-//    ProvidersView(providerSettings: .constant([
+//    AIProvidersView(providerSettings: .constant([
 //      .anthropic: .init(apiKey: "sk-ant-api03-..."),
 //    ]))
 //    .frame(width: 600, height: 400)
@@ -37,7 +37,7 @@ import SwiftUI
 //      anthropicAPIKey: "sk-ant-api03-...",
 //      openAIAPIKey: "sk-...")
 //  }) {
-//    ProvidersView(providerSettings: .constant([
+//    AIProvidersView(providerSettings: .constant([
 //      .anthropic: .init(apiKey: "sk-ant-api03-..."),
 //      .openAI: .init(apiKey: "sk-..."),
 //    ]))

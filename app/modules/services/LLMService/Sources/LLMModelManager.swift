@@ -27,7 +27,7 @@ protocol AIModelsManagerProtocol: Sendable {
 
   func getModel(by providerModelId: String) -> AIProviderModel?
 
-  func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel?
+  func getModelInfo(by modelInfoId: AIModelID) -> AIModel?
 
   func provider(for model: AIModel) -> AIProvider?
 
@@ -97,7 +97,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
     modelsById[providerModelId]
   }
 
-  func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel? {
+  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
     modelInfosByModelSlug[modelInfoId]
   }
 
@@ -332,7 +332,7 @@ extension DefaultLLMService {
     llmModelsManager.getModel(by: providerModelId)
   }
 
-  func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel? {
+  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
     llmModelsManager.getModelInfo(by: modelInfoId)
   }
 

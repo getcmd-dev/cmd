@@ -80,7 +80,7 @@ public protocol LLMService: Sendable {
   ///
   /// - Parameter modelInfoId: The unique identifier for the model info.
   /// - Returns: The model information if found, otherwise nil.
-  func getModelInfo(by modelInfoId: ModelInfoId) -> AIModel?
+  func getModelInfo(by modelInfoId: AIModelID) -> AIModel?
 
   /// Determines which provider is associated with the given model.
   ///

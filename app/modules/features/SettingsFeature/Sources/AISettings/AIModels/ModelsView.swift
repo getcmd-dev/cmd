@@ -57,7 +57,7 @@ struct ModelsView: View {
     }
   }
 
-  @State private var initialModelsOrder: [ModelInfoId: Int]
+  @State private var initialModelsOrder: [AIModelID: Int]
   @Bindable private var viewModel: LLMSettingsViewModel
   @State private var searchText = ""
 
@@ -223,7 +223,7 @@ struct ModelCard: View {
 }
 
 extension [AIModel] {
-  func sorted(by enabled: [ModelInfoId]) -> [ModelInfoId: Int] {
+  func sorted(by enabled: [AIModelID]) -> [AIModelID: Int] {
     sorted(by: { a, b in
       switch (enabled.contains(a.id), enabled.contains(b.id)) {
       case (true, false):
@@ -239,7 +239,7 @@ extension [AIModel] {
     })
   }
 
-  func sorted(respecting initialOrder: [ModelInfoId: Int]) -> [AIModel] {
+  func sorted(respecting initialOrder: [AIModelID: Int]) -> [AIModel] {
     sorted(by: { a, b in
       (initialOrder[a.id] ?? Int.max) < (initialOrder[b.id] ?? Int.max)
     })
