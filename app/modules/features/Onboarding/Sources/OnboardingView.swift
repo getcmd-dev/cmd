@@ -24,24 +24,28 @@ struct OnboardingView: View {
 
   var body: some View {
     ZStack {
-      WelcomeView(onGetStarted: {
-        viewModel.handleMoveToNextStep()
-      })
-      .readingSize($referenceViewSize)
-      .isHidden(viewModel.currentStep != .welcome)
+      Rectangle()
+        .foregroundColor(.clear)
+        .background(colorScheme.primaryBackground)
+      Group {
+        WelcomeView(onGetStarted: {
+          viewModel.handleMoveToNextStep()
+        })
+        .readingSize($referenceViewSize)
+        .isHidden(viewModel.currentStep != .welcome)
 
-      if viewModel.currentStep == .accessibilityPermission || viewModel.currentStep == .xcodeExtensionPermission {
-        PermissionsView(viewModel: viewModel)
-      } else if viewModel.currentStep == .providersSetup {
-        llmProviderSetupView
-          .isHidden(viewModel.currentStep != .providersSetup)
-      } else if viewModel.currentStep == .setupComplete {
-        OnboardingCompletedView(onDone: viewModel.handleMoveToNextStep)
+        if viewModel.currentStep == .accessibilityPermission || viewModel.currentStep == .xcodeExtensionPermission {
+          PermissionsView(viewModel: viewModel)
+        } else if viewModel.currentStep == .providersSetup {
+          llmProviderSetupView
+            .isHidden(viewModel.currentStep != .providersSetup)
+        } else if viewModel.currentStep == .setupComplete {
+          OnboardingCompletedView(onDone: viewModel.handleMoveToNextStep)
+        }
       }
+      .frame(height: referenceViewSize.height)
+      .padding(40)
     }
-    .frame(height: referenceViewSize.height)
-    .padding(40)
-    .background(colorScheme.primaryBackground)
   }
 
   @State private var referenceViewSize = CGSize.zero
