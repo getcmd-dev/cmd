@@ -45,6 +45,7 @@ const copyIconsToApp = async () => {
 	// Compress the icons directory using tar via spawn
 	// For deterministic archives with BSD tar, copy files to temp dir with fixed timestamps
 	const tmpDir = path.join(os.tmpdir(), "icons-tmp")
+	await fs.remove(tmpDir)
 	await fs.ensureDir(tmpDir)
 	await fs.copy(srcIconsDir, tmpDir, { overwrite: true })
 

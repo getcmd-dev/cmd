@@ -175,7 +175,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
     let models = providers.compactMap { models[$0] }.flatMap(\.self).reduce(into: [:], { acc, model in
       acc[model.modelInfo.id] = model.modelInfo
     })
-    return models.values.sorted(by: { $0.name < $1.name })
+    return models.values.sorted(by: { $0.rankForProgramming < $1.rankForProgramming })
   }
 
   private static func loadModels(fileManager: FileManagerI) throws -> [AIProvider: [AIProviderModel]] {
@@ -381,7 +381,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
 
 extension PublishedDictionary<AIModelID, AIModel> {
   var sortedValues: [AIModel] {
-    wrappedValue.values.sorted(by: { $0.name < $1.name })
+    wrappedValue.values.sorted(by: { $0.rankForProgramming < $1.rankForProgramming })
   }
 }
 
