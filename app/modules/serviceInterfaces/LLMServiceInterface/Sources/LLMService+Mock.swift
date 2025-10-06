@@ -13,27 +13,12 @@ import ToolFoundation
 #if DEBUG
 @ThreadSafe
 public final class MockLLMService: LLMService {
-    public func provider(for model: LLMFoundation.AIModel) -> ConcurrencyFoundation.ReadonlyCurrentValueSubject<LLMFoundation.AIProvider?, Never> {
-        .just(provider(for: model))
-    }
-    
-    public func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
-        .just(getModelInfo(by: modelInfoId))
-    }
-    
-    public func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
-        .just(getModel(by: providerModelId))
-    }
-    
-    public var _availableModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
-    public var availableModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> { _availableModels.readonly() }
-    
   public init(activeModels: [AIModel] = [], availableModels: [AIModel] = []) {
-      
     _activeModels = .init(activeModels)
-      _availableModels = .init(availableModels)
+    _availableModels = .init(availableModels)
   }
 
+  public var _availableModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
   public var _activeModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
 
   public var onSendMessage: (@Sendable (
@@ -63,8 +48,24 @@ public final class MockLLMService: LLMService {
 
   public var onLowTierModel: (@Sendable () -> AIProviderModel?)?
 
+  public var availableModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> { _availableModels.readonly() }
+
   public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> {
     _activeModels.readonly()
+  }
+
+  public func provider(for model: LLMFoundation.AIModel) -> ConcurrencyFoundation
+    .ReadonlyCurrentValueSubject<LLMFoundation.AIProvider?, Never>
+  {
+    .just(provider(for: model))
+  }
+
+  public func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+    .just(getModelInfo(by: modelInfoId))
+  }
+
+  public func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+    .just(getModel(by: providerModelId))
   }
 
   public func modelsAvailable(for _: LLMFoundation

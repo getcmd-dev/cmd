@@ -18,23 +18,15 @@ import ThreadSafe
 /// Internal protocol used to test different functionalities in DefaultLLMService independently.
 protocol AIModelsManagerProtocol: Sendable {
 
-//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel]
-
-//  func getModel(by providerModelId: String) -> AIProviderModel?
-
-//  func getModelInfo(by modelId: AIModelID) -> AIModel?
-
-//  func provider(for model: AIModel) -> AIProvider?
-    
-    func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
 
   func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
 
   func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never>
 
   func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never>
-    
-    var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 
   func refetchModelsAvailable(
     for provider: AIProvider,
@@ -127,7 +119,15 @@ final class AIModelsManager: AIModelsManagerProtocol {
       })
     self.modelByModelId = modelByModelId
     mutableModels = .init(modelByModelId.sortedValues)
+    _availableModels = .init(Self.availableModels(
+      settings: settingsService.value(for: \.llmProviderSettings),
+      models: llmModelByProvider))
+
     observerChangesToSettings()
+  }
+
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+    _availableModels.readonly()
   }
 
   var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
@@ -143,6 +143,22 @@ final class AIModelsManager: AIModelsManagerProtocol {
       }
       .removeDuplicates()
       .eraseToAnyPublisher())
+  }
+
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+    let preferredProvider = settingsService.liveValue(for: \.preferedProviders)
+    let providersAvailableForModel = providerModelsByModelId.subscribeToValue(for: model.id)
+
+    return ReadonlyCurrentValueSubject<AIProvider?, Never>(
+      preferredProvider.currentValue[model.id] ?? providersAvailableForModel.currentValue?.first?.provider,
+      publisher: preferredProvider
+        .map { $0[model.id] }
+        .combineLatest(providersAvailableForModel)
+        .map { preferred, providers in
+          preferred ?? providers?.first?.provider
+        }
+        .removeDuplicates()
+        .eraseToAnyPublisher())
   }
 
   func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
@@ -162,31 +178,15 @@ final class AIModelsManager: AIModelsManagerProtocol {
     try await fetchAndSaveModelsAvailable(for: provider, settings: newSettings)
   }
 
-//    func getModel(by providerModelId: String) -> AIProviderModel? {
-//      modelsByProviderId[providerModelId]
-//    }
-
-  func getModel(by providerModelId: String) -> AIProviderModel? {
-    getModel(by: providerModelId).currentValue
-  }
-
   func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
     modelsByProviderId.subscribeToValue(for: providerModelId)
-  }
-
-  func getModelInfo(by modelId: AIModelID) -> AIModel? {
-    getModelInfo(by: modelId).currentValue
   }
 
   func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
     modelByModelId.subscribeToValue(for: modelId)
   }
 
-  func provider(for model: AIModel) -> AIProvider? {
-    // TODO: listen to setting service and update the dictionary when settings change. Here only read from backing.
-    settingsService.value(for: \.preferedProviders)[model.id] ?? providerModelsByModelId.subscribeToValue(for: model.id)
-      .currentValue?.first?.provider
-  }
+  private let _availableModels: CurrentValueSubject<[AIModel], Never>
 
   private let localServer: LocalServer
   private let settingsService: SettingsService
@@ -202,6 +202,18 @@ final class AIModelsManager: AIModelsManagerProtocol {
   private let mutableModels: CurrentValueSubject<[AIModel], Never>
 
   private let queue = TaskQueue<Void, Never>()
+
+  private static func availableModels(
+    settings: [AIProvider: AIProviderSettings],
+    models: [AIProvider: [AIProviderModel]])
+    -> [AIModel]
+  {
+    let providers = settings.keys
+    let models = providers.compactMap { models[$0] }.flatMap(\.self).reduce(into: [:], { acc, model in
+      acc[model.modelInfo.id] = model.modelInfo
+    })
+    return models.values.sorted(by: { $0.name < $1.name })
+  }
 
   private static func loadModels(fileManager: FileManagerI) throws -> [AIProvider: [AIProviderModel]] {
     let cacheURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -328,9 +340,12 @@ final class AIModelsManager: AIModelsManagerProtocol {
   private func observerChangesToSettings() {
     let previousSettings = Atomic<[AIProvider: AIProviderSettings]?>(nil)
     settingsService.liveValue(for: \.llmProviderSettings).sink { @Sendable [weak self] llmProviderSettings in
+      guard let self else { return }
       let previous = previousSettings.set(to: llmProviderSettings)
-      Task {
-        await self?.updateModels(from: previous, to: llmProviderSettings)
+      Task { [weak self] in
+        guard let self else { return }
+        await updateModels(from: previous, to: llmProviderSettings)
+        _availableModels.send(Self.availableModels(settings: llmProviderSettings, models: llmModelByProvider.wrappedValue))
       }
     }.store(in: &cancellables)
     settingsService.liveValue(for: \.enabledModels).sink { @Sendable [weak self] _ in
@@ -413,9 +428,9 @@ extension DefaultLLMService {
     llmModelsManager.activeModels
   }
 
-//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-//    llmModelsManager.modelsAvailable(for: provider)
-//  }
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+    llmModelsManager.availableModels
+  }
 
   func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
     llmModelsManager.modelsAvailable(for: provider)
@@ -429,34 +444,17 @@ extension DefaultLLMService {
     try await llmModelsManager.refetchModelsAvailable(for: provider, newSettings: newSettings)
   }
 
-//  func getModel(by providerModelId: String) -> AIProviderModel? {
-//    llmModelsManager.getModel(by: providerModelId)
-//  }
-//
-//  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
-//    llmModelsManager.getModelInfo(by: modelInfoId)
-//  }
-//
-//  func provider(for model: AIModel) -> AIProvider? {
-//    llmModelsManager.provider(for: model)
-//  }
-    
-    
-    var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
-        llmModelsManager.availableModels
-    }
-    
-    func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
-        llmModelsManager.getModel(by: providerModelId)
-    }
-    
-    func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
-        llmModelsManager.getModelInfo(by: modelInfoId)
-    }
-    
-    func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
-        llmModelsManager.provider(for: model)
-    }
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+    llmModelsManager.getModel(by: providerModelId)
+  }
+
+  func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+    llmModelsManager.getModelInfo(by: modelInfoId)
+  }
+
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+    llmModelsManager.provider(for: model)
+  }
 
   func lowTierModel() -> AIProviderModel? {
     let settings = settingsService.values()
