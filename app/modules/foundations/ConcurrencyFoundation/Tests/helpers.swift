@@ -26,3 +26,19 @@ extension AsyncSequence {
 // MARK: - AsyncStream.Iterator + @unchecked @retroactive Sendable
 
 extension AsyncStream.Iterator: @unchecked @retroactive Sendable where Self.Element: Sendable { }
+
+// MARK: - Lifetime
+
+/// A class that calls a hook when it is de-initialize. Useful to monitor the lifetime of objects.
+final class Lifetime: Sendable {
+  init(onDeinit: @escaping @Sendable () -> Void) {
+    self.onDeinit = onDeinit
+  }
+
+  deinit {
+    onDeinit()
+  }
+
+  let onDeinit: @Sendable () -> Void
+
+}

@@ -20,7 +20,7 @@ extension DefaultToolUseViewModel: ViewRepresentable, StreamRepresentable {
     case .success(let output):
       return """
         ⏺ \(toolName)
-          ⎿ Success: \(output))
+          ⎿ Success: \(output ?? ""))
 
 
         """

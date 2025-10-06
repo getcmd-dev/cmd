@@ -3,19 +3,21 @@
 
 import Combine
 
-// MARK: - RetainingPublisherSubscription
+// MARK: - RetainingSubscription
 
 /// A subscription that will retain a given object until it is cancelled.
 ///
-/// This is particularly useful when working with custom publishers that needs to be retained while they are subscribed to.
-public final class RetainingPublisherSubscription<Output>: Subscription {
+/// This is particularly useful when working with a publisher that needs to be retained while it is subscribed to.
+public final class RetainingSubscription<Output, Failure: Error>: Subscription {
 
   public init<S: Subscriber>(
     retained: AnyObject,
-    publisher: any Publisher<Output, Never>,
-    subscriber: S) where S.Input == Output, S.Failure == Never
+    publisher: any Publisher<Output, Failure>,
+    subscriber: S,
+    preReceiveHook: ((RetainingSubscription<Output, Failure>) -> Void)? = nil) where S.Input == Output, S.Failure == Failure
   {
     self.retained = retained
+    preReceiveHook?(self)
 
     subjectCancellable = publisher.sink(receiveCompletion: { completion in
       subscriber.receive(completion: completion)

@@ -6,10 +6,10 @@ import ConcurrencyFoundation
 import Foundation
 import Testing
 
-// MARK: - RetainingPublisherSubscriptionTests
+// MARK: - RetainingSubscriptionTests
 
 @MainActor
-struct RetainingPublisherSubscriptionTests {
+struct RetainingSubscriptionTests {
   @Test("sends values to the subscriber")
   func testSendValues() async throws {
     let publisher = TestPublisher()
@@ -62,7 +62,7 @@ struct RetainingPublisherSubscriptionTests {
 
   @Test @MainActor
   func test_deinit() {
-    var test: Test? = Test(onDeinit: { })
+    var test: Lifetime? = Lifetime(onDeinit: { })
     let release = createRelease(for: test)
     test = nil
     DispatchQueue.global(qos: .background).async {
@@ -70,7 +70,7 @@ struct RetainingPublisherSubscriptionTests {
     }
   }
 
-  private func createRelease(for value: Test?) -> Atomic<@Sendable () -> Void> {
+  private func createRelease(for value: Lifetime?) -> Atomic<@Sendable () -> Void> {
     let release = Atomic<@Sendable () -> Void>({ })
     release.set(to: {
       _ = value
@@ -78,21 +78,6 @@ struct RetainingPublisherSubscriptionTests {
     })
     return release
   }
-
-}
-
-// MARK: - Test
-
-final class Test: Sendable {
-  init(onDeinit: @escaping @Sendable () -> Void) {
-    self.onDeinit = onDeinit
-  }
-
-  deinit {
-    onDeinit()
-  }
-
-  let onDeinit: @Sendable () -> Void
 
 }
 
@@ -109,7 +94,7 @@ private final class TestPublisher: Publisher {
   }
 
   func receive<S>(subscriber: S) where S: Subscriber, Never == S.Failure, Int == S.Input {
-    subscriber.receive(subscription: RetainingPublisherSubscription(
+    subscriber.receive(subscription: RetainingSubscription(
       retained: self,
       publisher: value.eraseToAnyPublisher(),
       subscriber: subscriber))

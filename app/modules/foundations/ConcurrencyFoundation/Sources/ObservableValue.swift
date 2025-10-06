@@ -19,8 +19,8 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
   public convenience init(_ value: AnyPublisher<Value, Never>, initial: Value) {
     self.init(initial)
 
-    value.sink { [weak self] value in
-      Task { @MainActor [weak self] in
+    value.sink { @Sendable [weak self] value in
+      runOnMainThread { [weak self] in
         self?.value = value
       }
     }.store(in: &cancellables)
@@ -32,7 +32,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
     Task { [weak self] in
       for await value in updates {
-        Task { @MainActor [weak self] in
+        runOnMainThread { [weak self] in
           self?.value = value
         }
       }
@@ -44,7 +44,7 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
     Task { [weak self] in
       let value = await update()
-      Task { @MainActor [weak self] in
+      runOnMainThread { [weak self] in
         self?.value = value
       }
     }
@@ -56,7 +56,13 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
   public let id = UUID()
 
+  @available(*, deprecated, renamed: "wrappedValue", message: "Use wrappedValue instead")
   @MainActor public var value: Value
+
+  @MainActor
+  public var wrappedValue: Value {
+    value
+  }
 
   public static func constant(_ value: Value) -> ObservableValue<Value> {
     ObservableValue(Just(value).eraseToAnyPublisher(), initial: value)
@@ -75,5 +81,20 @@ extension ObservableValue {
     Binding(
       get: { self.value },
       set: { self.value = $0 })
+  }
+}
+
+extension ReadonlyCurrentValueSubject where Failure == Never {
+  @MainActor
+  public func asObservableValue() -> ObservableValue<Output> {
+    .init(eraseToAnyPublisher(), initial: currentValue)
+  }
+}
+
+extension ObservableValue {
+  @MainActor
+  public func map<T: Sendable>(_ transform: @escaping (Value) -> T) -> ObservableValue<T> {
+    let publisher: AnyPublisher<Value, Never> = self.observeChanges(to: \.value)
+    return .init(publisher.map(transform).eraseToAnyPublisher(), initial: transform(value))
   }
 }

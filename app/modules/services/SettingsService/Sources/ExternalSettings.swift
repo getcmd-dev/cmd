@@ -83,6 +83,14 @@ extension ExternalSettings: Codable {
 
   init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: String.self)
+
+    let llmProviderSettings: [AIProvider: AIProviderSettings] = container
+      .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
+      .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
+        guard let provider = AIProvider(rawValue: el.key) else { return }
+        acc[provider] = el.value
+      } ?? Self.defaultSettings.llmProviderSettings
+
     self.init(
       allowAnonymousAnalytics: container.resilientlyDecodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? Self
         .defaultSettings.allowAnonymousAnalytics,
@@ -96,15 +104,10 @@ extension ExternalSettings: Codable {
         .fileEditMode,
       preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [String: AIProvider]()) { acc, el in
-          guard let provider = AIProvider(rawValue: el.value) else { return }
+          guard let provider = AIProvider(rawValue: el.value), llmProviderSettings[provider] != nil else { return }
           acc[el.key] = provider
         } ?? Self.defaultSettings.preferedProviders,
-      llmProviderSettings: container
-        .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
-        .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
-          guard let provider = AIProvider(rawValue: el.key) else { return }
-          acc[provider] = el.value
-        } ?? Self.defaultSettings.llmProviderSettings,
+      llmProviderSettings: llmProviderSettings,
       enabledModels: container.resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? Self.defaultSettings
         .enabledModels,
       reasoningModels: container

@@ -2,6 +2,8 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import Foundation
+import os
 
 // MARK: - ReadonlyCurrentValueSubject
 
@@ -19,6 +21,10 @@ public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>
 
   public var currentValue: Output {
     value.value
+  }
+
+  public static func just(_ value: Output) -> Self {
+    .init(value, publisher: CurrentValueSubject(value).eraseToAnyPublisher())
   }
 
   public func receive<S>(subscriber: S) where S: Subscriber, S.Failure == Failure, S.Input == Output {

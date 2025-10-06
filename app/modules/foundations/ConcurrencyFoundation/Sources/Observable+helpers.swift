@@ -124,7 +124,7 @@ public final class ObservablePublisher<Object: Observable, Output>: Publisher, S
   public typealias Failure = Never
 
   public func receive<S>(subscriber: S) where S: Subscriber, Never == S.Failure, Output == S.Input {
-    let subscription = RetainingPublisherSubscription(
+    let subscription = RetainingSubscription(
       retained: self,
       publisher: internalPublisher,
       subscriber: subscriber)

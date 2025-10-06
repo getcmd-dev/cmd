@@ -12,6 +12,13 @@ extension Settings: Codable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: String.self)
+    let llmProviderSettings: [AIProvider: AIProviderSettings] = container
+      .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
+      .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
+        guard let provider = AIProvider(rawValue: el.key) else { return }
+        acc[provider] = el.value
+      } ?? [:]
+
     self.init(
       pointReleaseXcodeExtensionToDebugApp: container
         .resilientlyDecodeIfPresent(Bool.self, forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
@@ -24,16 +31,11 @@ extension Settings: Codable {
       fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? .directIO,
       preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [String: AIProvider]()) { acc, el in
-          guard let provider = AIProvider(rawValue: el.value) else { return }
+          guard let provider = AIProvider(rawValue: el.value), llmProviderSettings[provider] != nil else { return }
           acc[el.key] = provider
         }
         ?? [:],
-      llmProviderSettings: container
-        .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
-        .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
-          guard let provider = AIProvider(rawValue: el.key) else { return }
-          acc[provider] = el.value
-        } ?? [:],
+      llmProviderSettings: llmProviderSettings,
       enabledModels: container
         .resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? [],
       reasoningModels: container
