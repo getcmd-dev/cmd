@@ -172,27 +172,3 @@ extension LLMServiceError: LocalizedError {
     }
   }
 }
-
-//
-// #if DEBUG
-//// TODO: Remove this once tests have been migrated to use the new API.
-// extension LLMService {
-//  func sendMessage(
-//    messageHistory: [Schema.Message],
-//    tools: [any Tool],
-//    model: AIProviderModel,
-//    chatMode: ChatMode,
-//    context: ChatContext,
-//    handleUpdateStream: (UpdateStream) -> Void)
-//    async throws -> SendMessageResponse
-//  {
-//    try await sendMessage(
-//      messageHistory: messageHistory,
-//      tools: tools,
-//      model: model,
-//      chatMode: chatMode,
-//      context: context,
-//      handleUpdateStream: handleUpdateStream)
-//  }
-// }
-// #endif

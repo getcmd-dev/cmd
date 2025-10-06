@@ -143,7 +143,7 @@ final class DefaultLLMService: LLMService {
       messageHistory: messageHistory,
       tools: tools,
       model: model,
-      enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
+      enableReasoning: model.canReason && settings.reasoningModels[model.id]?.isEnabled == true,
       context: context,
       supportDebugStreamRepeatInDebug: true,
       handleUpdateStream: handleUpdateStream,

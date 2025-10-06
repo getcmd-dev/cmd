@@ -17,6 +17,23 @@ import ThreadSafe
 
 /// Internal protocol used to test different functionalities in DefaultLLMService independently.
 protocol AIModelsManagerProtocol: Sendable {
+  // Note: Despite being heavy handed, returning an `ReadonlyCurrentValueSubject` for each property has
+  // been prefered over alternatives as none satisfied all our requirements of:
+  // - Being able to get the current value synchronously
+  // - Being able to subscribe to changes
+  // - Being read-only
+  // - Being thread safe
+  // - Not being bound to the main thread
+  // - Being performance to scale to 100 of providers that can have 1000 models.
+  //
+  // Alternatives considered:
+  // - `@Published` properties / ObservableObject: Not thread safe if not bound to the main actor.
+  // The consumer can easily map an `ReadonlyCurrentValueSubject` to an ObservableObject through `.asObservableObjectBox`
+  // - `CurrentValueSubject`: Not read-only
+  // - @Observable: Doesn't not cross well protocol boundaries required for DI. Typically bounded to the main actor.
+  // The consumer can easily map an `ReadonlyCurrentValueSubject` to an ObservableObject through `.asObservableValue`
+  // - Return a higher level object that could be queried for each value of interest.
+  // No solution worked well with targetted invalidation when only one model / one provider changes.
 
   func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
 
