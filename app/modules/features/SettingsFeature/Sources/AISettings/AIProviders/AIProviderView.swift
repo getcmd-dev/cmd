@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ConcurrencyFoundation
 import DLS
 import LLMFoundation
 import SettingsServiceInterface
@@ -25,10 +26,7 @@ struct AIProviderView: View {
     self.enabledModels = enabledModels
     self.onSettingsChanged = onSettingsChanged
     self.onSelectModels = onSelectModels
-  }
-
-  var isConfigurable: Bool {
-    onSettingsChanged != nil
+    modelsAvailable = viewModel.modelsAvailable(for: provider)
   }
 
   var body: some View {
@@ -145,6 +143,8 @@ struct AIProviderView: View {
     }
   }
 
+  @Bindable private var modelsAvailable: ObservableValue<[AIProviderModel]>
+
   @Bindable private var viewModel: LLMSettingsViewModel
   @Environment(\.colorScheme) private var colorScheme
 
@@ -162,9 +162,13 @@ struct AIProviderView: View {
   private let onSelectModels: (() -> Void)?
 
   private var enabledModelsCount: Int {
-    viewModel.modelsAvailable(for: provider)
+    modelsAvailable.wrappedValue
       .filter { model in enabledModels.contains(model.modelInfo.id) }
       .count
+  }
+
+  private var isConfigurable: Bool {
+    onSettingsChanged != nil
   }
 
   private func loadCurrentSettings() {

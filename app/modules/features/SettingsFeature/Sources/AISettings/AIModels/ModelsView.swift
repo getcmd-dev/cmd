@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DLS
@@ -16,11 +17,17 @@ struct ModelsView: View {
   ///   - availableModels: When provided, only those models are shown in the view. Otherwise all available models are shown.
   init(
     viewModel: LLMSettingsViewModel,
-    availableModels: [AIModel]? = nil)
+    provider: AIProvider? = nil)
   {
     self.viewModel = viewModel
-    self.availableModels = availableModels ?? viewModel.availableModels
-    _initialModelsOrder = .init(initialValue: self.availableModels.sorted(by: viewModel.enabledModels))
+    let availableModels: ObservableValue<[AIModel]> =
+      if let provider {
+        viewModel.modelsAvailable(for: provider).map({ $0.map(\.modelInfo) })
+      } else {
+        .init(viewModel.availableModels)
+      }
+    self.availableModels = availableModels
+    _initialModelsOrder = .init(initialValue: availableModels.wrappedValue.sorted(by: viewModel.enabledModels))
   }
 
   var body: some View {
@@ -55,16 +62,22 @@ struct ModelsView: View {
       }
       .scrollIndicators(.hidden)
     }
+//    .onReceive(modelsPublisher.receive(on: DispatchQueue.main), perform: { availableModels = $0 })
   }
+
+  @Bindable private var availableModels: ObservableValue<[AIModel]>
 
   @State private var initialModelsOrder: [AIModelID: Int]
   @Bindable private var viewModel: LLMSettingsViewModel
   @State private var searchText = ""
 
-  private let availableModels: [AIModel]
+//  @State private var availableModels: [AIModel]
+
+//  private let modelsPublisher: AnyPublisher<[AIModel], Never>
 
   private var filteredModels: [AIModel] {
     availableModels
+      .wrappedValue
       .filter {
         searchText.isEmpty ? true : $0.name.localizedCaseInsensitiveContains(searchText)
       }

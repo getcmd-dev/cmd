@@ -13,11 +13,28 @@ import ToolFoundation
 #if DEBUG
 @ThreadSafe
 public final class MockLLMService: LLMService {
-  public init(activeModels: [LLMFoundation.AIModel] = []) {
-    mutableActiveModels = .init(activeModels)
+    public func provider(for model: LLMFoundation.AIModel) -> ConcurrencyFoundation.ReadonlyCurrentValueSubject<LLMFoundation.AIProvider?, Never> {
+        .just(provider(for: model))
+    }
+    
+    public func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+        .just(getModelInfo(by: modelInfoId))
+    }
+    
+    public func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+        .just(getModel(by: providerModelId))
+    }
+    
+    public var _availableModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
+    public var availableModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> { _availableModels.readonly() }
+    
+  public init(activeModels: [AIModel] = [], availableModels: [AIModel] = []) {
+      
+    _activeModels = .init(activeModels)
+      _availableModels = .init(availableModels)
   }
 
-  public var mutableActiveModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
+  public var _activeModels: CurrentValueSubject<[LLMFoundation.AIModel], Never>
 
   public var onSendMessage: (@Sendable (
     [Schema.Message],
@@ -47,7 +64,14 @@ public final class MockLLMService: LLMService {
   public var onLowTierModel: (@Sendable () -> AIProviderModel?)?
 
   public var activeModels: ReadonlyCurrentValueSubject<[LLMFoundation.AIModel], Never> {
-    mutableActiveModels.readonly()
+    _activeModels.readonly()
+  }
+
+  public func modelsAvailable(for _: LLMFoundation
+    .AIProvider)
+    -> ReadonlyCurrentValueSubject<[LLMFoundation.AIProviderModel], Never>
+  {
+    CurrentValueSubject([]).readonly()
   }
 
   // MARK: - LLMService

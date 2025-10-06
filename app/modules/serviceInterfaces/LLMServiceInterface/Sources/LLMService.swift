@@ -51,13 +51,36 @@ public protocol LLMService: Sendable {
 
   /// Generate a summary of a conversation based on the message history.
   func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String
+    
+    /// All the models available.
+    /// Note: those models might not have been enabled by the user.
+    var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 
-  /// Returns the list of available models for the specified provider.
+  /// Returns the list of available models from the specified provider.
+    /// Note: those models might not have been enabled by the user.
   ///
   /// - Parameter provider: The LLM provider to get models for.
-  /// - Returns: An array of available models for the provider.
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel]
+  /// - Returns: An array of available models for the provider. The value will be updated when the value changes.
+    func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
+    
+    /// Retrieves a model by its provider-specific model identifier.
+    ///
+    /// - Parameter providerModelId: The provider-specific identifier for the model.
+    /// - Returns: The model if found, otherwise nil. The value will be updated when the value changes.
+    func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never>
 
+    /// Retrieves model information by its model info identifier.
+    ///
+    /// - Parameter modelInfoId: The unique identifier for the model info.
+    /// - Returns: The model information if found, otherwise nil. The value will be updated when the value changes.
+    func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never>
+
+    /// Determines which provider is associated with the given model.
+    ///
+    /// - Parameter model: The model information to find the provider for.
+    /// - Returns: The provider that owns the model, or nil if not found. The value will be updated when the value changes.
+    func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
+    
   /// Refetches and returns the list of available models for the specified provider with new settings.
   ///
   /// - Parameters:
@@ -70,24 +93,6 @@ public protocol LLMService: Sendable {
     newSettings: Settings.AIProviderSettings)
     async throws -> [AIProviderModel]
 
-  /// Retrieves a model by its provider-specific model identifier.
-  ///
-  /// - Parameter providerModelId: The provider-specific identifier for the model.
-  /// - Returns: The model if found, otherwise nil.
-  func getModel(by providerModelId: String) -> AIProviderModel?
-
-  /// Retrieves model information by its model info identifier.
-  ///
-  /// - Parameter modelInfoId: The unique identifier for the model info.
-  /// - Returns: The model information if found, otherwise nil.
-  func getModelInfo(by modelInfoId: AIModelID) -> AIModel?
-
-  /// Determines which provider is associated with the given model.
-  ///
-  /// - Parameter model: The model information to find the provider for.
-  /// - Returns: The provider that owns the model, or nil if not found.
-  func provider(for model: AIModel) -> AIProvider?
-
   /// A read-only subject that publishes the currently active models.
   ///
   /// This provides reactive updates whenever the set of active models changes.
@@ -96,6 +101,41 @@ public protocol LLMService: Sendable {
   /// Returns the low tier model from configured providers with the cheapest input cost.
   /// Low tier models are suitable for simple queries that favor speed & low cost over accuracy.
   func lowTierModel() -> AIProviderModel?
+}
+
+extension LLMService {
+    /// Returns the list of available models from the specified provider.
+    /// Note: those models might not have been enabled by the user.
+    ///
+    /// - Parameter provider: The LLM provider to get models for.
+    /// - Returns: An array of available models for the provider.
+    public func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
+        modelsAvailable(for: provider).currentValue
+    }
+    
+    /// Retrieves a model by its provider-specific model identifier.
+    ///
+    /// - Parameter providerModelId: The provider-specific identifier for the model.
+    /// - Returns: The model if found, otherwise nil.
+    public func getModel(by providerModelId: String) -> AIProviderModel? {
+        getModel(by: providerModelId).currentValue
+    }
+
+    /// Retrieves model information by its model info identifier.
+    ///
+    /// - Parameter modelInfoId: The unique identifier for the model info.
+    /// - Returns: The model information if found, otherwise nil.
+    public func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
+        getModelInfo(by: modelInfoId).currentValue
+    }
+
+    /// Determines which provider is associated with the given model.
+    ///
+    /// - Parameter model: The model information to find the provider for.
+    /// - Returns: The provider that owns the model, or nil if not found.
+    public func provider(for model: AIModel) -> AIProvider? {
+        provider(for: model).currentValue
+    }
 }
 
 public typealias LLMUsageInfo = Schema.ResponseUsage

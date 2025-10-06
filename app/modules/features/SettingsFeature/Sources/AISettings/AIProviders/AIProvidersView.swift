@@ -167,7 +167,7 @@ private struct ProviderModelSelectionView: View {
       }
       .padding(.bottom, 16)
 
-      ModelsView(viewModel: viewModel, availableModels: viewModel.modelsAvailable(for: provider).map(\.modelInfo))
+      ModelsView(viewModel: viewModel, provider: provider)
       Spacer(minLength: 0)
     }
     .onKeyPress(.escape) {

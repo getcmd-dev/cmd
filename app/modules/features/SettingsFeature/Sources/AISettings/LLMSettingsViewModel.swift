@@ -3,6 +3,7 @@
 
 import AppFoundation
 import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import LLMFoundation
@@ -155,8 +156,8 @@ public final class LLMSettingsViewModel {
   }
 
   /// Returns the list of models available for the specified provider.
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-    llmService.modelsAvailable(for: provider)
+  func modelsAvailable(for provider: AIProvider) -> ObservableValue<[AIProviderModel]> {
+    llmService.modelsAvailable(for: provider).asObservableValue()
   }
 
   /// Returns the list of providers that support the specified model.

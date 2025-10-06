@@ -49,7 +49,7 @@ public final class AXNotificationPublisher: Publisher, Sendable {
   public typealias Failure = Never
 
   public func receive<S>(subscriber: S) where S: Subscriber, Never == S.Failure, Element == S.Input {
-    let subscription = RetainingPublisherSubscription(
+    let subscription = RetainingSubscription(
       retained: self,
       publisher: passthroughSubject,
       subscriber: subscriber)

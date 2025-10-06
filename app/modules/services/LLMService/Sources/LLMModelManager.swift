@@ -18,27 +18,90 @@ import ThreadSafe
 /// Internal protocol used to test different functionalities in DefaultLLMService independently.
 protocol AIModelsManagerProtocol: Sendable {
 
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel]
+//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel]
+
+//  func getModel(by providerModelId: String) -> AIProviderModel?
+
+//  func getModelInfo(by modelId: AIModelID) -> AIModel?
+
+//  func provider(for model: AIModel) -> AIProvider?
+    
+    func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
+
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
+
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never>
+
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never>
+    
+    var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 
   func refetchModelsAvailable(
     for provider: AIProvider,
     newSettings: Settings.AIProviderSettings)
     async throws -> [AIProviderModel]
 
-  func getModel(by providerModelId: String) -> AIProviderModel?
-
-  func getModelInfo(by modelInfoId: AIModelID) -> AIModel?
-
-  func provider(for model: AIModel) -> AIProvider?
-
   var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+}
+
+// MARK: - PublishedDictionary
+
+@ThreadSafe
+private final class PublishedDictionary<Key: Hashable & Sendable, Value: Equatable & Sendable>: Sendable {
+  init(_ wrappedValue: [Key: Value] = [:]) {
+    self.wrappedValue = wrappedValue
+  }
+
+  var subscribers = [Key: [UUID: @Sendable (Value?) -> Void]]()
+  var wrappedValue: [Key: Value]
+
+  func subscribeToValue(for key: Key) -> ReadonlyCurrentValueSubject<Value?, Never> {
+    let subscriptionId = UUID()
+    let publisher = CurrentValueSubject<Value?, Never>(wrappedValue[key])
+    let cancellable = AnyCancellable { [weak self] in
+      self?.inLock { $0.subscribers[key]?.removeValue(forKey: subscriptionId) }
+    }
+    subscribers[key, default: [:]][subscriptionId] = { [weak publisher] model in
+      publisher?.send(model)
+    }
+    return .init(publisher.value, publisher: publisher.retaining(cancellable).removeDuplicates().eraseToAnyPublisher())
+  }
+
+  subscript(_ key: Key) -> Value? {
+    get { wrappedValue[key] }
+    set {
+      inLock { state in
+        state.wrappedValue[key] = newValue
+        state.subscribers[key]?.forEach { $0.value(newValue) }
+      }
+    }
+  }
+
+  subscript(_ key: Key, default defaultValue: Value) -> Value {
+    get { inLock { $0.wrappedValue[key, default: defaultValue] } }
+    set {
+      inLock { state in
+        state.wrappedValue[key] = newValue
+        state.subscribers[key]?.forEach { $0.value(newValue) }
+      }
+    }
+  }
+
+  @discardableResult
+  func removeValue(forKey key: Key) -> Value? {
+    inLock { state in
+      let value = state.wrappedValue.removeValue(forKey: key)
+      state.subscribers[key]?.forEach { $0.value(nil) }
+      return value
+    }
+  }
+
 }
 
 // MARK: - AIModelsManager
 
 @ThreadSafe
 final class AIModelsManager: AIModelsManagerProtocol {
-
   init(
     localServer: LocalServer,
     settingsService: SettingsService,
@@ -51,18 +114,19 @@ final class AIModelsManager: AIModelsManagerProtocol {
     self.shellService = shellService
 
     let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
-    self.llmModelByProvider = llmModelByProvider
-    modelsById = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
+    self.llmModelByProvider = .init(llmModelByProvider)
+    modelsByProviderId = .init(llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.id] = model
-    }
-    modelByModelSlug = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
+    })
+    providerModelsByModelId = .init(llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.modelInfo.id, default: []].append(model)
-    }
-    let modelInfosByModelSlug = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
-      acc[model.modelInfo.id] = model.modelInfo
-    }
-    self.modelInfosByModelSlug = modelInfosByModelSlug
-    mutableModels = .init(modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name }))
+    })
+    let modelByModelId = PublishedDictionary<AIModelID, AIModel>(llmModelByProvider.values.flatMap(\.self)
+      .reduce(into: [:]) { acc, model in
+        acc[model.modelInfo.id] = model.modelInfo
+      })
+    self.modelByModelId = modelByModelId
+    mutableModels = .init(modelByModelId.sortedValues)
     observerChangesToSettings()
   }
 
@@ -82,7 +146,12 @@ final class AIModelsManager: AIModelsManagerProtocol {
   }
 
   func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-    llmModelByProvider[provider] ?? []
+    modelsAvailable(for: provider).currentValue
+  }
+
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
+    let publisher = llmModelByProvider.subscribeToValue(for: provider)
+    return .init(publisher.currentValue ?? [], publisher: publisher.map { $0 ?? [] }.eraseToAnyPublisher())
   }
 
   func refetchModelsAvailable(
@@ -93,16 +162,30 @@ final class AIModelsManager: AIModelsManagerProtocol {
     try await fetchAndSaveModelsAvailable(for: provider, settings: newSettings)
   }
 
+//    func getModel(by providerModelId: String) -> AIProviderModel? {
+//      modelsByProviderId[providerModelId]
+//    }
+
   func getModel(by providerModelId: String) -> AIProviderModel? {
-    modelsById[providerModelId]
+    getModel(by: providerModelId).currentValue
   }
 
-  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
-    modelInfosByModelSlug[modelInfoId]
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+    modelsByProviderId.subscribeToValue(for: providerModelId)
+  }
+
+  func getModelInfo(by modelId: AIModelID) -> AIModel? {
+    getModelInfo(by: modelId).currentValue
+  }
+
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+    modelByModelId.subscribeToValue(for: modelId)
   }
 
   func provider(for model: AIModel) -> AIProvider? {
-    settingsService.value(for: \.preferedProviders)[model.id] ?? modelByModelSlug[model.id]?.first?.provider
+    // TODO: listen to setting service and update the dictionary when settings change. Here only read from backing.
+    settingsService.value(for: \.preferedProviders)[model.id] ?? providerModelsByModelId.subscribeToValue(for: model.id)
+      .currentValue?.first?.provider
   }
 
   private let localServer: LocalServer
@@ -110,10 +193,10 @@ final class AIModelsManager: AIModelsManagerProtocol {
   private let fileManager: FileManagerI
   private let shellService: ShellService
 
-  private var llmModelByProvider: [AIProvider: [AIProviderModel]]
-  private var modelsById: [String: AIProviderModel]
-  private var modelByModelSlug: [String: [AIProviderModel]]
-  private var modelInfosByModelSlug: [String: AIModel]
+  private var llmModelByProvider: PublishedDictionary<AIProvider, [AIProviderModel]>
+  private var modelsByProviderId: PublishedDictionary<String, AIProviderModel>
+  private var providerModelsByModelId: PublishedDictionary<AIModelID, [AIProviderModel]>
+  private var modelByModelId: PublishedDictionary<AIModelID, AIModel>
   private var cancellables = Set<AnyCancellable>()
 
   private let mutableModels: CurrentValueSubject<[AIModel], Never>
@@ -141,24 +224,37 @@ final class AIModelsManager: AIModelsManagerProtocol {
     try fileManager.write(data: data, to: cacheURL)
   }
 
+  /// Update the internal state to remove all models for the given provider.
   private static func remove(provider: AIProvider, from state: inout _InternalState) {
     let udpatedModelIds = state.llmModelByProvider.removeValue(forKey: provider)?.map(\.id) ?? []
     for modelId in udpatedModelIds {
-      guard let modelInfo = state.modelsById.removeValue(forKey: modelId)?.modelInfo else { continue }
-      state.modelByModelSlug[modelInfo.id]?.removeAll(where: { $0.id == modelId })
-      if state.modelByModelSlug[modelInfo.id]?.isEmpty == true {
-        state.modelByModelSlug.removeValue(forKey: modelInfo.id)
-        state.modelInfosByModelSlug.removeValue(forKey: modelInfo.id)
+      guard let modelInfo = state.modelsByProviderId.removeValue(forKey: modelId)?.modelInfo else { continue }
+      state.providerModelsByModelId[modelInfo.id]?.removeAll(where: { $0.id == modelId })
+      if state.providerModelsByModelId[modelInfo.id]?.isEmpty == true {
+        state.providerModelsByModelId.removeValue(forKey: modelInfo.id)
+        state.modelByModelId.removeValue(forKey: modelInfo.id)
       }
     }
   }
 
-  private static func add(models: [AIProviderModel], for provider: AIProvider, to state: inout _InternalState) {
+  /// Update the internal state to update the models for the given provider, removing pre-existing ones that are not in the new value.
+  private static func set(models: [AIProviderModel], for provider: AIProvider, to state: inout _InternalState) {
+    var staleProviderModelIds = Set((state.llmModelByProvider[provider] ?? []).map(\.id))
     state.llmModelByProvider[provider] = models
     for model in models {
-      state.modelsById[model.id] = model
-      state.modelByModelSlug[model.modelInfo.id, default: []].append(model)
-      state.modelInfosByModelSlug[model.modelInfo.id] = model.modelInfo
+      state.modelsByProviderId[model.id] = model
+      state.providerModelsByModelId[model.modelInfo.id, default: []].append(model)
+      state.modelByModelId[model.modelInfo.id] = model.modelInfo
+
+      staleProviderModelIds.remove(model.id)
+    }
+    for providerModelId in staleProviderModelIds {
+      guard let modelInfo = state.modelsByProviderId.removeValue(forKey: providerModelId)?.modelInfo else { continue }
+      state.providerModelsByModelId[modelInfo.id]?.removeAll(where: { $0.id == providerModelId })
+      if state.providerModelsByModelId[modelInfo.id]?.isEmpty == true {
+        state.providerModelsByModelId.removeValue(forKey: modelInfo.id)
+        state.modelByModelId.removeValue(forKey: modelInfo.id)
+      }
     }
   }
 
@@ -170,25 +266,18 @@ final class AIModelsManager: AIModelsManagerProtocol {
     let models = try await fetchModelsAvailable(for: provider, settings: settings)
 
     let llmModelByProvider = inLock { state in
-      // First remove old models to avoid keeping stale data.
-      Self.remove(provider: provider, from: &state)
-      // Then add new models.
-      Self.add(models: models, for: provider, to: &state)
+      Self.set(models: models, for: provider, to: &state)
       return state.llmModelByProvider
     }
 
     do {
-      try Self.persist(models: llmModelByProvider, fileManager: fileManager)
+      try Self.persist(
+        models: llmModelByProvider.wrappedValue.reduce(into: [:]) { $0[$1.key] = $1.value },
+        fileManager: fileManager)
     } catch {
       defaultLogger.error("Failed to persist models", error)
     }
-
-    let modelInfos: [AIModel] = inLock { state in
-      Self.remove(provider: provider, from: &state)
-      Self.add(models: models, for: provider, to: &state)
-      return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
-    } ?? []
-    mutableModels.send(modelInfos)
+    mutableModels.send(modelByModelId.sortedValues)
 
     return models
   }
@@ -267,7 +356,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
         for provider in removedProviders {
           Self.remove(provider: provider, from: &state)
         }
-        return state.modelInfosByModelSlug.values.sorted(by: { $0.name < $1.name })
+        return state.modelByModelId.sortedValues
       }
       mutableModels.send(modelInfos)
 
@@ -288,7 +377,9 @@ final class AIModelsManager: AIModelsManagerProtocol {
       }
 
       do {
-        try Self.persist(models: llmModelByProvider, fileManager: fileManager)
+        try Self.persist(
+          models: llmModelByProvider.wrappedValue.reduce(into: [:], { $0[$1.key] = $1.value }),
+          fileManager: fileManager)
       } catch {
         defaultLogger.error("Failed to persist models", error)
       }
@@ -304,10 +395,16 @@ final class AIModelsManager: AIModelsManagerProtocol {
       settingsService.value(for: \.enabledModels).contains(model.id) ||
         // The model that represent an external agent should always be considered active.
         // To disable it, the user can disable the provider instead.
-        modelByModelSlug[model.id]?.first?.provider.isExternalAgent == true
+        providerModelsByModelId[model.id]?.first?.provider.isExternalAgent == true
     }
   }
 
+}
+
+extension PublishedDictionary<AIModelID, AIModel> {
+  var sortedValues: [AIModel] {
+    wrappedValue.values.sorted(by: { $0.name < $1.name })
+  }
 }
 
 extension DefaultLLMService {
@@ -316,7 +413,11 @@ extension DefaultLLMService {
     llmModelsManager.activeModels
   }
 
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
+//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
+//    llmModelsManager.modelsAvailable(for: provider)
+//  }
+
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
     llmModelsManager.modelsAvailable(for: provider)
   }
 
@@ -328,17 +429,34 @@ extension DefaultLLMService {
     try await llmModelsManager.refetchModelsAvailable(for: provider, newSettings: newSettings)
   }
 
-  func getModel(by providerModelId: String) -> AIProviderModel? {
-    llmModelsManager.getModel(by: providerModelId)
-  }
-
-  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
-    llmModelsManager.getModelInfo(by: modelInfoId)
-  }
-
-  func provider(for model: AIModel) -> AIProvider? {
-    llmModelsManager.provider(for: model)
-  }
+//  func getModel(by providerModelId: String) -> AIProviderModel? {
+//    llmModelsManager.getModel(by: providerModelId)
+//  }
+//
+//  func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
+//    llmModelsManager.getModelInfo(by: modelInfoId)
+//  }
+//
+//  func provider(for model: AIModel) -> AIProvider? {
+//    llmModelsManager.provider(for: model)
+//  }
+    
+    
+    var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+        llmModelsManager.availableModels
+    }
+    
+    func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+        llmModelsManager.getModel(by: providerModelId)
+    }
+    
+    func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+        llmModelsManager.getModelInfo(by: modelInfoId)
+    }
+    
+    func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+        llmModelsManager.provider(for: model)
+    }
 
   func lowTierModel() -> AIProviderModel? {
     let settings = settingsService.values()
@@ -368,8 +486,7 @@ extension DefaultLLMService {
     }
 
     // Construct the AIProviderModel using the actual model from the provider
-    let models = modelsAvailable(for: provider)
-    return models.first(where: { $0.modelInfo.id == modelInfo.id })
+    return modelsAvailable(for: provider).first(where: { $0.modelInfo.id == modelInfo.id })
   }
 }
 

@@ -161,7 +161,7 @@ final class OnboardingViewModel {
     if permissionsService.status(for: .xcodeExtension).currentValue == false, !skipXcodeExtension {
       return .xcodeExtensionPermission
     }
-    if !hasSkippedProviderSetup, !canSkipProviderSetup {
+    if !hasSkippedProviderSetup {
       return .providersSetup
     }
     return .setupComplete

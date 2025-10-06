@@ -346,79 +346,94 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
       """
       @ThreadSafe
       final class AIModelsManager {
-        init(localServer: LocalServer)
-        {
-          self.localServer = localServer
-
-          let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
-          self.llmModelByProvider = llmModelByProvider
+        init() {
           let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
             acc[model.modelInfo.id] = model.modelInfo
           }
-          modelInfosByModelSlug  = modelInfos // double space here
-          mutableModels = .init(modelInfos.values.sorted(by: { $0.name < $1.name }))
+          modelByModelId  = modelInfos // double space here
         }
-
-        var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
-          mutableModels.readonly()
-        }
-
-        private let localServer: LocalServer
-
-        private var llmModelByProvider: [AIProvider: [AIProviderModel]]
-        private var modelInfosByModelSlug: [String: AIModel]
-
-        private let mutableModels: CurrentValueSubject<[AIModel], Never>
+        private var modelByModelId: [String: AIModel]
       }
       """,
       expandedSource: """
         final class AIModelsManager {
-          init(localServer: LocalServer){
-              var _llmModelByProvider: [AIProvider: [AIProviderModel]]
-              var _modelInfosByModelSlug: [String: AIModel]
-              self.localServer = localServer
-              let llmModelByProvider = (try? Self.loadModels(fileManager: fileManager)) ?? [:]
-              _llmModelByProvider = llmModelByProvider
+          init() {
+              var _modelByModelId: [String: AIModel]
               let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
                     acc[model.modelInfo.id] = model.modelInfo
                   }
-              _modelInfosByModelSlug = modelInfos // double space here
-              self._internalState = Atomic<_InternalState>(_InternalState(llmModelByProvider: _llmModelByProvider, modelInfosByModelSlug: _modelInfosByModelSlug))
-              mutableModels = .init(modelInfos.values.sorted(by: {
-                          $0.name < $1.name
-                      }))
+              _modelByModelId = modelInfos // double space here
+              self._internalState = Atomic<_InternalState>(_InternalState(modelByModelId: _modelByModelId))
           }
-
-          var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
-            mutableModels.readonly()
-          }
-
-          private let localServer: LocalServer
-
-          private var llmModelByProvider: [AIProvider: [AIProviderModel]] {
+          private var modelByModelId: [String: AIModel] {
               get {
-                  _internalState.value.llmModelByProvider
+                  _internalState.value.modelByModelId
               }
               set {
-                  _ = _internalState.set(\\.llmModelByProvider, to: newValue)
+                  _ = _internalState.set(\\.modelByModelId, to: newValue)
               }
           }
-          private var modelInfosByModelSlug: [String: AIModel] {
-              get {
-                  _internalState.value.modelInfosByModelSlug
-              }
-              set {
-                  _ = _internalState.set(\\.modelInfosByModelSlug, to: newValue)
-              }
-          }
-
-          private let mutableModels: CurrentValueSubject<[AIModel], Never>
 
             private let _internalState: Atomic<_InternalState>
 
             private struct _InternalState: Sendable {
-              var llmModelByProvider: [AIProvider: [AIProviderModel]]
-              var modelInfosByModelSlug: [String: AIModel]
+              var modelByModelId: [String: AIModel]
+            }
+
+            @discardableResult
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+                _internalState.mutate(mutation)
+              }
+        }
+        """,
+      macros: [
+        "ThreadSafe": ThreadSafeMacro.self,
+        "ThreadSafeProperty": ThreadSafePropertyMacro.self,
+        "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
+      ])
+  }
+
+  func testThreadSafeMacro_heandleNonStandardSpacing() {
+    assertMacroExpansion(
+      """
+      @ThreadSafe
+      final class AIModelsManager {
+        init() {
+          //    let modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+          //      acc[model.modelInfo.id] = .init(value: model.modelInfo)
+          //    }
+          self.modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+            acc[model.modelInfo.id] = .init(value: model.modelInfo)
+          }
+        }
+        private var modelByModelId: [String: AIModel]
+      }
+      """,
+      expandedSource: """
+        final class AIModelsManager {
+          init() {
+              let _modelByModelId: [String: AIModel]
+              //    let modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+                  //      acc[model.modelInfo.id] = .init(value: model.modelInfo)
+                  //    }
+                  self.modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+                    acc[model.modelInfo.id] = .init(value: model.modelInfo)
+                  }
+              self._internalState = Atomic<_InternalState>(_InternalState(modelByModelId: _modelByModelId))
+          }
+          private var modelByModelId: [String: AIModel] {
+              get {
+                  _internalState.value.modelByModelId
+              }
+              set {
+                  _ = _internalState.set(\\.modelByModelId, to: newValue)
+              }
+          }
+
+            private let _internalState: Atomic<_InternalState>
+
+            private struct _InternalState: Sendable {
+              var modelByModelId: [String: AIModel]
             }
 
             @discardableResult
