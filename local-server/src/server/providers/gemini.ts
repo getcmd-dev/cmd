@@ -1,9 +1,9 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput, ModelRichInfo, ProviderConfig } from "./provider"
+import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { JSONValue, LanguageModel } from "ai"
 import { UserFacingError } from "../errors"
-import { OpenRouterModel } from "./open-router"
+import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
@@ -14,9 +14,9 @@ type ModelBaseInfo = {
 	outputTokenLimit: number
 }
 
-export class GeminiModelProvider implements ModelProvider {
+export class GeminiAIProvider implements AIProvider {
 	name: APIProviderName = "gemini"
-	build(params: ModelProviderInput): ModelProviderOutput {
+	build(params: AIProviderInput): AIProviderOutput {
 		const {
 			provider: { apiKey, baseUrl },
 			modelName,
@@ -40,7 +40,7 @@ export class GeminiModelProvider implements ModelProvider {
 			},
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
 		// https://ai.google.dev/api/models#endpoint_1
 		const baseUrl =
 			process.env["GEMINI_LOCAL_SERVER_PROXY"] ??
@@ -82,7 +82,7 @@ export class GeminiModelProvider implements ModelProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Gemini                                ->  OpenRouter
 		// models/gemini-2.0-flash-live-001      ->  google/gemini-2.0-flash-001
 		// models/gemini-2.5-flash-live-preview  ->  google/gemini-2.5-flash-preview-09-2025

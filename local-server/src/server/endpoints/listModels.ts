@@ -1,22 +1,21 @@
 import { Request, Response, Router } from "express"
 import { UserFacingError } from "../errors"
 import { ListModelsInput, ListModelsOutput } from "../schemas/listModelsSchema"
-import { ModelProvider } from "../providers/provider"
-import { OpenRouterModel, OpenRouterModelProvider } from "../providers/open-router"
-import { deduplicate } from "../providers/provider-utils"
+import { AIProvider, ProviderModelFullInfo } from "../providers/provider"
+import { deduplicate, listReferenceModels } from "../providers/provider-utils"
 
 let cachedRequest:
 	| {
 			expiresAt: number
-			models: Promise<OpenRouterModel[]>
+			models: Promise<ProviderModelFullInfo[]>
 	  }
 	| undefined = undefined
 
-const getOpenRouterModelsWithCaching = async (): Promise<OpenRouterModel[]> => {
+const getProviderModelFullInfosWithCaching = async (): Promise<ProviderModelFullInfo[]> => {
 	if (cachedRequest && cachedRequest.expiresAt > Date.now()) {
 		return cachedRequest.models
 	}
-	const promise = new OpenRouterModelProvider().listReferenceModels()
+	const promise = listReferenceModels()
 	cachedRequest = {
 		expiresAt: Date.now() + 1000 * 60, // 1mn hours
 		models: promise,
@@ -24,7 +23,7 @@ const getOpenRouterModelsWithCaching = async (): Promise<OpenRouterModel[]> => {
 	return promise
 }
 
-export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]) => {
+export const registerEndpoint = (router: Router, modelProviders: AIProvider[]) => {
 	router.post("/models", async (req: Request, res: Response) => {
 		const body = req.body as ListModelsInput
 		// Input validation
@@ -43,7 +42,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			} satisfies ListModelsOutput)
 			return
 		}
-		const allModels = await getOpenRouterModelsWithCaching()
+		const allModels = await getProviderModelFullInfosWithCaching()
 		let models = await modelProvider.listModels(body.provider.settings, allModels)
 		// Ensure no two models have the same global id from a given provider
 		models = deduplicate(models)

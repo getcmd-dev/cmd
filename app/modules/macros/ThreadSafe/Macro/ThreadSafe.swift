@@ -40,11 +40,29 @@ extension ThreadSafeMacro: MemberMacro {
 
     var members = [DeclSyntax]()
 
-    // Generate _internalState property
-    let internalStateProperty = DeclSyntax("""
-      private let \(raw: Constants.internalStateName): Atomic<_InternalState>
-      """)
-    members.append(internalStateProperty)
+    let hasInitializer = classDecl.memberBlock.members.contains(where: { $0.decl.as(InitializerDeclSyntax.self) != nil })
+    if !hasInitializer {
+      // Generate and initialize _internalState property
+      let variables = try storedVariables.map { name, _, defaultValue in
+        guard let defaultValue else {
+          throw DiagnosticsError(
+            syntax: classDecl,
+            message: "Property '\(name)' must have a default value or the class must define an initializer.")
+        }
+        return "\(name): \(defaultValue)"
+      }
+      let decl = "private let \(Constants.internalStateName) = Atomic<_InternalState>(_InternalState(\(variables.joined(separator: ", "))))"
+      let internalStateProperty = DeclSyntax("""
+        \(raw: decl)
+        """)
+      members.append(internalStateProperty)
+    } else {
+      // Generate _internalState property
+      let internalStateProperty = DeclSyntax("""
+        private let \(raw: Constants.internalStateName): Atomic<_InternalState>
+        """)
+      members.append(internalStateProperty)
+    }
 
     // Generate _InternalState struct with the stored properties
     var internalStateFields = ""
@@ -188,7 +206,7 @@ extension ThreadSafeInitializerMacro: BodyMacro {
       guard
         let callExpr = element.value.as(FunctionCallExprSyntax.self),
         let genericType = callExpr.calledExpression.as(GenericSpecializationExprSyntax.self),
-        let typeName = genericType.genericArgumentClause.arguments.first?.argument.description
+        let typeName = genericType.genericArgumentClause.arguments.first?.argument.trimmedDescription
           .trimmingCharacters(in: .whitespacesAndNewlines)
       else {
         return nil
@@ -198,7 +216,7 @@ extension ThreadSafeInitializerMacro: BodyMacro {
       var defaultValue: String? = nil
       for arg in callExpr.arguments {
         if arg.label?.text == "defaultValue" {
-          defaultValue = arg.expression.description
+          defaultValue = arg.expression.trimmedDescription
         }
       }
       if defaultValue == nil, typeName.hasSuffix("?") { defaultValue = "nil" }
@@ -212,7 +230,7 @@ extension ThreadSafeInitializerMacro: BodyMacro {
     // Find when the last stored variable is set
     let lastVariableSetAt = decl.statements.enumerated().compactMap { offset, statement in
       for (key, _, _) in storedVariables.filter({ $0.defaultValue == nil }) {
-        let trimmedStatement = statement.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedStatement = statement.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         if
           trimmedStatement.contains(selfDotPropertyEqual(key, isAtStart: true)) ||
           trimmedStatement.contains(propertyEqual(key, isAtStart: true))
@@ -229,18 +247,20 @@ extension ThreadSafeInitializerMacro: BodyMacro {
       if offset > lastVariableSetAt {
         return [CodeBlockItemSyntax(statement)]
       }
-      let trimmedStatement = statement.description.trimmingCharacters(in: .whitespacesAndNewlines)
+      let trimmedStatement = statement.trimmedDescription
       for (key, _, _) in storedVariables {
         if trimmedStatement.contains(selfDotPropertyEqual(key, isAtStart: true)) {
           mutatedProperties.insert(key)
           return [
-            CodeBlockItemSyntax(stringLiteral: statement.description.replacing(selfDotPropertyEqual(key), with: "_\(key) =")),
+            CodeBlockItemSyntax(stringLiteral: statement.trimmedDescription.replacing(
+              selfDotPropertyEqual(key),
+              with: "_\(key) =")),
           ]
         }
         if trimmedStatement.contains(propertyEqual(key, isAtStart: true)) {
           mutatedProperties.insert(key)
           return [
-            CodeBlockItemSyntax(stringLiteral: statement.description.replacing(propertyEqual(key), with: "_\(key) =")),
+            CodeBlockItemSyntax(stringLiteral: statement.trimmedDescription.replacing(propertyEqual(key), with: "_\(key) =")),
           ]
         }
       }
@@ -374,11 +394,12 @@ extension ClassDeclSyntax {
           let pattern = binding.pattern.as(IdentifierPatternSyntax.self)
         {
           let name = pattern.identifier.text.trimmingCharacters(in: .whitespacesAndNewlines)
-          let defaultValue = binding.initializer?.value.description.trimmingCharacters(in: .whitespacesAndNewlines) ?? binding
+          let defaultValue = binding.initializer?.value.trimmedDescription
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? binding
             .typeAnnotation?.type.defaultValueForOptional
 
           if let typeAnnotation = binding.typeAnnotation {
-            let type = typeAnnotation.type.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            let type = typeAnnotation.type.trimmedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
             storedVars.append((name, type, defaultValue))
           } else if let defaultValue {
             // Heuristically tries to infer the type from the default value

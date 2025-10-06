@@ -1,10 +1,10 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput, ModelRichInfo, ProviderConfig } from "./provider"
+import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
 import { ModelMessage } from "ai"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
 import { UserFacingError } from "../errors"
-import { OpenRouterModel } from "./open-router"
+import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
@@ -12,9 +12,9 @@ type ModelBaseInfo = {
 	display_name: string
 }
 
-export class AnthropicModelProvider implements ModelProvider {
+export class AnthropicAIProvider implements AIProvider {
 	name: APIProviderName = "anthropic"
-	build(params: ModelProviderInput): ModelProviderOutput {
+	build(params: AIProviderInput): AIProviderOutput {
 		const {
 			provider: { apiKey, baseUrl },
 			modelName,
@@ -37,7 +37,7 @@ export class AnthropicModelProvider implements ModelProvider {
 			addProviderOptionsToTools: (tools) => addCacheControlToTools(tools, this.name),
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
 		const baseUrl = process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com/v1"
 		const allModels: ModelBaseInfo[] = []
 		let afterId: string | undefined = undefined
@@ -74,7 +74,7 @@ export class AnthropicModelProvider implements ModelProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Anthropic.model.id claude-sonnet-4-5-20250929
 		// OpenRoutermodel.id: anthropic/claude-sonnet-4.5
 		// OpenRoutermodel.canonical_slug: anthropic/claude-4.5-sonnet-20250929

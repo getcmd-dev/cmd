@@ -1,9 +1,9 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput, ModelRichInfo, ProviderConfig } from "./provider"
+import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createGroq } from "@ai-sdk/groq"
 import { JSONValue, LanguageModel } from "ai"
 import { UserFacingError } from "../errors"
-import { OpenRouterModel } from "./open-router"
+import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
 
 type ModelBaseInfo = {
@@ -13,9 +13,9 @@ type ModelBaseInfo = {
 	max_completion_tokens: number
 }
 
-export class GroqModelProvider implements ModelProvider {
+export class GroqAIProvider implements AIProvider {
 	name: APIProviderName = "groq"
-	build(params: ModelProviderInput): ModelProviderOutput {
+	build(params: AIProviderInput): AIProviderOutput {
 		const {
 			provider: { apiKey, baseUrl },
 			modelName,
@@ -41,7 +41,7 @@ export class GroqModelProvider implements ModelProvider {
 			},
 		}
 	}
-	async listModels(params: ProviderConfig, referenceModels: OpenRouterModel[]): Promise<ModelRichInfo[]> {
+	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
 		// https://console.groq.com/docs/api-reference#models-retrieve
 		const baseUrl = process.env["GROQ_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.groq.com/openai/v1"
 
@@ -72,7 +72,7 @@ export class GroqModelProvider implements ModelProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: ModelBaseInfo, models: OpenRouterModel[]): ModelRichInfo | undefined {
+	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Groq                                       ->  OpenRouter
 		// meta-llama/llama-4-scout-17b-16e-instruct  ->  meta-llama/llama-4-scout
 		// moonshotai/kimi-k2-instruct                ->  moonshotai/kimi-k2

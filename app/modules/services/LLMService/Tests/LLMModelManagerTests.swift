@@ -42,10 +42,10 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // then
-    #expect(sut.modelsAvailable(for: .anthropic).count == 1)
-    #expect(sut.modelsAvailable(for: .openAI).count == 1)
-    #expect(sut.getModel(by: "claude-sonnet")?.modelInfo.slug == "claude-sonnet-4")
-    #expect(sut.getModel(by: "gpt-5")?.modelInfo.slug == "gpt-latest")
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.count == 1)
+    #expect(sut.modelsAvailable(for: .openAI).currentValue.count == 1)
+    #expect(sut.getModel(by: "claude-sonnet").currentValue?.modelInfo.slug == "claude-sonnet-4")
+    #expect(sut.getModel(by: "gpt-5").currentValue?.modelInfo.slug == "gpt-latest")
   }
 
   @Test("Initializes with empty models when file does not exist")
@@ -62,8 +62,8 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // then
-    #expect(sut.modelsAvailable(for: .anthropic).isEmpty)
-    #expect(sut.modelsAvailable(for: .openAI).isEmpty)
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.isEmpty)
+    #expect(sut.modelsAvailable(for: .openAI).currentValue.isEmpty)
   }
 
   @Test("Initializes with empty models when file has invalid data")
@@ -82,8 +82,8 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // then
-    #expect(sut.modelsAvailable(for: .anthropic).isEmpty)
-    #expect(sut.modelsAvailable(for: .openAI).isEmpty)
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.isEmpty)
+    #expect(sut.modelsAvailable(for: .openAI).currentValue.isEmpty)
   }
 
   // MARK: - Model Retrieval Tests
@@ -107,8 +107,8 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let anthropicModels = sut.modelsAvailable(for: .anthropic)
-    let openAIModels = sut.modelsAvailable(for: .openAI)
+    let anthropicModels = sut.modelsAvailable(for: .anthropic).currentValue
+    let openAIModels = sut.modelsAvailable(for: .openAI).currentValue
 
     // then
     #expect(anthropicModels.count == 2)
@@ -131,7 +131,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let groqModels = sut.modelsAvailable(for: .groq)
+    let groqModels = sut.modelsAvailable(for: .groq).currentValue
 
     // then
     #expect(groqModels.isEmpty)
@@ -155,7 +155,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let model = sut.getModel(by: "claude-sonnet")
+    let model = sut.getModel(by: "claude-sonnet").currentValue
 
     // then
     #expect(model?.id == "claude-sonnet")
@@ -174,7 +174,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let model = sut.getModel(by: "non-existent-id")
+    let model = sut.getModel(by: "non-existent-id").currentValue
 
     // then
     #expect(model == nil)
@@ -195,7 +195,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let modelInfo = sut.getModelInfo(by: "claude-sonnet-4")
+    let modelInfo = sut.getModelInfo(by: "claude-sonnet-4").currentValue
 
     // then
     #expect(modelInfo?.slug == "claude-sonnet-4")
@@ -213,7 +213,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     // when
-    let modelInfo = sut.getModelInfo(by: "non-existent-slug")
+    let modelInfo = sut.getModelInfo(by: "non-existent-slug").currentValue
 
     // then
     #expect(modelInfo == nil)
@@ -235,10 +235,10 @@ class AIModelsManagerTests {
       settingsService: settingsService,
       fileManager: fileManager,
       shellService: MockShellService())
-    let modelInfo = try #require(sut.getModelInfo(by: "claude-sonnet-4"))
+    let modelInfo = try #require(sut.getModelInfo(by: "claude-sonnet-4").currentValue)
 
     // when
-    let provider = sut.provider(for: modelInfo)
+    let provider = sut.provider(for: modelInfo).currentValue
 
     // then
     #expect(provider == .openRouter)
@@ -258,10 +258,10 @@ class AIModelsManagerTests {
       settingsService: settingsService,
       fileManager: fileManager,
       shellService: MockShellService())
-    let modelInfo = try #require(sut.getModelInfo(by: "claude-sonnet-4"))
+    let modelInfo = try #require(sut.getModelInfo(by: "claude-sonnet-4").currentValue)
 
     // when
-    let provider = sut.provider(for: modelInfo)
+    let provider = sut.provider(for: modelInfo).currentValue
 
     // then
     #expect(provider == .anthropic)
@@ -307,7 +307,7 @@ class AIModelsManagerTests {
     // then
     #expect(models.count == 2)
     #expect(models.map(\.id).sorted() == ["claude-haiku-new", "claude-sonnet-new"])
-    #expect(sut.modelsAvailable(for: .anthropic).count == 2)
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.count == 2)
   }
 
   @Test("refetchModelsAvailable replaces old models for provider")
@@ -349,10 +349,10 @@ class AIModelsManagerTests {
       newSettings: Settings.AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1))
 
     // then
-    let anthropicModels = sut.modelsAvailable(for: .anthropic)
+    let anthropicModels = sut.modelsAvailable(for: .anthropic).currentValue
     #expect(anthropicModels.count == 1)
     #expect(anthropicModels.first?.id == "new-model")
-    #expect(sut.getModel(by: "old-model") == nil)
+    #expect(sut.getModel(by: "old-model").currentValue == nil)
   }
 
   @Test("refetchModelsAvailable persists models to file")
@@ -508,7 +508,7 @@ class AIModelsManagerTests {
 
     // then
     try await fulfillment(of: [requestReceived, modelsUpdated])
-    #expect(sut.modelsAvailable(for: .anthropic).count == 1)
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.count == 1)
   }
 
   @Test("Automatically fetches models when provider settings are updated")
@@ -608,10 +608,10 @@ class AIModelsManagerTests {
 
     // then
     try await fulfillment(of: [modelsUpdated])
-    #expect(sut.modelsAvailable(for: .anthropic).isEmpty)
-    #expect(sut.modelsAvailable(for: .openAI).count == 1)
-    #expect(sut.getModel(by: "claude-sonnet") == nil)
-    #expect(sut.getModel(by: "gpt-5") != nil)
+    #expect(sut.modelsAvailable(for: .anthropic).currentValue.isEmpty)
+    #expect(sut.modelsAvailable(for: .openAI).currentValue.count == 1)
+    #expect(sut.getModel(by: "claude-sonnet").currentValue == nil)
+    #expect(sut.getModel(by: "gpt-5").currentValue != nil)
   }
 
   // MARK: - External Agent Tests

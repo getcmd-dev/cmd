@@ -10,29 +10,51 @@ import ThreadSafe
 
 @ThreadSafe
 final class MockAIModelsManager: AIModelsManagerProtocol {
-  init(activeModels: [AIModel] = []) {
-    mutableActiveModels = .init(activeModels)
+  init(activeModels: [AIModel] = [], availableModels: [AIModel] = []) {
+    _activeModels = .init(activeModels)
+    _availableModels = .init(availableModels)
     setDefaultValues()
   }
 
-  var onModelsAvailableForProvider: @Sendable (AIProvider) -> [AIProviderModel] = { _ in [] }
+  var onModelsAvailableForProvider: @Sendable (AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> = { _ in
+    .just([])
+  }
 
   var onRefetchModelsAvailableForProvider: @Sendable (AIProvider, Settings.AIProviderSettings) async throws
     -> [AIProviderModel] = { _, _ in [] }
 
-  var onGetModelByProviderModelId: @Sendable (String) -> AIProviderModel? = { _ in nil }
-
-  var onGetModelInfoById: @Sendable (AIModelID) -> AIModel? = { _ in nil }
-  var onProviderForModel: @Sendable (AIModel) -> AIProvider? = { _ in nil }
-
-  let mutableActiveModels: CurrentValueSubject<[AIModel], Never>
-
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
-    mutableActiveModels.readonly()
+  var onGetModelByProviderModelId: @Sendable (String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> = { _ in
+    .just(nil)
   }
 
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
+  var onGetModelInfoById: @Sendable (AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> = { _ in .just(nil) }
+  var onProviderForModel: @Sendable (AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> = { _ in .just(nil) }
+
+  let _activeModels: CurrentValueSubject<[AIModel], Never>
+  let _availableModels: CurrentValueSubject<[AIModel], Never>
+
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+    _availableModels.readonly()
+  }
+
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+    _activeModels.readonly()
+  }
+
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+    onProviderForModel(model)
+  }
+
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
     onModelsAvailableForProvider(provider)
+  }
+
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+    onGetModelByProviderModelId(providerModelId)
+  }
+
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+    onGetModelInfoById(modelId)
   }
 
   func refetchModelsAvailable(
@@ -41,18 +63,6 @@ final class MockAIModelsManager: AIModelsManagerProtocol {
     async throws -> [AIProviderModel]
   {
     try await onRefetchModelsAvailableForProvider(provider, newSettings)
-  }
-
-  func getModel(by providerModelId: String) -> AIProviderModel? {
-    onGetModelByProviderModelId(providerModelId)
-  }
-
-  func getModelInfo(by id: AIModelID) -> AIModel? {
-    onGetModelInfoById(id)
-  }
-
-  func provider(for model: AIModel) -> AIProvider? {
-    onProviderForModel(model)
   }
 
   private var modelsByProviders = [AIProvider: [AIProviderModel]]()
@@ -78,17 +88,17 @@ final class MockAIModelsManager: AIModelsManagerProtocol {
       ],
     ]
 
-    onModelsAvailableForProvider = { [weak self] provider in self?.modelsByProviders[provider] ?? [] }
+    onModelsAvailableForProvider = { [weak self] provider in .just(self?.modelsByProviders[provider] ?? []) }
     onRefetchModelsAvailableForProvider = { [weak self] provider, _ in self?.modelsByProviders[provider] ?? [] }
     onGetModelByProviderModelId = { [weak self] providerModelId in
-      self?.modelsByProviders.values.flatMap(\.self).first(where: { $0.id == providerModelId })
+      .just(self?.modelsByProviders.values.flatMap(\.self).first(where: { $0.id == providerModelId }))
     }
     onGetModelInfoById = { [weak self] id in
-      self?.modelsByProviders.values.flatMap(\.self).first(where: { $0.modelInfo.id == id })?.modelInfo
+      .just(self?.modelsByProviders.values.flatMap(\.self).first(where: { $0.modelInfo.id == id })?.modelInfo)
     }
     onProviderForModel = { [weak self] modelInfo in
-      self?.modelsByProviders.filter({ $0.value.contains(where: { $0.modelInfo.id == modelInfo.id }) }).map(\.key)
-        .sorted(by: { a, b in a.name < b.name }).first
+      .just(self?.modelsByProviders.filter({ $0.value.contains(where: { $0.modelInfo.id == modelInfo.id }) }).map(\.key)
+        .sorted(by: { a, b in a.name < b.name }).first)
     }
   }
 

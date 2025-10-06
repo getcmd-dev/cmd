@@ -7,7 +7,8 @@ import os
 
 // MARK: - ReadonlyCurrentValueSubject
 
-/// Like `CurrentValueSubject`, but does not allow to mutate the value.
+/// `ReadonlyCurrentValueSubject` is a readonly version of `CurrentValueSubject`.
+/// It can be used to represent a value that can be observed but not modified directly.
 public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>: Publisher, Sendable {
 
   public init(_ value: Output, publisher: AnyPublisher<Output, Failure>) {

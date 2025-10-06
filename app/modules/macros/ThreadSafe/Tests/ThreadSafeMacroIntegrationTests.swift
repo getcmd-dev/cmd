@@ -13,12 +13,11 @@ import XCTest
 final class ThreadSafeMacroIntegrationTests: XCTestCase {
 
   func testThreadSafeMacroWithAccessors() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
       final class Example {
-        var count: Int
+        var count: Int = 1
       }
       """,
       expandedSource: """
@@ -32,7 +31,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
               }
           }
 
-            private let _internalState: Atomic<_InternalState>
+            private let _internalState = Atomic<_InternalState>(_InternalState(count: 1))
 
             private struct _InternalState: Sendable {
               var count: Int
@@ -98,7 +97,6 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testInitializerWithOtherProperties() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
@@ -165,12 +163,11 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testThreadSafeMacroOnlyExpandsCorrectVar() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
       final class Example {
-        var count: Int
+        var count: Int = 0
         let value: String
         var name: String { "name" }
       }
@@ -188,7 +185,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
           let value: String
           var name: String { "name" }
 
-            private let _internalState: Atomic<_InternalState>
+            private let _internalState = Atomic<_InternalState>(_InternalState(count: 0))
 
             private struct _InternalState: Sendable {
               var count: Int
@@ -262,7 +259,6 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testThreadSafeMacro_handleComplexArraySyntax() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
@@ -281,7 +277,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
                 }
             }
 
-            private let _internalState: Atomic<_InternalState>
+            private let _internalState = Atomic<_InternalState>(_InternalState(eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool]()))
 
             private struct _InternalState: Sendable {
               var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool]
@@ -301,7 +297,6 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testThreadSafeMacro_noMutableProperties() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
@@ -341,7 +336,6 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
   }
 
   func testThreadSafeMacro_handleNonStandardSpacing() {
-    // Test that the Sendable macro adds the correct attributes and members
     assertMacroExpansion(
       """
       @ThreadSafe
@@ -362,7 +356,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
               let modelInfos = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
                     acc[model.modelInfo.id] = model.modelInfo
                   }
-              _modelByModelId = modelInfos // double space here
+              _modelByModelId = modelInfos
               self._internalState = Atomic<_InternalState>(_InternalState(modelByModelId: _modelByModelId))
           }
           private var modelByModelId: [String: AIModel] {
@@ -393,7 +387,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
       ])
   }
 
-  func testThreadSafeMacro_heandleNonStandardSpacing() {
+  func testThreadSafeMacro_handleComments() {
     assertMacroExpansion(
       """
       @ThreadSafe
@@ -412,11 +406,8 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
       expandedSource: """
         final class AIModelsManager {
           init() {
-              let _modelByModelId: [String: AIModel]
-              //    let modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
-                  //      acc[model.modelInfo.id] = .init(value: model.modelInfo)
-                  //    }
-                  self.modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
+              var _modelByModelId: [String: AIModel]
+              _modelByModelId = llmModelByProvider.values.flatMap(\\.self).reduce(into: [:]) { acc, model in
                     acc[model.modelInfo.id] = .init(value: model.modelInfo)
                   }
               self._internalState = Atomic<_InternalState>(_InternalState(modelByModelId: _modelByModelId))
@@ -431,6 +422,44 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
           }
 
             private let _internalState: Atomic<_InternalState>
+
+            private struct _InternalState: Sendable {
+              var modelByModelId: [String: AIModel]
+            }
+
+            @discardableResult
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+                _internalState.mutate(mutation)
+              }
+        }
+        """,
+      macros: [
+        "ThreadSafe": ThreadSafeMacro.self,
+        "ThreadSafeProperty": ThreadSafePropertyMacro.self,
+        "ThreadSafeInitializer": ThreadSafeInitializerMacro.self,
+      ])
+  }
+
+  func testThreadSafeMacro_handleMissingInit() {
+    assertMacroExpansion(
+      """
+      @ThreadSafe
+      final class AIModelsManager {
+        private var modelByModelId: [String: AIModel] = [:]
+      }
+      """,
+      expandedSource: """
+        final class AIModelsManager {
+          private var modelByModelId: [String: AIModel] {
+              get {
+                  _internalState.value.modelByModelId
+              }
+              set {
+                  _ = _internalState.set(\\.modelByModelId, to: newValue)
+              }
+          }
+
+            private let _internalState = Atomic<_InternalState>(_InternalState(modelByModelId: [:]))
 
             private struct _InternalState: Sendable {
               var modelByModelId: [String: AIModel]

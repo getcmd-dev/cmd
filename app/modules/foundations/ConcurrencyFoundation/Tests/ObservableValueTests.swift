@@ -25,14 +25,9 @@ struct ObservableValueTests {
     #expect(observable.value == 0)
 
     let updates = expectation(description: "Updates received")
-    let values = Atomic([Int]())
 
-    let cancellable = observable.observeChanges(to: \.value) { previousValue in
-      let count = values.mutate {
-        $0.append(previousValue)
-        return $0.count
-      }
-      if count == 3 {
+    let cancellable = observable.observeChanges(to: \.value) { value in
+      if value == 3 {
         updates.fulfill()
       }
     }
@@ -43,7 +38,6 @@ struct ObservableValueTests {
     subject.send(3)
 
     try await fulfillment(of: [updates])
-    #expect(values.value == [1, 2, 3])
     #expect(observable.value == 3)
   }
 

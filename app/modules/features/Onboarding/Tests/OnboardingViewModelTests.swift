@@ -56,8 +56,11 @@ struct OnboardingViewModelTests {
     var onDoneCalled = false
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
 
-    // Should go directly to setup complete since permissions are granted and models are available
-    viewModel.handleMoveToNextStep() // welcome -> setupComplete
+    // Should go directly to providers setup since permissions are granted
+    viewModel.handleMoveToNextStep() // welcome -> providersSetup
+    #expect(viewModel.currentStep == .providersSetup)
+    // Should go directly to setup complete since models are available
+    viewModel.handleMoveToNextStep() // providersSetup -> setupComplete
 
     #expect(viewModel.currentStep == .setupComplete)
     #expect(onDoneCalled == false)
@@ -110,7 +113,7 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("step progression moves to setupComplete when models are available", .dependencies {
+  @Test("step progression doesn't skip provider setup when models are available", .dependencies {
     $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
     $0.llmService = MockLLMService(activeModels: [.gpt])
   })
@@ -119,8 +122,9 @@ struct OnboardingViewModelTests {
 
     #expect(viewModel.currentStep == .welcome)
 
-    viewModel.handleMoveToNextStep() // welcome -> setupComplete (skipping providers)
-    #expect(viewModel.currentStep == .setupComplete)
+    viewModel
+      .handleMoveToNextStep() // welcome -> providersSetup (does not skip providers, even though they are already configured)
+    #expect(viewModel.currentStep == .providersSetup)
   }
 
   @MainActor
@@ -232,7 +236,7 @@ struct OnboardingViewModelTests {
     #expect(viewModel.currentStep == .providersSetup)
 
     // Add an active model
-    mockLLMService.mutableActiveModels.send([.gpt])
+    mockLLMService._activeModels.send([.gpt])
     try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
 
     viewModel.handleMoveToNextStep()

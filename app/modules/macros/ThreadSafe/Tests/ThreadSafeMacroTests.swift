@@ -15,15 +15,15 @@ final class ThreadSafeMacroTests: XCTestCase {
       """
       @ThreadSafe
       final class Example {
-        var count: Int
+        var count: Int = 1
       }
       """,
       expandedSource: """
         final class Example {
           @ThreadSafeProperty
-          var count: Int
+          var count: Int = 1
 
-            private let _internalState: Atomic<_InternalState>
+            private let _internalState = Atomic<_InternalState>(_InternalState(count: 1))
 
             private struct _InternalState: Sendable {
               var count: Int
@@ -239,7 +239,7 @@ final class ThreadSafeMacroTests: XCTestCase {
       """
       @ThreadSafe
       public final class Example {
-        var count: Int
+        var count: Int = 1
         let value: String
         var name: String { "name" }
         @Dependency var foo
@@ -248,12 +248,12 @@ final class ThreadSafeMacroTests: XCTestCase {
       expandedSource: """
         public final class Example {
           @ThreadSafeProperty
-          var count: Int
+          var count: Int = 1
           let value: String
           var name: String { "name" }
           @Dependency var foo
 
-            private let _internalState: Atomic<_InternalState>
+            private let _internalState = Atomic<_InternalState>(_InternalState(count: 1))
 
             private struct _InternalState: Sendable {
               var count: Int

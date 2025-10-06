@@ -161,7 +161,7 @@ struct ChatInputViewModelTests {
     #expect(sut.selectedModel == .claudeSonnet)
 
     // when
-    mockLLMService.mutableActiveModels.send([.gpt])
+    mockLLMService._activeModels.send([.gpt])
 
     // then
     try await fulfillment(of: hasChangedModelToGpt)
@@ -215,7 +215,7 @@ struct ChatInputViewModelTests {
     }.store(in: &cancellables)
 
     // when - simulate removing openAI provider (anthropic models remain)
-    mockLLMService.mutableActiveModels.send([
+    mockLLMService._activeModels.send([
       .claudeHaiku_3_5,
       .claudeOpus,
       .claudeSonnet,
@@ -231,7 +231,7 @@ struct ChatInputViewModelTests {
     #expect(sut.selectedModel == .claudeSonnet)
 
     // when - simulate removing all providers
-    mockLLMService.mutableActiveModels.send([])
+    mockLLMService._activeModels.send([])
     try await fulfillment(of: hasChangedSelectedModels)
 
     // then

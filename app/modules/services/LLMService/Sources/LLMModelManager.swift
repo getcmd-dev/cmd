@@ -36,60 +36,6 @@ protocol AIModelsManagerProtocol: Sendable {
   var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 }
 
-// MARK: - PublishedDictionary
-
-@ThreadSafe
-private final class PublishedDictionary<Key: Hashable & Sendable, Value: Equatable & Sendable>: Sendable {
-  init(_ wrappedValue: [Key: Value] = [:]) {
-    self.wrappedValue = wrappedValue
-  }
-
-  var subscribers = [Key: [UUID: @Sendable (Value?) -> Void]]()
-  var wrappedValue: [Key: Value]
-
-  func subscribeToValue(for key: Key) -> ReadonlyCurrentValueSubject<Value?, Never> {
-    let subscriptionId = UUID()
-    let publisher = CurrentValueSubject<Value?, Never>(wrappedValue[key])
-    let cancellable = AnyCancellable { [weak self] in
-      self?.inLock { $0.subscribers[key]?.removeValue(forKey: subscriptionId) }
-    }
-    subscribers[key, default: [:]][subscriptionId] = { [weak publisher] model in
-      publisher?.send(model)
-    }
-    return .init(publisher.value, publisher: publisher.retaining(cancellable).removeDuplicates().eraseToAnyPublisher())
-  }
-
-  subscript(_ key: Key) -> Value? {
-    get { wrappedValue[key] }
-    set {
-      inLock { state in
-        state.wrappedValue[key] = newValue
-        state.subscribers[key]?.forEach { $0.value(newValue) }
-      }
-    }
-  }
-
-  subscript(_ key: Key, default defaultValue: Value) -> Value {
-    get { inLock { $0.wrappedValue[key, default: defaultValue] } }
-    set {
-      inLock { state in
-        state.wrappedValue[key] = newValue
-        state.subscribers[key]?.forEach { $0.value(newValue) }
-      }
-    }
-  }
-
-  @discardableResult
-  func removeValue(forKey key: Key) -> Value? {
-    inLock { state in
-      let value = state.wrappedValue.removeValue(forKey: key)
-      state.subscribers[key]?.forEach { $0.value(nil) }
-      return value
-    }
-  }
-
-}
-
 // MARK: - AIModelsManager
 
 @ThreadSafe
@@ -161,9 +107,9 @@ final class AIModelsManager: AIModelsManagerProtocol {
         .eraseToAnyPublisher())
   }
 
-  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-    modelsAvailable(for: provider).currentValue
-  }
+//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
+//    modelsAvailable(for: provider).currentValue
+//  }
 
   func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
     let publisher = llmModelByProvider.subscribeToValue(for: provider)
@@ -514,6 +460,60 @@ struct PersistedAIProviderModels: Codable {
     var container = encoder.container(keyedBy: String.self)
     for (provider, models) in models {
       try container.encode(models, forKey: provider.id)
+    }
+  }
+
+}
+
+// MARK: - PublishedDictionary
+
+@ThreadSafe
+private final class PublishedDictionary<Key: Hashable & Sendable, Value: Equatable & Sendable>: Sendable {
+  init(_ wrappedValue: [Key: Value] = [:]) {
+    self.wrappedValue = wrappedValue
+  }
+
+  var subscribers = [Key: [UUID: @Sendable (Value?) -> Void]]()
+  var wrappedValue: [Key: Value]
+
+  func subscribeToValue(for key: Key) -> ReadonlyCurrentValueSubject<Value?, Never> {
+    let subscriptionId = UUID()
+    let publisher = CurrentValueSubject<Value?, Never>(wrappedValue[key])
+    let cancellable = AnyCancellable { [weak self] in
+      self?.inLock { $0.subscribers[key]?.removeValue(forKey: subscriptionId) }
+    }
+    subscribers[key, default: [:]][subscriptionId] = { [weak publisher] model in
+      publisher?.send(model)
+    }
+    return .init(publisher.value, publisher: publisher.retaining(cancellable).removeDuplicates().eraseToAnyPublisher())
+  }
+
+  subscript(_ key: Key) -> Value? {
+    get { wrappedValue[key] }
+    set {
+      inLock { state in
+        state.wrappedValue[key] = newValue
+        state.subscribers[key]?.forEach { $0.value(newValue) }
+      }
+    }
+  }
+
+  subscript(_ key: Key, default defaultValue: Value) -> Value {
+    get { inLock { $0.wrappedValue[key, default: defaultValue] } }
+    set {
+      inLock { state in
+        state.wrappedValue[key] = newValue
+        state.subscribers[key]?.forEach { $0.value(newValue) }
+      }
+    }
+  }
+
+  @discardableResult
+  func removeValue(forKey key: Key) -> Value? {
+    inLock { state in
+      let value = state.wrappedValue.removeValue(forKey: key)
+      state.subscribers[key]?.forEach { $0.value(nil) }
+      return value
     }
   }
 

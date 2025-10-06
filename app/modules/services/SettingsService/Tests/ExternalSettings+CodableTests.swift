@@ -19,7 +19,14 @@ struct ExternalSettingsCodableTests {
       allowAnonymousAnalytics: false,
       automaticallyCheckForUpdates: false,
       preferedProviders: .init([.claudeHaiku_3_5: .anthropic, .gpt: .openAI]),
-      llmProviderSettings: [:])
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+        .openAI: .init(apiKey: "test-openai-api-key", baseUrl: "https://api.openai.com", executable: nil, createdOrder: 2),
+      ])
 
     let json = """
       {
@@ -31,7 +38,18 @@ struct ExternalSettingsCodableTests {
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
         "userDefinedXcodeShortcuts" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          },
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 2
+          }
+        },
         "mcpServers" : {},
         "preferedProviders" : {
           "anthropic/claude-3.5-haiku" : "anthropic",
@@ -163,6 +181,13 @@ struct ExternalSettingsCodableTests {
   func testDecodingWithPartialData() throws {
     let json = """
       {
+        "llmProviderSettings" : {
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 1
+          }
+        },
         "preferedProviders" : {
           "openai/gpt-5" : "openai"
         }
@@ -173,7 +198,13 @@ struct ExternalSettingsCodableTests {
       allowAnonymousAnalytics: true, // default
       automaticallyCheckForUpdates: true, // default
       preferedProviders: .init([.gpt: .openAI]),
-      llmProviderSettings: [:], // default,
+      llmProviderSettings: [
+        .openAI: .init(
+          apiKey: "test-openai-api-key",
+          baseUrl: "https://api.openai.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       enabledModels: [], // default
     )
 
@@ -225,6 +256,11 @@ struct ExternalSettingsCodableTests {
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
+        .openAI: Settings.AIProviderSettings(
+          apiKey: "openai-key",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
         .openRouter: Settings.AIProviderSettings(
           apiKey: "openrouter-key",
           baseUrl: "https://openrouter.ai/api/v1",
@@ -273,6 +309,13 @@ struct ExternalSettingsCodableTests {
       allowAnonymousAnalytics: true,
       automaticallyCheckForUpdates: true,
       preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       reasoningModels: .init([
         .claudeOpus: .init(isEnabled: true),
         .gpt: .init(isEnabled: false),
@@ -286,7 +329,13 @@ struct ExternalSettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "preferedProviders" : {
           "anthropic/claude-3.5-haiku" : "anthropic"
@@ -301,7 +350,7 @@ struct ExternalSettingsCodableTests {
         },
         "toolPreferences": [],
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -455,7 +504,13 @@ struct ExternalSettingsCodableTests {
     let settings = ExternalSettings(
       allowAnonymousAnalytics: false,
       preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
-      llmProviderSettings: [:],
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       customInstructions: customInstructions)
 
     let json = """
@@ -470,14 +525,20 @@ struct ExternalSettingsCodableTests {
         },
         "keyboardShortcuts" : {},
         "enabledModels" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "preferedProviders" : {
           "anthropic/claude-3.5-haiku" : "anthropic"
         },
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -516,7 +577,13 @@ struct ExternalSettingsCodableTests {
           "agentMode" : "Prioritize performance and efficiency"
         },
         "enabledModels" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 1
+          }
+        },
         "preferedProviders" : {
           "openai/gpt-5" : "openai"
         }
@@ -526,7 +593,13 @@ struct ExternalSettingsCodableTests {
     let expectedSettings = ExternalSettings(
       allowAnonymousAnalytics: false,
       preferedProviders: .init([.gpt: .openAI]),
-      llmProviderSettings: [:],
+      llmProviderSettings: [
+        .openAI: .init(
+          apiKey: "test-openai-api-key",
+          baseUrl: "https://api.openai.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       customInstructions: Settings.CustomInstructions(
         askModePrompt: nil,
         agentModePrompt: "Prioritize performance and efficiency"))
@@ -545,7 +618,13 @@ struct ExternalSettingsCodableTests {
     let settings = ExternalSettings(
       allowAnonymousAnalytics: false,
       preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
-      llmProviderSettings: [:],
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       toolPreferences: toolPreferences)
 
     let json = """
@@ -556,7 +635,13 @@ struct ExternalSettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "preferedProviders" : {
           "anthropic/claude-3.5-haiku" : "anthropic"
@@ -577,7 +662,7 @@ struct ExternalSettingsCodableTests {
           }
         ],
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 

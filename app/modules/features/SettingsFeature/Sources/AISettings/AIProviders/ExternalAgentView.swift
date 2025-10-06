@@ -63,6 +63,7 @@ struct ExternalAgentView: View {
       } else if let executablePath = executableFinder.executablePath {
         HStack {
           Text("\(provider.name)'s executable was found at \(executablePath)")
+            .textSelection(.enabled)
             .fontWeight(.medium)
 
           Spacer()

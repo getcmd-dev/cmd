@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express"
 import { logError, logInfo, saveLogToFile } from "../../../logger"
-import { ModelProvider } from "../../providers/provider"
+import { AIProvider } from "../../providers/provider"
 import {
 	InternalContent,
 	Message,
@@ -40,7 +40,7 @@ import {
 	registerEndpoint as registerClaudeCodeEndpoint,
 } from "./claudeCode/sendMessageToClaudeCode"
 
-export const registerEndpoint = (router: Router, modelProviders: ModelProvider[], getPort: () => number) => {
+export const registerEndpoint = (router: Router, modelProviders: AIProvider[], getPort: () => number) => {
 	registerClaudeCodeEndpoint(router)
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {

@@ -7,11 +7,7 @@ import ThreadSafe
 @ThreadSafe
 public final class ToolsPlugin: Sendable {
 
-  #if DEBUG
   public init() { }
-  #else
-  init() { }
-  #endif
 
   /// All registered tools in the plugin.
   /// - Returns: An array containing all tools currently registered in the plugin.
