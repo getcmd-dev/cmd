@@ -177,6 +177,14 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
     self.xcodeCommandIndex = xcodeCommandIndex
   }
 
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      name: container.decode(String.self, forKey: .name),
+      command: container.decode(String.self, forKey: .command),
+      xcodeCommandIndex: container.decode(Int.self, forKey: .xcodeCommandIndex))
+  }
+
   public let id: UUID
   public var name: String
   public var command: String

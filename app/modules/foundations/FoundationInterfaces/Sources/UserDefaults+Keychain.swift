@@ -89,6 +89,6 @@ extension UserDefaults {
     //
     // Since the DefaultSettingService can load keys eagerly, whether from the host app or the extension,
     // we mitigate the issue by only making the keychain available to the host app which is the only context in which it is needed.
-    Bundle.main.bundleIdentifier == Bundle.main.object(forInfoDictionaryKey: "APP_BUNDLE_IDENTIFIER") as? String
+    Bundle.main.isHostApp
   }
 }

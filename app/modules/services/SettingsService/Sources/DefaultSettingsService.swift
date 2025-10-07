@@ -25,25 +25,29 @@ final class DefaultSettingsService: SettingsService {
   convenience init(
     fileManager: FileManagerI,
     sharedUserDefaults: UserDefaultsI,
-    releaseSharedUserDefaults: UserDefaultsI?)
+    releaseSharedUserDefaults: UserDefaultsI?,
+    bundle: Bundle = .main)
   {
     self.init(
       fileManager: fileManager,
       settingsFileLocation: fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json"),
       sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: releaseSharedUserDefaults)
+      releaseSharedUserDefaults: releaseSharedUserDefaults,
+      bundle: bundle)
   }
 
-  package init(
+  init(
     fileManager: FileManagerI,
     settingsFileLocation: URL,
     sharedUserDefaults: UserDefaultsI,
-    releaseSharedUserDefaults: UserDefaultsI?)
+    releaseSharedUserDefaults: UserDefaultsI?,
+    bundle: Bundle = .main)
   {
     self.fileManager = fileManager
     self.settingsFileLocation = settingsFileLocation
     self.sharedUserDefaults = sharedUserDefaults
     self.releaseSharedUserDefaults = releaseSharedUserDefaults
+    self.bundle = bundle
     settings = CurrentValueSubject<Settings, Never>(defaultSettings)
     settings.send(loadSettings())
 
@@ -53,7 +57,11 @@ final class DefaultSettingsService: SettingsService {
   // MARK: - Constants
 
   enum Keys {
+    /// The key for the old location of the settings, still used for migrating old clients.
     static let appWideSettings = "appWideSettings"
+    /// Sandboxed processes, such as the Xcode extension, cannot read the settings from disk.
+    /// They instead read a read-only copy written to user defaults at this key.
+    static let externalSettingsForSandboxedProcesses = "externalSettingsForSandboxedProcesses"
     static let internalSettings = "internalSettings"
   }
 
@@ -102,6 +110,8 @@ final class DefaultSettingsService: SettingsService {
     update(to: defaultSettings)
   }
 
+  private let bundle: Bundle
+
   /// Decode the value here to ensure that we are using the default values used in decoding.
   private let defaultSettings = Settings(externalSettings: .defaultSettings, internalSettings: .defaultSettings)
 
@@ -112,11 +122,15 @@ final class DefaultSettingsService: SettingsService {
   private let settingsFileLocation: URL
   private let sharedUserDefaults: UserDefaultsI
   private let releaseSharedUserDefaults: UserDefaultsI?
+  /// Whether the notification for updates from user defaults should be skipped.
+  /// (used to avoid infinite loop when updating users default from the settings service)
+  private var skipUpdateFromUserDefaults = false
 
   private func loadSettings() -> Settings {
     if
       let settings = loadAndMigrateLegacySettings()
     {
+      defaultLogger.log("Loaded from legacy storage")
       return settings
     }
 
@@ -133,7 +147,19 @@ final class DefaultSettingsService: SettingsService {
     internalSettings.pointReleaseXcodeExtensionToDebugApp = sharedUserDefaults
       .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
-    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: settingsFileLocation))
+    let data: Data? =
+      if bundle.isHostApp {
+        try? fileManager.read(dataFrom: settingsFileLocation)
+      } else {
+        // The Xcode extension is sandboxed and cannot read the settings from disk. It reads a copy written to user defaults.
+        sharedUserDefaults.data(forKey: Keys.externalSettingsForSandboxedProcesses)
+      }
+    if data == nil {
+      // This is expected to happen on first app launch.
+      defaultLogger.log("No settings found. Starting with default values.")
+    }
+
+    var externalSettings: ExternalSettings = data
       .map { data in
         do {
           return try JSONDecoder().decode(ExternalSettings.self, from: data)
@@ -142,6 +168,10 @@ final class DefaultSettingsService: SettingsService {
           return nil
         }
       } ??? .defaultSettings
+
+    if let data {
+      saveSettingsForSandboxedProcesses(data)
+    }
 
     // Load API keys from the keychain.
     for provider in AIProvider.allCases {
@@ -157,8 +187,26 @@ final class DefaultSettingsService: SettingsService {
     return Settings(externalSettings: externalSettings, internalSettings: internalSettings)
   }
 
+  /// Write the settings to a location accessible by sandboxed processes.
+  /// It is important that the `ExternalSettings` has been stripped of private keys prior to calling this function.
+  private func saveSettingsForSandboxedProcesses(_ settings: ExternalSettings) {
+    guard bundle.isHostApp else { return }
+    do {
+      try saveSettingsForSandboxedProcesses(JSONEncoder().encode(settings))
+    } catch {
+      defaultLogger.error("Failed to save settings for sandboxed processes", error)
+    }
+  }
+
+  /// Write the settings to a location accessible by sandboxed processes.
+  private func saveSettingsForSandboxedProcesses(_ data: Data) {
+    guard bundle.isHostApp else { return }
+    sharedUserDefaults.set(data, forKey: Keys.externalSettingsForSandboxedProcesses)
+  }
+
   private func loadAndMigrateLegacySettings() -> Settings? {
     if let data = sharedUserDefaults.data(forKey: Keys.appWideSettings) {
+      defaultLogger.log("Starting to migrate settings to the new location")
       do {
         let settings: Settings = try {
           var settings = try JSONDecoder().decode(Settings.self, from: data)
@@ -194,7 +242,7 @@ final class DefaultSettingsService: SettingsService {
         }
         return settings
       } catch {
-        defaultLogger.error(error)
+        defaultLogger.error("failed to migrate settings", error)
       }
     }
     return nil
@@ -233,6 +281,7 @@ final class DefaultSettingsService: SettingsService {
 
     // External settings are written to json files at known locations, that can easily be edited by users.
     try publicSettings.externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
+    saveSettingsForSandboxedProcesses(publicSettings.externalSettings)
 
     // Store this value separately in user defaults, as it can also be accessed by the release version.
     sharedUserDefaults.set(
@@ -251,10 +300,11 @@ final class DefaultSettingsService: SettingsService {
   /// This can be moved back to init once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func observeChangesToUserDefaults() {
     notificationObserver = sharedUserDefaults.onChange { [weak self] in
-      guard let self else { return }
-
+      guard let self, !self.skipUpdateFromUserDefaults else { return }
+      skipUpdateFromUserDefaults = true
       let newSettings = loadSettings()
       settings.send(newSettings)
+      skipUpdateFromUserDefaults = false
     }
   }
 

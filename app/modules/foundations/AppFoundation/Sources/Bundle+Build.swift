@@ -13,12 +13,27 @@ extension Bundle {
 
   /// The bundle identifier for the host app. This is also the prefix of any identifier for other targets.
   public var hostAppBundleId: String {
-    infoDictionary?["APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
+    infoDictionary?["HOST_APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
+  }
+
+  /// The bundle identifier for the xcode extension. This is also the prefix of any identifier for other targets.
+  public var xcodeExtensionBundleId: String {
+    infoDictionary?["XCODE_EXTENSION_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command.Extension"
+  }
+
+  /// Whether the current process is the Xcode extension.
+  public var isXcodeExtension: Bool {
+    bundleIdentifier == xcodeExtensionBundleId
+  }
+
+  /// Whether the current process is the host application (the main application).
+  public var isHostApp: Bool {
+    bundleIdentifier == hostAppBundleId
   }
 
   /// The bundle identifier for the RELEASE host app. This is also the prefix of any identifier for other targets in RELEASE.
   public var releaseHostAppBundleId: String {
-    infoDictionary?["RELEASE_APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
+    infoDictionary?["RELEASE_HOST_APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
   }
 
   /// The app type, which maps to the Sparkle update channel (e.g., "stable" or "dev")

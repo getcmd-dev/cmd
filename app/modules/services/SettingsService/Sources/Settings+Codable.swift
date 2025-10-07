@@ -99,7 +99,7 @@ extension KeyedDecodingContainer where K == String {
     do {
       return try decodeIfPresent(T.self, forKey: key)
     } catch {
-      defaultLogger.error("Failed to decode \(T.self) for key \(key) at \(codingPath): \(error)")
+      defaultLogger.error("Failed to decode \(T.self) for key \(key.stringValue) at \(codingPath): \(error)")
       return nil
     }
   }

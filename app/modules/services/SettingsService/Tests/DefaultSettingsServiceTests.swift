@@ -437,7 +437,8 @@ struct DefaultSettingsServiceTests {
       fileManager: fileManager,
       settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: nil)
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
 
     // then
     // Verify all provider API keys are properly deserialized from keychain
@@ -454,6 +455,51 @@ struct DefaultSettingsServiceTests {
     #expect(sut.value(for: \.llmProviderSettings[.groq]?.createdOrder) == 4)
     #expect(sut.value(for: \.llmProviderSettings[.gemini]?.createdOrder) == 5)
   }
+
+  @Test("Xcode extension reads from user defaults")
+  @MainActor
+  func test_xcodeExtensionReadsFromUserDefaults() async throws {
+    // given
+    let fileManager = MockFileManager()
+    let settingsFileLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
+    let sharedUserDefaults = MockUserDefaults()
+
+    // Store internal settings in UserDefaults
+    let internalSettingsJSON = """
+      {
+        "pointReleaseXcodeExtensionToDebugApp" : false
+      }
+      """
+    let internalData = try #require(internalSettingsJSON.data(using: .utf8))
+    sharedUserDefaults.set(internalData, forKey: DefaultSettingsService.Keys.internalSettings)
+
+    // Store external settings on disk
+    let externalSettingsJSON = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates": true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "fileEditMode": "direct I/O",
+        "llmProviderSettings" : {}
+      }
+      """
+
+    let externalData = try #require(externalSettingsJSON.data(using: .utf8))
+    sharedUserDefaults.set(externalData, forKey: DefaultSettingsService.Keys.externalSettingsForSandboxedProcesses)
+
+    // when
+    let sut = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil,
+      bundle: .testXcodeExtension)
+
+    // then
+    #expect(sut.value(for: \.allowAnonymousAnalytics) == false)
+    // Helps ensure that we indeed decoded the value, and didn't fallback to default
+    #expect(sut.value(for: \.allowAnonymousAnalytics) != ExternalSettings.defaultSettings.allowAnonymousAnalytics)
+  }
 }
 
 extension DefaultSettingsService {
@@ -466,4 +512,48 @@ extension DefaultSettingsService {
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
   }
+}
+
+// MARK: - TestBundle
+
+class TestBundle: Bundle, @unchecked Sendable {
+  init(_ infoDictionary: [String: Any]?, bundleIdentifier: String) {
+    _infoDictionary = infoDictionary
+    _bundleIdentifier = bundleIdentifier
+    super.init()
+  }
+
+  override var infoDictionary: [String: Any]? {
+    _infoDictionary
+  }
+
+  override var bundleIdentifier: String? {
+    _bundleIdentifier
+  }
+
+  private let _infoDictionary: [String: Any]?
+
+  private let _bundleIdentifier: String
+
+}
+
+extension Bundle {
+  static let testMain: Bundle = TestBundle(
+    [
+      "XCODE_EXTENSION_PRODUCT_NAME": "Xcode extension",
+      "HOST_APP_BUNDLE_IDENTIFIER": "com.test.app",
+      "XCODE_EXTENSION_BUNDLE_IDENTIFIER": "com.test.xcode-extension",
+      "RELEASE_HOST_APP_BUNDLE_IDENTIFIER": "com.test.app",
+      "APP_DISTRIBUTION_CHANNEL": "dev",
+    ],
+    bundleIdentifier: "com.test.app")
+  static let testXcodeExtension: Bundle = TestBundle(
+    [
+      "XCODE_EXTENSION_PRODUCT_NAME": "Xcode extension",
+      "HOST_APP_BUNDLE_IDENTIFIER": "com.test.app",
+      "XCODE_EXTENSION_BUNDLE_IDENTIFIER": "com.test.xcode-extension",
+      "RELEASE_HOST_APP_BUNDLE_IDENTIFIER": "com.test.app",
+      "APP_DISTRIBUTION_CHANNEL": "dev",
+    ],
+    bundleIdentifier: "com.test.xcode-extension")
 }

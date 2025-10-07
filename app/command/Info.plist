@@ -2,14 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>APP_BUNDLE_IDENTIFIER</key>
+	<key>HOST_APP_BUNDLE_IDENTIFIER</key>
 	<string>$(HOST_APP_BUNDLE_IDENTIFIER)</string>
 	<key>APP_DISTRIBUTION_CHANNEL</key>
 	<string>$(APP_DISTRIBUTION_CHANNEL)</string>
 	<key>DebugUserDefaultsSharedSuiteName</key>
 	<string>$(INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName)</string>
-	<key>RELEASE_APP_BUNDLE_IDENTIFIER</key>
-	<string>$(RELEASE_APP_BUNDLE_IDENTIFIER)</string>
+	<key>RELEASE_HOST_APP_BUNDLE_IDENTIFIER</key>
+	<string>$(RELEASE_HOST_APP_BUNDLE_IDENTIFIER)</string>
 	<key>ReleaseUserDefaultsSharedSuiteName</key>
 	<string>$(INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName)</string>
 	<key>SUFeedURL</key>

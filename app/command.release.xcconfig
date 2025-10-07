@@ -8,7 +8,7 @@ RELEASE_SUFFIX =
 SHARED_USER_DEFAULTS_SUITE = $(RELEASE_SHARED_USER_DEFAULTS_SUITE)
 
 // Bundle identifiers
-HOST_APP_BUNDLE_IDENTIFIER = $(RELEASE_APP_BUNDLE_IDENTIFIER)
+HOST_APP_BUNDLE_IDENTIFIER = $(RELEASE_HOST_APP_BUNDLE_IDENTIFIER)
 XCODE_EXTENSION_BUNDLE_IDENTIFIER = dev.getcmd.command.Extension
 
 // This cannot be identical to the App's product name. So we add an invisible utf8 character (not visible in Xcode).

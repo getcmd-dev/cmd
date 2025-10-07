@@ -65,7 +65,8 @@ struct SettingsMigrationTests {
       fileManager: fileManager,
       settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: nil)
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
 
     // Give migration task time to complete
     try await fulfillment(of: didRemoveOldEntryFromUserDefaults)
