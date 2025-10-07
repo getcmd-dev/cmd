@@ -31,6 +31,40 @@ def load_secret(env_key)
   ENV[env_key] = decoded
 end
 
+# Find a version that doesn't conflict with existing tag, branch, or release
+def find_available_version(initial_version)
+  version = initial_version
+
+  loop do
+    existing_tag = silent_sh("git ls-remote origin refs/tags/v#{version}").strip
+    existing_branch = silent_sh("git ls-remote origin refs/heads/release-v#{version}").strip
+
+    # Check if GitHub release exists by attempting to fetch the release URL
+    existing_release = begin
+      http_status = silent_sh("curl -o /dev/null -s -w '%{http_code}' https://github.com/getcmd-dev/cmd/releases/tag/v#{version}").strip
+      http_status == "200"
+    rescue
+      false
+    end
+
+    if existing_tag.empty? && existing_branch.empty? && !existing_release
+      puts "Using version: #{version}"
+      return version
+    else
+      conflicts = []
+      conflicts << "tag" unless existing_tag.empty?
+      conflicts << "branch" unless existing_branch.empty?
+      conflicts << "release" if existing_release
+
+      version_parts = version.split(".")
+      version_parts[-1] = (version_parts[-1].to_i + 1).to_s
+      new_version = version_parts.join(".")
+      puts "Version #{version} conflicts with existing #{conflicts.join(', ')}. Bumping to #{new_version}."
+      version = new_version
+    end
+  end
+end
+
 platform :mac do
   desc "Build the app in Debug configuration"
   lane :build_debug do
@@ -206,19 +240,12 @@ platform :mac do
     app_config_path = File.absolute_path("../command.shared.xcconfig")
     sh("sed -i '' 's/APP_DISTRIBUTION_CHANNEL=.*/APP_DISTRIBUTION_CHANNEL=stable/' #{app_config_path}")
 
-    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
-    # Look for an existing version tag. If one exist, bump the version.
-    existing_version = sh("git ls-remote origin refs/tags/v#{version}").strip
-    if existing_version.empty?
-      puts "Using version: #{version}"
-    else
-      version_parts = version.split(".")
-      version_parts[-1] = (version_parts[-1].to_i + 1).to_s
-      new_version = version_parts.join(".")
-      puts "Bumping version from #{version} to #{new_version}."
+    original_version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+    version = find_available_version(original_version)
 
-      sh("sed -i '' 's/APP_VERSION=#{version}/APP_VERSION=#{new_version}/' #{app_config_path}")
-      version = new_version
+    # Update config file if version changed
+    if version != original_version
+      sh("sed -i '' 's/APP_VERSION=#{original_version}/APP_VERSION=#{version}/' #{app_config_path}")
     end
 
     ENV["UPLOAD_SOURCEMAP_TO_SENTRY"] = "true"

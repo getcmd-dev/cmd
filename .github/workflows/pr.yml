@@ -57,6 +57,7 @@ jobs:
         FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
 
   test-swift:
     runs-on: macos-26

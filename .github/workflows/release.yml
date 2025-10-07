@@ -58,3 +58,4 @@ jobs:
         SPARKLE_SECRET_KEY: ${{ secrets.SPARKLE_SECRET_KEY }}
         GH_WRITE_TOKEN: ${{ secrets.GH_WRITE_TOKEN }}
         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
