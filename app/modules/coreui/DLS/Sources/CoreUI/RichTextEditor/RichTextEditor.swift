@@ -194,24 +194,27 @@ public struct RichTextEditor: NSViewRepresentable {
     guard let textView = textView as? RichTextView else { return }
 
     if textView.string != text.string {
-      let string = NSMutableAttributedString(attributedString: text)
-      string.enumerateAttributes(in: NSRange(location: 0, length: string.length), options: []) { attributes, range, _ in
-        var newAttributes = [NSAttributedString.Key: Any]()
-        // Default values.
-        newAttributes[.font] = textView.font
-        newAttributes[.foregroundColor] = textView.textColor
+      // Skip text updates while IME composition is in progress to prevent losing marked text
+      if !textView.hasMarkedText() {
+        let string = NSMutableAttributedString(attributedString: text)
+        string.enumerateAttributes(in: NSRange(location: 0, length: string.length), options: []) { attributes, range, _ in
+          var newAttributes = [NSAttributedString.Key: Any]()
+          // Default values.
+          newAttributes[.font] = textView.font
+          newAttributes[.foregroundColor] = textView.textColor
 
-        // Don't update values for locked attributes.
-        (attributes[.lockedAttributes] as? [NSAttributedString.Key])?.forEach { lockedAttribute in
-          newAttributes.removeValue(forKey: lockedAttribute)
+          // Don't update values for locked attributes.
+          (attributes[.lockedAttributes] as? [NSAttributedString.Key])?.forEach { lockedAttribute in
+            newAttributes.removeValue(forKey: lockedAttribute)
+          }
+          string.setAttributes(attributes.merging(newAttributes, uniquingKeysWith: { _, b in b }), range: range)
         }
-        string.setAttributes(attributes.merging(newAttributes, uniquingKeysWith: { _, b in b }), range: range)
-      }
 
-      textView.undoManager?.beginUndoGrouping()
-      textView.replaceCharacters(in: nil, with: string)
-      textView.undoManager?.endUndoGrouping()
-      textView.didChangeText()
+        textView.undoManager?.beginUndoGrouping()
+        textView.replaceCharacters(in: nil, with: string)
+        textView.undoManager?.endUndoGrouping()
+        textView.didChangeText()
+      }
     }
 
     if needsFocus {
@@ -306,6 +309,13 @@ private class RichTextView: NSTextView {
   }
 
   override func keyDown(with event: NSEvent) {
+    // First, let the input method handle the event if there's marked text (composition in progress)
+    // This ensures IME events (like ESC to cancel composition) don't trigger custom key handlers
+    if hasMarkedText() {
+      super.keyDown(with: event)
+      return
+    }
+
     guard let onKeyDown, let firstChar = event.charactersIgnoringModifiers?.first else {
       super.keyDown(with: event)
       return
