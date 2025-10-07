@@ -59,7 +59,7 @@ def find_available_version(initial_version)
       version_parts = version.split(".")
       version_parts[-1] = (version_parts[-1].to_i + 1).to_s
       new_version = version_parts.join(".")
-      puts "Version #{version} conflicts with existing #{conflicts.join(', ')}. Bumping to #{new_version}."
+      puts "Version #{version} conflicts with existing #{conflicts.join(", ")}. Bumping to #{new_version}."
       version = new_version
     end
   end
