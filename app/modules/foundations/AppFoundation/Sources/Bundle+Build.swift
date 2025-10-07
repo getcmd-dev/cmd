@@ -16,7 +16,7 @@ extension Bundle {
     infoDictionary?["HOST_APP_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command"
   }
 
-  /// The bundle identifier for the xcode extension. This is also the prefix of any identifier for other targets.
+  /// The bundle identifier for the Xcode extension. This is also the prefix of any identifier for other targets.
   public var xcodeExtensionBundleId: String {
     infoDictionary?["XCODE_EXTENSION_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command.Extension"
   }

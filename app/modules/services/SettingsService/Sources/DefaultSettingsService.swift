@@ -242,7 +242,7 @@ final class DefaultSettingsService: SettingsService {
         }
         return settings
       } catch {
-        defaultLogger.error("failed to migrate settings", error)
+        defaultLogger.error("Failed to migrate settings", error)
       }
     }
     return nil
