@@ -83,9 +83,9 @@ final class AppLauncherXPCService: NSObject, AppLauncherXPCServer, @unchecked Se
   }
 
   func ping(id: String, reply: @escaping @Sendable (String) -> Void) {
-    defaultLogger.log("Received ping request \(id)")
+    logger.log("Received ping request \(id)")
     reply(id)
-    defaultLogger.log("Responded to ping request \(id)")
+    logger.log("Responded to ping request \(id)")
   }
 
   private let logger = defaultLogger.subLogger(subsystem: "xpc")

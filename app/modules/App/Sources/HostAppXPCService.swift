@@ -76,7 +76,7 @@ public final class HostAppXPCService: NSObject, @unchecked Sendable {
 
   private func connectUntilReady(retryCount: Int) async throws {
     guard retryCount < 5 else {
-      throw AppError("Cound not connect to app launcher")
+      throw AppError("Could not connect to app launcher")
     }
     do {
       if retryCount > 0 {

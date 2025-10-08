@@ -10,7 +10,7 @@ import ServiceManagement
 
 /// Manages the launch agent registration with launchd.
 /// This allows a background helper process to run at login and provide services.
-/// The launch agent can be comminunicated with via XPC.
+/// The launch agent can be communicated with via XPC.
 public struct AppLauncherManager: Sendable {
   public init(userDefaults: UserDefaultsI) {
     self.userDefaults = userDefaults

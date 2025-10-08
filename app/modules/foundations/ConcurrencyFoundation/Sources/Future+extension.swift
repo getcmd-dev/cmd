@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Combine
+import Foundation
 
 extension Future {
 
@@ -17,7 +18,7 @@ extension Future {
 
   /// Return a Future and continuation handler.
   /// The future is resolved when the handler is called.
-  /// The handler should be called exactly once other wise the app will crash.
+  /// The handler should be called exactly once otherwise the app will crash.
   public static func make() -> (Future<Output, Failure>, @Sendable (Result<Output, Failure>) -> Void) {
     var promise: (Result<Output, Failure>) -> Void = { _ in }
     let future = Future { p in
@@ -57,10 +58,16 @@ extension Future {
   }
 }
 
-public func withRacedThrowingContinuation<T, E: Error>(_ body: (RacedContinuation<T, E>) -> Void) async throws -> T {
-  let (future, continuation) = Future<T, E>.makeRacingContinuations()
+public func withRacedThrowingContinuation<T>(_ body: (RacedContinuation<T, any Error>) -> Void) async throws -> T {
+  let (future, continuation) = Future<T, any Error>.makeRacingContinuations()
   body(continuation)
   return try await future.value
+}
+
+public func withRacedContinuation<T>(_ body: (RacedContinuation<T, Never>) -> Void) async throws -> T {
+  let (future, continuation) = Future<T, Never>.makeRacingContinuations()
+  body(continuation)
+  return await future.value
 }
 
 // MARK: - RacedContinuation
@@ -128,7 +135,13 @@ extension RacedContinuation where E == Error {
   public func timeout(afterNanoseconds nanoseconds: UInt64) {
     Task {
       try await Task.sleep(nanoseconds: nanoseconds)
-      resume(throwing: CancellationError())
+      resume(throwing: TimeoutError())
     }
   }
+}
+
+// MARK: - TimeoutError
+
+public struct TimeoutError: Error, LocalizedError {
+  public var errorDescription: String? { "The operation has timed out." }
 }

@@ -56,7 +56,7 @@ extension NSXPCConnection {
     try await withRacedThrowingContinuation { continuation in
       continuation.timeout(afterNanoseconds: timeoutNanoseconds)
       let proxy = self.remoteObjectProxyWithErrorHandler { error in
-        defaultLogger.error("[XPC] Error getting remote proxy for version check", error)
+        defaultLogger.error("[XPC] Error getting remote proxy", error)
         continuation.resume(throwing: error)
       }
 
