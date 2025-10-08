@@ -67,7 +67,7 @@ public struct Settings: Sendable, Equatable {
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
     self.fileEditMode = fileEditMode
-    self.preferedProviders = preferedProviders
+    self.preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
