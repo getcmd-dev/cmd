@@ -287,6 +287,11 @@ final class DefaultSettingsService: SettingsService {
     sharedUserDefaults.set(
       settings.pointReleaseXcodeExtensionToDebugApp,
       forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+
+    // Store defaultLogLevel in user defaults for logger access
+    sharedUserDefaults.set(
+      settings.defaultLogLevel.rawValue,
+      forKey: .defaultLogLevel)
     #if DEBUG
     /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
 

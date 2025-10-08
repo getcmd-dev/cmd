@@ -42,6 +42,15 @@ public final class SettingsViewModel {
     enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
     showToolInputCopyButtonInRelease = userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
 
+    if
+      let storedLevel = userDefaults.string(forKey: .defaultLogLevel),
+      let level = LogLevel(rawValue: storedLevel)
+    {
+      defaultLogLevel = level
+    } else {
+      defaultLogLevel = .info
+    }
+
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
       toolsPlugin: toolsPlugin)
@@ -156,6 +165,14 @@ public final class SettingsViewModel {
   var showToolInputCopyButtonInRelease: Bool {
     didSet {
       userDefaults.set(showToolInputCopyButtonInRelease, forKey: .showToolInputCopyButtonInRelease)
+    }
+  }
+
+  var defaultLogLevel: LogLevel {
+    didSet {
+      userDefaults.set(defaultLogLevel.rawValue, forKey: .defaultLogLevel)
+      settings.defaultLogLevel = defaultLogLevel
+      settingsService.update(setting: \.defaultLogLevel, to: defaultLogLevel)
     }
   }
 
