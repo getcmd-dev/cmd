@@ -376,7 +376,7 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
   }
 
   func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
-    updateLogger.info("Updater error: \(error.localizedDescription)")
+    updateLogger.error("Updater error", error)
     acknowledgement()
   }
 

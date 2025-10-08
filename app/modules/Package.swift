@@ -831,6 +831,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "JSONFoundation",
     "LLMFoundation",
+    "LoggingServiceInterface",
   ],
   testDependencies: [
     "LLMFoundation",
@@ -991,6 +992,7 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
   ],
   testDependencies: [
+    "ConcurrencyFoundation",
     "FoundationInterfaces",
   ],
   path: "./services/LoggingService"))

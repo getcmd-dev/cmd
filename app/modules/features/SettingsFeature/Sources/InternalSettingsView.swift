@@ -20,6 +20,7 @@ struct InternalSettingsView: View {
   @Binding var enableAnalyticsAndCrashReporting: Bool
   @Binding var enableNetworkProxy: Bool
   @Binding var showToolInputCopyButtonInRelease: Bool
+  @Binding var defaultLogLevel: LogLevel
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -55,6 +56,24 @@ struct InternalSettingsView: View {
           "Show tool input copy button in Release",
           caption: "Display the copy button for tool inputs in Release builds",
           value: $showToolInputCopyButtonInRelease)
+
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Default log level for file persistence")
+          Text("Controls which log messages are written to log files and shown in Console.app")
+            .font(.caption)
+            .foregroundColor(.secondary)
+          Picker("Log Level", selection: $defaultLogLevel) {
+            Text("Trace").tag(LogLevel.trace)
+            Text("Debug").tag(LogLevel.debug)
+            Text("Info").tag(LogLevel.info)
+            Text("Warn").tag(LogLevel.warn)
+            Text("Error").tag(LogLevel.error)
+            Text("Critical").tag(LogLevel.critical)
+          }
+          .pickerStyle(.menu)
+          .padding(.top, 14)
+          .padding(.bottom, 4)
+        }
 
         #if DEBUG
         InternalSettingsRow(

@@ -12,5 +12,6 @@ Target.module(
     "ThreadSafe",
   ],
   testDependencies: [
+    "ConcurrencyFoundation",
     "FoundationInterfaces",
   ])

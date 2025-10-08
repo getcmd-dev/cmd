@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LLMFoundation
+import LoggingServiceInterface
 import SwiftUI
 
 // MARK: - FileEditMode
@@ -60,7 +61,8 @@ public struct Settings: Sendable, Equatable {
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
-    mcpServers: [String: MCPServerConfiguration] = [:])
+    mcpServers: [String: MCPServerConfiguration] = [:],
+    defaultLogLevel: LogLevel = .info)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -76,6 +78,7 @@ public struct Settings: Sendable, Equatable {
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
+    self.defaultLogLevel = defaultLogLevel
   }
 
   public struct AIProviderSettings: Sendable, Codable, Equatable {
@@ -135,6 +138,8 @@ public struct Settings: Sendable, Equatable {
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   public var mcpServers: [String: MCPServerConfiguration]
+
+  public var defaultLogLevel: LogLevel
 
   public var llmProviderSettings: [AIProvider: AIProviderSettings] {
     didSet {
@@ -306,6 +311,7 @@ extension UserDefaultsKey {
   public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
   public static let enableNetworkProxy = "enableNetworkProxy"
   public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
+  public static let defaultLogLevel = "defaultLogLevel"
 }
 
 // MARK: - KeyEquivalent + Codable
