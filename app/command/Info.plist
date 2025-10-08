@@ -20,6 +20,10 @@
 	<string>$(INFOPLIST_KEY_UserDefaultsSharedSuiteName)</string>
 	<key>XCODE_EXTENSION_PRODUCT_NAME</key>
 	<string>$(XCODE_EXTENSION_PRODUCT_NAME)</string>
+	<key>AppLauncherVersion</key>
+	<string>$(APPLAUNCHER_VERSION)</string>
+	<key>LAUNCH_AGENT_BUNDLE_IDENTIFIER</key>
+	<string>$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)</string>
 	<key>bugsnag</key>
 	<dict>
 		<key>apiKey</key>

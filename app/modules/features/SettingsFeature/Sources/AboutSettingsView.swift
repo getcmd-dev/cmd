@@ -13,6 +13,7 @@ struct AboutSettingsView: View {
   @Binding var allowAnonymousAnalytics: Bool
   @Binding var automaticallyCheckForUpdates: Bool
   @Binding var fileEditMode: FileEditMode
+  @Binding var launchHostAppWhenXcodeDidActivate: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -70,6 +71,21 @@ struct AboutSettingsView: View {
             }
             Spacer()
             Toggle("", isOn: $automaticallyCheckForUpdates)
+              .toggleStyle(.switch)
+          }
+
+          Divider()
+
+          HStack {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Launch `cmd` when Xcode becomes active")
+              Text(
+                "Ensure that `cmd` is running when you use Xcode.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            Spacer()
+            Toggle("", isOn: $launchHostAppWhenXcodeDidActivate)
               .toggleStyle(.switch)
           }
         }

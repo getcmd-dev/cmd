@@ -12,6 +12,7 @@ Target.module(
     "LoggingServiceInterface",
     "SettingsService",
     "SettingsServiceInterface",
+    "SharedUtilsFoundation",
     "SharedValuesFoundation",
     "ThreadSafe",
   ])

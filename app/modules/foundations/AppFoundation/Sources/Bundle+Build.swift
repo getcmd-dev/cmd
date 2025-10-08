@@ -21,6 +21,11 @@ extension Bundle {
     infoDictionary?["XCODE_EXTENSION_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command.Extension"
   }
 
+  /// The bundle identifier for the Xcode extension. This is also the prefix of any identifier for other targets.
+  public var appLauncherBundleId: String {
+    infoDictionary?["LAUNCH_AGENT_BUNDLE_IDENTIFIER"] as? String ?? "dev.getcmd.command.appLauncher"
+  }
+
   /// Whether the current process is the Xcode extension.
   public var isXcodeExtension: Bool {
     bundleIdentifier == xcodeExtensionBundleId
@@ -39,6 +44,15 @@ extension Bundle {
   /// The app type, which maps to the Sparkle update channel (e.g., "stable" or "dev")
   public var appType: String {
     infoDictionary?["APP_DISTRIBUTION_CHANNEL"] as? String ?? "stable"
+  }
+
+  /// The path to the host app (used by AppLauncher to launch the main app)
+  public var hostAppPath: String? {
+    infoDictionary?["HOST_APP_PATH"] as? String
+  }
+
+  public var appLauncherVersion: String {
+    infoDictionary?["AppLauncherVersion"] as? String ?? "unknown"
   }
 }
 

@@ -57,6 +57,7 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverService",
     "XcodeObserverServiceInterface",
+    "XPCServiceInterface",
   ],
   resources: [],
   testDependencies: [

@@ -8,6 +8,7 @@ import FoundationInterfaces
 import LLMFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
+import SharedUtilsFoundation
 import SharedValuesFoundation
 import SwiftUI
 import ToolFoundation
@@ -41,6 +42,9 @@ public final class SettingsViewModel {
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
     enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
     showToolInputCopyButtonInRelease = userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
+    launchHostAppWhenXcodeDidActivate = userDefaults.object(forKey: .launchHostAppWhenXcodeDidActivate) == nil
+      ? true
+      : userDefaults.bool(forKey: .launchHostAppWhenXcodeDidActivate)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -156,6 +160,12 @@ public final class SettingsViewModel {
   var showToolInputCopyButtonInRelease: Bool {
     didSet {
       userDefaults.set(showToolInputCopyButtonInRelease, forKey: .showToolInputCopyButtonInRelease)
+    }
+  }
+
+  var launchHostAppWhenXcodeDidActivate: Bool {
+    didSet {
+      userDefaults.set(launchHostAppWhenXcodeDidActivate, forKey: .launchHostAppWhenXcodeDidActivate)
     }
   }
 

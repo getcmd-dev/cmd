@@ -87,6 +87,11 @@ let package = Package(
       targets: [
         "AppExtension",
       ]),
+    .library(
+      name: "AppLauncher",
+      targets: [
+        "AppLauncher",
+      ]),
   ],
   dependencies: [
     .package(url: "https://github.com/appstefan/highlightswift", from: "1.1.0"),

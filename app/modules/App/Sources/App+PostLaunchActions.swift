@@ -10,6 +10,7 @@
 import AppUpdateServiceInterface
 import ChatCompletionServiceInterface
 import Dependencies
+import LoggingServiceInterface
 import XcodeObserverServiceInterface
 
 extension commandApp {
@@ -25,5 +26,16 @@ extension commandApp {
     // Initiate the local HTTP server to support chat completion
     @Dependency(\.chatCompletion) var chatCompletion
     chatCompletion.start()
+
+    // Setup login item for first time if not already enabled
+    // Ensure the launch agent is up to date and enabled
+    Task {
+      do {
+        @Dependency(\.userDefaults) var userDefaults
+        try await AppLauncherManager(userDefaults: userDefaults).enable()
+      } catch {
+        defaultLogger.error("Failed to enable launch agent", error)
+      }
+    }
   }
 }

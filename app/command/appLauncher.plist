@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)</string>
+	<key>Program</key>
+	<string>$(LAUNCH_AGENT_PROGRAM_PATH)</string>
+	<key>MachServices</key>
+	<dict>
+		<key>$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)</key>
+		<true/>
+	</dict>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

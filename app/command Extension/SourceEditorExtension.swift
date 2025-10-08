@@ -5,6 +5,7 @@ import AppExtension
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
+import SharedUtilsFoundation
 import SharedValuesFoundation
 import XcodeKit
 
@@ -70,7 +71,7 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
 
   private func openContainingAppIfNecessary() {
     do {
-      try OpenHostApp.openHostApp()
+      try OpenHostApp.openHostApp { XcodeExtensionError(message: $0) }
     } catch {
       defaultLogger.error("Error opening containing application: \(error)")
     }

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F608C1A62E94E563004F0EDD /* AppLauncher in Frameworks */ = {isa = PBXBuildFile; productRef = F608C1A52E94E563004F0EDD /* AppLauncher */; };
+		F62BF8CB2E95969100392306 /* command app launcher in CopyFiles */ = {isa = PBXBuildFile; fileRef = F65AEADE2E94DC84006B67B5 /* command app launcher */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F63A9B2B2D6F8635000F805D /* XcodeKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4762D6ECDBC002C9691 /* XcodeKit.framework */; };
 		F63A9B2C2D6F8635000F805D /* XcodeKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4762D6ECDBC002C9691 /* XcodeKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F6DA46702D6EDBA100408790 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F64FD4742D6ECDBC002C9691 /* Cocoa.framework */; };
@@ -16,6 +18,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		F62BF8B42E95962000392306 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F6EF7DB72D4C4F2C0074006B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F65AEADD2E94DC84006B67B5;
+			remoteInfo = AppLauncher;
+		};
 		F6DA46792D6EDBA100408790 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F6EF7DB72D4C4F2C0074006B /* Project object */;
@@ -26,6 +35,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		F62BF8CA2E95967C00392306 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = ../Applications;
+			dstSubfolderSpec = 6;
+			files = (
+				F62BF8CB2E95969100392306 /* command app launcher in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F63A9B2D2D6F8635000F805D /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -48,6 +67,16 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F65AEADC2E94DC84006B67B5 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +84,7 @@
 		F61D6E282D74F47C0089003D /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
 		F64FD4742D6ECDBC002C9691 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		F64FD4762D6ECDBC002C9691 /* XcodeKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XcodeKit.framework; path = Library/Frameworks/XcodeKit.framework; sourceTree = DEVELOPER_DIR; };
+		F65AEADE2E94DC84006B67B5 /* command app launcher */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "command app launcher"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F65DBB812D73B78600E47A41 /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
 		F65DBBA72D73B83700E47A41 /* command.shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = command.shared.xcconfig; sourceTree = "<group>"; };
 		F668BFD52D74DD8F00387742 /* command.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = command.xcodeproj; sourceTree = "<group>"; };
@@ -87,6 +117,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F65AEADF2E94DC84006B67B5 /* command app launcher */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "command app launcher";
+			sourceTree = "<group>";
+		};
 		F6DA46722D6EDBA100408790 /* command Extension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -106,6 +141,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F65AEADB2E94DC84006B67B5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F608C1A62E94E563004F0EDD /* AppLauncher in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F6DA466C2D6EDBA100408790 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -164,6 +207,7 @@
 				F6F3892D2D6FBE05004DAB09 /* command.release.xcconfig */,
 				F6EF7DC12D4C4F2C0074006B /* command */,
 				F6DA46722D6EDBA100408790 /* command Extension */,
+				F65AEADF2E94DC84006B67B5 /* command app launcher */,
 				F64AF2782D4C58620076F56D /* Frameworks */,
 				F6EF7DC02D4C4F2C0074006B /* Products */,
 				C8189B282938979000C9DCDA /* modules */,
@@ -177,6 +221,7 @@
 			children = (
 				F6EF7DBF2D4C4F2C0074006B /* cmd (Debug).app */,
 				F6DA466F2D6EDBA100408790 /* ؜cmd (Debug).appex */,
+				F65AEADE2E94DC84006B67B5 /* command app launcher */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -184,6 +229,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		F65AEADD2E94DC84006B67B5 /* command app launcher */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F65AEAE42E94DC84006B67B5 /* Build configuration list for PBXNativeTarget "command app launcher" */;
+			buildPhases = (
+				F65AEADA2E94DC84006B67B5 /* Sources */,
+				F65AEADB2E94DC84006B67B5 /* Frameworks */,
+				F65AEADC2E94DC84006B67B5 /* Copy Files */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F65AEADF2E94DC84006B67B5 /* command app launcher */,
+			);
+			name = "command app launcher";
+			packageProductDependencies = (
+				F608C1A52E94E563004F0EDD /* AppLauncher */,
+			);
+			productName = AppLauncher;
+			productReference = F65AEADE2E94DC84006B67B5 /* command app launcher */;
+			productType = "com.apple.product-type.tool";
+		};
 		F6DA466E2D6EDBA100408790 /* command Extension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F6DA467C2D6EDBA100408790 /* Build configuration list for PBXNativeTarget "command Extension" */;
@@ -212,16 +280,20 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = F6EF7DE42D4C4F2D0074006B /* Build configuration list for PBXNativeTarget "command" */;
 			buildPhases = (
+				F6000003DEBUGVER00000003 /* Generate Debug AppLauncher Version */,
 				F668A8A82D50221D0036DF70 /* Sync the app with the local proxy server */,
 				F6EF7DBB2D4C4F2C0074006B /* Sources */,
 				F6EF7DBC2D4C4F2C0074006B /* Frameworks */,
 				F6EF7DBD2D4C4F2C0074006B /* Resources */,
+				F62BF8CD2E95A28E00392306 /* Preprocess appLauncher.plist */,
 				F668A8B82D5035950036DF70 /* ShellScript */,
 				F64FD4822D6ECDBC002C9691 /* Embed Foundation Extensions */,
+				F62BF8CA2E95967C00392306 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F62BF8B52E95962000392306 /* PBXTargetDependency */,
 				F6DA467A2D6EDBA100408790 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
@@ -242,9 +314,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					F65AEADD2E94DC84006B67B5 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					F6DA466E2D6EDBA100408790 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -289,6 +364,7 @@
 			targets = (
 				F6EF7DBE2D4C4F2C0074006B /* command */,
 				F6DA466E2D6EDBA100408790 /* command Extension */,
+				F65AEADD2E94DC84006B67B5 /* command app launcher */,
 			);
 		};
 /* End PBXProject section */
@@ -311,6 +387,42 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		F6000003DEBUGVER00000003 /* Generate Debug AppLauncher Version */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Debug AppLauncher Version";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then\n    mkdir -p \"${SRCROOT}/build\"\n    echo \"APPLAUNCHER_VERSION = debug-$(date +%s)\" > \"${SRCROOT}/build/applauncher-debug-version.xcconfig\"\nfi\n";
+		};
+		F62BF8CD2E95A28E00392306 /* Preprocess appLauncher.plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Preprocess appLauncher.plist";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n\n# Replace in the appLauncher.plist different variables based on the build settings.\n\nPLIST_PATH=\"${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}/Contents/Resources/appLauncher.plist\"\nLAUNCH_AGENTS_DIR=\"${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}/Contents/Library/LaunchAgents\"\nLAUNCH_AGENTS_PLIST=\"${LAUNCH_AGENTS_DIR}/appLauncher.plist\"\n\n\nif [ -f \"$PLIST_PATH\" ]; then\n    echo \"Preprocessing appLauncher.plist...\"\n\n    # Replace Label and Program\n    /usr/libexec/PlistBuddy -c \"Set :Label ${LAUNCH_AGENT_BUNDLE_IDENTIFIER}\" \"$PLIST_PATH\"\n    /usr/libexec/PlistBuddy -c \"Set :Program ${LAUNCH_AGENT_PROGRAM_PATH}\" \"$PLIST_PATH\"\n\n    # Remove the placeholder MachServices key\n    /usr/libexec/PlistBuddy -c \"Delete :MachServices:\\$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)\" \"$PLIST_PATH\" 2>/dev/null || true\n\n    # Add the correct MachServices key\n    /usr/libexec/PlistBuddy -c \"Add :MachServices:${LAUNCH_AGENT_BUNDLE_IDENTIFIER} bool true\" \"$PLIST_PATH\"\n\n    # Create Library/LaunchAgents directory if it doesn't exist\n    mkdir -p \"$LAUNCH_AGENTS_DIR\"\n    \n    # Copy preprocessed plist to LaunchAgents directory\n    cp \"$PLIST_PATH\" \"$LAUNCH_AGENTS_PLIST\"\n\n    echo \"✅ Preprocessed plist (${CONFIGURATION}):\"\n    echo \"  Label: ${LAUNCH_AGENT_BUNDLE_IDENTIFIER}\"\n    echo \"  Program: ${LAUNCH_AGENT_PROGRAM_PATH}\"\n    echo \"  MachService: ${LAUNCH_AGENT_BUNDLE_IDENTIFIER}\"\n    echo \"  Copied to: $LAUNCH_AGENTS_PLIST\"\nelse\n    echo \"❌ appLauncher.plist not found at $PLIST_PATH\"\n    exit 1\nfi\n";
+		};
 		F668A8A82D50221D0036DF70 /* Sync the app with the local proxy server */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -350,6 +462,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F65AEADA2E94DC84006B67B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F6DA466B2D6EDBA100408790 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -367,6 +486,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		F62BF8B52E95962000392306 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F65AEADD2E94DC84006B67B5 /* command app launcher */;
+			targetProxy = F62BF8B42E95962000392306 /* PBXContainerItemProxy */;
+		};
 		F6DA467A2D6EDBA100408790 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = F6DA466E2D6EDBA100408790 /* command Extension */;
@@ -375,6 +499,45 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		F65AEAE22E94DC84006B67B5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLAUNCHER_VERSION = debug;
+				CODE_SIGN_ENTITLEMENTS = "command app launcher/AppLauncher.entitlements";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				DEVELOPMENT_TEAM = GP78T2GNXD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = "command app launcher/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F65AEAE32E94DC84006B67B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLAUNCHER_VERSION = "$(MARKETING_VERSION)";
+				CODE_SIGN_ENTITLEMENTS = "command app launcher/AppLauncher.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CREATE_INFOPLIST_SECTION_IN_BINARY = YES;
+				DEVELOPMENT_TEAM = GP78T2GNXD;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = "command app launcher/Info.plist";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(LAUNCH_AGENT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 		F6DA467D2D6EDBA100408790 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReferenceAnchor = F6DA46722D6EDBA100408790 /* command Extension */;
@@ -612,6 +775,7 @@
 			baseConfigurationReferenceAnchor = F6EF7DC12D4C4F2C0074006B /* command */;
 			baseConfigurationReferenceRelativePath = App.release.xcconfig;
 			buildSettings = {
+				APPLAUNCHER_VERSION = "$(MARKETING_VERSION)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon.release;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = command/command.entitlements;
@@ -648,6 +812,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F65AEAE42E94DC84006B67B5 /* Build configuration list for PBXNativeTarget "command app launcher" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F65AEAE22E94DC84006B67B5 /* Debug */,
+				F65AEAE32E94DC84006B67B5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F6DA467C2D6EDBA100408790 /* Build configuration list for PBXNativeTarget "command Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -678,6 +851,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F608C1A52E94E563004F0EDD /* AppLauncher */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppLauncher;
+		};
 		F6EC34F22D5C165A006E935C /* App */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = App;

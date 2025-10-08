@@ -14,6 +14,7 @@ Target.module(
     "LoggingServiceInterface",
     "MCPServiceInterface",
     "SettingsServiceInterface",
+    "SharedUtilsFoundation",
     "SharedValuesFoundation",
     "ShellServiceInterface",
     "ToolFoundation",

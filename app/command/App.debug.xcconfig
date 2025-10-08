@@ -2,6 +2,8 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 #include "../command.debug.xcconfig"
+// This config is generated at buildtime
+#include? "../build/applauncher-debug-version.xcconfig"
 
 PRODUCT_NAME = cmd $(DEBUG_SUFFIX)
 INFOPLIST_KEY_CFBundleDisplayName = cmd $(DEBUG_SUFFIX)

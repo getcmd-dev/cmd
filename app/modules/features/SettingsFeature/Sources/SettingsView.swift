@@ -105,7 +105,8 @@ public struct SettingsView: View {
         AboutSettingsView(
           allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics,
           automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
-          fileEditMode: $viewModel.fileEditMode)
+          fileEditMode: $viewModel.fileEditMode,
+          launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate)
 
       case .landing:
         EmptyView()

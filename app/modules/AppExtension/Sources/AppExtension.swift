@@ -9,4 +9,5 @@
 @_exported import FoundationInterfaces
 @_exported import LoggingServiceInterface
 @_exported import SettingsServiceInterface
+@_exported import SharedUtilsFoundation
 @_exported import SharedValuesFoundation

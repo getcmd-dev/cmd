@@ -8,7 +8,9 @@ import SwiftUI
 #Preview("About Settings - Analytics Enabled") {
   AboutSettingsView(
     allowAnonymousAnalytics: .constant(true),
-    automaticallyCheckForUpdates: .constant(true), fileEditMode: .constant(.xcodeExtension))
+    automaticallyCheckForUpdates: .constant(true),
+    fileEditMode: .constant(.xcodeExtension),
+    launchHostAppWhenXcodeDidActivate: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -16,7 +18,9 @@ import SwiftUI
 #Preview("About Settings - Analytics Disabled") {
   AboutSettingsView(
     allowAnonymousAnalytics: .constant(false),
-    automaticallyCheckForUpdates: .constant(false), fileEditMode: .constant(.directIO))
+    automaticallyCheckForUpdates: .constant(false),
+    fileEditMode: .constant(.directIO),
+    launchHostAppWhenXcodeDidActivate: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }

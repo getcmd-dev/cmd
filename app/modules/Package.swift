@@ -130,6 +130,7 @@ targets.append(contentsOf: Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverService",
     "XcodeObserverServiceInterface",
+    "XPCServiceInterface",
   ],
   resources: [],
   testDependencies: [
@@ -487,6 +488,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "MCPServiceInterface",
     "SettingsServiceInterface",
+    "SharedUtilsFoundation",
     "SharedValuesFoundation",
     "ShellServiceInterface",
     "ToolFoundation",
@@ -539,6 +541,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "SettingsService",
     "SettingsServiceInterface",
+    "SharedUtilsFoundation",
     "SharedValuesFoundation",
     "ThreadSafe",
   ],
@@ -643,6 +646,13 @@ targets.append(contentsOf: Target.module(
   path: "./foundations/SwiftTesting"))
 
 targets.append(contentsOf: Target.module(
+  name: "SharedUtilsFoundation",
+  dependencies: [
+    "LoggingServiceInterface",
+  ],
+  path: "./foundations/SharedUtilsFoundation"))
+
+targets.append(contentsOf: Target.module(
   name: "ChatFoundation",
   dependencies: [],
   testDependencies: [
@@ -699,6 +709,20 @@ targets.append(contentsOf: Target.macroModule(
   path: "./macros/ThreadSafe"))
 
 targets.append(contentsOf: Target.module(
+  name: "AppLauncher",
+  dependencies: [
+    "AppFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LoggingService",
+    "LoggingServiceInterface",
+    "SharedUtilsFoundation",
+    "ThreadSafe",
+    "XPCServiceInterface",
+  ],
+  path: "./AppLauncher"))
+
+targets.append(contentsOf: Target.module(
   name: "AppUpdateServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -752,6 +776,14 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./serviceInterfaces/PermissionsServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "XPCServiceInterface",
+  dependencies: [
+    "ConcurrencyFoundation",
+    "LoggingServiceInterface",
+  ],
+  path: "./serviceInterfaces/XPCServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "MCPServiceInterface",
@@ -1248,6 +1280,11 @@ let package = Package(
       name: "AppExtension",
       targets: [
         "AppExtension",
+      ]),
+    .library(
+      name: "AppLauncher",
+      targets: [
+        "AppLauncher",
       ]),
   ],
   dependencies: [

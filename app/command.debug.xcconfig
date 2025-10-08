@@ -10,6 +10,8 @@ SHARED_USER_DEFAULTS_SUITE = $(DEBUG_SHARED_USER_DEFAULTS_SUITE)
 // Bundle identifiers
 HOST_APP_BUNDLE_IDENTIFIER = dev.getcmd.debug.command
 XCODE_EXTENSION_BUNDLE_IDENTIFIER = dev.getcmd.debug.command.Extension
+LAUNCH_AGENT_BUNDLE_IDENTIFIER = dev.getcmd.debug.command.appLauncher
+LAUNCH_AGENT_PROGRAM_PATH = $(BUILT_PRODUCTS_DIR)/cmd $(DEBUG_SUFFIX).app/Contents/Applications/command app launcher
 
 // This cannot be identical to the App's product name. So we add an invisible utf8 character (not visible in Xcode).
 XCODE_EXTENSION_PRODUCT_NAME = ؜cmd $(DEBUG_SUFFIX)

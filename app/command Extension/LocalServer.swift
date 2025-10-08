@@ -5,6 +5,7 @@ import AppExtension
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
+import SharedUtilsFoundation
 import SharedValuesFoundation
 
 // MARK: - LocalServer
@@ -83,7 +84,7 @@ final class LocalServer {
           return try await send(command: command, input: input, retryCount: retryCount, ignoreDebugAppCheck: true)
         } else {
           // If we could not connect to the host app, try to open it and retry once.
-          try OpenHostApp.openHostApp()
+          try OpenHostApp.openHostApp { XcodeExtensionError(message: $0) }
           return try await send(command: command, input: input, retryCount: retryCount + 1)
         }
       }
