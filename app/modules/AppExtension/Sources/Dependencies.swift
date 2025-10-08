@@ -31,7 +31,6 @@ extension AppExtensionScope: UserDefaultsProviding {
       }
     }
   }
-
 }
 
 // MARK: - AppExtensionScope + SettingsServiceProviding
@@ -40,4 +39,6 @@ extension AppExtensionScope: SettingsServiceProviding { }
 
 // MARK: - AppExtensionScope + FileManagerProviding
 
-extension AppExtensionScope: FileManagerProviding { }
+extension AppExtensionScope: FileManagerProviding {
+  public var fileManager: any FileManagerI { shared { SandboxedFileManager() } }
+}
