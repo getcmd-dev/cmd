@@ -992,6 +992,7 @@ targets.append(contentsOf: Target.module(
     "ThreadSafe",
   ],
   testDependencies: [
+    "ConcurrencyFoundation",
     "FoundationInterfaces",
   ],
   path: "./services/LoggingService"))

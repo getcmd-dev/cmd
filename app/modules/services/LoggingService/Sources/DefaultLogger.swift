@@ -41,13 +41,13 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   ///   - fileManager: File manager for handling log file operations
   ///   - is3rdPartyLoggingEnabled: Whether external logging services are enabled
   ///   - writeToFile: Optional custom file writing function
-  private init(
+  init(
     subsystem: String,
     category: String,
     fileManager: FileManagerI,
     userDefaults: UserDefaultsI,
-    is3rdPartyLoggingEnabled: Bool,
-    writeToFile: (@Sendable (String) -> Void)?)
+    is3rdPartyLoggingEnabled: Bool = false,
+    writeToFile: (@Sendable (String) -> Void)? = nil)
   {
     logger = os.Logger(subsystem: subsystem, category: category)
     self.subsystem = subsystem
