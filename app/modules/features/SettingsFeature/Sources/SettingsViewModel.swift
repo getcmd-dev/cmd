@@ -46,6 +46,15 @@ public final class SettingsViewModel {
       ? true
       : userDefaults.bool(forKey: .launchHostAppWhenXcodeDidActivate)
 
+    if
+      let storedLevel = userDefaults.string(forKey: .defaultLogLevel),
+      let level = LogLevel(rawValue: storedLevel)
+    {
+      defaultLogLevel = level
+    } else {
+      defaultLogLevel = .info
+    }
+
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
       toolsPlugin: toolsPlugin)
@@ -166,6 +175,14 @@ public final class SettingsViewModel {
   var launchHostAppWhenXcodeDidActivate: Bool {
     didSet {
       userDefaults.set(launchHostAppWhenXcodeDidActivate, forKey: .launchHostAppWhenXcodeDidActivate)
+    }
+  }
+
+  var defaultLogLevel: LogLevel {
+    didSet {
+      userDefaults.set(defaultLogLevel.rawValue, forKey: .defaultLogLevel)
+      settings.defaultLogLevel = defaultLogLevel
+      settingsService.update(setting: \.defaultLogLevel, to: defaultLogLevel)
     }
   }
 

@@ -41,13 +41,13 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   ///   - fileManager: File manager for handling log file operations
   ///   - is3rdPartyLoggingEnabled: Whether external logging services are enabled
   ///   - writeToFile: Optional custom file writing function
-  private init(
+  init(
     subsystem: String,
     category: String,
     fileManager: FileManagerI,
     userDefaults: UserDefaultsI,
-    is3rdPartyLoggingEnabled: Bool,
-    writeToFile: (@Sendable (String) -> Void)?)
+    is3rdPartyLoggingEnabled: Bool = false,
+    writeToFile: (@Sendable (String) -> Void)? = nil)
   {
     logger = os.Logger(subsystem: subsystem, category: category)
     self.subsystem = subsystem
@@ -105,19 +105,29 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   }
 
   /// Logs a trace message to the console and file.
-  /// - Parameter message: The debug message to log
+  /// - Parameter message: The trace message to log
   public func trace(_ message: String) {
     let formattedMessage = "[Trace] \(message)"
-    logger.trace("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    // Use logger.log if trace level is enabled, so it shows in Console
+    if shouldShowInConsole(.trace) {
+      logger.log("\(formattedMessage, privacy: .public)")
+    } else {
+      logger.trace("\(formattedMessage, privacy: .public)")
+    }
+    writeToFileIfLevelMatches(.trace, "\(subsystem).\(category) \(formattedMessage)")
   }
 
   /// Logs a debug message to the console and file.
   /// - Parameter message: The debug message to log
   public func debug(_ message: String) {
     let formattedMessage = "[Debug] \(message)"
-    logger.debug("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    // Use logger.log if debug level is enabled, so it shows in Console
+    if shouldShowInConsole(.debug) {
+      logger.log("\(formattedMessage, privacy: .public)")
+    } else {
+      logger.debug("\(formattedMessage, privacy: .public)")
+    }
+    writeToFileIfLevelMatches(.debug, "\(subsystem).\(category) \(formattedMessage)")
   }
 
   /// Logs an informational message to the console and file.
@@ -125,7 +135,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   public func info(_ message: String) {
     let formattedMessage = "[Info] \(message)"
     logger.info("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    writeToFileIfLevelMatches(.info, "\(subsystem).\(category) \(formattedMessage)")
   }
 
   /// Logs a general message to the console, file, and optionally to Sentry.
@@ -133,7 +143,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   public func log(_ message: String) {
     let formattedMessage = "[Log] \(message)"
     logger.log("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    writeToFileIfLevelMatches(.info, "\(subsystem).\(category) \(formattedMessage)")
 
     if is3rdPartyLoggingEnabled {
       let breadcrumb = Breadcrumb(level: .info, category: "\(subsystem):\(category)")
@@ -150,7 +160,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   public func record(event: StaticString, value: String, metadata: [StaticString: String]? = nil) {
     let formattedMessage = "[Event] \(event)"
     logger.log("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    writeToFileIfLevelMatches(.info, "\(subsystem).\(category) \(formattedMessage)")
 
     if is3rdPartyLoggingEnabled {
       Statsig.logEvent(event.string, value: value, metadata: metadata?.reduce(into: [String: String]()) { acc, item in
@@ -164,7 +174,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   public func notice(_ message: String) {
     let formattedMessage = "[Notice] \(message)"
     logger.notice("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    writeToFileIfLevelMatches(.warn, "\(subsystem).\(category) \(formattedMessage)")
   }
 
   /// Logs an error message to the console, file, and optionally to Sentry.
@@ -172,7 +182,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   public func error(_ message: String) {
     let formattedMessage = "[Error] \(message)"
     logger.error("\(formattedMessage, privacy: .public)")
-    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+    writeToFileIfLevelMatches(.error, "\(subsystem).\(category) \(formattedMessage)")
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(message: formattedMessage)
       Bugsnag.notifyError(AppError(message))
@@ -197,11 +207,11 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       let formattedMessage = "[Error] \(messagePrefix)\(error.localizedDescription)\n\ndebugDescription: \(debugDescription)"
       logger.error(
         "\(formattedMessage, privacy: .public)")
-      writeToFile("\(subsystem).\(category) \(formattedMessage)")
+      writeToFileIfLevelMatches(.error, "\(subsystem).\(category) \(formattedMessage)")
     } else {
       let formattedMessage = "[Error] \(messagePrefix)\(error.localizedDescription)"
       logger.error("\(formattedMessage, privacy: .public)")
-      writeToFile("\(subsystem).\(category) \(formattedMessage)")
+      writeToFileIfLevelMatches(.error, "\(subsystem).\(category) \(formattedMessage)")
     }
     if is3rdPartyLoggingEnabled {
       SentrySDK.capture(error: error)
@@ -235,6 +245,41 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       let newDeviceId = UUID().uuidString
       userDefaults.set(newDeviceId, forKey: "deviceId")
       return newDeviceId
+    }
+  }
+
+  /// Writes a message to the log file if the message's level meets or exceeds the configured default log level.
+  /// - Parameters:
+  ///   - messageLevel: The severity level of the message
+  ///   - message: The message to write
+  private func writeToFileIfLevelMatches(_ messageLevel: LogLevel, _ message: String) {
+    let defaultLevel = getConfiguredLogLevel()
+
+    // Only write if the message level is at or above the default level
+    if messageLevel >= defaultLevel {
+      writeToFile(message)
+    }
+  }
+
+  /// Determines if a message at the given level should be shown in the console.
+  /// For trace and debug levels, we use logger.log() instead of logger.trace()/logger.debug() so they appear in Console.app
+  /// - Parameter messageLevel: The severity level of the message
+  /// - Returns: true if the message should use logger.log() to be visible in console
+  private func shouldShowInConsole(_ messageLevel: LogLevel) -> Bool {
+    let configuredLevel = getConfiguredLogLevel()
+    return messageLevel >= configuredLevel
+  }
+
+  /// Gets the configured log level from UserDefaults
+  /// - Returns: The configured log level, defaulting to .info
+  private func getConfiguredLogLevel() -> LogLevel {
+    if
+      let storedLevel = userDefaults.string(forKey: .defaultLogLevel),
+      let level = LogLevel(rawValue: storedLevel)
+    {
+      level
+    } else {
+      .info
     }
   }
 

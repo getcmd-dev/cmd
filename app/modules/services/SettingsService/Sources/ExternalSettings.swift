@@ -4,6 +4,7 @@
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
+import LoggingServiceInterface
 import SettingsServiceInterface
 import System
 
@@ -34,7 +35,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
     self.fileEditMode = fileEditMode
-    self.preferedProviders = preferedProviders
+    self.preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
@@ -69,12 +70,20 @@ struct ExternalSettings: Sendable, Equatable {
 // MARK: - InternalSettings
 
 struct InternalSettings: Sendable, Equatable {
-  static let defaultSettings = InternalSettings(pointReleaseXcodeExtensionToDebugApp: false)
-  init(pointReleaseXcodeExtensionToDebugApp: Bool) {
+  static let defaultSettings = InternalSettings(
+    pointReleaseXcodeExtensionToDebugApp: false,
+    defaultLogLevel: .info)
+
+  init(
+    pointReleaseXcodeExtensionToDebugApp: Bool,
+    defaultLogLevel: LogLevel = .info)
+  {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
+    self.defaultLogLevel = defaultLogLevel
   }
 
   var pointReleaseXcodeExtensionToDebugApp: Bool
+  var defaultLogLevel: LogLevel
 }
 
 // MARK: - ExternalSettings + Codable
@@ -184,12 +193,16 @@ extension InternalSettings: Codable {
     self.init(
       pointReleaseXcodeExtensionToDebugApp: container.resilientlyDecodeIfPresent(
         Bool.self,
-        forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false)
+        forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
+      defaultLogLevel: container.resilientlyDecodeIfPresent(
+        LogLevel.self,
+        forKey: "defaultLogLevel") ?? Self.defaultSettings.defaultLogLevel)
   }
 
   func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
+    try container.encode(defaultLogLevel, forKey: "defaultLogLevel")
   }
 }
 
@@ -256,7 +269,8 @@ extension Settings {
       toolPreferences: externalSettings.toolPreferences,
       keyboardShortcuts: externalSettings.keyboardShortcuts,
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
-      mcpServers: externalSettings.mcpServers)
+      mcpServers: externalSettings.mcpServers,
+      defaultLogLevel: internalSettings.defaultLogLevel)
   }
 
   var externalSettings: ExternalSettings {
@@ -277,7 +291,9 @@ extension Settings {
   }
 
   var internalSettings: InternalSettings {
-    .init(pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp)
+    .init(
+      pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
+      defaultLogLevel: defaultLogLevel)
   }
 }
 

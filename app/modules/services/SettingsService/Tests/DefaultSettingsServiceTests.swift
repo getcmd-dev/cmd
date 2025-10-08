@@ -336,6 +336,7 @@ struct DefaultSettingsServiceTests {
     let internalData = try #require(sharedUserDefaults.dumpStorage()["internalSettings"] as? Data)
     internalData.expectToMatch("""
       {
+        "defaultLogLevel" : "info",
         "pointReleaseXcodeExtensionToDebugApp" : false
       }
       """)

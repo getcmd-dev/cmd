@@ -823,4 +823,26 @@ struct ExternalSettingsCodableTests {
     #expect(decodedSettings.llmProviderSettings.count == 1) // successfully decoded valid provider
     #expect(decodedSettings.llmProviderSettings[.anthropic]?.apiKey == "test-key")
   }
+
+  @Test("Filters preferred providers when llmProviderSettings is missing")
+  func testFiltersPreferedProvidersWhenProviderIsMissing() throws {
+    let settings = ExternalSettings(
+      preferedProviders: .init([
+        .claudeHaiku_3_5: .anthropic,
+        .gpt: .openAI,
+        .claudeSonnet: .anthropic,
+      ]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ])
+
+    #expect(settings.preferedProviders.count == 2)
+    #expect(settings.preferedProviders[.claudeHaiku_3_5] == .anthropic)
+    #expect(settings.preferedProviders[.claudeSonnet] == .anthropic)
+    #expect(settings.preferedProviders[.gpt] == nil)
+  }
 }

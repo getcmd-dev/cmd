@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
 import LLMFoundation
+import LoggingServiceInterface
 import SwiftUI
 
 // MARK: - FileEditMode
@@ -60,14 +61,15 @@ public struct Settings: Sendable, Equatable {
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
-    mcpServers: [String: MCPServerConfiguration] = [:])
+    mcpServers: [String: MCPServerConfiguration] = [:],
+    defaultLogLevel: LogLevel = .info)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
     self.fileEditMode = fileEditMode
-    self.preferedProviders = preferedProviders
+    self.preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
@@ -76,6 +78,7 @@ public struct Settings: Sendable, Equatable {
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
+    self.defaultLogLevel = defaultLogLevel
   }
 
   public struct AIProviderSettings: Sendable, Codable, Equatable {
@@ -127,7 +130,6 @@ public struct Settings: Sendable, Equatable {
   public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [AIModelID: AIProvider]
-  public var llmProviderSettings: [AIProvider: AIProviderSettings]
   public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
   public var enabledModels: [AIModelID]
@@ -136,6 +138,16 @@ public struct Settings: Sendable, Equatable {
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   public var mcpServers: [String: MCPServerConfiguration]
+
+  public var defaultLogLevel: LogLevel
+
+  public var llmProviderSettings: [AIProvider: AIProviderSettings] {
+    didSet {
+      // Ensure we don't keep prefered providers that are no longer configured.
+      preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
+    }
+  }
+
 }
 
 // MARK: - Settings + Tool Preferences Helpers
@@ -299,6 +311,7 @@ extension UserDefaultsKey {
   public static let enableAnalyticsAndCrashReporting = "enableAnalyticsAndCrashReporting"
   public static let enableNetworkProxy = "enableNetworkProxy"
   public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
+  public static let defaultLogLevel = "defaultLogLevel"
 }
 
 // MARK: - KeyEquivalent + Codable

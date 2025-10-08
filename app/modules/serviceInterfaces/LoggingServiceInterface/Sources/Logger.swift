@@ -3,6 +3,34 @@
 
 import Foundation
 
+// MARK: - LogLevel
+
+public enum LogLevel: String, Sendable, Codable, Comparable {
+  case trace
+  case debug
+  case info
+  case warn
+  case error
+  case critical
+
+  public static func <(lhs: LogLevel, rhs: LogLevel) -> Bool {
+    lhs.severity < rhs.severity
+  }
+
+  /// Severity rank for comparison. Higher values mean more severe.
+  private var severity: Int {
+    switch self {
+    case .trace: 0
+    case .debug: 1
+    case .info: 2
+    case .warn: 3
+    case .error: 4
+    case .critical: 5
+    }
+  }
+
+}
+
 // MARK: - Logger
 
 /// A protocol for logging messages at different levels with optional file logging support.
