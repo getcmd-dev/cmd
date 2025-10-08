@@ -26,7 +26,7 @@ class AIModelsManagerTests {
   @Test("Initializes with models loaded from file")
   func test_init_loadsModelsFromFile() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)],
       openAI: [makeTestModel(providerId: "gpt-5", slug: "gpt-latest", provider: .openAI)])
     let fileManager = MockFileManager(files: [
@@ -91,7 +91,7 @@ class AIModelsManagerTests {
   @Test("modelsAvailable returns models for specific provider")
   func test_modelsAvailable_returnsModelsForProvider() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic),
         makeTestModel(providerId: "claude-haiku", slug: "claude-haiku-35", provider: .anthropic),
@@ -119,7 +119,7 @@ class AIModelsManagerTests {
   @Test("modelsAvailable returns empty array for provider with no models")
   func test_modelsAvailable_returnsEmptyForUnknownProvider() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)])
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
@@ -140,7 +140,7 @@ class AIModelsManagerTests {
   @Test("getModel returns correct model by provider ID")
   func test_getModel_returnsModelByProviderId() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic),
         makeTestModel(providerId: "claude-haiku", slug: "claude-haiku-35", provider: .anthropic),
@@ -183,7 +183,7 @@ class AIModelsManagerTests {
   @Test("getModelInfo returns correct model info by slug")
   func test_getModelInfo_returnsModelInfoBySlug() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)])
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
@@ -222,14 +222,18 @@ class AIModelsManagerTests {
   @Test("provider returns preferred provider when set")
   func test_provider_returnsPreferedProvider() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "anthropic/claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)],
       openRouter: [makeTestModel(providerId: "openrouter/claude-sonnet", slug: "claude-sonnet-4", provider: .openRouter)])
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
     let settingsService = MockSettingsService(Settings(
-      preferedProviders: ["claude-sonnet-4": .openRouter]))
+      preferedProviders: ["claude-sonnet-4": .openRouter],
+      llmProviderSettings: [
+        .anthropic: Settings.AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
+        .openRouter: Settings.AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 2),
+      ]))
     let sut = AIModelsManager(
       localServer: MockLocalServer(),
       settingsService: settingsService,
@@ -244,10 +248,39 @@ class AIModelsManagerTests {
     #expect(provider == .openRouter)
   }
 
+  @Test("provider returns preferred provider that are configured")
+  func test_provider_returnsPreferedProviderThatAreConfigured() throws {
+    // given
+    let modelsData = makePersistedProviderModelsJSON(
+      anthropic: [makeTestModel(providerId: "anthropic/claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)])
+    let fileManager = MockFileManager(files: [
+      "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
+    ])
+    let settings = Settings(
+      preferedProviders: ["claude-sonnet-4": .openRouter],
+      llmProviderSettings: [
+        .anthropic: Settings.AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      ])
+    print(settings.preferedProviders)
+    let settingsService = MockSettingsService(settings)
+    let sut = AIModelsManager(
+      localServer: MockLocalServer(),
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+    let modelInfo = try #require(sut.getModelInfo(by: "claude-sonnet-4").currentValue)
+
+    // when
+    let provider = sut.provider(for: modelInfo).currentValue
+
+    // then
+    #expect(provider == .anthropic) // The preferred provider was set to open routed, which is not available anymore.
+  }
+
   @Test("provider returns first available provider when no preference set")
   func test_provider_returnsFirstAvailableProvider() throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "anthropic/claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)])
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
@@ -313,7 +346,7 @@ class AIModelsManagerTests {
   @Test("refetchModelsAvailable replaces old models for provider")
   func test_refetchModelsAvailable_replacesOldModels() async throws {
     // given
-    let oldModelsData = makePersistedModelsJSON(
+    let oldModelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "old-model", slug: "old-slug", provider: .anthropic)])
     let fileManager = MockFileManager(files: [
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": oldModelsData,
@@ -400,7 +433,7 @@ class AIModelsManagerTests {
   @Test("activeModels filters by enabled models")
   func test_activeModels_filtersByEnabledModels() async throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic),
         makeTestModel(providerId: "claude-haiku", slug: "claude-haiku-35", provider: .anthropic),
@@ -427,7 +460,7 @@ class AIModelsManagerTests {
   @Test("activeModels updates when enabledModels setting changes")
   func test_activeModels_updatesWhenEnabledModelsChange() async throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic),
         makeTestModel(providerId: "claude-haiku", slug: "claude-haiku-35", provider: .anthropic),
@@ -577,7 +610,7 @@ class AIModelsManagerTests {
   @Test("Removes models when provider is removed from settings")
   func test_observeSettings_removesModelsWhenProviderRemoved() async throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)],
       openAI: [makeTestModel(providerId: "gpt-5", slug: "gpt-latest", provider: .openAI)])
     let fileManager = MockFileManager(files: [
@@ -773,7 +806,7 @@ class AIModelsManagerTests {
     // given
     let anthropicLowTier = try #require(AIProvider.anthropic.lowTierModelId)
     let openAILowTier = try #require(AIProvider.openAI.lowTierModelId)
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(
           providerId: "claude-3.5-haiku",
@@ -821,7 +854,7 @@ class AIModelsManagerTests {
   @Test("lowTierModel returns nil when no low tier models are enabled")
   func test_lowTierModel_returnsNilWhenNoneEnabled() async throws {
     // given
-    let modelsData = makePersistedModelsJSON(
+    let modelsData = makePersistedProviderModelsJSON(
       anthropic: [
         makeTestModel(
           providerId: "claude-3.5-haiku",
@@ -935,7 +968,7 @@ private func makeListModelsOutput(models: [Schema.Model]) -> Schema.ListModelsOu
   Schema.ListModelsOutput(models: models)
 }
 
-private func makePersistedModelsJSON(
+private func makePersistedProviderModelsJSON(
   anthropic: [AIProviderModel] = [],
   openAI: [AIProviderModel] = [],
   openRouter: [AIProviderModel] = [])

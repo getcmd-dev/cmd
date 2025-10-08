@@ -127,7 +127,6 @@ public struct Settings: Sendable, Equatable {
   public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [AIModelID: AIProvider]
-  public var llmProviderSettings: [AIProvider: AIProviderSettings]
   public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
   public var enabledModels: [AIModelID]
@@ -136,6 +135,14 @@ public struct Settings: Sendable, Equatable {
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   public var mcpServers: [String: MCPServerConfiguration]
+
+  public var llmProviderSettings: [AIProvider: AIProviderSettings] {
+    didSet {
+      // Ensure we don't keep prefered providers that are no longer configured.
+      preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
+    }
+  }
+
 }
 
 // MARK: - Settings + Tool Preferences Helpers
