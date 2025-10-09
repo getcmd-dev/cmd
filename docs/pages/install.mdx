@@ -1,0 +1,135 @@
+---
+title: "Installation"
+description: "Install and set up cmd for Xcode"
+---
+
+## System Requirements
+
+- **Operating System**: macOS
+- **Xcode**: 16.x or 26.x
+
+## Step 1: Install cmd
+
+<AccordionGroup>
+  <Accordion icon="beer-mug" title="Install with Homebrew (Recommended)" defaultOpen>
+    The easiest way to install cmd:
+
+    ```bash
+    brew install cmd
+    ```
+  </Accordion>
+
+  <Accordion icon="download" title="Download DMG">
+    Alternatively, download the latest release:
+
+    1. Visit the [releases page](https://github.com/getcmd-dev/cmd/releases/latest)
+    2. Download the DMG file
+    3. Open the DMG and drag cmd to Applications
+    4. Launch cmd from Applications or Launchpad
+  </Accordion>
+</AccordionGroup>
+<Info>cmd will automatically update, unless auto-updates are disable.</Info>
+
+## Step 2: Grant Permissions
+
+cmd needs specific permissions to integrate with Xcode.
+
+<AccordionGroup>
+  <Accordion icon="lock" title="Grant Accessibility Permission">
+    cmd needs accessibility permission to integrate with Xcode:
+
+    1. Launch cmd
+    2. When prompted, click "Open System Settings"
+    3. Enable cmd in [**Privacy & Security > Accessibility**](x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility)
+    4. Return to cmd
+
+    <Warning>Without this permission, cmd cannot see your Xcode context or make edits.</Warning>
+  </Accordion>
+
+  <Accordion icon="wrench" title="Grant Xcode Extension Permission">
+    cmd also needs Xcode extension permission:
+
+    1. When prompted, click "Open System Settings"
+    2. Enable cmd in [**Privacy & Security > Extensions > Xcode Source Editor**](x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.dt.Xcode.extension.source-editor)
+    3. **Restart Xcode** for the changes to take effect
+
+    <Info>You must restart Xcode after enabling the extension for it to work properly.</Info>
+  </Accordion>
+</AccordionGroup>
+
+## Step 3: Configure AI Providers
+
+cmd requires at least one AI provider to function. You'll configure this during the onboarding flow.
+
+<Steps>
+  <Step title="Choose a Provider">
+    Select from supported providers like OpenAI, Anthropic, Google AI, or others
+  </Step>
+
+  <Step title="Enter API Key">
+    Provide your API key from the chosen provider
+  </Step>
+
+  <Step title="Test Connection">
+    cmd will verify your configuration works
+  </Step>
+
+  <Step title="Enable Models">
+    Choose which models you want to use
+  </Step>
+</Steps>
+
+<Card title="Complete AI Provider Setup" icon="key" href="/pages/ai-providers">
+  See the full guide for configuring AI providers and managing API keys
+</Card>
+
+<Info>
+  Your API keys are stored securely in macOS Keychain. cmd never sends your code to its own servers—only to your chosen AI provider.
+</Info>
+
+## Step 4: Configure Xcode 26 (Optional)
+
+If you're using Xcode 26, you can integrate cmd with Xcode's built-in AI chat interface.
+
+<Steps>
+  <Step title="Open Xcode Settings">
+    In Xcode, go to **Xcode > Settings > Intelligence**
+  </Step>
+
+  <Step title="Add Model Provider">
+    Click **"Add a Model Provider"**
+  </Step>
+
+  <Step title="Configure Local Model">
+    Select a local model running on port **10101**:
+
+    <img src="/assets/xcode26-installation-prompt.jpeg" alt="Xcode 26 model provider setup" />
+  </Step>
+
+  <Step title="Use Either Interface">
+    You can now interact with cmd through:
+    - **Xcode's AI chat**: Built into Xcode 26
+    - **cmd's sidebar**: The native cmd interface
+
+    <img src="/assets/xcode26-sidebar.jpeg" alt="Using cmd in Xcode 26" />
+  </Step>
+</Steps>
+
+<Tip>
+  The Xcode 26 integration gives you flexibility to use whichever interface you prefer while benefiting from cmd's powerful agentic AI.
+</Tip>
+
+## Privacy & Security
+
+<Info>
+  **Your code stays on your machine**
+
+  - cmd runs entirely locally
+  - Your code is only sent to your chosen AI providers
+  - You can opt out of anonymized analytics
+  - API keys are stored in macOS Keychain
+</Info>
+
+<Card title="Read Privacy Details" icon="shield" href="/pages/features#privacy--security">
+  Learn more about cmd's open source philosophy and privacy approach
+</Card>

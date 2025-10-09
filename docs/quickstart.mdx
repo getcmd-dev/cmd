@@ -1,80 +1,145 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Start using cmd effectively in Xcode"
 ---
 
-## Get started in three steps
+<Info>
+  **Prerequisites**: Make sure you've [installed cmd](/pages/install) and configured at least one AI provider.
+</Info>
 
-Get your documentation site running locally and make your first customization.
+## Your First Task
 
-### Step 1: Set up your local environment
+Let's walk through using cmd for a simple task to get familiar with the interface and workflow.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Open a Project in Xcode">
+    Launch Xcode and open any project (or create a new one if you don't have one handy).
+  </Step>
 
-### Step 2: Deploy your changes
+  <Step title="Verify cmd is Connected">
+    Check that:
+    - The ⌘ menu bar icon is visible
+    - Bring cmd's chat interface by using `⌘` + `I`, or using the menu bar.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    <img
+      className="block dark:hidden"
+      src="/assets/hero-light.png"
+      alt="cmd sidebar showing project context"
+    />
+    <img
+      className="hidden dark:block"
+      src="/assets/hero-dark.png"
+      alt="cmd sidebar showing project context"
+    />
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Add code selection">
+    Open a Swift file and select a code snippet you want to work with. Press `⌘` + `⇧` + `I`
+  </Step>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Ask cmd a Question">
+    Try asking cmd something simple like:
+    - "Explain what this function does"
+    - "Add comments to this code"
+    - "What does this class do?"
 
-### Step 3: Go live
+    cmd will see your selected code and provide context-aware answers.
+  </Step>
+</Steps>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+<Tip>
+  cmd can see what you're working on in Xcode, including selected code, open files, and your current project. This context makes responses much more relevant than general AI assistants.
+</Tip>
 
-## Next steps
+## Understanding Modes
 
-Now that you have your docs running, explore these key features:
+cmd offers different modes for different workflows. Try switching between them:
 
-<CardGroup cols={2}>
+<Tabs>
+  <Tab title="Agent Mode">
+    **Best for**: Complex tasks, code generation, refactoring
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+    In Agent mode, cmd can:
+    - Edit multiple files
+    - Run builds and tests
+    - Fix errors it encounters
+    - Check its own work
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    **Example tasks**:
+    - "Add error handling to this networking code"
+    - "Refactor this view controller to use SwiftUI"
+    - "Create a new data model for user preferences"
+  </Tab>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+  <Tab title="Chat Mode">
+    **Best for**: Questions, explanations, learning
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    In Chat mode, cmd provides answers without modifying code:
+    - Explain complex patterns
+    - Get architectural advice
+    - Understand unfamiliar code
+    - Learn best practices
 
-</CardGroup>
+    **Example questions**:
+    - "How does this architecture pattern work?"
+    - "What's the difference between @State and @Binding?"
+    - "Why is this code causing a memory leak?"
+  </Tab>
+</Tabs>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  cmd will always ask before making changes, unless a permission is granted permanently.
+</Note>
+
+## Switching Models
+
+Different tasks benefit from different AI models:
+
+<Steps>
+  <Step title="Open Model Selector">
+    Click the model dropdown at the top of the cmd sidebar.
+  </Step>
+
+  <Step title="Choose a Model">
+    Select from your enabled models:
+    - **Fast models** (GPT-3.5, Claude Haiku): Quick answers and simple tasks
+    - **Balanced models** (Claude Sonnet, GPT-4 Turbo): Most coding tasks
+    - **Powerful models** (Claude Opus, GPT-5): Complex problems
+  </Step>
+
+  <Step title="Continue Your Task">
+    cmd will use the selected model for subsequent requests.
+  </Step>
+</Steps>
+
+<Tip>
+  Start with a balanced model like Claude Sonnet. Switch to faster models for simple questions or more powerful models for complex tasks.
+</Tip>
+
+## Using Xcode 26 Integration
+
+If you configured Xcode 26 integration during installation:
+
+<AccordionGroup>
+  <Accordion title="Using Xcode's Built-in Chat">
+    1. Open Xcode 26's AI chat interface
+    2. Select cmd, then your desired model
+    3. Ask questions or request changes
+    4. cmd provides the AI capabilities behind the scenes
+    5. You get Xcode's native interface with cmd's agentic AI
+  </Accordion>
+
+  <Accordion title="Using cmd's Native Sidebar">
+    1. Use the cmd sidebar as described above
+    2. See richer formatting and better visual feedback
+    3. Access all cmd-specific features
+  </Accordion>
+
+  <Accordion title="Switching Between Interfaces">
+    You can use both interfaces interchangeably based on your preference. Both use the same cmd configuration and AI providers.
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  **Having issues?** Open an issue on [GitHub](https://github.com/getcmd-dev/cmd/issues).
 </Note>

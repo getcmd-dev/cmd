@@ -1,0 +1,125 @@
+---
+title: "Quick Start"
+description: "Get up and running with cmd in minutes"
+---
+
+## Prerequisites
+
+Before you begin, make sure you have:
+- macOS (cmd is a native macOS application)
+- Xcode installed on your system
+- An API key from at least one supported AI provider (OpenAI, Anthropic, etc.)
+
+## Installation
+
+<Steps>
+  <Step title="Install cmd">
+    Choose one of the following methods:
+
+    **Using Homebrew (recommended):**
+    ```bash
+    brew install cmd
+    ```
+
+    **Or download the DMG:**
+
+    Download the [latest release](https://github.com/getcmd-dev/cmd/releases/latest) and drag cmd to your Applications folder.
+  </Step>
+
+  <Step title="Launch cmd">
+    Open the cmd app from your Applications folder or Launchpad.
+  </Step>
+
+  <Step title="Grant Accessibility Permission">
+    cmd needs accessibility permission to see what's in Xcode and make edits.
+
+    When prompted:
+    1. Click "Open System Settings"
+    2. Enable cmd in Privacy & Security > Accessibility
+    3. Return to cmd
+  </Step>
+
+  <Step title="Configure AI Provider">
+    During the initial setup, you'll need to configure at least one AI provider:
+
+    1. Choose your preferred AI provider (OpenAI, Anthropic, etc.)
+    2. Enter your API key
+    3. Select your preferred model
+
+    <Note>
+      cmd never sends your code to any server other than your chosen AI provider. Your API keys are stored securely in your macOS keychain.
+    </Note>
+  </Step>
+</Steps>
+
+## Your First Task
+
+Once setup is complete, let's try cmd:
+
+<Steps>
+  <Step title="Open a Project in Xcode">
+    Open any Xcode project or create a new one.
+  </Step>
+
+  <Step title="Open cmd Sidebar">
+    The cmd sidebar should appear automatically. If not, you can open it from the cmd menu bar.
+  </Step>
+
+  <Step title="Ask cmd to Help">
+    Try asking cmd to help with something simple:
+
+    - "Explain what this function does"
+    - "Add comments to this code"
+    - "Create a simple test for this class"
+
+    <img src="/assets/sidebar.png" alt="cmd sidebar" />
+  </Step>
+
+  <Step title="Review and Accept Changes">
+    cmd will show you what it plans to change before making modifications. You can:
+    - Review the proposed changes
+    - Accept or reject them
+    - Ask cmd to make adjustments
+  </Step>
+</Steps>
+
+## Optional: Xcode 26 Integration
+
+If you're using Xcode 26, you can integrate cmd with Xcode's built-in AI chat:
+
+<Steps>
+  <Step title="Open Xcode Settings">
+    Go to `Xcode > Settings > Intelligence > Add a Model Provider`
+  </Step>
+
+  <Step title="Configure Local Model">
+    Select a local model running on port **10101**
+
+    <img src="/assets/xcode26-installation-prompt.jpeg" alt="Xcode 26 setup" />
+  </Step>
+
+  <Step title="Use Either Interface">
+    You can now interact with cmd using:
+    - Xcode 26's built-in AI chat interface
+    - cmd's own sidebar UI
+
+    <img src="/assets/xcode26-sidebar.jpeg" alt="Xcode 26 sidebar" />
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Learn About Modes" icon="sliders" href="/pages/features">
+    Explore Agent mode and Chat mode to understand different ways to interact with cmd.
+  </Card>
+  <Card title="Customize AI Models" icon="gear" href="/pages/models">
+    Configure different AI providers and models for different tasks.
+  </Card>
+  <Card title="Set Up MCP Servers" icon="server" href="/pages/mcp-servers">
+    Extend cmd's capabilities with Model Context Protocol servers.
+  </Card>
+  <Card title="Join the Community" icon="github" href="https://github.com/getcmd-dev/cmd">
+    Contribute to the project or get help from the community.
+  </Card>
+</CardGroup>

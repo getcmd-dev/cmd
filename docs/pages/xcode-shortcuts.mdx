@@ -1,0 +1,145 @@
+---
+title: "Xcode Shortcuts"
+description: "Use cmd to configure Xcode shortcuts for anything you want (no sandbox)"
+---
+
+## Overview
+
+Xcode Shortcuts allow you to execute custom commands directly from Xcode using the cmd extension. You can create shortcuts that open files in external editors, run scripts, or perform any command-line operation using context from your current Xcode session.
+
+<Info>
+  Shortcuts are only available when a file is open in Xcode.
+</Info>
+
+## Prerequisites
+
+Before configuring shortcuts, ensure you have granted the Xcode Extension permission:
+
+<Card title="Grant Xcode Extension Permission" icon="wrench" href="/pages/install#step-2-grant-permissions">
+  Follow the installation guide to enable the Xcode Source Editor extension
+</Card>
+
+<Warning>
+  Without the Xcode Extension permission, shortcuts will not be available in Xcode's menu.
+</Warning>
+
+## Creating a Shortcut
+
+<Steps>
+  <Step title="Open Shortcut Settings">
+    Go to **Settings > Xcode Shortcuts** in cmd
+  </Step>
+
+  <Step title="Add New Shortcut">
+    Click **"Add Shortcut"** to create a new shortcut
+  </Step>
+
+  <Step title="Configure the Command">
+    Enter your command using any of the available variables
+
+    **Example Commands:**
+
+    <AccordionGroup>
+      <Accordion title="Open file in VS Code at line number" defaultOpen>
+        ```bash
+        code "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
+        ```
+        This opens the current file in VS Code, jumping to the selected line if available.
+      </Accordion>
+
+      <Accordion title="Copy file path to clipboard">
+        ```bash
+        echo "$FILEPATH" | pbcopy
+        ```
+        Copies the current file path to your clipboard.
+      </Accordion>
+
+      <Accordion title="Run a script with context">
+        ```bash
+        ~/scripts/process-selection.sh "$SELECTED_TEXT" "$FILEPATH"
+        ```
+        Executes a custom script with the selected text and file path.
+      </Accordion>
+
+      <Accordion title="Open terminal at project location">
+        ```bash
+        open -a Terminal "$PROJECT_PATH"
+        ```
+        Opens a new Terminal window at your project directory.
+      </Accordion>
+
+      <Accordion title="Lint current file">
+        ```bash
+        swiftformat --config rules.swiftformat "$FILEPATH"
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Name Your Shortcut">
+    Give your shortcut a descriptive name that will appear in Xcode's menu (e.g., "Open in VS Code", "Copy File Path")
+  </Step>
+
+  <Step title="Test the Shortcut">
+    Click the <Icon icon="play" /> button to test your shortcut and verify it works correctly
+  </Step>
+
+  <Step title="Save">
+    Click **"Save"** to add the shortcut
+  </Step>
+
+  <Step title="Save">
+    You should not find your shortcut in Xcode under `Editor` > `cmd` > `shortcut name`
+  </Step>
+</Steps>
+
+## Setting Up Key Bindings in Xcode
+
+For quick access, it is recommended to assign keyboard shortcuts to your commands:
+
+<Steps>
+  <Step title="Open Xcode Settings">
+    In Xcode, go to **Xcode > Settings > Key Bindings**
+  </Step>
+
+  <Step title="Find Your Shortcut">
+    Search for your shortcut name in the key bindings list, or for `cmd`
+  </Step>
+
+  <Step title="Assign a Key Combination">
+    Click on the shortcut and press your desired key combination.
+  </Step>
+
+  <Step title="(Optional) Resolve conflict">
+    If your desired key binding conflicts with one already defined in Xcode (there's a lot!), change or remove the conflicting one.
+  </Step>
+
+  <Step title="Verify">
+    The key binding is now active. Test it in any open Xcode file.
+  </Step>
+</Steps>
+
+<Tip>
+  **Recommended**: Set up key bindings for your most frequently used shortcuts to streamline your workflow.
+</Tip>
+
+## Variable Reference
+
+Use these variables in your shortcut commands to access Xcode context:
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `$FILEPATH` | Absolute path to the current file | `/Users/name/project/ContentView.swift` |
+| `$FILEPATH_FROM_GIT_ROOT` | Relative path to the current file from the git root | `./project/ContentView.swift` |
+| `$SELECTED_LINE_NUMBER_START` | First line of selection | `42` |
+| `$SELECTED_LINE_NUMBER_END` | Last line of selection | `58` |
+| `$XCODE_PROJECT_PATH` | The path to the project active in Xcode | `/Users/name/swift-package` `/Users/name/app.xcodeproj` |
+
+### Using Conditional Variables
+
+Some variables may not always be available (e.g., when nothing is selected). Use shell parameter expansion for conditional behavior:
+
+```bash
+# Only add line number if text is selected
+code "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
+```

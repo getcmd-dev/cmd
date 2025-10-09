@@ -10,7 +10,7 @@ The best AI in Xcode, open source.
 - 👉 Works with Xcode 26's AI chat
 - 🪪 [Official getcmd.dev home page](https://getcmd.dev/)
 
-<img align="center" width="100%" src="./docs/images/sidebar.png"/>
+<img align="center" width="100%" src="./docs/assets/sidebar.png"/>
 
 ## Key features:
 - **Seamless integration in Xcode**: `cmd` operates as a side panel in Xcode. It sees what is in Xcode, can edit files and take other actions.
@@ -32,11 +32,11 @@ The best AI in Xcode, open source.
                 <li>Go to <code>Xcode > Settings > Intelligence > Add a Model Provider</code></li>
                 <li>
                     Select a local model, running on port 10101<br/>
-                    <img align="center" height="300px" src="./docs/images/xcode26-installation-prompt.jpeg"/>
+                    <img align="center" height="300px" src="./docs/assets/xcode26-installation-prompt.jpeg"/>
                 </li>
                 <li>
                     Interact with <code>cmd</code> using either Xcode 26 built in AI chat, or <code>cmd</code>'s own UI.<br/>
-                    <img align="center" height="500px" src="./docs/images/xcode26-sidebar.jpeg"/>
+                    <img align="center" height="500px" src="./docs/assets/xcode26-sidebar.jpeg"/>
                 </li>
             </ul>
         </details>

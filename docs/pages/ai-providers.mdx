@@ -1,0 +1,66 @@
+---
+title: "AI Providers"
+description: "Configure AI providers to use with cmd"
+---
+
+## Overview
+
+cmd connects to AI providers using your API keys. You can configure multiple providers and switch between them as needed. This gives you flexibility to:
+
+- Use different providers for different tasks
+- Have backup options if one provider has issues
+- Compare performance across providers
+- Take advantage of different pricing models
+
+## Initial Setup
+
+During the onboarding flow, you'll be prompted to configure at least one AI provider. You can always add more providers later through **Settings > AI Providers**.
+
+
+## Adding a Provider
+
+<Steps>
+  <Step title="Open AI Providers Settings">
+    Go to **Settings > AI Providers**
+  </Step>
+
+  <Step title="Add New Provider">
+    Configure the desired provider (typically with an API key)
+  </Step>
+
+  <Step title="Save">
+    Select which of the available models to enable
+  </Step>
+</Steps>
+
+<Info>
+  API keys are stored securely in your macOS Keychain and are never sent to cmd's servers.
+</Info>
+
+## Managing Providers
+
+
+### Setting a Default Provider
+
+When multiple providers offer the same model, you can set which provider to use by default. See [Models](/pages/models) for details.
+
+### API Key Security
+
+<CardGroup cols={2}>
+  <Card title="Secure Storage" icon="lock">
+    API keys are stored in macOS Keychain
+  </Card>
+  <Card title="Encrypted Transmission" icon="shield">
+    All API calls use HTTPS for encrypted communication
+  </Card>
+  <Card title="No Key Sharing" icon="eye-slash">
+    Keys are never shared with anyone
+  </Card>
+  <Card title="Easy Revocation" icon="rotate">
+    Revoke keys anytime through your provider's console
+  </Card>
+</CardGroup>
+
+<Tip>
+  Configure multiple providers to compare costs and performance. You can switch providers anytime from **Settings > Models**.
+</Tip>

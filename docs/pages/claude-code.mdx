@@ -1,0 +1,101 @@
+---
+title: "Claude Code"
+description: "Configure Claude Code to use with cmd"
+---
+
+## Overview
+
+While cmd's agent mode can autonomously take on complex tasks, you might prefer to bring in an external agent.<br/>
+Setting up Claude Code gives you access to powerful agentic capabilities through cmd's native interface in Xcode.
+
+## Prerequisites
+
+Before configuring Claude Code in cmd, you need to have Claude Code installed and set up on your system.
+
+<Steps>
+  <Step title="Install Claude Code">
+    Follow [the official setup guide](https://docs.claude.com/en/docs/claude-code/setup) to install Claude Code.
+  </Step>
+
+  <Step title="Verify Installation">
+    Ensure Claude Code is working properly by running it from your terminal:
+
+    ```bash
+    claude --version
+    ```
+  </Step>
+  <Step title="Login in Claude Code">
+    Launch Claude Code in your terminal to authenticate (either with an API key or an Anthropic subscription)
+  </Step>
+</Steps>
+
+## Configuring Claude Code in cmd
+
+Once Claude Code is installed and configured, you can enable it in cmd:
+
+<Steps>
+  <Step title="Open AI Provider Settings">
+    Go to **Settings > AI Providers** in cmd
+  </Step>
+
+  <Step title="Configuration">
+    cmd should **automatically detect** where Claude Code is installed on your system.
+
+    Otherwise, or if you need specific launch arguments, you can manually specify how to launch Claude Code
+
+    1. Click **"Add Provider"** or **"Configure"** for Claude Code
+    2. Provide the path to the Claude Code binary
+    3. Optionally, specify a custom command if you use a specific way to run Claude Code
+
+    <AccordionGroup>
+      <Accordion title="Example: Using mise">
+        If you run Claude Code via `mise`, you can specify:
+
+        ```bash
+        mise x npm:@anthropic-ai/claude-code@latest -- claude code
+        ```
+      </Accordion>
+
+      <Accordion title="Example: Direct binary path">
+        If you have Claude Code installed in a specific location:
+
+        ```bash
+        /usr/local/bin/claude
+        ```
+      </Accordion>
+
+      <Accordion title="Example: npm global install">
+        If installed via npm globally:
+
+        ```bash
+        npx @anthropic-ai/claude-code
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Enable Claude Code">
+    Toggle **"Enable"** for Claude Code
+  </Step>
+</Steps>
+
+## Using Claude Code
+
+Once enabled, Claude Code will appear in your model selection:
+
+<Steps>
+  <Step title="Select Claude Code">
+    In the cmd interface, open the model selector and choose **"Claude Code"**
+  </Step>
+
+  <Step title="Start Using">
+    You can now use Claude Code's advanced agentic capabilities:
+    - Multi-step task execution
+    - Integrates with your existing Claude Code configuration, include `Claude.md`
+    - Rich native UI in cmd
+  </Step>
+</Steps>
+
+<Tip>
+  Claude Code appears in the model selector just like any other AI model, but as an external agent it provides advanced capabilities that go beyond simple chat interactions.
+</Tip>

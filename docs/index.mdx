@@ -1,97 +1,144 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Welcome to cmd"
+description: "The best AI in Xcode, open source"
 ---
 
-## Setting up
+import FeaturesShowcase from '/snippets/features-showcase.mdx';
 
-Get your documentation site up and running in minutes.
+<img
+  className="block dark:hidden"
+  src="/assets/hero-light.png"
+  alt="cmd hero"
+/>
+<img
+  className="hidden dark:block"
+  src="/assets/hero-dark.png"
+  alt="cmd hero"
+/>
+
+## Get Started in Minutes
+
+cmd brings powerful AI assistance directly into Xcode. Choose your path to get started:
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick Start"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Install and configure cmd in just a few minutes
+  </Card>
+  <Card
+    title="Learn More"
+    icon="book"
+    href="/pages/features"
+  >
+    Understand what makes cmd special
+  </Card>
+</CardGroup>
+
+## Why cmd?
+
+<CardGroup cols={3}>
+  <Card title="Seamless Integration" icon="apple">
+    Works alongside Xcode. Integrates with Xcode 26's native AI interface
+  </Card>
+  <Card title="Agentic AI" icon="robot">
+    Autonomous agents that understand context and check their own work
+  </Card>
+  <Card title="Open Source" icon="code">
+    Fully transparent, runs locally, you control your data
+  </Card>
+  <Card title="Your Choice of AI" icon="server">
+    Works with any AI provider of your choosing
+  </Card>
+  <Card title="External Agents" icon="terminal">
+    Delegate entire tasks to Claude Code through a native interface
+  </Card>
+</CardGroup>
+
+<FeaturesShowcase />
+
+## Installation
+
+<Steps>
+  <Step title="Install">
+    ```bash
+    brew install cmd
+    ```
+    Or [download the DMG](https://github.com/getcmd-dev/cmd/releases/latest)
+  </Step>
+
+  <Step title="Grant Permissions">
+    Allow accessibility access when prompted
+  </Step>
+
+  <Step title="Configure AI">
+    Add your API key from OpenAI, Anthropic, or another provider
+  </Step>
+
+  <Step title="Start Coding">
+    Open Xcode and start using cmd
+  </Step>
+</Steps>
 
 <Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
+  title="Detailed Installation Guide"
+  icon="book-open"
+  href="/pages/install"
 >
-  Follow our three step quickstart guide.
+  Need help? Follow our complete installation guide
 </Card>
 
-## Make it yours
+## Customize cmd
 
-Design a docs site that looks great and empowers your users.
+Make cmd work the way you want:
 
-<Columns cols={2}>
+<CardGroup cols={2}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Configure AI Providers"
+    icon="key"
+    href="/pages/ai-providers"
   >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Set up your preferred AI providers with API keys
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Select Models"
+    icon="sliders"
+    href="/pages/models"
   >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+    Choose which models to enable and use
   </Card>
   <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
+    title="MCP Servers"
+    icon="server"
+    href="/pages/mcp-servers"
   >
-    Add sample code to demonstrate how to use your product.
+    Extend capabilities with Model Context Protocol servers
+  </Card>
+</CardGroup>
+
+## Join the Community
+
+<CardGroup cols={2}>
+  <Card
+    title="GitHub"
+    icon="github"
+    href="https://github.com/getcmd-dev/cmd"
+  >
+    Contribute, report issues, or browse the source code
   </Card>
   <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
+    title="Website"
+    icon="globe"
+    href="https://getcmd.dev"
   >
-    Display images and other media.
+    Visit the official cmd website
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+---
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  cmd is open source and runs entirely on your machine. Your code is only sent to the AI providers you choose. You can opt out of anonymized analytics.
+</Note>

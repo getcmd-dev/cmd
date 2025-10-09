@@ -55,4 +55,4 @@ export OPENAI_LOCAL_SERVER_PROXY="http://localhost:10003/v1"
 export GROQ_LOCAL_SERVER_PROXY="http://localhost:10004/openai/v1"
 ```
 - Set a reverse proxy in your proxy tool. For instance in Proxyman (Tools > Reverse Proxy...):
-<img height="width: 100%" src="./docs/images/proxy-setup.png"/>
+<img height="width: 100%" src="./docs/assets/proxy-setup.png"/>

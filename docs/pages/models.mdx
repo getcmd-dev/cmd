@@ -1,0 +1,89 @@
+---
+title: "Models"
+description: "Select and configure AI models in cmd"
+---
+
+## Overview
+
+After configuring your [AI providers](/pages/ai-providers), you need to enable which models you want to use. cmd provides fine-grained control over:
+
+- Which models are available in the model selector
+- Which provider to use when a model is available from multiple sources
+- Default model preferences
+
+You can configure models during onboarding or anytime through **Settings > Models** or **Settings > AI Providers**.
+
+## Enabling Models
+
+<Steps>
+  <Step title="Open Model Settings">
+    Go to **Settings > Models** (or `⌘,` then navigate to Models)
+  </Step>
+
+  <Step title="Browse Available Models">
+    You'll see all models available from your configured providers
+  </Step>
+
+  <Step title="Enable Models">
+    Toggle on the models you want to use. Enabled models will appear in the model selector when using cmd.
+  </Step>
+
+  <Step title="Set Preferences">
+    If a model is available from multiple providers, select your preferred provider
+  </Step>
+</Steps>
+
+<Info>
+  You need at least one provider configured before you can enable models. See [AI Providers](/pages/ai-providers) to set up providers.
+</Info>
+
+## Managing Multiple Providers for the Same Model
+
+Some models may be available from multiple providers. For example:
+- **Claude Sonnet** from both Anthropic and OpenRouter
+- **GPT-4** from both OpenAI and Azure OpenAI
+- Popular models from both direct providers and aggregators
+
+### Setting Provider Preference
+
+<Steps>
+  <Step title="Open Model Settings">
+    Navigate to **Settings > Models**
+  </Step>
+
+  <Step title="Find the Model">
+    Locate the model that's available from multiple providers
+  </Step>
+
+  <Step title="Select Provider">
+    Choose which provider to use from the dropdown:
+    - Anthropic
+    - OpenRouter
+    - OpenAI
+    - etc.
+  </Step>
+
+  <Step title="Save Changes">
+    Your preference is saved automatically
+  </Step>
+</Steps>
+
+<Tip>
+  You might choose different providers based on:
+  - **Cost**: Compare pricing across providers
+  - **Speed**: Some providers may have faster response times
+  - **Reliability**: Use a backup provider if your primary is having issues
+  - **Features**: Some providers offer additional features
+</Tip>
+
+## Switching Models During Use
+
+Once you've enabled models, you can switch between them easily in the chat interface:
+
+1. Click the **model selector** at the top of the chat
+2. Choose from your enabled models
+3. Continue your conversation with the new model
+
+The model selector shows only the models you've enabled in settings.
+
+<Warning>After changing model mid-conversation, the next message will not have use prompt caching</Warning>

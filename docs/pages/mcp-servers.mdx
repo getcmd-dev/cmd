@@ -1,0 +1,49 @@
+---
+title: "MCP Servers"
+description: "Extend cmd's capabilities with Model Context Protocol servers"
+---
+
+<Note>
+  MCP integration is currently in Preview.
+</Note>
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is an open standard that enables AI assistants to connect to external tools and data sources. By configuring MCP servers in cmd, you can extend what AI models can do with:
+
+- Access to external databases
+- Integration with third-party APIs
+- Custom tools and functions
+- Additional context from various sources
+
+
+## Configuring MCP Servers
+
+
+<Steps>
+  <Step title="Open MCP Settings">
+    Navigate to **Settings > MCP Servers** in cmd
+  </Step>
+
+  <Step title="Add New Server">
+    Click **"Add"**
+  </Step>
+
+  <Step title="Configure Server">
+    Enter the server details in the typical JSON format. You'll see examples in cmd
+  </Step>
+
+  <Step title="Test Connection">
+    Click **"Test"** to verify the server is accessible and responding correctly
+  </Step>
+
+  <Step title="Enable Server">
+    Toggle the server on to make it available to cmd
+  </Step>
+</Steps>
+
+## Security Considerations
+
+<Warning>
+  MCP servers can access sensitive data and execute commands. Only use trusted MCP servers and carefully review permissions.
+</Warning>
