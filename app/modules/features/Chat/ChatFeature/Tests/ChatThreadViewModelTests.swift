@@ -20,8 +20,17 @@ import Testing
 import XcodeObserverServiceInterface
 @testable import ChatFeature
 
+private let workspaceURL = URL(fileURLWithPath: "/Users/test/MyProject")
+private let fileURL = URL(fileURLWithPath: "/Users/test/MyProject/File.swift")
+private let otherFileURL = URL(fileURLWithPath: "/Users/test/MyProject/OtherFile.swift")
+
 // MARK: - ChatThreadViewModelTests
 
+@Suite("ChatThreadViewModelTests", .dependencies {
+  $0.withAllModelAvailable()
+  $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
+  $0.xcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL, focussedTabURL: fileURL)
+})
 struct ChatThreadViewModelTests {
 
   // MARK: - App Event Registry Tests
@@ -30,7 +39,8 @@ struct ChatThreadViewModelTests {
   @Test("View model registers handler with app event registry on initialization")
   func viewModelRegistersHandlerWithAppEventRegistry() async throws {
     // Setup
-    let mockEventRegistry = MockAppEventHandlerRegistry()
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let handlerRegistered = Atomic<Bool>(false)
 
     mockEventRegistry.onRegisterHandler = { _ in
@@ -38,11 +48,7 @@ struct ChatThreadViewModelTests {
     }
 
     // when
-    let sut = withDependencies {
-      $0.appEventHandlerRegistry = mockEventRegistry
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // then
     #expect(handlerRegistered.value == true)
@@ -53,18 +59,15 @@ struct ChatThreadViewModelTests {
   @Test("View model handles set_conversation_name command correctly")
   func viewModelHandlesSetConversationNameCommand() async throws {
     // given
-    let mockEventRegistry = MockAppEventHandlerRegistry()
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let registeredHandler = Atomic<(@Sendable (AppEvent) async -> Bool)?>(nil)
 
     mockEventRegistry.onRegisterHandler = { handler in
       registeredHandler.set(to: handler)
     }
 
-    let sut = withDependencies {
-      $0.appEventHandlerRegistry = mockEventRegistry
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     let expectedName = "New Thread Name"
     let nameParams = Schema.NameConversationCommandParams(
@@ -93,18 +96,15 @@ struct ChatThreadViewModelTests {
   @Test("View model ignores set_conversation_name command for different thread")
   func viewModelIgnoresSetConversationNameCommandForDifferentThread() async throws {
     // given
-    let mockEventRegistry = MockAppEventHandlerRegistry()
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let registeredHandler = Atomic<(@Sendable (AppEvent) async -> Bool)?>(nil)
 
     mockEventRegistry.onRegisterHandler = { handler in
       registeredHandler.set(to: handler)
     }
 
-    let sut = withDependencies {
-      $0.appEventHandlerRegistry = mockEventRegistry
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // Prepare test data with different thread ID
     let nameParams = Schema.NameConversationCommandParams(
@@ -133,19 +133,16 @@ struct ChatThreadViewModelTests {
   @MainActor
   @Test("View model ignores non-set_conversation_name commands")
   func viewModelIgnoresNonSetConversationNameCommands() async throws {
-    // Setup
-    let mockEventRegistry = MockAppEventHandlerRegistry()
+    // given
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let registeredHandler = Atomic<(@Sendable (AppEvent) async -> Bool)?>(nil)
 
     mockEventRegistry.onRegisterHandler = { handler in
       registeredHandler.set(to: handler)
     }
 
-    let sut = withDependencies {
-      $0.appEventHandlerRegistry = mockEventRegistry
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // Prepare test data with different command
     let event = ExecuteExtensionRequestEvent(
@@ -165,19 +162,16 @@ struct ChatThreadViewModelTests {
   @MainActor
   @Test("View model handles non-ExecuteExtensionRequestEvent events")
   func viewModelHandlesNonExecuteExtensionRequestEventEvents() async throws {
-    // Setup
-    let mockEventRegistry = MockAppEventHandlerRegistry()
+    // given
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let registeredHandler = Atomic<(@Sendable (AppEvent) async -> Bool)?>(nil)
 
     mockEventRegistry.onRegisterHandler = { handler in
       registeredHandler.set(to: handler)
     }
 
-    let sut = withDependencies {
-      $0.appEventHandlerRegistry = mockEventRegistry
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // Create a custom event that is not ExecuteExtensionRequestEvent
     struct CustomEvent: AppEvent { }
@@ -195,16 +189,11 @@ struct ChatThreadViewModelTests {
   @Test("receiving messages updates state")
   func test_receivingMessages_updatesState() async throws {
     // given
-    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
 
     let testThreadId = UUID()
-
-    let sut = withDependencies {
-      $0.withAllModelAvailable()
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel(id: testThreadId)
-    }
+    let sut = ChatThreadViewModel(id: testThreadId)
 
     let isDoneStreaming = expectation(description: "is done streaming")
     let hasProcessedFirstMessage = expectation(description: "has processed first message")
@@ -246,10 +235,10 @@ struct ChatThreadViewModelTests {
           }
           return events
         }
-        if value.count == 2 {
+        if value.count == 3 {
           hasProcessedFirstMessage.fulfillAtMostOnce()
         }
-        if value.count == 3 {
+        if value.count == 4 {
           isDoneStreaming.fulfillAtMostOnce()
         }
       }
@@ -273,33 +262,29 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file")
   func sendMessageIncludesFocussedFile() async throws {
     // given
-    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
+    let hasSentMessages = expectation(description: "has sent messages")
 
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
       messagesSent.set(to: messages)
+      hasSentMessages.fulfill()
       return SendMessageResponse(newMessages: [], usageInfo: nil)
     }
 
-    let workspaceURL = URL(fileURLWithPath: "/Users/test/MyProject")
-    let fileURL = URL(fileURLWithPath: "/Users/test/MyProject/File.swift")
-    let sut = withDependencies {
-      $0.withAllModelAvailable()
-      $0.xcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL, focussedTabURL: fileURL)
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
     await sut.sendMessage()
+    try await fulfillment(of: hasSentMessages)
 
     // then
     let sentMessages = messagesSent.value
     #expect(sentMessages.count == 2)
     #expect(sentMessages.map { $0.content.map(\.text) } == [
-      ["The file currently focused in the editor is: /Users/test/MyProject/File.swift"],
+      ["The file currently focused in the editor is: \(fileURL.path)"],
       ["How do I fix this?"],
     ])
   }
@@ -308,23 +293,16 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file only once if it doesn't change")
   func sendMessageIncludesFocussedFileOnlyOnceIfItDoesNotChange() async throws {
     // given
-    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
       messagesSent.set(to: messages)
       return SendMessageResponse(newMessages: [], usageInfo: nil)
     }
 
-    let workspaceURL = URL(fileURLWithPath: "/Users/test/MyProject")
-    let fileURL = URL(fileURLWithPath: "/Users/test/MyProject/File.swift")
-    let sut = withDependencies {
-      $0.withAllModelAvailable()
-      $0.xcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL, focussedTabURL: fileURL)
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    let sut = ChatThreadViewModel()
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
@@ -335,7 +313,7 @@ struct ChatThreadViewModelTests {
     // then
     let sentMessages = messagesSent.value
     #expect(sentMessages.map { $0.content.map(\.text) } == [
-      ["The file currently focused in the editor is: /Users/test/MyProject/File.swift"],
+      ["The file currently focused in the editor is: \(fileURL.path)"],
       ["How do I fix this?"],
       ["Thanks"],
     ])
@@ -345,25 +323,19 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file twice if it changed")
   func sendMessageIncludesFocussedFileTwiceIfItChanged() async throws {
     // given
-    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
       messagesSent.set(to: messages)
       return SendMessageResponse(newMessages: [], usageInfo: nil)
     }
-    let workspaceURL = URL(fileURLWithPath: "/Users/test/MyProject")
-    let fileURL = URL(fileURLWithPath: "/Users/test/MyProject/File.swift")
-    let otherFileURL = URL(fileURLWithPath: "/Users/test/MyProject/OtherFile.swift")
-    let mockXcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL, focussedTabURL: fileURL)
 
-    let sut = withDependencies {
-      $0.withAllModelAvailable()
-      $0.xcodeObserver = mockXcodeObserver
-      $0.llmService = mockLLMService
-    } operation: {
-      ChatThreadViewModel()
-    }
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    let mockXcodeObserver = try #require(xcodeObserver as? MockXcodeObserver)
+
+    let sut = ChatThreadViewModel()
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
@@ -394,9 +366,9 @@ struct ChatThreadViewModelTests {
     // then
     let sentMessages = messagesSent.value
     #expect(sentMessages.map { $0.content.map(\.text) } == [
-      ["The file currently focused in the editor is: /Users/test/MyProject/File.swift"],
+      ["The file currently focused in the editor is: \(fileURL.path)"],
       ["How do I fix this?"],
-      ["The file currently focused in the editor is: /Users/test/MyProject/OtherFile.swift"],
+      ["The file currently focused in the editor is: \(otherFileURL.path)"],
       ["Thanks"],
     ])
   }
@@ -404,9 +376,7 @@ struct ChatThreadViewModelTests {
   // MARK: - Summarization Tests
 
   @MainActor
-  @Test("conversation summarization is triggered when token usage exceeds 80% of context size", .dependencies {
-    $0.withAllModelAvailable()
-  })
+  @Test("conversation summarization is triggered when token usage exceeds 80% of context size")
   func conversationSummarizationTriggeredWhenTokensExceedThreshold() async throws {
     // given
     @Dependency(\.llmService) var llmService
@@ -501,9 +471,7 @@ struct ChatThreadViewModelTests {
   }
 
   @MainActor
-  @Test("summarization uses correct model and message history", .dependencies {
-    $0.withAllModelAvailable()
-  })
+  @Test("summarization uses correct model and message history")
   func summarizationUsesCorrectParameters() async throws {
     // given
     @Dependency(\.llmService) var llmService
@@ -544,9 +512,7 @@ struct ChatThreadViewModelTests {
   }
 
   @MainActor
-  @Test("summarization handles errors gracefully", .dependencies {
-    $0.withAllModelAvailable()
-  })
+  @Test("summarization handles errors gracefully")
   func summarizationHandlesErrorsGracefully() async throws {
     // given
     @Dependency(\.llmService) var llmService
@@ -592,9 +558,7 @@ struct ChatThreadViewModelTests {
   }
 
   @MainActor
-  @Test("message sent during summarization waits for completion and uses summarized context", .dependencies {
-    $0.withAllModelAvailable()
-  })
+  @Test("message sent during summarization waits for completion and uses summarized context")
   func messageDuringSummarizationWaitsAndUsesSummarizedContext() async throws {
     // given
     @Dependency(\.llmService) var llmService
@@ -660,6 +624,7 @@ struct ChatThreadViewModelTests {
     #expect(messages.count == 2)
     #expect(messages == [
       [
+        "The file currently focused in the editor is: \(fileURL.path)",
         "First message",
       ],
       [

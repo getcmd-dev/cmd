@@ -195,37 +195,35 @@ public class ChatViewModel {
     }
   }
 
-  private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
-    Task { @MainActor in
-      if !ProcessInfo.processInfo.isRunningInTestEnvironment {
-        NSApp.setActivationPolicy(.regular)
-        // TODO: make sure the app is activated. Sometimes it doesn't work.
-        Task { try await NSApplication.activateCurrentApp() }
-      }
+  private func handle(addCodeToChatEvent event: AddCodeToChatEvent) async {
+    if !ProcessInfo.processInfo.isRunningInTestEnvironment {
+      NSApp.setActivationPolicy(.regular)
+      // TODO: make sure the app is activated. Sometimes it doesn't work.
+      Task { try await NSApplication.activateCurrentApp() }
+    }
 
-      if event.newThread {
-        self.addTab()
-      }
-      if let chatMode = event.chatMode {
-        self.tab.input.mode = chatMode
-      }
+    if event.newThread {
+      addTab()
+    }
+    if let chatMode = event.chatMode {
+      tab.input.mode = chatMode
+    }
 
-      self.tab.input.textInputNeedsFocus = true
+    tab.input.textInputNeedsFocus = true
 
-      if let workspace = xcodeObserver.state.focusedWorkspace {
-        let handled = await addCodeSelection(from: workspace)
-        if !handled {
-          // Add log for debugging.
-          if
-            let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
-              .debugDescription
-          {
-            defaultLogger.log(axInfo as String)
-          }
+    if let workspace = xcodeObserver.state.focusedWorkspace {
+      let handled = await addCodeSelection(from: workspace)
+      if !handled {
+        // Add log for debugging.
+        if
+          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
+            .debugDescription
+        {
+          defaultLogger.log(axInfo as String)
         }
-      } else {
-        defaultLogger.log("No workspace found to handle add to code to chat event")
       }
+    } else {
+      defaultLogger.log("No workspace found to handle add to code to chat event")
     }
   }
 

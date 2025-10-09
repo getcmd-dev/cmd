@@ -26,10 +26,9 @@ import XcodeObserverServiceInterface
 // MARK: - ChatViewModelTests
 
 @Suite(.dependencies {
-  $0.userDefaults = MockUserDefaults()
+  $0.withAllModelAvailable()
   $0.chatHistoryService = MockChatHistoryService()
   $0.fileManager = MockFileManager()
-  $0.llmService = MockLLMService()
   $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
 })
 struct ChatViewModelTests {
@@ -48,9 +47,7 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("adding a new tab replaces the current one", .dependencies {
-    $0.withAllModelAvailable()
-  })
+  @Test("adding a new tab replaces the current one")
   func addingNewTabReplacesCurrentOne() async {
     // given
     let sut = ChatViewModel()
@@ -212,13 +209,14 @@ struct ChatViewModelTests {
   @Test("addCodeSelection adds file selection attachment when editor has selection")
   func addCodeSelectionAddsFileSelectionAttachment() async throws {
     // given
+    @Dependency(\.fileManager) var fileManager
+    let mockFileManager = try #require(fileManager as? MockFileManager)
     let filePath = try #require(URL(string: "file:///test/file.swift"))
     let content = "Test file content"
-    let mockFileManager = MockFileManager(files: [
-      filePath.path(): content,
-    ])
-    let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
+    try mockFileManager.write(string: content, to: filePath, options: .atomic)
 
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    let mockXcodeObserver = try #require(xcodeObserver as? MockXcodeObserver)
     let xcodeState = XcodeState(
       activeApplicationProcessIdentifier: 123,
       previousApplicationProcessIdentifier: nil,
@@ -243,17 +241,13 @@ struct ChatViewModelTests {
               knownPath: filePath,
               lastKnownContent: content)])]),
       ])
-    let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.state(xcodeState))
+    mockXcodeObserver.mutableStatePublisher.send(AXState<XcodeState>.state(xcodeState))
 
-    let sut = withDependencies {
-      $0.xcodeObserver = mockXcodeObserver
-      $0.fileManager = mockFileManager
-      $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
-    } operation: {
-      ChatViewModel()
-    }
+    let sut = ChatViewModel()
 
     // when
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
+    let mockAppEventHandlerRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: false, chatMode: nil))
 
     // then
