@@ -1,10 +1,10 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import AppUpdateServiceInterface
 import Dependencies
 import DLS
-import AppFoundation
 import PermissionsServiceInterface
 import SettingsServiceInterface
 import SwiftUI
@@ -34,12 +34,10 @@ struct AboutSettingsView: View {
           InfoRow(label: "Version", value: Bundle.main.shortVersion)
           InfoRow(label: "Build", value: Bundle.main.version)
           InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
-          #if DEBUG
           Divider()
           PermissionStatusRow(permission: .accessibility, permissionsService: permissionsService)
           Divider()
           PermissionStatusRow(permission: .xcodeExtension, permissionsService: permissionsService)
-          #endif
         }
         .padding(16)
         .background(Color(NSColor.controlBackgroundColor))
@@ -251,8 +249,6 @@ private struct PermissionStatusRow: View {
   let permission: Permission
   let permissionsService: PermissionsService
 
-  @State private var status: Bool?
-
   var body: some View {
     HStack {
       Text(permissionLabel)
@@ -269,6 +265,8 @@ private struct PermissionStatusRow: View {
       status = newStatus
     }
   }
+
+  @State private var status: Bool?
 
   private var permissionLabel: String {
     switch permission {

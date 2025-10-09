@@ -4,6 +4,7 @@
 import Dependencies
 import DLS
 import ExtensionEventsInterface
+import PermissionsServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
 import ShellServiceInterface
@@ -21,6 +22,20 @@ struct UserDefinedXcodeShortcutsSettingsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
+      // Documentation link
+      PlainLink(
+        "Documentation",
+        destination: URL(string: "https://docs.getcmd.dev/pages/xcode-shortcuts")!)
+
+      // Xcode Extension permission warning
+      if !isXcodeExtensionPermissionGranted {
+        WarningView(
+          title: "Xcode Extension permissions required",
+          subtext:
+          Text(
+            "Xcode shortcuts need Xcode Extension permissions to work. Please grant permissions in \(Text("[**Settings > Login Items & Extensions > Xcode Source Editor**](x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.dt.Xcode.extension.source-editor)"))."))
+      }
+
       VStack(alignment: .leading) {
         Text("Easily create new shortcuts in Xcode")
           .font(.headline)
@@ -130,11 +145,17 @@ struct UserDefinedXcodeShortcutsSettingsView: View {
 
       Spacer()
     }
+    .onReceive(permissionsService.status(for: .xcodeExtension)) { isGranted in
+      isXcodeExtensionPermissionGranted = isGranted == true
+    }
   }
 
+  @State private var isXcodeExtensionPermissionGranted = false
   @State private var editingShortcut: UserDefinedXcodeShortcut?
   @State private var showingAddForm = false
   @Environment(\.colorScheme) private var colorScheme
+
+  @Dependency(\.permissionsService) private var permissionsService
 
   private var hasAvailableCommandIndex: Bool {
     userDefinedXcodeShortcuts.nextAvailableXcodeCommandIndex() != nil

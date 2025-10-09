@@ -44,24 +44,23 @@ extension Bundle {
     }
     return bundleId
   }
-    
-    public var version: String {
-        guard let version = infoDictionary?["CFBundleVersion"] as? String else {
-            logger.error("CFBundleVersion not found in Info.plist, using fallback 'Unknown'")
-            return "Unknown"
-        }
-        return version
+
+  public var version: String {
+    guard let version = infoDictionary?["CFBundleVersion"] as? String else {
+      logger.error("CFBundleVersion not found in Info.plist, using fallback 'Unknown'")
+      return "Unknown"
     }
-    
-    public var shortVersion: String {
-        guard let version = infoDictionary?["CFBundleShortVersionString"] as? String else {
-            logger.error("CFBundleShortVersionString not found in Info.plist, using fallback 'Unknown'")
-            return "Unknown"
-        }
-        return version
+    return version
+  }
+
+  public var shortVersion: String {
+    guard let version = infoDictionary?["CFBundleShortVersionString"] as? String else {
+      logger.error("CFBundleShortVersionString not found in Info.plist, using fallback 'Unknown'")
+      return "Unknown"
     }
-    
-    
+    return version
+  }
+
   /// Whether the current process is the Xcode extension.
   public var isXcodeExtension: Bool {
     bundleIdentifier == xcodeExtensionBundleId
