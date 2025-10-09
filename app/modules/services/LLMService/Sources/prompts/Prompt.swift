@@ -263,20 +263,30 @@ enum Prompt {
       return "# Always use absolute path."
     }
     return """
-      # Always use path relative to the project root.
+      # Always use absolute path when using tools. Always use path relative to the project root otherwise.
 
-      The directory root is \(
-      projectRoot
-      .path). Any relative path is relative to this root, and you should prefer using relative path whenever possible. Relative path should start with './', and only absolute paths should start with '/'.
-      For instance to describe the content of a file at the absolute path /path/to/new/file use:
+      The directory root is `\(projectRoot
+      .path)`. Relative path should start with './', and only absolute paths should start with '/'.
+
+      ## Absolute path for tools
+      Tools do not know where it the project root. They ALWAYS need an absolute path starting with '/'.
+      If you are given a relative path, you MUST convert it to an absolute path by prepending the project root path.
+
+      ## Relative path for text content
+      When refering to a path within the content of your response, you MUST use a path relative to the project root. This will be displayed to the user as is, and they prefer to see relative paths.
+      Any relative path is relative to this root. 
+      For instance:
+      - to describe the content of a file at the absolute path /path/to/new/file use:
       ```language:/path/to/new/file
       /// Some code file
       ```
 
-      and to describe the content of a file at the relative path src/components/Button.tsx use:
+      - to describe the content of a file at the relative path src/components/Button.tsx use:
       ```language:./src/components/Button.tsx
       /// Some code file
       ```
+
+      - to otherwise describe a path within the content of your response, use the relative path starting with './', for instance "The button is at `./src/components/Button.tsx`". 
       """
   }
 
