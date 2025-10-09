@@ -32,6 +32,10 @@ struct ModelsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      PlainLink("Documentation", destination: URL(string: "https://docs.getcmd.dev/pages/models"))
+        .font(.subheadline)
+        .foregroundColor(.secondary)
+        .padding(.bottom, 16)
       // Search bar
       HStack {
         Image(systemName: "magnifyingglass")

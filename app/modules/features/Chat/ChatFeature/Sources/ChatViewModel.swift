@@ -249,7 +249,7 @@ public class ChatViewModel {
       return false
     }
 
-    guard let filePath = await xcodeObserver.focussedFileURL(in: workspace) else {
+    guard let filePath = await xcodeObserver.focusedTabURL(in: workspace) else {
       defaultLogger.log("Could not resolve file path for file \(editor.fileName) to handle add to code to chat event")
       return false
     }

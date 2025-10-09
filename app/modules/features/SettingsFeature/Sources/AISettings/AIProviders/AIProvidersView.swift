@@ -19,6 +19,10 @@ public struct AIProvidersView: View {
   public var body: some View {
     ZStack {
       VStack(alignment: .leading, spacing: 0) {
+        PlainLink("Documentation", destination: URL(string: "https://docs.getcmd.dev/pages/ai-providers"))
+          .font(.subheadline)
+          .foregroundColor(.secondary)
+          .padding(.bottom, 16)
         // Search bar
         HStack {
           Image(systemName: "magnifyingglass")

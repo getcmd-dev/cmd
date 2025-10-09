@@ -18,6 +18,11 @@ struct MCPSettingsView: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
+      PlainLink("Documentation", destination: URL(string: "https://docs.getcmd.dev/pages/mcp-servers"))
+        .font(.subheadline)
+        .foregroundColor(.secondary)
+        .padding(.bottom, 16)
+
       if isCreatingNewServer {
         NewMCPServerCard(
           cancel: {
