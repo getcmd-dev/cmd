@@ -248,22 +248,8 @@ public class ChatViewModel {
       defaultLogger.log("No content found in the focus editor to handle add to code to chat event")
       return false
     }
-    var filePath: URL?
-    if let path = workspace.tabs.first(where: { $0.fileName == editor.fileName })?.knownPath {
-      filePath = path
-    } else if
-      // The Accessibility API, which xcode observer uses to set the `knownPath`,
-      // only gives the absolute path for the file focussed on the first editor tab.
-      // So in split screen mode, if the user focuses on the second tab, this value is missing.
-      // We therefore perform a more expensive operation to list all files in the workspace to find a match.
-      let matchingFiles = try? await xcodeObserver.listFiles(in: workspace.url).0
-        .filter({ $0.lastPathComponent == editor.fileName }),
-      matchingFiles.count == 1,
-      let path = matchingFiles.first
-    {
-      filePath = path
-    }
-    guard let filePath else {
+
+    guard let filePath = await xcodeObserver.focussedFileURL(in: workspace) else {
       defaultLogger.log("Could not resolve file path for file \(editor.fileName) to handle add to code to chat event")
       return false
     }

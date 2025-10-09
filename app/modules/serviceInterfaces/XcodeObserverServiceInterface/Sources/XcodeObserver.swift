@@ -30,6 +30,14 @@ extension XcodeObserver {
     statePublisher.currentValue
   }
 
+  /// The URL of the file currently focussed in the IDE, if any.
+  public var focusedTabURL: URL? {
+    get async {
+      guard let workspace = state.focusedWorkspace else { return nil }
+      return await focusedTabURL(in: workspace)
+    }
+  }
+
   /// The content of the file, as last observed in the IDE.
   /// Note: if the file has not yet been opened in the IDE, or if the observation was started after the file was focussed, this content is unknown.
   public func knownEditorContent(of file: URL) -> String? {
@@ -40,6 +48,27 @@ extension XcodeObserver {
         }.first
       }.first
     }.first
+  }
+
+  /// The URL of the file currently focussed in the workspace, if any.
+  public func focusedTabURL(in workspace: XcodeWorkspaceState) async -> URL? {
+    guard let editor = workspace.editors.first(where: { $0.isFocused }) else { return nil }
+
+    if let path = workspace.tabs.first(where: { $0.fileName == editor.fileName })?.knownPath {
+      return path
+    } else if
+      // The Accessibility API, which Xcode observer uses to set the `knownPath`,
+      // only gives the absolute path for the file focussed on the first editor tab.
+      // So in split screen mode, if the user focuses on the second tab, this value is missing.
+      // We therefore perform a more expensive operation to list all files in the workspace to find a match.
+      let matchingFiles = try? await listFiles(in: workspace.url).0
+        .filter({ $0.lastPathComponent == editor.fileName }),
+      matchingFiles.count == 1,
+      let path = matchingFiles.first
+    {
+      return path
+    }
+    return nil
   }
 }
 
@@ -60,11 +89,6 @@ extension AXState<XcodeState> {
   public var focusedWorkspace: XcodeWorkspaceState? {
     focusedInstance?.workspaces
       .first
-  }
-
-  public var focusedTabURL: URL? {
-    focusedWorkspace?.tabs
-      .first(where: { $0.isFocused })?.knownPath
   }
 }
 

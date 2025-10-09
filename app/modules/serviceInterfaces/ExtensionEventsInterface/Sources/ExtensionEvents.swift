@@ -44,12 +44,12 @@ extension UserDefinedXcodeShortcutExecutionInput {
     let xcodeState = xcodeObserver.state
 
     // Set FILEPATH
-    if let currentFile = xcodeState.focusedTabURL {
+    if let currentFile = await xcodeObserver.focusedTabURL {
       environmentVariables["FILEPATH"] = currentFile.path(percentEncoded: false)
     }
     // Set FILEPATH_FROM_GIT_ROOT
     if
-      let currentFile = xcodeState.focusedTabURL,
+      let currentFile = await xcodeObserver.focusedTabURL,
       let gitRoot = try? await shellService.stdout(
         "git rev-parse --show-toplevel",
         cwd: currentFile.deletingLastPathComponent().path)

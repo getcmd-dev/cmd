@@ -162,7 +162,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
-    updateFocusFileInfo()
+    await updateFocusFileInfo()
 
     if let summarizationTask {
       try? await summarizationTask.value
@@ -408,9 +408,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
   }
 
-  private func updateFocusFileInfo() {
+  private func updateFocusFileInfo() async {
     // Check if the focused file in Xcode has changed and add it as context
-    if let currentFocusedFile = xcodeObserver.state.focusedTabURL {
+    if let currentFocusedFile = await xcodeObserver.focusedTabURL {
       if currentFocusedFile != lastFocusedFileURL {
         lastFocusedFileURL = currentFocusedFile
 
