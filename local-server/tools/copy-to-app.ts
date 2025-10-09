@@ -50,8 +50,9 @@ const copyIconsToApp = async () => {
 	await fs.copy(srcIconsDir, tmpDir, { overwrite: true })
 
 	// Set all files to epoch time for deterministic archive
+	// Use UTC timezone to ensure consistent timestamps across all environments
 	await new Promise<void>((resolve, reject) => {
-		const touchProcess = spawn("sh", ["-c", `find ${tmpDir} -exec touch -t 197001010000 {} +`])
+		const touchProcess = spawn("sh", ["-c", `TZ=UTC find ${tmpDir} -exec touch -t 197001010000 {} +`])
 		touchProcess.on("error", reject)
 		touchProcess.on("close", (code) => {
 			if (code === 0) resolve()
