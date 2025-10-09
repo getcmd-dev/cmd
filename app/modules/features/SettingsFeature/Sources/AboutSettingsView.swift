@@ -244,7 +244,6 @@ struct AppUpdateRow: View {
 
 // MARK: - PermissionStatusRow
 
-#if DEBUG
 private struct PermissionStatusRow: View {
   let permission: Permission
   let permissionsService: PermissionsService
@@ -299,4 +298,3 @@ private struct PermissionStatusRow: View {
     }
   }
 }
-#endif
