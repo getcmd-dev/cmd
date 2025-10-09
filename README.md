@@ -17,13 +17,13 @@ The best AI in Xcode, open source.
 - **Best agentic AI in Xcode**: `cmd` uses frontier models and provides them with file access, build tools, and project context for effective code generation.
 - **Easy to trust**: `cmd` is open source and runs entirely locally. No data about your code is sent to 3rd parties other than the AI providers of your choosing. You can opt out of anonymised analytics.
 - **Claude Code**: `cmd` brings Claude Code to Xcode, as the first external agent supported.
-- **Chose the AI provider you want**: `cmd` supports the most popular AI providers. If you need another one, reach out!
+- **Choose the AI provider you want**: `cmd` supports the most popular AI providers. If you need another one, reach out!
 
 
 ## Installation
 
 <ul>
-    <li><code>brew install cmd</code> (or alternatievly <a href="https://github.com/getcmd-dev/cmd/releases/download/v0.1.25/cmd.dmg">download the latest release</a>)</li><!-- version automatically updated during release -->
+    <li><code>brew install cmd</code> (or alternatively <a href="https://github.com/getcmd-dev/cmd/releases/download/v0.1.25/cmd.dmg">download the latest release</a>)</li><!-- version automatically updated during release -->
     <li>Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)</li>
     <li>
         <details>

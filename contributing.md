@@ -37,15 +37,15 @@ gem install bundler && bundle install
 ```
 
 ## Architecture overview
-command has a MacOS app and a local node server:
-- the MacOS app handles all the UI/UX and intergration with Xcode.
-- the local node server handles some business logic that leverages open source code written in typescript. Some examples include interfacing with external providers, defining some agentic tools etc. It's not worth re-building the wheel in Swift for the sake of it. The installation of node and the local server is managed by the MacOS app.
+command has a macOS app and a local node server:
+- the macOS app handles all the UI/UX and intergration with Xcode.
+- the local node server handles some business logic that leverages open source code written in typescript. Some examples include interfacing with external providers, defining some agentic tools etc. It's not worth re-building the wheel in Swift for the sake of it. The installation of node and the local server is managed by the macOS app.
 
 ## App developement
 See the [app's development guide](./app/contributing.md) for more details.
 
 ## Proxying network traffic
-`cmd` sends requests from both the MacOS app and the node process it launches. Requests from the MacOS app can be proxied in a standard way by any proxy tool. Requests from the node process (which include all chat completion) require some specific setup:
+`cmd` sends requests from both the macOS app and the node process it launches. Requests from the macOS app can be proxied in a standard way by any proxy tool. Requests from the node process (which include all chat completion) require some specific setup:
 - Set env variables for the provider you want to proxy. For instance:
 ```bash
 # in ~/.zshrc
