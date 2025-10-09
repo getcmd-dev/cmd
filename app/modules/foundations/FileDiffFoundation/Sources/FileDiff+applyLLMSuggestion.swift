@@ -112,7 +112,9 @@ extension FileDiff {
         // Given the regex, this can only happen if the search is empty, which is only allowed if the file content is empty.
         assert(search.isEmpty)
         if !fileContent.isEmpty {
-          throw DiffError.message("Search pattern -\(search)- does not end with a newline character.")
+          throw DiffError.message(
+            errorDescription: "Search pattern -\(search)- does not end with a newline character.",
+            debugDescription: nil)
         }
       } else {
         search.removeLast()
@@ -175,7 +177,9 @@ extension FileDiff {
         }
 
       guard let firstFind else {
-        throw DiffError.message("Could not find search pattern in original content:\n---\n\(search)\n---")
+        throw DiffError.message(
+          errorDescription: "Could not find search pattern in original content",
+          debugDescription: "---\n\(search)\n---")
       }
 
       let startIndex = firstFind
@@ -212,13 +216,32 @@ extension FileDiff {
 // MARK: - DiffError
 
 public enum DiffError: Error, LocalizedError {
-  case message(String)
+  case message(errorDescription: String, debugDescription: String?)
   case notADiff(content: String)
 
   public var errorDescription: String? {
     switch self {
-    case .message(let message):
+    case .message(let message, _):
       message
+    case .notADiff:
+      "The diff is not correctly formatted"
+    }
+  }
+}
+
+// MARK: CustomDebugStringConvertible
+
+extension DiffError: CustomDebugStringConvertible {
+  /// A detailed description of the error.
+  public var debugDescription: String {
+    switch self {
+    case .message(let message, let debugDescription):
+      if let debugDescription {
+        "\(message)\ndebugDescription: \(debugDescription)"
+      } else {
+        "The diff is not correctly formatted"
+      }
+
     case .notADiff(let content):
       "The diff is not correctly formatted. Could not parse \(content)"
     }

@@ -391,7 +391,7 @@ struct ApplyLLMSuggestionTests {
       >>>>>>> REPLACE
       """
     #expect(performing: { _ = try FileDiff.apply(searchReplacePattern: diff, to: fileContent) }, throws: { error in
-      (error as? DiffError)?.errorDescription?.contains("Could not find search pattern in original content") == true
+      (error as? DiffError)?.errorDescription == "Could not find search pattern in original content"
     })
   }
 
@@ -411,7 +411,7 @@ struct ApplyLLMSuggestionTests {
       Some unparsed content
       """
     #expect(performing: { _ = try FileDiff.apply(searchReplacePattern: diff, to: fileContent) }, throws: { error in
-      (error as? DiffError)?.errorDescription?.contains("The diff is not correctly formatted") == true
+      (error as? DiffError)?.errorDescription == "The diff is not correctly formatted"
     })
   }
 
@@ -429,7 +429,7 @@ struct ApplyLLMSuggestionTests {
       Hello, universe!>>>>>>> REPLACE
       """
     #expect(performing: { _ = try FileDiff.apply(searchReplacePattern: diff, to: fileContent) }, throws: { error in
-      (error as? DiffError)?.errorDescription?.contains("The diff is not correctly formatted") == true
+      (error as? DiffError)?.errorDescription == "The diff is not correctly formatted"
     })
   }
 
