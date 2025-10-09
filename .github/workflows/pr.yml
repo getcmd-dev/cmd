@@ -3,6 +3,9 @@ name: Integration tests
 on:
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
 concurrency:
   group: integration-tests-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
