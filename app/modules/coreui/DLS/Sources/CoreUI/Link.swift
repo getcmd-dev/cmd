@@ -6,7 +6,6 @@ import SwiftUI
 
 public struct PlainLink: View {
   public init(_ title: some StringProtocol, destination: URL?) {
-    print("init PlainLink")
     label = { Text(title) }
     if destination == nil {
       defaultLogger.error("The URL provided for the PlainLink is nil. title: \(title)")

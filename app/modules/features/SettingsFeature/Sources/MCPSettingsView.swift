@@ -85,8 +85,7 @@ private struct NewMCPServerCard: View {
   let saveLabel: String
   @State private var raw = """
     {
-      "command": "npx",
-      "args": ["-y", "mcp-ripgrep@latest"]
+
     }
     """
 
@@ -271,9 +270,12 @@ private struct NewMCPServerCard: View {
     }
   }
 
-  /// Extracts the original tool name by removing the "mcp__<serverName>__" prefix.
+  /// Extracts the original tool name by removing the "mcp__" prefix if present.
   private func originalName(for mcpTool: any Tool) -> String {
-    mcpTool.name.replacingOccurrences(of: "mcp__", with: "").components(separatedBy: "__").dropFirst().joined(separator: "__")
+    guard mcpTool.name.hasPrefix("mcp__") else {
+      return mcpTool.name
+    }
+    return mcpTool.name.dropFirst("mcp__".count).components(separatedBy: "__").last ?? ""
   }
 
   private func saveServer() async throws {
