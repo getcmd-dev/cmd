@@ -135,6 +135,7 @@ struct ToolUseView: View {
         .frame(width: 14, height: 14)
         .foregroundColor(foregroundColor)
       Text("Searching \(toolUse.input.regex) failed: \(error.localizedDescription)")
+        .textSelection(.enabled)
         .foregroundColor(foregroundColor)
     }
   }

@@ -126,6 +126,7 @@ struct WebSearchToolUseView: View {
                 .foregroundColor(colorScheme.removedLineDiffText)
               Text("Error: \(error)")
                 .font(.caption)
+                .textSelection(.enabled)
                 .foregroundColor(colorScheme.toolUseForeground)
                 .lineLimit(isExpanded ? nil : 1)
                 .truncationMode(.tail)

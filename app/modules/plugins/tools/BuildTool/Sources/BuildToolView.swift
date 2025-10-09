@@ -136,6 +136,7 @@ struct ToolUseView: View {
         } else {
           Text("Build failed")
             .font(.system(.body, design: .monospaced))
+            .textSelection(.enabled)
             .foregroundColor(foregroundColor)
             .lineLimit(1)
           Image(systemName: "xmark")
@@ -171,6 +172,7 @@ struct ToolUseView: View {
         .frame(width: 15)
       Text("Build failed: \(error.localizedDescription)")
         .font(.system(.body, design: .monospaced))
+        .textSelection(.enabled)
         .foregroundColor(colorScheme.xcodeErrorColor)
         .lineLimit(1)
       Spacer(minLength: 0)

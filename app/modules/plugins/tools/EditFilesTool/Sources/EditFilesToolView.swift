@@ -88,11 +88,13 @@ struct ToolUseView: View {
       VStack(alignment: .leading) {
         HStack {
           Text("Error editing file")
+            .textSelection(.enabled)
             .foregroundColor(colorScheme.redError)
           Spacer(minLength: 0)
         }
         if isErrorViewHovered {
           Text(error.localizedDescription)
+            .textSelection(.enabled)
             .foregroundColor(colorScheme.secondaryForeground)
         }
       }
@@ -259,6 +261,7 @@ struct FileChangeView: View {
       if isExpanded {
         if case .error(let error) = editState {
           Text("error: \(error)")
+            .textSelection(.enabled)
         }
 
         CodePreview(
