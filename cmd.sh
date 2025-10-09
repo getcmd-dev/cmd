@@ -17,7 +17,7 @@ lint_swift_command() {
 	else
 		# make path absolute
 		if [[ "$1" != /* ]]; then
-			files="$(current_dir)/$1"
+			files="$($current_dir)/$1"
 		else
 			files="$1"
 		fi

@@ -487,6 +487,7 @@ targets.append(contentsOf: Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "MCPServiceInterface",
+    "PermissionsServiceInterface",
     "SettingsServiceInterface",
     "SharedUtilsFoundation",
     "SharedValuesFoundation",

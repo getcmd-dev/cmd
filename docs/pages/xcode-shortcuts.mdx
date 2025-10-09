@@ -42,7 +42,7 @@ Before configuring shortcuts, ensure you have granted the Xcode Extension permis
     <AccordionGroup>
       <Accordion title="Open file in VS Code at line number" defaultOpen>
         ```bash
-        code "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
+        code --goto "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
         ```
         This opens the current file in VS Code, jumping to the selected line if available.
       </Accordion>
@@ -141,5 +141,5 @@ Some variables may not always be available (e.g., when nothing is selected). Use
 
 ```bash
 # Only add line number if text is selected
-code "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
+code --goto "$FILEPATH${SELECTED_LINE_NUMBER_START:+:$SELECTED_LINE_NUMBER_START}"
 ```

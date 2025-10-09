@@ -6,6 +6,7 @@ import Foundation
 import LoggingService
 import LoggingServiceInterface
 import ThreadSafe
+import AppFoundation
 
 // MARK: - AppLauncherScope
 
@@ -14,6 +15,7 @@ public final class AppLauncherScope: Sendable, BaseProviding {
 
   init() {
     setupLogging()
+      defaultLogger.log("Launching app launcher (version: \(Bundle.main.version)")
   }
 
   public static let shared = AppLauncherScope()

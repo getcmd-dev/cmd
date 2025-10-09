@@ -6,6 +6,8 @@ import DependencyFoundation
 import LoggingService
 import LoggingServiceInterface
 import ThreadSafe
+import Foundation
+import AppFoundation
 
 // MARK: - AppScope
 @ThreadSafe
@@ -31,6 +33,7 @@ final class AppScope: Sendable, BaseProviding {
     sharedDependencies = AppScopeStorage(initial: initialDependencies)
 
     setupLogging()
+      defaultLogger.log("Launching app (version: \(Bundle.main.version)")
   }
 
   func _shared<T: Sendable>(key: String, _ build: @Sendable () -> T) -> T {

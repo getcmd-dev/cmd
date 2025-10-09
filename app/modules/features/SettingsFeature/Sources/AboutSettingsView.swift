@@ -4,6 +4,8 @@
 import AppUpdateServiceInterface
 import Dependencies
 import DLS
+import AppFoundation
+import PermissionsServiceInterface
 import SettingsServiceInterface
 import SwiftUI
 
@@ -29,9 +31,15 @@ struct AboutSettingsView: View {
               onRelaunchTapped: { appUpdateService.relaunch() })
             Divider()
           }
-          InfoRow(label: "Version", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")
-          InfoRow(label: "Build", value: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown")
+          InfoRow(label: "Version", value: Bundle.main.shortVersion)
+          InfoRow(label: "Build", value: Bundle.main.version)
           InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
+          #if DEBUG
+          Divider()
+          PermissionStatusRow(permission: .accessibility, permissionsService: permissionsService)
+          Divider()
+          PermissionStatusRow(permission: .xcodeExtension, permissionsService: permissionsService)
+          #endif
         }
         .padding(16)
         .background(Color(NSColor.controlBackgroundColor))
@@ -141,6 +149,7 @@ struct AboutSettingsView: View {
   }
 
   @Dependency(\.appUpdateService) private var appUpdateService: AppUpdateService
+  @Dependency(\.permissionsService) private var permissionsService: PermissionsService
 
 }
 
@@ -234,3 +243,62 @@ struct AppUpdateRow: View {
   }
 
 }
+
+// MARK: - PermissionStatusRow
+
+#if DEBUG
+private struct PermissionStatusRow: View {
+  let permission: Permission
+  let permissionsService: PermissionsService
+
+  @State private var status: Bool?
+
+  var body: some View {
+    HStack {
+      Text(permissionLabel)
+        .foregroundColor(.secondary)
+      Spacer()
+      Text(statusText)
+        .fontWeight(.medium)
+        .foregroundColor(statusColor)
+    }
+    .onAppear {
+      status = permissionsService.status(for: permission).currentValue
+    }
+    .onReceive(permissionsService.status(for: permission)) { newStatus in
+      status = newStatus
+    }
+  }
+
+  private var permissionLabel: String {
+    switch permission {
+    case .accessibility:
+      "Accessibility Permission"
+    case .xcodeExtension:
+      "Xcode Extension Permission"
+    }
+  }
+
+  private var statusText: String {
+    switch status {
+    case .some(true):
+      "Granted"
+    case .some(false):
+      "Denied"
+    case .none:
+      "Unknown"
+    }
+  }
+
+  private var statusColor: Color {
+    switch status {
+    case .some(true):
+      .green
+    case .some(false):
+      .red
+    case .none:
+      .secondary
+    }
+  }
+}
+#endif
