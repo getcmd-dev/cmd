@@ -1,0 +1,276 @@
+name: Rocket Merge
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  merge-on-rocket:
+    # Only run on PR comments
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '🚀')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+      issues: write
+
+    steps:
+      - name: Check permissions and approvals
+        id: check-permission
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Check commenter's permission level
+            const permission = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username: context.actor
+            });
+
+            const isAdmin = permission.data.permission === 'admin';
+            const hasWritePermission = ['admin', 'write'].includes(permission.data.permission);
+
+            console.log(`User ${context.actor} has permission level: ${permission.data.permission}`);
+
+            // If not admin, check for admin approval on the PR
+            let hasAdminApproval = false;
+            if (!isAdmin) {
+              console.log('User is not admin, checking for admin approvals...');
+
+              const reviews = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+
+              // Check each reviewer's permission level
+              for (const review of reviews.data) {
+                if (review.state === 'APPROVED') {
+                  const reviewerPermission = await github.rest.repos.getCollaboratorPermissionLevel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    username: review.user.login
+                  });
+
+                  if (reviewerPermission.data.permission === 'admin') {
+                    console.log(`Found admin approval from ${review.user.login}`);
+                    hasAdminApproval = true;
+                    break;
+                  }
+                }
+              }
+            }
+
+            // User must have write permission AND (be admin OR have admin approval)
+            if (!hasWritePermission) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `❌ @${context.actor} does not have permission to merge this PR.`
+              });
+              core.setFailed('User does not have merge permissions');
+              return;
+            }
+
+            if (!isAdmin && !hasAdminApproval) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `❌ @${context.actor} cannot merge: this PR requires approval from an admin first.`
+              });
+              core.setFailed('PR not approved by admin');
+              return;
+            }
+
+            console.log('Permission check passed!');
+            core.setOutput('has-permission', 'true');
+
+      - name: Post status comment
+        if: steps.check-permission.outputs.has-permission == 'true'
+        id: status-comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🚀 Merge requested by @' + context.actor + '. Will merge once all tests pass (within 60 minutes)...'
+            });
+
+            console.log(`Posted status comment with ID: ${comment.data.id}`);
+            core.setOutput('comment-id', comment.data.id);
+
+      - name: Get PR details
+        if: steps.check-permission.outputs.has-permission == 'true'
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            core.setOutput('ref', pr.data.head.ref);
+            core.setOutput('sha', pr.data.head.sha);
+            core.setOutput('mergeable', pr.data.mergeable);
+            core.setOutput('mergeable_state', pr.data.mergeable_state);
+            core.setOutput('title', pr.data.title);
+
+            console.log(`PR #${context.issue.number} - mergeable: ${pr.data.mergeable}, state: ${pr.data.mergeable_state}`);
+
+      - name: Wait for checks to complete
+        if: steps.check-permission.outputs.has-permission == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const maxAttempts = 120; // Wait up to 60 minutes
+            const delayMs = 30000; // Check every 30 seconds
+
+            const originalSha = '${{ steps.pr.outputs.sha }}';
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              console.log(`Attempt ${attempt}/${maxAttempts}: Checking status...`);
+
+              // Check if the PR head SHA has changed (new commits pushed)
+              const currentPr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+
+              if (currentPr.data.head.sha !== originalSha) {
+                console.log(`PR head changed from ${originalSha} to ${currentPr.data.head.sha}`);
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                  body: '🔄 Merge cancelled: new commits were pushed to the branch.'
+                });
+                core.setFailed('New commits pushed');
+                return;
+              }
+
+              // Get combined status
+              const status = await github.rest.repos.getCombinedStatusForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: originalSha
+              });
+
+              // Get check runs
+              const checks = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: originalSha
+              });
+
+              const statusState = status.data.state;
+              const allChecksComplete = checks.data.check_runs.every(check =>
+                check.status === 'completed'
+              );
+              const allChecksSuccess = checks.data.check_runs.every(check =>
+                check.conclusion === 'success' || check.conclusion === 'skipped'
+              );
+
+              console.log(`Status: ${statusState}, Checks complete: ${allChecksComplete}, Checks success: ${allChecksSuccess}`);
+
+              const hasRequiredChecks = status.data.statuses.length > 0 || checks.data.check_runs.length > 0;
+              if (!hasRequiredChecks) {
+                console.log('No required checks found, proceeding...');
+                return;
+              }
+
+              if (allChecksComplete && statusState === 'success' && allChecksSuccess) {
+                console.log('All checks passed!');
+                return;
+              }
+
+              // If any check failed
+              const anyCheckFailed = checks.data.check_runs.some(check =>
+                check.conclusion === 'failure' || check.conclusion === 'cancelled' || check.conclusion === 'timed_out'
+              );
+
+              if (statusState === 'failure' || anyCheckFailed) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                  body: '❌ Cannot merge: checks have failed.'
+                });
+                core.setFailed('Checks failed');
+                return;
+              }
+
+              // Wait before next attempt
+              if (attempt < maxAttempts) {
+                console.log(`Waiting ${delayMs/1000} seconds before next check...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+              }
+            }
+
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+              body: '⏱️ Timeout: checks did not complete within 60 minutes.'
+            });
+            core.setFailed('Timeout waiting for checks');
+
+      - name: Squash and merge
+        if: steps.check-permission.outputs.has-permission == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const originalSha = '${{ steps.pr.outputs.sha }}';
+
+            try {
+              // Final check: verify PR head hasn't changed right before merging
+              const finalPr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+
+              if (finalPr.data.head.sha !== originalSha) {
+                console.log(`PR head changed from ${originalSha} to ${finalPr.data.head.sha}`);
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                  body: '🔄 Merge cancelled: new commits were pushed to the branch.'
+                });
+                core.setFailed('New commits pushed before merge');
+                return;
+              }
+
+              const result = await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                merge_method: 'squash',
+                commit_title: `${{ steps.pr.outputs.title }} (#${context.issue.number})`,
+              });
+
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                body: `🚀 PR merged successfully by @${context.actor}!`
+              });
+
+              console.log('PR merged successfully');
+            } catch (error) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                body: `❌ Failed to merge: ${error.message}`
+              });
+              throw error;
+            }
