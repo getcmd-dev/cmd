@@ -206,7 +206,7 @@ public final class RoutesRegistry: Sendable {
 ///
 /// The `Router` maintains a navigation stack using SwiftUI's `@Observable` macro,
 /// automatically triggering UI updates when navigation occurs. It must be used
-/// with `NavigationStackWithRegistry` to function properly.
+/// with `RoutableNavigationStack` to function properly.
 ///
 /// ## Usage
 ///

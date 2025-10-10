@@ -65,7 +65,7 @@ final class SidePanel: XcodeWindow {
 
     backgroundColor = .clear
 
-    let root = NavigationStackWithRegistry(
+    let root = RoutableNavigationStack(
       router: router,
       rootView: ChatView(
         viewModel: windowsViewModel.chat),

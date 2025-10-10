@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-// MARK: - NavigationStackWithRegistry
+// MARK: - RoutableNavigationStack
 
 /// A navigation stack that integrates with the RoutingFoundation system.
 ///
@@ -14,7 +14,7 @@ import SwiftUI
 /// ## Usage
 ///
 /// ```swift
-/// NavigationStackWithRegistry(
+/// RoutableNavigationStack(
 ///   registry: routeRegistry,
 ///   rootView: HomeView(),
 ///   navBarBuilder: { popAction in
@@ -40,13 +40,13 @@ import SwiftUI
 /// - **Navigation Bar**: Provide a custom navigation bar via `navBarBuilder`
 /// - **Background Colors**: Set default and per-route background colors
 /// - **Root View**: The initial view shown when the navigation stack is empty
-public struct NavigationStackWithRegistry: View {
+public struct RoutableNavigationStack: View {
 
   /// Creates a navigation stack integrated with the routing system.
   ///
   /// - Parameters:
-  ///   - registry: The `RoutesRegistry` containing all route builders. Routes should be
-  ///     registered before creating the navigation stack.
+  ///   - router: The `Router` that handles navigation events. Routes should be
+  ///     registered to its registry before creating the navigation stack.
   ///   - rootView: The initial view shown when the navigation stack is empty.
   ///   - navBarBuilder: A closure that constructs the custom navigation bar for pushed routes.
   ///     Receives a closure to trigger back navigation.
@@ -58,9 +58,10 @@ public struct NavigationStackWithRegistry: View {
   /// ```swift
   /// let registry = RoutesRegistry()
   /// registry.registerRoutes()
+  /// let router = Router(registry: registry)
   ///
-  /// NavigationStackWithRegistry(
-  ///   registry: registry,
+  /// RoutableNavigationStack(
+  ///   router: router,
   ///   rootView: HomeView(),
   ///   navBarBuilder: { popAction in
   ///     HStack {

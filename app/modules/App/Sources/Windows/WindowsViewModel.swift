@@ -35,8 +35,8 @@ final class WindowsViewModel {
   struct State {
     let isSidePanelVisible: Bool
     let isOnboardingVisible: Bool
-      /// Whether the window should show the Settings view.
-      /// When true, this state is expected to be transient and to be reset to false as soon as the Settings have been shown.
+    /// Whether the window should show the Settings view.
+    /// When true, this state is expected to be transient and to be reset to false as soon as the Settings have been shown.
     let needsToPushSettingsView: Bool
 
     func with(
