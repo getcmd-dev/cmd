@@ -45,6 +45,7 @@ Target.module(
     "PermissionsService",
     "PermissionsServiceInterface",
     "ReadFileTool",
+    "RoutingFoundation",
     "SearchFilesTool",
     "SettingsFeature",
     "SettingsService",

@@ -3,19 +3,18 @@
 
 import Dependencies
 import DLS
+import RoutingFoundation
+import SettingsFeatureInterface
 import SwiftUI
 
 // MARK: - OnboardingView
 
 struct OnboardingView: View {
   /// Create a view to guide the user through a few onboarding steps.
-  /// - Parameter showAIProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
   init(
-    viewModel: OnboardingViewModel,
-    createAIAIProvidersView: @MainActor @escaping () -> AnyView)
+    viewModel: OnboardingViewModel)
   {
     self.viewModel = viewModel
-    self.createAIAIProvidersView = createAIAIProvidersView
   }
 
   enum Constants {
@@ -54,7 +53,7 @@ struct OnboardingView: View {
 
   @Bindable private var viewModel: OnboardingViewModel
 
-  private let createAIAIProvidersView: @MainActor () -> AnyView
+  @Environment(Router.self) private var router
 
   @ViewBuilder
   private var llmProviderSetupView: some View {
@@ -71,7 +70,7 @@ struct OnboardingView: View {
         Spacer(minLength: 0)
       }
 
-      createAIAIProvidersView()
+      AnyView(router.embed(route: AIProviderSettingsRoute()))
 
       if viewModel.canSkipProviderSetup {
         HoveredButton(

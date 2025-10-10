@@ -6,8 +6,10 @@ import AccessibilityObjCFoundation
 import AppKit
 import ChatFeature
 import Dependencies
+import DLS
 import FoundationInterfaces
 import LoggingServiceInterface
+import RoutingFoundation
 import SettingsFeature
 import SettingsServiceInterface
 import SwiftUI
@@ -60,13 +62,21 @@ final class SidePanel: XcodeWindow {
 
     backgroundColor = .clear
 
-    let root = ChatView(
-      viewModel: windowsViewModel.chat,
-      SettingsView: { onDismiss in
-        AnyView(SettingsView(
-          viewModel: SettingsViewModel(),
-          onDismiss: onDismiss))
-      })
+    let routesRegistry = RoutesRegistry()
+    routesRegistry.registerRoutes()
+
+    let root = NavigationStackWithRegistry(
+      registry: routesRegistry,
+      rootView: ChatView(
+        viewModel: windowsViewModel.chat),
+      navBarBuilder: { dismiss in
+        HStack {
+          BackButton { dismiss() }
+            .padding()
+          Spacer()
+        }
+      },
+      defaultBackgroundColor: { $0.primaryBackground })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     let hostingView = NSHostingView(rootView: root)

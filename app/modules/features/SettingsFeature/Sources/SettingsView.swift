@@ -2,37 +2,26 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import DLS
+import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
 
 // MARK: - SettingsView
 
 public struct SettingsView: View {
-  public init(viewModel: SettingsViewModel, onDismiss: @MainActor @escaping () -> Void = { }) {
+  public init(viewModel: SettingsViewModel) {
     self.viewModel = viewModel
-    self.onDismiss = onDismiss
   }
 
   public var body: some View {
-    ZStack {
-      if currentView == .landing {
-        SettingsLandingView(
-          onNavigate: { section in
-            currentView = section
-          },
-          onDismiss: onDismiss,
-          hasAvailableModels: !viewModel.llmSettings.availableModels.isEmpty,
-          showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
-      }
-
-      if currentView != .landing {
-        overlayView
-          .transition(.move(edge: .trailing))
-      }
-    }
-    .padding(.horizontal, Constants.horizontalPadding)
-    .padding(.vertical, Constants.verticalPadding)
-    .background(colorScheme.primaryBackground)
+    SettingsLandingView(
+      onNavigate: { section in
+        router.push(view(for: section))
+      },
+      hasAvailableModels: !viewModel.llmSettings.availableModels.isEmpty,
+      showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
+      .padding(.horizontal, Constants.horizontalPadding)
+      .padding(.vertical, Constants.verticalPadding)
   }
 
   private enum Constants {
@@ -40,27 +29,19 @@ public struct SettingsView: View {
     static let verticalPadding: CGFloat = 16
   }
 
+  @Environment(Router.self) private var router
+
   @Environment(\.colorScheme) private var colorScheme
   @Bindable private var viewModel: SettingsViewModel
 
-  @State private var currentView = SettingsSection.landing
-
-  private let onDismiss: @MainActor () -> Void
-
   @ViewBuilder
-  private var overlayView: some View {
+  private func view(for section: SettingsSection) -> some View {
     VStack(spacing: 0) {
-      // Header with back button
-      HStack {
-        BackButton { currentView = .landing }
-        Spacer()
-      }
-
       // Header with icon and title
       HStack(spacing: 8) {
-        Image(systemName: currentView.iconName)
+        Image(systemName: section.iconName)
           .frame(width: 16, height: 16)
-        Text(currentView.title)
+        Text(section.title)
           .font(.title2)
           .fontWeight(.medium)
         Spacer()
@@ -68,7 +49,7 @@ public struct SettingsView: View {
       .padding(.top, 16)
       .padding(.bottom, 20)
 
-      switch currentView {
+      switch section {
       case .providers:
         AIProvidersView(viewModel: viewModel.llmSettings)
 
@@ -108,11 +89,10 @@ public struct SettingsView: View {
           automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
           fileEditMode: $viewModel.fileEditMode,
           launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate)
-
-      case .landing:
-        EmptyView()
       }
     }
+    .padding(.horizontal, Constants.horizontalPadding)
+    .padding(.vertical, Constants.verticalPadding)
   }
 
 }
@@ -120,7 +100,6 @@ public struct SettingsView: View {
 // MARK: - SettingsSection
 
 private enum SettingsSection: String, Identifiable, CaseIterable {
-  case landing
   case providers
   case models
   case chatModes
@@ -135,8 +114,6 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 
   var title: String {
     switch self {
-    case .landing:
-      "Settings"
     case .providers:
       "Providers"
     case .models:
@@ -160,8 +137,6 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 
   var iconName: String {
     switch self {
-    case .landing:
-      "gearshape"
     case .providers:
       "key"
     case .models:
@@ -188,14 +163,11 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 
 private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
-  let onDismiss: () -> Void
   let hasAvailableModels: Bool
   let showInternalSettingsInRelease: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      BackButton { onDismiss() }
-
       // Header
       HStack {
         Icon(systemName: "gearshape")

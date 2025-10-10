@@ -6,6 +6,8 @@ import ConcurrencyFoundation
 import Dependencies
 import DLS
 import FoundationInterfaces
+import RoutingFoundation
+import SettingsFeatureInterface
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -29,11 +31,9 @@ import XcodeObserverServiceInterface
 public struct ChatView: View {
 
   public init(
-    viewModel: ChatViewModel,
-    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
+    viewModel: ChatViewModel)
   {
     self.viewModel = viewModel
-    self.SettingsView = SettingsView
   }
 
   public var body: some View {
@@ -58,11 +58,6 @@ public struct ChatView: View {
             viewModel.handleSelectChatThread(id: threadId)
           })
       }
-      if showSettingsSheet {
-        SettingsView {
-          showSettingsSheet = false
-        }
-      }
     }
     .background(colorScheme.primaryBackground)
   }
@@ -80,14 +75,13 @@ public struct ChatView: View {
     viewModel.focusedWorkspacePath?.lastPathComponent.split(separator: ".").first.map(String.init)
   }
 
-  @State private var showSettingsSheet = false
-
   @Environment(\.colorScheme) private var colorScheme
 
   @Bindable private var viewModel: ChatViewModel
 
+  @Environment(Router.self) private var router
+
   @Dependency(\.userDefaults) private var userDefaults
-  private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
 
   @ViewBuilder
   private var quickActionsRow: some View {
@@ -117,7 +111,7 @@ public struct ChatView: View {
 
       IconButton(
         action: {
-          showSettingsSheet = true
+          router.navigate(to: SettingsRoute())
         },
         systemName: "gearshape",
         onHoverColor: colorScheme.secondarySystemBackground,

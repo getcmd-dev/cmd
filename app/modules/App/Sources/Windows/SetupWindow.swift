@@ -2,8 +2,9 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppKit
+import DLS
 import Onboarding
-import SettingsFeature
+import RoutingFoundation
 import SwiftUI
 
 final class SetupWindow: NSWindow {
@@ -16,19 +17,28 @@ final class SetupWindow: NSWindow {
       backing: .buffered,
       defer: false)
 
-    let root = OnboardingFeatureBuilder.build(.init(
-      bringWindowToFront: { [weak self] in
-        NSApplication.shared.activate()
-        self?.makeKeyAndOrderFront(nil)
-        self?.orderFrontRegardless()
+    let routesRegistry = RoutesRegistry()
+    routesRegistry.registerRoutes()
+
+    let root = NavigationStackWithRegistry(
+      registry: routesRegistry,
+      rootView: OnboardingFeatureBuilder.build(.init(
+        bringWindowToFront: { [weak self] in
+          NSApplication.shared.activate()
+          self?.makeKeyAndOrderFront(nil)
+          self?.orderFrontRegardless()
+        },
+        onDone: {
+          onComplete()
+        })),
+      navBarBuilder: { dismiss in
+        HStack {
+          BackButton { dismiss() }
+            .padding()
+          Spacer()
+        }
       },
-      onDone: {
-        onComplete()
-      },
-      createAIAIProvidersView: { [weak self] in
-        guard let self else { return AnyView(EmptyView()) }
-        return AnyView(AIProvidersView(viewModel: settingsViewModel))
-      }))
+      defaultBackgroundColor: { $0.primaryBackground })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     let hostingView = NSHostingView(rootView: root)
@@ -51,6 +61,4 @@ final class SetupWindow: NSWindow {
     // Center window on screen
     center()
   }
-
-  private let settingsViewModel = LLMSettingsViewModel()
 }
