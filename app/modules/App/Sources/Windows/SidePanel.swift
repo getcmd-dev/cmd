@@ -10,7 +10,6 @@ import DLS
 import FoundationInterfaces
 import LoggingServiceInterface
 import RoutingFoundation
-import SettingsFeature
 import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
