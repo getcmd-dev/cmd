@@ -41,6 +41,11 @@
           "anchor": "About Us",
           "href": "https://getcmd.dev/",
           "icon": "book-open"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://discord.gg/s268Kajr",
+          "icon": "discord"
         }
       ]
     }
@@ -69,8 +74,9 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/getcmd_dev",
-      "github": "https://github.com/getcmd-dev"
+      "discord": "https://discord.gg/s268Kajr",
+      "github": "https://github.com/getcmd-dev",
+      "x": "https://x.com/getcmd_dev"
     }
   }
 }

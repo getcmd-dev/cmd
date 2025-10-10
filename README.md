@@ -1,3 +1,6 @@
+[![Build & Deploy](https://github.com/getcmd-dev/cmd/actions/workflows/main.yml/badge.svg)](https://github.com/getcmd-dev/cmd/actions/workflows/main.yml)
+<a href="https://discord.gg/s268Kajr"><img src="https://img.shields.io/badge/Join%20Discord-5865F2?style=flat&logo=discord&logoColor=white" alt="Join Discord"></a>
+
 # **⌘ cmd**
 
 The best AI in Xcode, open source.
