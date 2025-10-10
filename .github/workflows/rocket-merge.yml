@@ -13,6 +13,7 @@ jobs:
       contents: write
       pull-requests: write
       checks: read
+      issues: write
 
     steps:
       - name: Check permissions and approvals
