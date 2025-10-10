@@ -45,7 +45,7 @@ export class GeminiAIProvider implements AIProvider {
 		const baseUrl =
 			process.env["GEMINI_LOCAL_SERVER_PROXY"] ??
 			params.baseUrl ??
-			"https://generativelanguage.googleapis.com/v1beta/"
+			"https://generativelanguage.googleapis.com/v1beta"
 		const allModels: ModelBaseInfo[] = []
 		let nextPageToken: string | undefined = undefined
 
