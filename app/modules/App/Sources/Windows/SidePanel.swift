@@ -6,9 +6,10 @@ import AccessibilityObjCFoundation
 import AppKit
 import ChatFeature
 import Dependencies
+import DLS
 import FoundationInterfaces
 import LoggingServiceInterface
-import SettingsFeature
+import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
@@ -20,6 +21,10 @@ final class SidePanel: XcodeWindow {
 
     @Dependency(\.userDefaults) var userDefaults
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
+
+    let routesRegistry = RoutesRegistry()
+    routesRegistry.registerRoutes()
+    router = Router(registry: routesRegistry)
 
     super.init(contentRect: .zero)
 
@@ -60,13 +65,18 @@ final class SidePanel: XcodeWindow {
 
     backgroundColor = .clear
 
-    let root = ChatView(
-      viewModel: windowsViewModel.chat,
-      SettingsView: { onDismiss in
-        AnyView(SettingsView(
-          viewModel: SettingsViewModel(),
-          onDismiss: onDismiss))
-      })
+    let root = RoutableNavigationStack(
+      router: router,
+      rootView: ChatView(
+        viewModel: windowsViewModel.chat),
+      navBarBuilder: { dismiss in
+        HStack {
+          BackButton { dismiss() }
+            .padding()
+          Spacer()
+        }
+      },
+      defaultBackgroundColor: { $0.primaryBackground })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     let hostingView = NSHostingView(rootView: root)
@@ -90,6 +100,8 @@ final class SidePanel: XcodeWindow {
   }
 
   let defaultChatPositionIsInverted: Bool
+
+  let router: Router
 
   override var canBecomeKey: Bool { true }
 

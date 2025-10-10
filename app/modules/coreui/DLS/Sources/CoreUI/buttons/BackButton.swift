@@ -1,13 +1,14 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import DLS
 import SwiftUI
 
-struct BackButton: View {
-  let action: () -> Void
+public struct BackButton: View {
+  public init(action: @escaping () -> Void) {
+    self.action = action
+  }
 
-  var body: some View {
+  public var body: some View {
     HoveredButton(
       action: {
         action()
@@ -25,5 +26,7 @@ struct BackButton: View {
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  private let action: () -> Void
 
 }

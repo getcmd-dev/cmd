@@ -37,12 +37,8 @@ struct AIProvidersView: View {
 }
 
 extension OnboardingView {
-  init(
-    createAIAIProvidersView: @Sendable @escaping () -> AnyView)
-  {
-    self.init(
-      viewModel: OnboardingViewModel(),
-      createAIAIProvidersView: createAIAIProvidersView)
+  init() {
+    self.init(viewModel: OnboardingViewModel())
   }
 }
 
@@ -50,9 +46,7 @@ extension OnboardingView {
   withDependencies {
     $0.permissionsService = createMockPermissionService()
   } operation: {
-    OnboardingView(createAIAIProvidersView: {
-      AnyView(AIProvidersView())
-    })
+    OnboardingView()
   }
 }
 

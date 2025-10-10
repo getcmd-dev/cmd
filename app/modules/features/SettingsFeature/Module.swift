@@ -14,6 +14,8 @@ Target.module(
     "LoggingServiceInterface",
     "MCPServiceInterface",
     "PermissionsServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
     "SharedUtilsFoundation",
     "SharedValuesFoundation",

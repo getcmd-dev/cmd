@@ -261,7 +261,6 @@ class AIModelsManagerTests {
       llmProviderSettings: [
         .anthropic: Settings.AIProviderSettings(apiKey: "old-key", baseUrl: nil, executable: nil, createdOrder: 1),
       ])
-    print(settings.preferedProviders)
     let settingsService = MockSettingsService(settings)
     let sut = AIModelsManager(
       localServer: MockLocalServer(),

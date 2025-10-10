@@ -9,16 +9,13 @@ import SwiftUI
 public struct Input {
   let bringWindowToFront: @MainActor () -> Void
   let onDone: @MainActor () -> Void
-  let createAIAIProvidersView: @MainActor () -> AnyView
 
   public init(
     bringWindowToFront: @MainActor @escaping () -> Void,
-    onDone: @MainActor @escaping () -> Void,
-    createAIAIProvidersView: @MainActor @escaping () -> AnyView)
+    onDone: @MainActor @escaping () -> Void)
   {
     self.bringWindowToFront = bringWindowToFront
     self.onDone = onDone
-    self.createAIAIProvidersView = createAIAIProvidersView
   }
 }
 
@@ -30,7 +27,7 @@ public enum OnboardingFeatureBuilder {
     let viewModel = OnboardingViewModel(
       bringWindowToFront: input.bringWindowToFront,
       onDone: input.onDone)
-    return AnyView(OnboardingView(viewModel: viewModel, createAIAIProvidersView: input.createAIAIProvidersView))
+    return AnyView(OnboardingView(viewModel: viewModel))
   }
 
 }

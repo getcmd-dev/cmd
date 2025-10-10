@@ -7,6 +7,8 @@ Target.module(
     "LLMServiceInterface",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
   ],
   resources: [.process("Resources")],

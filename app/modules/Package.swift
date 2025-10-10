@@ -118,8 +118,10 @@ targets.append(contentsOf: Target.module(
     "PermissionsService",
     "PermissionsServiceInterface",
     "ReadFileTool",
+    "RoutingFoundation",
     "SearchFilesTool",
     "SettingsFeature",
+    "SettingsFeatureInterface",
     "SettingsService",
     "SettingsServiceInterface",
     "ShellService",
@@ -399,6 +401,13 @@ targets.append(contentsOf: Target.module(
   path: "./plugins/ExtensionCommandHandler"))
 
 targets.append(contentsOf: Target.module(
+  name: "SettingsFeatureInterface",
+  dependencies: [
+    "RoutingFoundation",
+  ],
+  path: "./features/SettingsFeatureInterface"))
+
+targets.append(contentsOf: Target.module(
   name: "ChatFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -427,6 +436,8 @@ targets.append(contentsOf: Target.module(
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ShellServiceInterface",
@@ -488,6 +499,8 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "MCPServiceInterface",
     "PermissionsServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
     "SharedUtilsFoundation",
     "SharedValuesFoundation",
@@ -516,6 +529,8 @@ targets.append(contentsOf: Target.module(
     "LLMServiceInterface",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
   ],
   resources: [.process("Resources")],
@@ -652,6 +667,14 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
   ],
   path: "./foundations/SharedUtilsFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "RoutingFoundation",
+  dependencies: [
+    "AppFoundation",
+  ],
+  testDependencies: [],
+  path: "./foundations/RoutingFoundation"))
 
 targets.append(contentsOf: Target.module(
   name: "ChatFoundation",

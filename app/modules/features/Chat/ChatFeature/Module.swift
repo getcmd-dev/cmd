@@ -27,6 +27,8 @@ Target.module(
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "RoutingFoundation",
+    "SettingsFeatureInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ShellServiceInterface",
