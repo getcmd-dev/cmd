@@ -8,7 +8,7 @@ import Observation
 /// Routing allows for the decoupling between a feature's implementation and its usage.
 /// The implementing module, typically a `Feature` module, defines the view and its state management.
 /// It provides a `RouteBuilder` that can resolve a `Route` of a specific type to a `View`.
-/// The interface module typically only descrive the `Route` type and its configuration parameters.
+/// The interface module typically only describe the `Route` type and its configuration parameters.
 /// The top level scope is responsible for registering all available features to their given routes.
 /// Then, a feature can be used with little dependencies as:
 ///
