@@ -22,7 +22,7 @@ struct AnyRoute: Route {
   ///
   /// - Parameter route: The route to wrap. If already an `AnyRoute`, returns it directly
   ///   to prevent double-wrapping.
-  public init<R: Route>(_ route: R) {
+  init<R: Route>(_ route: R) {
     // Prevent double-wrapping if the route is already an AnyRoute
     if let anyRoute = route as? AnyRoute {
       self = anyRoute
@@ -41,16 +41,19 @@ struct AnyRoute: Route {
     }
   }
 
-  public var id: AnyHashable { .init(wrappedValue.id) }
+  /// The original wrapped route value.
+  let wrappedValue: any Route
 
-  public var name: String { wrappedValue.name }
+  var id: AnyHashable { .init(wrappedValue.id) }
+
+  var name: String { wrappedValue.name }
 
   /// Compares two type-erased routes for equality.
   ///
   /// Routes are equal if they have the same type and the same hash value.
   /// This ensures that routes of different types are never considered equal,
   /// even if they have the same ID value.
-  public static func ==(lhs: AnyRoute, rhs: AnyRoute) -> Bool {
+  static func ==(lhs: AnyRoute, rhs: AnyRoute) -> Bool {
     lhs._equal(rhs)
   }
 
@@ -58,12 +61,9 @@ struct AnyRoute: Route {
   ///
   /// Uses the cached hash value for performance, avoiding repeated hashing
   /// of the existential type.
-  public func hash(into hasher: inout Hasher) {
+  func hash(into hasher: inout Hasher) {
     _hash(&hasher)
   }
-
-  /// The original wrapped route value.
-  let wrappedValue: any Route
 
   private let _equal: @Sendable (AnyRoute) -> Bool
   private let _hash: @Sendable (inout Hasher) -> Void

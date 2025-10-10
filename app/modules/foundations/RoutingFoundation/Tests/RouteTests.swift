@@ -169,6 +169,19 @@ struct RoutesRegistryTests {
     #expect(view is Text)
   }
 
+  @Test("Registry stores and retrieves route builders, even if the route is wrapped in AnyRoute")
+  func registerAndRetrieveBuilderWithAnyRoute() {
+    let sut = RoutesRegistry()
+    let builder = MockRouteBuilder(routeId: "test", viewText: "Test View")
+    sut.register(routeBuilder: builder)
+
+    let route = MockRoute(id: "test", name: "Test")
+    let view = sut.view(for: AnyRoute(route))
+
+    // View should be successfully built (not EmptyView)
+    #expect(view is Text)
+  }
+
   @Test("Registry returns EmptyView for unregistered route")
   func unregisteredRoute() {
     let sut = RoutesRegistry()
