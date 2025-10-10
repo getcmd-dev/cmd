@@ -10,7 +10,7 @@ concurrency:
   group: integration-tests-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
-  detect-changes:
+  detect-app-changes:
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.filter.outputs.app }}
@@ -25,8 +25,8 @@ jobs:
   build-release-app:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.app == 'true' }}
+    needs: detect-app-changes
+    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -79,8 +79,8 @@ jobs:
   test-swift:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.app == 'true' }}
+    needs: detect-app-changes
+    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -119,8 +119,8 @@ jobs:
   lint-swift:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.app == 'true' }}
+    needs: detect-app-changes
+    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -138,8 +138,8 @@ jobs:
   sync-app-dependencies:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.app == 'true' }}
+    needs: detect-app-changes
+    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
