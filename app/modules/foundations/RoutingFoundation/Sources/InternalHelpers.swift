@@ -6,7 +6,12 @@ import os
 
 extension Route {
   /// Converts the route's ID into an `AnyHashable` for use as a dictionary key.
-  var hashId: AnyHashable { .init(id) }
+  var hashId: AnyHashable {
+    if let anyRoute = self as? AnyRoute {
+      return anyRoute.id // Already wrapped in AnyHashable
+    }
+    return AnyHashable(id)
+  }
 }
 
 // MARK: - AnyRoute
