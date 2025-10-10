@@ -179,8 +179,13 @@ jobs:
 
               console.log(`Status: ${statusState}, Checks complete: ${allChecksComplete}, Checks success: ${allChecksSuccess}`);
 
-              // If all checks are complete and successful
-              if (allChecksComplete && (statusState === 'success' || statusState === '') && allChecksSuccess) {
+              const hasRequiredChecks = status.data.statuses.length > 0 || checks.data.check_runs.length > 0;
+              if (!hasRequiredChecks) {
+                console.log('No required checks found, proceeding...');
+                return;
+              }
+
+              if (allChecksComplete && statusState === 'success' && allChecksSuccess) {
                 console.log('All checks passed!');
                 return;
               }
@@ -221,7 +226,28 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const originalSha = '${{ steps.pr.outputs.sha }}';
+
             try {
+              // Final check: verify PR head hasn't changed right before merging
+              const finalPr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number
+              });
+
+              if (finalPr.data.head.sha !== originalSha) {
+                console.log(`PR head changed from ${originalSha} to ${finalPr.data.head.sha}`);
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: '${{ steps.status-comment.outputs.comment-id }}',
+                  body: '🔄 Merge cancelled: new commits were pushed to the branch.'
+                });
+                core.setFailed('New commits pushed before merge');
+                return;
+              }
+
               const result = await github.rest.pulls.merge({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
