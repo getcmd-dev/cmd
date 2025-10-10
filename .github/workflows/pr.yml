@@ -10,9 +10,23 @@ concurrency:
   group: integration-tests-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'app/**'
   build-release-app:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -65,6 +79,8 @@ jobs:
   test-swift:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -103,6 +119,8 @@ jobs:
   lint-swift:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -120,6 +138,8 @@ jobs:
   sync-app-dependencies:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
