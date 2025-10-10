@@ -22,6 +22,10 @@ final class SidePanel: XcodeWindow {
     @Dependency(\.userDefaults) var userDefaults
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
 
+    let routesRegistry = RoutesRegistry()
+    routesRegistry.registerRoutes()
+    router = Router(registry: routesRegistry)
+
     super.init(contentRect: .zero)
 
     styleMask = [.closable, .miniaturizable, .resizable, .titled]
@@ -61,11 +65,8 @@ final class SidePanel: XcodeWindow {
 
     backgroundColor = .clear
 
-    let routesRegistry = RoutesRegistry()
-    routesRegistry.registerRoutes()
-
     let root = NavigationStackWithRegistry(
-      registry: routesRegistry,
+      router: router,
       rootView: ChatView(
         viewModel: windowsViewModel.chat),
       navBarBuilder: { dismiss in
@@ -99,6 +100,8 @@ final class SidePanel: XcodeWindow {
   }
 
   let defaultChatPositionIsInverted: Bool
+
+  let router: Router
 
   override var canBecomeKey: Bool { true }
 

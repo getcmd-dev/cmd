@@ -74,43 +74,42 @@ public struct NavigationStackWithRegistry: View {
   /// )
   /// ```
   public init(
-    registry: RoutesRegistry,
+    router: Router,
     rootView: any View,
     navBarBuilder: @escaping @MainActor (@escaping @MainActor () -> Void) -> any View,
     defaultBackgroundColor: @escaping (@Sendable (ColorScheme) -> Color))
   {
-    let router = Router(registry: registry)
-    navManager = router
+    self.router = router
     self.rootView = rootView
     self.navBarBuilder = navBarBuilder
     self.defaultBackgroundColor = defaultBackgroundColor
   }
 
   public var body: some View {
-    NavigationStack(path: $navManager.path) {
+    NavigationStack(path: $router.path) {
       AnyView(rootView)
         .navigationDestination(for: AnyRoute.self) { route in
           VStack(spacing: 0) {
             // Custom navigation bar with back action
             AnyView(navBarBuilder {
-              navManager.pop()
+              router.pop()
             })
             .background(backgroundColor(for: route))
 
             // Route's view content
-            AnyView(navManager.registry.view(for: route))
+            AnyView(router.registry.view(for: route))
               .background(backgroundColor(for: route))
 
           }.navigationBarBackButtonHidden(true)
         }
     }
-    .environment(navManager)
+    .environment(router)
   }
 
   /// The router managing navigation state.
   ///
   /// Marked `@Bindable` to allow SwiftUI to observe changes to the navigation path.
-  @Bindable var navManager: Router
+  @Bindable var router: Router
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -123,7 +122,7 @@ public struct NavigationStackWithRegistry: View {
   /// Uses the route's custom background color if specified, otherwise falls back
   /// to the default background color.
   private func backgroundColor(for route: any Route) -> Color {
-    navManager.registry.backgroundColor(for: route, colorScheme: colorScheme) ?? defaultBackgroundColor(colorScheme)
+    router.registry.backgroundColor(for: route, colorScheme: colorScheme) ?? defaultBackgroundColor(colorScheme)
   }
 
 }

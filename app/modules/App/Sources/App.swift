@@ -62,11 +62,15 @@ public struct commandApp: App {
           windowsViewModel.handle(.showApplication)
         }
       } else {
-        Button("Show chat (⌘I)") {
+        Button("Show chat") {
           windowsViewModel.handle(.showApplication)
         }
         .keyboardShortcut("I", modifiers: .command)
       }
+      Button("Settings") {
+        windowsViewModel.handle(.showSettings)
+      }
+      .keyboardShortcut(",", modifiers: .command)
       Divider()
       Button("Quit") { NSApplication.shared.terminate(nil) }
         .keyboardShortcut("q")
@@ -80,7 +84,7 @@ public struct commandApp: App {
     }.commands {
       CommandGroup(before: .appSettings) {
         Button("Settings…") {
-          print("settings")
+          windowsViewModel.handle(.showSettings)
         }
         .keyboardShortcut(",", modifiers: .command)
       }

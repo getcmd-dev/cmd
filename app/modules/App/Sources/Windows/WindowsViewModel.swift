@@ -19,7 +19,7 @@ import XcodeObserverServiceInterface
 final class WindowsViewModel {
 
   init() {
-    state = .init(isSidePanelVisible: false, isOnboardingVisible: false)
+    state = .init(isSidePanelVisible: false, isOnboardingVisible: false, needsToPushSettingsView: false)
     // Initialize the chat VM before displaying as it can be used without being visible.
     // For instance to respond to chat completion requests by an external client.
     chat = ChatViewModel()
@@ -35,21 +35,28 @@ final class WindowsViewModel {
   struct State {
     let isSidePanelVisible: Bool
     let isOnboardingVisible: Bool
+      /// Whether the window should show the Settings view.
+      /// When true, this state is expected to be transient and to be reset to false as soon as the Settings have been shown.
+    let needsToPushSettingsView: Bool
 
     func with(
       isSidePanelVisible: Bool? = nil,
-      isOnboardingVisible: Bool? = nil)
+      isOnboardingVisible: Bool? = nil,
+      needsToPushSettingsView: Bool? = nil)
       -> State
     {
       State(
         isSidePanelVisible: isSidePanelVisible ?? self.isSidePanelVisible,
-        isOnboardingVisible: isOnboardingVisible ?? self.isOnboardingVisible)
+        isOnboardingVisible: isOnboardingVisible ?? self.isOnboardingVisible,
+        needsToPushSettingsView: needsToPushSettingsView ?? self.needsToPushSettingsView)
     }
   }
 
   enum WindowsAction {
     case onboardingDidComplete
     case showApplication
+    case showSettings
+    case didShowSettings
     case closeSidePanel
     case accessibilityPermissionChanged(isGranted: Bool?)
   }
@@ -75,6 +82,14 @@ final class WindowsViewModel {
     switch action {
     case .showApplication:
       state = state.with(isSidePanelVisible: true)
+
+    case .showSettings:
+      state = state.with(
+        isSidePanelVisible: true,
+        needsToPushSettingsView: true)
+
+    case .didShowSettings:
+      state = state.with(needsToPushSettingsView: false)
 
     case .closeSidePanel:
       state = state.with(isSidePanelVisible: false)

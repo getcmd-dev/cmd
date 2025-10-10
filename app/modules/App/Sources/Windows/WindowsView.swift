@@ -1,9 +1,12 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import Observation
+import SettingsFeatureInterface
 
 @MainActor
 final class WindowsView {
@@ -18,8 +21,13 @@ final class WindowsView {
       to: viewModel.state,
       from: .init(
         isSidePanelVisible: false,
-        isOnboardingVisible: false))
-    startObservations(of: viewModel)
+        isOnboardingVisible: false,
+        needsToPushSettingsView: false))
+    cancellable = viewModel.observeChanges(to: \.state) { @Sendable [weak self] state in
+      MainActor.assumeIsolated { [weak self] in
+        self?.state = state
+      }
+    }
   }
 
   @MainActor var state: WindowsViewModel.State {
@@ -27,6 +35,8 @@ final class WindowsView {
       update(to: state, from: oldValue)
     }
   }
+
+  private var cancellable: AnyCancellable?
 
   private let viewModel: WindowsViewModel
 
@@ -54,6 +64,17 @@ final class WindowsView {
         }
       } else {
         hideSidePanel()
+      }
+    }
+    if newState.needsToPushSettingsView != oldState.needsToPushSettingsView {
+      if newState.needsToPushSettingsView {
+        sidePanel?.router.navigate(to: SettingsRoute())
+        sidePanel?.show()
+        sidePanel?.orderFrontRegardless()
+
+        DispatchQueue.main.async { [weak self] in
+          self?.viewModel.handle(.didShowSettings)
+        }
       }
     }
   }
@@ -85,18 +106,4 @@ final class WindowsView {
     setupWindow?.setIsVisible(false)
     setupWindow?.close()
   }
-
-  @MainActor
-  private func startObservations(of viewModel: WindowsViewModel) {
-    withObservationTracking({
-      _ = viewModel.state
-    }, onChange: { [weak self] in
-      Task { @MainActor in
-        guard let self, viewModel === self.viewModel else { return }
-        self.state = viewModel.state
-        self.startObservations(of: viewModel)
-      }
-    })
-  }
-
 }

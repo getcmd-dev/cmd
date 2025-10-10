@@ -48,6 +48,7 @@ Target.module(
     "RoutingFoundation",
     "SearchFilesTool",
     "SettingsFeature",
+    "SettingsFeatureInterface",
     "SettingsService",
     "SettingsServiceInterface",
     "ShellService",

@@ -19,9 +19,10 @@ final class SetupWindow: NSWindow {
 
     let routesRegistry = RoutesRegistry()
     routesRegistry.registerRoutes()
+    let router = Router(registry: routesRegistry)
 
     let root = NavigationStackWithRegistry(
-      registry: routesRegistry,
+      router: router,
       rootView: OnboardingFeatureBuilder.build(.init(
         bringWindowToFront: { [weak self] in
           NSApplication.shared.activate()
