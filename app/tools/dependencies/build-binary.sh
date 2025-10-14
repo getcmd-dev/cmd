@@ -22,12 +22,12 @@ else
 	CACHE_DIR="$CACHE_DIR/debug"
 fi
 CACHE_BINARY="${CACHE_DIR}/SwiftModuleCommand"
-SYNC_BINARY="${CACHE_BINARY}/SwiftModuleCommand"
+BINARY="${CACHE_BINARY}/SwiftModuleCommand"
 
 # Check if we need to rebuild
 REBUILD=false
-if [ ! -f "${SYNC_BINARY}" ]; then
-	echo "NO cache bin at $SYNC_BINARY. Rebuilding..."
+if [ ! -f "${BINARY}" ]; then
+	echo "NO cache bin at $BINARY. Rebuilding..."
 	REBUILD=true
 fi
 
@@ -44,4 +44,4 @@ if [ "${REBUILD}" = true ]; then
 fi
 
 # Export the binary path for use by calling scripts
-export SYNC_BINARY="${CACHE_BINARY}/SwiftModuleCommand"
+export BINARY="${CACHE_BINARY}/SwiftModuleCommand"

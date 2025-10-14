@@ -14,12 +14,12 @@ extension Target {
     name: String,
     dependencies: [Target.Dependency],
     resources: [PackageDescription.Resource]? = nil,
-    testDependencies: [Target.Dependency]? = nil,
-    testExclude: [String] = [],
-    testResources: [PackageDescription.Resource]? = nil,
+    testsDependencies: [Target.Dependency]? = nil,
+    testsExclude: [String] = [],
+    testsResources: [PackageDescription.Resource]? = nil,
     interfaceDependencies: [Target.Dependency]? = nil,
-    interfaceTestDependencies: [Target.Dependency]? = nil,
-    interfaceTestResources: [PackageDescription.Resource]? = nil,
+    interfaceTestsDependencies: [Target.Dependency]? = nil,
+    interfaceTestsResources: [PackageDescription.Resource]? = nil,
     path: String)
     -> [Target]
   {
@@ -35,14 +35,14 @@ extension Target {
           .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
         ]))
 
-    if let testDependencies {
+    if let testsDependencies {
       targets.append(
         Target.testTarget(
           name: "\(name)Tests",
-          dependencies: testDependencies,
+          dependencies: testsDependencies,
           path: "\(path)/Tests",
-          exclude: testExclude,
-          resources: testResources))
+          exclude: testsExclude,
+          resources: testsResources))
     }
 
     // Interface target
@@ -55,13 +55,13 @@ extension Target {
     }
 
     // Interface test target
-    if let interfaceTestDependencies {
+    if let interfaceTestsDependencies {
       targets.append(
         Target.testTarget(
           name: "\(name)InterfaceTests",
-          dependencies: interfaceTestDependencies,
+          dependencies: interfaceTestsDependencies,
           path: "\(path)/InterfaceTests",
-          resources: interfaceTestResources))
+          resources: interfaceTestsResources))
     }
     return targets
   }
@@ -70,7 +70,7 @@ extension Target {
     name: String,
     macroDependencies: [Target.Dependency] = [],
     dependencies: [Target.Dependency],
-    testDependencies: [Target.Dependency]? = nil,
+    testsDependencies: [Target.Dependency]? = nil,
     path: String)
     -> [Target]
   {
@@ -82,10 +82,10 @@ extension Target {
       name: name,
       dependencies: dependencies + [Target.Dependency.byName(name: "\(name)Macro")],
       path: "\(path)/Sources")
-    if let testDependencies {
+    if let testsDependencies {
       let testTarget = Target.testTarget(
         name: "\(name)Tests",
-        dependencies: testDependencies + [Target.Dependency.byName(name: name)],
+        dependencies: testsDependencies + [Target.Dependency.byName(name: name)],
         path: "\(path)/Tests")
       return [pluginTarget, macroTarget, testTarget]
     } else {

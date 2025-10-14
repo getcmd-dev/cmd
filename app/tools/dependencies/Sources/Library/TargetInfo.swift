@@ -12,7 +12,8 @@ public struct TargetInfo {
     self.moduleDir = moduleDir
     let folderName = folderURL.lastPathComponent
 
-    guard let type = TargetType.allCases.first(where: { folderName.hasSuffix($0.rawValue) }) else {
+    guard let type = TargetType.allCases.first(where: { folderName.hasSuffix($0.rawValue) })
+    else {
       return nil
     }
 
@@ -25,13 +26,17 @@ public struct TargetInfo {
     externalDependencies = []
 
     if
-      let existingDependencies = source?.statements.first?.item.as(FunctionCallExprSyntax.self)?.arguments
-        .first(where: { $0.label?.trimmedDescription == dependenciesProperty })?.expression.as(ArrayExprSyntax.self)
+      let existingDependencies = source?.statements.first?.item.as(
+        FunctionCallExprSyntax.self)?.arguments
+        .first(where: { $0.label?.trimmedDescription == dependenciesProperty })?.expression.as(
+          ArrayExprSyntax.self)
     {
       externalDependencies = existingDependencies.elements
         .compactMap { expr in
           if let dep = expr.expression.dependencyInfo, let package = dep.package {
-            return ExternalDependency(raw: dep.raw, name: dep.name, packageName: package.packageName, procuct: package.procuct)
+            return ExternalDependency(
+              raw: dep.raw, name: dep.name, packageName: package.packageName,
+              procuct: package.procuct)
           }
           return nil
         }
@@ -46,7 +51,7 @@ public struct TargetInfo {
     public var propertyKey: String {
       switch self {
       case .Sources: ""
-      case .Tests: "Test"
+      case .Tests: "Tests"
       case .Macro: "Macro"
       }
     }

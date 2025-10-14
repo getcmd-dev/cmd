@@ -37,7 +37,7 @@ for repo_path in ${TEST_REPOS}; do
 	fi
 
 	echo "Processing ${repo_name}..."
-	"${SYNC_BINARY}" sync --path "${repo_path}/Package.swift" --all
+	"${BINARY}" sync --path "${repo_path}/Package.swift" --all
 
 	echo ""
 done

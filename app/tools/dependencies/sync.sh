@@ -22,7 +22,7 @@ done
 RELEASE=true source ./build-binary.sh
 
 # Run the program
-"${SYNC_BINARY}" sync --path "${ROOT_DIR}/app/modules/Package.swift" ${ALL_FLAG}
+"${BINARY}" sync --path "${ROOT_DIR}/app/modules/Package.swift" ${ALL_FLAG}
 
 # lint
 cd "${ROOT_DIR}/app"
