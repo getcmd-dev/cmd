@@ -340,6 +340,24 @@ platform :mac do
       all_components << { path: component, depth: depth }
     end
 
+    # Also find standalone executables (like command-line tools) that were stripped
+    Dir.glob("#{app_path}/Contents/Applications/**/*").each do |file|
+      next unless File.file?(file) && !File.symlink?(file)
+
+      file_type = begin
+        silent_sh("file -b '#{file}'")
+      rescue
+        ""
+      end
+
+      # If it's a Mach-O executable and not already in our list, add it
+      if file_type.include?("Mach-O") && !file_type.include?("dSYM") && !all_components.any? { |c| file.start_with?(c[:path]) }
+        depth = file.split("/").length
+        puts "adding macho file: #{file}"
+        all_components << { path: file, depth: depth }
+      end
+    end
+
     # Sort by depth (deepest first) then by path for consistency
     all_components.sort_by! { |c| [-c[:depth], c[:path]] }
 
