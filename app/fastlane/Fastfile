@@ -233,7 +233,7 @@ platform :mac do
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do |options|
     skip_symbols_upload = !options[:skip_symbols_upload].nil?
-    skip_github_release = !options[:skip_github_release].nil?
+    skip_release_upload = !options[:skip_release_upload].nil?
 
     setup_ci if ENV["CI"]
     # Set APP_DISTRIBUTION_CHANNEL to stable for release builds
@@ -264,9 +264,13 @@ platform :mac do
       upload_release_symbols(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
     end
 
-    unless skip_github_release
-      gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+    unless skip_release_upload
+      aws_access_key_id = load_secret("AWS_ACCESS_KEY_ID")
+      aws_secret = load_secret("AWS_SECRET_ACCESS_KEY")
+      sh("AWS_ACCESS_KEY_ID='#{aws_access_key_id}' AWS_SECRET_ACCESS_KEY='#{aws_secret}' AWS_DEFAULT_REGION=us-east-1 aws s3 cp #{dmg_path} s3://cmd-releases/#{version}/cmd.dmg")
+      puts("Release uploaded to https://cmd-releases.s3.us-east-1.amazonaws.com/#{version}/cmd.dmg/")
 
+      gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
       set_github_release(
         api_token: gh_personal_access_token_cmd,
         server_url: "https://api.github.com",
@@ -308,6 +312,7 @@ platform :mac do
 
     # Strip only debug info, preserve symbols needed for crash symbolication
     sh("strip -rSTx '#{app_binary_path}'")
+    all_components = []
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
 
@@ -324,6 +329,9 @@ platform :mac do
       rescue
         puts "Warning: Could not strip #{file}"
       end
+
+      depth = file.split("/").length
+      all_components << { path: file, depth: depth }
     end
 
     ## Resign
@@ -338,6 +346,24 @@ platform :mac do
 
       depth = component.split("/").length
       all_components << { path: component, depth: depth }
+    end
+
+    # Also find standalone executables (like command-line tools) that were stripped
+    Dir.glob("#{app_path}/Contents/Applications/**/*").each do |file|
+      next unless File.file?(file) && !File.symlink?(file)
+
+      file_type = begin
+        silent_sh("file -b '#{file}'")
+      rescue
+        ""
+      end
+
+      # If it's a Mach-O executable and not already in our list, add it
+      next unless file_type.include?("Mach-O") && !file_type.include?("dSYM") && !all_components.any? { |c| file.start_with?(c[:path]) }
+
+      depth = file.split("/").length
+      puts "adding macho file: #{file}"
+      all_components << { path: file, depth: depth }
     end
 
     # Sort by depth (deepest first) then by path for consistency
@@ -394,14 +420,6 @@ platform :mac do
       finalize: true,
     )
     sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --wait '#{archive_path}'")
-    # sentry_debug_files_upload(
-    #   auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-    #   org_slug: 'getcmd',
-    #   project_slug: 'cmd-mac-app',
-    #   # include_sources: true,
-    #   path: dsym_path,
-    #   wait: true,
-    # )
     sentry_set_commits(
       org_slug: "getcmd",
       project_slug: "cmd-mac-app",
