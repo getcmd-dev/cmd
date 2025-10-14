@@ -308,6 +308,7 @@ platform :mac do
 
     # Strip only debug info, preserve symbols needed for crash symbolication
     sh("strip -rSTx '#{app_binary_path}'")
+    all_components = []
     Dir.glob("#{app_path}/**/*").each do |file|
       next unless File.file?(file) && !File.symlink?(file)
 
@@ -324,6 +325,9 @@ platform :mac do
       rescue
         puts "Warning: Could not strip #{file}"
       end
+
+      depth = file.split("/").length
+      all_components << { path: file, depth: depth }
     end
 
     ## Resign
