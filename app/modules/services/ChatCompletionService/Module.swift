@@ -15,4 +15,5 @@ Target.module(
   ],
   testDependencies: [
     "AppFoundation",
+    "ChatCompletionService",
   ])

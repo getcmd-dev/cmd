@@ -1,6 +1,7 @@
 Target.module(
   name: "XcodeObserverService",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "XcodeProj", package: "XcodeProj"),
     "AccessibilityFoundation",
     "AppFoundation",
@@ -22,6 +23,7 @@ Target.module(
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
+    "XcodeObserverService",
     "XcodeObserverServiceInterface",
   ],
   testResources: [

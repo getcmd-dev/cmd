@@ -11,6 +11,7 @@ Target.module(
   ],
   testDependencies: [
     "ConcurrencyFoundation",
+    "FileSuggestionService",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ])

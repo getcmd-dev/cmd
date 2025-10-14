@@ -17,7 +17,9 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "GRDB", package: "GRDB.swift"),
     "ChatFeatureInterface",
+    "ChatService",
     "ChatServiceInterface",
     "ConcurrencyFoundation",
     "FoundationInterfaces",

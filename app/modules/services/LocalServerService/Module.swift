@@ -21,6 +21,7 @@ Target.module(
   testDependencies: [
     "AppFoundation",
     "JSONFoundation",
+    "LocalServerService",
     "LocalServerServiceInterface",
     "SwiftTesting",
   ])

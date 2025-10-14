@@ -15,8 +15,10 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "MCP", package: "swift-sdk"),
     "ConcurrencyFoundation",
     "JSONFoundation",
+    "MCPService",
     "MCPServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",

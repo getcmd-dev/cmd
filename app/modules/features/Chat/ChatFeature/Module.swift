@@ -38,11 +38,13 @@ Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AccessibilityFoundation",
     "AppEventServiceInterface",
     "ChatAppEvents",
     "ChatCompletionServiceInterface",
+    "ChatFeature",
     "ChatFeatureInterface",
     "ChatFoundation",
     "ChatServiceInterface",

@@ -5,4 +5,6 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "ShellServiceInterface",
+  ])

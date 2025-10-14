@@ -10,6 +10,7 @@ Target.module(
   testDependencies: [
     "AppFoundation",
     "ChatFeatureInterface",
+    "ChatServiceInterface",
     "ConcurrencyFoundation",
     "SwiftTesting",
   ])

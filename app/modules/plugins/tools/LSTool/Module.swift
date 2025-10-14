@@ -1,6 +1,7 @@
 Target.module(
   name: "LSTool",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "DLS",
@@ -9,9 +10,11 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "JSONFoundation",
     "LocalServerServiceInterface",
+    "LSTool",
     "SwiftTesting",
     "ToolFoundation",
   ])

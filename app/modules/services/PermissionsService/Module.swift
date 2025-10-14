@@ -11,6 +11,7 @@ Target.module(
   ],
   testDependencies: [
     "ConcurrencyFoundation",
+    "PermissionsService",
     "ShellServiceInterface",
     "SwiftTesting",
   ])

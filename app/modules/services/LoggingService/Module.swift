@@ -14,4 +14,5 @@ Target.module(
   testDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
+    "LoggingService",
   ])

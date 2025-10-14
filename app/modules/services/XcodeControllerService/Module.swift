@@ -18,6 +18,7 @@ Target.module(
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppEventServiceInterface",
     "AppFoundation",
     "ExtensionEventsInterface",
@@ -27,6 +28,7 @@ Target.module(
     "SharedValuesFoundation",
     "ShellServiceInterface",
     "SwiftTesting",
+    "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ])

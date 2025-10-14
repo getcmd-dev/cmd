@@ -4,4 +4,5 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
-  ])
+  ],
+  testDependencies: [])

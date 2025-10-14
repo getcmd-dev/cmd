@@ -9,5 +9,6 @@ Target.module(
   testDependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "LocalServerServiceInterface",
     "SwiftTesting",
   ])

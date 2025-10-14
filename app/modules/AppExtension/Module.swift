@@ -1,6 +1,7 @@
 Target.module(
   name: "AppExtension",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AccessibilityFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",

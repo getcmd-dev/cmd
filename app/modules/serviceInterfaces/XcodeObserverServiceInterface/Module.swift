@@ -8,4 +8,6 @@ Target.module(
     "FoundationInterfaces",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "XcodeObserverServiceInterface",
+  ])

@@ -10,5 +10,6 @@ Target.module(
   ],
   testDependencies: [
     "LLMFoundation",
+    "SettingsServiceInterface",
     "SwiftTesting",
   ])

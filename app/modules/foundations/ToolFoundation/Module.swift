@@ -16,4 +16,5 @@ Target.module(
     "JSONFoundation",
     "SwiftTesting",
     "ThreadSafe",
+    "ToolFoundation",
   ])

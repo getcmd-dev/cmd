@@ -1,6 +1,7 @@
 Target.module(
   name: "ClaudeCodeTools",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "JSONScanner", package: "JSONScanner"),
     "AppFoundation",
     "ChatFoundation",
@@ -11,8 +12,10 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ChatFoundation",
+    "ClaudeCodeTools",
     "JSONFoundation",
     "SwiftTesting",
     "ToolFoundation",

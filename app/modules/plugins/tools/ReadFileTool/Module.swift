@@ -1,6 +1,7 @@
 Target.module(
   name: "ReadFileTool",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ChatServiceInterface",
     "CodePreview",
@@ -15,9 +16,11 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "FoundationInterfaces",
     "JSONFoundation",
+    "ReadFileTool",
     "SwiftTesting",
     "ToolFoundation",
   ])

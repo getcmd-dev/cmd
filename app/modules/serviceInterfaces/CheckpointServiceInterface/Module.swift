@@ -7,6 +7,7 @@ Target.module(
   ],
   testDependencies: [
     "AppFoundation",
+    "CheckpointServiceInterface",
     "ConcurrencyFoundation",
     "SwiftTesting",
   ])

@@ -1,6 +1,7 @@
 Target.module(
   name: "DLS",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
@@ -12,4 +13,6 @@ Target.module(
     .process("Resources/fileIcons"),
     .process("Resources/cmd-logo.svg"),
   ],
-  testDependencies: [])
+  testDependencies: [
+    "DLS",
+  ])

@@ -8,4 +8,6 @@ Target.module(
     "LocalServerServiceInterface",
     "ToolFoundation",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "DefaultToolView",
+  ])

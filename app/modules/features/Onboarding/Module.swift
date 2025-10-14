@@ -13,9 +13,11 @@ Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "FoundationInterfaces",
     "LLMServiceInterface",
+    "Onboarding",
     "PermissionsServiceInterface",
     "SwiftTesting",
   ])

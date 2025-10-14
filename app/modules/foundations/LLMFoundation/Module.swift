@@ -3,4 +3,6 @@ Target.module(
   dependencies: [
     "AppFoundation",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "LLMFoundation",
+  ])

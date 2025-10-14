@@ -8,6 +8,7 @@ Target.module(
   ],
   testDependencies: [
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+    "FileDiffFoundation",
     "FileDiffTypesFoundation",
   ],
   testExclude: ["__Snapshots__"])

@@ -25,6 +25,7 @@ Target.module(
     "FoundationInterfaces",
     "JSONFoundation",
     "LLMFoundation",
+    "LLMService",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "SettingsServiceInterface",

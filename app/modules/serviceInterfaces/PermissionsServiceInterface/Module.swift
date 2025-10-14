@@ -6,5 +6,6 @@ Target.module(
     "ThreadSafe",
   ],
   testDependencies: [
+    "PermissionsServiceInterface",
     "SwiftTesting",
   ])
