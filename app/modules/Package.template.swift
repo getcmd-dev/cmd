@@ -14,67 +14,62 @@ extension Target {
     name: String,
     dependencies: [Target.Dependency],
     resources: [PackageDescription.Resource]? = nil,
-    interfaceDependencies: [Target.Dependency]? = nil,
     testDependencies: [Target.Dependency]? = nil,
     testExclude: [String] = [],
     testResources: [PackageDescription.Resource]? = nil,
+    interfaceDependencies: [Target.Dependency]? = nil,
     interfaceTestDependencies: [Target.Dependency]? = nil,
     interfaceTestResources: [PackageDescription.Resource]? = nil,
     path: String)
     -> [Target]
   {
     var targets = [Target]()
-    var extraDependencies = [Target.Dependency]()
 
-    // Interface target and its dependencies should be added to all targets
-    if let interfaceDependencies {
-      let interfaceTarget = Target.target(
-        name: "\(name)Interface",
-        dependencies: interfaceDependencies,
-        path: "\(path)/Interface")
-      targets.append(interfaceTarget)
-      extraDependencies.append(Target.Dependency.byName(name: "\(name)Interface"))
+    targets.append(
+      Target.target(
+        name: name,
+        dependencies: dependencies,
+        path: "\(path)/Sources",
+        resources: resources,
+        swiftSettings: [
+          .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+        ]))
 
-      // Interface test target if interfaceTestDependencies is provided
-      if let interfaceTestDependencies {
-        let interfaceTestTarget = Target.testTarget(
-          name: "\(name)InterfaceTests",
-          dependencies: interfaceTestDependencies + extraDependencies,
-          path: "\(path)/InterfaceTests",
-          resources: interfaceTestResources)
-        targets.append(interfaceTestTarget)
-      }
+    if let testDependencies {
+      targets.append(
+        Target.testTarget(
+          name: "\(name)Tests",
+          dependencies: testDependencies,
+          path: "\(path)/Tests",
+          exclude: testExclude,
+          resources: testResources))
     }
 
-    // Main target with its dependencies + interface
-    let sourceTarget = Target.target(
-      name: name,
-      dependencies: dependencies + extraDependencies,
-      path: "\(path)/Sources",
-      resources: resources,
-      swiftSettings: [
-        .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
-      ])
-    targets.append(sourceTarget)
-    extraDependencies.append(Target.Dependency.byName(name: name))
+    // Interface target
+    if let interfaceDependencies {
+      targets.append(
+        Target.target(
+          name: "\(name)Interface",
+          dependencies: interfaceDependencies,
+          path: "\(path)/InterfaceSources"))
+    }
 
-    // Main test target with its dependencies + main target + interface
-    if let testDependencies {
-      let testTarget = Target.testTarget(
-        name: "\(name)Tests",
-        dependencies: testDependencies + extraDependencies,
-        path: "\(path)/Tests",
-        exclude: testExclude,
-        resources: testResources)
-      targets.append(testTarget)
+    // Interface test target
+    if let interfaceTestDependencies {
+      targets.append(
+        Target.testTarget(
+          name: "\(name)InterfaceTests",
+          dependencies: interfaceTestDependencies,
+          path: "\(path)/InterfaceTests",
+          resources: interfaceTestResources))
     }
     return targets
   }
 
   static func macroModule(
     name: String,
-    dependencies: [Target.Dependency],
     macroDependencies: [Target.Dependency] = [],
+    dependencies: [Target.Dependency],
     testDependencies: [Target.Dependency]? = nil,
     path: String)
     -> [Target]
