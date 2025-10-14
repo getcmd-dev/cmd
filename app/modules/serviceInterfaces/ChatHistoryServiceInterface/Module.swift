@@ -1,22 +1,18 @@
 Target.module(
-  name: "SearchFilesTool",
+  name: "ChatHistoryServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
-    "ConcurrencyFoundation",
-    "DLS",
-    "FileIcon",
-    "JSONFoundation",
+    "CheckpointServiceInterface",
+    "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testsDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
-    "JSONFoundation",
-    "LocalServerServiceInterface",
-    "SearchFilesTool",
+    "ChatHistoryServiceInterface",
+    "ConcurrencyFoundation",
     "SwiftTesting",
-    "ToolFoundation",
   ])

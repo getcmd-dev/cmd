@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-CACHE_DIR="./tmp/bin"
+CACHE_DIR="~/.cmd/dev/tmp/bin"
 
 # Calculate hash of all git-tracked source files
 CURRENT_HASH=$(git ls-files . 2>/dev/null | sort | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
@@ -22,7 +22,7 @@ else
 	CACHE_DIR="$CACHE_DIR/debug"
 fi
 CACHE_BINARY="${CACHE_DIR}/SwiftModuleCommand"
-BINARY="${CACHE_BINARY}/SwiftModuleCommand"
+BINARY="${CACHE_DIR}/SwiftModuleCommand"
 
 # Check if we need to rebuild
 REBUILD=false
@@ -31,17 +31,17 @@ if [ ! -f "${BINARY}" ]; then
 	REBUILD=true
 fi
 
-mkdir -p "${CACHE_BINARY}"
+mkdir -p "${CACHE_DIR}"
 
 if [ "${REBUILD}" = true ]; then
 	if [ "${IS_RELEASE}" = true ]; then
 		swift build -c release
-		cp ".build/release/SwiftModuleCommand" "${CACHE_BINARY}"
+		cp ".build/release/SwiftModuleCommand" "${CACHE_DIR}"
 	else
 		swift build
-		cp ".build/debug/SwiftModuleCommand" "${CACHE_BINARY}"
+		cp ".build/debug/SwiftModuleCommand" "${CACHE_DIR}"
 	fi
 fi
 
 # Export the binary path for use by calling scripts
-export BINARY="${CACHE_BINARY}/SwiftModuleCommand"
+export BINARY="${BINARY}"

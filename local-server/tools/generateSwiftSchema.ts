@@ -10,7 +10,7 @@ const generate = () => {
 		const swiftSchema = generateSwiftSchema(jsonSchema, name)
 
 		fs.writeFileSync(
-			`../app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/${name}.generated.swift`,
+			`../app/modules/services/LocalServerService/InterfaceSources/${name}.generated.swift`,
 			swiftSchema,
 		)
 	}

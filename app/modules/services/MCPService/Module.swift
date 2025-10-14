@@ -25,4 +25,12 @@ Target.module(
     "SwiftTesting",
     "ThreadSafe",
     "ToolFoundation",
+  ],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "SettingsServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
   ])

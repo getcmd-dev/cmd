@@ -3,6 +3,7 @@
 
 import Dependencies
 import DLS
+import FileIcon
 import Foundation
 import HighlighterServiceInterface
 import Observation

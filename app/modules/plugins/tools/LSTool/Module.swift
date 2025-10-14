@@ -5,6 +5,7 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "DLS",
+    "FileIcon",
     "JSONFoundation",
     "LocalServerServiceInterface",
     "ToolFoundation",

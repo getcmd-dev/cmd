@@ -133,6 +133,7 @@ targets.append(
       "ChatCompletionService",
       "ChatCompletionServiceInterface",
       "ChatFeature",
+      "ChatHistoryServiceInterface",
       "ChatService",
       "ChatServiceInterface",
       "CheckpointService",
@@ -204,16 +205,11 @@ targets.append(
       "LoggingServiceInterface",
       "ThreadSafe",
     ],
-    path: "./services/AppEventService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "AppEventServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ConcurrencyFoundation",
     ],
-    path: "./serviceInterfaces/AppEventServiceInterface"))
+    path: "./services/AppEventService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -276,21 +272,16 @@ targets.append(
       "ThreadSafe",
     ],
     testsDependencies: [],
-    path: "./services/AppUpdateService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "AppUpdateServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ConcurrencyFoundation",
       "ThreadSafe",
     ],
-    testsDependencies: [
+    interfaceTestsDependencies: [
       "AppUpdateServiceInterface",
       "SwiftTesting",
     ],
-    path: "./serviceInterfaces/AppUpdateServiceInterface"))
+    path: "./services/AppUpdateService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -366,16 +357,11 @@ targets.append(
       "AppFoundation",
       "ChatCompletionService",
     ],
-    path: "./services/ChatCompletionService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "ChatCompletionServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "LocalServerServiceInterface",
     ],
-    path: "./serviceInterfaces/ChatCompletionServiceInterface"))
+    path: "./services/ChatCompletionService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -389,8 +375,8 @@ targets.append(
       "AppUpdateServiceInterface",
       "ChatAppEvents",
       "ChatCompletionServiceInterface",
-      "ChatFeatureInterface",
       "ChatFoundation",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "CodePreview",
@@ -399,6 +385,7 @@ targets.append(
       "ExtensionEventsInterface",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "FileIcon",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
       "HighlighterServiceInterface",
@@ -425,8 +412,8 @@ targets.append(
       "ChatAppEvents",
       "ChatCompletionServiceInterface",
       "ChatFeature",
-      "ChatFeatureInterface",
       "ChatFoundation",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
@@ -446,19 +433,6 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
-    name: "ChatFeatureInterface",
-    dependencies: [
-      "AppFoundation",
-      "CheckpointServiceInterface",
-      "LLMServiceInterface",
-      "LocalServerServiceInterface",
-      "LoggingServiceInterface",
-      "ToolFoundation",
-    ],
-    path: "./features/Chat/ChatFeatureInterface"))
-
-targets.append(
-  contentsOf: Target.module(
     name: "ChatFoundation",
     dependencies: [],
     testsDependencies: [
@@ -469,11 +443,32 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "ChatHistoryServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "CheckpointServiceInterface",
+      "LLMServiceInterface",
+      "LocalServerServiceInterface",
+      "LoggingServiceInterface",
+      "ThreadSafe",
+      "ToolFoundation",
+    ],
+    testsDependencies: [
+      "AppFoundation",
+      "ChatHistoryServiceInterface",
+      "ConcurrencyFoundation",
+      "SwiftTesting",
+    ],
+    path: "./serviceInterfaces/ChatHistoryServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "ChatService",
     dependencies: [
       .product(name: "GRDB", package: "GRDB.swift"),
       "AppFoundation",
-      "ChatFeatureInterface",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
@@ -488,7 +483,7 @@ targets.append(
     ],
     testsDependencies: [
       .product(name: "GRDB", package: "GRDB.swift"),
-      "ChatFeatureInterface",
+      "ChatHistoryServiceInterface",
       "ChatService",
       "ChatServiceInterface",
       "ConcurrencyFoundation",
@@ -505,16 +500,8 @@ targets.append(
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
-      "ChatFeatureInterface",
       "ThreadSafe",
       "ToolFoundation",
-    ],
-    testsDependencies: [
-      "AppFoundation",
-      "ChatFeatureInterface",
-      "ChatServiceInterface",
-      "ConcurrencyFoundation",
-      "SwiftTesting",
     ],
     path: "./serviceInterfaces/ChatServiceInterface"))
 
@@ -529,23 +516,18 @@ targets.append(
       "LocalServerServiceInterface",
     ],
     testsDependencies: [],
-    path: "./services/CheckpointService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "CheckpointServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
     ],
-    testsDependencies: [
+    interfaceTestsDependencies: [
       "AppFoundation",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
       "SwiftTesting",
     ],
-    path: "./serviceInterfaces/CheckpointServiceInterface"))
+    path: "./services/CheckpointService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -558,6 +540,7 @@ targets.append(
       "ChatServiceInterface",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "ToolFoundation",
     ],
@@ -641,16 +624,11 @@ targets.append(
   contentsOf: Target.module(
     name: "DLS",
     dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
-      "FoundationInterfaces",
-      "LocalServerServiceInterface",
       "LoggingServiceInterface",
-      "ShellServiceInterface",
     ],
     resources: [
-      .process("Resources/fileIcons"),
       .process("Resources/cmd-logo.svg"),
     ],
     testsDependencies: [
@@ -670,6 +648,7 @@ targets.append(
       "DLS",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "FileIcon",
       "FoundationInterfaces",
       "JSONFoundation",
       "LocalServerServiceInterface",
@@ -776,6 +755,23 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "FileIcon",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DLS",
+      "FoundationInterfaces",
+      "LocalServerServiceInterface",
+      "ShellServiceInterface",
+    ],
+    resources: [
+      .process("Resources/fileIcons"),
+    ],
+    path: "./coreui/FileIcon"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "FileSuggestionService",
     dependencies: [
       .product(name: "Ifrit", package: "Ifrit"),
@@ -792,17 +788,11 @@ targets.append(
       "SwiftTesting",
       "XcodeObserverServiceInterface",
     ],
-    path: "./services/FileSuggestionService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "FileSuggestionServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ThreadSafe",
     ],
-    testsDependencies: [],
-    path: "./serviceInterfaces/FileSuggestionServiceInterface"))
+    path: "./services/FileSuggestionService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -884,12 +874,7 @@ targets.append(
       "ThreadSafe",
       "ToolFoundation",
     ],
-    path: "./services/LLMService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "LLMServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ChatFoundation",
       "ConcurrencyFoundation",
@@ -900,8 +885,7 @@ targets.append(
       "ThreadSafe",
       "ToolFoundation",
     ],
-    testsDependencies: [],
-    path: "./serviceInterfaces/LLMServiceInterface"))
+    path: "./services/LLMService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -931,24 +915,19 @@ targets.append(
       "LocalServerServiceInterface",
       "SwiftTesting",
     ],
-    path: "./services/LocalServerService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "LocalServerServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
       "JSONFoundation",
     ],
-    testsDependencies: [
+    interfaceTestsDependencies: [
       "AppFoundation",
       "ConcurrencyFoundation",
       "LocalServerServiceInterface",
       "SwiftTesting",
     ],
-    path: "./serviceInterfaces/LocalServerServiceInterface"))
+    path: "./services/LocalServerService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -969,17 +948,12 @@ targets.append(
       "FoundationInterfaces",
       "LoggingService",
     ],
-    path: "./services/LoggingService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "LoggingServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       "ConcurrencyFoundation",
       "FoundationInterfaces",
       "ThreadSafe",
     ],
-    path: "./serviceInterfaces/LoggingServiceInterface"))
+    path: "./services/LoggingService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -989,6 +963,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "LocalServerServiceInterface",
       "ToolFoundation",
@@ -1033,12 +1008,7 @@ targets.append(
       "ThreadSafe",
       "ToolFoundation",
     ],
-    path: "./services/MCPService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "MCPServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ConcurrencyFoundation",
       "DependencyFoundation",
@@ -1046,7 +1016,7 @@ targets.append(
       "ThreadSafe",
       "ToolFoundation",
     ],
-    path: "./serviceInterfaces/MCPServiceInterface"))
+    path: "./services/MCPService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1092,21 +1062,16 @@ targets.append(
       "ShellServiceInterface",
       "SwiftTesting",
     ],
-    path: "./services/PermissionsService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "PermissionsServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "ConcurrencyFoundation",
       "ThreadSafe",
     ],
-    testsDependencies: [
+    interfaceTestsDependencies: [
       "PermissionsServiceInterface",
       "SwiftTesting",
     ],
-    path: "./serviceInterfaces/PermissionsServiceInterface"))
+    path: "./services/PermissionsService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1118,6 +1083,7 @@ targets.append(
       "CodePreview",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "FoundationInterfaces",
       "HighlighterServiceInterface",
       "JSONFoundation",
@@ -1156,6 +1122,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
@@ -1240,12 +1207,7 @@ targets.append(
       "SharedValuesFoundation",
       "SwiftTesting",
     ],
-    path: "./services/SettingsService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "SettingsServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
@@ -1253,12 +1215,12 @@ targets.append(
       "LLMFoundation",
       "LoggingServiceInterface",
     ],
-    testsDependencies: [
+    interfaceTestsDependencies: [
       "LLMFoundation",
       "SettingsServiceInterface",
       "SwiftTesting",
     ],
-    path: "./serviceInterfaces/SettingsServiceInterface"))
+    path: "./services/SettingsService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1290,20 +1252,12 @@ targets.append(
     testsDependencies: [
       "ShellService",
     ],
-    path: "./services/ShellService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "ShellServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "LoggingServiceInterface",
       "ThreadSafe",
     ],
-    testsDependencies: [
-      "ShellServiceInterface",
-    ],
-    path: "./serviceInterfaces/ShellServiceInterface"))
+    path: "./services/ShellService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1395,18 +1349,13 @@ targets.append(
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
     ],
-    path: "./services/XcodeControllerService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "XcodeControllerServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
       "ThreadSafe",
     ],
-    path: "./serviceInterfaces/XcodeControllerServiceInterface"))
+    path: "./services/XcodeControllerService"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1440,12 +1389,7 @@ targets.append(
     testsResources: [
       .copy("resources/"),
     ],
-    path: "./services/XcodeObserverService"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "XcodeObserverServiceInterface",
-    dependencies: [
+    interfaceDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AccessibilityFoundation",
       "AppFoundation",
@@ -1453,10 +1397,7 @@ targets.append(
       "FoundationInterfaces",
       "ThreadSafe",
     ],
-    testsDependencies: [
-      "XcodeObserverServiceInterface",
-    ],
-    path: "./serviceInterfaces/XcodeObserverServiceInterface"))
+    path: "./services/XcodeObserverService"))
 
 targets.append(
   contentsOf: Target.module(

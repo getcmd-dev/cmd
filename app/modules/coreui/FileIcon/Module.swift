@@ -1,13 +1,14 @@
 Target.module(
-  name: "XcodeObserverServiceInterface",
+  name: "FileIcon",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
-    "AccessibilityFoundation",
     "AppFoundation",
     "ConcurrencyFoundation",
+    "DLS",
     "FoundationInterfaces",
-    "ThreadSafe",
+    "LocalServerServiceInterface",
+    "ShellServiceInterface",
   ],
-  testsDependencies: [
-    "XcodeObserverServiceInterface",
+  resources: [
+    .process("Resources/fileIcons"),
   ])
