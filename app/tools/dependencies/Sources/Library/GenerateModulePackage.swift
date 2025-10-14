@@ -53,6 +53,13 @@ public final class GenerateModulePackage {
       }
     }
 
+    // Filter for targets with XSources/ folders (nameInModule starts with "X" and type is Sources)
+    let productTargetNames = focussedTargets
+      .filter { target in
+        return target.type == .Sources
+      }
+      .map(\.name)
+
     let packageURL = moduleDir.appendingPathComponent("Package.swift")
     var rewrittenFile = templatePackageSource
 
@@ -67,6 +74,7 @@ public final class GenerateModulePackage {
       packageURL: packageURL,
       name: moduleDir.lastPathComponent,
       focussedTargetNames: focussedTargets.map(\.name),
+      productTargetNames: productTargetNames,
       internalDependencies: selectedTargets.values.filter { $0.moduleDir != moduleDir },
       externalDependencies: externalDependencies)
       .visit(rewrittenFile)
@@ -110,17 +118,20 @@ final class UpdatePackage: SyntaxRewriter {
     packageURL: URL,
     name: String,
     focussedTargetNames: [String],
+    productTargetNames: [String],
     internalDependencies: [TargetInfo],
     externalDependencies: Set<String>)
   {
     self.packageURL = packageURL
     self.name = name
     self.focussedTargetNames = focussedTargetNames
+    self.productTargetNames = productTargetNames
     self.externalDependencies = externalDependencies
     self.internalDependencies = internalDependencies
   }
 
   let focussedTargetNames: [String]
+  let productTargetNames: [String]
   let externalDependencies: Set<String>
   let internalDependencies: [TargetInfo]
   let packageURL: URL
@@ -148,7 +159,7 @@ final class UpdatePackage: SyntaxRewriter {
 
     let newProducts = makeExpr("""
       [
-        \(focussedTargetNames.sorted().map { ".library(name: \"\($0)\", targets: [\"\($0)\"])" }.joined(separator: ",\n"))
+        \(productTargetNames.sorted().map { ".library(name: \"\($0)\", targets: [\"\($0)\"])" }.joined(separator: ",\n"))
       ]
       """)
     var newProductArg = LabeledExprSyntax(label: "products", expression: newProducts)
