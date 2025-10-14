@@ -355,11 +355,11 @@ platform :mac do
       end
 
       # If it's a Mach-O executable and not already in our list, add it
-      if file_type.include?("Mach-O") && !file_type.include?("dSYM") && !all_components.any? { |c| file.start_with?(c[:path]) }
-        depth = file.split("/").length
-        puts "adding macho file: #{file}"
-        all_components << { path: file, depth: depth }
-      end
+      next unless file_type.include?("Mach-O") && !file_type.include?("dSYM") && !all_components.any? { |c| file.start_with?(c[:path]) }
+
+      depth = file.split("/").length
+      puts "adding macho file: #{file}"
+      all_components << { path: file, depth: depth }
     end
 
     # Sort by depth (deepest first) then by path for consistency
