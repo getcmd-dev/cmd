@@ -7,4 +7,4 @@ Target.module(
     "JSONFoundation",
     "LocalServerServiceInterface",
   ],
-  testDependencies: [])
+  testsDependencies: [])

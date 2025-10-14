@@ -9,7 +9,7 @@ Target.module(
     "LocalServerServiceInterface",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "JSONFoundation",

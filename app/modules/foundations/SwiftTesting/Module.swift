@@ -5,4 +5,4 @@ Target.module(
     "ConcurrencyFoundation",
     "JSONFoundation",
   ],
-  testDependencies: [])
+  testsDependencies: [])

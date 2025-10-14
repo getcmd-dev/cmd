@@ -11,7 +11,7 @@ Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingService",

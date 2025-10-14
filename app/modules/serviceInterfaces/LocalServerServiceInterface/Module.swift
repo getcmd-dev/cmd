@@ -6,7 +6,7 @@ Target.module(
     "ConcurrencyFoundation",
     "JSONFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
     "LocalServerServiceInterface",

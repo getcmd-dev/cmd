@@ -25,7 +25,7 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "ConcurrencyFoundation",

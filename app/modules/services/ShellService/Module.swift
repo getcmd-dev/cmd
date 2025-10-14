@@ -8,6 +8,6 @@ Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ShellService",
   ])

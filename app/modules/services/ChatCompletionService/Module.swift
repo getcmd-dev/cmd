@@ -13,7 +13,7 @@ Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
     "AppFoundation",
     "ChatCompletionService",
   ])

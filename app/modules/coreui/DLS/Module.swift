@@ -13,6 +13,6 @@ Target.module(
     .process("Resources/fileIcons"),
     .process("Resources/cmd-logo.svg"),
   ],
-  testDependencies: [
+  testsDependencies: [
     "DLS",
   ])

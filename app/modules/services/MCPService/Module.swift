@@ -14,7 +14,7 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "MCP", package: "swift-sdk"),
     "ConcurrencyFoundation",
     "JSONFoundation",

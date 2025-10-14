@@ -15,7 +15,7 @@ Target.module(
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",

@@ -9,7 +9,7 @@ Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ConcurrencyFoundation",
     "PermissionsService",
     "ShellServiceInterface",

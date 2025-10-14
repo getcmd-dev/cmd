@@ -1,7 +1,7 @@
 Target.module(
   name: "ChatFoundation",
   dependencies: [],
-  testDependencies: [
+  testsDependencies: [
     "ChatFoundation",
     "SwiftTesting",
   ])

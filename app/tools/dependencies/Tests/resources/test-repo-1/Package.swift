@@ -18,7 +18,7 @@ extension Target {
     resources: [PackageDescription.Resource]? = nil,
     interfaceDependencies: [Target.Dependency]? = nil,
     interfaceTestDependencies: [Target.Dependency]? = nil,
-    testDependencies: [Target.Dependency]? = nil,
+    testsDependencies: [Target.Dependency]? = nil,
     testExclude: [String] = [],
     testResources: [PackageDescription.Resource]? = nil,
     path: String)
@@ -61,10 +61,10 @@ extension Target {
     extraDependencies.append(Target.Dependency.byName(name: name))
 
     // Main test target with its dependencies + main target + interface
-    if let testDependencies {
+    if let testsDependencies {
       let testTarget = Target.testTarget(
         name: "\(name)Tests",
-        dependencies: testDependencies + extraDependencies,
+        dependencies: testsDependencies + extraDependencies,
         path: "\(path)/Tests",
         exclude: testExclude,
         resources: testResources)
@@ -77,7 +77,7 @@ extension Target {
     name: String,
     dependencies: [Target.Dependency],
     macroDependencies: [Target.Dependency] = [],
-    testDependencies: [Target.Dependency]? = nil,
+    testsDependencies: [Target.Dependency]? = nil,
     path: String)
     -> [Target]
   {
@@ -89,10 +89,10 @@ extension Target {
       name: "\(name)Macro",
       dependencies: macroDependencies,
       path: "\(path)/Macro")
-    if let testDependencies {
+    if let testsDependencies {
       let testTarget = Target.testTarget(
         name: "\(name)Tests",
-        dependencies: testDependencies + [Target.Dependency.byName(name: name)],
+        dependencies: testsDependencies + [Target.Dependency.byName(name: name)],
         path: "\(path)/Tests")
       return [pluginTarget, macroTarget, testTarget]
     } else {
@@ -107,7 +107,7 @@ targets.append(
   contentsOf: Target.module(
     name: "ModuleA",
     dependencies: [],
-    testDependencies: [
+    testsDependencies: [
       .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     ],
     path: "./ModuleA"))

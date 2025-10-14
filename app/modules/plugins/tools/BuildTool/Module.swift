@@ -11,7 +11,7 @@ Target.module(
     "ToolFoundation",
     "XcodeControllerServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "BuildTool",

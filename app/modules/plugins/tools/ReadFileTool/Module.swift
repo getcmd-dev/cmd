@@ -15,7 +15,7 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "FoundationInterfaces",

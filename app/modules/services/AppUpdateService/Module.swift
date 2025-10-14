@@ -10,4 +10,4 @@ Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testsDependencies: [])

@@ -9,7 +9,7 @@ Target.module(
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ConcurrencyFoundation",
     "FileSuggestionService",
     "SwiftTesting",

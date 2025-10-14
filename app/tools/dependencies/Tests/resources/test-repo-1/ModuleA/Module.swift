@@ -1,6 +1,6 @@
 Target.module(
   name: "ModuleA",
   dependencies: [],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
   ])

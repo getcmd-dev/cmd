@@ -151,7 +151,7 @@ struct SyncTests {
            "ModuleA",
         -])
         +],
-        +  testDependencies: [])
+        +  testsDependencies: [])
         diff --git a/ModuleB/Package.swift b/ModuleB/Package.swift
         --- a/ModuleB/Package.swift
         +++ b/ModuleB/Package.swift
@@ -159,7 +159,7 @@ struct SyncTests {
              dependencies: [
                "ModuleA"
              ],
-        +    testDependencies: [],
+        +    testsDependencies: [],
              path: "."))
          
          let package = Package(
@@ -180,7 +180,7 @@ struct SyncTests {
              dependencies: [
                "ModuleA"
              ],
-        +    testDependencies: [],
+        +    testsDependencies: [],
              path: "./ModuleB"))
          
          let package = Package(
@@ -211,7 +211,7 @@ struct SyncTests {
          Target.module(
            name: "ModuleA",
         -  dependencies: [],
-        -  testDependencies: [
+        -  testsDependencies: [
         -  .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
         -])
         +  dependencies: [])
@@ -222,7 +222,7 @@ struct SyncTests {
            contentsOf: Target.module(
              name: "ModuleA",
              dependencies: [],
-        -    testDependencies: [
+        -    testsDependencies: [
         -      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
         -    ],
              path: "."))
@@ -245,7 +245,7 @@ struct SyncTests {
            contentsOf: Target.module(
              name: "ModuleA",
              dependencies: [],
-        -    testDependencies: [
+        -    testsDependencies: [
         -      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
         -    ],
              path: "./ModuleA"))
@@ -320,10 +320,10 @@ struct SyncTests {
              Target.module(
                name: "ModuleA",
                dependencies: [],
-            -  testDependencies: [
+            -  testsDependencies: [
             -  .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
             -])
-            +  testDependencies: [])
+            +  testsDependencies: [])
             diff --git a/ModuleA/Package.swift b/ModuleA/Package.swift
             --- a/ModuleA/Package.swift
             +++ b/ModuleA/Package.swift
@@ -331,10 +331,10 @@ struct SyncTests {
                contentsOf: Target.module(
                  name: "ModuleA",
                  dependencies: [],
-            -    testDependencies: [
+            -    testsDependencies: [
             -      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
             -    ],
-            +    testDependencies: [],
+            +    testsDependencies: [],
                  path: "."))
              
              let package = Package(
@@ -345,10 +345,10 @@ struct SyncTests {
                contentsOf: Target.module(
                  name: "ModuleA",
                  dependencies: [],
-            -    testDependencies: [
+            -    testsDependencies: [
             -      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
             -    ],
-            +    testDependencies: [],
+            +    testsDependencies: [],
                  path: "./ModuleA"))
              
              targets.append(
@@ -379,7 +379,7 @@ struct SyncTests {
                dependencies: [
                "ModuleA",
             +],
-            +  testDependencies: [
+            +  testsDependencies: [
             +  .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
              ])
             diff --git a/ModuleB/Package.swift b/ModuleB/Package.swift
@@ -389,7 +389,7 @@ struct SyncTests {
                  dependencies: [
                    "ModuleA"
                  ],
-            +    testDependencies: [
+            +    testsDependencies: [
             +      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
             +    ],
                  path: "."))
@@ -412,7 +412,7 @@ struct SyncTests {
                  dependencies: [
                    "ModuleA"
                  ],
-            +    testDependencies: [
+            +    testsDependencies: [
             +      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
             +    ],
                  path: "./ModuleB"))
