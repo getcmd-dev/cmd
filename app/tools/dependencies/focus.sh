@@ -18,16 +18,10 @@ for arg in "$@"; do
 	fi
 done
 
-# Cache the built binary, as for some reasons it gets rebuilt every time otherwise.
-# The cache will need to be manually cleaned if the binary is updated.
-if [ ! -f "./tmp/bin/sync-package-dependencies" ]; then
-	swift build -c release
-	mkdir -p tmp
-	mkdir -p tmp/bin
-	cp ".build/release/SyncPackageDependenciesCommand" "./tmp/bin/sync-package-dependencies"
-fi
+# Build the binary (with caching)
+RELEASE=true source ./build-binary.sh
 
-output=$("./tmp/bin/sync-package-dependencies" focus --path "${ROOT_DIR}/app/modules/Package.swift" "${parsed_args[@]}")
+output=$("${BINARY}" focus --path "${ROOT_DIR}/app/modules/Package.swift" "${parsed_args[@]}")
 
 # lint Package.swift / Module.swift
 cd "${ROOT_DIR}/app"

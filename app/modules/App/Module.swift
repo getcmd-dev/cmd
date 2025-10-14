@@ -62,8 +62,10 @@ Target.module(
     "XPCServiceInterface",
   ],
   resources: [],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+    "App",
     "AppEventServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",

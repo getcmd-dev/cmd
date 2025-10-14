@@ -18,9 +18,10 @@ Target.module(
     .process("Resources/main.bundle.cjs.gz"),
     .process("Resources/main.bundle.cjs.map"),
   ],
-  testDependencies: [
+  testsDependencies: [
     "AppFoundation",
     "JSONFoundation",
+    "LocalServerService",
     "LocalServerServiceInterface",
     "SwiftTesting",
   ])

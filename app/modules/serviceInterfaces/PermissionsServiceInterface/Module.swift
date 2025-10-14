@@ -5,6 +5,7 @@ Target.module(
     "ConcurrencyFoundation",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
+    "PermissionsServiceInterface",
     "SwiftTesting",
   ])

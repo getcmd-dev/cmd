@@ -4,4 +4,4 @@ Target.module(
     .product(name: "Dependencies", package: "swift-dependencies"),
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testsDependencies: [])

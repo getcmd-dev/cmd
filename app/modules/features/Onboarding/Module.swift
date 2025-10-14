@@ -12,10 +12,12 @@ Target.module(
     "SettingsServiceInterface",
   ],
   resources: [.process("Resources")],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "FoundationInterfaces",
     "LLMServiceInterface",
+    "Onboarding",
     "PermissionsServiceInterface",
     "SwiftTesting",
   ])

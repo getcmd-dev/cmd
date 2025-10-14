@@ -12,10 +12,11 @@ Target.module(
     "SharedValuesFoundation",
     "ThreadSafe",
   ],
-  testDependencies: [
+  testsDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
+    "SettingsService",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",

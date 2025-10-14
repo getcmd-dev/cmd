@@ -8,7 +8,8 @@ Target.module(
     "LLMFoundation",
     "LoggingServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     "LLMFoundation",
+    "SettingsServiceInterface",
     "SwiftTesting",
   ])

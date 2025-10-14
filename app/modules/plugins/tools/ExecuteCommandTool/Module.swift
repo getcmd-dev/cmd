@@ -1,6 +1,7 @@
 Target.module(
   name: "ExecuteCommandTool",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "CodePreview",
     "ConcurrencyFoundation",
@@ -11,9 +12,11 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
+    "ExecuteCommandTool",
     "LocalServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",

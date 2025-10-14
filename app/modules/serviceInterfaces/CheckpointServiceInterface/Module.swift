@@ -5,8 +5,9 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     "AppFoundation",
+    "CheckpointServiceInterface",
     "ConcurrencyFoundation",
     "SwiftTesting",
   ])

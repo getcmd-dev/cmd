@@ -1,6 +1,7 @@
 Target.module(
   name: "SearchFilesTool",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "DLS",
@@ -9,10 +10,12 @@ Target.module(
     "LoggingServiceInterface",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "JSONFoundation",
     "LocalServerServiceInterface",
+    "SearchFilesTool",
     "SwiftTesting",
     "ToolFoundation",
   ])

@@ -11,4 +11,4 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [])
+  testsDependencies: [])

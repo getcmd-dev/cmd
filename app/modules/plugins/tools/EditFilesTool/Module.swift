@@ -1,6 +1,7 @@
 Target.module(
   name: "EditFilesTool",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ChatServiceInterface",
     "CodePreview",
@@ -17,12 +18,14 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AppFoundation",
     "ChatServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
+    "EditFilesTool",
     "FileDiffFoundation",
     "FoundationInterfaces",
     "JSONFoundation",

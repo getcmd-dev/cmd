@@ -7,9 +7,10 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
     "AppFoundation",
     "ChatFeatureInterface",
+    "ChatServiceInterface",
     "ConcurrencyFoundation",
     "SwiftTesting",
   ])

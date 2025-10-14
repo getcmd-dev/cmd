@@ -6,8 +6,9 @@ Target.module(
     "FileDiffTypesFoundation",
     "LoggingServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+    "FileDiffFoundation",
     "FileDiffTypesFoundation",
   ],
-  testExclude: ["__Snapshots__"])
+  testsExclude: ["__Snapshots__"])

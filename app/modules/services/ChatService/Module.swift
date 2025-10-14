@@ -16,8 +16,10 @@ Target.module(
     "ThreadSafe",
     "ToolFoundation",
   ],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "GRDB", package: "GRDB.swift"),
     "ChatFeatureInterface",
+    "ChatService",
     "ChatServiceInterface",
     "ConcurrencyFoundation",
     "FoundationInterfaces",

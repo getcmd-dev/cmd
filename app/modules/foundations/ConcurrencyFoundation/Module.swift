@@ -1,6 +1,7 @@
 Target.module(
   name: "ConcurrencyFoundation",
   dependencies: [],
-  testDependencies: [
+  testsDependencies: [
+    "ConcurrencyFoundation",
     "SwiftTesting",
   ])

@@ -1,4 +1,6 @@
 Target.module(
   name: "AccessibilityFoundation",
   dependencies: [],
-  testDependencies: [])
+  testsDependencies: [
+    "AccessibilityFoundation",
+  ])

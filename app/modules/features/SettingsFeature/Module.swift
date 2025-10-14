@@ -1,6 +1,7 @@
 Target.module(
   name: "SettingsFeature",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatFoundation",
@@ -24,12 +25,17 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
-  testDependencies: [
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
     "LLMServiceInterface",
+    "SettingsFeature",
     "SettingsServiceInterface",
     "SwiftTesting",
+  ],
+  interfaceDependencies: [
+    "RoutingFoundation",
   ])
