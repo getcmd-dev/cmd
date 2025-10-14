@@ -65,6 +65,74 @@ def find_available_version(initial_version)
   end
 end
 
+# Get the next version by combining APP_VERSION and APP_NEXT_VERSION
+def get_next_version(config_path)
+  app_version = sh("cat #{config_path} | grep 'APP_VERSION='").split("APP_VERSION=").last.strip
+  next_version = sh("cat #{config_path} | grep 'APP_NEXT_VERSION='").split("APP_NEXT_VERSION=").last.strip
+  "#{app_version}.#{next_version}"
+end
+
+# Increment APP_NEXT_VERSION in the config file
+def increment_next_version(config_path)
+  current_next = sh("cat #{config_path} | grep 'APP_NEXT_VERSION='").split("APP_NEXT_VERSION=").last.strip.to_i
+  new_next = current_next + 1
+  sh("sed -i '' 's/APP_NEXT_VERSION=.*/APP_NEXT_VERSION=#{new_next}/' #{config_path}")
+  puts "Incremented APP_NEXT_VERSION from #{current_next} to #{new_next}"
+  new_next
+end
+
+# Update a specific channel section in the appcast.xml file
+def update_appcast_for_channel(channel:, version:, description:, sign_update:)
+  appcast_path = File.absolute_path("./appcast.xml")
+
+  # Create from template if doesn't exist
+  unless File.exist?(appcast_path)
+    template_path = File.absolute_path("./appcast.template.xml")
+    require "fileutils"
+    FileUtils.cp(template_path, appcast_path)
+    puts "Created appcast.xml from template"
+  end
+
+  content = File.read(appcast_path)
+
+  # Determine the download URL based on channel
+  download_url = if channel == "stable"
+    "https://github.com/getcmd-dev/cmd/releases/download/v#{version}/cmd.app.zip"
+  else
+    "https://cmd-releases.s3.us-east-1.amazonaws.com/next/#{version}/cmd.app.zip"
+  end
+
+  # Build the new item section
+  new_item = <<~XML.strip
+    <item>
+      <title>Version #{version}</title>
+      <link>https://sparkle-project.org</link>
+      <sparkle:version>#{version}</sparkle:version>
+      <sparkle:channel>#{channel}</sparkle:channel>
+      <description>
+        <![CDATA[
+         #{description}
+        ]]>
+      </description>
+      <pubDate>#{Time.now.httpdate}</pubDate>
+      <enclosure url="#{download_url}" #{sign_update} />
+    </item>
+  XML
+
+  # Replace the section for this channel using a regex that matches the item with this channel
+  # This preserves the other channel's section unchanged
+  pattern = %r{\s*<item>.*?<sparkle:channel>#{Regexp.escape(channel)}</sparkle:channel>.*?</item>}m
+
+  if content =~ pattern
+    content.gsub!(pattern, "\n" + new_item.split("\n").map { |line| "      " + line }.join("\n"))
+    puts "Updated #{channel} channel section in appcast.xml"
+  else
+    puts "Warning: Could not find #{channel} channel section in appcast.xml"
+  end
+
+  File.write(appcast_path, content)
+end
+
 platform :mac do
   desc "Build the app in Debug configuration"
   lane :build_debug do
@@ -115,6 +183,7 @@ platform :mac do
     sh("xcodebuild -resolvePackageDependencies -scheme command -project ../command.xcodeproj -configuration Release -derivedDataPath #{build_path}/derived_data -onlyUsePackageVersionsFromResolvedFile -parallelizeTargets")
 
     version = options.fetch(:version, nil)
+    is_next = options.fetch(:is_next, false)
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
@@ -214,18 +283,22 @@ platform :mac do
 
     puts "Notarization completed successfully. version: #{version}, app_path: #{app_path}"
 
-    appcast_template_path = File.absolute_path("./appcast.template.xml")
-    appcast_path = File.absolute_path("./appcast.xml")
-    appcast_content = File.read(appcast_template_path)
-    appcast_content.gsub!("REPLACE_SPARKLE_VERSION", version)
-    appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
-    appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
-    File.write(appcast_path, appcast_content)
+    # Update appcast for the appropriate channel
+    channel = is_next ? "next" : "stable"
+    update_appcast_for_channel(
+      channel: channel,
+      version: version,
+      description: "Test description for the release\nnew line",
+      sign_update: sparkle_output,
+    )
 
-    readme_path = File.absolute_path("../../README.md")
-    readme_content = File.read(readme_path)
-    readme_content.gsub!(/(.*)v[0-9\.]+(.*<!-- version automatically updated during release -->)/, "\\1v#{version}\\2")
-    File.write(readme_path, readme_content)
+    # Only update README for stable releases
+    unless is_next
+      readme_path = File.absolute_path("../../README.md")
+      readme_content = File.read(readme_path)
+      readme_content.gsub!(/(.*)v[0-9\.]+(.*<!-- version automatically updated during release -->)/, "\\1v#{version}\\2")
+      File.write(readme_path, readme_content)
+    end
 
     { version: version, app_zip_path: app_zip_path, app_binary_path: app_binary_path, build_path: build_path, dmg_path: dmg_path, archive_path: archive_path }
   end
@@ -234,24 +307,32 @@ platform :mac do
   lane :distribute_release do |options|
     skip_symbols_upload = !options[:skip_symbols_upload].nil?
     skip_release_upload = !options[:skip_release_upload].nil?
+    is_next = options.fetch(:next, false)
 
     setup_ci if ENV["CI"]
-    # Set APP_DISTRIBUTION_CHANNEL to stable for release builds
+
+    # Set APP_DISTRIBUTION_CHANNEL based on mode
     app_config_path = File.absolute_path("../command.shared.xcconfig")
-    sh("sed -i '' 's/APP_DISTRIBUTION_CHANNEL=.*/APP_DISTRIBUTION_CHANNEL=stable/' #{app_config_path}")
+    distribution_channel = is_next ? "next" : "stable"
+    sh("sed -i '' 's/APP_DISTRIBUTION_CHANNEL=.*/APP_DISTRIBUTION_CHANNEL=#{distribution_channel}/' #{app_config_path}")
 
-    original_version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
-    version = find_available_version(original_version)
-
-    # Update config file if version changed
-    if version != original_version
-      sh("sed -i '' 's/APP_VERSION=#{original_version}/APP_VERSION=#{version}/' #{app_config_path}")
+    # Determine version based on mode
+    if is_next
+      version = get_next_version(app_config_path)
+      increment_next_version(app_config_path)
+    else
+      original_version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+      version = find_available_version(original_version)
+      # Update config file if version changed
+      if version != original_version
+        sh("sed -i '' 's/APP_VERSION=#{original_version}/APP_VERSION=#{version}/' #{app_config_path}")
+      end
     end
 
     ENV["UPLOAD_SOURCEMAP_TO_SENTRY"] = "true"
     ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
 
-    result = create_and_sign_release(version: version)
+    result = create_and_sign_release(version: version, is_next: is_next)
     version = result[:version]
     app_zip_path = result[:app_zip_path]
     dmg_path = result[:dmg_path]
@@ -267,33 +348,46 @@ platform :mac do
     unless skip_release_upload
       aws_access_key_id = load_secret("AWS_ACCESS_KEY_ID")
       aws_secret = load_secret("AWS_SECRET_ACCESS_KEY")
-      sh("AWS_ACCESS_KEY_ID='#{aws_access_key_id}' AWS_SECRET_ACCESS_KEY='#{aws_secret}' AWS_DEFAULT_REGION=us-east-1 aws s3 cp #{dmg_path} s3://cmd-releases/#{version}/cmd.dmg")
-      puts("Release uploaded to https://cmd-releases.s3.us-east-1.amazonaws.com/#{version}/cmd.dmg/")
 
-      gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
-      set_github_release(
-        api_token: gh_personal_access_token_cmd,
-        server_url: "https://api.github.com",
-        repository_name: "getcmd-dev/cmd",
-        name: "v#{version}",
-        tag_name: "v#{version}",
-        description: "v#{version}",
-        commitish: "main",
-        upload_assets: [dmg_path, app_zip_path],
-      )
+      sh("AWS_ACCESS_KEY_ID='#{aws_access_key_id}' AWS_SECRET_ACCESS_KEY='#{aws_secret}' AWS_DEFAULT_REGION=us-east-1 aws s3 cp #{dmg_path} s3://cmd-releases/#{distribution_channel}/#{version}/cmd.dmg")
+      sh("AWS_ACCESS_KEY_ID='#{aws_access_key_id}' AWS_SECRET_ACCESS_KEY='#{aws_secret}' AWS_DEFAULT_REGION=us-east-1 aws s3 cp #{app_zip_path} s3://cmd-releases/#{distribution_channel}/#{version}/cmd.app.zip")
+      puts("Next release uploaded to:")
+      puts("  DMG: https://cmd-releases.s3.us-east-1.amazonaws.com/#{distribution_channel}/#{version}/cmd.dmg")
+      puts("  ZIP: https://cmd-releases.s3.us-east-1.amazonaws.com/#{distribution_channel}/#{version}/cmd.app.zip")
 
-      current_branch = sh("git rev-parse --abbrev-ref HEAD").strip
-      new_branch_name = "release-v#{version}"
-      sh("git add ../..  && git commit -m 'Release v#{version}' --no-verify && git checkout -b #{new_branch_name} && git push origin #{new_branch_name} --no-verify")
-      create_pull_request(
-        api_token: gh_personal_access_token_cmd,
-        title: "Release v#{version}",
-        repo: "getcmd-dev/cmd",
-        head: new_branch_name,
-        base: "main",
-      )
+      if is_next
+        # Next mode: No GitHub release, push directly to next
+        sh("git add ../.. && git commit -m 'Release next v#{version}' --no-verify && git push origin next --no-verify")
+        puts("Changes pushed directly to main branch")
+      else
+        # Stable mode: Upload to version directory, create GitHub release, create PR
+        sh("AWS_ACCESS_KEY_ID='#{aws_access_key_id}' AWS_SECRET_ACCESS_KEY='#{aws_secret}' AWS_DEFAULT_REGION=us-east-1 aws s3 cp #{dmg_path} s3://cmd-releases/#{version}/cmd.dmg")
+        puts("Release uploaded to https://cmd-releases.s3.us-east-1.amazonaws.com/#{version}/cmd.dmg/")
+
+        gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+        set_github_release(
+          api_token: gh_personal_access_token_cmd,
+          server_url: "https://api.github.com",
+          repository_name: "getcmd-dev/cmd",
+          name: "v#{version}",
+          tag_name: "v#{version}",
+          description: "v#{version}",
+          commitish: "main",
+          upload_assets: [dmg_path, app_zip_path],
+        )
+
+        sh("git rev-parse --abbrev-ref HEAD").strip
+        new_branch_name = "release-v#{version}"
+        sh("git add ../..  && git commit -m 'Release v#{version}' --no-verify && git checkout -b #{new_branch_name} && git push origin #{new_branch_name} --no-verify")
+        create_pull_request(
+          api_token: gh_personal_access_token_cmd,
+          title: "Release v#{version}",
+          repo: "getcmd-dev/cmd",
+          head: new_branch_name,
+          base: "main",
+        )
+      end
     end
-    sh("git checkout #{current_branch}")
   end
 
   desc "Strip debug symbols from the binary and resign the app"

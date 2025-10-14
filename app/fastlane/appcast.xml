@@ -20,5 +20,18 @@ new line
         <enclosure url="https://github.com/getcmd-dev/cmd/releases/download/v0.1.29/cmd.app.zip" sparkle:edSignature="QiliPV2fMlULVOslmBMrn0K41HGgU64hAOjb8ljRghOLhF9K2mOad7Q0r31etPydwKBZMIJX+/IxaRlJn2IBAQ==" length="48371493"
  />
       </item>
+      <item>
+        <title>Version REPLACE_SPARKLE_NEXT_VERSION</title>
+        <link>https://sparkle-project.org</link>
+        <sparkle:version>REPLACE_SPARKLE_NEXT_VERSION</sparkle:version>
+        <sparkle:channel>next</sparkle:channel>
+        <description>
+          <![CDATA[
+           REPLACE_SPARKLE_NEXT_DESCRIPTION
+          ]]>
+        </description>
+        <pubDate>Tue, 29 Mar 2022 15:20:11 +0000</pubDate>
+        <enclosure url="https://cmd-releases.s3.us-east-1.amazonaws.com/next/REPLACE_SPARKLE_NEXT_VERSION/cmd.app.zip" REPLACE_SPARKLE_NEXT_SIGN_UPDATE />
+      </item>
   </channel>
 </rss>
