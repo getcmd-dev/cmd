@@ -21,8 +21,7 @@ extension Target {
     testsDependencies: [Target.Dependency]? = nil,
     testExclude: [String] = [],
     testResources: [PackageDescription.Resource]? = nil,
-    path: String
-  )
+    path: String)
     -> [Target]
   {
     var targets = [Target]()
@@ -42,7 +41,7 @@ extension Target {
         let interfaceTestTarget = Target.testTarget(
           name: "\(name)InterfaceTests",
           dependencies: interfaceTestDependencies + interfaceDependencies + [
-            Target.Dependency.byName(name: "\(name)Interface")
+            Target.Dependency.byName(name: "\(name)Interface"),
           ],
           path: "\(path)/Interface/Tests")
         targets.append(interfaceTestTarget)
@@ -56,7 +55,7 @@ extension Target {
       path: "\(path)/Sources",
       resources: resources,
       swiftSettings: [
-        .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
+        .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
       ])
     targets.append(sourceTarget)
     extraDependencies.append(Target.Dependency.byName(name: name))
@@ -79,8 +78,7 @@ extension Target {
     dependencies: [Target.Dependency],
     macroDependencies: [Target.Dependency] = [],
     testsDependencies: [Target.Dependency]? = nil,
-    path: String
-  )
+    path: String)
     -> [Target]
   {
     let pluginTarget = Target.target(
@@ -110,17 +108,17 @@ targets.append(
     name: "ModuleA",
     dependencies: [],
     testsDependencies: [
-      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
+      .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     ],
     path: "."))
 
 let package = Package(
   name: "ModuleA",
   platforms: [
-    .macOS("15.2")
+    .macOS("15.2"),
   ],
   products: [
-    .library(name: "ModuleA", targets: ["ModuleA"])
+    .library(name: "ModuleA", targets: ["ModuleA"]),
   ],
   dependencies: [],
   targets: targets)

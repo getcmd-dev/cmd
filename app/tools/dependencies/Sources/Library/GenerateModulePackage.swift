@@ -56,7 +56,7 @@ public final class GenerateModulePackage {
     // Filter for targets with XSources/ folders (nameInModule starts with "X" and type is Sources)
     let productTargetNames = focussedTargets
       .filter { target in
-        return target.type == .Sources
+        target.type == .Sources
       }
       .map(\.name)
 
