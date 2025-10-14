@@ -76,14 +76,14 @@ extension Target {
     path: String)
     -> [Target]
   {
-    let pluginTarget = Target.target(
-      name: name,
-      dependencies: dependencies,
-      path: "\(path)/Sources")
     let macroTarget = Target.macro(
       name: "\(name)Macro",
       dependencies: macroDependencies,
       path: "\(path)/Macro")
+    let pluginTarget = Target.target(
+      name: name,
+      dependencies: dependencies + [Target.Dependency.byName(name: "\(name)Macro")],
+      path: "\(path)/Sources")
     if let testDependencies {
       let testTarget = Target.testTarget(
         name: "\(name)Tests",
