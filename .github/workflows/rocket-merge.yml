@@ -171,6 +171,9 @@ jobs:
               });
 
               const statusState = status.data.state;
+              const hasStatuses = status.data.statuses.length > 0;
+              const hasCheckRuns = checks.data.check_runs.length > 0;
+
               const allChecksComplete = checks.data.check_runs.every(check =>
                 check.status === 'completed'
               );
@@ -178,15 +181,22 @@ jobs:
                 check.conclusion === 'success' || check.conclusion === 'skipped'
               );
 
-              console.log(`Status: ${statusState}, Checks complete: ${allChecksComplete}, Checks success: ${allChecksSuccess}`);
+              console.log(`Status state: ${statusState}, Has statuses: ${hasStatuses}, Has check runs: ${hasCheckRuns}`);
+              console.log(`Checks complete: ${allChecksComplete}, Checks success: ${allChecksSuccess}`);
 
-              const hasRequiredChecks = status.data.statuses.length > 0 || checks.data.check_runs.length > 0;
+              const hasRequiredChecks = hasStatuses || hasCheckRuns;
               if (!hasRequiredChecks) {
                 console.log('No required checks found, proceeding...');
                 return;
               }
 
-              if (allChecksComplete && statusState === 'success' && allChecksSuccess) {
+              // Check runs must pass if they exist
+              const checkRunsPassed = !hasCheckRuns || (allChecksComplete && allChecksSuccess);
+              // Commit statuses must pass if they exist
+              const statusesPassed = !hasStatuses || statusState === 'success';
+
+              // BOTH must pass (if they exist)
+              if (checkRunsPassed && statusesPassed) {
                 console.log('All checks passed!');
                 return;
               }
