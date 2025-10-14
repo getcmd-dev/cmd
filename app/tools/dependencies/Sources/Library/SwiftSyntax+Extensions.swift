@@ -44,15 +44,26 @@ func makeExpr(_ source: String) -> ExprSyntax {
 /// If a string starts with `"product("`, we treat it as an identifier expression.
 /// Otherwise we treat it as a string literal.
 func makeArrayExprSyntax(from items: [ExprSyntax]) -> ArrayExprSyntax {
+  // Handle empty arrays - format as []
+  if items.isEmpty {
+    let leftSq = TokenSyntax.leftSquareToken()
+    let rightSq = TokenSyntax.rightSquareToken()
+    return ArrayExprSyntax(
+      leftSquare: leftSq,
+      elements: ArrayElementListSyntax([]),
+      rightSquare: rightSq)
+  }
+
+  // Non-empty arrays formatted across multiple lines
   let leftSq = TokenSyntax.leftSquareToken()
-  let rightSq = TokenSyntax.rightSquareToken()
+  let rightSq = TokenSyntax.rightSquareToken(leadingTrivia: .newline)
 
   // Convert each string into an ArrayElementSyntax
-  let elementList = items.enumerated().map { idx, item -> ArrayElementSyntax in
+  let elementList = items.enumerated().map { _, item -> ArrayElementSyntax in
     return ArrayElementSyntax(
-      leadingTrivia: idx == 0 ? .newline : nil,
+      leadingTrivia: .newlines(1) + .spaces(2),
       expression: item.trimmed,
-      trailingComma: TokenSyntax.commaToken(trailingTrivia: .newline))
+      trailingComma: TokenSyntax.commaToken())
   }
 
   let arrayElementList = ArrayElementListSyntax(elementList)
@@ -60,4 +71,12 @@ func makeArrayExprSyntax(from items: [ExprSyntax]) -> ArrayExprSyntax {
     leftSquare: leftSq,
     elements: arrayElementList,
     rightSquare: rightSq)
+}
+
+extension ArrayElementListSyntax {
+  func appending(contentOf: [ArrayElementSyntax]) -> ArrayElementListSyntax {
+    var result = self
+    result.append(contentsOf: contentOf)
+    return result
+  }
 }

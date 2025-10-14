@@ -10,7 +10,9 @@ extension URL {
     if !path.hasSuffix("/") {
       path += "/"
     }
-    return URL(fileURLWithPath: path).absoluteURL
+    // Don't use absoluteURL as it resolves against the real filesystem
+    // which doesn't work with mock file managers
+    return URL(fileURLWithPath: path)
   }
 
   public func pathRelative(to reference: URL) -> String {
@@ -30,14 +32,6 @@ extension URL {
   }
 }
 
-extension ArrayElementListSyntax {
-  func appending(contentOf: [ArrayElementSyntax]) -> ArrayElementListSyntax {
-    var result = self
-    result.append(contentsOf: contentOf)
-    return result
-  }
-}
-
 extension Array {
 
   public func uniqueSorted(by identifier: (Element) -> some Equatable & Comparable) -> [Element] {
@@ -52,15 +46,38 @@ extension Array {
   }
 }
 
+/// Checks if a directory contains at least one file
+func directoryIsNotEmpty(_ url: URL) -> Bool {
+  guard
+    let contents = fileManager.files(
+      at: url,
+      includingPropertiesForKeys: nil,
+      options: [.skipsHiddenFiles])
+  else {
+    return false
+  }
+  return !contents.isEmpty
+}
+
 extension String {
+  public var camelCased: String {
+    guard !isEmpty else { return "" }
+    let parts = components(separatedBy: .alphanumerics.inverted)
+    let first = parts.first!.lowercasingFirst
+    let rest = parts.dropFirst().map(\.uppercasingFirst)
+
+    return ([first] + rest).joined()
+  }
+
   public func resolve(with base: String) -> String {
-    if hasPrefix("/") {
-      return self
+    let cleanPath = replacingOccurrences(of: "./", with: "")
+    if cleanPath.hasPrefix("/") {
+      return cleanPath
     }
     if base.hasSuffix("/") {
-      return base + self
+      return base + cleanPath
     }
-    return base + "/" + self
+    return base + "/" + cleanPath
   }
 
   public func update(
@@ -69,15 +86,19 @@ extension String {
     encoding: String.Encoding = .utf8)
     throws
   {
-    if !FileManager.default.fileExists(atPath: url.path) {
-      try write(to: url, atomically: atomically, encoding: encoding)
+    if !fileManager.fileExists(atPath: url.path) {
+      try fileManager.write(self, to: url, atomically: atomically, encoding: encoding)
       return
     }
-    let currentContent = try String(contentsOf: url, encoding: encoding)
+    let currentContent = try fileManager.read(contentsOfFile: url.path)
     // Ignore spaces to mitigate differences caused by the linter after the file is written.
     guard currentContent.replacing(/\s/, with: "") != replacing(/\s/, with: "") else {
       return
     }
-    try write(to: url, atomically: atomically, encoding: encoding)
+    try fileManager.write(self, to: url, atomically: atomically, encoding: encoding)
   }
+
+  private var lowercasingFirst: String { prefix(1).lowercased() + dropFirst() }
+  private var uppercasingFirst: String { prefix(1).uppercased() + dropFirst() }
+
 }

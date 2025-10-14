@@ -13,177 +13,106 @@ import SwiftSyntaxBuilder
 /// the package manifest accordingly by:
 /// - Adding missing dependencies that are imported but not declared
 /// - Removing unused dependencies that are declared but not imported
-public final class UpdateDependencies: SyntaxRewriter {
+public enum UpdateDependencies {
 
-  convenience init(packagePath: URL, targetsInfo: [TargetInfo]? = nil) throws {
-    let path = packagePath.canonicalURL
+  /// Update all dependencies:
+  ///   - update Module.swift files (initialize empty files, fix names, add properties)
+  ///   - add / remove dependencies in the `Module.swift files`
+  ///   - generate the aggregated `Package.swift` file
+  ///   - generate `Package.swift` for each module
+  ///
+  ///   - Parameters:
+  ///   - packagePath: The path to the root package directory.
+  ///   - all: If true, also generate `Package.swift` files for each module.
+  public static func update(packageURL: URL, all: Bool = false) throws -> [String: TargetInfo] {
+    let templatePackageURL = packageURL.deletingLastPathComponent()
+      .appending(path: "Package.template.swift")
+    let templatePackageSource = try Parser.parse(source: fileManager.read(contentsOfFile: templatePackageURL.path))
 
-    // Load the file's text
-    let fileContents = try String(contentsOfFile: path.path)
-
-    // Parse to syntax
-    let packageSource = Parser.parse(source: fileContents)
-
-    try self.init(packageSource: packageSource, packagePath: path, targetsInfo: targetsInfo)
-  }
-
-  public init(packageSource: SourceFileSyntax, packagePath: URL, targetsInfo: [TargetInfo]? = nil) throws {
-    self.packageSource = packageSource
-    let packageDirPath = packagePath.deletingLastPathComponent()
-
-    if let targetsInfo {
-      targets = targetsInfo
-      isRewrittingModule = true
-    } else {
-      let extractor = ExtractModuleInfo(packageDirPath: packageDirPath)
-      extractor.walk(packageSource)
-      targets = extractor.targetInfo
-      isRewrittingModule = false
-    }
-
-    localPackages = Set(targets.map(\.name))
-  }
-
-  public func rewrite(_ filePath: URL) throws {
-    let modifiedSource = visit(packageSource)
-    try modifiedSource.description.update(url: filePath, atomically: true, encoding: .utf8)
-  }
-
-  public override func visit(_ node: FunctionCallExprSyntax) -> ExprSyntax {
-    guard
-      let base = node.calledExpression.as(MemberAccessExprSyntax.self),
-      base.declName.baseName.text == "macro" ||
-      base.declName.baseName.text == "target" ||
-      base.declName.baseName.text == "testTarget" ||
-      base.declName.baseName.text == "macroModule" ||
-      base.declName.baseName.text == "module"
-    else {
-      return super.visit(node)
-    }
-
-    guard
-      let targetName = findStringArgument(in: node.arguments, label: "name"),
-      let target = targets.first(where: { $0.name == targetName })
-    else {
-      return super.visit(node)
-    }
-
-    var updatedNode = fixDependencies(in: node, target: target)
-    if target.modulePath != nil, let testTarget = targets.first(where: { $0.name == "\(targetName)Tests" }) {
-      updatedNode = fixDependencies(in: updatedNode, target: testTarget)
-    }
-    return ExprSyntax(super.visit(updatedNode))
-  }
-
-  let packageSource: SourceFileSyntax
-
-  private let targets: [TargetInfo]
-  private let isRewrittingModule: Bool
-  private let localPackages: Set<String>
-
-  private func fixDependencies(in node: FunctionCallExprSyntax, target: TargetInfo) -> FunctionCallExprSyntax {
-    do {
-      // Gather actual imports used in code
-      let usedImports = try collectAllImports(in: target.path)
-
-      // Compare declared vs used
-      let declaredDep = target.dependencies.reduce(into: [:]) { $0[$1.name] = $1 }
-      let codeImports = usedImports.reduce(into: [String: DependencyInfo]()) { $0[$1] = DependencyInfo(
-        raw: ExprSyntax("\"\(raw: $1)\""),
-        name: $1,
-        package: nil) }
-
-      // Missing: local packages that are imported but not declared:
-      let missingDependencies = codeImports
-        .filter { !declaredDep.keys.contains($0.key) }
-        .filter { localPackages.contains($0.key) }
-
-      // Extra: declared but not imported
-      let extraDependencies = declaredDep.filter { dep in
-        if target.modulePath != nil, target.type == .testTarget, dep.key == target.name.replacing("Tests", with: "") {
-          // The test target dependency on its main target is already included for modules.
-          return true
-        }
-        return !codeImports.keys.contains(dep.key) &&
-          // Ignore macros, as they cannot be imported but remain required dependencies.
-          !dep.key.hasSuffix("Macro")
+    // First, discover all existing Module.swift, and the targets the define:
+    let repoURL = templatePackageURL.deletingLastPathComponent()
+    let moduleFiles = try fileManager.files(at: repoURL, includingPropertiesForKeys: nil)?
+      .filter { $0.lastPathComponent == "Module.swift" }
+      .map { file -> (URL, SourceFileSyntax) in
+        let content = try fileManager.read(contentsOfFile: file.path)
+        let source = Parser.parse(source: content)
+        return (file, source)
       }
+      .sorted(by: { $0.0.path < $1.0.path }) ?? []
 
-      if !isRewrittingModule, let modulePath = target.modulePath {
-        // Also fix the module declaration.
-        let packagePath = modulePath.appending(path: "Module.swift")
-        let moduleFormater = try UpdateDependencies(
-          packagePath: packagePath,
-          targetsInfo: targets)
-        try moduleFormater.rewrite(packagePath)
+    var targets = try moduleFiles
+      .flatMap { moduleFile in
+        let moduleDir = moduleFile.0.deletingLastPathComponent()
+        return try fileManager.contentsOfDirectory(at: moduleDir)
+          .filter { directoryIsNotEmpty($0) }
+          .compactMap {
+            TargetInfo(folderURL: $0, moduleDir: moduleDir, source: moduleFile.1)
+          }
       }
-
-      let argKey = (target.type == .testTarget && target.modulePath != nil) ? "testDependencies" : "dependencies"
-      let newArgs = fixDependenciesArgument(node.arguments, add: missingDependencies, remove: extraDependencies, argKey: argKey)
-      return node.with(\.arguments, newArgs)
-    } catch {
-      fatalError(error.localizedDescription)
-    }
-  }
-
-  /// Remove / add dependencies as necessary, and keep sorted.
-  private func fixDependenciesArgument(
-    _ argList: LabeledExprListSyntax,
-    add: [String: DependencyInfo],
-    remove: [String: DependencyInfo],
-    argKey: String = "dependencies")
-    -> LabeledExprListSyntax
-  {
-    var newArgList = argList
-
-    if let depIndex = argList.firstIndex(where: { $0.label?.text == argKey }) {
-      // Already has a dependencies: [ ... ] param. Modify it:
-      let oldArg = argList[depIndex]
-      if let oldArrayExpr = oldArg.expression.as(ArrayExprSyntax.self) {
-        var dependencies = oldArrayExpr.elements.compactMap(\.expression.dependencyInfo)
-        dependencies = dependencies.filter { !remove.keys.contains($0.name) }
-        dependencies.append(contentsOf: add.values)
-        dependencies.uniqueSort(by: \.sortingId)
-        // Build a new array expr
-        let newArrayExpr = makeArrayExprSyntax(from: dependencies.map(\.raw))
-        let newArg = oldArg.with(\.expression, ExprSyntax(newArrayExpr))
-        newArgList = newArgList.with(\.[depIndex], newArg)
+      .reduce(into: [String: TargetInfo]()) { result, target in
+        result[target.name] = target
       }
-    } else {
-      // No dependencies param. Create one from scratch containing `add` items.
-      let dependencies = Array(add.values).uniqueSorted(by: \.sortingId)
-      let newArrayExpr = makeArrayExprSyntax(from: dependencies.map(\.raw))
+    let externalDependencies = targets.values.reduce(into: [String: TargetInfo.ExternalDependency](), { result, target in
+      for externalDependency in target.externalDependencies { result[externalDependency.name] = externalDependency }
+    })
 
-      // Create a new labeled argument
-      let labelToken = TokenSyntax.identifier(argKey)
-      let colonToken = TokenSyntax.colonToken()
-      let trailingComma = TokenSyntax.commaToken(trailingTrivia: .newline)
+    // Then identify existing dependencies based on imports
+    targets = try targets.mapValues { target in
+      var target = target
+      let imports = try collectAllImports(in: target.folderURL)
+      target.dependencies = imports
+        .compactMap { targets[$0] }
+        .sorted(using: KeyPathComparator(\.name))
+      target.externalDependencies = imports
+        .compactMap { externalDependencies[$0] }
+        .sorted(using: KeyPathComparator(\.name))
 
-      let newArg = LabeledExprSyntax(
-        label: labelToken,
-        colon: colonToken,
-        expression: ExprSyntax(newArrayExpr),
-        trailingComma: trailingComma)
-      newArgList.append(newArg)
+      return target
     }
 
-    return newArgList
-  }
+    // Then rewrite the Module.swift files
+    let targetsByModuleDir = targets.reduce(into: Dictionary(uniqueKeysWithValues: moduleFiles.map { (
+      $0.0.deletingLastPathComponent(),
+      []) }))
+    { result, target in
+      result[target.value.moduleDir, default: []].append(target.value)
+    }
+    try targetsByModuleDir.forEach { moduleDir, targets in
+      try UpdateModuleFile(moduleFileURL: moduleDir.appending(path: "Module.swift"), targets: targets).run()
+    }
 
-  // MARK: - Collecting Imports
+    // Then, update the main Package.swift
+    let packageModifier = GenerateEntirePackage(
+      templatePackageSource: templatePackageSource,
+      packageDirURL: templatePackageURL.deletingLastPathComponent())
+    try packageModifier.run()
+
+    guard all else { return targets }
+    // Finally, if requested, generate all local Package.swift
+
+    for moduleDir in targetsByModuleDir.keys
+      .sorted(using: KeyPathComparator(\.path))
+    {
+      try GenerateModulePackage(
+        moduleDir: moduleDir,
+        allTargets: targets,
+        templatePackageSource: templatePackageSource,
+        templatePackageURL: templatePackageURL).run()
+    }
+    return targets
+  }
 
   /// Collects all the unique imports found in `.swift` files under `directoryPath`.
   /// - Parameter directoryPath: The file system path to search (recursively).
   /// - Returns: A set of strings, e.g. { "SwiftUI", "Foundation.NSString", ... }.
-  private func collectAllImports(in directoryPath: String) throws -> Set<String> {
-    let directoryURL = URL(fileURLWithPath: directoryPath)
+  private static func collectAllImports(in directoryURL: URL) throws -> Set<String> {
     var allImports = Set<String>()
 
     // Recursively gather *.swift files from the directory.
     let fileURLs = allSwiftFiles(in: directoryURL)
 
     for fileURL in fileURLs {
-      if let fileText = try? String(contentsOfFile: fileURL.path) {
+      if let fileText = try? fileManager.read(contentsOfFile: fileURL.path) {
         let sourceFile = Parser.parse(source: fileText)
         let imports = findImports(in: sourceFile)
         allImports.formUnion(imports)
@@ -194,15 +123,15 @@ public final class UpdateDependencies: SyntaxRewriter {
   }
 
   /// Recursively traverses `baseURL` to find every file ending in `.swift`.
-  private func allSwiftFiles(in baseURL: URL) -> [URL] {
+  private static func allSwiftFiles(in baseURL: URL) -> [URL] {
     var result = [URL]()
     if
-      let enumerator = FileManager.default.enumerator(
+      let enumerator = fileManager.files(
         at: baseURL,
         includingPropertiesForKeys: nil,
         options: [.skipsHiddenFiles])
     {
-      for case let file as URL in enumerator {
+      for file in enumerator {
         if file.pathExtension == "swift" {
           result.append(file)
         }
@@ -215,7 +144,7 @@ public final class UpdateDependencies: SyntaxRewriter {
   /// For example:
   ///    import SwiftUI           → "SwiftUI"
   ///    import Foundation.NSData → "Foundation"
-  private func findImports(in sourceFile: SourceFileSyntax) -> [String] {
+  private static func findImports(in sourceFile: SourceFileSyntax) -> [String] {
     var imports = [String]()
     for statement in sourceFile.statements {
       if let importDecl = statement.item.as(ImportDeclSyntax.self) {
@@ -226,54 +155,23 @@ public final class UpdateDependencies: SyntaxRewriter {
     }
     return imports
   }
+
 }
 
-extension UpdateDependencies {
-  /// Update all dependencies:
-  ///   - add / remove dependencies in the `Module.swift files`
-  ///   - generate the aggregated `Package.swift` file
-  ///   - generate `Package.swift` for each module
-  ///
-  ///   - Parameters:
-  ///   - packagePath: The path to the root package directory.
-  ///   - all: If true, also generate `Package.swift` files for each module.
-  public static func update(packagePath: URL, all: Bool = false) throws -> [String: TargetInfo] {
-    let basePackagePath = packagePath.deletingLastPathComponent()
-      .appending(path: "Package.base.swift")
-    let basePackageSource = try Parser.parse(source: String(contentsOf: basePackagePath, encoding: .utf8))
+// MARK: - DependencyInfo
 
-    // Generate the main package
-    var mainPackageSource = try GenerateEntirePackage(
-      basePackageSource: basePackageSource,
-      packageDirPath: basePackagePath.deletingLastPathComponent()).generate()
+public struct DependencyInfo {
+  /// The original syntax expression (e.g. `"SomeTarget"` or `product(name: "KeyboardShortcuts", package: "...")`)
+  let raw: ExprSyntax
 
-    // Update dependencies
-    try UpdateDependencies(packageSource: mainPackageSource, packagePath: packagePath).rewrite(packagePath)
+  /// The normalized dependency name (e.g. "SomeTarget" or "KeyboardShortcuts")
+  public let name: String
 
-    // Regenerate the main package
-    mainPackageSource = try GenerateEntirePackage(
-      basePackageSource: basePackageSource,
-      packageDirPath: basePackagePath.deletingLastPathComponent()).generate()
+  public let package: PackageDependencyInfo?
 
-    // Generate all the derived Package.swift for each module
-    let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
-    targetExtractor.walk(mainPackageSource)
-    let allTargets = targetExtractor.targetInfo
-      .reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
-
-    guard all else { return allTargets }
-
-    for modulePath in allTargets.values
-      .compactMap({ $0.modulePath?.path })
-      .uniqueSorted(by: \.self)
-    {
-      try GenerateModulePackage(
-        modulePath: modulePath,
-        allTargets: allTargets,
-        basePackageSource: basePackageSource,
-        basePackagePath: basePackagePath).run()
-    }
-    return allTargets
+  public struct PackageDependencyInfo {
+    public let packageName: String
+    public let procuct: String
   }
 }
 

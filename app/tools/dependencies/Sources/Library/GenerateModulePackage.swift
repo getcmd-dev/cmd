@@ -2,30 +2,31 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftFormat
 import SwiftParser
 import SwiftSyntax
 
 // MARK: - GenerateModulePackage
 
-/// Generate the Package.swift file for one module.
+/// Generate the Package.swift file for one module, for instance at ./repo/ModuleA/Package.swift
 public final class GenerateModulePackage {
 
   public init(
-    modulePath: String,
+    moduleDir: URL,
     allTargets: [String: TargetInfo],
-    basePackageSource: SourceFileSyntax,
-    basePackagePath: URL)
+    templatePackageSource: SourceFileSyntax,
+    templatePackageURL: URL)
     throws
   {
-    self.modulePath = URL(fileURLWithPath: modulePath).canonicalURL
+    self.moduleDir = moduleDir.canonicalURL
     self.allTargets = allTargets
-    self.basePackageSource = basePackageSource
-    self.basePackagePath = basePackagePath
+    self.templatePackageSource = templatePackageSource
+    self.templatePackageURL = templatePackageURL
   }
 
   public func run() throws {
     let targets = allTargets
-    let focussedTargets = targets.values.filter { $0.modulePath == modulePath }
+    let focussedTargets = targets.values.filter { $0.moduleDir == moduleDir }
 
     var selectedTargets = focussedTargets.reduce(into: [String: TargetInfo]()) { result, target in
       result[target.name] = target
@@ -33,18 +34,12 @@ public final class GenerateModulePackage {
     var externalDependencies = Set<String>()
 
     // Add all dependencies, not including transitives.
-    var needsDependencies = focussedTargets
-    while needsDependencies.count > 0 {
-      let target = needsDependencies.removeFirst()
-      let moduleTargets = targets.values.filter { $0.modulePath == target.modulePath }
+    for target in focussedTargets {
+      let targetDependencies = targets.values.filter { $0.name == target.name }
 
-      for dependency in moduleTargets.flatMap(\.dependencies) {
+      for dependency in targetDependencies.flatMap(\.dependencies) {
         if selectedTargets[dependency.name] != nil {
           // Dependency already added
-          continue
-        }
-        if let package = dependency.package {
-          externalDependencies.insert(package.packageName)
           continue
         }
         guard let dependencyTarget = targets[dependency.name] else {
@@ -52,41 +47,58 @@ public final class GenerateModulePackage {
         }
         selectedTargets[dependency.name] = dependencyTarget
       }
+
+      for dependency in targetDependencies.flatMap(\.externalDependencies) {
+        externalDependencies.insert(dependency.packageName)
+      }
     }
 
-    let packagePath = modulePath.appendingPathComponent("Package.swift")
-    var rewrittenFile = basePackageSource
+    let packageURL = moduleDir.appendingPathComponent("Package.swift")
+    var rewrittenFile = templatePackageSource
 
-    rewrittenFile = UpdateRelativePathInPackage(packagePath: basePackagePath, targetPath: packagePath)
+    rewrittenFile = UpdateRelativePathInPackage(packageURL: templatePackageURL, targetURL: packageURL)
       .visit(rewrittenFile)
     rewrittenFile = try AddTargetToPackage(
       source: rewrittenFile,
-      packageDirPath: modulePath,
-      modules: [modulePath.path]).rewrite()
+      packageDirURL: moduleDir,
+      modules: [moduleDir.path]).rewrite()
 
     rewrittenFile = UpdatePackage(
-      packagePath: packagePath,
-      name: modulePath.lastPathComponent,
-      focussedTargetNames: focussedTargets.filter { $0.type == .target }.map(\.name),
-      internalDependencies: selectedTargets.values.filter { $0.modulePath != modulePath },
+      packageURL: packageURL,
+      name: moduleDir.lastPathComponent,
+      focussedTargetNames: focussedTargets.map(\.name),
+      internalDependencies: selectedTargets.values.filter { $0.moduleDir != moduleDir },
       externalDependencies: externalDependencies)
       .visit(rewrittenFile)
 
-    try """
+    // Format the output with swift-format for consistent indentation
+    var configuration = Configuration()
+    configuration.indentation = .spaces(2)
+    configuration.lineLength = 120
+
+    let unformattedCode = rewrittenFile.description
+    var formattedOutput = ""
+    try SwiftFormatter(configuration: configuration).format(
+      source: unformattedCode,
+      assumingFileURL: packageURL,
+      selection: Selection(offsetRanges: []),
+      to: &formattedOutput)
+
+    try fileManager.write(
+      """
       // This file is generated. Do not modify directly.
 
-      \(rewrittenFile.description)
-      """
-    .write(
-      to: URL(fileURLWithPath: packagePath.path),
+      \(formattedOutput)
+      """,
+      to: packageURL,
       atomically: true,
       encoding: .utf8)
   }
 
-  let modulePath: URL
+  let moduleDir: URL
   let allTargets: [String: TargetInfo]
-  let basePackageSource: SourceFileSyntax
-  let basePackagePath: URL
+  let templatePackageSource: SourceFileSyntax
+  let templatePackageURL: URL
 
 }
 
@@ -95,13 +107,13 @@ public final class GenerateModulePackage {
 final class UpdatePackage: SyntaxRewriter {
 
   init(
-    packagePath: URL,
+    packageURL: URL,
     name: String,
     focussedTargetNames: [String],
     internalDependencies: [TargetInfo],
     externalDependencies: Set<String>)
   {
-    self.packagePath = packagePath
+    self.packageURL = packageURL
     self.name = name
     self.focussedTargetNames = focussedTargetNames
     self.externalDependencies = externalDependencies
@@ -111,7 +123,7 @@ final class UpdatePackage: SyntaxRewriter {
   let focussedTargetNames: [String]
   let externalDependencies: Set<String>
   let internalDependencies: [TargetInfo]
-  let packagePath: URL
+  let packageURL: URL
   let name: String
 
   override func visit(_ node: FunctionCallExprSyntax) -> ExprSyntax {
@@ -136,7 +148,7 @@ final class UpdatePackage: SyntaxRewriter {
 
     let newProducts = makeExpr("""
       [
-        \(focussedTargetNames.map { ".library(name: \"\($0)\", targets: [\"\($0)\"])" }.joined(separator: ",\n"))
+        \(focussedTargetNames.sorted().map { ".library(name: \"\($0)\", targets: [\"\($0)\"])" }.joined(separator: ",\n"))
       ]
       """)
     var newProductArg = LabeledExprSyntax(label: "products", expression: newProducts)
@@ -153,13 +165,12 @@ final class UpdatePackage: SyntaxRewriter {
             .filter { dep in !externalDependencies.filter { dep.description.contains("/\($0)") }.isEmpty }
             .appending(
               contentOf: internalDependencies
-                .uniqueSorted(by: \.path)
+                .sorted(using: KeyPathComparator(\.name))
                 .compactMap { dep -> ArrayElementSyntax? in
-                  guard let modulePath = dep.modulePath else { return nil }
                   return ArrayElementSyntax(
                     leadingTrivia: .newline,
                     expression: makeExpr(
-                      ".package(path: \"\(modulePath.pathRelative(to: packagePath.deletingLastPathComponent()))\"),"),
+                      ".package(path: \"\(dep.moduleDir.pathRelative(to: packageURL.deletingLastPathComponent()))\"),"),
                     trailingComma: .commaToken())
                 }))))
     }
@@ -174,15 +185,15 @@ final class UpdatePackage: SyntaxRewriter {
 final class UpdateRelativePathInPackage: SyntaxRewriter {
 
   init(
-    packagePath: URL,
-    targetPath: URL)
+    packageURL: URL,
+    targetURL: URL)
   {
-    self.packagePath = packagePath
-    self.targetPath = targetPath
+    self.packageURL = packageURL
+    self.targetURL = targetURL
   }
 
-  let packagePath: URL
-  let targetPath: URL
+  let packageURL: URL
+  let targetURL: URL
 
   override func visit(_ node: LabeledExprSyntax) -> LabeledExprSyntax {
     guard node.label?.text.description == "path" else {
@@ -190,15 +201,18 @@ final class UpdateRelativePathInPackage: SyntaxRewriter {
     }
     guard
       let segments = node.expression.as(StringLiteralExprSyntax.self)?.segments,
-      segments.count == 1, let path = segments.first?.description
+      segments.count == 1, let path = segments.first?.trimmedDescription
     else {
       return super.visit(node)
     }
     guard path.starts(with: ".") else {
       return super.visit(node)
     }
-    let absolutePath = packagePath.deletingLastPathComponent().appending(path: path).canonicalURL
-    let newRelativePath = absolutePath.pathRelative(to: targetPath.deletingLastPathComponent())
-    return node.with(\.expression, ExprSyntax(makeExpr("\"\(newRelativePath)\"")))
+    let absolutePath = packageURL.deletingLastPathComponent().appending(path: path).canonicalURL
+    let newRelativePath = absolutePath.pathRelative(to: targetURL.deletingLastPathComponent())
+
+    // Preserve the original trivia (spacing) from the node
+    let newExpression = makeExpr("\"\(newRelativePath)\"")
+    return node.with(\.expression, ExprSyntax(newExpression))
   }
 }

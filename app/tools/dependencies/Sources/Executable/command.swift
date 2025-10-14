@@ -3,8 +3,8 @@
 
 import ArgumentParser
 import Foundation
+import SwiftModule
 import SwiftParser
-import SyncPackageDependencies
 
 // MARK: - SyncDependencies
 
@@ -30,8 +30,8 @@ struct SyncCommand: ParsableCommand {
   var all = false
 
   func run() throws {
-    let packagePath = URL(fileURLWithPath: path).canonicalURL
-    _ = try UpdateDependencies.update(packagePath: packagePath, all: all)
+    let packageURL = URL(fileURLWithPath: path).canonicalURL
+    _ = try UpdateDependencies.update(packageURL: packageURL, all: all)
   }
 }
 
@@ -50,16 +50,15 @@ struct FocusCommand: ParsableCommand {
   var list = false
 
   func run() throws {
-    let packagePath = URL(fileURLWithPath: path).canonicalURL
+    let packageURL = URL(fileURLWithPath: path).canonicalURL
 
     if list {
-      let modulesInfo = try UpdateDependencies.update(packagePath: packagePath, all: false)
+      let modulesInfo = try UpdateDependencies.update(packageURL: packageURL, all: false)
       print("\(modulesInfo.keys.joined(separator: "\n"))\n")
       return
     }
     guard
-      let module = try UpdateDependencies.update(packagePath: packagePath, all: true)[module],
-      let modulePath = module.modulePath
+      let module = try UpdateDependencies.update(packageURL: packageURL, all: true)[module]
     else {
       FocusCommand.exit(withError: NSError(
         domain: "SyncDependenciesError",
@@ -67,6 +66,6 @@ struct FocusCommand: ParsableCommand {
         userInfo: [NSLocalizedDescriptionKey: "Could not find module \(module)"]))
     }
 
-    print(modulePath.canonicalURL.appending(path: "Package.swift").path + "\n")
+    print(module.moduleDir.canonicalURL.appending(path: "Package.swift").path + "\n")
   }
 }

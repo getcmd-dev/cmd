@@ -2,67 +2,80 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftFormat
 import SwiftParser
 import SwiftSyntax
 
 // MARK: - GenerateEntirePackage
 
-/// Generate the root Package.swift file.
+/// Generate the root Package.swift file, for instance at ./repo/Package.swift
 public final class GenerateEntirePackage {
 
   public init(packageDirPath: String) throws {
-    self.packageDirPath = URL(filePath: packageDirPath).canonicalURL
-    basePackageSource = try Parser.parse(source: String(contentsOfFile: packageDirPath))
+    packageDirURL = URL(filePath: packageDirPath).canonicalURL
+    templatePackageSource = try Parser.parse(source: fileManager.read(contentsOfFile: packageDirPath))
   }
 
-  public init(basePackageSource: SourceFileSyntax, packageDirPath: URL) {
-    self.packageDirPath = packageDirPath.canonicalURL
-    self.basePackageSource = basePackageSource
+  public init(templatePackageSource: SourceFileSyntax, packageDirURL: URL) {
+    self.packageDirURL = packageDirURL.canonicalURL
+    self.templatePackageSource = templatePackageSource
   }
 
   public func generate() throws -> SourceFileSyntax {
-    let directoryPath = packageDirPath.path
+    let directoryPath = packageDirURL.path
     let modules = Self.findModuleFiles(in: directoryPath)
 
     let rewriter = try AddTargetToPackage(
-      source: basePackageSource,
-      packageDirPath: packageDirPath,
+      source: templatePackageSource,
+      packageDirURL: packageDirURL,
       modules: modules)
 
     return rewriter.rewrite()
   }
 
-  let packageDirPath: URL
-  let basePackageSource: SourceFileSyntax
+  let packageDirURL: URL
+  let templatePackageSource: SourceFileSyntax
 
   func generateSource() throws -> String {
     let rewrittenFile = try generate()
 
+    // Format the output with swift-format for consistent indentation
+    var configuration = Configuration()
+    configuration.indentation = .spaces(2)
+    configuration.lineLength = 120
+
+    let unformattedCode = rewrittenFile.description
+    var formattedOutput = ""
+    try SwiftFormatter(configuration: configuration).format(
+      source: unformattedCode,
+      assumingFileURL: nil,
+      selection: Selection(offsetRanges: []),
+      to: &formattedOutput)
+
     return """
       // This file is generated. Do not modify directly.
 
-      \(rewrittenFile.description)
+      \(formattedOutput)
       """
   }
 
   func run() throws {
     try generateSource().update(
-      url: packageDirPath.appending(path: "/Package.swift"),
+      url: packageDirURL.appending(path: "/Package.swift"),
       atomically: true,
       encoding: .utf8)
   }
 
   private static func findModuleFiles(in directoryPath: String) -> [String] {
-    let fileManager = FileManager.default
     var moduleFiles = [String]()
 
     func searchDirectory(_ path: String) {
       let directoryURL = URL(fileURLWithPath: path)
-      guard let enumerator = fileManager.enumerator(at: directoryURL, includingPropertiesForKeys: [.isDirectoryKey]) else {
+      guard let enumerator = fileManager.files(at: directoryURL, includingPropertiesForKeys: nil) else {
         return
       }
 
-      for case let fileURL as URL in enumerator {
+      for fileURL in enumerator {
         if fileURL.lastPathComponent == "Module.swift" {
           moduleFiles.append(fileURL.deletingLastPathComponent().path)
         }
@@ -70,7 +83,12 @@ public final class GenerateEntirePackage {
     }
 
     searchDirectory(directoryPath)
-    return moduleFiles
+    // Sort by module directory name for consistent ordering
+    return moduleFiles.sorted { path1, path2 in
+      let name1 = URL(fileURLWithPath: path1).lastPathComponent
+      let name2 = URL(fileURLWithPath: path2).lastPathComponent
+      return name1.localizedCaseInsensitiveCompare(name2) == .orderedAscending
+    }
   }
 }
 
@@ -78,13 +96,13 @@ public final class GenerateEntirePackage {
 
 final class AddTargetToPackage {
 
-  init(source: SourceFileSyntax, packageDirPath: URL, modules: [String]) throws {
-    self.packageDirPath = packageDirPath
+  init(source: SourceFileSyntax, packageDirURL: URL, modules: [String]) throws {
+    self.packageDirURL = packageDirURL
     packageFile = source
 
-    let packageDir = packageDirPath.path
+    let packageDir = packageDirURL.path
     moduleExpressions = try modules.map { modulePath in
-      let content = try String(contentsOfFile: "\(modulePath)/Module.swift")
+      let content = try fileManager.read(contentsOfFile: "\(modulePath)/Module.swift")
       let sf = Parser.parse(source: content)
 
       guard
@@ -125,7 +143,7 @@ final class AddTargetToPackage {
     return packageFile.with(\.statements, blockList)
   }
 
-  private let packageDirPath: URL
+  private let packageDirURL: URL
   private let packageFile: SourceFileSyntax
   private let moduleExpressions: [ExprSyntax]
 
@@ -166,7 +184,9 @@ private func rewriteModuleExpression(
     for arg in oldArgList {
       if arg.label?.text == "path" {
         hadPath = true
-        let updated = arg.with(\.expression, makeStringLiteralExpr(modulePath))
+        // Preserve the original trivia/formatting from the existing path argument
+        let newExpr = makeStringLiteralExpr(modulePath)
+        let updated = arg.with(\.expression, newExpr)
         newArgs.append(updated)
       } else {
         newArgs.append(arg)
@@ -190,10 +210,10 @@ private func rewriteModuleExpression(
 
 private func makePathTupleExpr(_ pathValue: String) -> LabeledExprSyntax {
   let labelToken = TokenSyntax(.identifier("path"), presence: .present)
-  let colonToken = TokenSyntax(.colon, presence: .present)
+  let colonToken = TokenSyntax(.colon, trailingTrivia: .space, presence: .present)
   let stringExpr = makeStringLiteralExpr(pathValue)
   return LabeledExprSyntax(
-    leadingTrivia: .newline,
+    leadingTrivia: .newlines(1) + .spaces(2),
     label: labelToken,
     colon: colonToken,
     expression: stringExpr,
