@@ -333,35 +333,6 @@ platform :mac do
     ## Resign
     puts "Using certificate to resign the app after stripping DEBUG symbols: #{certificate_name} (#{certificate_sha1})"
 
-    # Find all signable components and sort by depth (deepest first)
-    all_components = []
-
-    Dir.glob("#{app_path}/**/*.{framework,appex,bundle,xpc,app}").each do |component|
-      # Skip the main app itself
-      next if component == app_path
-
-      depth = component.split("/").length
-      all_components << { path: component, depth: depth }
-    end
-
-    # Also find standalone executables (like command-line tools) that were stripped
-    Dir.glob("#{app_path}/Contents/Applications/**/*").each do |file|
-      next unless File.file?(file) && !File.symlink?(file)
-
-      file_type = begin
-        silent_sh("file -b '#{file}'")
-      rescue
-        ""
-      end
-
-      # If it's a Mach-O executable and not already in our list, add it
-      next unless file_type.include?("Mach-O") && !file_type.include?("dSYM") && !all_components.any? { |c| file.start_with?(c[:path]) }
-
-      depth = file.split("/").length
-      puts "adding macho file: #{file}"
-      all_components << { path: file, depth: depth }
-    end
-
     # Sort by depth (deepest first) then by path for consistency
     all_components.sort_by! { |c| [-c[:depth], c[:path]] }
 
