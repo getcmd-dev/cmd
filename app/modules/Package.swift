@@ -17,11 +17,11 @@ extension Target {
     dependencies: [Target.Dependency],
     resources: [PackageDescription.Resource]? = nil,
     testsDependencies: [Target.Dependency]? = nil,
-    testExclude: [String] = [],
-    testResources: [PackageDescription.Resource]? = nil,
+    testsExclude: [String] = [],
+    testsResources: [PackageDescription.Resource]? = nil,
     interfaceDependencies: [Target.Dependency]? = nil,
-    interfaceTestDependencies: [Target.Dependency]? = nil,
-    interfaceTestResources: [PackageDescription.Resource]? = nil,
+    interfaceTestsDependencies: [Target.Dependency]? = nil,
+    interfaceTestsResources: [PackageDescription.Resource]? = nil,
     path: String)
     -> [Target]
   {
@@ -43,8 +43,8 @@ extension Target {
           name: "\(name)Tests",
           dependencies: testsDependencies,
           path: "\(path)/Tests",
-          exclude: testExclude,
-          resources: testResources))
+          exclude: testsExclude,
+          resources: testsResources))
     }
 
     // Interface target
@@ -57,13 +57,13 @@ extension Target {
     }
 
     // Interface test target
-    if let interfaceTestDependencies {
+    if let interfaceTestsDependencies {
       targets.append(
         Target.testTarget(
           name: "\(name)InterfaceTests",
-          dependencies: interfaceTestDependencies,
+          dependencies: interfaceTestsDependencies,
           path: "\(path)/InterfaceTests",
-          resources: interfaceTestResources))
+          resources: interfaceTestsResources))
     }
     return targets
   }
@@ -764,7 +764,7 @@ targets.append(
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
     ],
-    testExclude: ["__Snapshots__"],
+    testsExclude: ["__Snapshots__"],
     path: "./foundations/FileDiffFoundation"))
 
 targets.append(
@@ -1436,7 +1436,7 @@ targets.append(
       "XcodeObserverService",
       "XcodeObserverServiceInterface",
     ],
-    testResources: [
+    testsResources: [
       .copy("resources/"),
     ],
     path: "./services/XcodeObserverService"))

@@ -11,4 +11,4 @@ Target.module(
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
   ],
-  testExclude: ["__Snapshots__"])
+  testsExclude: ["__Snapshots__"])

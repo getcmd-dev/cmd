@@ -26,6 +26,6 @@ Target.module(
     "XcodeObserverService",
     "XcodeObserverServiceInterface",
   ],
-  testResources: [
+  testsResources: [
     .copy("resources/"),
   ])
