@@ -79,13 +79,13 @@ struct ClaudeCodeReadToolTests {
         10→
         11→### Module.swift
         12→Each module defines a `Module.swift` file where its dependencies are listed. They don't make sense on their own, but are are aggregated to create the shared [`Package.swift`](./modules/Package.swift) that is a standard Swift package.
-        13→The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.base.swift`.
+        13→The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.template.swift`.
         14→
         15→### syncing dependencies
         16→`cmd sync:dependencies` aggregates all dependencies, detect missing & unused ones and fix them. `cmd watch` will continuously do so.
         17→
         18→### 3rd party
-        19→3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.
+        19→3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.template.swift`.
         20→
         21→### Modules structure
         22→- foundation: usually some utility with no or little dependencies.

@@ -10,13 +10,13 @@ We favor a highly modularized code base. The motivation is to promote isolation 
 
 ### Module.swift
 Each module defines a `Module.swift` file where its dependencies are listed. They don't make sense on their own, but are are aggregated to create the shared [`Package.swift`](./modules/Package.swift) that is a standard Swift package.
-The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.base.swift`.
+The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.template.swift`.
 
 ### syncing dependencies
 `cmd sync:dependencies` aggregates all dependencies, detect missing & unused ones and fix them. `cmd watch` will continuously do so.
 
 ### 3rd party
-3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.
+3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.template.swift`.
 
 ### Modules structure
 - foundation: usually some utility with no or little dependencies.
