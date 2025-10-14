@@ -30,9 +30,10 @@ public final class UpdateModuleFile {
 
     // Read the file
     var content = try fileManager.read(contentsOfFile: moduleFileURL.path)
+    var sourceFile = Parser.parse(source: content)
 
     // In the file is empty, initialize it.
-    if content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+    if sourceFile.trimmedDescription.isEmpty {
       content = """
         Target.module(
           name: "\(moduleName)",
@@ -40,10 +41,8 @@ public final class UpdateModuleFile {
 
         """
       try fileManager.write(content, to: moduleFileURL, atomically: true, encoding: .utf8)
+      sourceFile = Parser.parse(source: content)
     }
-
-    // Parse the file
-    let sourceFile = Parser.parse(source: content)
 
     guard
       let firstStatement = sourceFile.statements.first,

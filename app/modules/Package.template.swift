@@ -12,7 +12,7 @@ import PackageDescription
 extension Target {
   static func module(
     name: String,
-    dependencies: [Target.Dependency],
+    dependencies: [Target.Dependency]? = nil,
     resources: [PackageDescription.Resource]? = nil,
     testsDependencies: [Target.Dependency]? = nil,
     testsExclude: [String] = [],
@@ -24,6 +24,7 @@ extension Target {
     -> [Target]
   {
     var targets = [Target]()
+    guard let dependencies else { return [] }
 
     targets.append(
       Target.target(

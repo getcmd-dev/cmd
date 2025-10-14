@@ -163,16 +163,6 @@ struct SyncTests {
              path: "."))
          
          let package = Package(
-        @@ -119,7 +120,8 @@ let package = Package(
-             .macOS("15.2")
-           ],
-           products: [
-        -    .library(name: "ModuleB", targets: ["ModuleB"])
-        +    .library(name: "ModuleB", targets: ["ModuleB"]),
-        +    .library(name: "ModuleBTest", targets: ["ModuleBTest"]),
-           ],
-           dependencies: [
-             .package(path: "../ModuleA")
         diff --git a/Package.swift b/Package.swift
         --- a/Package.swift
         +++ b/Package.swift
@@ -228,16 +218,6 @@ struct SyncTests {
              path: "."))
          
          let package = Package(
-        @@ -120,8 +117,7 @@ let package = Package(
-             .macOS("15.2")
-           ],
-           products: [
-        -    .library(name: "ModuleA", targets: ["ModuleA"]),
-        -    .library(name: "ModuleATest", targets: ["ModuleATest"]),
-        +    .library(name: "ModuleA", targets: ["ModuleA"])
-           ],
-           dependencies: [],
-           targets: targets)
         diff --git a/Package.swift b/Package.swift
         --- a/Package.swift
         +++ b/Package.swift
@@ -395,16 +375,6 @@ struct SyncTests {
                  path: "."))
              
              let package = Package(
-            @@ -119,7 +122,8 @@ let package = Package(
-                 .macOS("15.2")
-               ],
-               products: [
-            -    .library(name: "ModuleB", targets: ["ModuleB"])
-            +    .library(name: "ModuleB", targets: ["ModuleB"]),
-            +    .library(name: "ModuleBTest", targets: ["ModuleBTest"]),
-               ],
-               dependencies: [
-                 .package(path: "../ModuleA")
             diff --git a/Package.swift b/Package.swift
             --- a/Package.swift
             +++ b/Package.swift

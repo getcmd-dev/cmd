@@ -1,5 +1,5 @@
 Target.module(
   name: "ModuleB",
   dependencies: [
-    "ModuleA",
-  ])
+  "ModuleA",
+])
