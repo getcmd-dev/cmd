@@ -109,7 +109,7 @@ targets.append(
   contentsOf: Target.module(
     name: "ModuleB",
     dependencies: [
-      "ModuleA"
+      .product(name: "ModuleA", package: "ModuleA")
     ],
     path: "."))
 

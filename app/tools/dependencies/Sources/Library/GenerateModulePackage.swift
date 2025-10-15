@@ -28,7 +28,7 @@ public final class GenerateModulePackage {
     let targets = allTargets
     let focussedTargets = targets.values.filter { $0.moduleDir == moduleDir }
 
-    var selectedTargets = focussedTargets.reduce(into: [String: TargetInfo]()) { result, target in
+    var internalDependencies = focussedTargets.reduce(into: [String: TargetInfo]()) { result, target in
       result[target.name] = target
     }
     var externalDependencies = Set<String>()
@@ -38,14 +38,14 @@ public final class GenerateModulePackage {
       let targetDependencies = targets.values.filter { $0.name == target.name }
 
       for dependency in targetDependencies.flatMap(\.dependencies) {
-        if selectedTargets[dependency.name] != nil {
+        if internalDependencies[dependency.name] != nil {
           // Dependency already added
           continue
         }
         guard let dependencyTarget = targets[dependency.name] else {
           fatalError("Target \(dependency.name) not found")
         }
-        selectedTargets[dependency.name] = dependencyTarget
+        internalDependencies[dependency.name] = dependencyTarget
       }
 
       for dependency in targetDependencies.flatMap(\.externalDependencies) {
@@ -68,14 +68,15 @@ public final class GenerateModulePackage {
     rewrittenFile = try AddTargetToPackage(
       source: rewrittenFile,
       packageDirURL: moduleDir,
-      modules: [moduleDir.path]).rewrite()
+      modulePaths: [moduleDir.path],
+      internalDependencies: internalDependencies.values.filter { $0.moduleDir != moduleDir }).rewrite() //
 
     rewrittenFile = UpdatePackage(
       packageURL: packageURL,
       name: moduleDir.lastPathComponent,
       focussedTargetNames: focussedTargets.map(\.name),
       productTargetNames: productTargetNames,
-      internalDependencies: selectedTargets.values.filter { $0.moduleDir != moduleDir },
+      internalDependencies: internalDependencies.values.filter { $0.moduleDir != moduleDir },
       externalDependencies: externalDependencies)
       .visit(rewrittenFile)
 
