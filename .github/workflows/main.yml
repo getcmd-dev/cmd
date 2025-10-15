@@ -7,10 +7,10 @@ on:
       - 'docs/**'
       - '**/*.md'
 concurrency:
-  group: main-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  group: main_${{ github.ref }}
+  cancel_in_progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
-  warm-up-release-app-cache:
+  warm_up_release_app_cache:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -31,7 +31,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -55,4 +55,4 @@ jobs:
       uses: actions/cache/save@v4
       with:
         path: app/build/derived_data
-        key: ${{ runner.os }}-app-derived-data-main
+        key: ${{ runner.os }}_app_derived_data_main
