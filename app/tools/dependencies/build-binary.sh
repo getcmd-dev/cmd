@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-CACHE_DIR="~/.cmd/dev/tmp/bin"
+CACHE_DIR="$HOME/.cmd/dev/tmp/bin"
 
 # Calculate hash of all git-tracked source files
 CURRENT_HASH=$(git ls-files . 2>/dev/null | sort | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
@@ -27,7 +27,7 @@ BINARY="${CACHE_DIR}/SwiftModuleCommand"
 # Check if we need to rebuild
 REBUILD=false
 if [ ! -f "${BINARY}" ]; then
-	echo "NO cache bin at $BINARY. Rebuilding..."
+	echo "No cached binary at $BINARY. Rebuilding..."
 	REBUILD=true
 fi
 
