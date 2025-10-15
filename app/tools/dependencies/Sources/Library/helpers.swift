@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftParser
 import SwiftSyntax
 
 extension URL {
@@ -80,25 +81,47 @@ extension String {
     return base + "/" + cleanPath
   }
 
-  public func update(
-    url: URL,
-    atomically: Bool = true,
-    encoding: String.Encoding = .utf8)
-    throws
-  {
-    if !fileManager.fileExists(atPath: url.path) {
-      try fileManager.write(self, to: url, atomically: atomically, encoding: encoding)
-      return
-    }
-    let currentContent = try fileManager.read(contentsOfFile: url.path)
-    // Ignore spaces to mitigate differences caused by the linter after the file is written.
-    guard currentContent.replacing(/\s/, with: "") != replacing(/\s/, with: "") else {
-      return
-    }
-    try fileManager.write(self, to: url, atomically: atomically, encoding: encoding)
-  }
-
   private var lowercasingFirst: String { prefix(1).lowercased() + dropFirst() }
   private var uppercasingFirst: String { prefix(1).uppercased() + dropFirst() }
 
+}
+
+extension FileManagerI {
+  /// Writes content to a file only if the AST differs, ignoring whitespace and comments.
+  /// This is useful to avoid unnecessary file modifications.
+  /// Those can have effects such as triggering linters or making Xcode re-resolve packages.
+  func writeIfASTDiffers(_ content: String, to url: URL) throws {
+    guard fileExists(atPath: url.path) else {
+      try write(content, to: url, atomically: true, encoding: .utf8)
+      return
+    }
+    let newContent = Syntax(Parser.parse(source: content))
+    let existingContent = try read(contentsOfFile: url.path)
+    let existingSource = Syntax(Parser.parse(source: existingContent))
+    guard !astEqual(newContent, existingSource) else { return }
+    try write(content, to: url, atomically: true, encoding: .utf8)
+  }
+}
+
+/// Whether two syntax trees are equal, ignoring trivia (comments/whitespace).
+func astEqual(_ a: Syntax, _ b: Syntax) -> Bool {
+  // Node kinds must match
+  guard a.kind == b.kind else { return false }
+
+  // Tokens: compare token kinds (which include identifier/literal text),
+  // but ignore trivia (comments/whitespace) by not looking at leading/trailingTrivia.
+  if let ta = a.as(TokenSyntax.self), let tb = b.as(TokenSyntax.self) {
+    return ta.tokenKind == tb.tokenKind
+  }
+
+  // Non-token nodes: compare children pairwise.
+  // Use .sourceAccurate so we only consider present (non-missing) nodes/tokens.
+  let ach = Array(a.children(viewMode: .sourceAccurate))
+  let bch = Array(b.children(viewMode: .sourceAccurate))
+  guard ach.count == bch.count else { return false }
+
+  for (c1, c2) in zip(ach, bch) {
+    if !astEqual(c1, c2) { return false }
+  }
+  return true
 }

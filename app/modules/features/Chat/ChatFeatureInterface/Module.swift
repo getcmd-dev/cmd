@@ -1,0 +1,2 @@
+Target.module(
+  name: "ChatFeatureInterface")

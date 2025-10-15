@@ -40,7 +40,7 @@ public final class UpdateModuleFile {
           dependencies: [])
 
         """
-      try fileManager.write(content, to: moduleFileURL, atomically: true, encoding: .utf8)
+      try fileManager.writeIfASTDiffers(content, to: moduleFileURL)
       sourceFile = Parser.parse(source: content)
     }
 
@@ -61,7 +61,7 @@ public final class UpdateModuleFile {
     // Write back
     let newContent = updatedCall.description + "\n"
     if newContent != content {
-      try fileManager.write(newContent, to: moduleFileURL, atomically: true, encoding: .utf8)
+      try fileManager.writeIfASTDiffers(newContent, to: moduleFileURL)
     }
   }
 
