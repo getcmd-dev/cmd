@@ -96,6 +96,9 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_grep"
+  public let mappedId = "search_files"
+
   public let name = "claude_code_Grep"
 
   public let description = """

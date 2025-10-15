@@ -78,6 +78,9 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   }
 
+  public let id = "ask_followup"
+  public var mappedId: String { id }
+
   public let name = "ask_followup"
 
   public let description = """

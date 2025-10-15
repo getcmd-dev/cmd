@@ -121,6 +121,9 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_multi_edit"
+  public let mappedId = "edit_or_create_files"
+
   public let name = "claude_code_MultiEdit"
 
   public let description = """

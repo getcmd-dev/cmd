@@ -97,6 +97,12 @@ public final class MCPTool: NonStreamableTool {
 
   }
 
+  public var id: String {
+    "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"
+  }
+
+  public var mappedId: String { id }
+
   public var name: String {
     "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"
   }

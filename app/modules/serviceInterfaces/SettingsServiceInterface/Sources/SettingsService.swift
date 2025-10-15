@@ -113,11 +113,21 @@ public struct Settings: Sendable, Equatable {
   }
 
   public struct ToolPreference: Sendable, Codable, Equatable {
-    public let toolName: String
+    public let toolId: String
     public var alwaysApprove: Bool
 
+    public init(toolId: String, alwaysApprove: Bool = false) {
+      self.toolId = toolId
+      self.alwaysApprove = alwaysApprove
+    }
+
+    // MARK: - Deprecated
+    @available(*, deprecated, message: "Use toolId instead")
+    public var toolName: String { toolId }
+
+    @available(*, deprecated, message: "Use init(toolId:alwaysApprove:) instead")
     public init(toolName: String, alwaysApprove: Bool = false) {
-      self.toolName = toolName
+      self.toolId = toolName
       self.alwaysApprove = alwaysApprove
     }
   }
@@ -153,20 +163,20 @@ public struct Settings: Sendable, Equatable {
 // MARK: - Settings + Tool Preferences Helpers
 
 extension Settings {
-  public func toolPreference(for toolName: String) -> ToolPreference? {
-    toolPreferences.first { $0.toolName == toolName }
+  public func toolPreference(for toolId: String) -> ToolPreference? {
+    toolPreferences.first { $0.toolId == toolId }
   }
 
-  public mutating func setToolPreference(toolName: String, alwaysApprove: Bool) {
-    if let index = toolPreferences.firstIndex(where: { $0.toolName == toolName }) {
+  public mutating func setToolPreference(toolId: String, alwaysApprove: Bool) {
+    if let index = toolPreferences.firstIndex(where: { $0.toolId == toolId }) {
       toolPreferences[index].alwaysApprove = alwaysApprove
     } else {
-      toolPreferences.append(ToolPreference(toolName: toolName, alwaysApprove: alwaysApprove))
+      toolPreferences.append(ToolPreference(toolId: toolId, alwaysApprove: alwaysApprove))
     }
   }
 
-  public func shouldAlwaysApprove(toolName: String) -> Bool {
-    toolPreferences.first { $0.toolName == toolName }?.alwaysApprove ?? false
+  public func shouldAlwaysApprove(toolId: String) -> Bool {
+    toolPreferences.first { $0.toolId == toolId }?.alwaysApprove ?? false
   }
 }
 

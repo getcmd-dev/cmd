@@ -17,6 +17,11 @@ import SwiftUI
 /// Each invocation of the tool is a 'tool use' that has its own input/output/state and possibly UI.
 public protocol Tool: Sendable {
   associatedtype Use: ToolUse where Use.SomeTool == Self
+  /// A unique identifier for this tool that will never change.
+  var id: String { get }
+  /// The ID of the internal tool this maps to. For internal tools, this is the same as `id`.
+  /// For external tools that map to internal tools, this points to the internal tool's ID.
+  var mappedId: String { get }
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
   var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
@@ -110,6 +115,7 @@ public protocol ToolUse: Sendable, Codable {
 }
 
 extension ToolUse {
+  public var toolId: String { callingTool.id }
   public var toolName: String { callingTool.name }
 
   public var toolDisplayName: String { callingTool.displayName }

@@ -143,6 +143,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   }
 
+  public let id = "execute_command"
+  public var mappedId: String { id }
+
   public let name = "execute_command"
 
   public let description = """

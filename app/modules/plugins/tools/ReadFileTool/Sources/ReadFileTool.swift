@@ -119,6 +119,9 @@ public final class ReadFileTool: NonStreamableTool {
 
   }
 
+  public let id = "read_file"
+  public var mappedId: String { id }
+
   public let name = "read_file"
 
   public let description = """

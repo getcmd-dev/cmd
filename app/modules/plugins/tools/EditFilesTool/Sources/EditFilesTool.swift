@@ -341,6 +341,16 @@ public final class EditFilesTool: Tool {
 
   public let canInputBeStreamed = true
 
+  public var id: String {
+    if shouldAutoApply {
+      "edit_or_create_files"
+    } else {
+      "suggest_files_changes"
+    }
+  }
+
+  public var mappedId: String { id }
+
   public var name: String {
     if shouldAutoApply {
       "edit_or_create_files"

@@ -122,6 +122,9 @@ public final class ClaudeCodeLSTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_ls"
+  public let mappedId = "list_files"
+
   public let name = "claude_code_LS"
 
   public let description = """

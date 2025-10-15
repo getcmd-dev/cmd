@@ -112,6 +112,9 @@ public final class LSTool: NonStreamableTool {
 
   }
 
+  public let id = "list_files"
+  public var mappedId: String { id }
+
   public let name = "list_files"
 
   public let description = """

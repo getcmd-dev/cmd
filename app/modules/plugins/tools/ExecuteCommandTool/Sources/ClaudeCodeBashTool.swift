@@ -66,6 +66,9 @@ public final class ClaudeCodeBashTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_bash"
+  public let mappedId = "execute_command"
+
   public let name = "claude_code_Bash"
 
   public let description = """

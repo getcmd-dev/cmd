@@ -23,12 +23,12 @@ struct ToolsConfigurationView: View {
       } else {
         ScrollView {
           VStack(alignment: .leading, spacing: 8) {
-            ForEach(viewModel.availableTools.filter { $0 as? any ExternalTool == nil }, id: \.name) { tool in
+            ForEach(viewModel.availableTools.filter { $0 as? any ExternalTool == nil }, id: \.id) { tool in
               ToolRow(
                 tool: tool,
-                isAlwaysApproved: viewModel.isAlwaysApproved(toolName: tool.name),
+                isAlwaysApproved: viewModel.isAlwaysApproved(toolId: tool.id),
                 onToggle: { isEnabled in
-                  viewModel.setAlwaysApprove(toolName: tool.name, alwaysApprove: isEnabled)
+                  viewModel.setAlwaysApprove(toolId: tool.id, alwaysApprove: isEnabled)
                 })
             }
           }

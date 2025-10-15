@@ -123,6 +123,9 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
     private static let chatPluginName = "current_todos"
   }
 
+  public let id = "claude_code_todo_write"
+  public let mappedId = "claude_code_todo_write"
+
   public let name = "claude_code_TodoWrite"
 
   public let description = """

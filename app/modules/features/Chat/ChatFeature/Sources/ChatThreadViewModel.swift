@@ -530,12 +530,12 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   /// Whether the tool use needs to be approved by the user.
   private func needsApproval(for toolUse: any ToolUse) -> Bool {
-    !shouldAlwaysApprove(toolName: toolUse.toolName)
+    !shouldAlwaysApprove(toolId: toolUse.toolId)
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {
     // Check if user has already approved this tool type
-    if shouldAlwaysApprove(toolName: toolUse.toolName) {
+    if shouldAlwaysApprove(toolId: toolUse.toolId) {
       return // Skip approval for this tool
     }
 
@@ -552,7 +552,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       break // Continue execution
     case .alwaysApprove:
       // Store preference and continue
-      storeAlwaysApprovePreference(for: toolUse.toolName)
+      storeAlwaysApprovePreference(for: toolUse.toolId)
 
     case .cancelled:
       throw CancellationError()
@@ -598,14 +598,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
   }
 
-  private func storeAlwaysApprovePreference(for toolName: String) {
+  private func storeAlwaysApprovePreference(for toolId: String) {
     var currentSettings = settingsService.values()
-    currentSettings.setToolPreference(toolName: toolName, alwaysApprove: true)
+    currentSettings.setToolPreference(toolId: toolId, alwaysApprove: true)
     settingsService.update(to: currentSettings)
   }
 
-  private func shouldAlwaysApprove(toolName: String) -> Bool {
-    settingsService.values().shouldAlwaysApprove(toolName: toolName)
+  private func shouldAlwaysApprove(toolId: String) -> Bool {
+    settingsService.values().shouldAlwaysApprove(toolId: toolId)
   }
 
   private func updateProjectInfo() -> SelectedProjectInfo? {

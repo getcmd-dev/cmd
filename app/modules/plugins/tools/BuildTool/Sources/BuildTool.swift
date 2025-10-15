@@ -102,6 +102,9 @@ public final class BuildTool: NonStreamableTool {
 
   }
 
+  public let id = "build"
+  public var mappedId: String { id }
+
   public let name = "build"
 
   public let description = """

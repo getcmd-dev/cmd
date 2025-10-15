@@ -110,6 +110,9 @@ public final class SearchFilesTool: NonStreamableTool {
 
   }
 
+  public let id = "search_files"
+  public var mappedId: String { id }
+
   public let name = "search_files"
 
   public let description = """
