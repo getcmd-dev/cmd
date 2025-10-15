@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  pull-requests: write
+  pull_requests: write
 jobs:
-  distribute-app:
+  distribute_app:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -14,7 +14,7 @@ jobs:
     - name: MacOS version
       run: sw_vers
     - name: Set up Homebrew
-      id: set-up-homebrew
+      id: set_up_homebrew
       uses: Homebrew/actions/setup-homebrew@master
     - uses: gsabran/setup-swift@main
       with:
@@ -44,7 +44,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: app/build/derived_data
-        key: ${{ runner.os }}-app-derived-data-main
+        key: ${{ runner.os }}_app_derived_data_main
     - name: Publish release
       run: cd app/fastlane && bundle exec fastlane mac distribute_release
       env:

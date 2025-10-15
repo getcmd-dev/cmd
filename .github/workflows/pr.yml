@@ -7,13 +7,16 @@ on:
       - 'docs/**'
       - '**/*.md'
 concurrency:
-  group: integration-tests-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+  group: integration_tests_${{ github.ref }}
+  cancel_in_progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
-  detect-app-changes:
+  detect_changes:
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.filter.outputs.app }}
+      xcode_config: ${{ steps.filter.outputs.xcode_config }}
+      app_tools: ${{ steps.filter.outputs.app_tools }}
+      local_server: ${{ steps.filter.outputs.local_server }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -22,11 +25,18 @@ jobs:
           filters: |
             app:
               - 'app/**'
-  build-release-app:
+            xcode_config:
+              - 'app/**/*.xcconfig'
+              - 'app/**/*.xcodeproj/**'
+            app_tools:
+              - 'app/tools/**'
+            local_server:
+              - 'local-server/**'
+  build_release_app:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-app-changes
-    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -45,7 +55,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -55,7 +65,7 @@ jobs:
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Load derived data & SPM cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
         path:
           app/build/derived_data
@@ -63,7 +73,9 @@ jobs:
           ~/Library/Caches/org.swift.swiftpm
           ~/Library/org.swift.swiftpm
           ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
-        key: ${{ runner.os }}-app-derived-data-main
+        key: ${{ runner.os }}_app_derived_data_${{ hashFiles('app/modules/Package.swift', 'app/modules/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}_app_derived_data_
     - name: Install fastlane dependencies
       run: |
         cd app/fastlane && gem install bundler && bundle install
@@ -87,11 +99,11 @@ jobs:
           exit 1
         fi
 
-  test-swift:
+  test_swift_app:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-app-changes
-    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -110,7 +122,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     - name: Load SPM cache
@@ -121,23 +133,50 @@ jobs:
           ~/Library/Caches/org.swift.swiftpm
           ~/Library/org.swift.swiftpm
           ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
-        key: ${{ runner.os }}-spm-app-modules-${{ hashFiles('app/modules/Package.swift') }}
+        key: ${{ runner.os }}_spm_app_modules_${{ hashFiles('app/modules/Package.swift', 'app/modules/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}-spm-app-modules-
-    - name: Run tests
+          ${{ runner.os }}_spm_app_modules_
+    - name: Run app module tests
       run: ./cmd.sh test:swift
 
-  lint-swift:
+  test_app_tools:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-app-changes
-    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.app_tools == 'true' }}
+    steps:
+    - name: MacOS version
+      run: sw_vers
+    - uses: actions/checkout@v4
+    - uses: gsabran/setup-swift@main
+      with:
+        swift-version: "6.2"
+        soft-fail-version-check: true
+    - name: Load SPM cache
+      uses: actions/cache@v4
+      with:
+        path:
+          app/tools/dependencies/.build
+          ~/Library/Caches/org.swift.swiftpm
+          ~/Library/org.swift.swiftpm
+          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
+        key: ${{ runner.os }}_spm_dependencies_tool_${{ hashFiles('app/tools/dependencies/Package.swift') }}
+        restore-keys: |
+          ${{ runner.os }}_spm_dependencies_tool_
+    - name: Run app tools tests
+      run: cd app/tools/dependencies && swift test
+
+  lint_swift:
+    runs-on: macos-26
+    timeout-minutes: 60
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
     - uses: actions/checkout@v4
     - name: Set up Homebrew
-      id: set-up-homebrew
+      id: set_up_homebrew
       uses: Homebrew/actions/setup-homebrew@master
     - name: Install swiftformat
       run: brew install swiftformat
@@ -146,11 +185,11 @@ jobs:
     - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
-  sync-app-dependencies:
+  sync_app_dependencies:
     runs-on: macos-26
     timeout-minutes: 60
-    needs: detect-app-changes
-    if: ${{ needs.detect-app-changes.outputs.app == 'true' }}
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -160,7 +199,7 @@ jobs:
         swift-version: "6.2"
         soft-fail-version-check: true
     - name: Set up Homebrew
-      id: set-up-homebrew
+      id: set_up_homebrew
       uses: Homebrew/actions/setup-homebrew@master
     - name: Install swiftformat
       run: brew install swiftformat
@@ -168,15 +207,17 @@ jobs:
       uses: actions/cache@v4
       with:
         path: app/tools/dependencies/tmp/bin
-        key: ${{ runner.os }}-spm-tools-${{ hashFiles('app/tools/dependencies/**') }}
+        key: ${{ runner.os }}_spm_tools_${{ hashFiles('app/tools/dependencies/**') }}
     - name: Run sync dependencies
       run: ./cmd.sh sync:dependencies
     - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
-  test-node:
+  test_node:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -188,7 +229,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install dependencies
       run: cd local-server && yarn install
     - name: Run tests
@@ -197,6 +238,8 @@ jobs:
   tsc:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -208,15 +251,17 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install dependencies
       run: cd local-server && yarn install
     - name: Run tests
       run: cd local-server && yarn tsc
 
-  lint-node:
+  lint_node:
     runs-on: macos-26
     timeout-minutes: 60
+    needs: detect_changes
+    if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
     - name: MacOS version
       run: sw_vers
@@ -228,7 +273,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: local-server/node_modules
-        key: ${{ runner.os }}-npm-modules-${{ hashFiles('local-server/yarn.lock') }}
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install dependencies
       run: cd local-server && yarn install
     - name: Run linter
@@ -236,7 +281,7 @@ jobs:
     - name: Verify that `cmd lint:ts` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
-  lint-shell:
+  lint_shell:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
@@ -244,7 +289,7 @@ jobs:
       run: sw_vers
     - uses: actions/checkout@v4
     - name: Set up Homebrew
-      id: set-up-homebrew
+      id: set_up_homebrew
       uses: Homebrew/actions/setup-homebrew@master
     - name: Install shfmt
       run: brew install shfmt
@@ -253,7 +298,7 @@ jobs:
     - name: Verify that `cmd lint:shell` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
-  lint-ruby:
+  lint_ruby:
     runs-on: macos-26
     timeout-minutes: 60
     steps:

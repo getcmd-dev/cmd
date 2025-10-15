@@ -161,8 +161,7 @@ test_swift_command() {
 		cd "$(dirname $package_swift)" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
 	else
 		# run all tests
-		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}" || exit 1
-		cd "$(git rev-parse --show-toplevel)/app/tools/dependencies" && swift test "${parsed_args[@]}" || exit 1
+		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
 	fi
 }
 
