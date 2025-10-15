@@ -113,46 +113,23 @@ public struct Settings: Sendable, Equatable {
   }
 
   public struct ToolPreference: Sendable, Equatable, Codable {
-    public init(toolId: String, alwaysApprove: Bool = false) {
-      self.toolId = toolId
-      self.alwaysApprove = alwaysApprove
-    }
-
-    @available(*, deprecated, message: "Use init(toolId:alwaysApprove:) instead")
-    public init(toolName: String, alwaysApprove: Bool = false) {
-      toolId = toolName
+    public init(toolMappedId: String, alwaysApprove: Bool = false) {
+      self.toolMappedId = toolMappedId
       self.alwaysApprove = alwaysApprove
     }
 
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       alwaysApprove = try container.decode(Bool.self, forKey: .alwaysApprove)
-
-      // Try to decode toolId first, fall back to toolName for backward compatibility
-      if let toolId = try? container.decode(String.self, forKey: .toolId) {
-        self.toolId = toolId
-      } else if let toolName = try? container.decode(String.self, forKey: .toolName) {
-        toolId = toolName
-      } else {
-        // If neither exists, throw an error
-        throw DecodingError.keyNotFound(
-          CodingKeys.toolId,
-          DecodingError.Context(
-            codingPath: decoder.codingPath,
-            debugDescription: "Neither 'toolId' nor 'toolName' key found"))
-      }
+      toolMappedId = try container.decode(String.self, forKey: .toolId)
     }
 
-    public let toolId: String
+    public let toolMappedId: String
     public var alwaysApprove: Bool
-
-    // MARK: - Deprecated
-    @available(*, deprecated, message: "Use toolId instead")
-    public var toolName: String { toolId }
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(toolId, forKey: .toolId)
+      try container.encode(toolMappedId, forKey: .toolId)
       try container.encode(alwaysApprove, forKey: .alwaysApprove)
     }
 
@@ -196,20 +173,20 @@ public struct Settings: Sendable, Equatable {
 // MARK: - Settings + Tool Preferences Helpers
 
 extension Settings {
-  public func toolPreference(for toolId: String) -> ToolPreference? {
-    toolPreferences.first { $0.toolId == toolId }
+  public func toolPreference(for toolMappedId: String) -> ToolPreference? {
+    toolPreferences.first { $0.toolMappedId == toolMappedId }
   }
 
-  public mutating func setToolPreference(toolId: String, alwaysApprove: Bool) {
-    if let index = toolPreferences.firstIndex(where: { $0.toolId == toolId }) {
+  public mutating func setToolPreference(toolMappedId: String, alwaysApprove: Bool) {
+    if let index = toolPreferences.firstIndex(where: { $0.toolMappedId == toolMappedId }) {
       toolPreferences[index].alwaysApprove = alwaysApprove
     } else {
-      toolPreferences.append(ToolPreference(toolId: toolId, alwaysApprove: alwaysApprove))
+      toolPreferences.append(ToolPreference(toolMappedId: toolMappedId, alwaysApprove: alwaysApprove))
     }
   }
 
-  public func shouldAlwaysApprove(toolId: String) -> Bool {
-    toolPreferences.first { $0.toolId == toolId }?.alwaysApprove ?? false
+  public func shouldAlwaysApprove(toolMappedId: String) -> Bool {
+    toolPreferences.first { $0.toolMappedId == toolMappedId }?.alwaysApprove ?? false
   }
 }
 

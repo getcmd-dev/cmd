@@ -114,7 +114,7 @@ public final class ClaudeCodeWriteTool: ExternalTool {
   }
 
   public let id = "claude_code_write"
-  public let mappedId = "edit_or_create_files"
+  public let mappedId = "edit_file"
 
   public let name = "claude_code_Write"
 

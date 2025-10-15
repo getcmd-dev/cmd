@@ -115,7 +115,7 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
   }
 
   public let id = "claude_code_web_search"
-  public let mappedId = "claude_code_web_search"
+  public let mappedId = "web_search"
 
   public let name = "claude_code_WebSearch"
 

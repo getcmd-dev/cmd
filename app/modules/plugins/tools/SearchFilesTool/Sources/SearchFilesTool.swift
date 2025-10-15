@@ -110,7 +110,7 @@ public final class SearchFilesTool: NonStreamableTool {
 
   }
 
-  public let id = "search_files"
+  public let id = "search"
   public let name = "search_files"
 
   public let description = """
