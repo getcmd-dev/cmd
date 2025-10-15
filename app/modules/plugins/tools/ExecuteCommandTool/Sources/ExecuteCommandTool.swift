@@ -144,8 +144,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
   }
 
   public let id = "execute_command"
-  public var mappedId: String { id }
-
   public let name = "execute_command"
 
   public let description = """
@@ -154,6 +152,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     If the output exceeds \(truncationLimit) characters, output will be truncated in the middle before being returned to you.
     """
+
+  public var mappedId: String { id }
 
   public var displayName: String {
     "Execute Command"

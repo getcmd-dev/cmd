@@ -127,7 +127,7 @@ public struct Settings: Sendable, Equatable {
 
     @available(*, deprecated, message: "Use init(toolId:alwaysApprove:) instead")
     public init(toolName: String, alwaysApprove: Bool = false) {
-      self.toolId = toolName
+      toolId = toolName
       self.alwaysApprove = alwaysApprove
     }
   }

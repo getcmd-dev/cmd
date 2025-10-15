@@ -120,8 +120,6 @@ public final class ReadFileTool: NonStreamableTool {
   }
 
   public let id = "read_file"
-  public var mappedId: String { id }
-
   public let name = "read_file"
 
   public let description = """
@@ -131,6 +129,8 @@ public final class ReadFileTool: NonStreamableTool {
     - offset: (optional) Starting line number (0-indexed). Default is 0.
     - limit: (optional) Maximum number of lines to read. If not provided, the tool will attempt to read the entire file.
     """
+
+  public var mappedId: String { id }
 
   public var displayName: String {
     "Read File"
