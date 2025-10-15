@@ -10,6 +10,7 @@ import JSONFoundation
 import LLMServiceInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import SettingsServiceInterface
 import ShellServiceInterface
 import ToolFoundation
 import XcodeObserverServiceInterface

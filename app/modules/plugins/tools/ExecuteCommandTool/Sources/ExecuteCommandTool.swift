@@ -193,8 +193,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in mode: ChatMode) -> Bool {
-    // TODO: add support for readonly uses of the terminal.
+  public func isAvailableByDefault(in mode: ChatMode) -> Bool {
+    // Only available in agent mode by default
     mode == .agent
   }
 

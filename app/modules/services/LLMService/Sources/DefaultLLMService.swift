@@ -348,12 +348,7 @@ final class DefaultLLMService: LLMService {
     from settings: Settings)
     -> String?
   {
-    switch chatMode {
-    case .ask:
-      settings.customInstructions.askMode
-    case .agent:
-      settings.customInstructions.agentMode
-    }
+    settings.chatModeConfigurations[chatMode.id]?.customInstructions
   }
 }
 

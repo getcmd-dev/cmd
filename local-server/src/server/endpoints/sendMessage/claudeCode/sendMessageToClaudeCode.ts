@@ -271,8 +271,10 @@ const createClaudeCodeEventStream = async (
 	delete env.NODE_OPTIONS
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
-	const createQuery = (resume: string | undefined) =>
-		query({
+	const createQuery = (resume: string | undefined) => {
+		// Added to debug why in some cases we lose connection to CC.
+		logInfo(`Sending message to CC. Resume? ${resume}. userMessage: ${JSON.stringify(userMessage)}`)
+		return query({
 			prompt: arrayToAsyncIterable([userMessage]),
 			options: {
 				mcpServers: {
@@ -302,6 +304,7 @@ const createClaudeCodeEventStream = async (
 				},
 			},
 		})
+	}
 
 	if (responseIsTerminated) {
 		// The response has already been cancelled, abort.

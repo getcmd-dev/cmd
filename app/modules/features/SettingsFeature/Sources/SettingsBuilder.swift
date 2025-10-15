@@ -35,6 +35,25 @@ public struct AIProviderSettingsBuilder: RouteBuilder {
     return AIProvidersView(viewModel: settings)
   }
 
-  public typealias R = AIProviderSettingsRoute
+}
 
+// MARK: - ChatModeSettingsBuilder
+
+public struct ChatModeSettingsBuilder: RouteBuilder {
+  public init() { }
+
+  public var routeId: String { ChatModeSettingsRoute.id }
+
+  public func build(route _: ChatModeSettingsRoute, with _: RoutingFoundation.RoutesRegistry) throws -> any View {
+    let viewModel = SettingsViewModel()
+
+    return
+      ChatModeView(
+        chatModeConfigurations: .init(
+          get: { viewModel.chatModeConfigurations },
+          set: { viewModel.chatModeConfigurations = $0 }),
+        toolsPlugin: viewModel.toolsPlugin)
+      .padding(.horizontal, SettingsView.Constants.horizontalPadding)
+      .padding(.vertical, SettingsView.Constants.verticalPadding)
+  }
 }

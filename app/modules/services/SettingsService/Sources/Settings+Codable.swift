@@ -40,9 +40,10 @@ extension Settings: Codable {
         .resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? [],
       reasoningModels: container
         .resilientlyDecodeIfPresent([AIModelID: LLMReasoningSetting].self, forKey: "reasoningModels") ?? [:],
-      customInstructions: container
-        .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings
-        .CustomInstructions(),
+      chatModeConfigurations: container
+        .resilientlyDecodeIfPresent([String: Settings.ChatModeConfiguration].self, forKey: "chatModeConfigurations") ?? [:],
+      knownToolReferenceIds: container
+        .resilientlyDecodeIfPresent([String].self, forKey: "knownToolReferenceIds") ?? [],
       toolPreferences: container
         .resilientlyDecodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [],
       keyboardShortcuts: container
@@ -67,7 +68,7 @@ extension Settings: Codable {
     }, forKey: "llmProviderSettings")
     try container.encode(enabledModels, forKey: "enabledModels")
     try container.encode(reasoningModels, forKey: "reasoningModels")
-    try container.encode(customInstructions, forKey: "customInstructions")
+    try container.encode(chatModeConfigurations, forKey: "chatModeConfigurations")
     try container.encode(toolPreferences, forKey: "toolPreferences")
     try container.encode(keyboardShortcuts, forKey: "keyboardShortcuts")
     try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")

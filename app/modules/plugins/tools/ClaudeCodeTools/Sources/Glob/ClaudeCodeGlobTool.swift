@@ -116,10 +116,6 @@ public final class ClaudeCodeGlobTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 // MARK: - GlobToolUseViewModel

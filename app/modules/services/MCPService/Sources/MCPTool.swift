@@ -97,6 +97,8 @@ public final class MCPTool: NonStreamableTool {
 
   }
 
+  public let serverName: String
+
   public var id: String {
     "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"
   }
@@ -127,19 +129,22 @@ public final class MCPTool: NonStreamableTool {
     return .object([:])
   }
 
+  /// The name of the tool that can be displayed without sepecific context.
+  /// It contains a reference to the MCP server, and makes it clear this is an MCP tool.
   public var displayName: String {
     "\(serverName):\(wrappedTool.name) (MCP)"
+  }
+
+  /// The name of the tool as described by the MCP server.
+  public var originalName: String {
+    wrappedTool.name
   }
 
   public var shortDescription: String {
     description
   }
 
-  public func isAvailable(in mode: ChatMode) -> Bool {
-    isReadonly ? true : mode == .agent
-  }
-
-  var isReadonly: Bool {
+  public var isReadonly: Bool {
     if wrappedTool.annotations.destructiveHint == true {
       return false
     }
@@ -150,7 +155,15 @@ public final class MCPTool: NonStreamableTool {
     return false
   }
 
-  private let serverName: String
+  public func isAvailable(in mode: ChatMode) -> Bool {
+    isReadonly ? true : mode == .agent
+  }
+
+  public func isAvailableByDefault(in mode: ChatMode) -> Bool {
+    // MCP tools are available by default based on their readonly status
+    // Readonly tools are available in all modes, non-readonly only in agent mode
+    isReadonly ? true : mode == .agent
+  }
 
   private let client: MCP.Client
   private let wrappedTool: MCP.Tool

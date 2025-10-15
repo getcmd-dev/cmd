@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
-// Re-export ChatFoundation as the protocols defined here depend on types from this module.
+// Re-export ChatFoundation since StreamRepresentable and other types defined in Tool depend on it.
 @_exported import ChatFoundation
 import Combine
 import ConcurrencyFoundation
@@ -28,14 +28,15 @@ public protocol Tool: Sendable {
   var description: String { get }
   /// The schema of the input parameters of the tool.
   var inputSchema: JSON { get }
-  /// Whether the tool is available in the given chat mode.
-  func isAvailable(in mode: ChatMode) -> Bool
   /// Whether this tool expect to receive the input as it is being streamed, or only once it is received entirely.
   var canInputBeStreamed: Bool { get }
   /// The tool display name
   var displayName: String { get }
   /// A short description of the tool (max 3 lines)
   var shortDescription: String { get }
+  /// Whether this tool is available by default in a given chat mode.
+  /// This describes the default behavior - users can override this in settings.
+  func isAvailableByDefault(in mode: ChatMode) -> Bool
 }
 
 extension Tool {
@@ -57,6 +58,12 @@ extension Tool {
   public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
     let decodedInput = try JSONDecoder().decode(Input.self, from: input)
     return use(toolUseId: toolUseId, input: decodedInput, isInputComplete: isInputComplete, context: context)
+  }
+
+  /// Default implementation: available in all modes.
+  /// Override this method to customize availability by mode.
+  public func isAvailableByDefault(in _: ChatMode) -> Bool {
+    true
   }
 }
 

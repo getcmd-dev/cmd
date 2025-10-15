@@ -1,0 +1,83 @@
+---
+title: "Chat Modes"
+description: "Configure and customize Agent mode and Ask mode with tools and permissions"
+---
+
+## Overview
+
+cmd offers two distinct chat modes, each designed for different types of interactions. You can customize which tools are available in each mode to match your workflow and security preferences.
+
+## Available Modes
+
+<CardGroup cols={2}>
+  <Card title="Agent Mode" icon="robot">
+    Autonomous agents that can edit files, run commands, and complete complex tasks with minimal supervision.
+  </Card>
+  <Card title="Ask Mode" icon="messages">
+    Conversational assistant for questions, explanations, and read-only analysis without modifying code.
+  </Card>
+</CardGroup>
+
+## Default Tool Configuration
+
+By default, each mode has different tools enabled:
+
+<Note>
+  When a tool is enabled, it still needs your permission to run. Enabling a tool gives the option for the AI model to request its usage. You're always in control.
+</Note>
+
+### Agent Mode (Default)
+
+Agent mode has **all tools enabled** by default, including:
+- **File Operations**: Read, edit, and write files
+- **Code Execution**: Run shell commands and builds
+- **Search & Discovery**: Search files, glob patterns, list directories
+- **Web Access**: Web search and fetch capabilities
+- **Task Management**: Todo tracking
+- **MCP Tools**: All connected MCP server tools (both read-only and read-write)
+
+### Ask Mode (Default)
+
+Ask mode has **read-only tools enabled** by default, including:
+- **Search Tools**: Search files and grep through codebase
+- **Discovery Tools**: Glob patterns to find files
+- **Web Tools**: Web search and web fetch for documentation
+- **Task Tracking**: Todo write for tracking conversations
+- **Read-Only MCP Tools**: Only MCP tools marked as read-only
+
+<Info>
+  Ask mode is designed for safe, exploratory conversations without the risk of modifying your code.
+</Info>
+
+## Customizing Chat Modes
+
+You can customize which tools are available in each mode:
+
+<Steps>
+  <Step title="Open Settings">
+    Navigate to **Settings** in cmd
+  </Step>
+
+  <Step title="Select Chat Mode Configuration">
+    Find the **Chat Modes** section and select the mode you want to customize (Agent or Ask)
+  </Step>
+
+  <Step title="Configure Available Tools">
+    You'll see a list of all available tools grouped by category:
+    - **File Operations**: Read, Edit, Write, List
+    - **Code Execution**: Shell commands, Build tools
+    - **Search & Discovery**: Search, Grep, Glob
+    - **Web & Network**: Web search, Web fetch
+    - **MCP Tools**: Tools from your connected MCP servers
+
+    Toggle tools on or off based on your preferences.
+  </Step>
+
+  <Step title="Add Custom Instructions (Optional)">
+    You can also add custom instructions specific to each mode to guide the AI's behavior.
+  </Step>
+
+  <Step title="Reset to Defaults">
+    Use the **"Reset to Default"** button to restore the original tool configuration for any mode.
+  </Step>
+</Steps>

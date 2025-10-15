@@ -187,7 +187,7 @@ final class SendMessageTests {
 
     let messages = try await sut.sendMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestTool<EmptyObject, String>(output: "test_result")]).lastValue
+      tools: [GenericTestTool<EmptyObject, String>(name: "TestTool", output: "test_result")]).lastValue
     #expect(messages.count == 2)
 
     let firstMessage = try await (#require(messages.first)).lastValue
@@ -260,7 +260,7 @@ final class SendMessageTests {
 
     let messages = try await sut.sendMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestTool<EmptyObject, String>(output: "test_result")]).lastValue
+      tools: [GenericTestTool<EmptyObject, String>(name: "TestTool", output: "test_result")]).lastValue
     #expect(messages.count == 2)
 
     let firstMessage = try await (#require(messages.first)).lastValue
@@ -663,7 +663,7 @@ final class SendMessageTests {
 
     let messages = try await sut.sendMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestTool<TestToolInput, String>(output: "test_result")]).lastValue
+      tools: [GenericTestTool<TestToolInput, String>(name: "TestTool", output: "test_result")]).lastValue
     #expect(messages.count == 2)
 
     let firstMessage = try await (#require(messages.first)).lastValue

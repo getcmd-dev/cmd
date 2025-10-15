@@ -33,7 +33,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
@@ -83,7 +82,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -98,7 +96,7 @@ struct ExternalSettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -133,7 +131,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -154,7 +151,7 @@ struct ExternalSettingsCodableTests {
         },
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -287,7 +284,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -296,7 +292,7 @@ struct ExternalSettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -326,7 +322,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -479,7 +474,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -488,123 +482,11 @@ struct ExternalSettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
-      }
-      """
-
-    try testEncoding(settings, json)
-  }
-
-  @Test("Encode and decode settings with custom instructions")
-  func testSettingsWithCustomInstructions() throws {
-    let customInstructions = Settings.CustomInstructions(
-      askModePrompt: "Always be concise and helpful",
-      agentModePrompt: "Focus on code quality and best practices")
-
-    let settings = ExternalSettings(
-      allowAnonymousAnalytics: false,
-      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
-      llmProviderSettings: [
-        .anthropic: .init(
-          apiKey: "test-anthropic-api-key",
-          baseUrl: "https://api.anthropic.com",
-          executable: nil,
-          createdOrder: 1),
-      ],
-      customInstructions: customInstructions)
-
-    let json = """
-      {
-        "allowAnonymousAnalytics" : false,
-        "automaticallyCheckForUpdates" : true,
-        "automaticallyUpdateXcodeSettings" : false,
-        "toolPreferences" : [],
-        "customInstructions" : {
-          "agentMode" : "Focus on code quality and best practices",
-          "askMode" : "Always be concise and helpful"
-        },
-        "keyboardShortcuts" : {},
-        "enabledModels" : [],
-        "llmProviderSettings" : {
-          "anthropic" : {
-            "apiKey" : "test-anthropic-api-key",
-            "baseUrl" : "https://api.anthropic.com",
-            "createdOrder" : 1
-          }
-        },
-        "mcpServers" : {},
-        "preferedProviders" : {
-          "anthropic/claude-3.5-haiku" : "anthropic"
-        },
-        "reasoningModels": {},
-        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O"
       }
       """
 
-    try testEncodingDecoding(settings, json)
-  }
-
-  @Test("Decode settings with only askMode custom instruction")
-  func testSettingsWithOnlyAskModeCustomInstruction() throws {
-    let json = """
-      {
-        "allowAnonymousAnalytics" : true,
-        "customInstructions" : {
-          "askMode" : "Be brief and direct"
-        },
-        "enabledModels" : [],
-        "llmProviderSettings" : {},
-        "preferedProviders" : {}
-      }
-      """
-
-    let expectedSettings = ExternalSettings(
-      allowAnonymousAnalytics: true,
-      preferedProviders: [:],
-      llmProviderSettings: [:],
-      customInstructions: Settings.CustomInstructions(askModePrompt: "Be brief and direct", agentModePrompt: nil))
-
-    try testDecoding(expectedSettings, json)
-  }
-
-  @Test("Decode settings with only agentMode custom instruction")
-  func testSettingsWithOnlyAgentModeCustomInstruction() throws {
-    let json = """
-      {
-        "allowAnonymousAnalytics" : false,
-        "customInstructions" : {
-          "agentMode" : "Prioritize performance and efficiency"
-        },
-        "enabledModels" : [],
-        "llmProviderSettings" : {
-          "openai" : {
-            "apiKey" : "test-openai-api-key",
-            "baseUrl" : "https://api.openai.com",
-            "createdOrder" : 1
-          }
-        },
-        "preferedProviders" : {
-          "openai/gpt-5" : "openai"
-        }
-      }
-      """
-
-    let expectedSettings = ExternalSettings(
-      allowAnonymousAnalytics: false,
-      preferedProviders: .init([.gpt: .openAI]),
-      llmProviderSettings: [
-        .openAI: .init(
-          apiKey: "test-openai-api-key",
-          baseUrl: "https://api.openai.com",
-          executable: nil,
-          createdOrder: 1),
-      ],
-      customInstructions: Settings.CustomInstructions(
-        askModePrompt: nil,
-        agentModePrompt: "Prioritize performance and efficiency"))
-
-    try testDecoding(expectedSettings, json)
+    try testEncoding(settings, json)
   }
 
   @Test("Encode and decode settings with tool preferences")
@@ -632,7 +514,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -724,9 +605,6 @@ struct ExternalSettingsCodableTests {
           executable: nil,
           createdOrder: 1),
       ],
-      customInstructions: Settings.CustomInstructions(
-        askModePrompt: "Be concise",
-        agentModePrompt: nil),
       toolPreferences: [
         Settings.ToolPreference(toolReferenceId: "LSTool", alwaysApprove: true),
         Settings.ToolPreference(toolReferenceId: "SearchFilesTool", alwaysApprove: false),
@@ -768,7 +646,6 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",

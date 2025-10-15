@@ -136,9 +136,11 @@ public final class BuildTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in chatMode: ChatMode) -> Bool {
-    chatMode == .agent
+  public func isAvailableByDefault(in _: ChatMode) -> Bool {
+    // Available in all modes (readonly tool)
+    true
   }
+
 }
 
 // MARK: - ToolUseViewModel

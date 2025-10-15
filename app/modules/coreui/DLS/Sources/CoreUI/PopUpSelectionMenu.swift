@@ -9,7 +9,7 @@ public protocol MenuItem: Identifiable, Equatable { }
 
 // MARK: - PopUpSelectionMenu
 
-public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
+public struct PopUpSelectionMenu<Item: MenuItem, Content: View, BottomRow: View>: View {
   /// A view that displays a list of items as a pop-up menu and allows the user to select one.
   /// - Parameters:
   ///   - selectedItem: The item that is currently selected.
@@ -18,13 +18,15 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
   ///   - maxHeight: The maximum height the popup menu can take. If nil it will fit all items. If set it will use a scroll view when needed.
   ///   - viewBuilder: Returns a view to display an item.
+  ///   - bottomRow: An optional view to display at the bottom of the popup menu.
   public init(
     selectedItem: Binding<Item>,
     availableItems: [Item],
     searchKey: ((Item) -> String)? = nil,
     isExpanded: Binding<Bool>? = nil,
     maxHeight: CGFloat? = nil,
-    @ViewBuilder viewBuilder: @escaping (Item) -> Content)
+    @ViewBuilder viewBuilder: @escaping (Item) -> Content,
+    @ViewBuilder bottomRow: @escaping () -> BottomRow = { EmptyView() })
   {
     _selectedItem = .init(
       get: { selectedItem.wrappedValue },
@@ -37,6 +39,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     self.searchKey = searchKey
     emptySelectionText = "Select an item"
     self.viewBuilder = viewBuilder
+    self.bottomRow = bottomRow
     self.maxHeight = maxHeight
 
     _isExpandedBinding = .init(
@@ -57,6 +60,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   ///   - isExpanded: When provided, a binding that describes whether the popup is expanded.
   ///   - maxHeight: The maximum height the popup menu can take. If nil it will fit all items. If set it will use a scroll view when needed.
   ///   - viewBuilder: Returns a view to display an item.
+  ///   - bottomRow: An optional view to display at the bottom of the popup menu.
   public init(
     selectedItem: Binding<Item?>,
     availableItems: [Item],
@@ -64,13 +68,15 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     emptySelectionText: String,
     isExpanded: Binding<Bool>? = nil,
     maxHeight: CGFloat? = nil,
-    @ViewBuilder viewBuilder: @escaping (Item) -> Content)
+    @ViewBuilder viewBuilder: @escaping (Item) -> Content,
+    @ViewBuilder bottomRow: @escaping () -> BottomRow = { EmptyView() })
   {
     _selectedItem = selectedItem
     self.availableItems = availableItems
     self.searchKey = searchKey
     self.emptySelectionText = emptySelectionText
     self.viewBuilder = viewBuilder
+    self.bottomRow = bottomRow
     self.maxHeight = maxHeight
 
     _isExpandedBinding = .init(
@@ -129,6 +135,9 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
               itemsList
             }
           }
+
+          bottomRow()
+            .padding(.horizontal, Constants.horizontalPadding)
         }
         .cornerRadius(6)
         .background(
@@ -160,6 +169,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
   private let searchKey: ((Item) -> String)?
   private let emptySelectionText: String
   private let viewBuilder: (Item) -> Content
+  private let bottomRow: () -> BottomRow
   private let maxHeight: CGFloat?
 
   private var isExpanded: Bool {
@@ -195,8 +205,8 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
                 .frame(width: 8, height: 8)
             }
           }
-          .padding(.horizontal, 12)
-          .padding(.vertical, 8)
+          .padding(.horizontal, Constants.horizontalPadding)
+          .padding(.vertical, Constants.verticalPadding)
           .background(
             colorScheme.secondarySystemBackground
               .opacity(item == selectedItem ? 1 : 0.001))
@@ -210,4 +220,11 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
     }
   }
 
+}
+
+// MARK: - Constants
+
+private enum Constants {
+  static let horizontalPadding: CGFloat = 12
+  static let verticalPadding: CGFloat = 8
 }

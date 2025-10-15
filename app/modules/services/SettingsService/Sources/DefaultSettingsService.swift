@@ -276,12 +276,13 @@ final class DefaultSettingsService: SettingsService {
     }
 
     // Internal settings are written to user defaults.
-    let internalSettings = try JSONEncoder.sortingKeys.encode(publicSettings.internalSettings)
+    let internalSettings = try JSONEncoder.sortingKeys.encode(publicSettings.internalSettings())
     sharedUserDefaults.set(internalSettings, forKey: Keys.internalSettings)
 
     // External settings are written to json files at known locations, that can easily be edited by users.
-    try publicSettings.externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
-    saveSettingsForSandboxedProcesses(publicSettings.externalSettings)
+    let externalSettings = publicSettings.externalSettings
+    try externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
+    saveSettingsForSandboxedProcesses(externalSettings)
 
     // Store this value separately in user defaults, as it can also be accessed by the release version.
     sharedUserDefaults.set(

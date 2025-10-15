@@ -184,7 +184,6 @@ struct ClaudeCodeWebSearchToolTests {
 
     #expect(tool.name == "claude_code_WebSearch")
     #expect(tool.displayName == "WebSearch (Claude Code)")
-    #expect(tool.isAvailable(in: .agent))
 
     // Verify the input schema structure
     guard

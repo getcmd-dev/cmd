@@ -170,9 +170,6 @@ public final class ReadFileTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
 }
 
 // MARK: - ReadFileTool.Use + DisplayableToolUse

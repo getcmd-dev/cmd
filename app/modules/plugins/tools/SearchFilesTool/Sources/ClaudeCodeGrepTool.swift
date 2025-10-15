@@ -187,10 +187,6 @@ public final class ClaudeCodeGrepTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 // MARK: - ClaudeCodeGrepInput

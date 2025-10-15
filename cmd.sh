@@ -83,7 +83,7 @@ install_swiftformat() {
 		force=true
 	fi
 
-	local target_dir="$(git rev-parse --show-toplevel)/app/tmp/swiftformat/$version"
+	local target_dir="$HOME/.cmd/dev/swiftformat/$version"
 	local target_path="$target_dir/swiftformat"
 
 	# Check if already installed

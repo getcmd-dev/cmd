@@ -120,10 +120,6 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 // MARK: - WebFetchToolUseViewModel

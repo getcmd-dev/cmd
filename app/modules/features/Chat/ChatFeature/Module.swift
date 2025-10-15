@@ -31,6 +31,7 @@ Target.module(
     "RoutingFoundation",
     "SettingsFeatureInterface",
     "SettingsServiceInterface",
+    "SettingsServiceToolsAdapter",
     "SharedValuesFoundation",
     "ShellServiceInterface",
     "ThreadSafe",

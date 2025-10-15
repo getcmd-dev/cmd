@@ -1,7 +1,6 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import ChatFoundation
 import ThreadSafe
 
 @ThreadSafe
@@ -15,11 +14,19 @@ public final class ToolsPlugin: Sendable {
     Array(registry.values)
   }
 
-  /// Returns tools that are available for the specified chat mode.
-  /// - Parameter mode: The chat mode to filter tools for.
-  /// - Returns: An array of tools that are available in the specified chat mode.
-  public func tools(for mode: ChatMode) -> [any Tool] {
-    Array(registry.values).filter { $0.isAvailable(in: mode) }
+  /// Returns tools that match the specified tool reference IDs.
+  /// - Parameter referenceIds: The list of tool reference IDs to retrieve.
+  /// - Returns: An array of tools that match the specified reference IDs.
+  public func tools(withReferenceIds referenceIds: [String]) -> [any Tool] {
+    referenceIds.compactMap { registry[$0] }
+  }
+
+  /// Returns the default set of tools available for a given chat mode.
+  /// This uses each tool's `isAvailableByDefault(in:)` method to determine inclusion.
+  /// - Parameter mode: The chat mode to get default tools for.
+  /// - Returns: An array of tools that are available by default in the specified mode.
+  public func defaultTools(for mode: ChatMode) -> [any Tool] {
+    Array(registry.values).filter { $0.isAvailableByDefault(in: mode) }
   }
 
   /// Registers a tool in the plugin registry.

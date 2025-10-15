@@ -10,6 +10,8 @@ import Dependencies
 import DLS
 import LLMFoundation
 import LoggingServiceInterface
+import RoutingFoundation
+import SettingsFeatureInterface
 import SwiftUI
 
 // MARK: - ChatInputView
@@ -108,6 +110,8 @@ struct ChatInputView: View {
 
   @Bindable private var inputViewModel: ChatInputViewModel
 
+  @Environment(Router.self) private var router
+
   private let sidePadding: CGFloat = 6
 
   private var enableAttachments: Bool {
@@ -140,6 +144,21 @@ struct ChatInputView: View {
       case .ask:
         AskModeView()
       }
+    } bottomRow: {
+      HStack {
+        Button {
+          router.navigate(to: ChatModeSettingsRoute())
+        } label: {
+          Text("Configure")
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .underline()
+        }
+        .buttonStyle(.plain)
+        .padding(3)
+        Spacer()
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
 

@@ -38,7 +38,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
@@ -90,7 +90,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -106,7 +106,7 @@ struct SettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -142,7 +142,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -164,7 +164,7 @@ struct SettingsCodableTests {
         },
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -304,7 +304,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -314,7 +314,7 @@ struct SettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -345,7 +345,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -505,7 +505,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -515,129 +515,11 @@ struct SettingsCodableTests {
         "preferedProviders" : {},
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
-      }
-      """
-
-    try testEncoding(settings, json)
-  }
-
-  @Test("Encode and decode settings with custom instructions")
-  func testSettingsWithCustomInstructions() throws {
-    let customInstructions = Settings.CustomInstructions(
-      askModePrompt: "Always be concise and helpful",
-      agentModePrompt: "Focus on code quality and best practices")
-
-    let settings = Settings(
-      pointReleaseXcodeExtensionToDebugApp: true,
-      allowAnonymousAnalytics: false,
-      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
-      llmProviderSettings: [
-        .anthropic: .init(
-          apiKey: "test-anthropic-api-key",
-          baseUrl: "https://api.anthropic.com",
-          executable: nil,
-          createdOrder: 1),
-      ],
-      customInstructions: customInstructions)
-
-    let json = """
-      {
-        "allowAnonymousAnalytics" : false,
-        "automaticallyCheckForUpdates" : true,
-        "automaticallyUpdateXcodeSettings" : false,
-        "toolPreferences" : [],
-        "customInstructions" : {
-          "agentMode" : "Focus on code quality and best practices",
-          "askMode" : "Always be concise and helpful"
-        },
-        "keyboardShortcuts" : {},
-        "enabledModels" : [],
-        "llmProviderSettings" : {
-          "anthropic" : {
-            "apiKey" : "test-anthropic-api-key",
-            "baseUrl" : "https://api.anthropic.com",
-            "createdOrder" : 1
-          }
-        },
-        "mcpServers" : {},
-        "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProviders" : {
-          "anthropic/claude-3.5-haiku" : "anthropic"
-        },
-        "reasoningModels": {},
-        "userDefinedXcodeShortcuts" : [],
         "fileEditMode": "direct I/O"
       }
       """
 
-    try testEncodingDecoding(settings, json)
-  }
-
-  @Test("Decode settings with only askMode custom instruction")
-  func testSettingsWithOnlyAskModeCustomInstruction() throws {
-    let json = """
-      {
-        "allowAnonymousAnalytics" : true,
-        "customInstructions" : {
-          "askMode" : "Be brief and direct"
-        },
-        "enabledModels" : [],
-        "llmProviderSettings" : {},
-        "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {}
-      }
-      """
-
-    let expectedSettings = Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      allowAnonymousAnalytics: true,
-      preferedProviders: [:],
-      llmProviderSettings: [:],
-      customInstructions: Settings.CustomInstructions(askModePrompt: "Be brief and direct", agentModePrompt: nil))
-
-    try testDecoding(expectedSettings, json)
-  }
-
-  @Test("Decode settings with only agentMode custom instruction")
-  func testSettingsWithOnlyAgentModeCustomInstruction() throws {
-    let json = """
-      {
-        "allowAnonymousAnalytics" : false,
-        "customInstructions" : {
-          "agentMode" : "Prioritize performance and efficiency"
-        },
-        "enabledModels" : [],
-        "llmProviderSettings" : {
-          "openai" : {
-            "apiKey" : "test-openai-api-key",
-            "baseUrl" : "https://api.openai.com",
-            "createdOrder" : 1
-          }
-        },
-        "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProviders" : {
-          "openai/gpt-5" : "openai"
-        }
-      }
-      """
-
-    let expectedSettings = Settings(
-      pointReleaseXcodeExtensionToDebugApp: true,
-      allowAnonymousAnalytics: false,
-      preferedProviders: .init([.gpt: .openAI]),
-      llmProviderSettings: [
-        .openAI: .init(
-          apiKey: "test-openai-api-key",
-          baseUrl: "https://api.openai.com",
-          executable: nil,
-          createdOrder: 1),
-      ],
-      customInstructions: Settings.CustomInstructions(
-        askModePrompt: nil,
-        agentModePrompt: "Prioritize performance and efficiency"))
-
-    try testDecoding(expectedSettings, json)
+    try testEncoding(settings, json)
   }
 
   @Test("Encode and decode settings with tool preferences")
@@ -666,7 +548,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -763,9 +645,6 @@ struct SettingsCodableTests {
           executable: nil,
           createdOrder: 1),
       ],
-      customInstructions: Settings.CustomInstructions(
-        askModePrompt: "Be concise",
-        agentModePrompt: nil),
       toolPreferences: [
         Settings.ToolPreference(toolReferenceId: "LSTool", alwaysApprove: true),
         Settings.ToolPreference(toolReferenceId: "SearchFilesTool", alwaysApprove: false),
@@ -810,7 +689,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
-        "customInstructions" : {},
+        "chatModeConfigurations" : {},
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",
@@ -868,5 +747,223 @@ struct SettingsCodableTests {
     #expect(decodedSettings.preferedProviders.isEmpty) // default empty dictionary
     #expect(decodedSettings.llmProviderSettings.count == 1) // successfully decoded valid provider
     #expect(decodedSettings.llmProviderSettings[.anthropic]?.apiKey == "test-key")
+  }
+
+  // MARK: - Chat Mode Configuration Tests
+
+  @Test("Encode and decode chat mode configurations with nil availableToolIds")
+  func testChatModeConfigurationWithNilToolIds() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "Agent instructions",
+          availableToolIds: nil), // nil means use defaults
+        "ask": Settings.ChatModeConfiguration(
+          customInstructions: nil,
+          availableToolIds: nil),
+      ])
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {
+          "agent" : {
+            "customInstructions" : "Agent instructions"
+          },
+          "ask" : {}
+        },
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Encode and decode chat mode configurations with explicit availableToolIds")
+  func testChatModeConfigurationWithExplicitToolIds() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "Agent instructions",
+          availableToolIds: ["search", "glob", "edit"]),
+        "ask": Settings.ChatModeConfiguration(
+          customInstructions: nil,
+          availableToolIds: ["search", "web_search"]),
+      ])
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {
+          "agent" : {
+            "customInstructions" : "Agent instructions",
+            "tools" : ["search", "glob", "edit"]
+          },
+          "ask" : {
+            "tools" : ["search", "web_search"]
+          }
+        },
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Encode and decode chat mode configurations with empty availableToolIds array")
+  func testChatModeConfigurationWithEmptyToolIds() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "No tools available",
+          availableToolIds: []), // empty array means explicitly no tools
+      ])
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {
+          "agent" : {
+            "customInstructions" : "No tools available",
+            "tools" : []
+          }
+        },
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode chat mode configuration without tools field defaults to nil")
+  func testDecodingChatModeConfigurationMissingTools() throws {
+    let json = """
+      {
+        "chatModeConfigurations" : {
+          "agent" : {
+            "customInstructions" : "Agent instructions"
+          }
+        }
+      }
+      """
+
+    let expectedSettings = Settings(
+      allowAnonymousAnalytics: true, // default
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "Agent instructions",
+          availableToolIds: nil), // Should default to nil when missing
+      ])
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  // MARK: - Integration Tests for Chat Mode Configuration
+
+  @Test("Complete settings with chat modes and tool preferences")
+  func testCompleteSettingsWithChatModesAndToolPreferences() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "Agent mode instructions",
+          availableToolIds: nil), // Use defaults for agent
+        "ask": Settings.ChatModeConfiguration(
+          customInstructions: "Ask mode instructions",
+          availableToolIds: ["search", "glob", "web_search"]), // Explicit tools for ask
+      ],
+      toolPreferences: [
+        Settings.ToolPreference(toolReferenceId: "edit", alwaysApprove: true),
+        Settings.ToolPreference(toolReferenceId: "bash", alwaysApprove: false),
+      ])
+
+    // Round-trip test
+    let jsonData = try JSONEncoder().encode(settings)
+    let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
+
+    #expect(decodedSettings == settings)
+    #expect(decodedSettings.chatModeConfigurations["agent"]?.customInstructions == "Agent mode instructions")
+    #expect(decodedSettings.chatModeConfigurations["agent"]?.availableToolIds == nil)
+    #expect(decodedSettings.chatModeConfigurations["ask"]?.availableToolIds == ["search", "glob", "web_search"])
+    #expect(decodedSettings.toolPreferences.count == 2)
+  }
+
+  @Test("ChatModeConfiguration semantics: nil vs empty vs populated")
+  func testChatModeConfigurationSemantics() throws {
+    // Test the three distinct states of availableToolIds
+    let config1 = Settings.ChatModeConfiguration(
+      customInstructions: nil,
+      availableToolIds: nil) // Use defaults from tool.isAvailableByDefault(in:)
+
+    let config2 = Settings.ChatModeConfiguration(
+      customInstructions: nil,
+      availableToolIds: []) // Explicitly no tools
+
+    let config3 = Settings.ChatModeConfiguration(
+      customInstructions: nil,
+      availableToolIds: ["search", "glob"]) // Explicitly these tools
+
+    // Verify they are different
+    #expect(config1 != config2)
+    #expect(config2 != config3)
+    #expect(config1 != config3)
+
+    // Verify they encode differently
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys
+
+    let data1 = try encoder.encode(config1)
+    let data2 = try encoder.encode(config2)
+    let data3 = try encoder.encode(config3)
+
+    let json1 = String(data: data1, encoding: .utf8)!
+    let json2 = String(data: data2, encoding: .utf8)!
+    let json3 = String(data: data3, encoding: .utf8)!
+
+    // nil should not include "tools" field
+    #expect(!json1.contains("tools"))
+
+    // empty array should have "tools": []
+    #expect(json2.contains("\"tools\":[]"))
+
+    // populated array should have the tools
+    #expect(json3.contains("\"tools\":[\"search\",\"glob\"]"))
   }
 }

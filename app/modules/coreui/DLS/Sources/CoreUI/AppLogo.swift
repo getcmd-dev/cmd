@@ -36,4 +36,14 @@ public struct AppIcon: View {
   public init() { }
 }
 
+// MARK: - MCPIcon
+
+public struct MCPIcon: View {
+  public var body: some View {
+    SVGImage(resourceBundle.url(forResource: "mcp", withExtension: "svg") ?? URL(filePath: ""))
+  }
+
+  public init() { }
+}
+
 private let resourceBundle = Bundle.module

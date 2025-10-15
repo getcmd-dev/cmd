@@ -57,7 +57,8 @@ public struct Settings: Sendable, Equatable {
     llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
     enabledModels: [AIModelID] = [],
     reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
-    customInstructions: CustomInstructions = CustomInstructions(),
+    chatModeConfigurations: [String: ChatModeConfiguration] = [:],
+    knownToolReferenceIds: [String] = [],
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
@@ -73,7 +74,8 @@ public struct Settings: Sendable, Equatable {
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
-    self.customInstructions = customInstructions
+    self.chatModeConfigurations = chatModeConfigurations
+    self.knownToolReferenceIds = knownToolReferenceIds
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
@@ -102,13 +104,21 @@ public struct Settings: Sendable, Equatable {
     }
   }
 
-  public struct CustomInstructions: Sendable, Codable, Equatable {
-    public var askMode: String?
-    public var agentMode: String?
+  public struct ChatModeConfiguration: Sendable, Codable, Equatable {
+    public var customInstructions: String?
+    /// List of tool reference IDs available in this mode.
+    /// When nil, use default tools from toolsPlugin.defaultTools(for:)
+    /// When set to an array (even empty), use exactly those tools.
+    public var availableToolIds: [String]?
 
-    public init(askModePrompt: String? = nil, agentModePrompt: String? = nil) {
-      askMode = askModePrompt
-      agentMode = agentModePrompt
+    public init(customInstructions: String? = nil, availableToolIds: [String]? = nil) {
+      self.customInstructions = customInstructions
+      self.availableToolIds = availableToolIds
+    }
+
+    private enum CodingKeys: String, CodingKey {
+      case customInstructions
+      case availableToolIds = "tools"
     }
   }
 
@@ -168,7 +178,9 @@ public struct Settings: Sendable, Equatable {
   public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
   public var enabledModels: [AIModelID]
-  public var customInstructions: CustomInstructions
+  public var chatModeConfigurations: [String: ChatModeConfiguration]
+  /// Array of known tool reference IDs. This is internal state for tracking tools.
+  public var knownToolReferenceIds: [String]
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]

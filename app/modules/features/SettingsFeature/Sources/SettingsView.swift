@@ -24,7 +24,7 @@ public struct SettingsView: View {
       .padding(.vertical, Constants.verticalPadding)
   }
 
-  private enum Constants {
+  enum Constants {
     static let horizontalPadding: CGFloat = 12
     static let verticalPadding: CGFloat = 16
   }
@@ -39,7 +39,7 @@ public struct SettingsView: View {
     VStack(spacing: 0) {
       // Header with icon and title
       HStack(spacing: 8) {
-        Image(systemName: section.iconName)
+        section.icon
           .frame(width: 16, height: 16)
         Text(section.title)
           .font(.title2)
@@ -57,7 +57,9 @@ public struct SettingsView: View {
         ModelsView(viewModel: viewModel.llmSettings)
 
       case .chatModes:
-        ChatModeView(customInstructions: $viewModel.customInstructions)
+        ChatModeView(
+          chatModeConfigurations: $viewModel.chatModeConfigurations,
+          toolsPlugin: viewModel.toolsPlugin)
 
       case .tools:
         ToolsConfigurationView(viewModel: viewModel.toolConfigurationViewModel)
@@ -135,7 +137,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
     }
   }
 
-  var iconName: String {
+  var iconName: String? {
     switch self {
     case .providers:
       "key"
@@ -146,7 +148,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
     case .tools:
       "wrench.and.screwdriver"
     case .mcp:
-      "network"
+      nil // MCP uses custom SVG icon
     case .keyboardShortcuts:
       "keyboard"
     case .userDefinedXcodeShortcuts:
@@ -155,6 +157,18 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "slider.horizontal.3"
     case .about:
       "info.circle"
+    }
+  }
+
+  @ViewBuilder @MainActor
+  var icon: some View {
+    switch self {
+    case .mcp:
+      MCPIcon()
+    default:
+      if let iconName {
+        Icon(systemName: iconName)
+      }
     }
   }
 }
@@ -257,9 +271,9 @@ private struct SettingsCard: View {
   var body: some View {
     Button(action: { action(section) }) {
       HStack(spacing: 16) {
-        Image(systemName: section.iconName)
+        section.icon
           .font(.system(size: 20))
-          .frame(width: 32, height: 32)
+          .frame(width: 20, height: 20)
 
         VStack(alignment: .leading, spacing: 4) {
           Text(section.title)
