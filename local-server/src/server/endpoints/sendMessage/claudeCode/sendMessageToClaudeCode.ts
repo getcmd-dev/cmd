@@ -334,6 +334,11 @@ const createClaudeCodeEventStream = async (
 				logInfo(
 					`Session ${existingSessionId} not found in Claude Code, retrying without resume to start fresh conversation`,
 				)
+				try {
+					await runningQuery.interrupt()
+				} catch {
+					// Interrupt might fail if the query has already failed. Continue with the fallback query.
+				}
 				// Start a new query without resume
 				runningQuery = createQuery(undefined)
 				return runningQuery
