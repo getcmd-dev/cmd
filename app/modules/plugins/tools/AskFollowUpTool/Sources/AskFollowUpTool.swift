@@ -85,7 +85,7 @@ public final class AskFollowUpTool: NonStreamableTool {
     Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
     """
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var displayName: String {
     "Follow Up"

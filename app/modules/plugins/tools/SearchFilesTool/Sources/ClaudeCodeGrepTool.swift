@@ -97,7 +97,7 @@ public final class ClaudeCodeGrepTool: ExternalTool {
   }
 
   public let id = "claude_code_grep"
-  public let mappedId = "search"
+  public let referenceId = "search"
 
   public let name = "claude_code_Grep"
 

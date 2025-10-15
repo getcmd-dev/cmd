@@ -75,7 +75,7 @@ public final class ClaudeCodeGlobTool: ExternalTool {
   }
 
   public let id = "claude_code_glob"
-  public let mappedId = "glob"
+  public let referenceId = "glob"
 
   public let name = "claude_code_Glob"
 

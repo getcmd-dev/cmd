@@ -117,7 +117,7 @@ public final class SearchFilesTool: NonStreamableTool {
     Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.
     """
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var displayName: String {
     "Search Files"

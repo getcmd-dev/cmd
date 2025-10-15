@@ -130,7 +130,7 @@ public final class ReadFileTool: NonStreamableTool {
     - limit: (optional) Maximum number of lines to read. If not provided, the tool will attempt to read the entire file.
     """
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var displayName: String {
     "Read File"

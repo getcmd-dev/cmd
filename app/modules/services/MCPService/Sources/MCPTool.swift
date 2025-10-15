@@ -101,7 +101,7 @@ public final class MCPTool: NonStreamableTool {
     "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"
   }
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var name: String {
     "mcp__\(serverName.sanitized)__\(wrappedTool.name.sanitized)"

@@ -124,7 +124,7 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
   }
 
   public let id = "claude_code_todo_write"
-  public let mappedId = "update_plan"
+  public let referenceId = "update_plan"
 
   public let name = "claude_code_TodoWrite"
 

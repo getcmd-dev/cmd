@@ -116,7 +116,7 @@ public final class ClaudeCodeEditTool: ExternalTool {
   }
 
   public let id = "claude_code_edit"
-  public let mappedId = "edit_file"
+  public let referenceId = "edit_file"
 
   public let name = "claude_code_Edit"
 

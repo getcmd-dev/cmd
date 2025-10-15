@@ -345,7 +345,7 @@ public final class EditFilesTool: Tool {
     "edit_file"
   }
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var name: String {
     if shouldAutoApply {

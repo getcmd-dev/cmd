@@ -24,14 +24,14 @@ public final class ToolConfigurationViewModel {
   private(set) var toolPreferences = [Settings.ToolPreference]()
 
   /// Returns whether a tool is configured to always be approved.
-  func isAlwaysApproved(toolMappedId: String) -> Bool {
-    toolPreferences.first { $0.toolMappedId == toolMappedId }?.alwaysApprove ?? false
+  func isAlwaysApproved(toolReferenceId: String) -> Bool {
+    toolPreferences.first { $0.toolReferenceId == toolReferenceId }?.alwaysApprove ?? false
   }
 
   /// Updates the approval preference for a specific tool.
-  func setAlwaysApprove(toolMappedId: String, alwaysApprove: Bool) {
+  func setAlwaysApprove(toolReferenceId: String, alwaysApprove: Bool) {
     var currentSettings = settingsService.values()
-    currentSettings.setToolPreference(toolMappedId: toolMappedId, alwaysApprove: alwaysApprove)
+    currentSettings.setToolPreference(toolReferenceId: toolReferenceId, alwaysApprove: alwaysApprove)
     settingsService.update(to: currentSettings)
   }
 

@@ -113,8 +113,8 @@ public struct Settings: Sendable, Equatable {
   }
 
   public struct ToolPreference: Sendable, Equatable, Codable {
-    public init(toolMappedId: String, alwaysApprove: Bool = false) {
-      self.toolMappedId = toolMappedId
+    public init(toolReferenceId: String, alwaysApprove: Bool = false) {
+      self.toolReferenceId = toolReferenceId
       self.alwaysApprove = alwaysApprove
     }
 
@@ -124,10 +124,10 @@ public struct Settings: Sendable, Equatable {
 
       // TODO: remove fallback after 11/15/25
       // Try to decode toolId first, fall back to toolName for backward compatibility
-      if let toolMappedId = try? container.decode(String.self, forKey: .toolId) {
-        self.toolMappedId = toolMappedId
+      if let toolReferenceId = try? container.decode(String.self, forKey: .toolId) {
+        self.toolReferenceId = toolReferenceId
       } else if let toolName = try? container.decode(String.self, forKey: .toolName) {
-        toolMappedId = toolName
+        toolReferenceId = toolName
       } else {
         throw DecodingError.keyNotFound(
           CodingKeys.toolId,
@@ -137,18 +137,18 @@ public struct Settings: Sendable, Equatable {
       }
     }
 
-    public let toolMappedId: String
+    public let toolReferenceId: String
     public var alwaysApprove: Bool
 
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(toolMappedId, forKey: .toolId)
+      try container.encode(toolReferenceId, forKey: .toolId)
       try container.encode(alwaysApprove, forKey: .alwaysApprove)
     }
 
     // MARK: - Codable
     private enum CodingKeys: String, CodingKey {
-      // This encodes the tool mappedId, which merges tools from different providers (eg edit file from cmd / Claude Code etc)
+      // This encodes the tool referenceId, which merges tools from different providers (eg edit file from cmd / Claude Code etc)
       // As this key is used facing (it shows up in the local settings file) we simply use toolId here.
       case toolId
       case toolName
@@ -188,20 +188,20 @@ public struct Settings: Sendable, Equatable {
 // MARK: - Settings + Tool Preferences Helpers
 
 extension Settings {
-  public func toolPreference(for toolMappedId: String) -> ToolPreference? {
-    toolPreferences.first { $0.toolMappedId == toolMappedId }
+  public func toolPreference(for toolReferenceId: String) -> ToolPreference? {
+    toolPreferences.first { $0.toolReferenceId == toolReferenceId }
   }
 
-  public mutating func setToolPreference(toolMappedId: String, alwaysApprove: Bool) {
-    if let index = toolPreferences.firstIndex(where: { $0.toolMappedId == toolMappedId }) {
+  public mutating func setToolPreference(toolReferenceId: String, alwaysApprove: Bool) {
+    if let index = toolPreferences.firstIndex(where: { $0.toolReferenceId == toolReferenceId }) {
       toolPreferences[index].alwaysApprove = alwaysApprove
     } else {
-      toolPreferences.append(ToolPreference(toolMappedId: toolMappedId, alwaysApprove: alwaysApprove))
+      toolPreferences.append(ToolPreference(toolReferenceId: toolReferenceId, alwaysApprove: alwaysApprove))
     }
   }
 
-  public func shouldAlwaysApprove(toolMappedId: String) -> Bool {
-    toolPreferences.first { $0.toolMappedId == toolMappedId }?.alwaysApprove ?? false
+  public func shouldAlwaysApprove(toolReferenceId: String) -> Bool {
+    toolPreferences.first { $0.toolReferenceId == toolReferenceId }?.alwaysApprove ?? false
   }
 }
 

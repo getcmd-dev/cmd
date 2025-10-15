@@ -62,7 +62,7 @@ struct TestTool: NonStreamableTool {
   var inputSchema = JSON.object([:])
 
   var id: String { "TestTool" }
-  var mappedId: String { id }
+  var referenceId: String { id }
 
   var name: String { "TestTool" }
   var displayName: String { "Test Tool" }

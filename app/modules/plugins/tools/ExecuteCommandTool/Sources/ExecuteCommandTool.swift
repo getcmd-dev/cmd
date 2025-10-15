@@ -153,7 +153,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
     If the output exceeds \(truncationLimit) characters, output will be truncated in the middle before being returned to you.
     """
 
-  public var mappedId: String { id }
+  public var referenceId: String { id }
 
   public var displayName: String {
     "Execute Command"

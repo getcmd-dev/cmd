@@ -67,7 +67,7 @@ public final class ClaudeCodeBashTool: ExternalTool {
   }
 
   public let id = "claude_code_bash"
-  public let mappedId = "bash"
+  public let referenceId = "bash"
 
   public let name = "claude_code_Bash"
 

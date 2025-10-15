@@ -157,7 +157,7 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
 
   var id: String { name }
-  var mappedId: String { id }
+  var referenceId: String { id }
 
   var displayName: String { name }
   var shortDescription: String { "tool for testing" }
@@ -241,7 +241,7 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
   let name: String
 
   var id: String { name }
-  var mappedId: String { id }
+  var referenceId: String { id }
 
   var displayName: String { name }
   var shortDescription: String { "tool for testing" }
@@ -327,7 +327,7 @@ struct TestExternalTool: ExternalTool {
   let name: String
 
   var id: String { name }
-  var mappedId: String { id }
+  var referenceId: String { id }
 
   var displayName: String { name }
   var shortDescription: String { "external tool for testing" }

@@ -26,9 +26,9 @@ struct ToolsConfigurationView: View {
             ForEach(viewModel.availableTools.filter { $0 as? any ExternalTool == nil }, id: \.id) { tool in
               ToolRow(
                 tool: tool,
-                isAlwaysApproved: viewModel.isAlwaysApproved(toolMappedId: tool.mappedId),
+                isAlwaysApproved: viewModel.isAlwaysApproved(toolReferenceId: tool.referenceId),
                 onToggle: { isEnabled in
-                  viewModel.setAlwaysApprove(toolMappedId: tool.mappedId, alwaysApprove: isEnabled)
+                  viewModel.setAlwaysApprove(toolReferenceId: tool.referenceId, alwaysApprove: isEnabled)
                 })
             }
           }

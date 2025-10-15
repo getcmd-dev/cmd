@@ -76,7 +76,7 @@ struct FailedTool: NonStreamableTool {
   let name: String
 
   var id: String { name }
-  var mappedId: String { id }
+  var referenceId: String { id }
 
   var displayName: String {
     "Failed tool"
