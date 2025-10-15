@@ -12,9 +12,6 @@ import ToolFoundation
 
 #if DEBUG
 struct TestTool: NonStreamableTool {
-  var id: String { "TestTool" }
-  var mappedId: String { id }
-
   public func isAvailable(in _: ChatMode) -> Bool {
     true
   }
@@ -63,6 +60,9 @@ struct TestTool: NonStreamableTool {
   }
 
   var inputSchema = JSON.object([:])
+
+  var id: String { "TestTool" }
+  var mappedId: String { id }
 
   var name: String { "TestTool" }
   var displayName: String { "Test Tool" }

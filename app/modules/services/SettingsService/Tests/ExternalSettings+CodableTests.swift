@@ -650,15 +650,15 @@ struct ExternalSettingsCodableTests {
         "toolPreferences" : [
           {
             "alwaysApprove" : true,
-            "toolName" : "EditFilesTool"
+            "toolId" : "EditFilesTool"
           },
           {
             "alwaysApprove" : false,
-            "toolName" : "ExecuteCommandTool"
+            "toolId" : "ExecuteCommandTool"
           },
           {
             "alwaysApprove" : true,
-            "toolName" : "ReadFileTool"
+            "toolId" : "ReadFileTool"
           }
         ],
         "userDefinedXcodeShortcuts" : [],

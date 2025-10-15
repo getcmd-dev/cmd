@@ -73,9 +73,10 @@ struct FailedTool: NonStreamableTool {
 
   typealias Use = FailedToolUse
 
+  let name: String
+
   var id: String { name }
   var mappedId: String { id }
-  let name: String
 
   var displayName: String {
     "Failed tool"

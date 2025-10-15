@@ -112,7 +112,7 @@ public struct Settings: Sendable, Equatable {
     }
   }
 
-  public struct ToolPreference: Sendable, Codable, Equatable {
+  public struct ToolPreference: Sendable, Equatable, Codable {
     public let toolId: String
     public var alwaysApprove: Bool
 
@@ -129,6 +129,38 @@ public struct Settings: Sendable, Equatable {
     public init(toolName: String, alwaysApprove: Bool = false) {
       toolId = toolName
       self.alwaysApprove = alwaysApprove
+    }
+
+    // MARK: - Codable
+    private enum CodingKeys: String, CodingKey {
+      case toolId
+      case toolName
+      case alwaysApprove
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      alwaysApprove = try container.decode(Bool.self, forKey: .alwaysApprove)
+
+      // Try to decode toolId first, fall back to toolName for backward compatibility
+      if let toolId = try? container.decode(String.self, forKey: .toolId) {
+        self.toolId = toolId
+      } else if let toolName = try? container.decode(String.self, forKey: .toolName) {
+        self.toolId = toolName
+      } else {
+        // If neither exists, throw an error
+        throw DecodingError.keyNotFound(
+          CodingKeys.toolId,
+          DecodingError.Context(
+            codingPath: decoder.codingPath,
+            debugDescription: "Neither 'toolId' nor 'toolName' key found"))
+      }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(toolId, forKey: .toolId)
+      try container.encode(alwaysApprove, forKey: .alwaysApprove)
     }
   }
 

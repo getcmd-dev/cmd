@@ -70,9 +70,10 @@ struct TestTool: NonStreamableTool {
 
   }
 
+  let name: String
+
   var id: String { name }
   var mappedId: String { id }
-  let name: String
 
   var displayName: String { name }
   var shortDescription: String { "tool for testing" }
