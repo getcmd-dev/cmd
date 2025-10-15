@@ -135,6 +135,8 @@ public struct Settings: Sendable, Equatable {
 
     // MARK: - Codable
     private enum CodingKeys: String, CodingKey {
+      // This encodes the tool mappedId, which merges tools from different providers (eg edit file from cmd / Claude Code etc)
+      // As this key is used facing (it shows up in the local settings file) we simply use toolId here.
       case toolId
       case toolName
       case alwaysApprove
