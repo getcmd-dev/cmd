@@ -17,7 +17,7 @@ import {
 	type SDKMessage,
 	query,
 	SDKPartialAssistantMessage,
-} from "@anthropic-ai/claude-code"
+} from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { readFile } from "fs/promises"
@@ -69,7 +69,7 @@ export const sendMessageToClaudeCode = async (
 	res: Response,
 ) => {
 	const eventStream = await createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
-	await respondUsingResponseStream(mapStream(eventStream, threadId, res), res)
+	await respondUsingResponseStream(wrapStreamWithAbortHandling(mapStream(eventStream, threadId, res)), res)
 	logInfo("done responsing, terminating request")
 	res.end()
 
@@ -92,6 +92,25 @@ const createClaudeCodeEventStream = async (
 		router: Router
 	},
 ): Promise<AsyncStream<ExtendedSDKMessage>> => {
+	// Setup response event listeners first
+	let responseCompletedByServer = false
+	let responseIsTerminated = false
+	res.on("finish", () => {
+		logInfo("response finished")
+		responseCompletedByServer = true
+		responseIsTerminated = true
+	})
+	const abortController = new AbortController()
+	res.on("close", () => {
+		logInfo("response close")
+		responseIsTerminated = true
+
+		if (!responseCompletedByServer) {
+			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			abortController.abort()
+		}
+	})
+
 	// get the id of the session to resume
 	const existingSessionId = ((): string | undefined => {
 		for (const message of messages) {
@@ -244,7 +263,6 @@ const createClaudeCodeEventStream = async (
 		return response
 	})
 
-	const abortController = new AbortController()
 	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)
 
 	// Try to remove env variable that might lead to CC exiting with status 1
@@ -253,58 +271,126 @@ const createClaudeCodeEventStream = async (
 	delete env.NODE_OPTIONS
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
-	const runningQuery = query({
-		prompt: arrayToAsyncIterable([userMessage]),
-		options: {
-			mcpServers: {
-				command: {
-					type: "http",
-					url: `http://localhost:${port}${mcpEndpoint}`,
+	const createQuery = (resume: string | undefined) =>
+		query({
+			prompt: arrayToAsyncIterable([userMessage]),
+			options: {
+				mcpServers: {
+					command: {
+						type: "http",
+						url: `http://localhost:${port}${mcpEndpoint}`,
+					},
+				},
+				permissionPromptToolName: "mcp__command__tool_approval",
+				pathToClaudeCodeExecutable,
+				executableArgs,
+				cwd: localExecutable.cwd,
+				env,
+				abortController,
+				includePartialMessages: true,
+				maxTurns: 100,
+				resume,
+				stderr: (data: string) => {
+					if (data.startsWith("Spawning Claude Code native binary")) {
+						return
+					}
+					logInfo(`Claude Code stderr: '${data}'`)
+					if (data.trim().length && data.trim() !== "Error") {
+						// TODO: clarify what's going on
+						logError(`Claude Code stderr: ${data}`)
+					}
 				},
 			},
-			permissionPromptToolName: "mcp__command__tool_approval",
-			pathToClaudeCodeExecutable,
-			executableArgs,
-			cwd: localExecutable.cwd,
-			env,
-			abortController,
-			includePartialMessages: true,
-			maxTurns: 100,
-			resume: existingSessionId,
-			stderr: (data: string) => {
-				if (data.startsWith("Spawning Claude Code native binary")) {
-					return
-				}
-				logInfo(`Claude Code stderr: '${data}'`)
-				if (data.trim().length && data.trim() !== "Error") {
-					// TODO: clarify what's going on
-					logError(`Claude Code stderr: ${data}`)
-				}
-			},
-		},
-	})
+		})
 
-	eventStream.pipeFrom(runningQuery)
+	if (responseIsTerminated) {
+		// The response has already been cancelled, abort.
+		eventStream.done()
+		return eventStream
+	}
 
-	let responseCompletedByServer = false
-	res.on("finish", () => {
-		responseCompletedByServer = true
-	})
-	res.on("close", () => {
-		if (!responseCompletedByServer) {
-			logInfo("Response closed (client disconnected), killing Claude Code process.")
-			runningQuery.interrupt().catch((err) => {
-				logError(`Error interrupting running query`, err)
-			})
-			abortController.abort()
+	// Handle the case where Claude Code doesn't have the conversation in its history.
+	// This can happen if the user cancelled the first message before Claude Code responded.
+	// In this case, we retry without the resume parameter to start a fresh conversation.
+	let runningQuery = createQuery(existingSessionId)
+
+	const queryStream = await (async (): Promise<AsyncIterable<ExtendedSDKMessage>> => {
+		try {
+			// Consume the first event to check for errors
+			const iterator = runningQuery[Symbol.asyncIterator]()
+			const firstEvent = await iterator.next()
+
+			if (firstEvent.done) {
+				return runningQuery
+			}
+
+			// Check if it's an error about session not found
+			if (
+				isSDKResultMessage(firstEvent.value) &&
+				firstEvent.value.is_error &&
+				firstEvent.value.subtype === "success" &&
+				firstEvent.value.result.includes("No conversation found with session ID")
+			) {
+				logInfo(
+					`Session ${existingSessionId} not found in Claude Code, retrying without resume to start fresh conversation`,
+				)
+				try {
+					await runningQuery.interrupt()
+				} catch {
+					// Interrupt might fail if the query has already failed. Continue with the fallback query.
+				}
+				// Start a new query without resume
+				runningQuery = createQuery(undefined)
+				return runningQuery
+			}
+
+			// Re-create an async iterable that includes the first event we already consumed
+			return (async function* (): AsyncIterableIterator<ExtendedSDKMessage> {
+				yield firstEvent.value
+				for await (const event of iterator) {
+					yield event
+				}
+			})()
+		} catch (error) {
+			if (`${error}`.includes("Claude Code process aborted by user")) {
+				// Fine, not an error
+				return (async function* (): AsyncIterableIterator<ExtendedSDKMessage> {})()
+			} else {
+				logError("Error handling query", error)
+				throw error
+			}
 		}
-	})
+	})()
+
+	eventStream.pipeFrom(queryStream)
 
 	return eventStream
 }
 
 export const isCoreUserMessage = (message: ModelMessage): message is UserModelMessage => {
 	return message.role === "user"
+}
+
+/**
+ * Wraps a stream to catch and handle Claude Code abort errors gracefully.
+ * This prevents abort errors from being logged as errors when the user cancels a request.
+ */
+async function* wrapStreamWithAbortHandling(
+	stream: AsyncIterable<ResponseChunkWithoutIndex>,
+): AsyncIterable<ResponseChunkWithoutIndex> {
+	try {
+		for await (const chunk of stream) {
+			yield chunk
+		}
+	} catch (error) {
+		if (`${error}`.includes("Claude Code process aborted by user")) {
+			// User aborted the request - this is expected behavior, not an error
+			logInfo(`Stream processing aborted by user: ${error}`)
+			return
+		}
+		// Re-throw other errors to be handled by the caller
+		throw error
+	}
 }
 
 async function* mapStream(

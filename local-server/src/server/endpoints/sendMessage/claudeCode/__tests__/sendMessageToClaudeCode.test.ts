@@ -5,7 +5,7 @@ import { MockedSpawn, mockSpawn } from "@/utils/tests/mockSpawn"
 import { MockedQuery, mockQuery } from "./mockClaudeCodeSDK"
 import { MockedFs, mockFs } from "@/utils/tests/mockFs"
 import { MockResponse } from "@/utils/tests/mockResponse"
-import { SDKMessage } from "@anthropic-ai/claude-code"
+import { SDKMessage } from "@anthropic-ai/claude-agent-sdk"
 import { ApproveToolUseRequestParams, ApprovalResult } from "../../../../schemas/toolApprovalSchema"
 import type { BetaMessage as APIAssistantMessage } from "@anthropic-ai/sdk/resources/beta/messages/messages.mjs"
 
