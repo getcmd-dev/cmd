@@ -1,4 +1,4 @@
-import { Options, Query, SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-code"
+import { Options, Query, SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk"
 import { jest } from "@jest/globals"
 
 /**
@@ -88,7 +88,7 @@ const mockClaudeCodeSDKOnce = ({
  * ```
  */
 export const mockQuery = (onMock: MockQueryCallback) => {
-	jest.unstable_mockModule("@anthropic-ai/claude-code", () => ({
+	jest.unstable_mockModule("@anthropic-ai/claude-agent-sdk", () => ({
 		query: ({ prompt, options }: { prompt: string | AsyncIterable<SDKUserMessage>; options?: Options }): Query => {
 			const mock = mockClaudeCodeSDKOnce({ prompt, options })
 			onMock(mock, { prompt, options })
