@@ -70,6 +70,8 @@ struct TestTool: NonStreamableTool {
 
   }
 
+  var id: String { name }
+  var mappedId: String { id }
   let name: String
 
   var displayName: String { name }

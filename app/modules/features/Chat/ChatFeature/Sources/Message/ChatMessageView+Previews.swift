@@ -12,6 +12,9 @@ import ToolFoundation
 
 #if DEBUG
 struct TestTool: NonStreamableTool {
+  var id: String { "TestTool" }
+  var mappedId: String { id }
+
   public func isAvailable(in _: ChatMode) -> Bool {
     true
   }

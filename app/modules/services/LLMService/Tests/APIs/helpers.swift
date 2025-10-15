@@ -152,6 +152,8 @@ struct TestTool<I: Codable & Sendable, O: Codable & Sendable>: NonStreamableTool
 
   }
 
+  var id: String { name }
+  var mappedId: String { id }
   let name: String
   let isReadonly: Bool
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
@@ -176,6 +178,9 @@ struct TestStreamingTool<I: Codable & Sendable, O: Codable & Sendable>: Tool {
   init(name: String = "TestStreamingTool") {
     self.name = name
   }
+
+  var id: String { name }
+  var mappedId: String { id }
 
   @ThreadSafe
   final class Use: ToolUse, Codable {
@@ -318,6 +323,8 @@ struct TestExternalTool: ExternalTool {
 
   }
 
+  var id: String { name }
+  var mappedId: String { id }
   let name: String
 
   var displayName: String { name }
