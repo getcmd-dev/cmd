@@ -1,10 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import ChatHistoryServiceInterface
+import ChatFeatureInterface
 import ConcurrencyFoundation
 import DLS
-import FileIcon
 import SwiftUI
 
 // MARK: - AttachmentItemView

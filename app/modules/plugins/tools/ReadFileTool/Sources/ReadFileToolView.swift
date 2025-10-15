@@ -3,7 +3,6 @@
 
 import CodePreview
 import DLS
-import FileIcon
 import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation

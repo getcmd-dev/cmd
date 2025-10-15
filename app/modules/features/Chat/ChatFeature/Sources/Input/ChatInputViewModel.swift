@@ -3,8 +3,8 @@
 
 import AppFoundation
 import AppKit
+import ChatFeatureInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies

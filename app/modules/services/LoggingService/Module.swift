@@ -15,9 +15,4 @@ Target.module(
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingService",
-  ],
-  interfaceDependencies: [
-    "ConcurrencyFoundation",
-    "FoundationInterfaces",
-    "ThreadSafe",
   ])

@@ -2,7 +2,6 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import DLS
-import FileIcon
 import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation

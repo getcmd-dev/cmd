@@ -3,7 +3,7 @@ Target.module(
   dependencies: [
     .product(name: "GRDB", package: "GRDB.swift"),
     "AppFoundation",
-    "ChatHistoryServiceInterface",
+    "ChatFeatureInterface",
     "ChatServiceInterface",
     "CheckpointServiceInterface",
     "ConcurrencyFoundation",
@@ -18,7 +18,7 @@ Target.module(
   ],
   testsDependencies: [
     .product(name: "GRDB", package: "GRDB.swift"),
-    "ChatHistoryServiceInterface",
+    "ChatFeatureInterface",
     "ChatService",
     "ChatServiceInterface",
     "ConcurrencyFoundation",

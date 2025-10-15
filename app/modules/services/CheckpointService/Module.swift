@@ -7,15 +7,4 @@ Target.module(
     "JSONFoundation",
     "LocalServerServiceInterface",
   ],
-  testsDependencies: [],
-  interfaceDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "AppFoundation",
-    "ConcurrencyFoundation",
-  ],
-  interfaceTestsDependencies: [
-    "AppFoundation",
-    "CheckpointServiceInterface",
-    "ConcurrencyFoundation",
-    "SwiftTesting",
-  ])
+  testsDependencies: [])

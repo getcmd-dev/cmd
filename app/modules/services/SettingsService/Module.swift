@@ -20,17 +20,4 @@ Target.module(
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",
-  ],
-  interfaceDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "JSONFoundation",
-    "LLMFoundation",
-    "LoggingServiceInterface",
-  ],
-  interfaceTestsDependencies: [
-    "LLMFoundation",
-    "SettingsServiceInterface",
-    "SwiftTesting",
   ])

@@ -92,7 +92,7 @@ struct SyncTests {
          contentsOf: Target.module(
            name: "ModuleB",
       -    dependencies: [
-      -      .product(name: "ModuleA", package: "ModuleA")
+      -      "ModuleA"
       -    ],
       +    dependencies: [],
            path: "."))
@@ -157,7 +157,7 @@ struct SyncTests {
         +++ b/ModuleB/Package.swift
         @@ -111,6 +111,7 @@ targets.append(
              dependencies: [
-               .product(name: "ModuleA", package: "ModuleA")
+               "ModuleA"
              ],
         +    testsDependencies: [],
              path: "."))
@@ -367,7 +367,7 @@ struct SyncTests {
             +++ b/ModuleB/Package.swift
             @@ -111,6 +111,9 @@ targets.append(
                  dependencies: [
-                   .product(name: "ModuleA", package: "ModuleA")
+                   "ModuleA"
                  ],
             +    testsDependencies: [
             +      .product(name: "DependenciesTestSupport", package: "swift-dependencies")
@@ -423,7 +423,7 @@ struct SyncTests {
         +++ b/ModuleB/Package.swift
         @@ -111,6 +111,7 @@ targets.append(
              dependencies: [
-               .product(name: "ModuleA", package: "ModuleA")
+               "ModuleA"
              ],
         +    interfaceDependencies: [],
              path: "."))

@@ -3,7 +3,7 @@
 
 import AccessibilityFoundation
 import AppEventServiceInterface
-import ChatHistoryServiceInterface
+import ChatFeatureInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies

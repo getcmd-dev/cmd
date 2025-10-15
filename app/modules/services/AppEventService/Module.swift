@@ -5,8 +5,4 @@ Target.module(
     "DependencyFoundation",
     "LoggingServiceInterface",
     "ThreadSafe",
-  ],
-  interfaceDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "ConcurrencyFoundation",
   ])

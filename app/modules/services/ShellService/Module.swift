@@ -10,9 +10,4 @@ Target.module(
   ],
   testsDependencies: [
     "ShellService",
-  ],
-  interfaceDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "LoggingServiceInterface",
-    "ThreadSafe",
   ])

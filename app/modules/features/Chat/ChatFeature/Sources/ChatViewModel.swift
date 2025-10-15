@@ -6,7 +6,7 @@ import AppFoundation
 import ChatAppEvents
 import ChatCompletionServiceInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import Combine
 import Dependencies
 import Foundation

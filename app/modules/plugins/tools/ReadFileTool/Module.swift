@@ -7,7 +7,6 @@ Target.module(
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
-    "FileIcon",
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "JSONFoundation",

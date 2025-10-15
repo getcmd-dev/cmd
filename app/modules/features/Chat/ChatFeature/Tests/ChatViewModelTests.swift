@@ -5,8 +5,9 @@ import AccessibilityFoundation
 import AppEventServiceInterface
 import AppKit
 import ChatAppEvents
+import ChatFeatureInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies

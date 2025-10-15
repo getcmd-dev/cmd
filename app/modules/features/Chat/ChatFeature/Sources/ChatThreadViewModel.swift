@@ -3,8 +3,9 @@
 
 import AppEventServiceInterface
 import AppFoundation
+import ChatFeatureInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation

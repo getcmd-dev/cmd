@@ -24,16 +24,4 @@ Target.module(
     "LocalServerService",
     "LocalServerServiceInterface",
     "SwiftTesting",
-  ],
-  interfaceDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "JSONFoundation",
-  ],
-  interfaceTestsDependencies: [
-    "AppFoundation",
-    "ConcurrencyFoundation",
-    "LocalServerServiceInterface",
-    "SwiftTesting",
   ])
