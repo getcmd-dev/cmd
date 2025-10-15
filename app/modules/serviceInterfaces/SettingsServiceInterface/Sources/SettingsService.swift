@@ -121,7 +121,20 @@ public struct Settings: Sendable, Equatable {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       alwaysApprove = try container.decode(Bool.self, forKey: .alwaysApprove)
-      toolMappedId = try container.decode(String.self, forKey: .toolId)
+
+      // TODO: remove fallback after 11/15/25
+      // Try to decode toolId first, fall back to toolName for backward compatibility
+      if let toolMappedId = try? container.decode(String.self, forKey: .toolId) {
+        self.toolMappedId = toolMappedId
+      } else if let toolName = try? container.decode(String.self, forKey: .toolName) {
+        toolMappedId = toolName
+      } else {
+        throw DecodingError.keyNotFound(
+          CodingKeys.toolId,
+          DecodingError.Context(
+            codingPath: decoder.codingPath,
+            debugDescription: "Neither 'toolId' nor 'toolName' key found"))
+      }
     }
 
     public let toolMappedId: String

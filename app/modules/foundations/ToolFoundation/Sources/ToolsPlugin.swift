@@ -25,7 +25,7 @@ public final class ToolsPlugin: Sendable {
   /// Registers a tool in the plugin registry.
   /// - Parameter tool: The tool to register. The tool's name will be used as the registry key.
   public func plugIn(tool: any Tool) {
-    registry[tool.name] = tool
+    registry[tool.id] = tool
   }
 
   /// Removes a tool from the plugin registry.
@@ -37,11 +37,16 @@ public final class ToolsPlugin: Sendable {
   /// Retrieves a tool by name from the registry or fallback matchers.
   /// - Parameter name: The name of the tool to retrieve.
   /// - Returns: The tool if found in the registry or through fallback matchers, otherwise nil.
+  @available(*, deprecated, renamed: "tool(byId:)", message: "Use tool(byId:) instead")
   public func tool(named name: String) -> (any Tool)? {
-    if let tool = registry[name] {
-      return tool
-    }
-    return nil
+    registry.values.first { $0.name == name }
+  }
+
+  /// Retrieves a tool by ID from the registry.
+  /// - Parameter id: The ID of the tool to retrieve.
+  /// - Returns: The tool if found in the registry, otherwise nil.
+  public func tool(byId id: String) -> (any Tool)? {
+    registry[id]
   }
 
   private var registry = [String: any Tool]()

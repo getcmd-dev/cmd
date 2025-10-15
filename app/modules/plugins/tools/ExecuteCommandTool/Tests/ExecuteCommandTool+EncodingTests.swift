@@ -26,7 +26,7 @@ extension ExecuteCommandToolTests {
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool": "execute_command",
+          "callingTool": "bash",
           "context": {
             "threadId": "mock-thread-id"
           },
@@ -57,7 +57,7 @@ extension ExecuteCommandToolTests {
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool": "execute_command",
+          "callingTool": "bash",
           "context": {
             "threadId": "mock-thread-id"
           },
@@ -89,7 +89,7 @@ extension ExecuteCommandToolTests {
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool": "execute_command",
+          "callingTool": "bash",
           "context": {
             "threadId": "mock-thread-id"
           },

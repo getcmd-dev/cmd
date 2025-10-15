@@ -610,9 +610,9 @@ struct ExternalSettingsCodableTests {
   @Test("Encode and decode settings with tool preferences")
   func testSettingsWithToolPreferences() throws {
     let toolPreferences = [
-      Settings.ToolPreference(toolName: "EditFilesTool", alwaysApprove: true),
-      Settings.ToolPreference(toolName: "ExecuteCommandTool", alwaysApprove: false),
-      Settings.ToolPreference(toolName: "ReadFileTool", alwaysApprove: true),
+      Settings.ToolPreference(toolMappedId: "EditFilesTool", alwaysApprove: true),
+      Settings.ToolPreference(toolMappedId: "ExecuteCommandTool", alwaysApprove: false),
+      Settings.ToolPreference(toolMappedId: "ReadFileTool", alwaysApprove: true),
     ]
 
     let settings = ExternalSettings(
@@ -706,7 +706,7 @@ struct ExternalSettingsCodableTests {
       preferedProviders: [:],
       llmProviderSettings: [:],
       toolPreferences: [
-        Settings.ToolPreference(toolName: "BuildTool", alwaysApprove: true),
+        Settings.ToolPreference(toolMappedId: "BuildTool", alwaysApprove: true),
       ])
 
     try testDecoding(expectedSettings, json)
@@ -728,8 +728,8 @@ struct ExternalSettingsCodableTests {
         askModePrompt: "Be concise",
         agentModePrompt: nil),
       toolPreferences: [
-        Settings.ToolPreference(toolName: "LSTool", alwaysApprove: true),
-        Settings.ToolPreference(toolName: "SearchFilesTool", alwaysApprove: false),
+        Settings.ToolPreference(toolMappedId: "LSTool", alwaysApprove: true),
+        Settings.ToolPreference(toolMappedId: "SearchFilesTool", alwaysApprove: false),
       ])
 
     let jsonData = try JSONEncoder().encode(originalSettings)

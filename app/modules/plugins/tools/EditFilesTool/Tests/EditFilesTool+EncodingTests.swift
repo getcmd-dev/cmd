@@ -47,7 +47,7 @@ struct EditFilesToolEncodingTests {
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool" : "suggest_files_changes",
+          "callingTool" : "edit_file",
           "context" : {
             "threadId": "mock-thread-id"
           },
@@ -129,7 +129,7 @@ struct EditFilesToolEncodingTests {
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool" : "suggest_files_changes",
+          "callingTool" : "edit_file",
           "context" : {
             "threadId": "mock-thread-id"
           },
@@ -225,7 +225,7 @@ struct EditFilesToolEncodingTests {
       let use = try tool.use(toolUseId: "edit-multi-789", input: data, isInputComplete: true, context: toolExecutionContext)
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
-          "callingTool" : "suggest_files_changes",
+          "callingTool" : "edit_file",
           "context" : {
             "threadId": "mock-thread-id"
           },

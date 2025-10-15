@@ -24,7 +24,7 @@ struct SearchFilesToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "search_files",
+        "callingTool": "search",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -53,7 +53,7 @@ struct SearchFilesToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "search_files",
+        "callingTool": "search",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -83,7 +83,7 @@ struct SearchFilesToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "search_files",
+        "callingTool": "search",
         "context": {
           "threadId": "mock-thread-id"
         },
