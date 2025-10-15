@@ -14,4 +14,8 @@ Target.module(
     "FileSuggestionService",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
+  ],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ThreadSafe",
   ])

@@ -6,6 +6,7 @@ import Dependencies
 import DLS
 import FileDiffFoundation
 import FileDiffTypesFoundation
+import FileIcon
 import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation

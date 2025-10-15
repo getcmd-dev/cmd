@@ -31,4 +31,10 @@ Target.module(
     "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
+  ],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "ThreadSafe",
   ])

@@ -10,4 +10,13 @@ Target.module(
     "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testsDependencies: [])
+  testsDependencies: [],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+    "ThreadSafe",
+  ],
+  interfaceTestsDependencies: [
+    "AppUpdateServiceInterface",
+    "SwiftTesting",
+  ])

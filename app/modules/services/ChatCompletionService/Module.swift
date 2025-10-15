@@ -16,4 +16,8 @@ Target.module(
   testsDependencies: [
     "AppFoundation",
     "ChatCompletionService",
+  ],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "LocalServerServiceInterface",
   ])

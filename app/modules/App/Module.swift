@@ -16,6 +16,7 @@ Target.module(
     "ChatCompletionService",
     "ChatCompletionServiceInterface",
     "ChatFeature",
+    "ChatHistoryServiceInterface",
     "ChatService",
     "ChatServiceInterface",
     "CheckpointService",

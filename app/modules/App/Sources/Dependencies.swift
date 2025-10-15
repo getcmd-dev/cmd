@@ -8,6 +8,7 @@ import AppUpdateService
 import AppUpdateServiceInterface
 import ChatCompletionService
 import ChatCompletionServiceInterface
+import ChatHistoryServiceInterface
 import ChatService
 import ChatServiceInterface
 import CheckpointService

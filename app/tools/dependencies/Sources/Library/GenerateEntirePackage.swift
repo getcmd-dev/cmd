@@ -28,7 +28,8 @@ public final class GenerateEntirePackage {
     let rewriter = try AddTargetToPackage(
       source: templatePackageSource,
       packageDirURL: packageDirURL,
-      modules: modules)
+      modulePaths: modules,
+      internalDependencies: [])
 
     return rewriter.rewrite()
   }
@@ -96,12 +97,12 @@ public final class GenerateEntirePackage {
 
 final class AddTargetToPackage {
 
-  init(source: SourceFileSyntax, packageDirURL: URL, modules: [String]) throws {
+  init(source: SourceFileSyntax, packageDirURL: URL, modulePaths: [String], internalDependencies: [TargetInfo]) throws {
     self.packageDirURL = packageDirURL
     packageFile = source
 
     let packageDir = packageDirURL.path
-    moduleExpressions = try modules.map { modulePath in
+    moduleExpressions = try modulePaths.map { modulePath in
       let content = try fileManager.read(contentsOfFile: "\(modulePath)/Module.swift")
       let sf = Parser.parse(source: content)
 
@@ -115,7 +116,11 @@ final class AddTargetToPackage {
           userInfo: [NSLocalizedDescriptionKey: "Invalid module file at \(modulePath)."])
       }
 
-      return rewriteModuleExpression(expr, modulePath: modulePath, packageDir: packageDir)
+      return rewriteModuleExpression(
+        expr,
+        modulePath: modulePath,
+        packageDir: packageDir,
+        internalDependencies: internalDependencies)
     }
   }
 
@@ -168,7 +173,8 @@ final class AddTargetToPackage {
 private func rewriteModuleExpression(
   _ expr: ExprSyntax,
   modulePath: String,
-  packageDir: String)
+  packageDir: String,
+  internalDependencies: [TargetInfo])
   -> ExprSyntax
 {
   guard let call = expr.as(FunctionCallExprSyntax.self) else {
@@ -179,6 +185,9 @@ private func rewriteModuleExpression(
 
   var hadPath = false
   var newArgs = [LabeledExprSyntax]()
+  let internalDependencies = internalDependencies.reduce(into: [String: TargetInfo](), { result, target in
+    result[target.name] = target
+  })
 
   if let oldArgList = LabeledExprListSyntax(call.arguments) {
     for arg in oldArgList {
@@ -187,6 +196,22 @@ private func rewriteModuleExpression(
         // Preserve the original trivia/formatting from the existing path argument
         let newExpr = makeStringLiteralExpr(modulePath)
         let updated = arg.with(\.expression, newExpr)
+        newArgs.append(updated)
+      } else if
+        arg.label?.text.hasSuffix("ependencies") == true,
+        let arrExpr = arg.expression.as(ArrayExprSyntax.self)
+      {
+        let newElements = arrExpr.elements.compactMap { el in
+          if
+            let targetName = el.expression.as(StringLiteralExprSyntax.self)?.segments.first?.trimmedDescription,
+            let target = internalDependencies[targetName]
+          {
+            return makeExpr(".product(name: \"\(targetName)\", package: \"\(target.moduleDir.lastPathComponent)\"),")
+          }
+          return ExprSyntax(el.expression)
+        }
+        let newExpr = makeArrayExprSyntax(from: newElements)
+        let updated = arg.with(\.expression, ExprSyntax(newExpr))
         newArgs.append(updated)
       } else {
         newArgs.append(arg)

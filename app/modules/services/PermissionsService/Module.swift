@@ -14,4 +14,13 @@ Target.module(
     "PermissionsService",
     "ShellServiceInterface",
     "SwiftTesting",
+  ],
+  interfaceDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+    "ThreadSafe",
+  ],
+  interfaceTestsDependencies: [
+    "PermissionsServiceInterface",
+    "SwiftTesting",
   ])

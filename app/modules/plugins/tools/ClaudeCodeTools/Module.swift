@@ -8,6 +8,7 @@ Target.module(
     "ChatServiceInterface",
     "ConcurrencyFoundation",
     "DLS",
+    "FileIcon",
     "JSONFoundation",
     "ToolFoundation",
   ],
