@@ -5,6 +5,7 @@ import AppFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DLS
 import Foundation
 import FoundationInterfaces
 import LocalServerServiceInterface

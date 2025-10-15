@@ -1,12 +1,13 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import ChatFeatureInterface
+import ChatHistoryServiceInterface
 import CodePreview
 import Dependencies
 import DLS
 import Down
 import FileDiffTypesFoundation
+import FileIcon
 import FoundationInterfaces
 import LoggingServiceInterface
 import SwiftUI

@@ -38,7 +38,7 @@ const copyJSCodeToApp = async () => {
 
 // now copy all the content of node_modules/vscode-material-icons/generated/icons
 const copyIconsToApp = async () => {
-	const iconsDir = path.join(__dirname, "../../app/modules/coreUI/DLS/Sources/Resources/fileIcons")
+	const iconsDir = path.join(__dirname, "../../app/modules/coreUI/FileIcon/Sources/Resources/fileIcons")
 	await fs.ensureDir(iconsDir)
 	const srcIconsDir = path.join(__dirname, "../node_modules/vscode-material-icons/generated/icons")
 

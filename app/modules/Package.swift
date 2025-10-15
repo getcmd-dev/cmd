@@ -133,6 +133,7 @@ targets.append(
       "ChatCompletionService",
       "ChatCompletionServiceInterface",
       "ChatFeature",
+      "ChatHistoryServiceInterface",
       "ChatService",
       "ChatServiceInterface",
       "CheckpointService",
@@ -389,8 +390,8 @@ targets.append(
       "AppUpdateServiceInterface",
       "ChatAppEvents",
       "ChatCompletionServiceInterface",
-      "ChatFeatureInterface",
       "ChatFoundation",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "CodePreview",
@@ -399,6 +400,7 @@ targets.append(
       "ExtensionEventsInterface",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "FileIcon",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
       "HighlighterServiceInterface",
@@ -425,8 +427,8 @@ targets.append(
       "ChatAppEvents",
       "ChatCompletionServiceInterface",
       "ChatFeature",
-      "ChatFeatureInterface",
       "ChatFoundation",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
@@ -447,14 +449,6 @@ targets.append(
 targets.append(
   contentsOf: Target.module(
     name: "ChatFeatureInterface",
-    dependencies: [
-      "AppFoundation",
-      "CheckpointServiceInterface",
-      "LLMServiceInterface",
-      "LocalServerServiceInterface",
-      "LoggingServiceInterface",
-      "ToolFoundation",
-    ],
     path: "./features/Chat/ChatFeatureInterface"))
 
 targets.append(
@@ -469,11 +463,32 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "ChatHistoryServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "CheckpointServiceInterface",
+      "LLMServiceInterface",
+      "LocalServerServiceInterface",
+      "LoggingServiceInterface",
+      "ThreadSafe",
+      "ToolFoundation",
+    ],
+    testsDependencies: [
+      "AppFoundation",
+      "ChatHistoryServiceInterface",
+      "ConcurrencyFoundation",
+      "SwiftTesting",
+    ],
+    path: "./serviceInterfaces/ChatHistoryServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "ChatService",
     dependencies: [
       .product(name: "GRDB", package: "GRDB.swift"),
       "AppFoundation",
-      "ChatFeatureInterface",
+      "ChatHistoryServiceInterface",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
@@ -488,7 +503,7 @@ targets.append(
     ],
     testsDependencies: [
       .product(name: "GRDB", package: "GRDB.swift"),
-      "ChatFeatureInterface",
+      "ChatHistoryServiceInterface",
       "ChatService",
       "ChatServiceInterface",
       "ConcurrencyFoundation",
@@ -505,16 +520,8 @@ targets.append(
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
-      "ChatFeatureInterface",
       "ThreadSafe",
       "ToolFoundation",
-    ],
-    testsDependencies: [
-      "AppFoundation",
-      "ChatFeatureInterface",
-      "ChatServiceInterface",
-      "ConcurrencyFoundation",
-      "SwiftTesting",
     ],
     path: "./serviceInterfaces/ChatServiceInterface"))
 
@@ -558,6 +565,7 @@ targets.append(
       "ChatServiceInterface",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "ToolFoundation",
     ],
@@ -641,16 +649,11 @@ targets.append(
   contentsOf: Target.module(
     name: "DLS",
     dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
-      "FoundationInterfaces",
-      "LocalServerServiceInterface",
       "LoggingServiceInterface",
-      "ShellServiceInterface",
     ],
     resources: [
-      .process("Resources/fileIcons"),
       .process("Resources/cmd-logo.svg"),
     ],
     testsDependencies: [
@@ -670,6 +673,7 @@ targets.append(
       "DLS",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "FileIcon",
       "FoundationInterfaces",
       "JSONFoundation",
       "LocalServerServiceInterface",
@@ -773,6 +777,23 @@ targets.append(
     name: "FileDiffTypesFoundation",
     dependencies: [],
     path: "./foundations/FileDiffTypesFoundation"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "FileIcon",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DLS",
+      "FoundationInterfaces",
+      "LocalServerServiceInterface",
+      "ShellServiceInterface",
+    ],
+    resources: [
+      .process("Resources/fileIcons"),
+    ],
+    path: "./coreui/FileIcon"))
 
 targets.append(
   contentsOf: Target.module(
@@ -989,6 +1010,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "LocalServerServiceInterface",
       "ToolFoundation",
@@ -1118,6 +1140,7 @@ targets.append(
       "CodePreview",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "FoundationInterfaces",
       "HighlighterServiceInterface",
       "JSONFoundation",
@@ -1156,6 +1179,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "DLS",
+      "FileIcon",
       "JSONFoundation",
       "LocalServerServiceInterface",
       "LoggingServiceInterface",

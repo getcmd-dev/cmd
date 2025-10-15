@@ -9,6 +9,7 @@ Target.module(
     "DLS",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
+    "FileIcon",
     "FoundationInterfaces",
     "JSONFoundation",
     "LocalServerServiceInterface",
