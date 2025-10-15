@@ -93,15 +93,13 @@ public final class GenerateModulePackage {
       selection: Selection(offsetRanges: []),
       to: &formattedOutput)
 
-    try fileManager.write(
+    try fileManager.writeIfASTDiffers(
       """
       // This file is generated. Do not modify directly.
 
       \(formattedOutput)
       """,
-      to: packageURL,
-      atomically: true,
-      encoding: .utf8)
+      to: packageURL)
   }
 
   let moduleDir: URL

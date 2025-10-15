@@ -61,10 +61,7 @@ public final class GenerateEntirePackage {
   }
 
   func run() throws {
-    try generateSource().update(
-      url: packageDirURL.appending(path: "/Package.swift"),
-      atomically: true,
-      encoding: .utf8)
+    try fileManager.writeIfASTDiffers(generateSource(), to: packageDirURL.appending(path: "/Package.swift"))
   }
 
   private static func findModuleFiles(in directoryPath: String) -> [String] {

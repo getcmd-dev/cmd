@@ -12,22 +12,47 @@ import Testing
 @MainActor
 @Suite("SyncTests", .serialized)
 struct SyncTests {
+    
+    @Test("Doesn't change an up-to-date repo")
+    func doesntChangeAUpToDateRepo() throws {
+      // Given
+      let repoURL = try findRepo(named: "test-repo-1")
+      let mockFileManager = MockFileManager(copyingRepoAt: repoURL)
+      fileManager = mockFileManager
+      let before = mockFileManager.files
 
-  @Test("Doesn't change an up-to-date repo")
-  func doesntChangeAUpToDateRepo() throws {
-    // Given
-    let repoURL = try findRepo(named: "test-repo-1")
-    let mockFileManager = MockFileManager(copyingRepoAt: repoURL)
-    fileManager = mockFileManager
-    let before = mockFileManager.files
+      // When
+      _ = try UpdateDependencies.update(packageURL: URL(filePath: "/repo/Package.swift"), all: true)
 
-    // When
-    _ = try UpdateDependencies.update(packageURL: URL(filePath: "/repo/Package.swift"), all: true)
+      // Then
+      let diff = try diffFiles(before: before, after: mockFileManager.files)
+      #expect(diff == "")
+    }
+    
+    @Test("Doesn't change a repo with trivia only changes")
+    func doesntChangeARepoWithTriviaOnlyChanges() throws {
+      // Given
+      let repoURL = try findRepo(named: "test-repo-1")
+      let mockFileManager = MockFileManager(copyingRepoAt: repoURL)
+      fileManager = mockFileManager
+        
+        var moduleAPackage = try #require( mockFileManager.files["/repo/ModuleA/Package.swift"])
+        moduleAPackage = "\n" + moduleAPackage + "\n// some comment\n"
+        try mockFileManager.write(moduleAPackage, to: URL(filePath: "/repo/ModuleA/Package.swift"), atomically: true, encoding: .utf8)
+        
+        var moduleBModule = try #require( mockFileManager.files["/repo/ModuleB/Module.swift"])
+        moduleBModule = "\n" + moduleBModule + "\n// some comment\n".replacingOccurrences(of: "name:", with: "       name:")
+        try mockFileManager.write(moduleBModule, to: URL(filePath: "/repo/ModuleB/Module.swift"), atomically: true, encoding: .utf8)
+        
+      let before = mockFileManager.files
 
-    // Then
-    let diff = try diffFiles(before: before, after: mockFileManager.files)
-    #expect(diff == "")
-  }
+      // When
+      _ = try UpdateDependencies.update(packageURL: URL(filePath: "/repo/Package.swift"), all: true)
+
+      // Then
+      let diff = try diffFiles(before: before, after: mockFileManager.files)
+      #expect(diff == "")
+    }
 
   @Test("Add missing dependency to module file")
   func addMissingDependencyToModuleFile() throws {
