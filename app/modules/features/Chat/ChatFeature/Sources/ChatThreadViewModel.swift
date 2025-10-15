@@ -530,12 +530,12 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   /// Whether the tool use needs to be approved by the user.
   private func needsApproval(for toolUse: any ToolUse) -> Bool {
-    !shouldAlwaysApprove(toolId: toolUse.toolId)
+    !shouldAlwaysApprove(toolId: toolUse.toolMappedId)
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {
     // Check if user has already approved this tool type
-    if shouldAlwaysApprove(toolId: toolUse.toolId) {
+    if shouldAlwaysApprove(toolId: toolUse.toolMappedId) {
       return // Skip approval for this tool
     }
 
@@ -552,7 +552,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       break // Continue execution
     case .alwaysApprove:
       // Store preference and continue
-      storeAlwaysApprovePreference(for: toolUse.toolId)
+      storeAlwaysApprovePreference(for: toolUse.toolMappedId)
 
     case .cancelled:
       throw CancellationError()

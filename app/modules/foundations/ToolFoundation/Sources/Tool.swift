@@ -116,6 +116,7 @@ public protocol ToolUse: Sendable, Codable {
 
 extension ToolUse {
   public var toolId: String { callingTool.id }
+  public var toolMappedId: String { callingTool.mappedId }
   public var toolName: String { callingTool.name }
 
   public var toolDisplayName: String { callingTool.displayName }
