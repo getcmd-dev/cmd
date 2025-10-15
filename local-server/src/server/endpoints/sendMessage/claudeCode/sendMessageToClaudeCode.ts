@@ -100,11 +100,15 @@ const createClaudeCodeEventStream = async (
 		responseCompletedByServer = true
 		responseIsTerminated = true
 	})
-	let onClose = () => {}
+	const abortController = new AbortController()
 	res.on("close", () => {
 		logInfo("response close")
 		responseIsTerminated = true
-		onClose()
+
+		if (!responseCompletedByServer) {
+			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			abortController.abort()
+		}
 	})
 
 	// get the id of the session to resume
@@ -259,7 +263,6 @@ const createClaudeCodeEventStream = async (
 		return response
 	})
 
-	const abortController = new AbortController()
 	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)
 
 	// Try to remove env variable that might lead to CC exiting with status 1
@@ -310,12 +313,6 @@ const createClaudeCodeEventStream = async (
 	// This can happen if the user cancelled the first message before Claude Code responded.
 	// In this case, we retry without the resume parameter to start a fresh conversation.
 	let runningQuery = createQuery(existingSessionId)
-	onClose = () => {
-		if (!responseCompletedByServer) {
-			logInfo("Response closed (client disconnected), killing Claude Code process.")
-			abortController.abort()
-		}
-	}
 
 	const queryStream = await (async (): Promise<AsyncIterable<ExtendedSDKMessage>> => {
 		try {
