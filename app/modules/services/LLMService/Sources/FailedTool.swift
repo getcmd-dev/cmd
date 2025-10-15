@@ -75,6 +75,9 @@ struct FailedTool: NonStreamableTool {
 
   let name: String
 
+  var id: String { name }
+  var referenceId: String { id }
+
   var displayName: String {
     "Failed tool"
   }

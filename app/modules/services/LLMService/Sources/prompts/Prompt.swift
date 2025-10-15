@@ -247,7 +247,7 @@ enum Prompt {
   private static func agentInstruction(mode: ChatMode) -> String? {
     guard mode == .agent else { return nil }
     return """
-      When the user is asking for edits to their code, use the 'edit_or_create_files' tool to make the changes.
+      When the user is asking for edits to their code, use the 'edit_file' tool to make the changes.
 
       # Proactiveness
       You are allowed to be proactive, but only when the user asks you to do something. You should strive to strike a balance between:

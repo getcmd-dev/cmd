@@ -79,6 +79,9 @@ public final class UnknownTool: NonStreamableTool {
 
   public let name: String
 
+  public var id: String { name }
+  public var referenceId: String { id }
+
   public var description: String {
     "Unknown tool \(name)"
   }

@@ -610,9 +610,9 @@ struct ExternalSettingsCodableTests {
   @Test("Encode and decode settings with tool preferences")
   func testSettingsWithToolPreferences() throws {
     let toolPreferences = [
-      Settings.ToolPreference(toolName: "EditFilesTool", alwaysApprove: true),
-      Settings.ToolPreference(toolName: "ExecuteCommandTool", alwaysApprove: false),
-      Settings.ToolPreference(toolName: "ReadFileTool", alwaysApprove: true),
+      Settings.ToolPreference(toolReferenceId: "EditFilesTool", alwaysApprove: true),
+      Settings.ToolPreference(toolReferenceId: "ExecuteCommandTool", alwaysApprove: false),
+      Settings.ToolPreference(toolReferenceId: "ReadFileTool", alwaysApprove: true),
     ]
 
     let settings = ExternalSettings(
@@ -650,15 +650,15 @@ struct ExternalSettingsCodableTests {
         "toolPreferences" : [
           {
             "alwaysApprove" : true,
-            "toolName" : "EditFilesTool"
+            "toolId" : "EditFilesTool"
           },
           {
             "alwaysApprove" : false,
-            "toolName" : "ExecuteCommandTool"
+            "toolId" : "ExecuteCommandTool"
           },
           {
             "alwaysApprove" : true,
-            "toolName" : "ReadFileTool"
+            "toolId" : "ReadFileTool"
           }
         ],
         "userDefinedXcodeShortcuts" : [],
@@ -706,7 +706,7 @@ struct ExternalSettingsCodableTests {
       preferedProviders: [:],
       llmProviderSettings: [:],
       toolPreferences: [
-        Settings.ToolPreference(toolName: "BuildTool", alwaysApprove: true),
+        Settings.ToolPreference(toolReferenceId: "BuildTool", alwaysApprove: true),
       ])
 
     try testDecoding(expectedSettings, json)
@@ -728,8 +728,8 @@ struct ExternalSettingsCodableTests {
         askModePrompt: "Be concise",
         agentModePrompt: nil),
       toolPreferences: [
-        Settings.ToolPreference(toolName: "LSTool", alwaysApprove: true),
-        Settings.ToolPreference(toolName: "SearchFilesTool", alwaysApprove: false),
+        Settings.ToolPreference(toolReferenceId: "LSTool", alwaysApprove: true),
+        Settings.ToolPreference(toolReferenceId: "SearchFilesTool", alwaysApprove: false),
       ])
 
     let jsonData = try JSONEncoder().encode(originalSettings)

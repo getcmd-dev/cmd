@@ -72,6 +72,9 @@ struct TestTool: NonStreamableTool {
 
   let name: String
 
+  var id: String { name }
+  var referenceId: String { id }
+
   var displayName: String { name }
   var shortDescription: String { "tool for testing" }
 

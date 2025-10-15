@@ -529,13 +529,16 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   }
 
   /// Whether the tool use needs to be approved by the user.
+  /// Note: We use `toolReferenceId` (the internal tool identifier) for permission tracking,
+  /// rather than the external `toolId`, to ensure that approval preferences are consistent
+  /// across different representations of the same tool.
   private func needsApproval(for toolUse: any ToolUse) -> Bool {
-    !shouldAlwaysApprove(toolName: toolUse.toolName)
+    !shouldAlwaysApprove(toolReferenceId: toolUse.toolReferenceId)
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {
     // Check if user has already approved this tool type
-    if shouldAlwaysApprove(toolName: toolUse.toolName) {
+    if shouldAlwaysApprove(toolReferenceId: toolUse.toolReferenceId) {
       return // Skip approval for this tool
     }
 
@@ -552,7 +555,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       break // Continue execution
     case .alwaysApprove:
       // Store preference and continue
-      storeAlwaysApprovePreference(for: toolUse.toolName)
+      storeAlwaysApprovePreference(for: toolUse.toolReferenceId)
 
     case .cancelled:
       throw CancellationError()
@@ -598,14 +601,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     }
   }
 
-  private func storeAlwaysApprovePreference(for toolName: String) {
+  private func storeAlwaysApprovePreference(for toolReferenceId: String) {
     var currentSettings = settingsService.values()
-    currentSettings.setToolPreference(toolName: toolName, alwaysApprove: true)
+    currentSettings.setToolPreference(toolReferenceId: toolReferenceId, alwaysApprove: true)
     settingsService.update(to: currentSettings)
   }
 
-  private func shouldAlwaysApprove(toolName: String) -> Bool {
-    settingsService.values().shouldAlwaysApprove(toolName: toolName)
+  private func shouldAlwaysApprove(toolReferenceId: String) -> Bool {
+    settingsService.values().shouldAlwaysApprove(toolReferenceId: toolReferenceId)
   }
 
   private func updateProjectInfo() -> SelectedProjectInfo? {

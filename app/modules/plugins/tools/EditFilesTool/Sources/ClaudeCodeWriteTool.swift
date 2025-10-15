@@ -113,6 +113,9 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_write"
+  public let referenceId = "edit_file"
+
   public let name = "claude_code_Write"
 
   public let description = """

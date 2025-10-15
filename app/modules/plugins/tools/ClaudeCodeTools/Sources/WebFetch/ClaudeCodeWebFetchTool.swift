@@ -68,6 +68,9 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_web_fetch"
+  public let referenceId = "web_fetch"
+
   public let name = "claude_code_WebFetch"
 
   public let description = """

@@ -27,7 +27,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_TodoWrite",
+        "callingTool": "claude_code_todo_write",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -74,7 +74,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_TodoWrite",
+        "callingTool": "claude_code_todo_write",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -117,7 +117,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_TodoWrite",
+        "callingTool": "claude_code_todo_write",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -151,7 +151,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_TodoWrite",
+        "callingTool": "claude_code_todo_write",
         "context": {
           "threadId": "mock-thread-id"
         },

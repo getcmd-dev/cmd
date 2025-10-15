@@ -131,6 +131,9 @@ public final class ClaudeCodeReadTool: ExternalTool {
 
   }
 
+  public let id = "claude_code_read"
+  public let referenceId = "read_file"
+
   public let name = "claude_code_Read"
 
   public let description = """

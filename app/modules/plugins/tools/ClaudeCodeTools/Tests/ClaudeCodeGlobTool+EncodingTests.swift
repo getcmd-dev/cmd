@@ -23,7 +23,7 @@ struct ClaudeCodeGlobToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_Glob",
+        "callingTool": "claude_code_glob",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -50,7 +50,7 @@ struct ClaudeCodeGlobToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_Glob",
+        "callingTool": "claude_code_glob",
         "context": {
           "threadId": "mock-thread-id"
         },
@@ -78,7 +78,7 @@ struct ClaudeCodeGlobToolEncodingTests {
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "claude_code_Glob",
+        "callingTool": "claude_code_glob",
         "context": {
           "threadId": "mock-thread-id"
         },

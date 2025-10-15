@@ -89,20 +89,22 @@ extension KeyedDecodingContainer {
   }
 
   public func decodeAnyTool(forKey key: K) throws -> any Tool {
-    let toolName = try decode(String.self, forKey: key)
+    let toolId = try decode(String.self, forKey: key)
     guard let toolsPlugin = try superDecoder().userInfo[toolsPluginKey] as? ToolsPlugin else {
       throw DecodingError.dataCorruptedError(
         forKey: key,
         in: self,
         debugDescription: "The tools plugin was not set in the decoder. Make sure to call `decoder.userInfo.set(toolPlugin:)` before decoding tools.")
     }
-    return toolsPlugin.tool(named: toolName) ?? UnknownTool(name: toolName)
+    // TODO: remove fallback after 11/15/25
+    // toolsPlugin.tool(named: toolName) is used as a fallback to decode tools encoding with the previous format.
+    return toolsPlugin.tool(byId: toolId) ?? toolsPlugin.tool(named: toolId) ?? UnknownTool(name: toolId)
   }
 }
 
 extension KeyedEncodingContainer {
   public mutating func encode(_ tool: some Tool, forKey key: K) throws {
-    try encode(tool.name, forKey: key)
+    try encode(tool.id, forKey: key)
   }
 }
 
