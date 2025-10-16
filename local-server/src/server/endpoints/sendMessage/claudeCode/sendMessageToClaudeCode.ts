@@ -212,55 +212,60 @@ const createClaudeCodeEventStream = async (
 
 	// writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
 	registerMCPServerEndpoints(router, mcpEndpoint, async (toolName, input) => {
-		logInfo(
-			`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
-		)
-
-		if (!toolName || typeof toolName !== "string") {
-			throw new Error("Invalid tool name provided")
-		}
-
-		const newToolName = `${TOOL_NAME_PREFIX}${toolName}`
-		const threadRequests = toolUseRequests.get(threadId)
-
-		if (!threadRequests || threadRequests.length === 0) {
-			throw new Error(`No tool use requests found for thread ${threadId}`)
-		}
-
-		const inputHash = createInputHash(input)
-
-		// First, try to find an exact match by tool name and input hash
-		let matchingToolCall = threadRequests
-			.filter((toolCall) => toolCall.toolName === newToolName && toolCall.inputHash === inputHash)
-			.sort((a, b) => b.timestamp - a.timestamp)[0]
-
-		// If no exact match found, fall back to tool name only and log warning
-		if (!matchingToolCall) {
+		try {
 			logInfo(
-				`No exact input match found for ${newToolName} with input ${JSON.stringify(input)} hash:${inputHash}, falling back to name-only matching`,
+				`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
 			)
-			matchingToolCall = threadRequests
-				.filter((toolCall) => toolCall.toolName === newToolName)
+
+			if (!toolName || typeof toolName !== "string") {
+				throw new Error("Invalid tool name provided")
+			}
+
+			const newToolName = `${TOOL_NAME_PREFIX}${toolName}`
+			const threadRequests = toolUseRequests.get(threadId)
+
+			if (!threadRequests || threadRequests.length === 0) {
+				throw new Error(`No tool use requests found for thread ${threadId}`)
+			}
+
+			const inputHash = createInputHash(input)
+
+			// First, try to find an exact match by tool name and input hash
+			let matchingToolCall = threadRequests
+				.filter((toolCall) => toolCall.toolName === newToolName && toolCall.inputHash === inputHash)
 				.sort((a, b) => b.timestamp - a.timestamp)[0]
+
+			// If no exact match found, fall back to tool name only and log warning
+			if (!matchingToolCall) {
+				logInfo(
+					`No exact input match found for ${newToolName} with input ${JSON.stringify(input)} hash:${inputHash}, falling back to name-only matching`,
+				)
+				matchingToolCall = threadRequests
+					.filter((toolCall) => toolCall.toolName === newToolName)
+					.sort((a, b) => b.timestamp - a.timestamp)[0]
+			}
+
+			if (!matchingToolCall) {
+				throw new Error(`No existing matching tool call found for ${newToolName} in thread ${threadId}`)
+			}
+
+			eventStream.yield({
+				type: "tool_use_permission_request",
+				toolName: newToolName,
+				toolUseId: matchingToolCall.toolUseId,
+				input: matchingToolCall.input,
+			} satisfies Omit<ToolUsePermissionRequest, "idx">)
+
+			const response = await new Promise<ApprovalResult>((resolve) => {
+				pendingToolApprovalRequests.set(matchingToolCall.toolUseId, resolve)
+			})
+
+			logInfo(`Got tool approval response for ${newToolName}: ${JSON.stringify(response)}`)
+			return response
+		} catch (err) {
+			logError("Failed to handle MCP tool approval request", err)
+			throw err
 		}
-
-		if (!matchingToolCall) {
-			throw new Error(`No existing matching tool call found for ${newToolName} in thread ${threadId}`)
-		}
-
-		eventStream.yield({
-			type: "tool_use_permission_request",
-			toolName: newToolName,
-			toolUseId: matchingToolCall.toolUseId,
-			input: matchingToolCall.input,
-		} satisfies Omit<ToolUsePermissionRequest, "idx">)
-
-		const response = await new Promise<ApprovalResult>((resolve) => {
-			pendingToolApprovalRequests.set(matchingToolCall.toolUseId, resolve)
-		})
-
-		logInfo(`Got tool approval response for ${newToolName}: ${JSON.stringify(response)}`)
-		return response
 	})
 
 	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)

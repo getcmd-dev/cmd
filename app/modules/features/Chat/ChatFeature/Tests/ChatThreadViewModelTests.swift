@@ -5,6 +5,7 @@ import AccessibilityFoundation
 import AppEventServiceInterface
 import ChatFoundation
 import ChatHistoryServiceInterface
+import ChatServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -632,6 +633,55 @@ struct ChatThreadViewModelTests {
         "Second message",
       ],
     ])
+  }
+
+  // MARK: - ChatService Retention Integration Tests
+
+  @MainActor
+  @Test("view model is retained via ChatService during streaming to prevent deallocation")
+  func viewModelIsRetainedDuringStreaming() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    @Dependency(\.chatService) var chatService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+
+    let streamingStarted = expectation(description: "Streaming started")
+    let streamingCanComplete = expectation(description: "Streaming can complete")
+
+    let viewModelId = UUID()
+    nonisolated(unsafe) weak var weakViewModel: ChatThreadViewModel?
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+
+      handleUpdateStream(updateStream)
+      streamingStarted.fulfill()
+
+      try await fulfillment(of: streamingCanComplete)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: nil)
+    }
+
+    // when
+    let viewModel = Atomic<ChatThreadViewModel?>(ChatThreadViewModel(id: viewModelId))
+    weakViewModel = viewModel.value
+    viewModel.value?.input.textInput = TextInput([.text("Test message")])
+
+    async let sendTask: Void? = viewModel.value?.sendMessage()
+    try await fulfillment(of: streamingStarted)
+    viewModel.set(to: nil)
+
+    // Verify the view model is retained while streaming even if we drop our strong reference
+    #expect(weakViewModel != nil)
+
+    // Allow streaming to complete
+    streamingCanComplete.fulfill()
+
+    await sendTask
+    // TODO: test for de-allocation here
   }
 
 }

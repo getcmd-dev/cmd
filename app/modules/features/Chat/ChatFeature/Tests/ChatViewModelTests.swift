@@ -875,6 +875,296 @@ struct ChatViewModelTests {
     #expect(mockUserDefaults.string(forKey: "lastOpenChatThreadId") == newTab.id.uuidString)
     #expect(mockUserDefaults.string(forKey: "wrongKey") == nil)
   }
+
+  // MARK: - ChatService Buffering Tests
+
+  @MainActor
+  @Test("tab didSet automatically buffers the new tab")
+  func tabDidSetAutomaticallyBuffers() {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let sut = ChatViewModel()
+    let originalTab = sut.tab
+
+    // when - Create and set a new tab
+    let newTab = ChatThreadViewModel()
+    sut.tab = newTab
+
+    // then - The new tab should be buffered in ChatService
+    let retrieved: ChatThreadViewModel? = chatService.knownObject(for: newTab.id)
+    #expect(retrieved === newTab)
+
+    // The original tab should also have been buffered during init
+    let retrievedOriginal: ChatThreadViewModel? = chatService.knownObject(for: originalTab.id)
+    #expect(retrievedOriginal === originalTab)
+  }
+
+  @MainActor
+  @Test("addTab with existing threadId reuses instance from ChatService")
+  func addTabReusesExistingInstance() {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let sut = ChatViewModel()
+    let originalTab = sut.tab
+    let originalId = originalTab.id
+
+    // Switch to a new tab
+    sut.addTab()
+    #expect(sut.tab.id != originalId)
+
+    // when - Add tab with the original thread ID
+    sut.addTab(threadId: originalId)
+
+    // then - Should reuse the original instance
+    #expect(sut.tab === originalTab)
+  }
+
+  @MainActor
+  @Test("addTab with new threadId creates new instance and buffers it")
+  func addTabWithNewThreadIdCreatesAndBuffers() {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let sut = ChatViewModel()
+    let newThreadId = UUID()
+
+    // when - Add tab with a new thread ID
+    sut.addTab(threadId: newThreadId)
+
+    // then - Should create a new instance
+    #expect(sut.tab.id == newThreadId)
+
+    // And it should be buffered
+    let retrieved: ChatThreadViewModel? = chatService.knownObject(for: newThreadId)
+    #expect(retrieved === sut.tab)
+  }
+
+  @MainActor
+  @Test("selectChatThread reuses existing instance from ChatService")
+  func selectChatThreadReusesExistingInstance() async throws {
+    // given
+    let threadId = UUID()
+    let testThread = ChatThreadModel(
+      id: threadId,
+      name: "Test Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
+
+    let sut = withDependencies {
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    // Load the thread for the first time
+    sut.handleSelectChatThread(id: threadId)
+    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+    let firstInstance = sut.tab
+    #expect(firstInstance.id == threadId)
+
+    // Switch to a different thread
+    sut.addTab()
+    #expect(sut.tab.id != threadId)
+
+    // when - Switch back to the original thread
+    sut.handleSelectChatThread(id: threadId)
+    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+    // then - Should get the same instance
+    let secondInstance = sut.tab
+    #expect(secondInstance.id == threadId)
+    #expect(firstInstance === secondInstance, "Should reuse the same ChatThreadViewModel instance")
+  }
+
+  @MainActor
+  @Test("ChatViewModel init buffers the initial tab")
+  func chatViewModelInitBuffersInitialTab() {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    // when
+    let sut = ChatViewModel()
+
+    // then - The initial tab should be buffered
+    let retrieved: ChatThreadViewModel? = chatService.knownObject(for: sut.tab.id)
+    #expect(retrieved === sut.tab)
+  }
+
+  @MainActor
+  @Test("loadPersistedChatThreads reuses existing instance from ChatService")
+  func loadPersistedChatThreadsReusesExistingInstance() async throws {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let threadId = UUID()
+    let testThread = ChatThreadModel(
+      id: threadId,
+      name: "Persisted Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockUserDefaults = MockUserDefaults()
+    mockUserDefaults.set(threadId.uuidString, forKey: "lastOpenChatThreadId")
+
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
+
+    let sut = withDependencies {
+      $0.chatHistoryService = mockChatHistoryService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      ChatViewModel()
+    }
+
+    // when - Load persisted threads, which creates a new instance
+    await sut.loadPersistedChatThreads()
+
+    let firstInstance = sut.tab
+    #expect(firstInstance.id == threadId)
+
+    // Verify it's buffered
+    let buffered: ChatThreadViewModel? = chatService.knownObject(for: threadId)
+    #expect(buffered === firstInstance)
+
+    // Switch away and back
+    sut.addTab()
+    sut.handleSelectChatThread(id: threadId)
+    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+    // then - Should reuse the buffered instance
+    let secondInstance = sut.tab
+    #expect(firstInstance === secondInstance, "Should reuse the buffered ChatThreadViewModel instance")
+  }
+
+  @MainActor
+  @Test("selectChatThread creates new instance when not in ChatService and buffers it")
+  func selectChatThreadCreatesNewInstanceAndBuffers() async throws {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let threadId = UUID()
+    let testThread = ChatThreadModel(
+      id: threadId,
+      name: "New Thread",
+      messages: [],
+      events: [],
+      projectInfo: nil,
+      createdAt: Date())
+
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
+
+    let sut = withDependencies {
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+
+    // when - Load a thread that's not in the ChatService
+    sut.handleSelectChatThread(id: threadId)
+    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+    // then - Should create a new instance and load from database
+    #expect(sut.tab.id == threadId)
+    #expect(sut.tab.name == "New Thread")
+
+    // And it should be buffered automatically
+    let buffered: ChatThreadViewModel? = chatService.knownObject(for: threadId)
+    #expect(buffered === sut.tab)
+  }
+
+  @MainActor
+  @Test("switching tabs multiple times maintains buffered instances")
+  func switchingTabsMaintainsBufferedInstances() async throws {
+    // given
+    @Dependency(\.chatService) var chatService
+
+    let thread1Id = UUID()
+    let thread2Id = UUID()
+    let thread3Id = UUID()
+
+    let testThread1 = ChatThreadModel(
+      id: thread1Id, name: "Thread 1", messages: [], events: [], projectInfo: nil, createdAt: Date())
+    let testThread2 = ChatThreadModel(
+      id: thread2Id, name: "Thread 2", messages: [], events: [], projectInfo: nil, createdAt: Date())
+    let testThread3 = ChatThreadModel(
+      id: thread3Id, name: "Thread 3", messages: [], events: [], projectInfo: nil, createdAt: Date())
+
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread1, testThread2, testThread3])
+    let sut = withDependencies {
+      $0.chatHistoryService = mockChatHistoryService
+    } operation: {
+      ChatViewModel()
+    }
+    let tab1Set = expectation(description: "First tab set")
+    let tab2Set = expectation(description: "Second tab set")
+    let tab3Set = expectation(description: "Third tab set")
+    let tab1SetAgain = expectation(description: "First tab set again")
+
+    var instance1: ChatThreadViewModel!
+    var instance2: ChatThreadViewModel!
+    var instance3: ChatThreadViewModel!
+
+    let cancellable = sut.observeChanges(to: \.tab) { newTab in
+      MainActor.assumeIsolated {
+        switch newTab.id {
+        case thread1Id:
+          instance1 = newTab
+          if !tab1Set.isFulfilled {
+            tab1Set.fulfill()
+          } else {
+            tab1SetAgain.fulfillAtMostOnce()
+          }
+
+        case thread2Id:
+          instance2 = newTab
+          tab2Set.fulfillAtMostOnce()
+
+        case thread3Id:
+          instance3 = newTab
+          tab3Set.fulfillAtMostOnce()
+
+        default:
+          break
+        }
+      }
+    }
+
+    // when - Load multiple threads
+    sut.handleSelectChatThread(id: thread1Id)
+    try await fulfillment(of: tab1Set)
+
+    sut.handleSelectChatThread(id: thread2Id)
+    try await fulfillment(of: tab2Set)
+
+    sut.handleSelectChatThread(id: thread3Id)
+    try await fulfillment(of: tab3Set)
+
+    // Switch back to thread1
+    sut.handleSelectChatThread(id: thread1Id)
+    try await fulfillment(of: tab1SetAgain)
+    // then - All instances should be reused
+    #expect(sut.tab === instance1)
+
+    // Verify all are still buffered
+    let buffered1: ChatThreadViewModel? = chatService.knownObject(for: thread1Id)
+    let buffered2: ChatThreadViewModel? = chatService.knownObject(for: thread2Id)
+    let buffered3: ChatThreadViewModel? = chatService.knownObject(for: thread3Id)
+
+    print("")
+
+    #expect(buffered1 === instance1)
+    #expect(buffered2 === instance2)
+    #expect(buffered3 === instance3)
+    _ = cancellable
+  }
 }
 
 extension Schema.MessageContent {

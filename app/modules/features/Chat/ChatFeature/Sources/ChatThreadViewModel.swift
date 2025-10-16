@@ -5,6 +5,7 @@ import AppEventServiceInterface
 import AppFoundation
 import ChatFoundation
 import ChatHistoryServiceInterface
+import ChatServiceInterface
 import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation
@@ -25,13 +26,10 @@ import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
 
-// TODO: look at possible retention issue of `ChatThreadViewModel`
-// while making sure it is not release while streaming.
-
 // MARK: - ChatThreadViewModel
 
 @MainActor @Observable
-final class ChatThreadViewModel: Identifiable, Equatable {
+final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   #if DEBUG
   convenience init(name: String? = nil, messages: [ChatMessageViewModel] = []) {
@@ -64,6 +62,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.fileManager) var fileManager
     @Dependency(\.checkpointService) var checkpointService
+    @Dependency(\.chatService) var chatService
 
     self.toolsPlugin = toolsPlugin
     self.settingsService = settingsService
@@ -71,6 +70,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.xcodeObserver = xcodeObserver
     self.fileManager = fileManager
     self.checkpointService = checkpointService
+    self.chatService = chatService
     self.id = id
     self.name = name
     self.messages = messages
@@ -140,6 +140,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
         }
       }
     }
+    // Release the strong reference and buffer for reuse when cancelling
+    chatService.stopKeepingAlive(self, for: id)
   }
 
   func handleToggleChatHistory() {
@@ -172,6 +174,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       defaultLogger.info("Cancelling current chat streaming task")
       streamingTask.task.cancel()
       self.streamingTask = nil
+      chatService.stopKeepingAlive(self, for: id)
     }
 
     // Cancel any pending tool approvals from previous messages
@@ -305,11 +308,17 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
       streamingTask = (task: task, id: taskId)
 
+      // Retain self while streaming to prevent deallocation when switching tabs
+      chatService.keepAlive(self, for: id)
+
       try await task.value
       streamingTask = nil
 
       // Save the conversation after successful completion
       await persistThread()
+
+      // Release the strong reference and buffer for reuse after streaming and persistence are complete
+      chatService.stopKeepingAlive(self, for: id)
 
       if let usageInfo = usageInfo.value {
         do {
@@ -337,6 +346,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
       // Save even after error to preserve the failure state
       await persistThread()
+
+      // Release the strong reference and buffer for reuse after error handling and persistence are complete
+      chatService.stopKeepingAlive(self, for: id)
     }
   }
 
@@ -379,6 +391,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   // MARK: - Persistence Methods
 
   private let chatHistoryService: ChatHistoryService
+  private let chatService: ChatService
 
   // MARK: - Change Tracking
 

@@ -47,12 +47,13 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
     self.internalStream = internalStream
 
     var iterator = internalStream.makeAsyncIterator()
+    let streamAddress = Unmanaged.passUnretained(internalStream as AnyObject).toOpaque().debugDescription
     Task { [weak self] in
       while let element = await iterator.next() {
         if self == nil {
           os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
             .warning(
-              "The BroadcastedStream received an event after being deallocated. It will not be forwarded to its subscribers.")
+              "The BroadcastedStream received an event after being deallocated. It will not be forwarded to its subscribers. Received element \(type(of: element), privacy: .public) \(String(describing: element), privacy: .public). Stream: \(streamAddress, privacy: .public)")
         }
         self?.broadcast(element)
       }
