@@ -7,6 +7,7 @@ import ChatAppEvents
 import ChatCompletionServiceInterface
 import ChatFoundation
 import ChatHistoryServiceInterface
+import ChatServiceInterface
 import Combine
 import Dependencies
 import Foundation
@@ -50,14 +51,18 @@ public class ChatViewModel {
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.fileManager) var fileManager
     @Dependency(\.chatHistoryService) var chatHistoryService
+    @Dependency(\.chatService) var chatService
     @Dependency(\.userDefaults) var userDefaults
     @Dependency(\.llmService) var llmService
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.xcodeObserver = xcodeObserver
     self.fileManager = fileManager
     self.chatHistoryService = chatHistoryService
+    self.chatService = chatService
     self.userDefaults = userDefaults
     self.llmService = llmService
+
+    chatService.buffer(tab, for: tab.id)
 
     registerAsAppEventHandler()
 
@@ -81,6 +86,7 @@ public class ChatViewModel {
   private(set) var showChatHistory = false
 
   let chatHistoryService: ChatHistoryService
+  let chatService: ChatService
   let userDefaults: UserDefaultsI
   let llmService: LLMService
 
@@ -88,6 +94,7 @@ public class ChatViewModel {
 
   var tab: ChatThreadViewModel {
     didSet {
+      chatService.buffer(tab, for: tab.id)
       saveLastOpenThreadId(tab.id)
     }
   }
@@ -109,7 +116,7 @@ public class ChatViewModel {
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
   func addTab(copyingCurrentInput: Bool = false, threadId: UUID? = nil) {
-    let newTab = ChatThreadViewModel(id: threadId)
+    let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     let currentTab = tab
     tab = newTab
     if copyingCurrentInput {
@@ -128,7 +135,7 @@ public class ChatViewModel {
           let threadId = UUID(uuidString: id),
           let thread = try await chatHistoryService.loadChatThread(id: threadId)
         {
-          tab = ChatThreadViewModel(from: thread)
+          tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
           return
         }
         userDefaults.removeObject(forKey: Constants.lastOpenChatThreadIdKey)
@@ -139,7 +146,7 @@ public class ChatViewModel {
       else {
         return
       }
-      tab = ChatThreadViewModel(from: thread)
+      tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
     } catch {
       defaultLogger.error("Failed to load chat tabs from database", error)
     }
@@ -167,7 +174,7 @@ public class ChatViewModel {
         return
       }
 
-      tab = ChatThreadViewModel(from: thread)
+      tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
       showChatHistory = false
     } catch {
       showChatHistory = false

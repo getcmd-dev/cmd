@@ -79,6 +79,12 @@ extension ChatCompletionServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }
 }
 
+// MARK: - ChatServiceDependencyKey + DependencyKey
+
+extension ChatServiceDependencyKey: DependencyKey {
+  public static var liveValue: ChatService { AppScope.shared.chatService }
+}
+
 // MARK: - MCPServiceDependencyKey + DependencyKey
 
 extension MCPServiceDependencyKey: DependencyKey {
@@ -188,6 +194,10 @@ extension AppScope: ChatContextRegistryServiceProviding { }
 // MARK: - AppScope + ChatCompletionServiceProviding
 
 extension AppScope: ChatCompletionServiceProviding { }
+
+// MARK: - AppScope + ChatServiceProviding
+
+extension AppScope: ChatServiceProviding { }
 
 // MARK: - AppScope + MCPServiceProviding
 

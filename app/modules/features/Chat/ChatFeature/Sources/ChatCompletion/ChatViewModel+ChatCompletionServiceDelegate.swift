@@ -56,7 +56,7 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
     if tab.id != threadId {
       // Try to load an existing thread.
       if let thread = try await chatHistoryService.loadChatThread(id: threadId) {
-        tab = ChatThreadViewModel(from: thread)
+        tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
       } else {
         // Create new thread
         addTab(copyingCurrentInput: false, threadId: threadId)
