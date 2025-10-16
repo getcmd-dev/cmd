@@ -7,8 +7,9 @@ import ToolFoundation
 
 extension SettingsService {
   /// Return the list of tools available in the given chat mode.
-  /// This methods reconciles tools configured as available by the user for a given chat mode
-  /// with new tools that might have beed added after the configuration.
+  /// This method reconciles tools configured as available by the user for a given chat mode
+  /// with new tools that might have been added after the configuration.
+  /// - Note: This method may update settings as a side effect if new tools are discovered.
   public func tools(availableIn chatMode: ChatMode, toolsPlugin: ToolsPlugin) -> [any Tool] {
     // check if we have new tools available that didn't exist when the
     // availableTools setting was set.
