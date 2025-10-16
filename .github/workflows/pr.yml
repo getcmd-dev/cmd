@@ -8,7 +8,7 @@ on:
       - '**/*.md'
 concurrency:
   group: integration_tests_${{ github.ref }}
-  cancel_in_progress: ${{ github.ref != 'refs/heads/master' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   detect_changes:
     runs-on: ubuntu-latest
