@@ -175,10 +175,10 @@ jobs:
               const hasCheckRuns = checks.data.check_runs.length > 0;
 
               const allChecksComplete = checks.data.check_runs.every(check =>
-                check.status === 'completed'
+                check.status === 'completed' || check.conclusion === 'skipped'
               );
               const allChecksSuccess = checks.data.check_runs.every(check =>
-                check.conclusion === 'success' || check.conclusion === 'skipped'
+                check.conclusion === 'success' || check.conclusion === 'skipped' || check.conclusion === 'neutral'
               );
 
               console.log(`Status state: ${statusState}, Has statuses: ${hasStatuses}, Has check runs: ${hasCheckRuns}`);
