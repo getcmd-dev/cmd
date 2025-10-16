@@ -153,6 +153,7 @@ actor RequestStreamingHelper: Sendable {
 
   private func process(event: Schema.StreamedResponseChunk) async {
     lastChunkIdx = event.idx ?? lastChunkIdx
+    defaultLogger.trace("Processing event #\(lastChunkIdx): \(event)")
 
     switch event {
     case .ping:
@@ -496,7 +497,7 @@ actor RequestStreamingHelper: Sendable {
 
   private func handle(toolUsePermissionRequest: Schema.ToolUsePermissionRequest) async {
     defaultLogger
-      .log("Received tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId)")
+      .log("Received tool permission request for \(toolUsePermissionRequest.toolName) #\(toolUsePermissionRequest.toolUseId)")
 
     guard
       let toolUse = result.content
@@ -505,12 +506,12 @@ actor RequestStreamingHelper: Sendable {
           toolUseRequest.id == toolUsePermissionRequest.toolUseId
         })?.toolUse as? (any ExternalToolUse)
     else {
-      defaultLogger.error("Could not find tool use matching \(toolUsePermissionRequest.toolUseId)")
+      defaultLogger.error("Could not find tool use matching #\(toolUsePermissionRequest.toolUseId)")
       await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
       return
     }
     guard let context else {
-      defaultLogger.error("No context available to handle tool use.")
+      defaultLogger.error("No context available to handle tool use #\(toolUsePermissionRequest.toolUseId)")
       assertionFailure("No context available to handle tool use.")
       await send(
         permissionResponse: .approvalResultDeny(.init(reason: "Internal error, no context available")),
@@ -525,20 +526,21 @@ actor RequestStreamingHelper: Sendable {
         toolUse.waitForApproval()
         try await context.requestApproval(for: toolUse)
       }
+      defaultLogger.log("Tool use #\(toolUsePermissionRequest.toolUseId) approved")
       permissionApproval = .approvalResultApprove(.init())
     } catch is CancellationError {
-      defaultLogger.error("Tool use is cancelled")
+      defaultLogger.error("Tool use #\(toolUsePermissionRequest.toolUseId) is cancelled")
       permissionApproval = .approvalResultDeny(.init(reason: "Tool use cancelled"))
       toolUse.cancel()
     } catch let error as LLMServiceError {
-      defaultLogger.error("Tool approval is denied: \(error)")
+      defaultLogger.error("Tool approval is denied for #\(toolUsePermissionRequest.toolUseId): \(error)")
       switch error {
       case .toolUsageDenied(let reason):
         permissionApproval = .approvalResultDeny(.init(reason: reason))
         toolUse.reject(reason: reason)
       }
     } catch {
-      defaultLogger.error("Tool approval had unexpected error type: \(error)")
+      defaultLogger.error("Tool approval for #\(toolUsePermissionRequest.toolUseId) had unexpected error type: \(error)")
       // Reject the tool use instead of replacing it
       permissionApproval = .approvalResultDeny(.init(reason: error.localizedDescription))
       toolUse.reject(reason: error.localizedDescription)

@@ -412,6 +412,7 @@ targets.append(
       "RoutingFoundation",
       "SettingsFeatureInterface",
       "SettingsServiceInterface",
+      "SettingsServiceToolsAdapter",
       "SharedValuesFoundation",
       "ShellServiceInterface",
       "ThreadSafe",
@@ -655,6 +656,7 @@ targets.append(
     ],
     resources: [
       .process("Resources/cmd-logo.svg"),
+      .process("Resources/mcp.svg"),
     ],
     testsDependencies: [
       "DLS",
@@ -1212,6 +1214,7 @@ targets.append(
       "LLMServiceInterface",
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
+      "MCPService",
       "MCPServiceInterface",
       "PermissionsServiceInterface",
       "RoutingFoundation",
@@ -1245,6 +1248,7 @@ targets.append(
     name: "SettingsService",
     dependencies: [
       "AppFoundation",
+      "ChatFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "FoundationInterfaces",
@@ -1283,6 +1287,27 @@ targets.append(
       "SwiftTesting",
     ],
     path: "./serviceInterfaces/SettingsServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "SettingsServiceToolsAdapter",
+    dependencies: [
+      "ChatFoundation",
+      "SettingsServiceInterface",
+      "ToolFoundation",
+    ],
+    testsDependencies: [
+      "AppFoundation",
+      "ChatFoundation",
+      "ConcurrencyFoundation",
+      "JSONFoundation",
+      "SettingsServiceInterface",
+      "SettingsServiceToolsAdapter",
+      "SharedValuesFoundation",
+      "SwiftTesting",
+      "ToolFoundation",
+    ],
+    path: "./serviceAdapters/SettingsServiceToolsAdapter"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1376,10 +1401,10 @@ targets.append(
     ],
     testsDependencies: [
       "AppFoundation",
+      "ChatFoundation",
       "ConcurrencyFoundation",
       "JSONFoundation",
       "SwiftTesting",
-      "ThreadSafe",
       "ToolFoundation",
     ],
     path: "./foundations/ToolFoundation"))

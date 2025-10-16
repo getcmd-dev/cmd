@@ -9,6 +9,7 @@ import LocalServerServiceInterface
 import SnapshotTesting
 import SwiftTesting
 import Testing
+import ToolFoundation
 
 @testable import LLMService
 
@@ -247,7 +248,7 @@ final class SendOneMessageTests {
     }
     let updatingMessage = try await sut.sendOneMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestTool<TestToolInput, EmptyObject>(name: "read_file", output: EmptyObject())])
+      tools: [GenericTestTool<TestToolInput, EmptyObject>(name: "read_file", output: EmptyObject())])
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
@@ -301,7 +302,7 @@ final class SendOneMessageTests {
     }
     let updatingMessage = try await sut.sendOneMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestTool<TestToolInput, EmptyObject>(name: "read_file", output: EmptyObject())])
+      tools: [GenericTestTool<TestToolInput, EmptyObject>(name: "read_file", output: EmptyObject())])
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 

@@ -415,13 +415,9 @@ public final class EditFilesTool: Tool {
     }
   }
 
-  public func isAvailable(in mode: ChatMode) -> Bool {
-    switch mode {
-    case .agent:
-      shouldAutoApply
-    case .ask:
-      !shouldAutoApply
-    }
+  public func isAvailableByDefault(in mode: ChatMode) -> Bool {
+    // Edit tools are only available in agent mode by default
+    mode == .agent
   }
 
   private let shouldAutoApply: Bool

@@ -337,6 +337,7 @@ struct DefaultSettingsServiceTests {
     internalData.expectToMatch("""
       {
         "defaultLogLevel" : "info",
+        "knownToolReferenceIds" : [],
         "pointReleaseXcodeExtensionToDebugApp" : false
       }
       """)

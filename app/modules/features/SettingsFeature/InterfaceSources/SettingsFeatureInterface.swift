@@ -27,3 +27,15 @@ public struct AIProviderSettingsRoute: Route {
 
   public init() { }
 }
+
+// MARK: - ChatModeSettingsRoute
+
+public struct ChatModeSettingsRoute: Route {
+  public var id: String { Self.id }
+
+  public static let name = "chat-mode-settings"
+  public static var id: String { name }
+  public var name: String { Self.name }
+
+  public init() { }
+}

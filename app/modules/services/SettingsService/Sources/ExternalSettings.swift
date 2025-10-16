@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatFoundation
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
@@ -8,7 +9,6 @@ import LoggingServiceInterface
 import SettingsServiceInterface
 import System
 
-typealias CustomInstructions = Settings.CustomInstructions
 typealias ToolPreference = Settings.ToolPreference
 typealias KeyboardShortcuts = Settings.KeyboardShortcuts
 
@@ -25,7 +25,7 @@ struct ExternalSettings: Sendable, Equatable {
     llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
     enabledModels: [AIModelID] = [],
     reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
-    customInstructions: CustomInstructions = CustomInstructions(),
+    chatModeConfigurations: [String: Settings.ChatModeConfiguration] = [:],
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
@@ -39,7 +39,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
-    self.customInstructions = customInstructions
+    self.chatModeConfigurations = chatModeConfigurations
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
@@ -59,7 +59,7 @@ struct ExternalSettings: Sendable, Equatable {
   let reasoningModels: [AIModelID: LLMReasoningSetting]
 
   let enabledModels: [AIModelID]
-  let customInstructions: CustomInstructions
+  let chatModeConfigurations: [String: Settings.ChatModeConfiguration]
   let toolPreferences: [ToolPreference]
   let keyboardShortcuts: KeyboardShortcuts
   let userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
@@ -72,17 +72,22 @@ struct ExternalSettings: Sendable, Equatable {
 struct InternalSettings: Sendable, Equatable {
   static let defaultSettings = InternalSettings(
     pointReleaseXcodeExtensionToDebugApp: false,
+    knownToolReferenceIds: [],
     defaultLogLevel: .info)
 
   init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
+    knownToolReferenceIds: [String] = [],
     defaultLogLevel: LogLevel = .info)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
+    self.knownToolReferenceIds = knownToolReferenceIds
     self.defaultLogLevel = defaultLogLevel
   }
 
   var pointReleaseXcodeExtensionToDebugApp: Bool
+  /// Array of known tool reference IDs. This is internal state not exposed to users.
+  var knownToolReferenceIds: [String]
   var defaultLogLevel: LogLevel
 }
 
@@ -122,9 +127,9 @@ extension ExternalSettings: Codable {
       reasoningModels: container
         .resilientlyDecodeIfPresent([AIModelID: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings
         .reasoningModels,
-      customInstructions: container
-        .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Self.defaultSettings
-        .customInstructions,
+      chatModeConfigurations: container
+        .resilientlyDecodeIfPresent([String: Settings.ChatModeConfiguration].self, forKey: "chatModeConfigurations") ?? Self
+        .defaultSettings.chatModeConfigurations,
       toolPreferences: container
         .resilientlyDecodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? Self.defaultSettings
         .toolPreferences,
@@ -167,8 +172,15 @@ extension ExternalSettings: Codable {
     if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
       try container.encode(reasoningModels, forKey: "reasoningModels")
     }
-    if encodeAllValues || customInstructions != Self.defaultSettings.customInstructions {
-      try container.encode(customInstructions, forKey: "customInstructions")
+    // Only encode chat mode configurations that differ from defaults
+    if encodeAllValues || chatModeConfigurations != Self.defaultSettings.chatModeConfigurations {
+      let nonDefaultConfigs = chatModeConfigurations.filter { $1 != Settings.ChatModeConfiguration.defaultValue }
+      // Only encode if there are non-default configs OR if we're encoding all values AND configs exist
+      if !nonDefaultConfigs.isEmpty {
+        try container.encode(nonDefaultConfigs, forKey: "chatModeConfigurations")
+      } else if encodeAllValues, !chatModeConfigurations.isEmpty {
+        try container.encode(chatModeConfigurations, forKey: "chatModeConfigurations")
+      }
     }
     if encodeAllValues || toolPreferences != Self.defaultSettings.toolPreferences {
       try container.encode(toolPreferences, forKey: "toolPreferences")
@@ -194,6 +206,9 @@ extension InternalSettings: Codable {
       pointReleaseXcodeExtensionToDebugApp: container.resilientlyDecodeIfPresent(
         Bool.self,
         forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
+      knownToolReferenceIds: container.resilientlyDecodeIfPresent(
+        [String].self,
+        forKey: "knownToolReferenceIds") ?? Self.defaultSettings.knownToolReferenceIds,
       defaultLogLevel: container.resilientlyDecodeIfPresent(
         LogLevel.self,
         forKey: "defaultLogLevel") ?? Self.defaultSettings.defaultLogLevel)
@@ -202,6 +217,7 @@ extension InternalSettings: Codable {
   func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
+    try container.encode(knownToolReferenceIds, forKey: "knownToolReferenceIds")
     try container.encode(defaultLogLevel, forKey: "defaultLogLevel")
   }
 }
@@ -265,7 +281,7 @@ extension Settings {
       llmProviderSettings: externalSettings.llmProviderSettings,
       enabledModels: externalSettings.enabledModels,
       reasoningModels: externalSettings.reasoningModels,
-      customInstructions: externalSettings.customInstructions,
+      chatModeConfigurations: externalSettings.chatModeConfigurations,
       toolPreferences: externalSettings.toolPreferences,
       keyboardShortcuts: externalSettings.keyboardShortcuts,
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
@@ -283,16 +299,17 @@ extension Settings {
       llmProviderSettings: llmProviderSettings,
       enabledModels: enabledModels,
       reasoningModels: reasoningModels,
-      customInstructions: customInstructions,
+      chatModeConfigurations: chatModeConfigurations,
       toolPreferences: toolPreferences,
       keyboardShortcuts: keyboardShortcuts,
       userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
       mcpServers: mcpServers)
   }
 
-  var internalSettings: InternalSettings {
+  func internalSettings() -> InternalSettings {
     .init(
       pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
+      knownToolReferenceIds: knownToolReferenceIds,
       defaultLogLevel: defaultLogLevel)
   }
 }
@@ -300,4 +317,8 @@ extension Settings {
 extension CodingUserInfoKey {
   /// Whether to encode values for all keys, or only for those that have a non default value.
   static let doNotEncodeDefaultValues = CodingUserInfoKey(rawValue: "doNotEncodeDefaultValues")!
+}
+
+extension Settings.ChatModeConfiguration {
+  static var defaultValue: Settings.ChatModeConfiguration { .init() }
 }

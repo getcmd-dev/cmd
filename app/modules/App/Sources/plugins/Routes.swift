@@ -8,5 +8,6 @@ extension RoutesRegistry {
   func registerRoutes() {
     register(routeBuilder: SettingsBuilder())
     register(routeBuilder: AIProviderSettingsBuilder())
+    register(routeBuilder: ChatModeSettingsBuilder())
   }
 }

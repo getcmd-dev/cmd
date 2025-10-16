@@ -156,8 +156,9 @@ public final class ClaudeCodeWriteTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
+  public func isAvailableByDefault(in mode: ChatMode) -> Bool {
+    // Only available in agent mode by default
+    mode == .agent
   }
 
 }

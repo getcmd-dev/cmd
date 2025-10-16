@@ -13,6 +13,7 @@ Target.module(
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "MCPService",
     "MCPServiceInterface",
     "PermissionsServiceInterface",
     "RoutingFoundation",

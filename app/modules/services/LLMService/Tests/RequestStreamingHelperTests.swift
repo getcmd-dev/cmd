@@ -372,7 +372,7 @@ struct RequestStreamingHelperBadInputTests {
 
   @Test("Handle non-streamable tool with bad input creates FailedToolUse")
   func testBadInputCreatesFailedToolUseForNonStreamableTools() async throws {
-    let mockTool = TestTool<TestToolInput, String>(name: "test_non_streamable", output: "success")
+    let mockTool = GenericTestTool<TestToolInput, String>(name: "test_non_streamable", output: "success")
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 

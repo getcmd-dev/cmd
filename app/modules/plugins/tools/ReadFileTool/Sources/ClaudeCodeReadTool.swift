@@ -171,10 +171,6 @@ public final class ClaudeCodeReadTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 // MARK: - ClaudeCodeReadTool.Use + DisplayableToolUse

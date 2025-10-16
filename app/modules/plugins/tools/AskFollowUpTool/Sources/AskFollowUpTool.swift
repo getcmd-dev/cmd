@@ -120,9 +120,6 @@ public final class AskFollowUpTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
 }
 
 // MARK: - ToolUseViewModel

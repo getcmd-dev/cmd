@@ -19,6 +19,7 @@ import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
 import SettingsServiceInterface
+import SettingsServiceToolsAdapter
 import SharedValuesFoundation
 import ThreadSafe
 import ToolFoundation
@@ -225,7 +226,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     let indexOfLastEventFromThisMessage = Atomic(events.count - 1)
     let taskId = UUID()
     do {
-      let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
+      // Get the configured tools for this chat mode
+      let tools = settingsService.tools(availableIn: input.mode, toolsPlugin: toolsPlugin)
       let usageInfo = Atomic<LLMUsageInfo?>(nil)
 
       let startTime = Date()

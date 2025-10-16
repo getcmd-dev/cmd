@@ -27,6 +27,7 @@
             "pages": [
               "pages/ai-providers",
               "pages/models",
+              "pages/chat-modes",
               "pages/claude-code",
               "pages/mcp-servers",
               "pages/xcode-shortcuts"

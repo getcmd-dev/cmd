@@ -150,10 +150,6 @@ public final class SearchFilesTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 extension SearchFilesTool.Use.Output {

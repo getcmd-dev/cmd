@@ -82,6 +82,8 @@ public final class SettingsViewModel {
 
   private(set) var settings: SettingsServiceInterface.Settings
 
+  let toolsPlugin: ToolsPlugin
+
   var allowAnonymousAnalytics: Bool {
     get {
       settings.allowAnonymousAnalytics
@@ -186,13 +188,13 @@ public final class SettingsViewModel {
     }
   }
 
-  var customInstructions: SettingsServiceInterface.Settings.CustomInstructions {
+  var chatModeConfigurations: [String: SettingsServiceInterface.Settings.ChatModeConfiguration] {
     get {
-      settings.customInstructions
+      settings.chatModeConfigurations
     }
     set {
-      settings.customInstructions = newValue
-      settingsService.update(setting: \.customInstructions, to: newValue)
+      settings.chatModeConfigurations = newValue
+      settingsService.update(setting: \.chatModeConfigurations, to: newValue)
     }
   }
 
@@ -241,6 +243,5 @@ public final class SettingsViewModel {
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
-  private let toolsPlugin: ToolsPlugin
   private let xcodeController: XcodeController
 }

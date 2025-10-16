@@ -2,6 +2,7 @@ Target.module(
   name: "SettingsService",
   dependencies: [
     "AppFoundation",
+    "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",

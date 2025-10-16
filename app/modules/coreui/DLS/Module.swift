@@ -7,6 +7,7 @@ Target.module(
   ],
   resources: [
     .process("Resources/cmd-logo.svg"),
+    .process("Resources/mcp.svg"),
   ],
   testsDependencies: [
     "DLS",

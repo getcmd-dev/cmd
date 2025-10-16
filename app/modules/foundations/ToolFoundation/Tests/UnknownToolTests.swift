@@ -13,12 +13,15 @@ struct UnknownToolTests {
   @Test
   func test_originalToolCanBeDecodedAsUnknownTool() throws {
     // Given - Create a tool use with an MCP tool
-    let tool = TestTool()
-    let originalToolUse = tool.use(
+    let tool = TestTool(output: .success(.object(["foo": "bar"])))
+    let originalToolUse = TestTool.Use(
+      callingTool: tool,
       toolUseId: "tool-use-id",
-      input: .init(preparedOutput: .success(["foo": "bar"])),
-      isInputComplete: true,
-      context: toolExecutionContext)
+      input: .init(),
+      context: toolExecutionContext,
+      internalState: nil,
+      initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
+    originalToolUse.startExecuting()
 
     // Encode the original tool use
     let data = try JSONEncoder().encode(WrappedToolUse(toolUse: originalToolUse))
@@ -34,22 +37,22 @@ struct UnknownToolTests {
     // Then - Verify the UnknownTool preserves all original data
     #expect(decodedToolUse.toolName == originalToolUse.toolName)
     #expect(decodedToolUse.toolUseId == originalToolUse.toolUseId)
-    #expect(decodedToolUse.input as? JSON.Value == ["preparedOutput": [
-      "type": "success",
-      "value": ["foo": "bar"],
-    ]])
+    let unknownToolUse = try #require(decodedToolUse as? ToolFoundation.UnknownTool.Use)
+    #expect(try unknownToolUse.status.value.asOutput == ["foo": "bar"])
     #expect(decodedToolUse.callingTool is UnknownTool)
   }
 
   @Test
   func test_unknownToolEncodingPreservesOriginalData() throws {
     // Given - Create original tool use and decode it as UnknownTool
-    let tool = TestTool()
-    let originalToolUse = tool.use(
+    let tool = TestTool(output: .success(.object(["foo": .string("bar")])))
+    let originalToolUse = TestTool.Use(
+      callingTool: tool,
       toolUseId: "tool-use-id",
-      input: .init(preparedOutput: .success(["foo": "bar"])),
-      isInputComplete: true,
-      context: toolExecutionContext)
+      input: .init(),
+      context: toolExecutionContext,
+      internalState: nil,
+      initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
 
     let originalData = try JSONEncoder().encode(WrappedToolUse(toolUse: originalToolUse))
 
@@ -73,7 +76,7 @@ struct UnknownToolTests {
     #expect(originalData.jsonString() == reEncodedData.jsonString())
     #expect(finalToolUse.toolName == originalToolUse.toolName)
     #expect(finalToolUse.toolUseId == originalToolUse.toolUseId)
-    #expect(try finalToolUse.input.preparedOutput.get() == ["foo": "bar"])
+    #expect(try finalToolUse.output.get() == .object(["foo": .string("bar")]))
     #expect(type(of: finalToolUse.callingTool) == type(of: originalToolUse.callingTool))
   }
 

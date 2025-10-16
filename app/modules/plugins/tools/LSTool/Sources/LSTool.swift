@@ -147,10 +147,6 @@ public final class LSTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 extension Schema.ListFilesToolOutput {

@@ -12,9 +12,9 @@ Target.module(
   ],
   testsDependencies: [
     "AppFoundation",
+    "ChatFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
     "SwiftTesting",
-    "ThreadSafe",
     "ToolFoundation",
   ])

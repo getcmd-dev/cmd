@@ -224,10 +224,6 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
-  }
-
 }
 
 // MARK: - TodoWriteToolUseViewModel
