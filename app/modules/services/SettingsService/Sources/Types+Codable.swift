@@ -15,7 +15,7 @@ extension Settings.ChatModeConfiguration: Codable {
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(customInstructions, forKey: .customInstructions)
+    try container.encodeIfPresent(customInstructions, forKey: .customInstructions)
     if let availableToolIds {
       // Ensure that we don't have duplicated values before encoding
       try container.encode(Array(Set(availableToolIds)).sorted(), forKey: .availableToolIds)

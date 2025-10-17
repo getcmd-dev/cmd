@@ -41,7 +41,7 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeWebFetchTool())
     plugIn(tool: ClaudeCodeWebSearchTool())
 
-    // MCP tools (server name -> [tool ids])
+    // MCP tools (server id -> [tool ids])
     let mcpServerConnections = Atomic([String: [String]]())
     // Update MCP tools as they change
     return mcpService.servers.sink { [weak self] servers in
@@ -56,16 +56,16 @@ extension ToolsPlugin {
 
       let removedToolIds = mcpServerConnections.mutate { value in
         // Find removed servers
-        let connectedServerNames = Set(connectedServers.map(\.configuration.name))
-        let removedServerNames = Set(value.keys).subtracting(connectedServerNames)
-        var removedTools = removedServerNames.flatMap { serverName -> [String] in
-          return value[serverName] ?? []
+        let connectedServerIds = Set(connectedServers.map(\.configuration.id))
+        let removedServerIds = Set(value.keys).subtracting(connectedServerIds)
+        var removedTools = removedServerIds.flatMap { serverId -> [String] in
+          return value[serverId] ?? []
         }
         // Find tools removed from existing servers
         removedTools += connectedServers.flatMap { server -> [String] in
-          let previousToolNames = Set(value[server.configuration.id] ?? [])
-          let currentToolNames = Set(server.tools.map(\.id))
-          return Array(previousToolNames.subtracting(currentToolNames))
+          let previousToolIds = Set(value[server.configuration.id] ?? [])
+          let currentToolIds = Set(server.tools.map(\.id))
+          return Array(previousToolIds.subtracting(currentToolIds))
         }
         value = connectedServers.reduce(into: [String: [String]]()) { dict, server in
           dict[server.configuration.name] = server.tools.map(\.id)
