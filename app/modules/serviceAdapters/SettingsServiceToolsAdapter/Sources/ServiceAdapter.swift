@@ -23,7 +23,11 @@ extension SettingsService {
         guard let chatMode = ChatMode.allCases.first(where: { $0.id == chatModeId }) else { continue }
         let defaultTools = toolsPlugin.defaultTools(for: chatMode).map(\.referenceId)
         let newToolsAvailableInChatMode = newTools.filter { defaultTools.contains($0) }
-        settings.chatModeConfigurations[chatModeId]?.availableToolIds?.append(contentsOf: newToolsAvailableInChatMode)
+        if var availableToolIds = settings.chatModeConfigurations[chatModeId]?.availableToolIds {
+          availableToolIds.append(contentsOf: newToolsAvailableInChatMode)
+          availableToolIds = Array(Set(availableToolIds)).sorted()
+          settings.chatModeConfigurations[chatModeId]?.availableToolIds = availableToolIds
+        }
       }
       settings.knownToolReferenceIds = (settings.knownToolReferenceIds + Array(newTools)).sorted()
       update(to: settings)

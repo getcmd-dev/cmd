@@ -104,7 +104,7 @@ public struct Settings: Sendable, Equatable {
     }
   }
 
-  public struct ChatModeConfiguration: Sendable, Codable, Equatable {
+  public struct ChatModeConfiguration: Sendable, Equatable {
     public var customInstructions: String?
     /// List of tool reference IDs available in this mode.
     /// When nil, use default tools from toolsPlugin.defaultTools(for:)
@@ -114,11 +114,6 @@ public struct Settings: Sendable, Equatable {
     public init(customInstructions: String? = nil, availableToolIds: [String]? = nil) {
       self.customInstructions = customInstructions
       self.availableToolIds = availableToolIds
-    }
-
-    private enum CodingKeys: String, CodingKey {
-      case customInstructions
-      case availableToolIds = "tools"
     }
   }
 
