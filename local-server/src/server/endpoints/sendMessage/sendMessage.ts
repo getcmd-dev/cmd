@@ -84,7 +84,10 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 						message: "Local executable is required for Claude Code provider.",
 					})
 				}
-				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort(), threadId, router }, res)
+				await sendMessageToClaudeCode(
+					{ messages, localExecutable, port: getPort(), threadId, router, tools },
+					res,
+				)
 				return
 			}
 
@@ -128,8 +131,8 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 				model,
 				abortSignal: abortController.signal,
 				tools: (addProviderOptionsToTools
-					? addProviderOptionsToTools(tools?.map(mapTool))
-					: tools?.map(mapTool)
+					? addProviderOptionsToTools(tools.map(mapTool))
+					: tools.map(mapTool)
 				)?.reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool
