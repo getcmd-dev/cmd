@@ -182,6 +182,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -203,6 +204,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -236,6 +238,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -279,6 +282,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -306,6 +310,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -330,6 +335,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -355,6 +361,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -413,6 +420,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -485,6 +493,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -547,6 +556,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 4567,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -577,6 +587,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 8080,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -601,6 +612,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -683,6 +695,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -743,6 +756,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -818,6 +832,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -878,6 +893,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -925,6 +941,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -1001,6 +1018,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)
@@ -1121,6 +1139,7 @@ describe("sendMessageToClaudeCode", () => {
 					threadId: testThreadId,
 					port: 3000,
 					router,
+					tools: [],
 				},
 				res as unknown as Response,
 			)

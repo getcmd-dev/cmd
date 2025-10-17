@@ -798,7 +798,7 @@ struct SettingsCodableTests {
       chatModeConfigurations: [
         "agent": Settings.ChatModeConfiguration(
           customInstructions: "Agent instructions",
-          availableToolIds: ["search", "glob", "edit"]),
+          availableToolIds: ["edit", "glob", "search"]),
         "ask": Settings.ChatModeConfiguration(
           customInstructions: nil,
           availableToolIds: ["search", "web_search"]),
@@ -812,7 +812,7 @@ struct SettingsCodableTests {
         "chatModeConfigurations" : {
           "agent" : {
             "customInstructions" : "Agent instructions",
-            "tools" : ["search", "glob", "edit"]
+            "tools" : ["edit", "glob", "search"]
           },
           "ask" : {
             "tools" : ["search", "web_search"]
@@ -907,7 +907,7 @@ struct SettingsCodableTests {
           availableToolIds: nil), // Use defaults for agent
         "ask": Settings.ChatModeConfiguration(
           customInstructions: "Ask mode instructions",
-          availableToolIds: ["search", "glob", "web_search"]), // Explicit tools for ask
+          availableToolIds: ["glob", "search", "web_search"]), // Explicit tools for ask
       ],
       toolPreferences: [
         Settings.ToolPreference(toolReferenceId: "edit", alwaysApprove: true),
@@ -921,7 +921,7 @@ struct SettingsCodableTests {
     #expect(decodedSettings == settings)
     #expect(decodedSettings.chatModeConfigurations["agent"]?.customInstructions == "Agent mode instructions")
     #expect(decodedSettings.chatModeConfigurations["agent"]?.availableToolIds == nil)
-    #expect(decodedSettings.chatModeConfigurations["ask"]?.availableToolIds == ["search", "glob", "web_search"])
+    #expect(decodedSettings.chatModeConfigurations["ask"]?.availableToolIds == ["glob", "search", "web_search"])
     #expect(decodedSettings.toolPreferences.count == 2)
   }
 
@@ -938,7 +938,7 @@ struct SettingsCodableTests {
 
     let config3 = Settings.ChatModeConfiguration(
       customInstructions: nil,
-      availableToolIds: ["search", "glob"]) // Explicitly these tools
+      availableToolIds: ["glob", "search"]) // Explicitly these tools
 
     // Verify they are different
     #expect(config1 != config2)
@@ -964,6 +964,6 @@ struct SettingsCodableTests {
     #expect(json2.contains("\"tools\":[]"))
 
     // populated array should have the tools
-    #expect(json3.contains("\"tools\":[\"search\",\"glob\"]"))
+    #expect(json3.contains("\"tools\":[\"glob\",\"search\"]"))
   }
 }

@@ -97,7 +97,7 @@ struct ChatModeConfigurationView: View {
           },
           set: { newToolIds in
             // When user changes selection, save it (this transitions from nil to an explicit array)
-            configuration.availableToolIds = Array(newToolIds)
+            configuration.availableToolIds = Array(Set(newToolIds)).sorted()
           }),
         allTools: toolsPlugin.tools,
         isExpanded: $isToolsExpanded,

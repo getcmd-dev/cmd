@@ -275,7 +275,6 @@ final class DefaultLLMService: LLMService {
       system: system,
       projectRoot: context?.projectRoot?.path,
       tools: tools
-        .filter { !$0.isExternalTool }
         .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: providerModel.id,
       enableReasoning: enableReasoning,

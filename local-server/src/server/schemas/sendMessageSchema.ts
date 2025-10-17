@@ -2,7 +2,7 @@ export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string
 	projectRoot: string | undefined
-	tools?: Tool[]
+	tools: Tool[]
 	model: string
 	enableReasoning: boolean
 	provider: APIProvider

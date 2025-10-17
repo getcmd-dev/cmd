@@ -2,6 +2,7 @@ import { logError, logInfo } from "@/logger"
 import {
 	LocalExecutable,
 	Message,
+	Tool,
 	ToolResultFailureMessage,
 	ToolResultSuccessMessage,
 	ToolUsePermissionRequest,
@@ -59,16 +60,25 @@ export const sendMessageToClaudeCode = async (
 		localExecutable,
 		port,
 		router,
+		tools,
 	}: {
 		messages: Message[]
 		threadId: string
 		localExecutable: LocalExecutable
 		port: number
 		router: Router
+		tools: Tool[]
 	},
 	res: Response,
 ) => {
-	const eventStream = await createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
+	const eventStream = await createClaudeCodeEventStream(res, {
+		messages,
+		localExecutable,
+		port,
+		threadId,
+		router,
+		tools,
+	})
 	await respondUsingResponseStream(wrapStreamWithAbortHandling(mapStream(eventStream, threadId, res)), res)
 	logInfo("done responsing, terminating request")
 	res.end()
@@ -84,12 +94,14 @@ const createClaudeCodeEventStream = async (
 		port,
 		threadId,
 		router,
+		tools,
 	}: {
 		messages: Message[]
 		localExecutable: LocalExecutable
 		port: number
 		threadId: string
 		router: Router
+		tools: Tool[]
 	},
 ): Promise<AsyncStream<ExtendedSDKMessage>> => {
 	// Setup response event listeners first
@@ -277,8 +289,30 @@ const createClaudeCodeEventStream = async (
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
 	const createQuery = (resume: string | undefined) => {
+		// The user might decide that some tools are not available.
+		// We only compare the list of available tools to the list of tools supported by the app.
+		// Other tools supported by Claude Code cannot be enabled/disabled by the app and remain available by default.
+		const availableTools = tools.filter((tool) => tool.name.startsWith(TOOL_NAME_PREFIX)).map((tool) => tool.name)
+		const disallowedTools = [
+			"Glob",
+			"TodoWrite",
+			"WebFetch",
+			"WebSearch",
+			"Edit",
+			"MultiEdit",
+			"Write",
+			"Bash",
+			"LS",
+			"Read",
+			"Grep",
+		].filter((toolName) => !availableTools.includes(`${TOOL_NAME_PREFIX}${toolName}`))
+		if (disallowedTools.length) {
+			logInfo(`disallowedTools: ${disallowedTools}`)
+		}
+
 		// Added to debug why in some cases we lose connection to CC.
-		logInfo(`Sending message to CC. Resume? ${resume}. userMessage: ${JSON.stringify(userMessage)}`)
+		logInfo(`Sending message to CC. Resume? ${resume}. userMessage: ${JSON.stringify(userMessage)}.`)
+
 		return query({
 			prompt: arrayToAsyncIterable([userMessage]),
 			options: {
@@ -292,6 +326,8 @@ const createClaudeCodeEventStream = async (
 				pathToClaudeCodeExecutable,
 				executableArgs,
 				cwd: localExecutable.cwd,
+				// Note: if disallowedTools changed mid session, the new parameter is ignored.
+				disallowedTools,
 				env,
 				abortController,
 				includePartialMessages: true,

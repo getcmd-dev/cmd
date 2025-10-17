@@ -18,7 +18,8 @@ public final class ToolsPlugin: Sendable {
   /// - Parameter referenceIds: The list of tool reference IDs to retrieve.
   /// - Returns: An array of tools that match the specified reference IDs.
   public func tools(withReferenceIds referenceIds: [String]) -> [any Tool] {
-    referenceIds.compactMap { registry[$0] }
+    let referenceIds = Set(referenceIds)
+    return registry.values.filter { referenceIds.contains($0.referenceId) }
   }
 
   /// Returns the default set of tools available for a given chat mode.
@@ -36,9 +37,9 @@ public final class ToolsPlugin: Sendable {
   }
 
   /// Removes a tool from the plugin registry.
-  /// - Parameter name: The name of the tool to remove from the registry.
-  public func unplug(toolNamed name: String) {
-    registry.removeValue(forKey: name)
+  /// - Parameter id: The ID of the tool to retrieve.
+  public func unplug(toolId id: String) {
+    registry.removeValue(forKey: id)
   }
 
   /// Retrieves a tool by name from the registry or fallback matchers.

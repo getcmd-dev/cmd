@@ -90,8 +90,8 @@ struct ToolsPluginTests {
     #expect(result.contains { $0.id == "Tool2" })
   }
 
-  @Test("tools(withReferenceIds:) preserves order of requested IDs")
-  func toolsWithReferenceIds_preservesOrder() {
+  @Test("tools(withReferenceIds:) returns all matching tools")
+  func toolsWithReferenceIds_returnsAllMatchingTools() {
     // given
     let sut = ToolsPlugin()
     let tool1 = TestTool(name: "Tool1")
@@ -107,9 +107,8 @@ struct ToolsPluginTests {
 
     // then
     #expect(result.count == 3)
-    #expect(result[0].id == "Tool3")
-    #expect(result[1].id == "Tool1")
-    #expect(result[2].id == "Tool2")
+    let resultIds = Set(result.map(\.id))
+    #expect(resultIds == Set(["Tool1", "Tool2", "Tool3"]))
   }
 
   // MARK: - defaultTools(for:)

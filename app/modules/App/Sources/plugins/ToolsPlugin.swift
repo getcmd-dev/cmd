@@ -41,7 +41,7 @@ extension ToolsPlugin {
     plugIn(tool: ClaudeCodeWebFetchTool())
     plugIn(tool: ClaudeCodeWebSearchTool())
 
-    // MCP tools
+    // MCP tools (server id -> [tool ids])
     let mcpServerConnections = Atomic([String: [String]]())
     // Update MCP tools as they change
     return mcpService.servers.sink { [weak self] servers in
@@ -54,27 +54,27 @@ extension ToolsPlugin {
         return nil
       }
 
-      let removedToolNames = mcpServerConnections.mutate { value in
+      let removedToolIds = mcpServerConnections.mutate { value in
         // Find removed servers
-        let connectedServerNames = Set(connectedServers.map(\.configuration.name))
-        let removedServerNames = Set(value.keys).subtracting(connectedServerNames)
-        var removedTools = removedServerNames.flatMap { serverName -> [String] in
-          return value[serverName] ?? []
+        let connectedServerIds = Set(connectedServers.map(\.configuration.id))
+        let removedServerIds = Set(value.keys).subtracting(connectedServerIds)
+        var removedTools = removedServerIds.flatMap { serverId -> [String] in
+          return value[serverId] ?? []
         }
         // Find tools removed from existing servers
         removedTools += connectedServers.flatMap { server -> [String] in
-          let previousToolNames = Set(value[server.configuration.name] ?? [])
-          let currentToolNames = Set(server.tools.map(\.name))
-          return Array(previousToolNames.subtracting(currentToolNames))
+          let previousToolIds = Set(value[server.configuration.id] ?? [])
+          let currentToolIds = Set(server.tools.map(\.id))
+          return Array(previousToolIds.subtracting(currentToolIds))
         }
         value = connectedServers.reduce(into: [String: [String]]()) { dict, server in
-          dict[server.configuration.name] = server.tools.map(\.name)
+          dict[server.configuration.name] = server.tools.map(\.id)
         }
         return removedTools
       }
 
-      for toolName in removedToolNames {
-        unplug(toolNamed: toolName)
+      for toolId in removedToolIds {
+        unplug(toolId: toolId)
       }
       for server in connectedServers {
         for tool in server.tools {
