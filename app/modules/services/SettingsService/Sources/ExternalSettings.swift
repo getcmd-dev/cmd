@@ -282,6 +282,7 @@ extension Settings {
       enabledModels: externalSettings.enabledModels,
       reasoningModels: externalSettings.reasoningModels,
       chatModeConfigurations: externalSettings.chatModeConfigurations,
+      knownToolReferenceIds: internalSettings.knownToolReferenceIds,
       toolPreferences: externalSettings.toolPreferences,
       keyboardShortcuts: externalSettings.keyboardShortcuts,
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
