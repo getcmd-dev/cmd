@@ -9,6 +9,7 @@ const buildOptions = {
 	entryPoints: ["src/main.ts"],
 	outfile: "dist/main.bundle.cjs",
 	bundle: true,
+	target: "node22",
 	plugins: [
 		esbuildPluginTsc({
 			tsconfigPath: "./tsconfig.json",
@@ -36,7 +37,8 @@ const buildOptions = {
 	// While this seems to be the desired setting, this doesn't work.
 	// See https://github.com/evanw/esbuild/issues/1921 and https://github.com/evanw/esbuild/issues/3324#issuecomment-2215644754
 	// format: 'esm',
-	minify: true,
+	minify: process.env.NODE_ENV === "production",
+	keepNames: true,
 }
 
 if (process.env.NODE_ENV === "production") {
