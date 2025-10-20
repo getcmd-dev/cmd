@@ -23,13 +23,11 @@ final class EditFilesToolUseViewModel {
   /// - Parameters:
   ///   - status: The status of tool, which can be observed.
   ///   - input: The tool input.
-  ///   - isInputComplete: Whether the tool has received all its input, or whether it is still streaming.
   ///   - updateToolStatus: a hook that allows to set the tool status.
   ///   - toolUseResult: The structured result containing information about changes.
   init(
     status: EditFilesTool.Use.Status,
     input: [EditFilesTool.Use.FileChange],
-    isInputComplete: Bool,
     setResult: @escaping (EditFilesTool.Use.FormattedOutput) -> Void,
     correctInput: ((URL, [EditFilesTool.Use.Input.FileChange.Change]) -> Void)? = nil,
     toolUseResult: EditFilesTool.Use.FormattedOutput = .init(fileChanges: []),
@@ -37,7 +35,6 @@ final class EditFilesToolUseViewModel {
   {
     self.status = status.value
     self.input = input
-    self.isInputComplete = isInputComplete
     self.setResult = setResult
     self.correctInput = correctInput
     self.toolUseResult = toolUseResult
@@ -54,7 +51,6 @@ final class EditFilesToolUseViewModel {
 
   typealias Input = EditFilesTool.Use.Input
 
-  var isInputComplete: Bool
   var status: ToolUseExecutionStatus<EditFilesTool.Output>
   let projectRoot: URL?
 
@@ -221,15 +217,11 @@ final class EditFilesToolUseViewModel {
           oldContent: baselineContent)
         filesEditModels[file] = model
       } catch {
-        if isInputComplete {
-          Task {
-            await attemptToFixCorruptedInput(file: file, baselineContent: baselineContent)
-            if filesEditModels[file] == nil {
-              updateToolUseResultForFile(file, status: .error(AppError(error)))
-            }
+        Task {
+          await attemptToFixCorruptedInput(file: file, baselineContent: baselineContent)
+          if filesEditModels[file] == nil {
+            updateToolUseResultForFile(file, status: .error(AppError(error)))
           }
-        } else {
-          // The input data might be incorrect until we have received all the input. Ignore errors for now.
         }
       }
     }

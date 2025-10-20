@@ -17,11 +17,11 @@ public typealias BuildType = XcodeControllerServiceInterface.BuildType
 
 // MARK: - BuildTool
 
-public final class BuildTool: NonStreamableTool {
+public final class BuildTool: Tool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: BuildTool,
       toolUseId: String,

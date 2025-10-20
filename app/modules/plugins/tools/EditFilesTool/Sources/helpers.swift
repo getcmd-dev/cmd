@@ -173,6 +173,6 @@ extension EditFilesTool.Use.FormattedOutput {
         "🔴 Error"
       }
     }
-    return .success(resultDescription.joined(separator: "\n"))
+    return .success(.init(result: resultDescription.joined(separator: "\n")))
   }
 }

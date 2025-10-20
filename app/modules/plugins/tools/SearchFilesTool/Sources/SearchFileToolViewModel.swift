@@ -13,10 +13,12 @@ final class ToolUseViewModel {
 
   init(
     status: SearchFilesTool.Use.Status,
-    input: SearchFilesTool.Use.Input)
+    input: SearchFilesTool.Use.Input,
+    rootPath: String?)
   {
     self.status = status.value
     self.input = input
+    self.rootPath = rootPath
     Task {
       for await status in status.futureUpdates {
         self.status = status
@@ -25,6 +27,7 @@ final class ToolUseViewModel {
   }
 
   let input: SearchFilesTool.Use.Input
+  let rootPath: String?
   var status: ToolUseExecutionStatus<SearchFilesTool.Use.Output>
 }
 

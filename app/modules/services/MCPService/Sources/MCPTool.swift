@@ -15,7 +15,7 @@ public typealias MCPToolOutput = JSON.Value
 
 // MARK: - MCPTool
 
-public final class MCPTool: NonStreamableTool {
+public final class MCPTool: ToolFoundation.Tool {
   init(tool: MCP.Tool, client: MCP.Client, serverName: String) {
     wrappedTool = tool
     self.client = client
@@ -23,7 +23,7 @@ public final class MCPTool: NonStreamableTool {
   }
 
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
     public init(
       callingTool: MCPTool,

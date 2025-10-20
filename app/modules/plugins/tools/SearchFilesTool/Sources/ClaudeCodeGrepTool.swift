@@ -6,19 +6,20 @@ import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
-import LocalServerServiceInterface
 import LoggingServiceInterface
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ClaudeCodeGrepTool
 
-public final class ClaudeCodeGrepTool: ExternalTool {
+public final class ClaudeCodeGrepTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
+
     public init(
       callingTool: ClaudeCodeGrepTool,
       toolUseId: String,
@@ -38,15 +39,19 @@ public final class ClaudeCodeGrepTool: ExternalTool {
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
+      _internalState = internalState ?? .init(rootPath: input.projectRoot ?? "/")
       self.updateStatus = updateStatus
     }
 
-    public typealias InternalState = EmptyObject
+    public struct InternalState: Codable, Sendable {
+      let rootPath: String
+    }
 
     public typealias Input = ClaudeCodeGrepInput
 
     public typealias Output = SearchFilesTool.Use.Output
 
+    public var internalState: InternalState?
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = true
@@ -61,6 +66,10 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public func startExecuting() {
+      updateStatus.yield(.running)
+    }
+
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
       let trimmedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -68,19 +77,18 @@ public final class ClaudeCodeGrepTool: ExternalTool {
         updateStatus.complete(with: .success(Output(
           outputForLLm: output,
           results: [],
-          rootPath: input.projectRoot ?? "/",
           hasMore: false)))
         return
       }
 
       // Try parsing with the simple format first
-      if let result = parseSimpleGrepOutput(rawOutput: output, projectRoot: input.projectRoot) {
+      if let result = parseSimpleGrepOutput(rawOutput: output) {
         updateStatus.complete(with: .success(result))
         return
       }
 
       // If that fails, try parsing with context format
-      if let result = parseGrepOutputWithContext(rawOutput: output, projectRoot: input.projectRoot) {
+      if let result = parseGrepOutputWithContext(rawOutput: output) {
         updateStatus.complete(with: .success(result))
         return
       }
@@ -90,9 +98,10 @@ public final class ClaudeCodeGrepTool: ExternalTool {
       updateStatus.complete(with: .success(Output(
         outputForLLm: output,
         results: [],
-        rootPath: input.projectRoot ?? "/",
         hasMore: false)))
     }
+
+    private let _internalState: InternalState
 
   }
 
@@ -271,7 +280,7 @@ public struct ClaudeCodeGrepInput: Codable, Sendable {
 /// /Users/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
 /// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
 /// ```
-private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
+private func parseSimpleGrepOutput(rawOutput: String) -> ToolsSchema.SearchFilesToolOutput? {
   // Check if output starts with "Found X files"
   let foundFilesRegex = #/^Found \d+ files?\n/#
   guard rawOutput.starts(with: foundFilesRegex) else {
@@ -285,10 +294,9 @@ private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> S
     return String(line)
   }
 
-  return Schema.SearchFilesToolOutput(
+  return ToolsSchema.SearchFilesToolOutput(
     outputForLLm: rawOutput,
     results: filePaths.map { .init(path: $0, searchResults: []) },
-    rootPath: projectRoot ?? "/",
     hasMore: false)
 }
 
@@ -302,7 +310,7 @@ private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> S
 /// --
 /// /path/to/another.swift-30-    input: [EditFilesTool.Use.FileChange],
 /// ```
-private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
+private func parseGrepOutputWithContext(rawOutput: String) -> ToolsSchema.SearchFilesToolOutput? {
   // Regex to parse ripgrep output lines with format: path[:lineNum]:text
   // - path: Matches file paths, allowing escaped spaces (\\ ) but not unescaped spaces
   //   Uses non-greedy matching to stop at the first colon delimiter
@@ -313,7 +321,7 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
   //   "/path/with\\ space.txt:content here" -> path="/path/with\\ space.txt", text="content here"
   let matchedLineRegex = #/^(?<path>(?:[^\\ ]|\\ )+?)(?::(?<lineNum>\d+))?:(?<text>.*)$/#
 
-  var fileResults = [String: [Schema.SearchResult]]()
+  var fileResults = [String: [ToolsSchema.SearchResult]]()
   var fileOrder = [String]()
 
   for line in rawOutput.split(separator: "\n") {
@@ -329,7 +337,7 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
         fileOrder.append(path)
         fileResults[path] = []
       }
-      fileResults[path]?.append(Schema.SearchResult(
+      fileResults[path]?.append(ToolsSchema.SearchResult(
         line: match.lineNum.map { Int($0) } ??? 0,
         text: String(match.text),
         isMatch: true))
@@ -342,15 +350,14 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
 
   // Convert to output format
   let results = fileOrder.map { path in
-    Schema.SearchFileResult(
+    ToolsSchema.SearchFileResult(
       path: path,
       searchResults: fileResults[path] ?? [])
   }
 
-  return Schema.SearchFilesToolOutput(
+  return ToolsSchema.SearchFilesToolOutput(
     outputForLLm: rawOutput,
     results: results,
-    rootPath: projectRoot ?? "/",
     hasMore: false)
 }
 
@@ -363,6 +370,6 @@ extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
       directoryPath: input.path ?? input.projectRoot ?? "/",
       regex: input.pattern,
       filePattern: input.glob)
-    return AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput))
+    return AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput, rootPath: _internalState.rootPath))
   }
 }

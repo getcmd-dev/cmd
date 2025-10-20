@@ -14,6 +14,7 @@ import LoggingServiceInterface
 import SwiftUI
 import ThreadSafe
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - EditFilesTool
 
@@ -24,19 +25,17 @@ public final class EditFilesTool: Tool {
   }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: EditFilesTool,
       toolUseId: String,
       input: Input,
-      isInputComplete: Bool,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element?)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      _isInputComplete = Atomic(isInputComplete)
       self.context = context
 
       _input = Atomic(input)
@@ -64,7 +63,7 @@ public final class EditFilesTool: Tool {
         formattedOutput = Atomic(initialOutput)
       }
 
-      if let error, isInputComplete {
+      if let error {
         updateStatus.complete(with: .failure(error))
       }
 
@@ -113,6 +112,9 @@ public final class EditFilesTool: Tool {
       }
     }
 
+    public typealias Input = ToolsSchema.EditFilesToolInput
+    public typealias Output = ToolsSchema.EditFilesToolOutput
+
     /// Similar to `Input.FileChange` but with added computed properties that need to be persisted.
     public struct FileChange: Codable, Sendable {
 
@@ -128,50 +130,6 @@ public final class EditFilesTool: Tool {
       var correctedChanges: [Input.FileChange.Change]?
     }
 
-    public struct Input: Codable, Sendable {
-      init(files: [FileChange]) {
-        self.files = files
-      }
-
-      public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: String.self)
-        files = try container.decode([FileChange].self, forKey: "files")
-      }
-
-      public struct FileChange: Codable, Sendable {
-        public struct Change: Codable, Sendable {
-          public let search: String
-          public let replace: String
-
-          public init(search: String, replace: String) {
-            self.search = search
-            self.replace = replace
-          }
-
-          public init(from decoder: any Decoder) throws {
-            let container = try decoder.container(keyedBy: String.self)
-            // Decode with default values, since when streaming not all keys may be present.
-            search = (try? container.decode(String.self, forKey: "search")) ?? ""
-            replace = (try? container.decode(String.self, forKey: "replace")) ?? ""
-          }
-        }
-
-        public let path: String
-        public let isNewFile: Bool?
-        public let changes: [Change]
-      }
-
-      public fileprivate(set) var files: [FileChange]
-
-      public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: String.self)
-        try container.encode(files, forKey: "files")
-      }
-
-    }
-
-    public typealias Output = String
-
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
     public let isReadonly = false
@@ -185,39 +143,13 @@ public final class EditFilesTool: Tool {
 
     public var input: Input { _input.value }
 
-    public var isInputComplete: Bool { _isInputComplete.value }
-
     public var internalState: InternalState? {
       resolvedInput
     }
 
-    public func receive(inputUpdate data: Data, isLast: Bool) throws {
-      let input = try JSONDecoder().decode(Input.self, from: data)
-      _input.set(to: input)
-      _isInputComplete.set(to: isLast)
-
-      let (mappedInput, error) = context.mappedInput(persistedInput: nil, rawInput: input)
-      self.mappedInput.set(to: mappedInput)
-      // Update formatted output with new input
-      let updatedOutput = FormattedOutput(
-        fileChanges: mappedInput.map { fileChange in
-          FileChangeInfo(
-            path: fileChange.path.path,
-            isNewFile: fileChange.isNewFile ?? false,
-            changeCount: fileChange.changes.count,
-            status: .pending)
-        })
-      formattedOutput.set(to: updatedOutput)
-      if let error, isLast {
-        updateStatus.complete(with: .failure(error))
-      }
-
-      Task { @MainActor in
-        self._viewModel?.input = self.mappedInput.value
-        self._viewModel?.isInputComplete = isLast
-        self._viewModel?.toolUseResult = self.formattedOutput.value
-      }
-      chatContextRegistry.persist(thread: context.threadId)
+    public func receive(output: JSONFoundation.JSON.Value) throws {
+      let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
+      updateStatus.complete(with: .success(output))
     }
 
     public func startExecuting() {
@@ -227,10 +159,6 @@ public final class EditFilesTool: Tool {
       }
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-      guard _isInputComplete.value else {
-        updateStatus.complete(with: .failure(AppError("Started executing before the input was entirely received")))
-        return
-      }
 
       Task { @MainActor in
         do {
@@ -249,8 +177,6 @@ public final class EditFilesTool: Tool {
       updateStatus.complete(with: .failure(CancellationError()))
     }
 
-    let _isInputComplete: Atomic<Bool>
-
     var resolvedInput: InternalState {
       InternalState(
         convertedInput: mappedInput.value,
@@ -265,12 +191,10 @@ public final class EditFilesTool: Tool {
       let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: mappedInput.value,
-        isInputComplete: isInputComplete,
         setResult: { [weak self, mappedInput, context] toolUseResult in
           // TODO: Rework the output sent to the LLM and add tests
           guard let self else { return }
           if
-            isInputComplete,
             toolUseResult.fileChanges.contains(where: { if case .error = $0.status { true } else { false } }) ||
             toolUseResult.fileChanges.allSatisfy({ if case .applied = $0.status { true } else { false } })
           {
@@ -442,4 +366,12 @@ extension ChatContextRegistryService {
       defaultLogger.error("Failed to persist thread")
     }
   }
+}
+
+extension EditFilesTool.Use.Input {
+  typealias FileChange = ToolsSchema.EditFilesToolInput_FileChange
+}
+
+extension EditFilesTool.Use.Input.FileChange {
+  typealias Change = ToolsSchema.EditFilesToolInput_Change
 }

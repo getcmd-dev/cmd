@@ -29,7 +29,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "123",
       input: .init(todos: todoItems),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
@@ -40,8 +40,7 @@ struct ClaudeCodeTodoWriteToolTests {
     try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
-    #expect(result.success == true)
-    #expect(result.message == "Todo list updated successfully")
+    #expect(result.message == "Todos have been modified successfully")
   }
 
   @Test
@@ -56,7 +55,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "456",
       input: .init(todos: todoItems),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
@@ -67,7 +66,6 @@ struct ClaudeCodeTodoWriteToolTests {
     try toolUse.receive(output: .string(errorMessage))
     let result = try await toolUse.output
 
-    #expect(result.success == false)
     #expect(result.message == errorMessage)
   }
 
@@ -76,7 +74,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "789",
       input: .init(todos: []),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
@@ -87,8 +85,7 @@ struct ClaudeCodeTodoWriteToolTests {
     try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
-    #expect(result.success == true)
-    #expect(result.message == "Todo list updated successfully")
+    #expect(result.message == "Todos have been modified successfully")
   }
 
   @Test
@@ -103,7 +100,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "large",
       input: .init(todos: todoItems),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
@@ -114,8 +111,7 @@ struct ClaudeCodeTodoWriteToolTests {
     try toolUse.receive(output: .string(output))
     let result = try await toolUse.output
 
-    #expect(result.success == true)
-    #expect(result.message == "Todo list updated successfully")
+    #expect(result.message == "Todos have been modified successfully")
   }
 
   @Test
@@ -138,7 +134,7 @@ struct ClaudeCodeTodoWriteToolTests {
     let toolUse = ClaudeCodeTodoWriteTool().use(
       toolUseId: "statuses",
       input: .init(todos: todoItems),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     #expect(toolUse.input.todos.count == 3)

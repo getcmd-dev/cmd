@@ -22,7 +22,6 @@ import SwiftUI
 
       TodoWriteToolUseView(toolUse: TodoWriteToolUseViewModel(
         status: .Just(.completed(.success(.init(
-          success: true,
           message: "Todo list updated successfully")))),
         input: .init(todos: [
           ClaudeCodeTodoWriteTool.Use.TodoItem(
@@ -45,7 +44,6 @@ import SwiftUI
 
       TodoWriteToolUseView(toolUse: TodoWriteToolUseViewModel(
         status: .Just(.completed(.success(.init(
-          success: true,
           message: "Todo list updated successfully with 15 items")))),
         input: .init(todos: Array(1...15).map { i in
           ClaudeCodeTodoWriteTool.Use.TodoItem(

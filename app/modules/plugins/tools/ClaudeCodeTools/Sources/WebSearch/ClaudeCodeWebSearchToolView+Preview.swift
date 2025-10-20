@@ -12,8 +12,8 @@ import ToolFoundation
     toolUseId: "preview",
     input: .init(
       query: "MCP HTTP streaming specifications",
-      allowed_domains: nil,
-      blocked_domains: nil),
+      allowedDomains: nil,
+      blockedDomains: nil),
     context: ToolExecutionContext(),
     initialStatus: .notStarted)
   return use.body
@@ -27,8 +27,8 @@ import ToolFoundation
     toolUseId: "preview",
     input: .init(
       query: "SwiftUI best practices 2025",
-      allowed_domains: ["developer.apple.com"],
-      blocked_domains: nil),
+      allowedDomains: ["developer.apple.com"],
+      blockedDomains: nil),
     context: ToolExecutionContext(),
     initialStatus: .running)
   return use.body
@@ -42,8 +42,8 @@ import ToolFoundation
     toolUseId: "preview",
     input: .init(
       query: "MCP HTTP streaming specifications",
-      allowed_domains: nil,
-      blocked_domains: nil),
+      allowedDomains: nil,
+      blockedDomains: nil),
     context: ToolExecutionContext(),
     initialStatus: .completed(.success(.init(
       links: [
@@ -69,8 +69,8 @@ import ToolFoundation
     toolUseId: "preview",
     input: .init(
       query: "test query",
-      allowed_domains: nil,
-      blocked_domains: ["example.com"]),
+      allowedDomains: nil,
+      blockedDomains: ["example.com"]),
     context: ToolExecutionContext(),
     initialStatus: .completed(.failure(NSError(
       domain: "WebSearchError",

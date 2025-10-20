@@ -6,6 +6,7 @@ import Foundation
 import LocalServerServiceInterface
 import SwiftTesting
 import Testing
+import ToolTypesFoundation
 @testable import SearchFilesTool
 
 struct SearchFilesToolTests {
@@ -22,14 +23,13 @@ struct SearchFilesToolTests {
           "regex" : "func*"
         }
         """)
-      return try JSONEncoder().encode(Schema.SearchFilesToolOutput(
+      return try JSONEncoder().encode(ToolsSchema.SearchFilesToolOutput(
         outputForLLm: "here's some result:...",
         results: [
           .init(path: "somefile.swift", searchResults: [
             .init(line: 1, text: "func foo() {\n", isMatch: true),
           ]),
         ],
-        rootPath: "/path/to/root",
         hasMore: false))
     }
 
@@ -39,7 +39,7 @@ struct SearchFilesToolTests {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",
         input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
-        isInputComplete: true,
+
         context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
@@ -64,7 +64,7 @@ struct SearchFilesToolTests {
       let toolUse = SearchFilesTool().use(
         toolUseId: "123",
         input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
-        isInputComplete: true,
+
         context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse

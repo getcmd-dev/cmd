@@ -12,11 +12,11 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeBashTool
 
-public final class ClaudeCodeBashTool: ExternalTool {
+public final class ClaudeCodeBashTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeBashTool,
       toolUseId: String,
@@ -143,6 +143,11 @@ public final class ClaudeCodeBashTool: ExternalTool {
 // MARK: - ClaudeCodeBashTool.Use + DisplayableToolUse
 
 extension ClaudeCodeBashTool.Use: DisplayableToolUse {
+  public func startExecuting() {
+    updateStatus.yield(.notStarted)
+    updateStatus.yield(.running)
+  }
+
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)

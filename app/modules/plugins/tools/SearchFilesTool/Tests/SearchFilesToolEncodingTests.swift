@@ -20,7 +20,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/project",
       regex: "FIXME",
       filePattern: nil)
-    let use = tool.use(toolUseId: "search-123", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-123", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -29,11 +29,11 @@ struct SearchFilesToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "search_files_input",
           "directoryPath": "/project",
           "regex": "FIXME"
         },
-        "internalState": null,
-        "isInputComplete": true,
+        "internalState": {},
         "status": {
           "status": "notStarted"
         },
@@ -49,7 +49,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/codebase/src",
       regex: "class\\s+\\w+Test",
       filePattern: "*.swift")
-    let use = tool.use(toolUseId: "search-pattern-456", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-pattern-456", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -58,12 +58,12 @@ struct SearchFilesToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "search_files_input",
           "directoryPath": "/codebase/src",
           "filePattern": "*.swift",
           "regex": "class\\\\s+\\\\w+Test"
         },
-        "internalState": null,
-        "isInputComplete": true,
+        "internalState": {},
         "status": {
           "status": "notStarted"
         },
@@ -79,7 +79,7 @@ struct SearchFilesToolEncodingTests {
       directoryPath: "/workspace/backend",
       regex: "api\\..*\\(",
       filePattern: "*.{py,js}")
-    let use = tool.use(toolUseId: "search-structure-789", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "search-structure-789", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -88,16 +88,52 @@ struct SearchFilesToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "search_files_input",
           "directoryPath": "/workspace/backend",
           "filePattern": "*.{py,js}",
           "regex": "api\\\\..*\\\\("
         },
-        "internalState": null,
-        "isInputComplete": true,
+        "internalState": {},
         "status": {
           "status": "notStarted"
         },
         "toolUseId": "search-structure-789"
+      }
+      """)
+  }
+
+  @Test("Tool Use encoding/decoding - extract rootPath from context")
+  func test_toolUseEncodingDecodingExtractsRootPath() throws {
+    let tool = SearchFilesTool()
+    let input = SearchFilesTool.Use.Input(
+      directoryPath: "/project",
+      regex: "FIXME",
+      filePattern: nil)
+    let use = tool.use(
+      toolUseId: "search-123",
+      input: input,
+
+      context: ToolExecutionContext(threadId: "mock-thread-id", projectRoot: URL(filePath: "/path/to/root")))
+
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
+      {
+        "callingTool": "search",
+        "context": {
+          "threadId": "mock-thread-id",
+          "projectRoot": "/path/to/root"
+        },
+        "input": {
+          "type": "search_files_input",
+          "directoryPath": "/project",
+          "regex": "FIXME"
+        },
+        "internalState": {
+          "rootPath": "/path/to/root"
+        },
+        "status": {
+          "status": "notStarted"
+        },
+        "toolUseId": "search-123"
       }
       """)
   }

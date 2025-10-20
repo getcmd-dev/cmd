@@ -4,9 +4,9 @@
 import AppFoundation
 import Dependencies
 import Foundation
-import LocalServerServiceInterface
 import SwiftTesting
 import Testing
+import ToolTypesFoundation
 @testable import SearchFilesTool
 
 struct SearchFilesToolStreamRepresentationTests {
@@ -17,7 +17,8 @@ struct SearchFilesToolStreamRepresentationTests {
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil))
+      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      rootPath: "/")
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -26,7 +27,7 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation shows success with match count")
   func test_streamRepresentationSuccess() {
     // given
-    let output = Schema.SearchFilesToolOutput(
+    let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "Search results",
       results: [
         .init(path: "/test/file1.txt", searchResults: [
@@ -36,13 +37,13 @@ struct SearchFilesToolStreamRepresentationTests {
           .init(line: 5, text: "another pattern", isMatch: true),
         ]),
       ],
-      rootPath: "/test",
       hasMore: false)
     let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil))
+      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      rootPath: "/test")
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -57,20 +58,20 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation shows success with truncated results")
   func test_streamRepresentationSuccessWithTruncation() {
     // given
-    let output = Schema.SearchFilesToolOutput(
+    let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "Search results",
       results: [
         .init(path: "/test/file1.swift", searchResults: [
           .init(line: 1, text: "test pattern", isMatch: true),
         ]),
       ],
-      rootPath: "/test",
       hasMore: true)
     let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "test.*pattern", filePattern: "*.swift"))
+      input: .init(directoryPath: "/test", regex: "test.*pattern", filePattern: "*.swift"),
+      rootPath: "/test")
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -90,7 +91,8 @@ struct SearchFilesToolStreamRepresentationTests {
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil))
+      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      rootPath: "/test")
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -105,16 +107,16 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation handles empty results")
   func test_streamRepresentationEmptyResults() {
     // given
-    let output = Schema.SearchFilesToolOutput(
+    let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "No results",
       results: [],
-      rootPath: "/test",
       hasMore: false)
     let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "nonexistent", filePattern: nil))
+      input: .init(directoryPath: "/test", regex: "nonexistent", filePattern: nil),
+      rootPath: "/test")
 
     // then
     #expect(viewModel.streamRepresentation == """

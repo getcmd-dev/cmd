@@ -16,7 +16,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "Swift programming", allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: "Swift programming", allowedDomains: nil, blockedDomains: nil))
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -36,7 +36,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "SwiftUI best practices", allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: "SwiftUI best practices", allowedDomains: nil, blockedDomains: nil))
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -58,7 +58,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "very specific obscure query", allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: "very specific obscure query", allowedDomains: nil, blockedDomains: nil))
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -78,7 +78,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "network error test", allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: "network error test", allowedDomains: nil, blockedDomains: nil))
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -102,7 +102,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "specific documentation page", allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: "specific documentation page", allowedDomains: nil, blockedDomains: nil))
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -128,7 +128,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: complexQuery, allowed_domains: nil, blocked_domains: nil))
+      input: .init(query: complexQuery, allowedDomains: nil, blockedDomains: nil))
 
     // then
     #expect(viewModel.streamRepresentation == """

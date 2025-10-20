@@ -5,9 +5,9 @@ import AppFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
-import LocalServerServiceInterface
 import SwiftTesting
 import Testing
+import ToolTypesFoundation
 @testable import SearchFilesTool
 
 // MARK: - ClaudeCodeGrepToolTests
@@ -27,7 +27,7 @@ struct ClaudeCodeGrepToolTests {
     let toolUse = ClaudeCodeGrepTool().use(
       toolUseId: "123",
       input: mockInput,
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
     toolUse.startExecuting()
@@ -62,7 +62,7 @@ struct ClaudeCodeGrepToolTests {
     let toolUse = ClaudeCodeGrepTool().use(
       toolUseId: "123",
       input: mockInput,
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
     toolUse.startExecuting()
@@ -92,13 +92,13 @@ struct ClaudeCodeGrepToolTests {
     let toolUse = ClaudeCodeGrepTool().use(
       toolUseId: "123",
       input: mockInput,
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
     toolUse.startExecuting()
     let outputWithLineNumber = """
       /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-152-      input: mappedInput,
-      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-153-      isInputComplete: true,
+      /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-153-      
       /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift:154:      setResult: { _ in },
       /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-155-      context: context)
       /plugins/tools/EditFilesTool/Sources/ClaudeCodeWriteTool.swift-156-
@@ -137,7 +137,7 @@ struct ClaudeCodeGrepToolTests {
     let toolUse = ClaudeCodeGrepTool().use(
       toolUseId: "123",
       input: mockInput,
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/me/cmd/app")))
 
     toolUse.startExecuting()
@@ -148,9 +148,9 @@ struct ClaudeCodeGrepToolTests {
   }
 }
 
-// MARK: - Schema.SearchResult + ExpressibleByArrayLiteral, Equatable
+// MARK: - ToolsSchema.SearchResult + ExpressibleByArrayLiteral, Equatable
 
-extension Schema.SearchResult: ExpressibleByArrayLiteral, Equatable {
+extension ToolsSchema.SearchResult: ExpressibleByArrayLiteral, Equatable {
   public init(arrayLiteral elements: ArrayLiteralElement...) {
     guard
       elements.count == 3,
@@ -165,7 +165,7 @@ extension Schema.SearchResult: ExpressibleByArrayLiteral, Equatable {
 
   public typealias ArrayLiteralElement = Any
 
-  public static func ==(lhs: Schema.SearchResult, rhs: Schema.SearchResult) -> Bool {
+  public static func ==(lhs: ToolsSchema.SearchResult, rhs: ToolsSchema.SearchResult) -> Bool {
     lhs.line == rhs.line && lhs.text == rhs.text && lhs.isMatch == rhs.isMatch
   }
 

@@ -13,11 +13,11 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeGlobTool
 
-public final class ClaudeCodeGlobTool: ExternalTool {
+public final class ClaudeCodeGlobTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeGlobTool,
       toolUseId: String,
@@ -38,14 +38,8 @@ public final class ClaudeCodeGlobTool: ExternalTool {
     }
 
     public typealias InternalState = EmptyObject
-    public struct Input: Codable, Sendable {
-      public let pattern: String
-      public let path: String?
-    }
-
-    public struct Output: Codable, Sendable {
-      public let files: [String]
-    }
+    public typealias Input = GlobTool.Use.Input
+    public typealias Output = GlobTool.Use.Output
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -59,6 +53,11 @@ public final class ClaudeCodeGlobTool: ExternalTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)

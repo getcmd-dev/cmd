@@ -10,14 +10,15 @@ import Foundation
 import JSONFoundation
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ClaudeCodeLSTool
 
-public final class ClaudeCodeLSTool: ExternalTool {
+public final class ClaudeCodeLSTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeLSTool,
       toolUseId: String,
@@ -58,6 +59,11 @@ public final class ClaudeCodeLSTool: ExternalTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
@@ -173,4 +179,8 @@ extension ClaudeCodeLSTool.Use: DisplayableToolUse {
       directoryPath: directoryPath,
       projectRoot: context.projectRoot))
   }
+}
+
+extension LSTool.Use.Output {
+  typealias File = ToolsSchema.LSToolOutput_File
 }

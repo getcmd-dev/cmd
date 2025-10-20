@@ -11,6 +11,7 @@ Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "ToolTypesFoundation",
   ],
   testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),

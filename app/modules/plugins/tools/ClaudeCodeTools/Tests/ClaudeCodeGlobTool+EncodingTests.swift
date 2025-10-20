@@ -19,7 +19,7 @@ struct ClaudeCodeGlobToolEncodingTests {
     let input = ClaudeCodeGlobTool.Use.Input(
       pattern: "**/*.swift",
       path: nil)
-    let use = tool.use(toolUseId: "glob-123", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "glob-123", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -28,10 +28,10 @@ struct ClaudeCodeGlobToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "glob_input",
           "pattern": "**/*.swift"
         },
         "internalState": null,
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
@@ -46,7 +46,7 @@ struct ClaudeCodeGlobToolEncodingTests {
     let input = ClaudeCodeGlobTool.Use.Input(
       pattern: "src/**/*.ts",
       path: "/Users/user/project")
-    let use = tool.use(toolUseId: "glob-456", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "glob-456", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -55,11 +55,11 @@ struct ClaudeCodeGlobToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "glob_input",
           "pattern": "src/**/*.ts",
           "path": "/Users/user/project"
         },
         "internalState": null,
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
@@ -74,7 +74,7 @@ struct ClaudeCodeGlobToolEncodingTests {
     let input = ClaudeCodeGlobTool.Use.Input(
       pattern: "**/*.{js,ts,jsx,tsx}",
       path: "/project/frontend")
-    let use = tool.use(toolUseId: "glob-789", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "glob-789", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -83,11 +83,11 @@ struct ClaudeCodeGlobToolEncodingTests {
           "threadId": "mock-thread-id"
         },
         "input": {
+          "type": "glob_input",
           "pattern": "**/*.{js,ts,jsx,tsx}",
           "path": "/project/frontend"
         },
         "internalState": null,
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },

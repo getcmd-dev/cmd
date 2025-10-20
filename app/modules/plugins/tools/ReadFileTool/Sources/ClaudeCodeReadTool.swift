@@ -17,12 +17,12 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeReadTool
 
-public final class ClaudeCodeReadTool: ExternalTool {
+public final class ClaudeCodeReadTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeReadTool,
       toolUseId: String,
@@ -64,6 +64,11 @@ public final class ClaudeCodeReadTool: ExternalTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
 
     public func receive(output: JSON.Value) throws {
       let data = try JSONEncoder().encode(output)

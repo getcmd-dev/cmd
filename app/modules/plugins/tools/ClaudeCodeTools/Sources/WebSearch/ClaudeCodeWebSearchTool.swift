@@ -15,11 +15,11 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeWebSearchTool
 
-public final class ClaudeCodeWebSearchTool: ExternalTool {
+public final class ClaudeCodeWebSearchTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWebSearchTool,
       toolUseId: String,
@@ -40,21 +40,8 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
     }
 
     public typealias InternalState = EmptyObject
-    public struct Input: Codable, Sendable {
-      public let query: String
-      public let allowed_domains: [String]?
-      public let blocked_domains: [String]?
-    }
-
-    public struct Output: Codable, Sendable {
-      public struct SearchResult: Codable, Sendable {
-        public let title: String
-        public let url: String
-      }
-
-      public let links: [SearchResult]
-      public let content: String
-    }
+    public typealias Input = WebSearchTool.Use.Input
+    public typealias Output = WebSearchTool.Use.Output
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -68,6 +55,11 @@ public final class ClaudeCodeWebSearchTool: ExternalTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)

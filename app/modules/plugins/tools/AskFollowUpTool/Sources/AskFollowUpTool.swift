@@ -12,12 +12,12 @@ import ToolFoundation
 
 // MARK: - AskFollowUpTool
 
-public final class AskFollowUpTool: NonStreamableTool {
+public final class AskFollowUpTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: AskFollowUpTool,
       toolUseId: String,

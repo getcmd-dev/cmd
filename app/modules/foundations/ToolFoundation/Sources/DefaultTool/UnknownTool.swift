@@ -11,13 +11,13 @@ import ThreadSafe
 
 /// Represents a tool that was previously used but is no longer available in the current application state.
 /// This type enables deserialization and representation of legacy tool usage data when the original tool type is unavailable.
-public final class UnknownTool: NonStreamableTool {
+public final class UnknownTool: Tool {
   public init(name: String) {
     self.name = name
   }
 
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
     public init(
       callingTool: UnknownTool,
@@ -117,7 +117,6 @@ extension UnknownTool.Use {
     let input = try container.decode(Input.self, forKey: .input)
     let context = try container.decode(ToolExecutionContext.self, forKey: .context)
     let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
 
     let rawData = try JSON.Value(from: decoder)
 
@@ -125,7 +124,6 @@ extension UnknownTool.Use {
       callingTool: callingTool,
       toolUseId: toolUseId,
       input: input,
-      isInputComplete: isInputComplete,
       context: context,
       internalState: rawData,
       initialStatus: statusValue)

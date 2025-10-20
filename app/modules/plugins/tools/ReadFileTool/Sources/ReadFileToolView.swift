@@ -25,7 +25,7 @@ struct ToolUseView: View {
     case .running:
       runningView
     case .completed(.success(let output)):
-      successView(output: output)
+      successView(input: toolUse.input, output: output)
     case .completed(.failure(let error)):
       errorView(error: error)
     }
@@ -86,7 +86,7 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(output: ReadFileTool.Use.Output) -> some View {
+  private func successView(input: ReadFileTool.Use.Input, output: ReadFileTool.Use.Output) -> some View {
     VStack(alignment: .leading) {
       HStack {
         if isExpanded {
@@ -114,8 +114,8 @@ struct ToolUseView: View {
       .acceptClickThrough()
       if isExpanded {
         CodePreview(
-          filePath: URL(fileURLWithPath: output.uri),
-          language: FileIcon.language(for: URL(fileURLWithPath: output.uri)),
+          filePath: URL(fileURLWithPath: input.path),
+          language: FileIcon.language(for: URL(fileURLWithPath: input.path)),
           content: output.content,
           highlightedContent: toolUse.highlightedContent,
           collapsedHeight: 400)
@@ -135,12 +135,6 @@ struct ToolUseView: View {
     }
   }
 
-}
-
-// MARK: - ReadFileTool.Use.Output + Identifiable
-
-extension ReadFileTool.Use.Output: Identifiable {
-  public var id: String { uri }
 }
 
 extension ToolUseViewModel {

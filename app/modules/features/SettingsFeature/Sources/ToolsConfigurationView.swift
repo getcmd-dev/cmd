@@ -23,7 +23,7 @@ struct ToolsConfigurationView: View {
       } else {
         ScrollView {
           VStack(alignment: .leading, spacing: 8) {
-            ForEach(viewModel.availableTools.filter { $0 as? any ExternalTool == nil }, id: \.id) { tool in
+            ForEach(viewModel.availableTools.filter { $0.id == $0.referenceId && $0.canBeExecuted }, id: \.id) { tool in
               ToolRow(
                 tool: tool,
                 isAlwaysApproved: viewModel.isAlwaysApproved(toolReferenceId: tool.referenceId),

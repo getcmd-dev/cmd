@@ -568,7 +568,10 @@ targets.append(
       "DLS",
       "FileIcon",
       "JSONFoundation",
+      "LocalServerServiceInterface",
+      "ShellServiceInterface",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     testsDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
@@ -682,6 +685,7 @@ targets.append(
       "LoggingServiceInterface",
       "ThreadSafe",
       "ToolFoundation",
+      "ToolTypesFoundation",
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
     ],
@@ -717,6 +721,7 @@ targets.append(
       "ShellServiceInterface",
       "ThreadSafe",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     testsDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
@@ -1016,6 +1021,7 @@ targets.append(
       "JSONFoundation",
       "LocalServerServiceInterface",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     testsDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
@@ -1150,6 +1156,7 @@ targets.append(
       "LoggingServiceInterface",
       "ThreadSafe",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     testsDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
@@ -1186,6 +1193,7 @@ targets.append(
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     testsDependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
@@ -1195,6 +1203,7 @@ targets.append(
       "SearchFilesTool",
       "SwiftTesting",
       "ToolFoundation",
+      "ToolTypesFoundation",
     ],
     path: "./plugins/tools/SearchFilesTool"))
 
@@ -1408,6 +1417,14 @@ targets.append(
       "ToolFoundation",
     ],
     path: "./foundations/ToolFoundation"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "ToolTypesFoundation",
+    dependencies: [
+      "JSONFoundation",
+    ],
+    path: "./foundations/ToolTypesFoundation"))
 
 targets.append(
   contentsOf: Target.module(

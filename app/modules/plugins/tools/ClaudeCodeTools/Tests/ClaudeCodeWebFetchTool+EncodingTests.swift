@@ -62,7 +62,7 @@ struct ClaudeCodeWebFetchToolEncodingTests {
 
     #expect(json?["url"] as? String == "https://api.example.com/v1/data")
     #expect(json?["prompt"] as? String == "What is the API response format?")
-    #expect(json?.count == 2)
+    #expect(json?.count == 3) // url, prompt, and type fields
   }
 
   @Test("Output JSON structure")
@@ -76,7 +76,7 @@ struct ClaudeCodeWebFetchToolEncodingTests {
     let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
 
     #expect(json?["result"] as? String == "The API returns JSON with status and data fields")
-    #expect(json?.count == 1)
+    #expect(json?.count == 2) // result and type fields
   }
 
   @Test("Special characters in input")

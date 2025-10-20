@@ -23,7 +23,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         id: "1"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)
-    let use = tool.use(toolUseId: "todo-123", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "todo-123", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -43,7 +43,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         "internalState": {
           "preExistingTodos" : []
         },
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
@@ -70,7 +69,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         id: "3"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)
-    let use = tool.use(toolUseId: "todo-456", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "todo-456", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -100,7 +99,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         "internalState": {
           "preExistingTodos" : []
         },
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
@@ -113,7 +111,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
   func test_toolUseEncodingDecodingEmptyTodoList() throws {
     let tool = ClaudeCodeTodoWriteTool()
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: [])
-    let use = tool.use(toolUseId: "todo-empty", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "todo-empty", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -127,7 +125,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         "internalState": {
           "preExistingTodos" : []
         },
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
@@ -147,7 +144,7 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         id: "long-1"),
     ]
     let input = ClaudeCodeTodoWriteTool.Use.Input(todos: todoItems)
-    let use = tool.use(toolUseId: "todo-long", input: input, isInputComplete: true, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "todo-long", input: input, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
@@ -167,7 +164,6 @@ struct ClaudeCodeTodoWriteToolEncodingTests {
         "internalState": {
           "preExistingTodos" : []
         },
-        "isInputComplete" : true,
         "status": {
           "status": "notStarted"
         },
