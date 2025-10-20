@@ -7,6 +7,7 @@ export interface SendMessageRequestParams {
 	enableReasoning: boolean
 	provider: APIProvider
 	threadId: string | undefined
+	useNewClaudeCodeApi?: boolean
 }
 
 export interface APIProvider {
