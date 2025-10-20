@@ -3,13 +3,25 @@ import ts from "typescript"
 import fs from "fs"
 import { dirname } from "path"
 
-export const generateJSONSchemas = (params: { path: string }): { name: string; schema: tsj.Schema }[] => {
+export const generateJSONSchemas = (params: {
+	path: string
+}): { name: string; schema: tsj.Schema; destination: string; schemaName: string }[] => {
 	const files = fs.readdirSync(params.path)
 	return files.map((file) => {
 		const filePath = `${params.path}/${file}`
 		const schema = generateJSONSchema({ path: filePath })
 		const name = file.split(".")[0]
-		return { name, schema }
+
+		// Parse a comment like // @generates: ./app/modules/ToolTypesFoundation/Sources/schema.swift
+		const fileContent = fs.readFileSync(filePath, "utf8")
+		const destinationDirective = fileContent.match(/\/\/\s*@generates:\s*(.+)/)
+		const destination = destinationDirective
+			? destinationDirective[1].trim()
+			: `./app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/${name}.generated.swift`
+		const schemaNameDirective = fileContent.match(/\/\/\s*@schema-name:\s*(.+)/)
+		const schemaName = schemaNameDirective ? schemaNameDirective[1].trim() : "Schema"
+
+		return { name, schema, destination, schemaName }
 	})
 }
 
