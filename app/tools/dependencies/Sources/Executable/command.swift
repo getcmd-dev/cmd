@@ -57,13 +57,24 @@ struct FocusCommand: ParsableCommand {
       print("\(modulesInfo.keys.joined(separator: "\n"))\n")
       return
     }
+    let modulesInfo = try UpdateDependencies.update(packageURL: packageURL, all: true)
     guard
-      let module = try UpdateDependencies.update(packageURL: packageURL, all: true)[module]
+      let module = modulesInfo[module]
     else {
+      // Find similar module names (distance <= 2)
+      let suggestions = modulesInfo.keys
+        .filter { levenshteinDistance($0, module) <= 2 }
+        .sorted { levenshteinDistance($0, module) < levenshteinDistance($1, module) }
+
+      var errorMessage = "Could not find module \(module)"
+      if !suggestions.isEmpty {
+        errorMessage += ". Did you mean: \(suggestions.joined(separator: ", "))?"
+      }
+
       FocusCommand.exit(withError: NSError(
         domain: "SyncDependenciesError",
         code: 1,
-        userInfo: [NSLocalizedDescriptionKey: "Could not find module \(module)"]))
+        userInfo: [NSLocalizedDescriptionKey: errorMessage]))
     }
 
     print(module.moduleDir.canonicalURL.appending(path: "Package.swift").path + "\n")
