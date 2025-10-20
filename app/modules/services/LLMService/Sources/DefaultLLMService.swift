@@ -283,7 +283,8 @@ final class DefaultLLMService: LLMService {
         settings: providerSettings,
         shellService: shellService,
         projectRoot: context?.projectRoot?.path),
-      threadId: context?.threadId)
+      threadId: context?.threadId,
+      useNewClaudeCodeApi: userDefaults.bool(forKey: .useNewClaudeCodeApi) ? false : nil)
 
     let encoder = JSONEncoder()
     // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
