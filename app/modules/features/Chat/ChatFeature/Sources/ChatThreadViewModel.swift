@@ -142,6 +142,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
     // Release the strong reference and buffer for reuse when cancelling
     chatService.stopKeepingAlive(self, for: id)
+    Task.detached {
+      await self.persistThread()
+    }
   }
 
   func handleToggleChatHistory() {
@@ -274,6 +277,8 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
                   self.messages.append(newMessageState)
 
                   for await update in newMessage.futureUpdates {
+                    hasChangedSinceLastSave = true
+
                     // new message content was received
                     if let newContent = update.content.last {
                       var content = newMessageState.content

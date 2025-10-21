@@ -35,18 +35,12 @@ public final class UnknownTool: Tool {
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
-      self.internalState = internalState
       self.updateStatus = updateStatus
-      rawData = internalState ?? .object([:])
     }
-
-    public typealias InternalState = JSON.Value
 
     public typealias Input = JSON.Value
 
     public typealias Output = JSON.Value
-
-    public let internalState: JSONFoundation.JSON.Value?
 
     public let context: ToolExecutionContext
 
@@ -71,9 +65,6 @@ public final class UnknownTool: Tool {
     public func cancel() {
       // Not supported
     }
-
-    /// The raw data that represented the missing tool use when serialized.
-    let rawData: JSON.Value
 
   }
 
@@ -106,30 +97,4 @@ public final class UnknownTool: Tool {
     false
   }
 
-}
-
-extension UnknownTool.Use {
-  public convenience init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
-
-    let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
-    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
-    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-
-    let rawData = try JSON.Value(from: decoder)
-
-    self.init(
-      callingTool: callingTool,
-      toolUseId: toolUseId,
-      input: input,
-      context: context,
-      internalState: rawData,
-      initialStatus: statusValue)
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    try rawData.encode(to: encoder)
-  }
 }
