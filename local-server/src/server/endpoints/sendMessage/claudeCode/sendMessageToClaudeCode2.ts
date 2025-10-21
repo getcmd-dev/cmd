@@ -2,15 +2,14 @@ import { logError, logInfo } from "@/logger"
 import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
 import { ModelMessage, UserModelMessage } from "ai"
 import { Response } from "express"
-import { Options } from "@anthropic-ai/claude-agent-sdk"
+import { Options, query } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "@/utils/spawn-promise"
-import { v4 as uuidv4 } from "uuid"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
-
-// TODO: look at conversation naming
+import { ContentBlock } from "@agentclientprotocol/sdk"
+import { sendCommandToHostApp } from "../../interProcessesBridge"
 
 // Constants
 const TOOL_NAME_PREFIX = "claude_code_"
@@ -89,8 +88,6 @@ const createClaudeCodeEventStream = async (
 		}
 		return undefined
 	})()
-	const sessionId = existingSessionId || uuidv4()
-	logInfo(`Session ID: ${sessionId} existingSessionId: ${existingSessionId}`)
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
@@ -115,7 +112,6 @@ const createClaudeCodeEventStream = async (
 	// We only compare the list of available tools to the list of tools supported by the app.
 	// Other tools supported by Claude Code cannot be enabled/disabled by the app and remain available by default.
 	const availableTools = tools.filter((tool) => tool.name.startsWith(TOOL_NAME_PREFIX)).map((tool) => tool.name)
-	logInfo(`availableTools: ${availableTools}`)
 	const disallowedTools = [
 		"Glob",
 		"TodoWrite",
@@ -132,9 +128,6 @@ const createClaudeCodeEventStream = async (
 	if (disallowedTools.length) {
 		logInfo(`disallowedTools: ${disallowedTools}`)
 	}
-
-	// Added to debug why in some cases we lose connection to CC.
-	logInfo(`Sending message to CC. Resume? ${existingSessionId}.`)
 
 	let pathToClaudeCodeExecutable: string
 	if (process.env.NODE_ENV === "development") {
@@ -178,17 +171,34 @@ const createClaudeCodeEventStream = async (
 		return eventStream
 	}
 
+	const messageContent = toACPContentBlocks(newUserMessages)
+
+	// Provide a name for the conversation, if needed.
+	// TODO: expose the models in Claude Code directly to the API, so that the conversation naming
+	// can be done like for any AI provider with a lower tier model.
+	if (!existingSessionId) {
+		void nameConversation(messageContent, options).then((name) => {
+			sendCommandToHostApp({
+				type: "execute-command",
+				command: "set_conversation_name",
+				input: {
+					name,
+					threadId,
+				},
+			})
+		})
+	}
+
 	const sendMessage = async () => {
 		acpClient = acpClient || new ClaudeCodeACPClient()
 		const acpEventStream = await acpClient.prompt(
 			options,
-			toACPContentBlocks(newUserMessages),
+			messageContent,
 			threadId,
 			async ({ toolCallId, input, toolName }) => {
 				return await askAppForPermission({ toolCallId, input, toolName, eventStream })
 			},
 		)
-		logInfo("done sending message to CC")
 
 		eventStream.pipeFrom(toMessageStream(acpEventStream))
 
@@ -209,8 +219,8 @@ export const isCoreUserMessage = (message: ModelMessage): message is UserModelMe
 	return message.role === "user"
 }
 
-/// Extract the executable path and args from the LocalExecutable configuration.
-/// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
+// Extract the executable path and args from the LocalExecutable configuration.
+// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
 // For instance `claude --dangerously-skip-permissions`
 const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<{ path: string; args: string[] }> => {
 	const parts = localExecutable.executable.match(/(?:[^\s"]+|"[^"]*")+/g) || []
@@ -232,4 +242,64 @@ const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<
 		throw new Error(`Executable ${execName} not found in PATH`)
 	}
 	return { path: execPath, args }
+}
+
+/* Using Claude Haiku, name the conversation based on the first message. */
+const nameConversation = async (messages: ContentBlock[], options: Options): Promise<string> => {
+	const newOptions: Options = {
+		...options,
+		systemPrompt: `
+		You are an expert in naming conversations. You'll be given the first message of the conversation and you need to provide a concise and descriptive name for the conversation, under 50 characters.
+
+		YOU MUST RESPOND WITH ONLY THE NAME OF THE CONVERSATION, NOTHING ELSE.
+		
+		good output example : \`Fixing the login flow in the app\`
+		bad output example: \`Here's a concise summary of the conversation: Fixing the login flow in the app\`
+		bad output example: \`I'm happy to assist you with that. Here's a concise summary of the conversation: Fixing the login flow in the app\`
+		`,
+		stderr: undefined,
+		disallowedTools: [
+			"Glob",
+			"TodoWrite",
+			"WebFetch",
+			"WebSearch",
+			"Edit",
+			"MultiEdit",
+			"Write",
+			"Bash",
+			"LS",
+			"Read",
+			"Grep",
+		],
+		resume: undefined,
+	}
+	const q = query({
+		prompt: messages
+			.filter((message) => message.type === "text")
+			.map((message) => message.text)
+			.join("\n"),
+		options: newOptions,
+	})
+	const models = await q.supportedModels()
+	const model =
+		models
+			.map((model) => model.value)
+			.filter((model) => model.includes("haiku"))
+			.sort((a, b) => (a > b ? -1 : 1))[0] || models[0].value
+	logInfo(`Using model: ${model}`)
+	await q.setModel(model)
+	while (true) {
+		const { value: message, done } = await q.next()
+		logInfo(`Message: ${JSON.stringify(message)} done: ${done}`)
+		if (message?.type === "assistant") {
+			const content = message.message.content.filter((content) => content.type === "text")[0]
+			if (content) {
+				return content.text
+			}
+		}
+		if (done) {
+			break
+		}
+	}
+	return "New conversation"
 }
