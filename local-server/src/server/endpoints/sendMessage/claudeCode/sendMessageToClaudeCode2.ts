@@ -129,7 +129,7 @@ const createClaudeCodeEventStream = async (
 		logInfo(`disallowedTools: ${disallowedTools}`)
 	}
 
-	const pathToClaudeCodeExecutable = process.env.CLODE_CODE_PROXY || executableInfo.path
+	const pathToClaudeCodeExecutable = process.env.CLAUDE_CODE_PROXY || executableInfo.path
 
 	let onError: ((error: string) => void) | undefined
 	const receivedError = new Promise<string>((resolve) => {

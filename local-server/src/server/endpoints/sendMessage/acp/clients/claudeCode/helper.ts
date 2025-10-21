@@ -33,7 +33,7 @@ import {
 	ExecuteCommandToolOutput,
 	GlobToolInput,
 	GlobToolOutput,
-	InterlalToolOutputSchemas,
+	InternalToolOutputSchemas,
 	ReadFileToolInput,
 	ReadFileToolOutput,
 	SearchFilesToolInput,
@@ -97,7 +97,7 @@ export async function* withParsedToolCalls(
 					yield event
 					continue
 				}
-				const output = event.update._meta?.jsonOutput as ToolOutputSchemas | undefined
+				const output = event.update._meta?.toolResponse as ToolOutputSchemas | undefined
 				if (!output) {
 					logError(`Tool call without output: ${JSON.stringify(event.update, null, 2)}`)
 					yield event
@@ -110,7 +110,6 @@ export async function* withParsedToolCalls(
 						_meta: {
 							...event.update._meta,
 							toolName: toolNameMapping[toolName] || toolName,
-							// input: mapToolInput(toolName, input),
 							output: mapToolOutput(toolName, output),
 						},
 					},
@@ -235,7 +234,7 @@ const mapToolInput = (toolName: string, input: ToolInputSchemas): ToolInputSchem
 	return undefined
 }
 
-const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InterlalToolOutputSchemas | undefined => {
+const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InternalToolOutputSchemas | undefined => {
 	switch (toolName) {
 		case "Bash": {
 			const o = output as BashOutput

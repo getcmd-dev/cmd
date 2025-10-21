@@ -141,55 +141,93 @@ export async function* toMessageStream(
 				break
 			}
 			case "tool_call": {
-				const toolName = event.update._meta?.toolName
-				if (typeof toolName !== "string") {
-					// TODO: handle regular ACP tools whose name has been removed
-					// as this will be necessary when integrating with agents that we can't modify easily,
-					// like codex that is Rust
-					logError(`Tool call without tool name: ${JSON.stringify(event.update, null, 2)}`)
-					break
-				}
+				const toolName = event.update._meta?.toolName as string | undefined
 				const input = event.update._meta?.input as Record<string, unknown> | undefined
-				yield {
-					type: "tool_call",
-					toolName,
-					toolUseId: event.update.toolCallId,
-					input: input || event.update.rawInput || {},
-				} satisfies Omit<ToolUseRequest, "idx">
+				if (toolName && input) {
+					// Those values have been already been processed to match the format expected by the app.
+					// We just forward them.
+					yield {
+						type: "tool_call",
+						toolName,
+						toolUseId: event.update.toolCallId,
+						input: input,
+					} satisfies Omit<ToolUseRequest, "idx">
+				} else {
+					// No pre-processed values available, we map ACP's standard tool format to the app's format.
+					logError(`Tool call not pre-processed: ${JSON.stringify(event.update, null, 2)}`)
+					switch (event.update.kind || "other") {
+						case "read":
+							break
+						case "edit":
+							break
+						case "delete":
+							break
+						case "move":
+							break
+						case "search":
+							break
+						case "execute":
+							break
+						case "think":
+							break
+						case "fetch":
+							break
+						case "switch_mode":
+							break
+						case "other":
+							break
+					}
+				}
 				break
 			}
 			case "tool_call_update": {
 				if (event.update.status === "completed" || event.update.status === "failed") {
-					const toolName = event.update._meta?.toolName
-					if (typeof toolName !== "string") {
-						// TODO: handle regular ACP tools whose name has been removed
-						// as this will be necessary when integrating with agents that we can't modify easily,
-						// like codex that is Rust
-						logError(`Tool call without tool name: ${JSON.stringify(event.update, null, 2)}`)
-						break
+					const toolName = event.update._meta?.toolName as string | undefined
+					const output: unknown = event.update._meta?.output as Record<string, unknown> | undefined
+					if (toolName && output) {
+						// Those values have been already been processed to match the format expected by the app.
+						// We just forward them.
+						yield {
+							type: "tool_result",
+							toolUseId: event.update.toolCallId,
+							toolName,
+							result:
+								event.update.status === "completed"
+									? {
+											type: "tool_result_success",
+											success: output,
+										}
+									: {
+											type: "tool_result_failure",
+											failure: output,
+										},
+						} satisfies Omit<ToolResultMessage, "idx">
+					} else {
+						// No pre-processed values available, we map ACP's standard tool format to the app's format.
+						logError(`Tool result not pre-processed: ${JSON.stringify(event.update, null, 2)}`)
+						switch (event.update.kind || "other") {
+							case "read":
+								break
+							case "edit":
+								break
+							case "delete":
+								break
+							case "move":
+								break
+							case "search":
+								break
+							case "execute":
+								break
+							case "think":
+								break
+							case "fetch":
+								break
+							case "switch_mode":
+								break
+							case "other":
+								break
+						}
 					}
-
-					const output: unknown =
-						(event.update._meta?.output as Record<string, unknown> | undefined) ||
-						event.update._meta?.jsonOutput ||
-						event.update.rawOutput ||
-						{}
-
-					yield {
-						type: "tool_result",
-						toolUseId: event.update.toolCallId,
-						toolName,
-						result:
-							event.update.status === "completed"
-								? {
-										type: "tool_result_success",
-										success: output,
-									}
-								: {
-										type: "tool_result_failure",
-										failure: output,
-									},
-					} satisfies Omit<ToolResultMessage, "idx">
 				}
 				break
 			}

@@ -1,7 +1,7 @@
 // @generates: ./app/modules/foundations/ToolTypesFoundation/Sources/tools.generated.swift
 // @schema-name: ToolsSchema
 
-export type InterlalToolInputSchemas =
+export type InternalToolInputSchemas =
 	| LSToolInput
 	| AskFollowUpToolInput
 	| EditFilesToolInput
@@ -13,7 +13,7 @@ export type InterlalToolInputSchemas =
 	| WebFetchToolInput
 	| WebSearchToolInput
 
-export type InterlalToolOutputSchemas =
+export type InternalToolOutputSchemas =
 	| LSToolOutput
 	| AskFollowUpToolOutput
 	| EditFilesToolOutput

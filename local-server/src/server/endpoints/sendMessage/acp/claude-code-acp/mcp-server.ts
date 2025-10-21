@@ -838,7 +838,7 @@ export function replaceAndCalculateLocation(
 	let currentContent = fileContent
 
 	// Use unique markers to track where replacements happen
-	const markerPrefix = `__REPLACE_MARKER_${Math.random().toString(36).substr(2, 9)}_`
+	const markerPrefix = `__REPLACE_MARKER_${Math.random().toString(36).substring(2, 11)}_`
 	let markerCounter = 0
 	const markers: string[] = []
 

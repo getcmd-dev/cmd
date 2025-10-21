@@ -348,7 +348,7 @@ extension ToolsSchema {
       try container.encodeIfPresent(blockedDomains, forKey: .blockedDomains)
     }
   }
-  public enum InterlalToolInputSchemas: Codable, Sendable {
+  public enum InternalToolInputSchemas: Codable, Sendable {
     case lSToolInput(_ value: LSToolInput)
     case askFollowUpToolInput(_ value: AskFollowUpToolInput)
     case editFilesToolInput(_ value: EditFilesToolInput)
@@ -846,7 +846,7 @@ extension ToolsSchema {
       try container.encode(content, forKey: .content)
     }
   }
-  public enum InterlalToolOutputSchemas: Codable, Sendable {
+  public enum InternalToolOutputSchemas: Codable, Sendable {
     case lSToolOutput(_ value: LSToolOutput)
     case askFollowUpToolOutput(_ value: AskFollowUpToolOutput)
     case editFilesToolOutput(_ value: EditFilesToolOutput)

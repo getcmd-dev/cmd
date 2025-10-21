@@ -84,7 +84,7 @@ export type CachedToolUse = {
 	id: string
 	name: string
 	input: unknown
-	jsonOutput?: unknown
+	toolResponse?: unknown
 	output?: ToolResultBlockParam
 }
 
@@ -746,9 +746,9 @@ export async function sendAcpNotifications(
 
 		const handleToolResult = async (toolUse: CachedToolUse) => {
 			const chunk = toolUse.output
-			if (!toolUse.jsonOutput || !chunk) {
+			if (!toolUse.toolResponse || !chunk) {
 				console.log(
-					`skipping handleToolResult update for ${toolUse.id}. jsonOutput: ${!!toolUse.jsonOutput} output: ${!!toolUse.output}`,
+					`skipping handleToolResult update for ${toolUse.id}. toolResponse: ${!!toolUse.toolResponse} output: ${!!toolUse.output}`,
 				)
 				// Wait for both output formats to be available before broadcasting the update.
 				return
@@ -761,7 +761,7 @@ export async function sendAcpNotifications(
 					sessionId,
 					update: {
 						_meta: {
-							jsonOutput: toolUse.jsonOutput,
+							toolResponse: toolUse.toolResponse,
 							toolName: toolUse.name,
 						},
 						toolCallId: chunk.tool_use_id,
@@ -805,7 +805,7 @@ export async function sendAcpNotifications(
 						onPostToolUseHook: async (toolUseId, toolInput, toolResponse) => {
 							const toolUse = toolUseCache[toolUseId]
 							if (toolUse) {
-								toolUse.jsonOutput = toolResponse
+								toolUse.toolResponse = toolResponse
 								await handleToolResult(toolUse)
 							} else {
 								console.error(

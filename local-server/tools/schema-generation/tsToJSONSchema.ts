@@ -14,7 +14,7 @@ export const generateJSONSchemas = (params: {
 
 		// Parse a comment like // @generates: ./app/modules/ToolTypesFoundation/Sources/schema.swift
 		const fileContent = fs.readFileSync(filePath, "utf8")
-		const destinationDirective = fileContent.match(/\/\/\s*@generates:\s*(.+)/)
+		const destinationDirective = fileContent.match(/^\/\/\s*@generates:\s*(.+)/m)
 		const destination = destinationDirective
 			? destinationDirective[1].trim()
 			: `./app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/${name}.generated.swift`
