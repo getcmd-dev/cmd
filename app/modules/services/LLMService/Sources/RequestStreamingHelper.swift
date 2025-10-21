@@ -324,12 +324,13 @@ actor RequestStreamingHelper: Sendable {
       }
     } else {
       // Tool not found
-      content.append(
-        toolUse: UnknownTool(name: request.toolName)
-          .use(
-            toolUseId: request.toolUseId,
-            input: request.input.asValue,
-            context: context.toolExecutionContext))
+      let toolUse = UnknownTool(name: request.toolName, isExternalAgent: isExternalAgent)
+        .use(
+          toolUseId: request.toolUseId,
+          input: request.input.asValue,
+          context: context.toolExecutionContext)
+      content.append(toolUse: toolUse)
+      await startExecution(of: toolUse, context: context)
     }
     result.update(with: AssistantMessage(content: content))
   }

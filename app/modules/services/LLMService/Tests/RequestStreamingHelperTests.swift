@@ -494,7 +494,7 @@ struct RequestStreamingHelperToolFailureTests {
     let mockTool = TestTool()
     let mockToolUse = mockTool.use(
       toolUseId: "test-tool-123",
-      input: EmptyObject(),
+      input: [:],
       context: .init())
 
     let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))

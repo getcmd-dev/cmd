@@ -13,7 +13,7 @@ import ToolFoundation
 #if DEBUG
 extension TestTool.Use {
   init() {
-    self = TestTool().use(toolUseId: UUID().uuidString, input: EmptyObject(), context: ToolExecutionContext())
+    self = TestTool().use(toolUseId: UUID().uuidString, input: [:], context: ToolExecutionContext())
   }
 }
 

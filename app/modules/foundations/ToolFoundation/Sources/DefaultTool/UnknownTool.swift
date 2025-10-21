@@ -12,8 +12,9 @@ import ThreadSafe
 /// Represents a tool that was previously used but is no longer available in the current application state.
 /// This type enables deserialization and representation of legacy tool usage data when the original tool type is unavailable.
 public final class UnknownTool: Tool {
-  public init(name: String) {
+  public init(name: String, isExternalAgent: Bool) {
     self.name = name
+    self.isExternalAgent = isExternalAgent
   }
 
   @ThreadSafe
@@ -36,11 +37,20 @@ public final class UnknownTool: Tool {
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
+      self.internalState = internalState ?? .init(isExternalAgent: callingTool.isExternalAgent)
+    }
+
+    public struct InternalState: Codable, Sendable {
+      /// When the tool is deserialized, the tool context is lost, and we only have the toolName left.
+      /// So we need to persist any information about the tool of interest.
+      let isExternalAgent: Bool
     }
 
     public typealias Input = JSON.Value
 
     public typealias Output = JSON.Value
+
+    public private(set) var internalState: InternalState?
 
     public let context: ToolExecutionContext
 
@@ -59,7 +69,13 @@ public final class UnknownTool: Tool {
     }
 
     public func startExecuting() {
-      // Not supported
+      if internalState?.isExternalAgent ?? callingTool.isExternalAgent {
+        // The external agent will set the results
+        updateStatus.yield(.notStarted)
+        updateStatus.yield(.running)
+      } else {
+        updateStatus.complete(with: .failure(AppError("Missing tool \(toolName)")))
+      }
     }
 
     public func cancel() {
@@ -92,6 +108,8 @@ public final class UnknownTool: Tool {
   public func isAvailable(in _: ChatMode) -> Bool {
     false
   }
+
+  let isExternalAgent: Bool
 
   var isReadonly: Bool {
     false

@@ -57,7 +57,7 @@ public struct TestTool: Tool {
 
     public typealias InternalState = EmptyObject
 
-    public typealias Input = EmptyObject
+    public typealias Input = JSON.Value
 
     public typealias Output = JSON.Value
 

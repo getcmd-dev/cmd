@@ -43,7 +43,8 @@ final class SendOneMessageTests {
           },
           "tools" : [],
           "projectRoot" : "/path/to/root",
-          "threadId" : "mock-thread-id"
+          "threadId" : "mock-thread-id",
+          "useNewClaudeCodeApi" : false
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
