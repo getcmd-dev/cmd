@@ -183,7 +183,11 @@ actor RequestStreamingHelper: Sendable {
 
     case .responseError(let error):
       // We received an error from the server.
-      err = err ?? AppError(message: error.message)
+      if let underlyingErrorMessage = error.underlyingErrorMessage {
+        err = err ?? AppError(message: "\(error.message) \(underlyingErrorMessage)")
+      } else {
+        err = err ?? AppError(message: error.message)
+      }
 
     case .reasoningDelta(let reasoningDelta):
       handle(reasoningDelta: reasoningDelta)

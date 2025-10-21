@@ -111,6 +111,7 @@ export interface ReasoningSignature {
 export interface ResponseError {
 	type: "error"
 	message: string
+	underlyingErrorMessage?: string
 	/**
 	 * @format integer
 	 */

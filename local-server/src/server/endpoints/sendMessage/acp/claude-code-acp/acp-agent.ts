@@ -54,12 +54,14 @@ import {
 	registerHookCallback,
 } from "./tools"
 import { ToolResultBlockParam } from "@anthropic-ai/sdk/resources"
+import { logError, logInfo } from "@/logger"
 
 type Session = {
 	query: Query
 	input: Pushable<SDKUserMessage>
 	cancelled: boolean
 	permissionMode: PermissionMode
+	claudeCodeSessionId?: string
 }
 
 type BackgroundTerminal =
@@ -208,6 +210,10 @@ export class ClaudeAcpAgent implements Agent {
 			settingSources: ["user", "project", "local"],
 			stderr: (err) => console.error("Claude Code error", err),
 			...options,
+			// It seems that Claude Code doesn't cancels cleanly when the abort controller passed as an option
+			// aborts.
+			// So instead, we manually listen for the abort event and interrupt the query if that happens.
+			abortController: undefined,
 			cwd: params.cwd,
 			mcpServers: { ...(options?.mcpServers || {}), ...mcpServers },
 			// If we want bypassPermissions to be an option, we have to start the session with it on.
@@ -254,10 +260,25 @@ export class ClaudeAcpAgent implements Agent {
 			newOptions.disallowedTools = disallowedTools
 		}
 
+		// Start the query, ensuring we cancel it when needed.
+		const abortController = options?.abortController
+		if (abortController?.signal.aborted) {
+			throw new Error("Cancelled")
+		}
 		const q = query({
 			prompt: input,
 			options: newOptions,
 		})
+		abortController?.signal.addEventListener("abort", async () => {
+			try {
+				logInfo("Aborting query")
+				await q.interrupt()
+				logInfo("Aborted query")
+			} catch (error) {
+				logError("Error aborting query", error)
+			}
+		})
+
 		const models = await getAvailableModels(q)
 		const permissionMode = "default"
 		// Change it back to default
@@ -338,6 +359,7 @@ export class ClaudeAcpAgent implements Agent {
 				case "system":
 					switch (message.subtype) {
 						case "init":
+							this.sessions[params.sessionId].claudeCodeSessionId = message.session_id
 							break
 						case "compact_boundary":
 							break
@@ -408,6 +430,7 @@ export class ClaudeAcpAgent implements Agent {
 					await sendAcpNotifications(
 						message,
 						params.sessionId,
+						this.sessions[params.sessionId],
 						this.toolUseCache,
 						this.fileContentCache,
 						this.client,
@@ -422,6 +445,7 @@ export class ClaudeAcpAgent implements Agent {
 					await sendAcpNotifications(
 						message,
 						params.sessionId,
+						this.sessions[params.sessionId],
 						this.toolUseCache,
 						this.fileContentCache,
 						this.client,
@@ -659,17 +683,22 @@ function promptToClaude(prompt: PromptRequest): SDKUserMessage {
 export async function sendAcpNotifications(
 	message: SDKAssistantMessage | SDKUserMessage | SDKUserMessageReplay | SDKPartialAssistantMessage,
 	sessionId: string,
+	sessionInfo: Session,
 	toolUseCache: ToolUseCache,
 	fileContentCache: { [key: string]: string },
 	client: AgentSideConnection,
 ): Promise<void> {
 	const notifications: SessionNotification[] = []
+	const _meta = {
+		externalSessionId: sessionInfo.claudeCodeSessionId,
+	}
 
 	// Handle streamed (partial) events for text and thinking.
 	if (message.type === "stream_event") {
 		if (message.event.type === "content_block_delta") {
 			if (message.event.delta.type === "text_delta") {
 				notifications.push({
+					_meta,
 					sessionId,
 					update: {
 						sessionUpdate: "agent_message_chunk",
@@ -681,6 +710,7 @@ export async function sendAcpNotifications(
 				})
 			} else if (message.event.delta.type === "thinking_delta") {
 				notifications.push({
+					_meta,
 					sessionId,
 					update: {
 						sessionUpdate: "agent_thought_chunk",
@@ -702,6 +732,7 @@ export async function sendAcpNotifications(
 
 		if (typeof content === "string") {
 			notifications.push({
+				_meta,
 				sessionId,
 				update: {
 					sessionUpdate: message.type === "assistant" ? "agent_message_chunk" : "user_message_chunk",
@@ -726,6 +757,7 @@ export async function sendAcpNotifications(
 			if (toolUse.name !== "TodoWrite") {
 				console.log("sending handleToolResult update")
 				await client.sessionUpdate({
+					_meta,
 					sessionId,
 					update: {
 						_meta: {
@@ -825,7 +857,11 @@ export async function sendAcpNotifications(
 					throw new Error("unhandled chunk type: " + chunk.type)
 			}
 			if (update) {
-				notifications.push({ sessionId, update })
+				notifications.push({
+					_meta,
+					sessionId,
+					update,
+				})
 			}
 		}
 	}

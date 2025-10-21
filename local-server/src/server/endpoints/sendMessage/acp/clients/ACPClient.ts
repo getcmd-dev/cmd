@@ -99,13 +99,14 @@ export async function* toMessageStream(
 	let hasSentSessionId = false
 
 	for await (const event of stream) {
-		if (!hasSentSessionId) {
+		const externalSessionId = event._meta?.externalSessionId as string | undefined
+		if (!hasSentSessionId && externalSessionId) {
 			hasSentSessionId = true
 			yield {
 				type: "internal_content",
 				value: {
 					type: "session_id",
-					sessionId: event.sessionId,
+					sessionId: externalSessionId,
 				} satisfies SessionIdInfo,
 			}
 		}

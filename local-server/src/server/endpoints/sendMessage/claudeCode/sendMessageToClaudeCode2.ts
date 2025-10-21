@@ -10,8 +10,6 @@ import { v4 as uuidv4 } from "uuid"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
 
-// TODO: check behavior when the user cancels
-// TODO: look at behavior when resuming a session
 // TODO: look at conversation naming
 
 // Constants
@@ -92,6 +90,7 @@ const createClaudeCodeEventStream = async (
 		return undefined
 	})()
 	const sessionId = existingSessionId || uuidv4()
+	logInfo(`Session ID: ${sessionId} existingSessionId: ${existingSessionId}`)
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
@@ -103,7 +102,7 @@ const createClaudeCodeEventStream = async (
 	// as since 2.0 Claude Code responds to each received message before processing the next ones.
 	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
 
-	const { path: pathToClaudeCodeExecutable, args: executableArgs } = await extractExecutableInfo(localExecutable)
+	const executableInfo = await extractExecutableInfo(localExecutable)
 
 	// Try to remove env variable that might lead to CC exiting with status 1
 	// See https://github.com/anthropics/claude-code/issues/4619#issuecomment-3217014571
@@ -111,10 +110,12 @@ const createClaudeCodeEventStream = async (
 	delete env.NODE_OPTIONS
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
+	// TODO: update names here once Claude Code tools have been removed from the app.
 	// The user might decide that some tools are not available.
 	// We only compare the list of available tools to the list of tools supported by the app.
 	// Other tools supported by Claude Code cannot be enabled/disabled by the app and remain available by default.
 	const availableTools = tools.filter((tool) => tool.name.startsWith(TOOL_NAME_PREFIX)).map((tool) => tool.name)
+	logInfo(`availableTools: ${availableTools}`)
 	const disallowedTools = [
 		"Glob",
 		"TodoWrite",
@@ -135,9 +136,20 @@ const createClaudeCodeEventStream = async (
 	// Added to debug why in some cases we lose connection to CC.
 	logInfo(`Sending message to CC. Resume? ${existingSessionId}.`)
 
+	let pathToClaudeCodeExecutable: string
+	if (process.env.NODE_ENV === "development") {
+		pathToClaudeCodeExecutable = process.env.CLODE_CODE_PROXY || executableInfo.path
+	} else {
+		pathToClaudeCodeExecutable = executableInfo.path
+	}
+
+	let onError: ((error: string) => void) | undefined
+	const receivedError = new Promise<string>((resolve) => {
+		onError = resolve
+	})
 	const options: Options & { cwd: string } = {
 		pathToClaudeCodeExecutable,
-		executableArgs,
+		executableArgs: executableInfo.args,
 		cwd: localExecutable.cwd || process.cwd(),
 		// Note: if disallowedTools changed mid session, the new parameter is ignored.
 		disallowedTools,
@@ -148,10 +160,14 @@ const createClaudeCodeEventStream = async (
 			if (data.startsWith("Spawning Claude Code native binary")) {
 				return
 			}
-			logInfo(`Claude Code stderr: '${data}'`)
 			if (data.trim().length && data.trim() !== "Error") {
+				onError?.(data)
+				onError = undefined
 				// TODO: clarify what's going on
 				logError(`Claude Code stderr: ${data}`)
+				eventStream.yield({ type: "error", message: data })
+				eventStream.done()
+				abortController.abort()
 			}
 		},
 	}
@@ -162,19 +178,31 @@ const createClaudeCodeEventStream = async (
 		return eventStream
 	}
 
-	acpClient = acpClient || new ClaudeCodeACPClient()
-	const acpEventStream = await acpClient.prompt(
-		options,
-		toACPContentBlocks(newUserMessages),
-		threadId,
-		async ({ toolCallId, input, toolName }) => {
-			return await askAppForPermission({ toolCallId, input, toolName, eventStream })
-		},
-	)
+	const sendMessage = async () => {
+		acpClient = acpClient || new ClaudeCodeACPClient()
+		const acpEventStream = await acpClient.prompt(
+			options,
+			toACPContentBlocks(newUserMessages),
+			threadId,
+			async ({ toolCallId, input, toolName }) => {
+				return await askAppForPermission({ toolCallId, input, toolName, eventStream })
+			},
+		)
+		logInfo("done sending message to CC")
 
-	eventStream.pipeFrom(toMessageStream(acpEventStream))
+		eventStream.pipeFrom(toMessageStream(acpEventStream))
 
-	return eventStream
+		return eventStream
+	}
+
+	// Handle cases where an error occurs during initialization,
+	// which might prevent the ACP client from ever responding.
+	return await Promise.race([
+		sendMessage(),
+		receivedError.then((error) => {
+			throw new Error(error)
+		}),
+	])
 }
 
 export const isCoreUserMessage = (message: ModelMessage): message is UserModelMessage => {
