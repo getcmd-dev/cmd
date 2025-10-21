@@ -596,9 +596,6 @@ export const registerHookCallback = (
 export const preToolUseHook: HookCallback = async (
 	input: HookInput,
 	toolUseID: string | undefined,
-	options: {
-		signal: AbortSignal
-	},
 ): Promise<HookJSONOutput> => {
 	if (input.hook_event_name === "PreToolUse" && toolUseID) {
 		await globalToolUseRegistry[toolUseID]?.onPreToolUseHook?.(toolUseID, input.tool_input)
@@ -609,9 +606,6 @@ export const preToolUseHook: HookCallback = async (
 export const postToolUseHook: HookCallback = async (
 	input: HookInput,
 	toolUseID: string | undefined,
-	options: {
-		signal: AbortSignal
-	},
 ): Promise<HookJSONOutput> => {
 	if (input.hook_event_name === "PostToolUse" && toolUseID) {
 		await globalToolUseRegistry[toolUseID]?.onPostToolUseHook?.(toolUseID, input.tool_input, input.tool_response)

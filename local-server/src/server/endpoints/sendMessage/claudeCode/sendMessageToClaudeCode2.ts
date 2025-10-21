@@ -1,7 +1,7 @@
 import { logError, logInfo } from "@/logger"
-import { LocalExecutable, Message, Tool, ToolUsePermissionRequest } from "@/server/schemas/sendMessageSchema"
+import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
 import { ModelMessage, UserModelMessage } from "ai"
-import { Request, Response, Router } from "express"
+import { Response } from "express"
 import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
@@ -9,8 +9,6 @@ import { spawn } from "@/utils/spawn-promise"
 import { v4 as uuidv4 } from "uuid"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
-import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
-import { UserFacingError } from "@/server/errors"
 
 // TODO: check behavior when the user cancels
 // TODO: look at behavior when resuming a session

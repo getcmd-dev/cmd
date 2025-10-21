@@ -438,20 +438,24 @@ Output: Create directory 'foo'`),
 					}
 				}
 
-				await using terminal = handle
+				const terminal = handle
+				try {
+					const { status } = await statusPromise
 
-				const { status } = await statusPromise
-
-				if (status === "aborted") {
-					return {
-						content: [{ type: "text", text: "Tool cancelled by user" }],
+					if (status === "aborted") {
+						return {
+							content: [{ type: "text", text: "Tool cancelled by user" }],
+						}
 					}
-				}
 
-				const output = await terminal.currentOutput()
+					const output = await terminal.currentOutput()
 
-				return {
-					content: [{ type: "text", text: toolCommandOutput(status, output) }],
+					return {
+						content: [{ type: "text", text: toolCommandOutput(status, output) }],
+					}
+				} finally {
+					// Ensure the handle is released
+					await handle.release()
 				}
 			},
 		)

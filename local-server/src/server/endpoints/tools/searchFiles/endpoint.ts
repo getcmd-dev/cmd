@@ -1,10 +1,11 @@
 import { Request, Response, Router } from "express"
 import { logInfo } from "../../../../logger"
-import { SearchFilesToolInput, SearchFilesToolOutput } from "../../../schemas/searchFileSchema"
+import { SearchFilesToolOutput } from "../../../schemas/toolsSchema"
 import { regexSearchFiles } from "./searchFiles"
 import { UserFacingError } from "../../../errors"
 import * as path from "path"
 import { existsSync } from "fs"
+import { SearchFilesRequestInput } from "@/server/schemas/searchFileSchema"
 
 export const registerEndpoint = (router: Router) => {
 	router.post("/searchFiles", async (req: Request, res: Response) => {
@@ -15,7 +16,7 @@ export const registerEndpoint = (router: Router) => {
 				statusCode: 400,
 			})
 		}
-		const body = req.body as SearchFilesToolInput
+		const body = req.body as SearchFilesRequestInput
 		if (typeof body.directoryPath !== "string") {
 			throw new UserFacingError({
 				message: "Parameter `directoryPath` must be a string",

@@ -1,4 +1,4 @@
-import { logError, logInfo } from "@/logger"
+import { logError } from "@/logger"
 import { SessionNotification } from "@agentclientprotocol/sdk"
 
 import {
