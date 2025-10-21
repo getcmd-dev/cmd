@@ -6,7 +6,7 @@ import * as acp from "@agentclientprotocol/sdk"
 import { AsyncStream } from "@/utils/asyncStream"
 
 describe("sendMessageToClaudeCode2", () => {
-	let sendMessageToClaudeCode: typeof import("../sendMessageToClaudeCode2").sendMessageToClaudeCode
+	let sendMessageToClaudeCode: typeof import("../sendMessageToCodex").sendMessageToClaudeCode
 	let res: MockResponse
 	let testThreadId: string
 
@@ -87,7 +87,7 @@ describe("sendMessageToClaudeCode2", () => {
 			sendCommandToHostApp: jest.fn(),
 		}))
 
-		const { sendMessageToClaudeCode: sendMessageToClaudeCodeImpl } = await import("../sendMessageToClaudeCode2")
+		const { sendMessageToClaudeCode: sendMessageToClaudeCodeImpl } = await import("../sendMessageToCodex")
 		sendMessageToClaudeCode = sendMessageToClaudeCodeImpl
 	})
 

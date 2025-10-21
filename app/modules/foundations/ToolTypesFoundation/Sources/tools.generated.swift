@@ -1043,4 +1043,558 @@ extension ToolsSchema {
       try container.encode(title, forKey: .title)
       try container.encode(url, forKey: .url)
     }
+  }
+  public enum ACPToolKind: String, Codable, Sendable {
+    case read = "read"
+    case edit = "edit"
+    case delete = "delete"
+    case move = "move"
+    case search = "search"
+    case execute = "execute"
+    case think = "think"
+    case fetch = "fetch"
+    case switchMode = "switch_mode"
+    case other = "other"
+  }    
+  public struct ACPToolInput: Codable, Sendable {
+    public let type = "acp_tool_input"
+    public let kind: ACPToolKind
+    public let title: String
+    public let rawInput: JSON?
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case kind = "kind"
+      case title = "title"
+      case rawInput = "rawInput"
+    }
+  
+    public init(
+        type: String = "acp_tool_input",
+        kind: ACPToolKind,
+        title: String,
+        rawInput: JSON? = nil
+    ) {
+      self.kind = kind
+      self.title = title
+      self.rawInput = rawInput
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      kind = try container.decode(ACPToolKind.self, forKey: .kind)
+      title = try container.decode(String.self, forKey: .title)
+      rawInput = try container.decodeIfPresent(JSON?.self, forKey: .rawInput)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(kind, forKey: .kind)
+      try container.encode(title, forKey: .title)
+      try container.encodeIfPresent(rawInput, forKey: .rawInput)
+    }
+  }
+  public struct ACPToolOutput: Codable, Sendable {
+    public let type = "acp_tool_output"
+    public let kind: ACPToolKind
+    public let content: [ACPToolOutput_Content]
+    public let rawOutput: JSON?
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case kind = "kind"
+      case content = "content"
+      case rawOutput = "rawOutput"
+    }
+  
+    public init(
+        type: String = "acp_tool_output",
+        kind: ACPToolKind,
+        content: [ACPToolOutput_Content],
+        rawOutput: JSON? = nil
+    ) {
+      self.kind = kind
+      self.content = content
+      self.rawOutput = rawOutput
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      kind = try container.decode(ACPToolKind.self, forKey: .kind)
+      content = try container.decode([ACPToolOutput_Content].self, forKey: .content)
+      rawOutput = try container.decodeIfPresent(JSON?.self, forKey: .rawOutput)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(kind, forKey: .kind)
+      try container.encode(content, forKey: .content)
+      try container.encodeIfPresent(rawOutput, forKey: .rawOutput)
+    }
+  }
+  public struct ACPToolOutput_MediaContent: Codable, Sendable {
+    public let content: ACPToolOutput_AnyMediaContent
+    public let type = "content"
+  
+    private enum CodingKeys: String, CodingKey {
+      case content = "content"
+      case type = "type"
+    }
+  
+    public init(
+        content: ACPToolOutput_AnyMediaContent,
+        type: String = "content"
+    ) {
+      self.content = content
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      content = try container.decode(ACPToolOutput_AnyMediaContent.self, forKey: .content)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(content, forKey: .content)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public struct ACPToolOutput_Diff: Codable, Sendable {
+    public let newText: String
+    public let oldText: String?
+    public let path: String
+    public let type = "diff"
+  
+    private enum CodingKeys: String, CodingKey {
+      case newText = "newText"
+      case oldText = "oldText"
+      case path = "path"
+      case type = "type"
+    }
+  
+    public init(
+        newText: String,
+        oldText: String? = nil,
+        path: String,
+        type: String = "diff"
+    ) {
+      self.newText = newText
+      self.oldText = oldText
+      self.path = path
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      newText = try container.decode(String.self, forKey: .newText)
+      oldText = try container.decodeIfPresent(String?.self, forKey: .oldText)
+      path = try container.decode(String.self, forKey: .path)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(newText, forKey: .newText)
+      try container.encodeIfPresent(oldText, forKey: .oldText)
+      try container.encode(path, forKey: .path)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public struct ACPToolOutput_Terminal: Codable, Sendable {
+    public let terminalId: String
+    public let type = "terminal"
+  
+    private enum CodingKeys: String, CodingKey {
+      case terminalId = "terminalId"
+      case type = "type"
+    }
+  
+    public init(
+        terminalId: String,
+        type: String = "terminal"
+    ) {
+      self.terminalId = terminalId
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      terminalId = try container.decode(String.self, forKey: .terminalId)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(terminalId, forKey: .terminalId)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public enum ACPToolOutput_Content: Codable, Sendable {
+    case aCPToolOutputMediaContent(_ value: ACPToolOutput_MediaContent)
+    case aCPToolOutputDiff(_ value: ACPToolOutput_Diff)
+    case aCPToolOutputTerminal(_ value: ACPToolOutput_Terminal)
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      let type = try container.decode(String.self, forKey: .type)
+      switch type {
+        case "content":
+          self = .aCPToolOutputMediaContent(try ACPToolOutput_MediaContent(from: decoder))
+        case "diff":
+          self = .aCPToolOutputDiff(try ACPToolOutput_Diff(from: decoder))
+        case "terminal":
+          self = .aCPToolOutputTerminal(try ACPToolOutput_Terminal(from: decoder))
+        default:
+          throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
+      }
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+        case .aCPToolOutputMediaContent(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputDiff(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputTerminal(let value):
+          try value.encode(to: encoder)
+      }
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Text: Codable, Sendable {
+    public let text: String
+    public let type = "text"
+  
+    private enum CodingKeys: String, CodingKey {
+      case text = "text"
+      case type = "type"
+    }
+  
+    public init(
+        text: String,
+        type: String = "text"
+    ) {
+      self.text = text
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      text = try container.decode(String.self, forKey: .text)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(text, forKey: .text)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Image: Codable, Sendable {
+    public let data: String
+    public let mimeType: String
+    public let type = "image"
+    public let uri: String?
+  
+    private enum CodingKeys: String, CodingKey {
+      case data = "data"
+      case mimeType = "mimeType"
+      case type = "type"
+      case uri = "uri"
+    }
+  
+    public init(
+        data: String,
+        mimeType: String,
+        type: String = "image",
+        uri: String? = nil
+    ) {
+      self.data = data
+      self.mimeType = mimeType
+      self.uri = uri
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      data = try container.decode(String.self, forKey: .data)
+      mimeType = try container.decode(String.self, forKey: .mimeType)
+      uri = try container.decodeIfPresent(String?.self, forKey: .uri)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(data, forKey: .data)
+      try container.encode(mimeType, forKey: .mimeType)
+      try container.encode(type, forKey: .type)
+      try container.encodeIfPresent(uri, forKey: .uri)
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Audio: Codable, Sendable {
+    public let data: String
+    public let mimeType: String
+    public let type = "audio"
+  
+    private enum CodingKeys: String, CodingKey {
+      case data = "data"
+      case mimeType = "mimeType"
+      case type = "type"
+    }
+  
+    public init(
+        data: String,
+        mimeType: String,
+        type: String = "audio"
+    ) {
+      self.data = data
+      self.mimeType = mimeType
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      data = try container.decode(String.self, forKey: .data)
+      mimeType = try container.decode(String.self, forKey: .mimeType)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(data, forKey: .data)
+      try container.encode(mimeType, forKey: .mimeType)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public struct ACPToolOutput_MediaContent_ResourceLink: Codable, Sendable {
+    public let description: String?
+    public let mimeType: String?
+    public let name: String
+    public let size: Double?
+    public let title: String?
+    public let type = "resource_link"
+    public let uri: String
+  
+    private enum CodingKeys: String, CodingKey {
+      case description = "description"
+      case mimeType = "mimeType"
+      case name = "name"
+      case size = "size"
+      case title = "title"
+      case type = "type"
+      case uri = "uri"
+    }
+  
+    public init(
+        description: String? = nil,
+        mimeType: String? = nil,
+        name: String,
+        size: Double? = nil,
+        title: String? = nil,
+        type: String = "resource_link",
+        uri: String
+    ) {
+      self.description = description
+      self.mimeType = mimeType
+      self.name = name
+      self.size = size
+      self.title = title
+      self.uri = uri
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      description = try container.decodeIfPresent(String?.self, forKey: .description)
+      mimeType = try container.decodeIfPresent(String?.self, forKey: .mimeType)
+      name = try container.decode(String.self, forKey: .name)
+      size = try container.decodeIfPresent(Double?.self, forKey: .size)
+      title = try container.decodeIfPresent(String?.self, forKey: .title)
+      uri = try container.decode(String.self, forKey: .uri)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encodeIfPresent(description, forKey: .description)
+      try container.encodeIfPresent(mimeType, forKey: .mimeType)
+      try container.encode(name, forKey: .name)
+      try container.encodeIfPresent(size, forKey: .size)
+      try container.encodeIfPresent(title, forKey: .title)
+      try container.encode(type, forKey: .type)
+      try container.encode(uri, forKey: .uri)
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Resource: Codable, Sendable {
+    public let resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource
+    public let type = "resource"
+  
+    private enum CodingKeys: String, CodingKey {
+      case resource = "resource"
+      case type = "type"
+    }
+  
+    public init(
+        resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource,
+        type: String = "resource"
+    ) {
+      self.resource = resource
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      resource = try container.decode(ACPToolOutput_MediaContent_Resource_EmbeddedResource.self, forKey: .resource)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(resource, forKey: .resource)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public enum ACPToolOutput_AnyMediaContent: Codable, Sendable {
+    case aCPToolOutputMediaContentText(_ value: ACPToolOutput_MediaContent_Text)
+    case aCPToolOutputMediaContentImage(_ value: ACPToolOutput_MediaContent_Image)
+    case aCPToolOutputMediaContentAudio(_ value: ACPToolOutput_MediaContent_Audio)
+    case aCPToolOutputMediaContentResourceLink(_ value: ACPToolOutput_MediaContent_ResourceLink)
+    case aCPToolOutputMediaContentResource(_ value: ACPToolOutput_MediaContent_Resource)
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      let type = try container.decode(String.self, forKey: .type)
+      switch type {
+        case "text":
+          self = .aCPToolOutputMediaContentText(try ACPToolOutput_MediaContent_Text(from: decoder))
+        case "image":
+          self = .aCPToolOutputMediaContentImage(try ACPToolOutput_MediaContent_Image(from: decoder))
+        case "audio":
+          self = .aCPToolOutputMediaContentAudio(try ACPToolOutput_MediaContent_Audio(from: decoder))
+        case "resource_link":
+          self = .aCPToolOutputMediaContentResourceLink(try ACPToolOutput_MediaContent_ResourceLink(from: decoder))
+        case "resource":
+          self = .aCPToolOutputMediaContentResource(try ACPToolOutput_MediaContent_Resource(from: decoder))
+        default:
+          throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
+      }
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+        case .aCPToolOutputMediaContentText(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputMediaContentImage(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputMediaContentAudio(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputMediaContentResourceLink(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputMediaContentResource(let value):
+          try value.encode(to: encoder)
+      }
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text: Codable, Sendable {
+    public let type = "embedded_resource_text"
+    public let mimeType: String?
+    public let text: String
+    public let uri: String
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case mimeType = "mimeType"
+      case text = "text"
+      case uri = "uri"
+    }
+  
+    public init(
+        type: String = "embedded_resource_text",
+        mimeType: String? = nil,
+        text: String,
+        uri: String
+    ) {
+      self.mimeType = mimeType
+      self.text = text
+      self.uri = uri
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      mimeType = try container.decodeIfPresent(String?.self, forKey: .mimeType)
+      text = try container.decode(String.self, forKey: .text)
+      uri = try container.decode(String.self, forKey: .uri)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encodeIfPresent(mimeType, forKey: .mimeType)
+      try container.encode(text, forKey: .text)
+      try container.encode(uri, forKey: .uri)
+    }
+  }
+  public struct ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob: Codable, Sendable {
+    public let type = "embedded_resource_blob"
+    public let blob: String
+    public let mimeType: String?
+    public let uri: String
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case blob = "blob"
+      case mimeType = "mimeType"
+      case uri = "uri"
+    }
+  
+    public init(
+        type: String = "embedded_resource_blob",
+        blob: String,
+        mimeType: String? = nil,
+        uri: String
+    ) {
+      self.blob = blob
+      self.mimeType = mimeType
+      self.uri = uri
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      blob = try container.decode(String.self, forKey: .blob)
+      mimeType = try container.decodeIfPresent(String?.self, forKey: .mimeType)
+      uri = try container.decode(String.self, forKey: .uri)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(blob, forKey: .blob)
+      try container.encodeIfPresent(mimeType, forKey: .mimeType)
+      try container.encode(uri, forKey: .uri)
+    }
+  }
+  public enum ACPToolOutput_MediaContent_Resource_EmbeddedResource: Codable, Sendable {
+    case aCPToolOutputMediaContentResourceEmbeddedResourceText(_ value: ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text)
+    case aCPToolOutputMediaContentResourceEmbeddedResourceBlob(_ value: ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob)
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      let type = try container.decode(String.self, forKey: .type)
+      switch type {
+        case "embedded_resource_text":
+          self = .aCPToolOutputMediaContentResourceEmbeddedResourceText(try ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text(from: decoder))
+        case "embedded_resource_blob":
+          self = .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(try ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob(from: decoder))
+        default:
+          throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
+      }
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      switch self {
+        case .aCPToolOutputMediaContentResourceEmbeddedResourceText(let value):
+          try value.encode(to: encoder)
+        case .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(let value):
+          try value.encode(to: encoder)
+      }
+    }
   }}

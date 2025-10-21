@@ -22,7 +22,7 @@ export interface APIProvider {
 export interface LocalExecutable {
 	executable: string
 	env: Record<string, string>
-	cwd?: string
+	cwd: string
 }
 
 export type APIProviderName = "openai" | "anthropic" | "openrouter" | "claude_code" | "groq" | "gemini"

@@ -1,14 +1,13 @@
 import { logError, logInfo } from "@/logger"
 import * as acp from "@agentclientprotocol/sdk"
-import { ClaudeAcpAgent } from "../../claude-code-acp/index"
 
-import { ClaudeAgentMeta } from "../../claude-code-acp/acp-agent"
 import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
-import { withParsedToolCalls } from "./helper"
+import { spawn } from "child_process"
+import { Readable, Writable } from "stream"
 
-export type ClaudeCodeACPSessionInitializationParams = {
+export type CodexACPSessionInitializationParams = {
 	cwd: string
 } & Options
 
@@ -29,13 +28,10 @@ type SessionManager = {
 	prompt: (message: acp.ContentBlock[]) => void
 }
 
-export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitializationParams>, acp.Client {
-	private readonly agentOutputStream = new TransformStream<acp.AnyMessage, acp.AnyMessage>()
-	private readonly agentInputStream = new TransformStream<acp.AnyMessage, acp.AnyMessage>()
+export class CodexACPClient implements ACPClient<CodexACPSessionInitializationParams>, acp.Client {
 	// keep track of active session to avoid creating multiple sessions
 	private activeSessions: Record<string, SessionManager> = {}
 	private readonly clientConnection: acp.ClientSideConnection
-	private readonly agentSideConnection: acp.AgentSideConnection
 	private eventHandlerByACPSessionId: Record<string, (event: acp.SessionNotification) => void> = {}
 	private permissionRequestHandlerByACPSessionId: Record<
 		string,
@@ -43,18 +39,27 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	> = {}
 
 	constructor() {
-		this.clientConnection = new acp.ClientSideConnection((_agent) => this, {
-			writable: this.agentInputStream.writable,
-			readable: this.agentOutputStream.readable,
-		})
+		const agentPath = "/Users/guigui/Downloads/codex-acp"
 
-		this.agentSideConnection = new acp.AgentSideConnection(
-			(agentConnection) => new ClaudeAcpAgent(agentConnection, { log: logInfo, error: logError }),
-			{
-				writable: this.agentOutputStream.writable,
-				readable: this.agentInputStream.readable,
-			},
-		)
+		// npx @zed-industries/codex-acp
+
+		// Spawn the agent as a subprocess using tsx
+		const agentProcess = spawn(agentPath, {
+			stdio: ["pipe", "pipe", "inherit"],
+		})
+		// const agentProcess = spawn("npx", ["@zed-industries/codex-acp"], {
+		// 	stdio: ["pipe", "pipe", "inherit"],
+		// })
+
+		// Create streams to communicate with the agent
+		const input = Writable.toWeb(agentProcess.stdin!)
+		const output = Readable.toWeb(agentProcess.stdout!) as ReadableStream<Uint8Array>
+		const stream = acp.ndJsonStream(input, output)
+
+		this.clientConnection = new acp.ClientSideConnection((_agent) => this, stream)
+		// this.clientConnection.cancel({
+		// 	sessionId: "123",
+		// })
 	}
 
 	async cancel(sessionId: string): Promise<void> {
@@ -64,7 +69,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	}
 
 	async prompt(
-		sessionInitializationParams: ClaudeCodeACPSessionInitializationParams,
+		sessionInitializationParams: CodexACPSessionInitializationParams,
 		message: acp.ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
@@ -90,27 +95,24 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 		session.permissionRequestHandler = permissionRequestHandler
 		session.prompt(message)
 
-		return { events: withParsedToolCalls(eventStream), sessionId: session.acpSessionId }
+		return { events: eventStream, sessionId: session.acpSessionId }
 	}
 
 	private async createSession(
-		sessionInitializationParams: ClaudeCodeACPSessionInitializationParams,
+		sessionInitializationParams: CodexACPSessionInitializationParams,
 		threadId: string,
 	): Promise<SessionManager> {
 		const abortController = sessionInitializationParams.abortController || new AbortController()
-		const meta: ClaudeAgentMeta = { options: { ...sessionInitializationParams, abortController } }
 		// Initialize the connection
 		await this.clientConnection.initialize({
 			protocolVersion: acp.PROTOCOL_VERSION,
 			clientCapabilities: {},
-			_meta: meta,
 		})
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
 			cwd: sessionInitializationParams.cwd,
 			mcpServers: [],
-			_meta: meta,
 		})
 		const acpSessionId = sessionResult.sessionId
 
@@ -135,7 +137,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 				sessionManager.eventHandler.yield(event)
 			} else {
 				logError(
-					`[ClaudeCodeACPClient] No event handler found for session ${acpSessionId}.
+					`[CodexACPClient] No event handler found for session ${acpSessionId}.
 					Event: ${JSON.stringify(event, null, 2)}.`,
 				)
 			}
@@ -145,7 +147,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 				return sessionManager.permissionRequestHandler({ toolCallId, input, toolName })
 			}
 			logError(
-				`[ClaudeCodeACPClient] No permission request handler found for session ${acpSessionId}.
+				`[CodexACPClient] No permission request handler found for session ${acpSessionId}.
 				Tool call ID: ${toolCallId}.
 				Tool input: ${JSON.stringify(input, null, 2)}.`,
 			)
@@ -167,9 +169,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 
 		const permissionRequestHandler = this.permissionRequestHandlerByACPSessionId[params.sessionId]
 		if (permissionRequestHandler) {
-			logInfo(
-				`[ClaudeCodeACPClient] Requesting permission for tool call: ${JSON.stringify(params.toolCall, null, 2)}`,
-			)
+			logInfo(`[CodexACPClient] Requesting permission for tool call: ${JSON.stringify(params.toolCall, null, 2)}`)
 			const isApproved = await permissionRequestHandler({
 				toolCallId: params.toolCall.toolCallId,
 				input: params.toolCall.rawInput,
@@ -192,7 +192,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 			}
 		} else {
 			logError(
-				`[ClaudeCodeACPClient] No permission request handler found for session ${params.sessionId}.
+				`[CodexACPClient] No permission request handler found for session ${params.sessionId}.
 				Tool call ID: ${params.toolCall.toolCallId}.
 				Tool input: ${JSON.stringify(params.toolCall, null, 2)}.`,
 			)
@@ -207,13 +207,13 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	}
 
 	async sessionUpdate(params: acp.SessionNotification): Promise<void> {
-		logInfo(`[ClaudeCodeACPClient] Session ${params.sessionId} update: ${JSON.stringify(params, null, 2)}`)
+		logInfo(`[CodexACPClient] Session ${params.sessionId} update: ${JSON.stringify(params, null, 2)}`)
 		const handler = this.eventHandlerByACPSessionId[params.sessionId]
 		if (handler) {
 			handler(params)
 		} else {
 			logError(
-				`[ClaudeCodeACPClient] No event handler found for session ${params.sessionId}.
+				`[CodexACPClient] No event handler found for session ${params.sessionId}.
 				Event: ${JSON.stringify(params, null, 2)}.`,
 			)
 		}

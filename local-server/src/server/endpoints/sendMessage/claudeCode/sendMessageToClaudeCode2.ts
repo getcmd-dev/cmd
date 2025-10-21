@@ -30,7 +30,7 @@ export const sendMessageToClaudeCode = async (
 	},
 	res: Response,
 ) => {
-	const eventStream = await createClaudeCodeEventStream(res, {
+	const eventStream = await createEventStream(res, {
 		messages,
 		localExecutable,
 		threadId,
@@ -41,7 +41,7 @@ export const sendMessageToClaudeCode = async (
 	res.end()
 }
 
-const createClaudeCodeEventStream = async (
+const createEventStream = async (
 	res: Response,
 	{
 		messages,
@@ -93,7 +93,6 @@ const createClaudeCodeEventStream = async (
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
 		firstNewUserMessagesIdx--
 	}
-	logInfo(`First new user messages index: ${firstNewUserMessagesIdx} / Total messages: ${messages.length}`)
 
 	// Merge all the user messages into a single message with several content parts
 	// as since 2.0 Claude Code responds to each received message before processing the next ones.
@@ -138,7 +137,7 @@ const createClaudeCodeEventStream = async (
 	const options: Options & { cwd: string } = {
 		pathToClaudeCodeExecutable,
 		executableArgs: executableInfo.args,
-		cwd: localExecutable.cwd || process.cwd(),
+		cwd: localExecutable.cwd,
 		// Note: if disallowedTools changed mid session, the new parameter is ignored.
 		disallowedTools,
 		env,
@@ -186,7 +185,7 @@ const createClaudeCodeEventStream = async (
 
 	const sendMessage = async () => {
 		acpClient = acpClient || new ClaudeCodeACPClient()
-		const acpEventStream = await acpClient.prompt(
+		const { events, sessionId } = await acpClient.prompt(
 			options,
 			messageContent,
 			threadId,
@@ -194,8 +193,11 @@ const createClaudeCodeEventStream = async (
 				return await askAppForPermission({ toolCallId, input, toolName, eventStream })
 			},
 		)
+		abortController.signal.addEventListener("abort", async () => {
+			await acpClient?.cancel(sessionId)
+		})
 
-		eventStream.pipeFrom(toMessageStream(acpEventStream))
+		eventStream.pipeFrom(toMessageStream(events))
 
 		return eventStream
 	}
@@ -208,10 +210,6 @@ const createClaudeCodeEventStream = async (
 			throw new Error(error)
 		}),
 	])
-}
-
-export const isCoreUserMessage = (message: ModelMessage): message is UserModelMessage => {
-	return message.role === "user"
 }
 
 // Extract the executable path and args from the LocalExecutable configuration.

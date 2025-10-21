@@ -13,6 +13,7 @@ import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/to
 import { Request, Response, Router } from "express"
 import { UserFacingError } from "@/server/errors"
 import { AsyncStream } from "@/utils/asyncStream"
+import { ACPToolInput, ACPToolOutput } from "@/server/schemas/toolsSchema"
 
 const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
 
@@ -31,7 +32,8 @@ export interface ACPClient<SessionInitializationParams extends { cwd: string }> 
 			toolName: string
 		}) => Promise<boolean>,
 		abortController?: AbortController,
-	): Promise<AsyncIterable<SessionNotification>>
+	): Promise<{ events: AsyncIterable<SessionNotification>; sessionId: string }>
+	cancel: (sessionId: string) => Promise<void>
 }
 
 export const toACPContentBlocks = (messages: Message[]): ContentBlock[] => {
@@ -154,29 +156,17 @@ export async function* toMessageStream(
 					} satisfies Omit<ToolUseRequest, "idx">
 				} else {
 					// No pre-processed values available, we map ACP's standard tool format to the app's format.
-					logError(`Tool call not pre-processed: ${JSON.stringify(event.update, null, 2)}`)
-					switch (event.update.kind || "other") {
-						case "read":
-							break
-						case "edit":
-							break
-						case "delete":
-							break
-						case "move":
-							break
-						case "search":
-							break
-						case "execute":
-							break
-						case "think":
-							break
-						case "fetch":
-							break
-						case "switch_mode":
-							break
-						case "other":
-							break
-					}
+					yield {
+						type: "tool_call",
+						toolUseId: event.update.toolCallId,
+						toolName: "acp",
+						input: {
+							type: "acp_tool_input",
+							kind: event.update.kind || "other",
+							title: event.update.title || "",
+							rawInput: event.update.rawInput,
+						} satisfies ACPToolInput,
+					} satisfies Omit<ToolUseRequest, "idx">
 				}
 				break
 			}
@@ -204,29 +194,26 @@ export async function* toMessageStream(
 						} satisfies Omit<ToolResultMessage, "idx">
 					} else {
 						// No pre-processed values available, we map ACP's standard tool format to the app's format.
-						logError(`Tool result not pre-processed: ${JSON.stringify(event.update, null, 2)}`)
-						switch (event.update.kind || "other") {
-							case "read":
-								break
-							case "edit":
-								break
-							case "delete":
-								break
-							case "move":
-								break
-							case "search":
-								break
-							case "execute":
-								break
-							case "think":
-								break
-							case "fetch":
-								break
-							case "switch_mode":
-								break
-							case "other":
-								break
-						}
+						yield {
+							type: "tool_result",
+							toolUseId: event.update.toolCallId,
+							toolName: "acp",
+							result:
+								event.update.status === "completed"
+									? {
+											type: "tool_result_success",
+											success: {
+												...event.update,
+												kind: event.update.kind || "other",
+												content: event.update.content || [],
+												type: "acp_tool_output",
+											} satisfies ACPToolOutput,
+										}
+									: {
+											type: "tool_result_failure",
+											failure: output,
+										},
+						} satisfies Omit<ToolResultMessage, "idx">
 					}
 				}
 				break
