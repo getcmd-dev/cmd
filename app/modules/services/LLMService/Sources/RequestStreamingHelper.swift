@@ -147,13 +147,6 @@ actor RequestStreamingHelper: Sendable {
   private let repeatDebugHelper: RepeatDebugHelper?
   #endif
 
-  private static func missingToolError(toolName name: String) -> Error {
-    NSError(
-      domain: "ToolUseError",
-      code: 0,
-      userInfo: [NSLocalizedDescriptionKey: "Missing tool \(name)"])
-  }
-
   private static func failedToParseToolInputError(toolName name: String, error: Error) -> Error {
     NSError(
       domain: "ToolUseError",
@@ -331,11 +324,12 @@ actor RequestStreamingHelper: Sendable {
       }
     } else {
       // Tool not found
-      content.append(toolUse: FailedToolUse(
-        toolUseId: request.toolUseId,
-        toolName: request.toolName,
-        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription,
-        context: context.toolExecutionContext))
+      content.append(
+        toolUse: UnknownTool(name: request.toolName)
+          .use(
+            toolUseId: request.toolUseId,
+            input: request.input.asValue,
+            context: context.toolExecutionContext))
     }
     result.update(with: AssistantMessage(content: content))
   }
