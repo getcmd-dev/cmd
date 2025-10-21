@@ -336,6 +336,7 @@ final class DefaultLLMService: LLMService {
         tools: tools,
         context: context,
         isExternalAgent: provider.isExternalAgent,
+        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server)
       #endif
