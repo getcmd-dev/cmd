@@ -16,7 +16,15 @@ type SessionManager = {
 	acpSessionId: string
 	eventHandler?: AsyncStream<acp.SessionNotification>
 	onPromptDone?: () => void
-	permissionRequestHandler?: (toolCallId: string, toolInput: unknown) => Promise<boolean>
+	permissionRequestHandler?: ({
+		toolCallId,
+		input,
+		toolName,
+	}: {
+		toolCallId: string
+		input: unknown
+		toolName: string
+	}) => Promise<boolean>
 	interrupt: () => void
 	prompt: (message: acp.ContentBlock[]) => void
 }
@@ -31,7 +39,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	private eventHandlerByACPSessionId: Record<string, (event: acp.SessionNotification) => void> = {}
 	private permissionRequestHandlerByACPSessionId: Record<
 		string,
-		(toolCallId: string, toolInput: unknown) => Promise<boolean>
+		({ toolCallId, input, toolName }: { toolCallId: string; input: unknown; toolName: string }) => Promise<boolean>
 	> = {}
 
 	constructor() {
@@ -53,7 +61,15 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 		sessionInitializationParams: ClaudeCodeACPSessionInitializationParams,
 		message: acp.ContentBlock[],
 		threadId: string,
-		permissionRequestHandler: (toolCallId: string, toolInput: unknown) => Promise<boolean>,
+		permissionRequestHandler: ({
+			toolCallId,
+			input,
+			toolName,
+		}: {
+			toolCallId: string
+			input: unknown
+			toolName: string
+		}) => Promise<boolean>,
 	): Promise<AsyncIterable<acp.SessionNotification>> {
 		const session =
 			this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
@@ -118,14 +134,14 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 				)
 			}
 		}
-		this.permissionRequestHandlerByACPSessionId[acpSessionId] = (toolCallId, toolInput) => {
+		this.permissionRequestHandlerByACPSessionId[acpSessionId] = ({ toolCallId, input, toolName }) => {
 			if (sessionManager.permissionRequestHandler) {
-				return sessionManager.permissionRequestHandler(toolCallId, toolInput)
+				return sessionManager.permissionRequestHandler({ toolCallId, input, toolName })
 			}
 			logError(
 				`[ClaudeCodeACPClient] No permission request handler found for session ${acpSessionId}.
 				Tool call ID: ${toolCallId}.
-				Tool input: ${JSON.stringify(toolInput, null, 2)}.`,
+				Tool input: ${JSON.stringify(input, null, 2)}.`,
 			)
 			return Promise.resolve(false)
 		}
@@ -145,7 +161,14 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 
 		const permissionRequestHandler = this.permissionRequestHandlerByACPSessionId[params.sessionId]
 		if (permissionRequestHandler) {
-			const isApproved = await permissionRequestHandler(params.toolCall.toolCallId, params.toolCall.rawInput)
+			logInfo(
+				`[ClaudeCodeACPClient] Requesting permission for tool call: ${JSON.stringify(params.toolCall, null, 2)}`,
+			)
+			const isApproved = await permissionRequestHandler({
+				toolCallId: params.toolCall.toolCallId,
+				input: params.toolCall.rawInput,
+				toolName: (params.toolCall._meta?.toolName as string) || params.toolCall.kind!,
+			})
 			if (isApproved) {
 				return {
 					outcome: {

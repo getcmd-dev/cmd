@@ -18,6 +18,44 @@ interface ToolUpdate {
 	locations?: ToolCallLocation[]
 }
 
+export function toolKindFromToolName(toolName: string): ToolKind {
+	switch (toolName) {
+		case "Task":
+			return "think"
+		case "NotebookRead":
+			return "read"
+		case "NotebookEdit":
+			return "edit"
+		case "Bash":
+			return "execute"
+		case "BashOutput":
+			return "execute"
+		case "KillShell":
+			return "execute"
+		case "Read":
+			return "read"
+		case "LS":
+			return "search"
+		case "Edit":
+			return "edit"
+		case "Write":
+			return "edit"
+		case "Glob":
+			return "search"
+		case "Grep":
+			return "search"
+		case "WebFetch":
+			return "fetch"
+		case "WebSearch":
+			return "fetch"
+		case "TodoWrite":
+			return "think"
+		case "ExitPlanMode":
+			return "switch_mode"
+	}
+	return "other"
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toolInfoFromToolUse(toolUse: any, cachedFileContent: { [key: string]: string }): ToolInfo {
 	const toolName = toolUse.name

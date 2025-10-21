@@ -145,7 +145,8 @@ extension ToolUse {
     }
   }
 
-  ///
+  /// Update the tool state when a succesful output has been received.
+  /// This method is called when the tool is run by an external agent.
   public func receive(externalSuccess: JSON.Value) {
     do {
       let data = try JSONEncoder().encode(externalSuccess)

@@ -1,14 +1,16 @@
 import { logError, logInfo } from "@/logger"
-import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
+import { LocalExecutable, Message, Tool, ToolUsePermissionRequest } from "@/server/schemas/sendMessageSchema"
 import { ModelMessage, UserModelMessage } from "ai"
-import { Response, Router } from "express"
+import { Request, Response, Router } from "express"
 import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "@/utils/spawn-promise"
 import { v4 as uuidv4 } from "uuid"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
-import { toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
+import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
+import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
+import { UserFacingError } from "@/server/errors"
 
 // TODO: check behavior when the user cancels
 // TODO: look at behavior when resuming a session
@@ -24,15 +26,11 @@ export const sendMessageToClaudeCode = async (
 		messages,
 		threadId,
 		localExecutable,
-		port,
-		router,
 		tools,
 	}: {
 		messages: Message[]
 		threadId: string
 		localExecutable: LocalExecutable
-		port: number
-		router: Router
 		tools: Tool[]
 	},
 	res: Response,
@@ -40,9 +38,7 @@ export const sendMessageToClaudeCode = async (
 	const eventStream = await createClaudeCodeEventStream(res, {
 		messages,
 		localExecutable,
-		port,
 		threadId,
-		router,
 		tools,
 	})
 	await respondUsingResponseStream(eventStream, res)
@@ -55,16 +51,12 @@ const createClaudeCodeEventStream = async (
 	{
 		messages,
 		localExecutable,
-		port,
 		threadId,
-		router,
 		tools,
 	}: {
 		messages: Message[]
 		localExecutable: LocalExecutable
-		port: number
 		threadId: string
-		router: Router
 		tools: Tool[]
 	},
 ): Promise<AsyncStream<ResponseChunkWithoutIndex>> => {
@@ -177,9 +169,8 @@ const createClaudeCodeEventStream = async (
 		options,
 		toACPContentBlocks(newUserMessages),
 		threadId,
-		async (toolCallId, toolInput) => {
-			logInfo(`Received permission request for ${toolCallId}: ${toolInput}`)
-			return true
+		async ({ toolCallId, input, toolName }) => {
+			return await askAppForPermission({ toolCallId, input, toolName, eventStream })
 		},
 	)
 

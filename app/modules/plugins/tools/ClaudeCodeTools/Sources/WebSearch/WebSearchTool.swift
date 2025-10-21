@@ -62,7 +62,6 @@ public final class WebSearchTool: Tool {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-      updateStatus.yield(.completed(.failure(AppError("WebSearch is not implemented"))))
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {

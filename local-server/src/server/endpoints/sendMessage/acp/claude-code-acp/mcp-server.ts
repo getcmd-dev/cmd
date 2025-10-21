@@ -10,6 +10,7 @@ import * as diff from "diff"
 
 import { sleep, unreachable, extractLinesWithByteLimit } from "./utils"
 import { PermissionResult } from "@anthropic-ai/claude-agent-sdk"
+import { toolKindFromToolName } from "./tools"
 
 export const SYSTEM_REMINDER = `
 
@@ -691,7 +692,9 @@ export function createPermissionMcpServer(agent: ClaudeAcpAgent, sessionId: stri
 			sessionId,
 			toolCall: {
 				toolCallId: input.tool_use_id!,
+				kind: toolKindFromToolName(input.tool_name),
 				rawInput: input.input,
+				_meta: { toolName: input.tool_name },
 			},
 		})
 		if (

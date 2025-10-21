@@ -4,17 +4,32 @@ import {
 	ReasoningDelta,
 	TextDelta,
 	ToolResultMessage,
+	ToolUsePermissionRequest,
 	ToolUseRequest,
 } from "@/server/schemas/sendMessageSchema"
 import { ResponseChunkWithoutIndex } from "../../sendMessage"
-import { logError } from "@/logger"
+import { logError, logInfo } from "@/logger"
+import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
+import { Request, Response, Router } from "express"
+import { UserFacingError } from "@/server/errors"
+import { AsyncStream } from "@/utils/asyncStream"
+
+const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
 
 export interface ACPClient<SessionInitializationParams extends { cwd: string }> {
 	prompt(
 		sessionInitializationParams: SessionInitializationParams,
 		message: ContentBlock[],
 		threadId: string,
-		permissionRequestHandler: (toolCallId: string, toolInput: unknown) => Promise<boolean>,
+		permissionRequestHandler: ({
+			toolCallId,
+			input,
+			toolName,
+		}: {
+			toolCallId: string
+			input: unknown
+			toolName: string
+		}) => Promise<boolean>,
 		abortController?: AbortController,
 	): Promise<AsyncIterable<SessionNotification>>
 }
@@ -196,4 +211,68 @@ export async function* toMessageStream(
 type SessionIdInfo = {
 	type: "session_id"
 	sessionId: string
+}
+
+export const askAppForPermission = async ({
+	toolCallId,
+	input,
+	toolName,
+	eventStream,
+}: {
+	toolCallId: string
+	input: unknown
+	toolName: string
+	eventStream: AsyncStream<ResponseChunkWithoutIndex>
+}): Promise<boolean> => {
+	logInfo(`Received permission request for ${toolCallId}: ${JSON.stringify(input, null, 2)}`)
+
+	const response = await new Promise<ApprovalResult>((resolve) => {
+		pendingToolApprovalRequests.set(toolCallId, resolve)
+
+		eventStream.yield({
+			type: "tool_use_permission_request",
+			toolName,
+			toolUseId: toolCallId,
+			input: input as Record<string, unknown>,
+		} satisfies Omit<ToolUsePermissionRequest, "idx">)
+	})
+
+	return response.type === "approval_allowed"
+}
+
+export const registerEndpoint = (router: Router) => {
+	// This endpoint is used to receive the result of pending tool permission requests.
+	router.post("/sendMessage/toolUse/permission/acp", async (req: Request, res: Response) => {
+		const body = req.body as ApproveToolUseRequestParams
+		const { toolUseId, approvalResult } = body
+
+		if (!toolUseId || typeof toolUseId !== "string") {
+			throw new UserFacingError({
+				message: "Invalid toolUseId",
+				statusCode: 400,
+			})
+		}
+
+		if (!approvalResult || !approvalResult.type) {
+			throw new UserFacingError({
+				message: "Invalid approvalResult",
+				statusCode: 400,
+			})
+		}
+
+		logInfo(`Received tool use permission response: ${toolUseId}, ${JSON.stringify(approvalResult)}.`)
+
+		const pendingRequest = pendingToolApprovalRequests.get(toolUseId)
+		if (!pendingRequest) {
+			throw new UserFacingError({
+				message: `No pending tool use approval request found for tool use ${toolUseId}`,
+				statusCode: 404,
+			})
+		}
+
+		// Remove from pending requests and resolve
+		pendingToolApprovalRequests.delete(toolUseId)
+		pendingRequest(approvalResult)
+		res.json({ success: true })
+	})
 }

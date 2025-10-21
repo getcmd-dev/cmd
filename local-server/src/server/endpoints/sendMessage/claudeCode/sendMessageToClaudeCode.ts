@@ -18,8 +18,6 @@ import {
 	type SDKMessage,
 	query,
 	SDKPartialAssistantMessage,
-	HookInput,
-	HookJSONOutput,
 } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"

@@ -744,6 +744,10 @@ export async function sendAcpNotifications(
 		// Only handle the first chunk for streaming; extend as needed for batching
 		for (const chunk of content) {
 			let update: SessionNotification["update"] | null = null
+			if (typeof chunk === "string") {
+				// Skipped, as text is handled through streaming.
+				continue
+			}
 			switch (chunk.type) {
 				case "text":
 					// Skipped, as text is handled through streaming.

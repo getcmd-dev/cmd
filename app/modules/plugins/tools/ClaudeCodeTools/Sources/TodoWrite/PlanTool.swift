@@ -89,8 +89,6 @@ public final class PlanTool: Tool {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-
-      updateStatus.yield(.completed(.failure(AppError("Plan is not implemented"))))
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {

@@ -272,13 +272,15 @@ final class DefaultLLMService: LLMService {
     else {
       throw AppError("Unsupported model \(model.id)")
     }
+    let isUsingNewClaudeCodeApi = userDefaults.bool(forKey: .useNewClaudeCodeApi)
 
     let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
       tools: tools
-        .filter { $0.canBeExecuted || provider.isExternalAgent }
+        // Unless we are using an external agent, only send to the AI tools that are internal.
+        .filter { ($0.canBeExecuted && $0.id == $0.referenceId) || provider.isExternalAgent }
         .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: providerModel.id,
       enableReasoning: enableReasoning,
@@ -288,7 +290,7 @@ final class DefaultLLMService: LLMService {
         shellService: shellService,
         projectRoot: context?.projectRoot?.path),
       threadId: context?.threadId,
-      useNewClaudeCodeApi: userDefaults.bool(forKey: .useNewClaudeCodeApi) ? false : nil)
+      useNewClaudeCodeApi: isUsingNewClaudeCodeApi)
 
     let encoder = JSONEncoder()
     // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
@@ -317,6 +319,7 @@ final class DefaultLLMService: LLMService {
         tools: tools,
         context: context,
         isExternalAgent: provider.isExternalAgent,
+        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server,
         repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)

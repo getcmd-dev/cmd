@@ -59,10 +59,8 @@ public final class WebFetchTool: Tool {
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
     public func startExecuting() {
-      // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-      updateStatus.yield(.completed(.failure(AppError("WebFetch is not implemented"))))
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {

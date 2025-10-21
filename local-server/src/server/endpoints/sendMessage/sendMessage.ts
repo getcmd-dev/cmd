@@ -86,6 +86,7 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 					})
 				}
 				const useNewClaudeCodeApi = body.useNewClaudeCodeApi === true
+				logInfo(`Using new Claude Code API: ${useNewClaudeCodeApi}`)
 				const sendMessageToClaudeCodeImpl = useNewClaudeCodeApi
 					? sendMessageToClaudeCode2
 					: sendMessageToClaudeCode

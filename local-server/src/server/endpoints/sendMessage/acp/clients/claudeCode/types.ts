@@ -262,11 +262,13 @@ export interface NotebookEditOutput {
 	total_cells: number
 }
 
+// Note: empirically, the returned object significantly differs from the SDK type:
+// https://docs.claude.com/en/api/agent-sdk/typescript#webfetch-2
 export interface WebFetchOutput {
 	/**
 	 * AI model's response to the prompt
 	 */
-	response: string
+	result: string
 	/**
 	 * URL that was fetched
 	 */
@@ -278,26 +280,30 @@ export interface WebFetchOutput {
 	/**
 	 * HTTP status code
 	 */
-	status_code?: number
+	code?: number
 }
 
+// Note: empirically, the returned object significantly differs from the SDK type:
+// https://docs.claude.com/en/api/agent-sdk/typescript#websearch-2
 export interface WebSearchOutput {
 	/**
 	 * Search results
 	 */
-	results: Array<{
-		title: string
-		url: string
-		snippet: string
-		/**
-		 * Additional metadata if available
-		 */
-		metadata?: Record<string, unknown>
-	}>
-	/**
-	 * Total number of results
-	 */
-	total_results: number
+	results: Array<
+		| {
+				tool_use_id: string
+				content: Array<{
+					title: string
+					url: string
+					/**
+					 * Additional metadata if available
+					 */
+					metadata?: Record<string, unknown>
+				}>
+		  }
+		| string
+	>
+	durationSeconds: number
 	/**
 	 * The query that was searched
 	 */

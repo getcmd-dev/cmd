@@ -336,18 +336,22 @@ const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InterlalToo
 			const o = output as WebFetchOutput
 			return {
 				type: "web_fetch_output",
-				result: o.response,
+				result: o.result,
 			} satisfies WebFetchToolOutput
 		}
 		case "WebSearch": {
 			const o = output as WebSearchOutput
 			return {
 				type: "web_search_output",
-				links: o.results.map((result) => ({
-					title: result.title,
-					url: result.url,
-				})),
-				content: o.results.map((result) => result.snippet).join("\n"),
+				links: o.results
+					.filter((result) => typeof result !== "string")
+					.flatMap((result) =>
+						result.content.map((content) => ({
+							title: content.title,
+							url: content.url,
+						})),
+					),
+				content: o.results.filter((result) => typeof result === "string").join("\n"),
 			} satisfies WebSearchToolOutput
 		}
 		case "TodoWrite": {
