@@ -14,28 +14,28 @@ struct ClaudeCodeWebSearchToolEncodingTests {
   func testInputCoding() throws {
     let input1 = ClaudeCodeWebSearchTool.Use.Input(
       query: "SwiftUI best practices",
-      allowed_domains: ["developer.apple.com", "swift.org"],
-      blocked_domains: ["example.com"])
+      allowedDomains: ["developer.apple.com", "swift.org"],
+      blockedDomains: ["example.com"])
 
     let encoded = try JSONEncoder().encode(input1)
     let decoded = try JSONDecoder().decode(ClaudeCodeWebSearchTool.Use.Input.self, from: encoded)
 
     #expect(decoded.query == input1.query)
-    #expect(decoded.allowed_domains == input1.allowed_domains)
-    #expect(decoded.blocked_domains == input1.blocked_domains)
+    #expect(decoded.allowedDomains == input1.allowedDomains)
+    #expect(decoded.blockedDomains == input1.blockedDomains)
 
     // Test with nil optional fields
     let input2 = ClaudeCodeWebSearchTool.Use.Input(
       query: "test query",
-      allowed_domains: nil,
-      blocked_domains: nil)
+      allowedDomains: nil,
+      blockedDomains: nil)
 
     let encoded2 = try JSONEncoder().encode(input2)
     let decoded2 = try JSONDecoder().decode(ClaudeCodeWebSearchTool.Use.Input.self, from: encoded2)
 
     #expect(decoded2.query == input2.query)
-    #expect(decoded2.allowed_domains == nil)
-    #expect(decoded2.blocked_domains == nil)
+    #expect(decoded2.allowedDomains == nil)
+    #expect(decoded2.blockedDomains == nil)
   }
 
   @Test("Encode and decode Output")
@@ -75,8 +75,8 @@ struct ClaudeCodeWebSearchToolEncodingTests {
   func testInputJSON() throws {
     let input = ClaudeCodeWebSearchTool.Use.Input(
       query: "swift concurrency",
-      allowed_domains: ["swift.org"],
-      blocked_domains: nil)
+      allowedDomains: ["swift.org"],
+      blockedDomains: nil)
 
     let encoded = try JSONEncoder().encode(input)
     let json = try JSONSerialization.jsonObject(with: encoded) as? [String: Any]

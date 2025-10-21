@@ -11,15 +11,15 @@ import Foundation
 import JSONFoundation
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ClaudeCodeTodoWriteTool
 
-public final class ClaudeCodeTodoWriteTool: ExternalTool {
+public final class ClaudeCodeTodoWriteTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
-
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeTodoWriteTool,
       toolUseId: String,
@@ -73,7 +73,9 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
         content = try container.decode(String.self, forKey: "content")
         status = try container.decode(String.self, forKey: "status")
         // Claude Code changed the format around 8/20/25 and replaced `id` with `activeForm` that can also be used as an id.
-        id = try container.decodeIfPresent(String.self, forKey: "activeForm") ?? container.decode(String.self, forKey: "id")
+        id = try container.decodeIfPresent(String.self, forKey: "activeForm") ?? container.decodeIfPresent(
+          String.self,
+          forKey: "id") ?? container.decode(String.self, forKey: "content")
       }
     }
 
@@ -87,7 +89,6 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
     }
 
     public struct Output: Codable, Sendable {
-      public let success: Bool
       public let message: String
     }
 
@@ -106,13 +107,15 @@ public final class ClaudeCodeTodoWriteTool: ExternalTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
+
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
-      // Parse the todo write output from Claude Code
-      let success = output.contains("successfully")
-      let message = success ? "Todo list updated successfully" : output
 
-      updateStatus.complete(with: .success(.init(success: success, message: message)))
+      updateStatus.complete(with: .success(.init(message: output)))
 
       do {
         @Dependency(\.chatContextRegistry) var chatContextRegistry

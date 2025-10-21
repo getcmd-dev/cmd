@@ -10,15 +10,16 @@ import JSONFoundation
 import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - LSTool
 
-public final class LSTool: NonStreamableTool {
+public final class LSTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+  public final class Use: ToolUse,
     @unchecked Sendable
   {
     public init(
@@ -43,25 +44,8 @@ public final class LSTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public typealias InternalState = EmptyObject
-    public struct Input: Codable, Sendable {
-      public let path: String
-      public let recursive: Bool?
-    }
-
-    public struct Output: Codable, Sendable {
-      public let files: [File]
-      /// Whether the output was truncated because there are too many files to reasonably return.
-      public let hasMore: Bool
-      public struct File: Codable, Sendable {
-        /// The full path of the file
-        public let path: String
-        /// The attributes of the file, e.g. like `drwxr-xr-x`.
-        public let attr: String?
-        /// The size of the file in human-readable format.
-        public let size: String?
-      }
-    }
+    public typealias Input = ToolsSchema.LSToolInput
+    public typealias Output = ToolsSchema.LSToolOutput
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -100,6 +84,11 @@ public final class LSTool: NonStreamableTool {
           updateStatus.complete(with: .failure(error))
         }
       }
+    }
+
+    public func receive(output: JSONFoundation.JSON.Value) throws {
+      let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
+      updateStatus.complete(with: .success(output))
     }
 
     public func cancel() {

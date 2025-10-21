@@ -13,7 +13,7 @@ const itMatchesSnapshot = (testName: string, tsCode: string) => {
 		const jsonSchema = generateJSONSchema({
 			content: tsCode,
 		})
-		const swiftSchema = generateSwiftSchema(jsonSchema, "schemaFile")
+		const swiftSchema = generateSwiftSchema(jsonSchema, "schemaFile", "Schema")
 
 		const normalizedTestName = toSnakeCase(testName.replace(/ /g, "_"))
 

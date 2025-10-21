@@ -17,7 +17,7 @@ struct UnknownToolTests {
     let originalToolUse = TestTool.Use(
       callingTool: tool,
       toolUseId: "tool-use-id",
-      input: .init(),
+      input: [:],
       context: toolExecutionContext,
       internalState: nil,
       initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
@@ -49,7 +49,7 @@ struct UnknownToolTests {
     let originalToolUse = TestTool.Use(
       callingTool: tool,
       toolUseId: "tool-use-id",
-      input: .init(),
+      input: ["foo": "bar"],
       context: toolExecutionContext,
       internalState: nil,
       initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
@@ -73,7 +73,27 @@ struct UnknownToolTests {
     finalDecoder.userInfo.set(toolPlugin: finalToolsPlugin)
     let finalToolUse = try #require(try finalDecoder.decode(WrappedToolUse.self, from: originalData).toolUse as? TestTool.Use)
 
-    #expect(originalData.jsonString() == reEncodedData.jsonString())
+    reEncodedData.expectToMatch("""
+      {
+        "callingTool" : "TestTool",
+        "toolUse" : {
+          "callingTool" : "TestTool",
+          "context" : {
+            "threadId" : "mock-thread-id"
+          },
+          "input" : {
+            "foo" : "bar"
+          },
+          "internalState" : {
+            "isExternalAgent" : false
+          },
+          "status" : {
+            "status" : "notStarted"
+          },
+          "toolUseId" : "tool-use-id"
+        }
+      }
+      """)
     #expect(finalToolUse.toolName == originalToolUse.toolName)
     #expect(finalToolUse.toolUseId == originalToolUse.toolUseId)
     #expect(try finalToolUse.output.get() == .object(["foo": .string("bar")]))

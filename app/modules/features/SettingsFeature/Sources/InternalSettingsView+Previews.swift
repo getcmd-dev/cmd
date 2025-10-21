@@ -15,6 +15,7 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
+    useNewClaudeCodeApi: .constant(false),
     defaultLogLevel: .constant(.info))
     .frame(width: 600, height: 400)
     .padding()
@@ -30,6 +31,7 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
+    useNewClaudeCodeApi: .constant(true),
     defaultLogLevel: .constant(.debug))
     .frame(width: 600, height: 400)
     .padding()

@@ -90,7 +90,7 @@ describe("sendMessageToClaudeCode", () => {
 	beforeEach(() => {
 		res = new MockResponse()
 		// Generate a unique thread ID for each test to avoid state interference
-		testThreadId = `test-thread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+		testThreadId = `test-thread-${Date.now()}-${Math.random().toString(36).substring(2, 11)}_`
 		// Clear file system and mock call history between tests
 		if (mockedFs) {
 			mockedFs.restore()

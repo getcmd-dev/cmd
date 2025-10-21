@@ -44,11 +44,10 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
-        isInputComplete: true,
+
         setResult: { _ in })
     }
 
-    #expect(viewModel.isInputComplete == true)
     #expect(viewModel.input.count == 1)
     #expect(viewModel.changes.count == 1)
     #expect(viewModel.changes.first?.path.path == testFile.path)
@@ -76,11 +75,9 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
-        isInputComplete: false,
         setResult: { _ in })
     }
 
-    #expect(viewModel.isInputComplete == false)
     #expect(viewModel.changes.count == 1)
 
     // Simulate streaming input with additional changes
@@ -96,9 +93,7 @@ struct ToolUseViewModelTests {
     ])
 
     viewModel.input = updatedInput.withPathsResolved(from: nil)
-    viewModel.isInputComplete = true
 
-    #expect(viewModel.isInputComplete == true)
     #expect(viewModel.changes.count == 1)
 
     let targetContent = await viewModel.changes.first?.change.targetContent
@@ -133,7 +128,6 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
-        isInputComplete: false,
         setResult: { _ in })
     }
 
@@ -201,7 +195,7 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
-        isInputComplete: true,
+
         setResult: { status in
           if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
@@ -269,7 +263,7 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
-        isInputComplete: true,
+
         setResult: { status in
           if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
@@ -320,7 +314,7 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
-        isInputComplete: true,
+
         setResult: { status in
           if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true
@@ -364,11 +358,8 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: initialInput.withPathsResolved(from: nil),
-        isInputComplete: false,
         setResult: { _ in })
     }
-
-    #expect(viewModel.isInputComplete == false)
 
     // Add more input through streaming
     let updatedInput = EditFilesTool.Use.Input(files: [
@@ -382,9 +373,7 @@ struct ToolUseViewModelTests {
     ])
 
     viewModel.input = updatedInput.withPathsResolved(from: nil)
-    viewModel.isInputComplete = true
 
-    #expect(viewModel.isInputComplete == true)
     #expect(viewModel.changes.count == 1)
   }
 
@@ -423,7 +412,7 @@ struct ToolUseViewModelTests {
       EditFilesToolUseViewModel(
         status: status,
         input: input.withPathsResolved(from: nil),
-        isInputComplete: true,
+
         setResult: { status in
           if status.fileChanges.allSatisfy(\.status.isApplied) {
             toolStatusUpdated = true

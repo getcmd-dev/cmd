@@ -23,6 +23,7 @@ actor RequestStreamingHelper: Sendable {
   ///   - result: The processed result that should be updated as we receive new data.
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
+  ///   - isExternalAgent: Whether we are communicating with an external agent that is responsible for executing tools, or not.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
   ///   - localServer: The local server for making API requests.
   ///   - repeatDebugHelper: A debug helper that will repeat the last streamed responses, regardless of the current input.
@@ -31,6 +32,8 @@ actor RequestStreamingHelper: Sendable {
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
+    isExternalAgent: Bool,
+    isUsingNewClaudeCodeApi: Bool = false,
     isTaskCancelled: @escaping @Sendable () -> Bool,
     localServer: LocalServer,
     repeatDebugHelper: RepeatDebugHelper?)
@@ -39,6 +42,8 @@ actor RequestStreamingHelper: Sendable {
     self.result = result
     self.tools = tools
     self.context = context
+    self.isExternalAgent = isExternalAgent
+    self.isUsingNewClaudeCodeApi = isUsingNewClaudeCodeApi
     self.isTaskCancelled = isTaskCancelled
     self.localServer = localServer
     self.repeatDebugHelper = repeatDebugHelper
@@ -49,6 +54,7 @@ actor RequestStreamingHelper: Sendable {
   ///   - result: The processed result that should be updated as we receive new data.
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
+  ///   - isExternalAgent: Whether we are communicating with an external agent that is responsible for executing tools, or not.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
   ///   - localServer: The local server for making API requests.
   init(
@@ -56,6 +62,8 @@ actor RequestStreamingHelper: Sendable {
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
+    isExternalAgent: Bool,
+    isUsingNewClaudeCodeApi: Bool,
     isTaskCancelled: @escaping @Sendable () -> Bool,
     localServer: LocalServer)
   {
@@ -63,19 +71,21 @@ actor RequestStreamingHelper: Sendable {
     self.result = result
     self.tools = tools
     self.context = context
+    self.isExternalAgent = isExternalAgent
+    self.isUsingNewClaudeCodeApi = isUsingNewClaudeCodeApi
     self.isTaskCancelled = isTaskCancelled
     self.localServer = localServer
   }
   #endif
 
+  let isExternalAgent: Bool
+  let isUsingNewClaudeCodeApi: Bool
   let result: MutableCurrentValueStream<AssistantMessage>
   let stream: AsyncThrowingStream<Data, any Error>
   let tools: [any ToolFoundation.Tool]
   let context: (any ChatContext)?
   let localServer: LocalServer
   var err: Error? = nil
-  var streamingToolUse: (any ToolUse)? = nil
-  var streamingToolUseInput = ""
 
   /// Handle all the streamed data, updating the `result` stream with the new content.
   ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
@@ -137,13 +147,6 @@ actor RequestStreamingHelper: Sendable {
   private let repeatDebugHelper: RepeatDebugHelper?
   #endif
 
-  private static func missingToolError(toolName name: String) -> Error {
-    NSError(
-      domain: "ToolUseError",
-      code: 0,
-      userInfo: [NSLocalizedDescriptionKey: "Missing tool \(name)"])
-  }
-
   private static func failedToParseToolInputError(toolName name: String, error: Error) -> Error {
     NSError(
       domain: "ToolUseError",
@@ -173,7 +176,11 @@ actor RequestStreamingHelper: Sendable {
 
     case .responseError(let error):
       // We received an error from the server.
-      err = err ?? AppError(message: error.message)
+      if let underlyingErrorMessage = error.underlyingErrorMessage {
+        err = err ?? AppError(message: "\(error.message) \(underlyingErrorMessage)")
+      } else {
+        err = err ?? AppError(message: error.message)
+      }
 
     case .reasoningDelta(let reasoningDelta):
       handle(reasoningDelta: reasoningDelta)
@@ -226,61 +233,13 @@ actor RequestStreamingHelper: Sendable {
     }
   }
 
-  private func handle(toolUseDelta: Schema.ToolUseDelta) async {
-    endPreviousContent()
-    guard let context else {
-      defaultLogger.error("No context available to handle tool use.")
-      return
-    }
-
-    let toolName = toolUseDelta.toolName
-    let toolUseId = toolUseDelta.toolUseId
-
-    guard let tool = tools.first(where: { $0.name == toolName }) else {
-      // The tool is not known. This is an error.
-      // We don't handle the error on every partial update. We expect to later receive the same erronous tool name as a complete tool use request where we'll handle it.
-      return
-    }
-    guard tool.canInputBeStreamed else {
-      // The tool doesn't support streaming input. It'll be called at a latter point with the full input.
-      return
-    }
-
-    streamingToolUseInput += toolUseDelta.inputDelta
-
-    do {
-      let (data, _) = try streamingToolUseInput.extractPartialJSON()
-      var content = result.content
-      if let streamingToolUse {
-        assert(
-          streamingToolUse.toolUseId == toolUseId,
-          "Received a tool input while a different tool use is still streaming.")
-        // If we already have an existing instance for this tool use, update it with the newly received data.
-        try streamingToolUse.receive(inputUpdate: data, isLast: false)
-      } else {
-        // ready to start streaming a new tool use
-        let toolUse = try tool.use(
-          toolUseId: toolUseId,
-          input: data,
-          isInputComplete: false,
-          context: context.toolExecutionContext)
-
-        streamingToolUse = toolUse
-        content.append(toolUse: toolUse)
-        result.update(with: AssistantMessage(content: content))
-      }
-
-    } catch {
-      // If the above fails, this is because the input could not be parsed by the tool.
-      // While we are receiving the input, it can happen that we don't have enough data to parse the input well
-      // so we do nothing with the error here.
-      // If the input is not complete when we start receiving the next content, or when the stream ends, we'll set the tool use as failed.
-    }
+  private func handle(toolUseDelta _: Schema.ToolUseDelta) async {
+    // Tool use delta is ignored. We always wait for the tool use request to be entirely received.
   }
 
   private func startExecution(of toolUse: any ToolUse, context: any ChatContext) async {
     do {
-      if toolUse is any ExternalToolUse {
+      if isExternalAgent {
         // We let the external agent manage permissions. If it needs permission
         // approval it will explicitely ask us using `toolUsePermissionRequest`
         // TODO: verify if there is any issue related to the ordering for external tools which calls first `toolUseRequest -> startExecution` and only later `toolUsePermissionRequest`
@@ -318,53 +277,11 @@ actor RequestStreamingHelper: Sendable {
       return
     }
 
-    if let toolUse = streamingToolUse {
-      if toolUse.toolUseId != toolUseRequest.toolUseId {
-        assertionFailure("Received a tool use request for a different tool use ID while already streaming a tool use.")
-      }
-      do {
-        // Complete the tool use input with the final data received from the server.
-        // This marks the end of streaming input for this tool use.
-        try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
-        endStreamedToolUse()
-        await startExecution(of: toolUse, context: context)
-      } catch {
-        defaultLogger.error("Could not parse input for tool \(toolUseRequest.toolName)@\(toolUseRequest.toolUseId)", error)
-        var err = error
-        if let decodingError = error as? DecodingError {
-          err = AppError(message: decodingError.llmErrorDescription)
-        }
-
-        if let updatableToolUse = toolUse as? (any UpdatableToolUse) {
-          updatableToolUse.complete(with: err)
-        } else {
-          // We are not able to update the tool use with the failure. So we cancel it and create a new tool use to represent the error.
-          toolUse.cancel()
-
-          // If the above fails, this is because the input could not be parsed by the tool.
-          var content = result.content
-          assert(
-            content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
-            "The last content should be the tool use request we are ending.")
-          content.removeLast()
-          content.append(toolUse: FailedToolUse(
-            toolUseId: toolUse.toolUseId,
-            toolName: toolUse.toolName,
-            errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: err).localizedDescription,
-            context: context.toolExecutionContext))
-          result.update(with: AssistantMessage(content: content))
-        }
-        endStreamedToolUse()
-      }
-      return
-    }
-
     if result.content.last?.asToolUseRequest?.toolUse.toolUseId == toolUseRequest.toolUseId {
       // We have already processed the tool use.
       return
     }
 
-    // Deal with non streaming tool use.
     var content = result.content
     let request = ToolUseRequestMessage(
       toolName: toolUseRequest.toolName,
@@ -378,10 +295,10 @@ actor RequestStreamingHelper: Sendable {
         let toolUse = try tool.use(
           toolUseId: request.toolUseId,
           input: data,
-          isInputComplete: true,
+
           context: context.toolExecutionContext)
 
-        if !toolUse.isReadonly, tool.isExternalTool {
+        if !toolUse.isReadonly, isExternalAgent {
           // We create a checkpoint now for external tools, as we do not control when the execution starts.
           // For internal tool, this will be done in `startExecution` after validating permissions.
           await context.prepareToExecute(writingToolUse: toolUse)
@@ -393,7 +310,7 @@ actor RequestStreamingHelper: Sendable {
       } catch {
         defaultLogger
           .error(
-            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput:\((try? JSONEncoder().encode(request.input)).map { String(data: $0, encoding: .utf8) } ??? "unreadable")")
+            "Could not parse input for tool \(request.toolName)@\(request.toolUseId):\n\(error)\nInput: \((try? JSONEncoder().encode(request.input)).map { String(data: $0, encoding: .utf8) } ??? "unreadable")")
         var err = error
         if let decodingError = error as? DecodingError {
           err = AppError(message: decodingError.llmErrorDescription)
@@ -407,11 +324,13 @@ actor RequestStreamingHelper: Sendable {
       }
     } else {
       // Tool not found
-      content.append(toolUse: FailedToolUse(
-        toolUseId: request.toolUseId,
-        toolName: request.toolName,
-        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription,
-        context: context.toolExecutionContext))
+      let toolUse = UnknownTool(name: request.toolName, isExternalAgent: isExternalAgent)
+        .use(
+          toolUseId: request.toolUseId,
+          input: request.input.asValue,
+          context: context.toolExecutionContext)
+      content.append(toolUse: toolUse)
+      await startExecution(of: toolUse, context: context)
     }
     result.update(with: AssistantMessage(content: content))
   }
@@ -422,7 +341,7 @@ actor RequestStreamingHelper: Sendable {
         .compactMap(\.asToolUseRequest)
         .first(where: { toolUseRequest in
           toolUseRequest.id == toolResult.toolUseId
-        })?.toolUse as? (any ExternalToolUse)
+        })?.toolUse
     else {
       defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId) for \(toolResult.toolName)")
       return
@@ -443,11 +362,6 @@ actor RequestStreamingHelper: Sendable {
         toolUse.fail(with: AppError("Could not parse failure"))
       }
     }
-  }
-
-  private func endStreamedToolUse() {
-    streamingToolUse = nil
-    streamingToolUseInput = ""
   }
 
   private func endPreviousContent() {
@@ -504,7 +418,7 @@ actor RequestStreamingHelper: Sendable {
         .compactMap(\.asToolUseRequest)
         .first(where: { toolUseRequest in
           toolUseRequest.id == toolUsePermissionRequest.toolUseId
-        })?.toolUse as? (any ExternalToolUse)
+        })?.toolUse
     else {
       defaultLogger.error("Could not find tool use matching #\(toolUsePermissionRequest.toolUseId)")
       await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
@@ -558,7 +472,11 @@ actor RequestStreamingHelper: Sendable {
         toolUseId: toolUsePermissionRequest.toolUseId,
         approvalResult: permissionResponse))
 
-      _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
+      if isUsingNewClaudeCodeApi {
+        _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission/acp", data: data)
+      } else {
+        _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
+      }
     } catch {
       defaultLogger
         .error(

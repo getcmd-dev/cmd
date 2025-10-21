@@ -85,7 +85,7 @@ struct ClaudeCodeWebSearchToolTests {
     let use = ClaudeCodeWebSearchTool.Use(
       callingTool: tool,
       toolUseId: "test-id",
-      input: .init(query: "MCP HTTP streaming specifications", allowed_domains: nil, blocked_domains: nil),
+      input: .init(query: "MCP HTTP streaming specifications", allowedDomains: nil, blockedDomains: nil),
       context: .init())
 
     // Test receiving the output
@@ -140,7 +140,7 @@ struct ClaudeCodeWebSearchToolTests {
     let use = ClaudeCodeWebSearchTool.Use(
       callingTool: tool,
       toolUseId: "test-id",
-      input: .init(query: "test query", allowed_domains: nil, blocked_domains: nil),
+      input: .init(query: "test query", allowedDomains: nil, blockedDomains: nil),
       context: .init())
 
     try use.receive(output: .string(output))
@@ -170,7 +170,7 @@ struct ClaudeCodeWebSearchToolTests {
     let use = ClaudeCodeWebSearchTool.Use(
       callingTool: tool,
       toolUseId: "test-id",
-      input: .init(query: "test", allowed_domains: nil, blocked_domains: nil),
+      input: .init(query: "test", allowedDomains: nil, blockedDomains: nil),
       context: .init())
 
     #expect(throws: (any Error).self) {

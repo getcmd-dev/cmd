@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express"
 import { logError } from "../logger"
+import { isUserFacingError } from "./errors"
 
 // Catch all errors during the execution to avoid crashing the server, and return a 500 error instead.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -13,6 +14,7 @@ const errorHandler = (err: Error & { statusCode?: number }, req: Request, res: R
 		success: false,
 		statusCode: errStatus,
 		message: errMsg,
+		underlyingErrorMessage: isUserFacingError(err) ? err.underlyingError?.message : undefined,
 		stack: process.env.NODE_ENV === "development" ? err.stack : {},
 	}
 

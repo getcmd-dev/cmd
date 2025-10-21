@@ -26,7 +26,6 @@ extension ClaudeCodeTodoWriteToolTests {
   func test_streamRepresentationSuccessWithChangedTodos() {
     // given
     let output = ClaudeCodeTodoWriteTool.Use.Output(
-      success: true,
       message: "Todo list updated successfully")
     let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .completed(.success(output)))
 

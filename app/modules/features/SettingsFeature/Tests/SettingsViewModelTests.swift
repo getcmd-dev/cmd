@@ -42,6 +42,7 @@ struct SettingsViewModelTests {
 
     mockUserDefaults.set(true, forKey: .repeatLastLLMInteraction)
     mockUserDefaults.set(false, forKey: .hasCompletedOnboardingUserDefaultsKey)
+    mockUserDefaults.set(true, forKey: .useNewClaudeCodeApi)
 
     let viewModel = withDependencies {
       $0.settingsService = mockSettingsService
@@ -52,6 +53,7 @@ struct SettingsViewModelTests {
 
     #expect(viewModel.repeatLastLLMInteraction == true)
     #expect(viewModel.showOnboardingScreenAgain == true) // Inverted logic
+    #expect(viewModel.useNewClaudeCodeApi == true)
   }
 
   @Test("allowAnonymousAnalytics setter updates settings service")
@@ -182,6 +184,23 @@ struct SettingsViewModelTests {
     viewModel.showToolInputCopyButtonInRelease = true
 
     #expect(mockUserDefaults.bool(forKey: .showToolInputCopyButtonInRelease) == true)
+  }
+
+  @Test("useNewClaudeCodeApi setter updates user defaults")
+  func test_useNewClaudeCodeApi_setter() {
+    let mockSettingsService = MockSettingsService()
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    viewModel.useNewClaudeCodeApi = true
+
+    #expect(mockUserDefaults.bool(forKey: .useNewClaudeCodeApi) == true)
   }
 
   @Test("fileEditMode setter updates settings service")

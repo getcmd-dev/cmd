@@ -30,6 +30,7 @@ final class DefaultLLMService: LLMService {
   {
     self.server = server
     self.settingsService = settingsService
+    self.userDefaults = userDefaults
     self.shellService = shellService
     self.llmModelsManager = llmModelsManager
 
@@ -93,7 +94,7 @@ final class DefaultLLMService: LLMService {
           await messageHistory.append(Self.waitForResult(of: toolUseRequest))
         }
 
-        if toolUseRequests.filter({ $0.toolUse as? any ExternalToolUse == nil }).isEmpty {
+        if provider(for: model)?.isExternalAgent == true {
           // All tool uses are external, we don't need to send their result back to the assistant.
           break
         }
@@ -202,6 +203,8 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? ""
   }
 
+  private let userDefaults: UserDefaultsI
+
   private let shellService: ShellService
 
   #if DEBUG
@@ -269,12 +272,15 @@ final class DefaultLLMService: LLMService {
     else {
       throw AppError("Unsupported model \(model.id)")
     }
+    let isUsingNewClaudeCodeApi = userDefaults.bool(forKey: .useNewClaudeCodeApi)
 
     let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
       tools: tools
+        // Unless we are using an external agent, only send to the AI tools that are internal.
+        .filter { ($0.canBeExecuted && $0.id == $0.referenceId) || provider.isExternalAgent }
         .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: providerModel.id,
       enableReasoning: enableReasoning,
@@ -283,7 +289,8 @@ final class DefaultLLMService: LLMService {
         settings: providerSettings,
         shellService: shellService,
         projectRoot: context?.projectRoot?.path),
-      threadId: context?.threadId)
+      threadId: context?.threadId,
+      useNewClaudeCodeApi: isUsingNewClaudeCodeApi)
 
     let encoder = JSONEncoder()
     // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
@@ -311,6 +318,8 @@ final class DefaultLLMService: LLMService {
         result: result,
         tools: tools,
         context: context,
+        isExternalAgent: provider.isExternalAgent,
+        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server,
         repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)
@@ -326,6 +335,8 @@ final class DefaultLLMService: LLMService {
         result: result,
         tools: tools,
         context: context,
+        isExternalAgent: provider.isExternalAgent,
+        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server)
       #endif

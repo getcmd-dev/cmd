@@ -249,8 +249,12 @@ final class DefaultLocalServer: LocalServer {
       >) in
         let hasResponded = Atomic(false)
 
+        let stdoutData = Atomic(Data())
         Task {
           for await data in stdout.fileHandleForReading.dataStream {
+            // Ensure that we are not keeping too much data in memory (max 1MB)
+            stdoutData.append(data, maxBufferSize: 1024 * 1024)
+
             let hadAlreadyResponded = hasResponded.set(to: true)
             guard !hadAlreadyResponded else { return }
             if let response = try? JSONDecoder().decode(ConnectionResponse.self, from: data) {
@@ -265,14 +269,8 @@ final class DefaultLocalServer: LocalServer {
         let stderrData = Atomic(Data())
         Task {
           for await data in stderr.fileHandleForReading.dataStream {
-            stderrData.mutate { stderrData in
-              stderrData += data
-              // Ensure that we are not keeping too much data in memory (max 1MB)
-              let maxStderrDataSize = 1024 * 1024
-              if stderrData.count > maxStderrDataSize {
-                stderrData = stderrData.suffix(maxStderrDataSize)
-              }
-            }
+            // Ensure that we are not keeping too much data in memory (max 1MB)
+            stderrData.append(data, maxBufferSize: 1024 * 1024)
           }
         }
 
@@ -282,9 +280,13 @@ final class DefaultLocalServer: LocalServer {
             process.waitUntilExit()
             if let self {
               // The server crashed or was killed, restart it.
+              let errorMessage = "Restarting server. This should not happen. Stdout: \(String(data: stdoutData.value, encoding: .utf8) ?? "<no data>"). Stderr: \(String(data: stderrData.value, encoding: .utf8) ?? "<no data>")"
               defaultLogger
-                .error(
-                  "Restarting server. This should not happen. Stderr: \(String(data: stderrData.value, encoding: .utf8) ?? "<no data>")")
+                .error(errorMessage)
+              let hadAlreadyResponded = hasResponded.set(to: true)
+              if !hadAlreadyResponded {
+                continuation.resume(throwing: AppError(errorMessage))
+              }
               await connect()
             }
           }
@@ -459,3 +461,14 @@ extension BaseProviding where
 }
 
 private let resourceBundle = Bundle.module
+
+extension Atomic where Value == Data {
+  func append(_ newData: Data, maxBufferSize: Int) {
+    mutate { buffer in
+      buffer += newData
+      if buffer.count > maxBufferSize {
+        buffer = buffer.suffix(maxBufferSize)
+      }
+    }
+  }
+}

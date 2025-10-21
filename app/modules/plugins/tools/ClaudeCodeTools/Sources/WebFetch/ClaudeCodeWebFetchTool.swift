@@ -13,11 +13,11 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeWebFetchTool
 
-public final class ClaudeCodeWebFetchTool: ExternalTool {
+public final class ClaudeCodeWebFetchTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWebFetchTool,
       toolUseId: String,
@@ -38,14 +38,9 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
     }
 
     public typealias InternalState = EmptyObject
-    public struct Input: Codable, Sendable {
-      public let url: String
-      public let prompt: String
-    }
 
-    public struct Output: Codable, Sendable {
-      public let result: String
-    }
+    public typealias Input = WebFetchTool.Use.Input
+    public typealias Output = WebFetchTool.Use.Output
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -59,6 +54,11 @@ public final class ClaudeCodeWebFetchTool: ExternalTool {
     public let context: ToolExecutionContext
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)

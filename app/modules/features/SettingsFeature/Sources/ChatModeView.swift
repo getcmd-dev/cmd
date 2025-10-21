@@ -237,18 +237,18 @@ struct ToolSelectionSection: View {
     var mcpToolsByServer = [String: [MCPTool]]()
 
     // Collect all non-external reference IDs
-    let nonExternalReferenceIds = Set(tools.filter { !$0.isExternalTool }.map(\.referenceId))
+    let nonExternalReferenceIds = Set(tools.filter { $0.id == $0.referenceId && $0.canBeExecuted }.map(\.referenceId))
 
     for tool in tools {
       // Check if it's an MCP tool
       if let mcpTool = tool as? MCPTool {
         mcpToolsByServer[mcpTool.serverName, default: []].append(mcpTool)
-      } else if tool.isExternalTool {
+      } else if tool.id != tool.referenceId {
         // External tool - only add if no non-external tool has the same referenceId
         if !nonExternalReferenceIds.contains(tool.referenceId) {
           externalTools.append(tool)
         }
-      } else {
+      } else if tool.canBeExecuted {
         // Non-external, non-MCP tool
         nonExternalNonMCPTools.append(tool)
       }

@@ -7,6 +7,7 @@ export interface SendMessageRequestParams {
 	enableReasoning: boolean
 	provider: APIProvider
 	threadId: string | undefined
+	useNewClaudeCodeApi?: boolean
 }
 
 export interface APIProvider {
@@ -110,6 +111,7 @@ export interface ReasoningSignature {
 export interface ResponseError {
 	type: "error"
 	message: string
+	underlyingErrorMessage?: string
 	/**
 	 * @format integer
 	 */

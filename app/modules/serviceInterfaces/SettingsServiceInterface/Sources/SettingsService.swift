@@ -354,6 +354,7 @@ extension UserDefaultsKey {
   public static let enableNetworkProxy = "enableNetworkProxy"
   public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
   public static let defaultLogLevel = "defaultLogLevel"
+  public static let useNewClaudeCodeApi = "useNewClaudeCodeApi"
 }
 
 // MARK: - KeyEquivalent + Codable

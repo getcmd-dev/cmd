@@ -10,6 +10,7 @@ Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "ToolFoundation",
+    "ToolTypesFoundation",
   ],
   testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -19,4 +20,5 @@ Target.module(
     "SearchFilesTool",
     "SwiftTesting",
     "ToolFoundation",
+    "ToolTypesFoundation",
   ])

@@ -24,13 +24,11 @@ extension ToolUse {
     let context = try container.decode(ToolExecutionContext.self, forKey: .context)
     let internalState = try container.decodeIfPresent(InternalState.self, forKey: .internalState)
     let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
 
     self.init(
       callingTool: callingTool,
       toolUseId: toolUseId,
       input: input,
-      isInputComplete: isInputComplete,
       context: context,
       internalState: internalState,
       initialStatus: statusValue)
@@ -45,7 +43,6 @@ extension ToolUse {
     try container.encode(context, forKey: .context)
     try container.encode(internalState, forKey: .internalState)
     try container.encode(status.value, forKey: .status)
-    try container.encode(isInputComplete, forKey: .isInputComplete)
   }
 }
 
@@ -58,7 +55,6 @@ enum ToolUseCodingKeys: String, CodingKey {
   case context
   case internalState
   case status
-  case isInputComplete
 }
 
 extension KeyedDecodingContainer {
@@ -98,7 +94,7 @@ extension KeyedDecodingContainer {
     }
     // TODO: remove fallback after 11/15/25
     // toolsPlugin.tool(named: toolName) is used as a fallback to decode tools encoding with the previous format.
-    return toolsPlugin.tool(byId: toolId) ?? toolsPlugin.tool(named: toolId) ?? UnknownTool(name: toolId)
+    return toolsPlugin.tool(byId: toolId) ?? toolsPlugin.tool(named: toolId) ?? UnknownTool(name: toolId, isExternalAgent: false)
   }
 }
 
@@ -111,25 +107,6 @@ extension KeyedEncodingContainer {
 extension [CodingUserInfoKey: Any] {
   public mutating func set(toolPlugin: ToolsPlugin) {
     self[toolsPluginKey] = toolPlugin
-  }
-}
-
-// MARK: - StreamableInput + Codable
-
-extension StreamableInput: Codable {
-
-  public init(from decoder: any Decoder) throws {
-    /// When working with streamed input,
-    self = try .streaming(StreamingInput(from: decoder))
-  }
-
-  public func encode(to encoder: any Encoder) throws {
-    switch self {
-    case .streaming(let input):
-      try input.encode(to: encoder)
-    case .streamed(let input):
-      try input.encode(to: encoder)
-    }
   }
 }
 

@@ -11,72 +11,10 @@ import SwiftUI
 import ToolFoundation
 
 #if DEBUG
-struct TestTool: NonStreamableTool {
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
+extension TestTool.Use {
+  init() {
+    self = TestTool().use(toolUseId: UUID().uuidString, input: [:], context: ToolExecutionContext())
   }
-
-  struct Use: NonStreamableToolUse {
-    init(
-      callingTool _: TestTool,
-      toolUseId _: String,
-      input _: String,
-      context _: ToolFoundation.ToolExecutionContext,
-      internalState _: InternalState? = nil,
-      initialStatus _: Status.Element?)
-    {
-      fatalError("not implemented")
-    }
-
-    init(input: String = "") {
-      self.input = input
-      callingTool = TestTool()
-      status = ConcurrencyFoundation.CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<String>>
-        .Just(.completed(.success(input)))
-      toolUseId = UUID().uuidString
-    }
-
-    public typealias InternalState = EmptyObject
-
-    public let isReadonly = true
-
-    let context = ToolExecutionContext()
-
-    let input: String
-
-    let callingTool: TestTool
-
-    var status: CurrentValueStream<ToolUseExecutionStatus<String>>
-
-    let toolUseId: String
-
-    func startExecuting() { }
-
-    func reject(reason _: String?) { }
-
-    func cancel() { }
-
-    func waitForApproval() { }
-  }
-
-  var inputSchema = JSON.object([:])
-
-  var id: String { "TestTool" }
-  var referenceId: String { id }
-
-  var name: String { "TestTool" }
-  var displayName: String { "Test Tool" }
-  var description: String { "A tool for testing." }
-  var shortDescription: String { description }
-
-  func use(toolUseId _: String, input _: String, context _: ToolExecutionContext) -> Use {
-    Use()
-  }
-
-  func use() -> Use {
-    Use()
-  }
-
 }
 
 let messageContentWithCode = """

@@ -10,7 +10,10 @@ Target.module(
     "DLS",
     "FileIcon",
     "JSONFoundation",
+    "LocalServerServiceInterface",
+    "ShellServiceInterface",
     "ToolFoundation",
+    "ToolTypesFoundation",
   ],
   testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),

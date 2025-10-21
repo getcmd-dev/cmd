@@ -20,7 +20,7 @@ extension AskFollowUpToolTests {
       let input = AskFollowUpTool.Use.Input(
         question: "Test question",
         followUp: ["Follow up 1"])
-      let use = tool.use(toolUseId: "test-123", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "test-123", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -35,7 +35,6 @@ extension AskFollowUpToolTests {
             "question": "Test question"
           },
           "internalState": null,
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },
@@ -50,7 +49,7 @@ extension AskFollowUpToolTests {
       let input = AskFollowUpTool.Use.Input(
         question: "Complex question",
         followUp: ["Step 1", "Step 2", "Step 3"])
-      let use = tool.use(toolUseId: "complex-456", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "complex-456", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -67,7 +66,6 @@ extension AskFollowUpToolTests {
             "question": "Complex question"
           },
           "internalState": null,
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },
@@ -82,7 +80,7 @@ extension AskFollowUpToolTests {
       let input = AskFollowUpTool.Use.Input(
         question: "Simple question?",
         followUp: [])
-      let use = tool.use(toolUseId: "simple-789", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "simple-789", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -97,7 +95,6 @@ extension AskFollowUpToolTests {
             "question": "Simple question?"
           },
           "internalState": null,
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },

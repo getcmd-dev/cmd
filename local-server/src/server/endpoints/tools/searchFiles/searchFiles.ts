@@ -3,7 +3,7 @@
 import * as childProcess from "child_process"
 import * as path from "path"
 import * as readline from "readline"
-import { SearchFilesToolOutput, SearchFileResult as SearchFileResultSchema } from "../../../schemas/searchFileSchema"
+import { SearchFilesToolOutput, SearchFileResult as SearchFileResultSchema } from "../../../schemas/toolsSchema"
 import { logError } from "../../../../logger"
 import { UserFacingError } from "../../../errors"
 
@@ -260,9 +260,9 @@ function formatResults(fileResults: SearchFileResult[], cwd: string): SearchFile
 	}
 
 	return {
+		type: "search_files_output",
 		outputForLLm: output.trim(),
 		results: Object.values(parsedResults),
 		hasMore: totalResults >= MAX_RESULTS,
-		rootPath: cwd,
 	}
 }

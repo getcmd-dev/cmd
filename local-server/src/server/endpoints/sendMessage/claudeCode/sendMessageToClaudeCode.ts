@@ -288,7 +288,12 @@ const createClaudeCodeEventStream = async (
 	delete env.NODE_OPTIONS
 	delete env.VSCODE_INSPECTOR_OPTIONS
 
-	const createQuery = (resume: string | undefined) => {
+	let onReceiveResult: () => void = () => {}
+	const receivedResult = new Promise<void>((resolve) => {
+		onReceiveResult = resolve
+	})
+
+	const createQuery = async (resume: string | undefined) => {
 		// The user might decide that some tools are not available.
 		// We only compare the list of available tools to the list of tools supported by the app.
 		// Other tools supported by Claude Code cannot be enabled/disabled by the app and remain available by default.
@@ -312,9 +317,8 @@ const createClaudeCodeEventStream = async (
 
 		// Added to debug why in some cases we lose connection to CC.
 		logInfo(`Sending message to CC. Resume? ${resume}. userMessage: ${JSON.stringify(userMessage)}.`)
-
 		return query({
-			prompt: arrayToAsyncIterable([userMessage]),
+			prompt: arrayToAsyncIterable([userMessage], receivedResult),
 			options: {
 				mcpServers: {
 					command: {
@@ -356,7 +360,7 @@ const createClaudeCodeEventStream = async (
 	// Handle the case where Claude Code doesn't have the conversation in its history.
 	// This can happen if the user cancelled the first message before Claude Code responded.
 	// In this case, we retry without the resume parameter to start a fresh conversation.
-	let runningQuery = createQuery(existingSessionId)
+	let runningQuery = await createQuery(existingSessionId)
 
 	const queryStream = await (async (): Promise<AsyncIterable<ExtendedSDKMessage>> => {
 		try {
@@ -384,7 +388,7 @@ const createClaudeCodeEventStream = async (
 					// Interrupt might fail if the query has already failed. Continue with the fallback query.
 				}
 				// Start a new query without resume
-				runningQuery = createQuery(undefined)
+				runningQuery = await createQuery(undefined)
 				return runningQuery
 			}
 
@@ -392,6 +396,11 @@ const createClaudeCodeEventStream = async (
 			return (async function* (): AsyncIterableIterator<ExtendedSDKMessage> {
 				yield firstEvent.value
 				for await (const event of iterator) {
+					if (event.type == "result") {
+						// The input stream needs to be kept open until Claude Code is done working.
+						// The bug is reported here https://github.com/anthropics/claude-code/issues/9705
+						onReceiveResult()
+					}
 					yield event
 				}
 			})()
@@ -712,14 +721,13 @@ export const registerEndpoint = (router: Router) => {
 	})
 }
 
-function arrayToAsyncIterable<T>(arr: T[]): AsyncIterable<T> {
+function arrayToAsyncIterable<T>(arr: T[], endStream: Promise<void>): AsyncIterable<T> {
 	return {
 		async *[Symbol.asyncIterator]() {
 			for (const item of arr) {
-				// You can introduce asynchronous operations here if needed,
-				// for example, simulating a delay with await new Promise()
 				yield item
 			}
+			await endStream
 		},
 	}
 }

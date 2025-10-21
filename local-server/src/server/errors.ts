@@ -34,6 +34,6 @@ export const addUserFacingError = (error: unknown, message: string, statusCode?:
 	return new UserFacingError({
 		message: message,
 		statusCode: statusCode,
-		underlyingError: error instanceof Error ? error : undefined,
+		underlyingError: error as Error | undefined,
 	})
 }

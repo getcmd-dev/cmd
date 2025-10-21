@@ -10,15 +10,16 @@ import JSONFoundation
 import ShellServiceInterface
 import ThreadSafe
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ExecuteCommandTool
 
-public final class ExecuteCommandTool: NonStreamableTool {
+public final class ExecuteCommandTool: Tool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+  public final class Use: ToolUse,
     @unchecked Sendable
   {
     public init(
@@ -26,13 +27,14 @@ public final class ExecuteCommandTool: NonStreamableTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState _: InternalState? = nil,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = Input(
+      self.input = input
+      resolvedInput = internalState ?? Input(
         command: input.command,
         cwd: input.cwd.map { $0.resolvePath(from: context.projectRoot).path() },
         canModifySourceFiles: input.canModifySourceFiles,
@@ -53,21 +55,14 @@ public final class ExecuteCommandTool: NonStreamableTool {
       setStderrStream = { stream in setStderr(.success(stream)) }
     }
 
-    public typealias InternalState = EmptyObject
+    public typealias InternalState = Input
+    public typealias Input = ToolsSchema.ExecuteCommandToolInput
 
-    public struct Input: Codable, Sendable {
-      public let command: String
-      public let cwd: String?
-      public let canModifySourceFiles: Bool
-      public let canModifyDerivedFiles: Bool
-    }
-
-    public struct Output: Codable, Sendable {
-      public let output: String?
-      public let exitCode: Int32
-    }
+    public typealias Output = ToolsSchema.ExecuteCommandToolOutput
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
+
+    public let resolvedInput: InternalState
 
     // TODO: add support for readonly uses of the terminal.
     public let isReadonly = false
@@ -82,6 +77,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public var internalState: InternalState? { resolvedInput }
+
     public func cancel() {
       updateStatus.complete(with: .failure(CancellationError()))
       try? runningProcess?.terminate()
@@ -95,8 +92,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
       Task {
         do {
           let shellResult = try await shellService.run(
-            input.command,
-            cwd: input.cwd ?? context.projectRoot?.path(),
+            resolvedInput.command,
+            cwd: resolvedInput.cwd ?? context.projectRoot?.path(),
             useInteractiveShell: true,
             env: nil)
           { execution, _, stdout, stderr in
@@ -107,7 +104,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
           let output = Output(
             output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
-            exitCode: shellResult.exitCode)
+            exitCode: Int(shellResult.exitCode))
           if shellResult.exitCode == 0 {
             updateStatus.complete(with: .success(output))
           } else {
@@ -123,6 +120,11 @@ public final class ExecuteCommandTool: NonStreamableTool {
         }
         runningProcess = nil
       }
+    }
+
+    public func receive(output: JSONFoundation.JSON.Value) throws {
+      let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
+      updateStatus.complete(with: .success(output))
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>

@@ -10,15 +10,16 @@ import JSONFoundation
 import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - SearchFilesTool
 
-public final class SearchFilesTool: NonStreamableTool {
+public final class SearchFilesTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+  public final class Use: ToolUse,
     @unchecked Sendable
   {
 
@@ -27,7 +28,7 @@ public final class SearchFilesTool: NonStreamableTool {
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
-      internalState _: EmptyObject? = nil,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,7 +36,7 @@ public final class SearchFilesTool: NonStreamableTool {
       self.context = context
 
       self.input = Input(
-        directoryPath: input.directoryPath.resolvePath(from: context.projectRoot).path,
+        directoryPath: input.directoryPath.map { $0.resolvePath(from: context.projectRoot).path },
         regex: input.regex,
         filePattern: input.filePattern)
 
@@ -45,15 +46,30 @@ public final class SearchFilesTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public typealias InternalState = EmptyObject
+    public typealias Input = ToolsSchema.SearchFilesToolInput
 
-    public struct Input: Codable, Sendable {
-      public let directoryPath: String
-      public let regex: String
-      public let filePattern: String?
+    public typealias Output = ToolsSchema.SearchFilesToolOutput
+
+    public typealias InternalState = RootPath
+    public struct RootPath: Codable, Sendable {
+      let rootPath: String?
+
+      init(rootPath: String?) {
+        self.rootPath = rootPath
+      }
+
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        // Only encode rootPath if it's not nil
+        if let rootPath {
+          try container.encode(rootPath, forKey: .rootPath)
+        }
+      }
+
+      private enum CodingKeys: String, CodingKey {
+        case rootPath
+      }
     }
-
-    public typealias Output = Schema.SearchFilesToolOutput
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -69,6 +85,10 @@ public final class SearchFilesTool: NonStreamableTool {
 
     public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
+    public var internalState: InternalState? {
+      RootPath(rootPath: context.projectRoot?.path())
+    }
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -80,26 +100,30 @@ public final class SearchFilesTool: NonStreamableTool {
 
       Task {
         do {
-          let fullInput = Schema.SearchFilesToolInput(
+          let fullInput = Schema.SearchFilesRequestInput(
             projectRoot: projectRoot.path(),
-            directoryPath: input.directoryPath,
+            directoryPath: input.directoryPath ?? projectRoot.path,
             regex: input.regex,
             filePattern: input.filePattern)
           let data = try JSONEncoder.sortingKeys.encode(fullInput)
-          let response: Schema.SearchFilesToolOutput = try await server.postRequest(path: "searchFiles", data: data)
-          updateStatus.complete(with: .success(Schema.SearchFilesToolOutput(
+          let response: ToolsSchema.SearchFilesToolOutput = try await server.postRequest(path: "searchFiles", data: data)
+          updateStatus.complete(with: .success(ToolsSchema.SearchFilesToolOutput(
             outputForLLm: response.outputForLLm,
             results: response.results.map { result in
-              Schema.SearchFileResult(
+              ToolsSchema.SearchFileResult(
                 path: result.path.resolvePath(from: projectRoot).path,
                 searchResults: result.searchResults)
             },
-            rootPath: response.rootPath,
             hasMore: response.hasMore)))
         } catch {
           updateStatus.complete(with: .failure(error))
         }
       }
+    }
+
+    public func receive(output: JSONFoundation.JSON.Value) throws {
+      let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
+      updateStatus.complete(with: .success(output))
     }
 
     public func cancel() {
@@ -166,6 +190,6 @@ extension SearchFilesTool.Use.Output {
 extension SearchFilesTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(ToolUseViewModel(status: status, input: input))
+    AnyToolUseViewModel(ToolUseViewModel(status: status, input: input, rootPath: context.projectRoot?.path))
   }
 }

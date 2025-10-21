@@ -3,9 +3,9 @@
 
 import DLS
 import FileIcon
-import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ToolUseView
 
@@ -24,7 +24,7 @@ struct ToolUseView: View {
     case .running:
       runningView
     case .completed(.success(let output)):
-      successView(output: output)
+      successView(output: output, rootPath: toolUse.rootPath)
     case .completed(.failure(let error)):
       errorView(error: error)
     }
@@ -77,7 +77,7 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(output: SearchFilesTool.Use.Output) -> some View {
+  private func successView(output: SearchFilesTool.Use.Output, rootPath: String?) -> some View {
     VStack(alignment: .leading) {
       HStack {
         if isExpanded {
@@ -111,7 +111,7 @@ struct ToolUseView: View {
                 .frame(width: 14, height: 14)
               Text(result.fileName)
                 .lineLimit(1)
-              Text(shorten(path: result.directoryPath, in: output.rootPath))
+              Text(shorten(path: result.directoryPath, in: rootPath))
                 .font(.caption)
                 .foregroundColor(colorScheme.toolUseForeground)
                 .lineLimit(1)
@@ -141,7 +141,8 @@ struct ToolUseView: View {
     }
   }
 
-  private func shorten(path: String, in rootPath: String) -> String {
+  private func shorten(path: String, in rootPath: String?) -> String {
+    guard let rootPath else { return path }
     var path = path.replacingOccurrences(of: rootPath, with: "")
     if path.hasPrefix("/") {
       path.removeFirst()
@@ -149,7 +150,7 @@ struct ToolUseView: View {
     return path
   }
 
-  private func display(for searchResult: Schema.SearchFileResult) -> String {
+  private func display(for searchResult: ToolsSchema.SearchFileResult) -> String {
     let matchedLines = searchResult.searchResults
       .filter(\.isMatch)
     guard
@@ -166,17 +167,17 @@ struct ToolUseView: View {
   }
 }
 
-// MARK: - Schema.SearchFileResult + Identifiable
+// MARK: - ToolsSchema.SearchFileResult + Identifiable
 
-extension Schema.SearchFileResult: Identifiable {
+extension ToolsSchema.SearchFileResult: Identifiable {
   public var id: String { path }
   public var pathURL: URL { URL(fileURLWithPath: path) }
   public var fileName: String { pathURL.lastPathComponent }
   public var directoryPath: String { pathURL.deletingLastPathComponent().path }
 }
 
-// MARK: - Schema.SearchResult + Identifiable
+// MARK: - ToolsSchema.SearchResult + Identifiable
 
-extension Schema.SearchResult: Identifiable {
+extension ToolsSchema.SearchResult: Identifiable {
   public var id: String { "\(line)-\(text)" }
 }

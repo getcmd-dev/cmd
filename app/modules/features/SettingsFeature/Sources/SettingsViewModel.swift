@@ -41,6 +41,7 @@ public final class SettingsViewModel {
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
     enableNetworkProxy = userDefaults.bool(forKey: .enableNetworkProxy)
+    useNewClaudeCodeApi = userDefaults.bool(forKey: .useNewClaudeCodeApi)
     showToolInputCopyButtonInRelease = userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
     launchHostAppWhenXcodeDidActivate = userDefaults.object(forKey: .launchHostAppWhenXcodeDidActivate) == nil
       ? true
@@ -165,6 +166,12 @@ public final class SettingsViewModel {
   var enableNetworkProxy: Bool {
     didSet {
       userDefaults.set(enableNetworkProxy, forKey: .enableNetworkProxy)
+    }
+  }
+
+  var useNewClaudeCodeApi: Bool {
+    didSet {
+      userDefaults.set(useNewClaudeCodeApi, forKey: .useNewClaudeCodeApi)
     }
   }
 

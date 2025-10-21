@@ -28,7 +28,7 @@ final class ToolUseViewModel {
             guard let self else { return }
             let highlightedContent = try await self.highlighter.attributedText(
               output.content,
-              language: FileIcon.language(for: URL(fileURLWithPath: output.uri)),
+              language: FileIcon.language(for: URL(fileURLWithPath: input.path)),
               colors: .codeHighlight)
             self.highlightedContent = highlightedContent
           }

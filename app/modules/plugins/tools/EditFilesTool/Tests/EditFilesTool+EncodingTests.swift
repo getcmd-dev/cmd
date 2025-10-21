@@ -43,7 +43,7 @@ struct EditFilesToolEncodingTests {
       ])
       $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
     } operation: {
-      let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
+      let use = try tool.use(toolUseId: "edit-123", input: data, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -52,6 +52,7 @@ struct EditFilesToolEncodingTests {
             "threadId": "mock-thread-id"
           },
           "input" : {
+            "type": "edit_files_input",
             "files" : [
               {
                 "changes" : [
@@ -94,7 +95,6 @@ struct EditFilesToolEncodingTests {
               ]
             }
           },
-          "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"
           },
@@ -125,7 +125,7 @@ struct EditFilesToolEncodingTests {
       ])
       $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager())
     } operation: {
-      let use = try tool.use(toolUseId: "edit-new-456", input: data, isInputComplete: true, context: toolExecutionContext)
+      let use = try tool.use(toolUseId: "edit-new-456", input: data, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -134,6 +134,7 @@ struct EditFilesToolEncodingTests {
             "threadId": "mock-thread-id"
           },
           "input" : {
+            "type": "edit_files_input",
             "files" : [
               {
                 "changes" : [
@@ -176,7 +177,6 @@ struct EditFilesToolEncodingTests {
               ]
             }
           },
-          "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"
           },
@@ -222,7 +222,7 @@ struct EditFilesToolEncodingTests {
       ])
       $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
     } operation: {
-      let use = try tool.use(toolUseId: "edit-multi-789", input: data, isInputComplete: true, context: toolExecutionContext)
+      let use = try tool.use(toolUseId: "edit-multi-789", input: data, context: toolExecutionContext)
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
           "callingTool" : "edit_file",
@@ -230,6 +230,7 @@ struct EditFilesToolEncodingTests {
             "threadId": "mock-thread-id"
           },
           "input" : {
+            "type": "edit_files_input",
             "files" : [
               {
                 "changes" : [
@@ -303,7 +304,6 @@ struct EditFilesToolEncodingTests {
               ]
             }
           },
-          "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"
           },

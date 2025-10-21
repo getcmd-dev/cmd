@@ -8,7 +8,7 @@ import ToolFoundation
 
 // MARK: - FailedToolUse
 
-struct FailedToolUse: NonStreamableToolUse {
+struct FailedToolUse: ToolUse {
   init(
     callingTool: FailedTool,
     toolUseId: String,
@@ -21,9 +21,13 @@ struct FailedToolUse: NonStreamableToolUse {
     self.input = input
     self.context = context
     self.toolUseId = toolUseId
+    let (status, updateStatus) = Status.makeStream(initial: .completed(.failure(AppError(input.errorDescription))))
+    updateStatus.finish()
+    self.status = status
+    self.updateStatus = updateStatus
   }
 
-  init(toolUseId: String, toolName: String, errorDescription: String, context: ToolFoundation.ToolExecutionContext) {
+  init(toolUseId: String, toolName: String, errorDescription: String, context: ToolExecutionContext) {
     let callingTool = FailedTool(name: toolName)
     self.init(
       callingTool: callingTool,
@@ -35,7 +39,7 @@ struct FailedToolUse: NonStreamableToolUse {
 
   public typealias InternalState = EmptyObject
 
-  public let context: ToolFoundation.ToolExecutionContext
+  public let context: ToolExecutionContext
 
   public let isReadonly = true
 
@@ -45,15 +49,15 @@ struct FailedToolUse: NonStreamableToolUse {
 
   typealias Output = EmptyObject
 
+  let updateStatus: AsyncStream<ToolUseExecutionStatus<EmptyObject>>.Continuation
+
   let callingTool: FailedTool
   let toolUseId: String
   let input: Input
 
-  var errorDescription: String { input.errorDescription }
+  let status: CurrentValueStream<ToolUseExecutionStatus<EmptyObject>>
 
-  var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> {
-    .Just(.completed(.failure(AppError(errorDescription))))
-  }
+  var errorDescription: String { input.errorDescription }
 
   func startExecuting() { }
 
@@ -66,7 +70,7 @@ struct FailedToolUse: NonStreamableToolUse {
 
 // MARK: - FailedTool
 
-struct FailedTool: NonStreamableTool {
+struct FailedTool: Tool {
   init(name: String) {
     self.name = name
   }

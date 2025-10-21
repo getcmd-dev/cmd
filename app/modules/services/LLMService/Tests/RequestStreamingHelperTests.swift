@@ -28,6 +28,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -70,6 +71,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -112,6 +114,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -147,6 +150,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -189,6 +193,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -243,6 +248,7 @@ struct RequestStreamingHelperReasoningTests {
       result: result,
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -281,7 +287,7 @@ struct RequestStreamingHelperReasoningTests {
     // Given
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
-    let tool = TestExternalTool()
+    let tool = TestTool()
     let toolUseId = UUID().uuidString
     let permissionRequested = expectation(description: "tool use permission requested and approved")
     let permissionResultSent = expectation(description: "tool use approval sent")
@@ -313,6 +319,7 @@ struct RequestStreamingHelperReasoningTests {
           permissionRequested.fulfill()
           // Returning without throwing will accept the tool use.
         }),
+      isExternalAgent: true,
       isTaskCancelled: { false },
       localServer: localServer,
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -352,7 +359,7 @@ struct RequestStreamingHelperReasoningTests {
     _ = try await requestResult
 
     // Then
-    let toolUse = try #require(result.content.first?.asToolUseRequest?.toolUse as? TestExternalTool.Use)
+    let toolUse = try #require(result.content.first?.asToolUseRequest?.toolUse as? TestTool.Use)
     #expect(toolUse.toolUseId == toolUseId)
 
     let toolStatus = await toolUse.status.lastValue
@@ -370,7 +377,7 @@ struct RequestStreamingHelperReasoningTests {
 @Suite("RequestStreamingHelper Bad Input Tests")
 struct RequestStreamingHelperBadInputTests {
 
-  @Test("Handle non-streamable tool with bad input creates FailedToolUse")
+  @Test("Handle with bad input creates FailedToolUse")
   func testBadInputCreatesFailedToolUseForNonStreamableTools() async throws {
     let mockTool = GenericTestTool<TestToolInput, String>(name: "test_non_streamable", output: "success")
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
@@ -381,6 +388,7 @@ struct RequestStreamingHelperBadInputTests {
       result: result,
       tools: [mockTool],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -422,7 +430,7 @@ struct RequestStreamingHelperBadInputTests {
 
   @Test("Handle external tool with bad input verifies error handling")
   func testExternalToolBadInputHandling() async throws {
-    let mockTool = TestExternalTool()
+    let mockTool = TestTool()
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 
@@ -431,6 +439,7 @@ struct RequestStreamingHelperBadInputTests {
       result: result,
       tools: [mockTool],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: true,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -464,64 +473,12 @@ struct RequestStreamingHelperBadInputTests {
       #expect(failedToolUse.toolUseId == "external-tool-123")
       #expect(failedToolUse.toolName == mockTool.name)
       #expect(failedToolUse.errorDescription.contains("Could not parse"))
-    } else if let externalToolUse = toolMessage.toolUse as? TestExternalTool.Use {
+    } else if let externalToolUse = toolMessage.toolUse as? TestTool.Use {
       // If external tool use is created, verify basic properties
       #expect(externalToolUse.toolUseId == "external-tool-123")
       // External tools may handle bad input differently than streamable tools
     } else {
       Issue.record("Expected FailedToolUse or TestExternalTool.Use, got \(type(of: toolMessage.toolUse))")
-    }
-  }
-
-  @Test("Handle streaming tool with bad input shows error handling")
-  func testStreamingToolBadInputHandling() async throws {
-    let mockTool = TestStreamingTool<TestToolInput, String>()
-    let result = MutableCurrentValueStream(AssistantMessage(content: []))
-    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
-
-    let helper = RequestStreamingHelper(
-      stream: stream,
-      result: result,
-      tools: [mockTool],
-      context: TestChatContext(projectRoot: URL(filePath: "/test")),
-      isTaskCancelled: { false },
-      localServer: MockLocalServer(),
-      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
-
-    // Send bad input that will fail parsing
-    let badInput = JSON.object([
-      "file": .number(123), // Should be string, but sending number
-      "keywords": .string("should be array"),
-    ])
-    let badToolUseRequest = Schema.ToolUseRequest(
-      toolName: mockTool.name,
-      input: badInput,
-      toolUseId: "streaming-tool-123",
-      idx: 0)
-
-    let badChunk = Schema.StreamedResponseChunk.toolUseRequest(badToolUseRequest)
-    let badData = try JSONEncoder().encode(badChunk)
-    continuation.yield(badData)
-
-    continuation.finish()
-
-    _ = try await helper.processStream()
-
-    let finalMessage = result.value
-    #expect(finalMessage.content.count == 1)
-
-    guard case .tool(let toolMessage) = finalMessage.content.first else {
-      Issue.record("Expected tool content")
-      return
-    }
-
-    // For streaming tools that don't implement UpdatableToolUse, should create FailedToolUse
-    if let failedToolUse = toolMessage.toolUse as? FailedToolUse {
-      #expect(failedToolUse.toolUseId == "streaming-tool-123")
-      #expect(failedToolUse.toolName == mockTool.name)
-      #expect(failedToolUse.errorDescription.contains("Could not parse"))
-    } else {
-      Issue.record("Expected FailedToolUse, got \(type(of: toolMessage.toolUse))")
     }
   }
 }
@@ -534,11 +491,10 @@ struct RequestStreamingHelperToolFailureTests {
   @Test("Handle tool result failure creates FailedToolUse")
   func testHandleToolResultFailureCreatesFailedToolUse() async throws {
     // Create a mock tool use that will be replaced with FailedToolUse
-    let mockTool = TestExternalTool()
+    let mockTool = TestTool()
     let mockToolUse = mockTool.use(
       toolUseId: "test-tool-123",
-      input: EmptyObject(),
-      isInputComplete: false,
+      input: [:],
       context: .init())
 
     let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))
@@ -549,6 +505,7 @@ struct RequestStreamingHelperToolFailureTests {
       result: result,
       tools: [mockTool],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
       isTaskCancelled: { false },
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
@@ -578,7 +535,7 @@ struct RequestStreamingHelperToolFailureTests {
 
     // Currently, tool result failures through streaming don't replace the tool use with FailedToolUse
     // They maintain the original tool use. Just verify the tool use ID is correct.
-    if let testExternalUse = toolMessage.toolUse as? TestExternalTool.Use {
+    if let testExternalUse = toolMessage.toolUse as? TestTool.Use {
       #expect(testExternalUse.toolUseId == "test-tool-123")
       // The current behavior is that the tool use remains in its original state
       // This might be the intended behavior - the failure is handled at the message level

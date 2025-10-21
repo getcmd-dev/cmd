@@ -53,6 +53,21 @@ export ANTHROPIC_LOCAL_SERVER_PROXY="http://localhost:10001/v1"
 export OPEN_ROUTER_LOCAL_SERVER_PROXY="http://localhost:10002/api/v1"
 export OPENAI_LOCAL_SERVER_PROXY="http://localhost:10003/v1"
 export GROQ_LOCAL_SERVER_PROXY="http://localhost:10004/openai/v1"
+export GEMINI_LOCAL_SERVER_PROXY="http://localhost:10005/v1beta"
+
+# Claude Code (with proxyman):
+cat > "$HOME/.claude/start_with_proxy.sh" << 'EOF'
+#!/bin/zsh
+
+set -a && \
+source "$HOME/Library/Application Support/com.proxyman.NSProxy/app-data/proxyman_env_automatic_setup.sh" &>/dev/null && \
+set +a;
+claude "$@"
+EOF
+chmod +x "$HOME/.claude/start_with_proxy.sh"
+export CLAUDE_CODE_PROXY="$HOME/.claude/start_with_proxy.sh"
+
+# If you use Proxyman, this will allow Claude Code to be proxied (this works for any node.js program)
 ```
 - Set a reverse proxy in your proxy tool. For instance in Proxyman (Tools > Reverse Proxy...):
 <img height="width: 100%" src="./docs/assets/proxy-setup.png"/>

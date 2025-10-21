@@ -22,7 +22,7 @@ extension ExecuteCommandToolTests {
         cwd: nil,
         canModifySourceFiles: false,
         canModifyDerivedFiles: false)
-      let use = tool.use(toolUseId: "exec-123", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "exec-123", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -31,12 +31,17 @@ extension ExecuteCommandToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "execute_command_input",
             "canModifyDerivedFiles": false,
             "canModifySourceFiles": false,
             "command": "pwd"
           },
-          "internalState": null,
-          "isInputComplete": true,
+          "internalState": {
+            "type": "execute_command_input",
+            "canModifyDerivedFiles": false,
+            "canModifySourceFiles": false,
+            "command": "pwd"
+          },
           "status": {
             "status": "notStarted"
           },
@@ -53,7 +58,7 @@ extension ExecuteCommandToolTests {
         cwd: "/path/to/project",
         canModifySourceFiles: false,
         canModifyDerivedFiles: true)
-      let use = tool.use(toolUseId: "exec-git-456", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "exec-git-456", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -62,13 +67,19 @@ extension ExecuteCommandToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "execute_command_input",
             "canModifyDerivedFiles": true,
             "canModifySourceFiles": false,
             "command": "git status",
             "cwd": "/path/to/project"
           },
-          "internalState": null,
-          "isInputComplete": true,
+          "internalState": {
+            "type": "execute_command_input",
+            "canModifyDerivedFiles": true,
+            "canModifySourceFiles": false,
+            "command": "git status",
+            "cwd": "/path/to/project"
+          },
           "status": {
             "status": "notStarted"
           },
@@ -85,7 +96,7 @@ extension ExecuteCommandToolTests {
         cwd: "/source",
         canModifySourceFiles: true,
         canModifyDerivedFiles: true)
-      let use = tool.use(toolUseId: "exec-build-789", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "exec-build-789", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -94,13 +105,19 @@ extension ExecuteCommandToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "execute_command_input",
             "canModifyDerivedFiles": true,
             "canModifySourceFiles": true,
             "command": "swift build",
             "cwd": "/source"
           },
-          "internalState": null,
-          "isInputComplete": true,
+          "internalState": {
+            "type": "execute_command_input",
+            "canModifyDerivedFiles": true,
+            "canModifySourceFiles": true,
+            "command": "swift build",
+            "cwd": "/source"
+          },
           "status": {
             "status": "notStarted"
           },

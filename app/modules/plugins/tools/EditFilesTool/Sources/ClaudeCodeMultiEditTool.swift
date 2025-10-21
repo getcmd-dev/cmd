@@ -16,12 +16,12 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeMultiEditTool
 
-public final class ClaudeCodeMultiEditTool: ExternalTool {
+public final class ClaudeCodeMultiEditTool: Tool {
 
   public init() { }
 
   @ThreadSafe
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeMultiEditTool,
       toolUseId: String,
@@ -87,11 +87,16 @@ public final class ClaudeCodeMultiEditTool: ExternalTool {
 
     public var internalState: InternalState? { mappedInput }
 
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
+
     public func receive(output _: JSON.Value) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "MultiEdit completed successfully"
       // TODO: handle failures
-      updateStatus.complete(with: .success(placeholderOutput))
+      updateStatus.complete(with: .success(.init(result: placeholderOutput)))
 
       updateTrackedFileContent()
       Task { [weak self] in
@@ -249,7 +254,7 @@ extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
     AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
-      isInputComplete: true,
+
       setResult: { [weak self] toolUseResult in
         guard let self else { return }
         // Update tracked content for successfully applied files

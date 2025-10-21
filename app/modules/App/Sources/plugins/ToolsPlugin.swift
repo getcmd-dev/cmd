@@ -27,6 +27,10 @@ extension ToolsPlugin {
     plugIn(tool: ExecuteCommandTool())
     plugIn(tool: AskFollowUpTool())
     plugIn(tool: BuildTool())
+    plugIn(tool: GlobTool())
+    plugIn(tool: PlanTool())
+    plugIn(tool: WebFetchTool())
+    plugIn(tool: WebSearchTool())
 
     // Claude Code
     plugIn(tool: ClaudeCodeReadTool())

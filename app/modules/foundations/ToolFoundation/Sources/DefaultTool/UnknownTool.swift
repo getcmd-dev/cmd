@@ -11,13 +11,14 @@ import ThreadSafe
 
 /// Represents a tool that was previously used but is no longer available in the current application state.
 /// This type enables deserialization and representation of legacy tool usage data when the original tool type is unavailable.
-public final class UnknownTool: NonStreamableTool {
-  public init(name: String) {
+public final class UnknownTool: Tool {
+  public init(name: String, isExternalAgent: Bool) {
     self.name = name
+    self.isExternalAgent = isExternalAgent
   }
 
   @ThreadSafe
-  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
     public init(
       callingTool: UnknownTool,
@@ -35,18 +36,21 @@ public final class UnknownTool: NonStreamableTool {
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
-      self.internalState = internalState
       self.updateStatus = updateStatus
-      rawData = internalState ?? .object([:])
+      self.internalState = internalState ?? .init(isExternalAgent: callingTool.isExternalAgent)
     }
 
-    public typealias InternalState = JSON.Value
+    public struct InternalState: Codable, Sendable {
+      /// When the tool is deserialized, the tool context is lost, and we only have the toolName left.
+      /// So we need to persist any information about the tool of interest.
+      let isExternalAgent: Bool
+    }
 
     public typealias Input = JSON.Value
 
     public typealias Output = JSON.Value
 
-    public let internalState: JSONFoundation.JSON.Value?
+    public private(set) var internalState: InternalState?
 
     public let context: ToolExecutionContext
 
@@ -65,15 +69,18 @@ public final class UnknownTool: NonStreamableTool {
     }
 
     public func startExecuting() {
-      // Not supported
+      if internalState?.isExternalAgent ?? callingTool.isExternalAgent {
+        // The external agent will set the results
+        updateStatus.yield(.notStarted)
+        updateStatus.yield(.running)
+      } else {
+        updateStatus.complete(with: .failure(AppError("Missing tool \(toolName)")))
+      }
     }
 
     public func cancel() {
       // Not supported
     }
-
-    /// The raw data that represented the missing tool use when serialized.
-    let rawData: JSON.Value
 
   }
 
@@ -102,36 +109,10 @@ public final class UnknownTool: NonStreamableTool {
     false
   }
 
+  let isExternalAgent: Bool
+
   var isReadonly: Bool {
     false
   }
 
-}
-
-extension UnknownTool.Use {
-  public convenience init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: ToolUseCodingKeys.self)
-
-    let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
-    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
-    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-    let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
-
-    let rawData = try JSON.Value(from: decoder)
-
-    self.init(
-      callingTool: callingTool,
-      toolUseId: toolUseId,
-      input: input,
-      isInputComplete: isInputComplete,
-      context: context,
-      internalState: rawData,
-      initialStatus: statusValue)
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    try rawData.encode(to: encoder)
-  }
 }

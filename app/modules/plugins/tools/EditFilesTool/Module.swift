@@ -16,6 +16,7 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "ToolTypesFoundation",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],

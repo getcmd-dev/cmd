@@ -21,7 +21,7 @@ extension ReadFileToolTests {
       let input = ReadFileTool.Use.Input(
         path: "/src/main.swift",
         lineRange: nil)
-      let use = tool.use(toolUseId: "read-123", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "read-123", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -30,12 +30,13 @@ extension ReadFileToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "read_file_input",
             "path": "/src/main.swift"
           },
           "internalState" : {
-            "path" : "/src/main.swift"
+            "path" : "/src/main.swift",
+            "type" : "read_file_input"
           },
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },
@@ -51,7 +52,7 @@ extension ReadFileToolTests {
       let input = ReadFileTool.Use.Input(
         path: "/test/file.py",
         lineRange: lineRange)
-      let use = tool.use(toolUseId: "read-range-456", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "read-range-456", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -60,6 +61,7 @@ extension ReadFileToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "read_file_input",
             "lineRange": {
               "end": 15,
               "start": 5
@@ -71,9 +73,9 @@ extension ReadFileToolTests {
               "end" : 15,
               "start" : 5
             },
-            "path" : "/test/file.py"
+            "path" : "/test/file.py",
+            "type" : "read_file_input"
           },
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },
@@ -89,7 +91,7 @@ extension ReadFileToolTests {
       let input = ReadFileTool.Use.Input(
         path: "/config/settings.json",
         lineRange: lineRange)
-      let use = tool.use(toolUseId: "read-single-789", input: input, isInputComplete: true, context: toolExecutionContext)
+      let use = tool.use(toolUseId: "read-single-789", input: input, context: toolExecutionContext)
 
       try testDecodingEncodingWithTool(of: use, tool: tool, """
         {
@@ -98,6 +100,7 @@ extension ReadFileToolTests {
             "threadId": "mock-thread-id"
           },
           "input": {
+            "type": "read_file_input",
             "lineRange": {
               "end": 25,
               "start": 25
@@ -109,9 +112,9 @@ extension ReadFileToolTests {
               "end" : 25,
               "start" : 25
             },
-            "path" : "/config/settings.json"
+            "path" : "/config/settings.json",
+            "type" : "read_file_input"
           },
-          "isInputComplete": true,
           "status": {
             "status": "notStarted"
           },

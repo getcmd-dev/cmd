@@ -15,7 +15,7 @@ struct ClaudeCodeLSToolTests {
     let toolUse = ClaudeCodeLSTool().use(
       toolUseId: "123",
       input: .init(path: "/path/to/root", ignore: nil),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()

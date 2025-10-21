@@ -169,7 +169,8 @@ final class SendMessageTests {
             },
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root",
-            "threadId" : "mock-thread-id"
+            "threadId" : "mock-thread-id",
+            "useNewClaudeCodeApi" : false
           }
           """,
           ignoring: "system")
@@ -230,7 +231,7 @@ final class SendMessageTests {
             "messages":[
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
-                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{"errorDescription":"Missing tool UnknownTool"},"idx" : 0}
+                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{},"idx" : 0}
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
@@ -242,7 +243,8 @@ final class SendMessageTests {
             },
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root",
-            "threadId" : "mock-thread-id"
+            "threadId" : "mock-thread-id",
+            "useNewClaudeCodeApi" : false
           }
           """,
           ignoring: "system")
@@ -489,7 +491,8 @@ final class SendMessageTests {
           },
           "tools":[],
           "projectRoot" : "/path/to/root",
-          "threadId" : "mock-thread-id"
+          "threadId" : "mock-thread-id",
+          "useNewClaudeCodeApi" : false
         }
         """,
         ignoring: "system")

@@ -20,13 +20,14 @@ class ModelsGenerator {
 	}
 
 	public originalFile: string
-
+	public schemaName: string
 	private get definitions(): Array<ObjectDefinitionModel | OneOfDefinitionModel | EnumDefinitionModel> {
 		return Array.from(this.models.values())
 	}
 
-	constructor(schema: JSONSchema7, name: string) {
+	constructor(schema: JSONSchema7, name: string, schemaName: string) {
 		this.originalFile = name
+		this.schemaName = schemaName
 		this.schema = schema
 		this.models = new Map()
 		Object.entries(schema.definitions ?? {}).forEach(([qualifiedTypeName, definition]) => {
@@ -413,7 +414,7 @@ const getTypeName = ({
 	}
 }
 
-export const generateSwiftSchema = (schema: JSONSchema7, name: string) => {
+export const generateSwiftSchema = (schema: JSONSchema7, name: string, schemaName: string): string => {
 	const templates = fs.readdirSync(`${dir}/templates`)
 
 	const partials = templates.reduce(
@@ -431,7 +432,7 @@ export const generateSwiftSchema = (schema: JSONSchema7, name: string) => {
 		Handlebars.registerPartial(name, partial)
 	})
 
-	const modelsGenerator = new ModelsGenerator(schema, name)
+	const modelsGenerator = new ModelsGenerator(schema, name, schemaName)
 	return template(modelsGenerator, {
 		allowProtoMethodsByDefault: true,
 		allowProtoPropertiesByDefault: true,

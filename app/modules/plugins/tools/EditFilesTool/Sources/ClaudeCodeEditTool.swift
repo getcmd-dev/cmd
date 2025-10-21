@@ -17,12 +17,12 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeEditTool
 
-public final class ClaudeCodeEditTool: ExternalTool {
+public final class ClaudeCodeEditTool: Tool {
 
   public init() { }
 
   @ThreadSafe
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeEditTool,
       toolUseId: String,
@@ -83,10 +83,15 @@ public final class ClaudeCodeEditTool: ExternalTool {
 
     public var internalState: InternalState? { mappedInput }
 
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
+
     public func receive(output _: JSON.Value) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "Edit completed successfully"
-      updateStatus.complete(with: .success(placeholderOutput))
+      updateStatus.complete(with: .success(.init(result: placeholderOutput)))
       updateTrackedFileContent()
       Task { [weak self] in
         // It seems that Claude Code can send the result of the file edit before the file has been updated on disk,
@@ -200,7 +205,7 @@ extension ClaudeCodeEditTool.Use: DisplayableToolUse {
     AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
-      isInputComplete: true,
+
       setResult: { _ in },
       correctInput: { [weak self] file, fixedInput in
         guard let self else { return }

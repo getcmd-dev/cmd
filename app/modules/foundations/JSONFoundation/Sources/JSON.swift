@@ -153,6 +153,15 @@ extension JSON {
     }
   }
 
+  public var asValue: JSON.Value {
+    switch self {
+    case .object(let value):
+      .object(value)
+    case .array(let value):
+      .array(value)
+    }
+  }
+
   public static func ==(lhs: JSON, rhs: JSON) -> Bool {
     lhs.asValue == rhs.asValue
   }
@@ -161,14 +170,6 @@ extension JSON {
     try asValue.encode(to: encoder)
   }
 
-  var asValue: JSON.Value {
-    switch self {
-    case .object(let value):
-      .object(value)
-    case .array(let value):
-      .array(value)
-    }
-  }
 }
 
 extension JSON.Value {

@@ -15,6 +15,7 @@ extension Schema {
     public let enableReasoning: Bool
     public let provider: APIProvider
     public let threadId: String?
+    public let useNewClaudeCodeApi: Bool?
   
     private enum CodingKeys: String, CodingKey {
       case messages = "messages"
@@ -25,6 +26,7 @@ extension Schema {
       case enableReasoning = "enableReasoning"
       case provider = "provider"
       case threadId = "threadId"
+      case useNewClaudeCodeApi = "useNewClaudeCodeApi"
     }
   
     public init(
@@ -35,7 +37,8 @@ extension Schema {
         model: String,
         enableReasoning: Bool,
         provider: APIProvider,
-        threadId: String? = nil
+        threadId: String? = nil,
+        useNewClaudeCodeApi: Bool? = nil
     ) {
       self.messages = messages
       self.system = system
@@ -45,6 +48,7 @@ extension Schema {
       self.enableReasoning = enableReasoning
       self.provider = provider
       self.threadId = threadId
+      self.useNewClaudeCodeApi = useNewClaudeCodeApi
     }
   
     public init(from decoder: Decoder) throws {
@@ -57,6 +61,7 @@ extension Schema {
       enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
       threadId = try container.decodeIfPresent(String?.self, forKey: .threadId)
+      useNewClaudeCodeApi = try container.decodeIfPresent(Bool?.self, forKey: .useNewClaudeCodeApi)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -69,6 +74,7 @@ extension Schema {
       try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)
       try container.encodeIfPresent(threadId, forKey: .threadId)
+      try container.encodeIfPresent(useNewClaudeCodeApi, forKey: .useNewClaudeCodeApi)
     }
   }
   public struct Message: Codable, Sendable {
@@ -897,12 +903,14 @@ extension Schema {
   public struct ResponseError: Codable, Sendable {
     public let type = "error"
     public let message: String
+    public let underlyingErrorMessage: String?
     public let statusCode: Int?
     public let idx: Int?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case message = "message"
+      case underlyingErrorMessage = "underlyingErrorMessage"
       case statusCode = "statusCode"
       case idx = "idx"
     }
@@ -910,10 +918,12 @@ extension Schema {
     public init(
         type: String = "error",
         message: String,
+        underlyingErrorMessage: String? = nil,
         statusCode: Int? = nil,
         idx: Int? = nil
     ) {
       self.message = message
+      self.underlyingErrorMessage = underlyingErrorMessage
       self.statusCode = statusCode
       self.idx = idx
     }
@@ -921,6 +931,7 @@ extension Schema {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       message = try container.decode(String.self, forKey: .message)
+      underlyingErrorMessage = try container.decodeIfPresent(String?.self, forKey: .underlyingErrorMessage)
       statusCode = try container.decodeIfPresent(Int?.self, forKey: .statusCode)
       idx = try container.decodeIfPresent(Int?.self, forKey: .idx)
     }
@@ -929,6 +940,7 @@ extension Schema {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(type, forKey: .type)
       try container.encode(message, forKey: .message)
+      try container.encodeIfPresent(underlyingErrorMessage, forKey: .underlyingErrorMessage)
       try container.encodeIfPresent(statusCode, forKey: .statusCode)
       try container.encodeIfPresent(idx, forKey: .idx)
     }

@@ -19,7 +19,7 @@ struct ClaudeCodeReadToolTests {
     let toolUse = ClaudeCodeReadTool().use(
       toolUseId: "123",
       input: .init(file_path: "path/to/file.txt", offset: nil, limit: nil),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()
@@ -42,7 +42,7 @@ struct ClaudeCodeReadToolTests {
     let toolUse = ClaudeCodeReadTool().use(
       toolUseId: "image-test",
       input: .init(file_path: "path/to/image.png", offset: nil, limit: nil),
-      isInputComplete: true,
+
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
     toolUse.startExecuting()

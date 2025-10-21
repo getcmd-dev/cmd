@@ -15,6 +15,7 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "ToolTypesFoundation",
   ],
   testsDependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),

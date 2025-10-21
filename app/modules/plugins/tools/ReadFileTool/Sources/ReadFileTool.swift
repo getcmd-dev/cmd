@@ -13,17 +13,19 @@ import LoggingServiceInterface
 import SwiftUI
 import ThreadSafe
 import ToolFoundation
+import ToolTypesFoundation
 
 // MARK: - ReadFileTool
 
-public final class ReadFileTool: NonStreamableTool {
+public final class ReadFileTool: Tool {
 
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: NonStreamableToolUse, UpdatableToolUse,
+  public final class Use: ToolUse,
     @unchecked Sendable
   {
+
     public init(
       callingTool: ReadFileTool,
       toolUseId: String,
@@ -48,19 +50,22 @@ public final class ReadFileTool: NonStreamableTool {
     }
 
     public typealias InternalState = Input
-    public struct Input: Codable, Sendable {
-      public let path: String
-      public let lineRange: Range?
-      public struct Range: Codable, Sendable {
-        public let start: Int
-        public let end: Int
-      }
-    }
+    public typealias Input = ToolsSchema.ReadFileToolInput
+//    public struct Input: Codable, Sendable {
+//      public let path: String
+//      public let lineRange: Range?
+//      public struct Range: Codable, Sendable {
+//        public let start: Int
+//        public let end: Int
+//      }
+//    }
 
-    public struct Output: Codable, Sendable {
-      public let content: String
-      public let uri: String
-    }
+    public typealias Output = ToolsSchema.ReadFileToolOutput
+
+//    public struct Output: Codable, Sendable {
+//      public let content: String
+//      public let uri: String
+//    }
 
     @MainActor public lazy var viewModel: AnyToolUseViewModel = createViewModel()
 
@@ -103,6 +108,18 @@ public final class ReadFileTool: NonStreamableTool {
         updateStatus.complete(with: .success(Output(content: content, uri: filePath.absoluteString)))
       } catch {
         updateStatus.complete(with: .failure(error))
+      }
+    }
+
+    public func receive(output: JSONFoundation.JSON.Value) throws {
+      let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
+      updateStatus.complete(with: .success(output))
+      do {
+        try chatContextRegistry.context(for: context.threadId).set(
+          knownFileContent: fileManager.read(contentsOf: filePath),
+          for: filePath)
+      } catch {
+        defaultLogger.error("Failed to register file content for path \(filePath)", error)
       }
     }
 
@@ -194,11 +211,15 @@ extension [String] {
     var end = upper
     if upper < 0 {
       // Never trust an LLM!
-      end = self.count + upper + 1
+      end = count + upper + 1
     }
     end = Swift.min(count, end)
 
     guard start < end else { return nil }
     return Array(self[start..<end])
   }
+}
+
+extension ReadFileTool.Use.Input {
+  typealias Range = ToolsSchema.ReadFileToolInput_Range
 }

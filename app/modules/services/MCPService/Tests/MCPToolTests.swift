@@ -17,7 +17,7 @@ enum MCPToolTests {
         serverName: "test-server")
 
       try testDecodingEncodingWithTool(
-        of: tool.use(toolUseId: "tool-use-id", input: [:], isInputComplete: true, context: toolExecutionContext),
+        of: tool.use(toolUseId: "tool-use-id", input: [:], context: toolExecutionContext),
         tool: tool,
         """
         {
@@ -29,7 +29,6 @@ enum MCPToolTests {
 
           },
           "internalState" : null,
-          "isInputComplete" : true,
           "status" : {
             "status" : "notStarted"
           },

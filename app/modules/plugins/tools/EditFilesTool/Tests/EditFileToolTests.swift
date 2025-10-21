@@ -46,7 +46,7 @@ struct EditFileToolTests {
       persistenceRequested.fulfillAtMostOnce()
     }
     let createToolUseFromInput = {
-      tool.use(toolUseId: "test-123", input: input, isInputComplete: true, context: toolExecutionContext)
+      tool.use(toolUseId: "test-123", input: input, context: toolExecutionContext)
     }
 
     try await withDependencies {

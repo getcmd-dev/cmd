@@ -15,11 +15,11 @@ import ToolFoundation
 
 // MARK: - ClaudeCodeWriteTool
 
-public final class ClaudeCodeWriteTool: ExternalTool {
+public final class ClaudeCodeWriteTool: Tool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeWriteTool,
       toolUseId: String,
@@ -79,11 +79,16 @@ public final class ClaudeCodeWriteTool: ExternalTool {
 
     public var internalState: InternalState? { mappedInput }
 
+    public func startExecuting() {
+      updateStatus.yield(.notStarted)
+      updateStatus.yield(.running)
+    }
+
     public func receive(output _: JSON.Value) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "Write completed successfully"
       // TODO: handle failures
-      updateStatus.complete(with: .success(placeholderOutput))
+      updateStatus.complete(with: .success(.init(result: placeholderOutput)))
 
       updateTrackedFileContent()
       Task { [weak self] in
@@ -186,7 +191,7 @@ extension ClaudeCodeWriteTool.Use: DisplayableToolUse {
     AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
-      isInputComplete: true,
+
       setResult: { [weak self] toolUseResult in
         guard let self else { return }
         // Update tracked content for successfully applied files

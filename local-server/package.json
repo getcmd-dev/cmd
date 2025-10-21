@@ -32,6 +32,7 @@
 		"export-schema-swift": "yarn tsx ./tools/generateSwiftSchema.ts"
 	},
 	"dependencies": {
+		"@agentclientprotocol/sdk": "^0.4.8",
 		"@ai-sdk/anthropic": "^2.0.6",
 		"@ai-sdk/google": "^2.0.8",
 		"@ai-sdk/groq": "^2.0.14",
@@ -41,6 +42,7 @@
 		"@modelcontextprotocol/sdk": "^1.17.0",
 		"@openrouter/ai-sdk-provider": "^1.1.2",
 		"@sentry/node": "^10.10.0",
+		"@zed-industries/claude-code-acp": "https://github.com/gsabran/claude-code-acp#c9b7a656a8514e180ea2ded820c94141d2db965b",
 		"ai": "^5.0.22",
 		"express": "^4.21.2",
 		"express-promise-router": "^4.1.1",
