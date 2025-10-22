@@ -398,6 +398,31 @@ platform :mac do
     silent_sh("rm '#{entitlements_path}'")
   end
 
+  desc "Build, archive, sign and upload symbols (for CI artifacts)"
+  lane :build_artifact do
+    setup_ci if ENV["CI"]
+
+    # Enable Sentry source map uploads
+    ENV["UPLOAD_SOURCEMAP_TO_SENTRY"] = "true"
+    ENV["SENTRY_AUTH_TOKEN"] = load_secret("SENTRY_AUTH_TOKEN")
+
+    # Get current version without bumping
+    app_config_path = File.absolute_path("../command.shared.xcconfig")
+    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
+
+    # Build and sign the release
+    result = create_and_sign_release(version: version)
+    version = result[:version]
+    app_binary_path = result[:app_binary_path]
+    archive_path = result[:archive_path]
+    build_path = result[:build_path]
+
+    # Upload symbols to Sentry and Bugsnag
+    upload_release_symbols(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
+
+    puts "Build artifact completed. DMG available at: #{result[:dmg_path]}"
+  end
+
   desc "Upload the new release to Sentry"
   lane :upload_release_symbols do |options|
     version = options.fetch(:version, nil)
