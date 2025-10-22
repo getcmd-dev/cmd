@@ -1,6 +1,5 @@
 import { logError, logInfo } from "@/logger"
 import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
-import { ModelMessage, UserModelMessage } from "ai"
 import { Response } from "express"
 import { Options, query } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"

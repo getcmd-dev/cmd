@@ -184,7 +184,7 @@ export async function* toMessageStream(
 				// The tool's properties of interest (e.g. content) might be received in calls that are not the last one.
 				// We need to combine the properties of interest from all the calls into a single object.
 				combinedToolStates[event.update.toolCallId] = {
-					...combinedToolStates[event.update.toolCallId],
+					...(combinedToolStates[event.update.toolCallId] ?? {}),
 					...event.update,
 					_meta: {
 						...combinedToolStates[event.update.toolCallId]._meta,

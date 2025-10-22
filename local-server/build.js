@@ -31,6 +31,15 @@ const buildOptions = {
 			},
 		},
 	],
+	mainFields: ["main", "module"],
+	conditions: ["node", "require", "default"],
+	define: {
+		"import.meta.url": "__IMU__",
+		"process.env.NODE_ENV": process.env.NODE_ENV === "production" ? '"production"' : '"development"',
+	},
+	banner: {
+		js: 'var __IMU__ = require("node:url").pathToFileURL(__filename).href;',
+	},
 	sourcemap: true,
 	sourceRoot: "../",
 	platform: "node",
@@ -42,8 +51,6 @@ const buildOptions = {
 }
 
 if (process.env.NODE_ENV === "production") {
-	buildOptions.define = { "process.env.NODE_ENV": '"production"' }
-
 	if (process.env.UPLOAD_SOURCEMAP_TO_SENTRY) {
 		if (process.env.SENTRY_AUTH_TOKEN === undefined) {
 			throw new Error("SENTRY_AUTH_TOKEN is not defined and required for production build")
@@ -63,8 +70,6 @@ if (process.env.NODE_ENV === "production") {
 			}),
 		)
 	}
-} else {
-	buildOptions.define = { "process.env.NODE_ENV": '"development"' }
 }
 export async function computeAndSaveHash() {
 	let fileBuffer = ""

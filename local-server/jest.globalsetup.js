@@ -7,4 +7,7 @@ export default () => {
 	delete process.env["ANTHROPIC_LOCAL_SERVER_PROXY"]
 	delete process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"]
 	delete process.env["OPENAI_LOCAL_SERVER_PROXY"]
+	delete process.env["GROQ_LOCAL_SERVER_PROXY"]
+	delete process.env["GEMINI_LOCAL_SERVER_PROXY"]
+	delete process.env["CLAUDE_CODE_PROXY"]
 }

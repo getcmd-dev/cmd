@@ -33,7 +33,7 @@ extension Schema {
       try container.encode(singleValue, forKey: .singleValue)
     }
   
-    public enum Role: String, Codable, Sendable {
+    public enum Role: String, Codable, Sendable, CaseIterable {
       case system = "system"
       case user = "user"
       case assistant = "assistant"

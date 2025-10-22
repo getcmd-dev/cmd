@@ -39,17 +39,15 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	> = {}
 
 	constructor() {
-		const agentPath = "/Users/guigui/Downloads/codex-acp"
+		const agentPath = process.env.CODEX_ACP_PATH
+		if (!agentPath) {
+			throw new Error("CODEX_ACP_PATH environment variable is not set")
+		}
 
-		// npx @zed-industries/codex-acp
-
-		// Spawn the agent as a subprocess using tsx
+		// Spawn the agent as a subprocess
 		const agentProcess = spawn(agentPath, {
 			stdio: ["pipe", "pipe", "inherit"],
 		})
-		// const agentProcess = spawn("npx", ["@zed-industries/codex-acp"], {
-		// 	stdio: ["pipe", "pipe", "inherit"],
-		// })
 
 		// Create streams to communicate with the agent
 		const input = Writable.toWeb(agentProcess.stdin!)
@@ -57,9 +55,6 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		const stream = acp.ndJsonStream(input, output)
 
 		this.clientConnection = new acp.ClientSideConnection((_agent) => this, stream)
-		// this.clientConnection.cancel({
-		// 	sessionId: "123",
-		// })
 	}
 
 	async cancel(sessionId: string): Promise<void> {

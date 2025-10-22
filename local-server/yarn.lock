@@ -1340,6 +1340,11 @@
   resolved "https://registry.yarnpkg.com/@open-draft/until/-/until-2.1.0.tgz#0acf32f470af2ceaf47f095cdecd40d68666efda"
   integrity sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==
 
+"@openai/codex-sdk@^0.47.0":
+  version "0.47.0"
+  resolved "https://registry.yarnpkg.com/@openai/codex-sdk/-/codex-sdk-0.47.0.tgz#810dceb679f862bd835cdb7439ec91a1bbdd075f"
+  integrity sha512-GFmF0C7wkmX10omICL/5Gm1w+BvZtc41Rwuv7/pVO47ZbSq+9bJqn0XUpwoyrYQavg+BsKSuJAo9CYCn9JhkZA==
+
 "@openrouter/ai-sdk-provider@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@openrouter/ai-sdk-provider/-/ai-sdk-provider-1.1.2.tgz#7db44576f04b5e2ff01f93af2cce637396dec9e4"

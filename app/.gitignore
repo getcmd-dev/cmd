@@ -67,6 +67,9 @@ fastlane/test_output
 **/Sources/Resources/main.bundle.cjs
 **/Sources/Resources/main.bundle.cjs.gz
 **/Sources/Resources/main.bundle.cjs.map
+**/Sources/Resources/main.bundle.mjs
+**/Sources/Resources/main.bundle.mjs.gz
+**/Sources/Resources/main.bundle.mjs.map
 **/Sources/Resources/build.sha256
 
 modules/**/Package.swift

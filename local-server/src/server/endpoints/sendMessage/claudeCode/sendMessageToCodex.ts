@@ -1,6 +1,6 @@
-import { logError, logInfo } from "@/logger"
+import { logInfo } from "@/logger"
 import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
-import { ModelMessage, UserModelMessage } from "ai"
+import { Codex } from "@openai/codex-sdk"
 import { Response } from "express"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
@@ -9,6 +9,8 @@ import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp
 import { ContentBlock } from "@agentclientprotocol/sdk"
 import { sendCommandToHostApp } from "../../interProcessesBridge"
 import { CodexACPClient } from "../acp/clients/codex/codexACPClient"
+
+// TODO: support resuming the conversation after the app restarts.
 
 let acpClient: CodexACPClient | undefined
 
@@ -90,70 +92,9 @@ const createEventStream = async (
 		firstNewUserMessagesIdx--
 	}
 
-	// Merge all the user messages into a single message with several content parts
-	// as since 2.0 Claude Code responds to each received message before processing the next ones.
 	const newUserMessages = messages.slice(firstNewUserMessagesIdx)
 
 	const executableInfo = await extractExecutableInfo(localExecutable)
-
-	// // Try to remove env variable that might lead to CC exiting with status 1
-	// // See https://github.com/anthropics/claude-code/issues/4619#issuecomment-3217014571
-	// const env = { ...localExecutable.env }
-	// delete env.NODE_OPTIONS
-	// delete env.VSCODE_INSPECTOR_OPTIONS
-
-	// // TODO: update names here once Claude Code tools have been removed from the app.
-	// // The user might decide that some tools are not available.
-	// // We only compare the list of available tools to the list of tools supported by the app.
-	// // Other tools supported by Claude Code cannot be enabled/disabled by the app and remain available by default.
-	// const availableTools = tools.filter((tool) => tool.name.startsWith(TOOL_NAME_PREFIX)).map((tool) => tool.name)
-	// const disallowedTools = [
-	// 	"Glob",
-	// 	"TodoWrite",
-	// 	"WebFetch",
-	// 	"WebSearch",
-	// 	"Edit",
-	// 	"MultiEdit",
-	// 	"Write",
-	// 	"Bash",
-	// 	"LS",
-	// 	"Read",
-	// 	"Grep",
-	// ].filter((toolName) => !availableTools.includes(`${TOOL_NAME_PREFIX}${toolName}`))
-	// if (disallowedTools.length) {
-	// 	logInfo(`disallowedTools: ${disallowedTools}`)
-	// }
-
-	// const pathToClaudeCodeExecutable = process.env.CLAUDE_CODE_PROXY || executableInfo.path
-
-	// let onError: ((error: string) => void) | undefined
-	// const receivedError = new Promise<string>((resolve) => {
-	// 	onError = resolve
-	// })
-	// const options: Options & { cwd: string } = {
-	// 	pathToClaudeCodeExecutable,
-	// 	executableArgs: executableInfo.args,
-	// 	cwd: localExecutable.cwd || process.cwd(),
-	// 	// Note: if disallowedTools changed mid session, the new parameter is ignored.
-	// 	disallowedTools,
-	// 	env,
-	// 	abortController,
-	// 	resume: existingSessionId,
-	// 	stderr: (data: string) => {
-	// 		if (data.startsWith("Spawning Claude Code native binary")) {
-	// 			return
-	// 		}
-	// 		if (data.trim().length && data.trim() !== "Error") {
-	// 			onError?.(data)
-	// 			onError = undefined
-	// 			// TODO: clarify what's going on
-	// 			logError(`Claude Code stderr: ${data}`)
-	// 			eventStream.yield({ type: "error", message: data })
-	// 			eventStream.done()
-	// 			abortController.abort()
-	// 		}
-	// 	},
-	// }
 
 	if (responseIsTerminated) {
 		// The response has already been cancelled, abort.
@@ -163,11 +104,11 @@ const createEventStream = async (
 
 	const messageContent = toACPContentBlocks(newUserMessages)
 
-	// // Provide a name for the conversation, if needed.
-	// // TODO: expose the models in Claude Code directly to the API, so that the conversation naming
-	// // can be done like for any AI provider with a lower tier model.
+	// Provide a name for the conversation, if needed.
+	// TODO: expose the models in cmd directly to the API, so that the conversation naming
+	// can be done like for any AI provider with a lower tier model.
 	// if (!existingSessionId) {
-	// 	void nameConversation(messageContent, options).then((name) => {
+	// 	void nameConversation(messageContent).then((name) => {
 	// 		sendCommandToHostApp({
 	// 			type: "execute-command",
 	// 			command: "set_conversation_name",
@@ -179,33 +120,22 @@ const createEventStream = async (
 	// 	})
 	// }
 
-	const sendMessage = async () => {
-		acpClient = acpClient || new CodexACPClient()
-		const { sessionId, events } = await acpClient.prompt(
-			{ cwd: localExecutable.cwd },
-			messageContent,
-			threadId,
-			async ({ toolCallId, input, toolName }) => {
-				return await askAppForPermission({ toolCallId, input, toolName, eventStream })
-			},
-		)
-		abortController.signal.addEventListener("abort", async () => {
-			await acpClient?.cancel(sessionId)
-		})
+	acpClient = acpClient || new CodexACPClient()
+	const { sessionId, events } = await acpClient.prompt(
+		{ cwd: localExecutable.cwd },
+		messageContent,
+		threadId,
+		async ({ toolCallId, input, toolName }) => {
+			return await askAppForPermission({ toolCallId, input, toolName, eventStream })
+		},
+	)
+	abortController.signal.addEventListener("abort", async () => {
+		await acpClient?.cancel(sessionId)
+	})
 
-		eventStream.pipeFrom(toMessageStream(events))
+	eventStream.pipeFrom(toMessageStream(events))
 
-		return eventStream
-	}
-
-	// Handle cases where an error occurs during initialization,
-	// which might prevent the ACP client from ever responding.
-	return await Promise.race([
-		sendMessage(),
-		// receivedError.then((error) => {
-		// 	throw new Error(error)
-		// }),
-	])
+	return eventStream
 }
 
 // Extract the executable path and args from the LocalExecutable configuration.
@@ -232,3 +162,27 @@ const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<
 	}
 	return { path: execPath, args }
 }
+
+/* Name the conversation based on the first message. */
+// const nameConversation = async (messages: ContentBlock[]): Promise<string> => {
+// 	const codex = new Codex()
+// 	const thread = codex.startThread()
+// 	const mergedMessage = messages
+// 		.filter((message) => message.type === "text")
+// 		.map((message) => message.text)
+// 		.join("\n")
+// 	const result =
+// 		await thread.run(`You are an expert in naming conversations. Below is the first message of a conversation and you need to provide a concise and descriptive name for the conversation, under 50 characters.
+
+// 		YOU MUST RESPOND WITH ONLY THE NAME OF THE CONVERSATION, NOTHING ELSE.
+
+// 		good output example : \`Fixing the login flow in the app\`
+// 		bad output example: \`Here's a concise summary of the conversation: Fixing the login flow in the app\`
+// 		bad output example: \`I'm happy to assist you with that. Here's a concise summary of the conversation: Fixing the login flow in the app\`)
+
+// 		Conversation to give a name to:
+// 		${mergedMessage}
+// `)
+
+// 	return result.finalResponse || "New conversation"
+// }
