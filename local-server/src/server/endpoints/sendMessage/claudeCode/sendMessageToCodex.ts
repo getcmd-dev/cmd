@@ -35,7 +35,7 @@ export const sendMessageToCodex = async (
 		tools,
 	})
 	await respondUsingResponseStream(eventStream, res)
-	logInfo("done responsing, terminating request")
+	logInfo("done responding, terminating request")
 	res.end()
 }
 
@@ -67,13 +67,13 @@ const createEventStream = async (
 		responseIsTerminated = true
 
 		if (!responseCompletedByServer) {
-			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			logInfo("Response closed (client disconnected), killing Codex process.")
 			abortController.abort()
 		}
 	})
 	const eventStream = new AsyncStream<ResponseChunkWithoutIndex>()
 
-	// get the id of the Claude Code session to resume
+	// get the id of the Codex session to resume
 	const existingSessionId = ((): string | undefined => {
 		for (const message of messages) {
 			if (message.role === "assistant") {
