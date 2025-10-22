@@ -2,7 +2,6 @@ Target.module(
   name: "ChatFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
-    .product(name: "Down", package: "Down"),
     .product(name: "HighlightSwift", package: "highlightswift"),
     "AppEventServiceInterface",
     "AppFoundation",
@@ -28,6 +27,7 @@ Target.module(
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "Markdown",
     "RoutingFoundation",
     "SettingsFeatureInterface",
     "SettingsServiceInterface",

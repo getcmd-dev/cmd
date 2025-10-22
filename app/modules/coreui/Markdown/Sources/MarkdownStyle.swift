@@ -1,18 +1,22 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import DLS
 import Down
 import SwiftUI
 
 // MARK: - MarkdownStyle
 
-class MarkdownStyle: DownStyle {
+public class MarkdownStyle: DownStyle {
 
-  init(colorScheme: ColorScheme) {
+  public init(
+    colorScheme: ColorScheme,
+    foregroundColor: SwiftUI.Color? = nil)
+  {
     super.init()
 
     baseFont = Font.systemFont(ofSize: 14, weight: .regular)
-    baseFontColor = colorScheme.primaryForeground.nsColor
+    baseFontColor = (foregroundColor ?? colorScheme.primaryForeground).nsColor
 
     let paragraphStyle = NSMutableParagraphStyle()
     paragraphStyle.paragraphSpacingBefore = 0
@@ -28,27 +32,33 @@ class MarkdownStyle: DownStyle {
     quoteColor = .secondaryLabelColor
   }
 
-  override var h1Attributes: DownStyle.Attributes {
+  public override var h1Attributes: DownStyle.Attributes {
     super.h1Attributes.merging([
       .font: baseFont.withSize(h1Size),
     ])
   }
 
-  override var h2Attributes: DownStyle.Attributes {
+  public override var h2Attributes: DownStyle.Attributes {
     super.h2Attributes.merging([
       .font: baseFont.withSize(h2Size),
     ])
   }
 
-  override var h3Attributes: DownStyle.Attributes {
+  public override var h3Attributes: DownStyle.Attributes {
     super.h3Attributes.merging([
       .font: baseFont.withSize(h3Size),
     ])
   }
 }
 
+extension ColorScheme {
+  public var markDownStyle: MarkdownStyle {
+    .init(colorScheme: self)
+  }
+}
+
 extension DownStyle.Attributes {
-  func merging(_ other: DownStyle.Attributes) -> DownStyle.Attributes {
+  public func merging(_ other: DownStyle.Attributes) -> DownStyle.Attributes {
     merging(other, uniquingKeysWith: { $1 })
   }
 }

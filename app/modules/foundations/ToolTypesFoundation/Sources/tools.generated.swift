@@ -1044,7 +1044,7 @@ extension ToolsSchema {
       try container.encode(url, forKey: .url)
     }
   }
-  public enum ACPToolKind: String, Codable, Sendable {
+  public enum ACPToolKind: String, Codable, Sendable, CaseIterable {
     case read = "read"
     case edit = "edit"
     case delete = "delete"

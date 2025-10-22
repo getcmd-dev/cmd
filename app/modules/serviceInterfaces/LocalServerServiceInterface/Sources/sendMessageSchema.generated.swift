@@ -106,7 +106,7 @@ extension Schema {
       try container.encode(content, forKey: .content)
     }
   
-    public enum Role: String, Codable, Sendable {
+    public enum Role: String, Codable, Sendable, CaseIterable {
       case system = "system"
       case user = "user"
       case assistant = "assistant"
@@ -734,7 +734,7 @@ extension Schema {
       }
     }
   }
-  public enum APIProviderName: String, Codable, Sendable {
+  public enum APIProviderName: String, Codable, Sendable, CaseIterable {
     case openai = "openai"
     case anthropic = "anthropic"
     case openrouter = "openrouter"

@@ -5,11 +5,12 @@ import ChatHistoryServiceInterface
 import CodePreview
 import Dependencies
 import DLS
-import Down
 import FileDiffTypesFoundation
 import FileIcon
 import FoundationInterfaces
 import LoggingServiceInterface
+// import Down
+import Markdown
 import SwiftUI
 import ToolFoundation
 
@@ -109,7 +110,7 @@ struct ChatMessageView: View {
     switch element {
     case .text(let text):
       // Only format the text for the assistant messages.
-      let attributedText = message.role == .user ? plainText(for: text) : markdown(for: text)
+      let attributedText = message.role == .user ? plainText(for: text) : colorScheme.markDownStyle.markdown(for: text.text)
       LongText(attributedText, maxWidth: size.width - 2 * horizontalPadding)
         .textSelection(.enabled)
         .padding(.horizontal, horizontalPadding)
@@ -118,18 +119,6 @@ struct ChatMessageView: View {
 
     case .codeBlock(let code):
       CodeBlockContentView(code: code, role: message.role)
-    }
-  }
-
-  private func markdown(for text: TextFormatter.Element.TextElement) -> AttributedString {
-    let markDown = Down(markdownString: text.text)
-    do {
-      let attributedString = try markDown.toAttributedString(using: style)
-      return AttributedString(attributedString.trimmedAttributedString())
-    } catch {
-      defaultLogger.error("Error parsing markdown", error)
-
-      return AttributedString(text.text)
     }
   }
 

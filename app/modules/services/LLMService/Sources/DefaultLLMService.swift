@@ -414,9 +414,9 @@ extension Schema.APIProvider {
     }()
     let localExecutable: Schema.LocalExecutable? = try await {
       guard let executable = settings.executable else { return nil }
-        guard let projectRoot else {
-            throw AppError("Cannot not use external agent without a project")
-        }
+      guard let projectRoot else {
+        throw AppError("Cannot not use external agent without a project")
+      }
       return await Schema.LocalExecutable(
         executable: executable,
         env: JSON(shellService.env),

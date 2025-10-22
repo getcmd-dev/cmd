@@ -14,6 +14,7 @@ import { Request, Response, Router } from "express"
 import { UserFacingError } from "@/server/errors"
 import { AsyncStream } from "@/utils/asyncStream"
 import { ACPToolInput, ACPToolOutput } from "@/server/schemas/toolsSchema"
+import { mapToolCallContent } from "./helper"
 
 const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
 
@@ -100,6 +101,13 @@ export async function* toMessageStream(
 ): AsyncIterable<ResponseChunkWithoutIndex> {
 	let hasSentSessionId = false
 
+	const combinedToolStates: {
+		[toolCallId: string]: Extract<
+			SessionNotification["update"],
+			{ sessionUpdate: "tool_call" | "tool_call_update" }
+		>
+	} = {}
+
 	for await (const event of stream) {
 		const externalSessionId = event._meta?.externalSessionId as string | undefined
 		if (!hasSentSessionId && externalSessionId) {
@@ -143,6 +151,7 @@ export async function* toMessageStream(
 				break
 			}
 			case "tool_call": {
+				combinedToolStates[event.update.toolCallId] = event.update
 				const toolName = event.update._meta?.toolName as string | undefined
 				const input = event.update._meta?.input as Record<string, unknown> | undefined
 				if (toolName && input) {
@@ -156,13 +165,14 @@ export async function* toMessageStream(
 					} satisfies Omit<ToolUseRequest, "idx">
 				} else {
 					// No pre-processed values available, we map ACP's standard tool format to the app's format.
+					const kind = event.update.kind || "other"
 					yield {
 						type: "tool_call",
 						toolUseId: event.update.toolCallId,
-						toolName: "acp",
+						toolName: `acp_${kind}`,
 						input: {
 							type: "acp_tool_input",
-							kind: event.update.kind || "other",
+							kind,
 							title: event.update.title || "",
 							rawInput: event.update.rawInput,
 						} satisfies ACPToolInput,
@@ -171,18 +181,33 @@ export async function* toMessageStream(
 				break
 			}
 			case "tool_call_update": {
-				if (event.update.status === "completed" || event.update.status === "failed") {
-					const toolName = event.update._meta?.toolName as string | undefined
-					const output: unknown = event.update._meta?.output as Record<string, unknown> | undefined
+				// The tool's properties of interest (e.g. content) might be received in calls that are not the last one.
+				// We need to combine the properties of interest from all the calls into a single object.
+				combinedToolStates[event.update.toolCallId] = {
+					...combinedToolStates[event.update.toolCallId],
+					...event.update,
+					_meta: {
+						...combinedToolStates[event.update.toolCallId]._meta,
+						...event.update._meta,
+					},
+				}
+				const update = combinedToolStates[event.update.toolCallId]
+
+				if (update.status === "completed" || update.status === "failed") {
+					if (update.status !== "completed") {
+						logInfo(`Tool call ${update.toolCallId} failed: ${JSON.stringify(update, null, 2)}`)
+					}
+					const toolName = update._meta?.toolName as string | undefined
+					const output: unknown = update._meta?.output as Record<string, unknown> | undefined
 					if (toolName && output) {
 						// Those values have been already been processed to match the format expected by the app.
 						// We just forward them.
 						yield {
 							type: "tool_result",
-							toolUseId: event.update.toolCallId,
+							toolUseId: update.toolCallId,
 							toolName,
 							result:
-								event.update.status === "completed"
+								update.status === "completed"
 									? {
 											type: "tool_result_success",
 											success: output,
@@ -194,24 +219,25 @@ export async function* toMessageStream(
 						} satisfies Omit<ToolResultMessage, "idx">
 					} else {
 						// No pre-processed values available, we map ACP's standard tool format to the app's format.
+						const kind = update.kind || "other"
 						yield {
 							type: "tool_result",
-							toolUseId: event.update.toolCallId,
-							toolName: "acp",
+							toolUseId: update.toolCallId,
+							toolName: `acp_${kind}`,
 							result:
-								event.update.status === "completed"
+								update.status === "completed"
 									? {
 											type: "tool_result_success",
 											success: {
-												...event.update,
-												kind: event.update.kind || "other",
-												content: event.update.content || [],
+												...update,
+												kind,
+												content: (update.content || []).map(mapToolCallContent),
 												type: "acp_tool_output",
 											} satisfies ACPToolOutput,
 										}
 									: {
 											type: "tool_result_failure",
-											failure: output,
+											failure: update.content || [],
 										},
 						} satisfies Omit<ToolResultMessage, "idx">
 					}

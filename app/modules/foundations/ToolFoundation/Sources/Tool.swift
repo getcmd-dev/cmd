@@ -317,18 +317,27 @@ extension ToolUse {
   }
 }
 
+// MARK: - ToolError
+
+public struct ToolError: Error {
+  public let value: JSON.Value
+
+  public init(_ value: JSON.Value) {
+    self.value = value
+  }
+}
+
 extension ToolUse {
 
   public func receive(output: JSON.Value, isSuccess: Bool) throws {
     if isSuccess {
       receive(externalSuccess: output)
     } else {
-      guard case .string(let stringOutput) = output else {
-        assertionFailure("Expected the output to be a string for an external tool use's error")
-        updateStatus.complete(with: .failure(AppError("The tool call failed")))
-        return
+      if case .string(let stringOutput) = output {
+        updateStatus.complete(with: .failure(AppError(stringOutput)))
+      } else {
+        updateStatus.complete(with: .failure(ToolError(output)))
       }
-      updateStatus.complete(with: .failure(AppError(stringOutput)))
     }
   }
 

@@ -5,6 +5,7 @@ Target.module(
     .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
     "AccessibilityFoundation",
     "AccessibilityObjCFoundation",
+    "ACPTool",
     "AppEventService",
     "AppEventServiceInterface",
     "AppFoundation",
