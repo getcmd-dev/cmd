@@ -65,7 +65,7 @@ const createEventStream = async (
 		responseIsTerminated = true
 
 		if (!responseCompletedByServer) {
-			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			logInfo("Response closed (client disconnected), killing Codex process.")
 			abortController.abort()
 		}
 	})
