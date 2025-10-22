@@ -153,6 +153,11 @@ extension JSON {
     }
   }
 
+  public init(encoding encodable: some Encodable) throws {
+    let data = try JSONEncoder().encode(encodable)
+    self = try JSONDecoder().decode(Self.self, from: data)
+  }
+
   public var asValue: JSON.Value {
     switch self {
     case .object(let value):
@@ -168,6 +173,10 @@ extension JSON {
 
   public func encode(to encoder: any Encoder) throws {
     try asValue.encode(to: encoder)
+  }
+
+  public func decode<T: Decodable>(as _: T.Type) throws -> T {
+    try asValue.decode(as: T.self)
   }
 
 }
@@ -212,6 +221,11 @@ extension JSON.Value {
         self = .array(array)
       }
     }
+  }
+
+  public init(encoding encodable: some Encodable) throws {
+    let data = try JSONEncoder().encode(encodable)
+    self = try JSONDecoder().decode(Self.self, from: data)
   }
 
   public static func ==(lhs: JSON.Value, rhs: JSON.Value) -> Bool {
@@ -263,6 +277,10 @@ extension JSON.Value {
         try container.encode(value)
       }
     }
+  }
+
+  public func decode<T: Decodable>(as _: T.Type) throws -> T {
+    try JSONDecoder().decode(T.self, from: JSONEncoder().encode(self))
   }
 }
 

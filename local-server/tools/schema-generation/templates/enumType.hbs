@@ -1,4 +1,4 @@
-public enum {{typeName}}: String, Codable, Sendable {
+public enum {{typeName}}: String, Codable, Sendable, CaseIterable {
   {{#each cases}}
   case {{name}} = "{{value}}"
   {{/each}}

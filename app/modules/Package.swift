@@ -116,12 +116,31 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "ACPTool",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DLS",
+      "JSONFoundation",
+      "LoggingServiceInterface",
+      "Markdown",
+      "ThreadSafe",
+      "ToolFoundation",
+      "ToolTypesFoundation",
+      "ToolUI",
+    ],
+    path: "./plugins/tools/ACPTool"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "App",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
       "AccessibilityFoundation",
       "AccessibilityObjCFoundation",
+      "ACPTool",
       "AppEventService",
       "AppEventServiceInterface",
       "AppFoundation",
@@ -383,7 +402,6 @@ targets.append(
     name: "ChatFeature",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
-      .product(name: "Down", package: "Down"),
       .product(name: "HighlightSwift", package: "highlightswift"),
       "AppEventServiceInterface",
       "AppFoundation",
@@ -409,6 +427,7 @@ targets.append(
       "LLMServiceInterface",
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
+      "Markdown",
       "RoutingFoundation",
       "SettingsFeatureInterface",
       "SettingsServiceInterface",
@@ -1036,6 +1055,19 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "Markdown",
+    dependencies: [
+      .product(name: "Down", package: "Down"),
+      "DLS",
+      "LoggingServiceInterface",
+    ],
+    testsDependencies: [
+      "Markdown",
+    ],
+    path: "./coreui/Markdown"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "MCPService",
     dependencies: [
       .product(name: "MCP", package: "swift-sdk"),
@@ -1425,6 +1457,19 @@ targets.append(
       "JSONFoundation",
     ],
     path: "./foundations/ToolTypesFoundation"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "ToolUI",
+    dependencies: [
+      "AppFoundation",
+      "DLS",
+      "JSONFoundation",
+      "Markdown",
+      "ToolFoundation",
+      "ToolTypesFoundation",
+    ],
+    path: "./coreui/ToolUI"))
 
 targets.append(
   contentsOf: Target.module(

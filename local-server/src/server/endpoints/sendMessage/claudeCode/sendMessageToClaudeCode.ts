@@ -420,10 +420,6 @@ const createClaudeCodeEventStream = async (
 	return eventStream
 }
 
-export const isCoreUserMessage = (message: ModelMessage): message is UserModelMessage => {
-	return message.role === "user"
-}
-
 /**
  * Wraps a stream to catch and handle Claude Code abort errors gracefully.
  * This prevents abort errors from being logged as errors when the user cancels a request.

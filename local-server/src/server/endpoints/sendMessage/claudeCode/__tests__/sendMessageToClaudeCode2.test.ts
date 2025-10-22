@@ -38,7 +38,7 @@ describe("sendMessageToClaudeCode2", () => {
 			message: acp.ContentBlock[],
 			threadId: string,
 			permissionRequestHandler: PermissionRequestHandler,
-		) => Promise<AsyncIterable<acp.SessionNotification>>
+		) => Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }>
 	>
 
 	// Helper function to yield control to the event loop
@@ -55,8 +55,11 @@ describe("sendMessageToClaudeCode2", () => {
 					message: acp.ContentBlock[],
 					threadId: string,
 					permissionRequestHandler: PermissionRequestHandler,
-				): Promise<AsyncIterable<acp.SessionNotification>> {
-					return mockPrompt(sessionInitializationParams, message, threadId, permissionRequestHandler)
+				): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
+					return await mockPrompt(sessionInitializationParams, message, threadId, permissionRequestHandler)
+				}
+				async cancel(sessionId: string): Promise<void> {
+					// Mock implementation - do nothing
 				}
 			},
 		}))
@@ -141,7 +144,10 @@ describe("sendMessageToClaudeCode2", () => {
 				},
 			]
 
-			mockPrompt.mockResolvedValue(createMockEventStream(mockEvents))
+			mockPrompt.mockResolvedValue({
+				events: createMockEventStream(mockEvents),
+				sessionId: mockEvents[0]?.sessionId || "test-session-123",
+			})
 
 			const done = sendMessageToClaudeCode(
 				{
@@ -227,7 +233,10 @@ describe("sendMessageToClaudeCode2", () => {
 				},
 			]
 
-			mockPrompt.mockResolvedValue(createMockEventStream(mockEvents))
+			mockPrompt.mockResolvedValue({
+				events: createMockEventStream(mockEvents),
+				sessionId: mockEvents[0]?.sessionId || "test-session-123",
+			})
 
 			const done = sendMessageToClaudeCode(
 				{
@@ -289,7 +298,10 @@ describe("sendMessageToClaudeCode2", () => {
 				},
 			]
 
-			mockPrompt.mockResolvedValue(createMockEventStream(mockEvents))
+			mockPrompt.mockResolvedValue({
+				events: createMockEventStream(mockEvents),
+				sessionId: mockEvents[0]?.sessionId || "test-session-123",
+			})
 
 			const done = sendMessageToClaudeCode(
 				{

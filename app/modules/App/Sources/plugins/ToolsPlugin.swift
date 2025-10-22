@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ACPTool
 import AskFollowUpTool
 import BuildTool
 import ClaudeCodeTools
@@ -31,6 +32,9 @@ extension ToolsPlugin {
     plugIn(tool: PlanTool())
     plugIn(tool: WebFetchTool())
     plugIn(tool: WebSearchTool())
+
+    // ACP
+    ACPTool.allTools.forEach(plugIn(tool:))
 
     // Claude Code
     plugIn(tool: ClaudeCodeReadTool())

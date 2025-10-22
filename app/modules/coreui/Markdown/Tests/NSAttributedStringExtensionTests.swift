@@ -5,7 +5,7 @@ import AppKit
 import Foundation
 import Testing
 
-@testable import ChatFeature
+@testable import Markdown
 
 // MARK: - NSAttributedStringExtensionTests
 

@@ -17,6 +17,13 @@ export interface MockedFs {
 	unlinkSync: jest.MockedFunction<(path: string) => void>
 	/** Mock function for fs.mkdirSync - creates directories in the in-memory file store */
 	mkdirSync: jest.MockedFunction<(path: string, options?: unknown) => void>
+	/** Mock promises API for fs */
+	promises: {
+		writeFile: jest.MockedFunction<(path: string, data: string) => Promise<void>>
+		readFile: jest.MockedFunction<(path: string, encoding?: string) => Promise<string>>
+		mkdir: jest.MockedFunction<(path: string, options?: unknown) => Promise<void>>
+		unlink: jest.MockedFunction<(path: string) => Promise<void>>
+	}
 	/** In-memory file store mapping file paths to their content */
 	files: { [path: string]: string }
 	/** Clears all files from the in-memory store and resets all mock call history */
@@ -93,17 +100,53 @@ export const mockFs = (onMock?: (mockedFs: MockedFs) => void) => {
 		// In real usage, directories would be created, but for our mock we just track the call
 	})
 
+	// Promises API
+	const writeFile = jest.fn<(path: string, data: string) => Promise<void>>(async (path, data) => {
+		files[path] = data
+	})
+
+	const readFile = jest.fn<(path: string, encoding?: string) => Promise<string>>(async (path) => {
+		if (!(path in files)) {
+			throw new Error(`ENOENT: no such file or directory, open '${path}'`)
+		}
+		return files[path]
+	})
+
+	const mkdir = jest.fn<(path: string, options?: unknown) => Promise<void>>(async () => {
+		// Simple mock implementation - just track that it was called
+	})
+
+	const unlink = jest.fn<(path: string) => Promise<void>>(async (path) => {
+		if (!(path in files)) {
+			throw new Error(`ENOENT: no such file or directory, unlink '${path}'`)
+		}
+		delete files[path]
+	})
+
+	const promises = {
+		writeFile,
+		readFile,
+		mkdir,
+		unlink,
+	}
+
 	const restore = () => {
 		// Clear all files
 		Object.keys(files).forEach((key) => delete files[key])
 
-		// Clear all mock call history
+		// Clear all mock call history - sync API
 		writeFileSync.mockClear()
 		appendFileSync.mockClear()
 		readFileSync.mockClear()
 		existsSync.mockClear()
 		unlinkSync.mockClear()
 		mkdirSync.mockClear()
+
+		// Clear all mock call history - promises API
+		writeFile.mockClear()
+		readFile.mockClear()
+		mkdir.mockClear()
+		unlink.mockClear()
 	}
 
 	const mockedFs: MockedFs = {
@@ -113,6 +156,7 @@ export const mockFs = (onMock?: (mockedFs: MockedFs) => void) => {
 		existsSync,
 		unlinkSync,
 		mkdirSync,
+		promises,
 		files,
 		restore,
 	}
@@ -128,5 +172,6 @@ export const mockFs = (onMock?: (mockedFs: MockedFs) => void) => {
 		existsSync,
 		unlinkSync,
 		mkdirSync,
+		promises,
 	}
 }

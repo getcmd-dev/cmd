@@ -135,7 +135,7 @@ extension Schema {
       try container.encode(rankForProgramming, forKey: .rankForProgramming)
     }
   }
-  public enum ModelModality: String, Codable, Sendable {
+  public enum ModelModality: String, Codable, Sendable, CaseIterable {
     case text = "text"
     case image = "image"
     case file = "file"

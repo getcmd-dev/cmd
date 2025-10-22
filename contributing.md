@@ -21,7 +21,9 @@ cmd install:swiftformat
 brew install jc
 brew install jq
 brew install shfmt
-brew install yarn
+
+# Enable Corepack for Yarn (uses version from package.json)
+corepack enable
 
 cp -R ./tools/githooks/. .git/hooks
 

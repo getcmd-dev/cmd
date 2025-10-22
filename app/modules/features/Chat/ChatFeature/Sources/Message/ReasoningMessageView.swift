@@ -30,7 +30,7 @@ struct ReasoningMessageView: View {
       }
       .buttonStyle(.plain)
       if isExpanded {
-        Text(reasoning.text)
+        Text(reasoning.text.trimmingCharacters(in: .whitespacesAndNewlines))
           .font(.system(size: 12, weight: .regular))
           .foregroundColor(.secondary)
           .padding(.leading)
@@ -45,14 +45,7 @@ struct ReasoningMessageView: View {
   @State private var isHovered = false
 
   private var thinkingDescription: String {
-    if reasoning.isStreaming {
-      return "Thinking"
-    }
-    if let reasoningDuration = reasoning.reasoningDuration {
-      return "Thought for \(formatDuration(reasoningDuration))"
-    } else {
-      return "Thought for a bit"
-    }
+    "Thinking"
   }
 
   private func iconName(isHovered: Bool) -> String {
@@ -70,20 +63,6 @@ struct ReasoningMessageView: View {
 
   private func iconSize(isHovered: Bool) -> CGFloat {
     iconName(isHovered: isHovered) == "brain" ? 16 : 8
-  }
-
-  private func formatDuration(_ duration: Double) -> String {
-    let seconds = Int(duration)
-
-    if seconds < 60 {
-      return "\(seconds)s"
-    } else if seconds < 3600 {
-      let minutes = seconds / 60
-      return "\(minutes)mn"
-    } else {
-      let hours = seconds / 3600
-      return "\(hours)h"
-    }
   }
 
 }

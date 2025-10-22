@@ -10,3 +10,4 @@
 coverage
 *.log
 persist/*.json
+.yarn/install-state.gz

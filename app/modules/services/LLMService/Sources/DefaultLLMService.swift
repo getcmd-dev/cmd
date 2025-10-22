@@ -404,6 +404,8 @@ extension Schema.APIProvider {
         return .openrouter
       case .claudeCode:
         return .claudeCode
+      case .codex:
+        return .codex
       case .groq:
         return .groq
       case .gemini:
@@ -412,8 +414,11 @@ extension Schema.APIProvider {
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    let localExecutable: Schema.LocalExecutable? = await {
+    let localExecutable: Schema.LocalExecutable? = try await {
       guard let executable = settings.executable else { return nil }
+      guard let projectRoot else {
+        throw AppError("Cannot use external agent without a project")
+      }
       return await Schema.LocalExecutable(
         executable: executable,
         env: JSON(shellService.env),

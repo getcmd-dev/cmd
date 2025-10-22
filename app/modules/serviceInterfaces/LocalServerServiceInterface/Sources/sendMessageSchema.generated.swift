@@ -106,7 +106,7 @@ extension Schema {
       try container.encode(content, forKey: .content)
     }
   
-    public enum Role: String, Codable, Sendable {
+    public enum Role: String, Codable, Sendable, CaseIterable {
       case system = "system"
       case user = "user"
       case assistant = "assistant"
@@ -734,18 +734,19 @@ extension Schema {
       }
     }
   }
-  public enum APIProviderName: String, Codable, Sendable {
+  public enum APIProviderName: String, Codable, Sendable, CaseIterable {
     case openai = "openai"
     case anthropic = "anthropic"
     case openrouter = "openrouter"
     case claudeCode = "claude_code"
+    case codex = "codex"
     case groq = "groq"
     case gemini = "gemini"
   }    
   public struct LocalExecutable: Codable, Sendable {
     public let executable: String
     public let env: JSON
-    public let cwd: String?
+    public let cwd: String
   
     private enum CodingKeys: String, CodingKey {
       case executable = "executable"
@@ -756,7 +757,7 @@ extension Schema {
     public init(
         executable: String,
         env: JSON,
-        cwd: String? = nil
+        cwd: String
     ) {
       self.executable = executable
       self.env = env
@@ -767,14 +768,14 @@ extension Schema {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       executable = try container.decode(String.self, forKey: .executable)
       env = try container.decode(JSON.self, forKey: .env)
-      cwd = try container.decodeIfPresent(String?.self, forKey: .cwd)
+      cwd = try container.decode(String.self, forKey: .cwd)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(executable, forKey: .executable)
       try container.encode(env, forKey: .env)
-      try container.encodeIfPresent(cwd, forKey: .cwd)
+      try container.encode(cwd, forKey: .cwd)
     }
   }
   public struct TextDelta: Codable, Sendable {

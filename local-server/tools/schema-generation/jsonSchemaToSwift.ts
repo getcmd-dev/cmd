@@ -254,6 +254,20 @@ class PropertyModel {
 				type: definition,
 				isRequired,
 			})
+		} else if (definition.type instanceof Array) {
+			const nonNullTypes = definition.type.filter((t) => t !== "null")
+			const type = nonNullTypes[0]
+			if (nonNullTypes.length === 1 && typeof type === "string") {
+				this.typeName = getTypeName({
+					generator,
+					typeNameQualifier,
+					propertyKey: this.name,
+					type: { type },
+					isRequired: nonNullTypes.length === definition.type.length,
+				})
+			} else {
+				throw new Error(`Type is not a string ${JSON.stringify(definition)} ${typeof definition.type}`)
+			}
 		} else if (definition.$ref) {
 			const ref = definition.$ref.replace("#/definitions/", "")
 			this.typeName = `${ref}${isRequired ? "" : "?"}`
@@ -273,7 +287,7 @@ class PropertyModel {
 		} else if (typeof definition === "object" && Object.keys(definition).length === 0) {
 			this.typeName = "JSON.Value"
 		} else {
-			throw new Error("Type is not a string")
+			throw new Error(`Type is not a string ${JSON.stringify(definition)} ${typeof definition.type}`)
 		}
 	}
 }
@@ -410,7 +424,7 @@ const getTypeName = ({
 			return `${typeName}${isRequired ? "" : "?"}`
 		}
 	} else {
-		throw new Error("Type is not a string")
+		throw new Error(`Type is not a string ${JSON.stringify(type)}`)
 	}
 }
 

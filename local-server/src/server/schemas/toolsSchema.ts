@@ -193,3 +193,96 @@ export type WebSearchToolOutput_SearchResult = {
 }
 
 // ACP
+export type ACPToolKind =
+	| "read"
+	| "edit"
+	| "delete"
+	| "move"
+	| "search"
+	| "execute"
+	| "think"
+	| "fetch"
+	| "switch_mode"
+	| "other"
+export type ACPToolInput = {
+	type: "acp_tool_input"
+	kind: ACPToolKind
+	title: string
+	rawInput?: Record<string, unknown>
+}
+export type ACPToolOutput = {
+	type: "acp_tool_output"
+	kind: ACPToolKind
+	content: ACPToolOutput_Content[]
+	rawOutput?: Record<string, unknown>
+}
+
+export type ACPToolOutput_MediaContent_Resource_EmbeddedResource =
+	| ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text
+	| ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob
+
+export interface ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text {
+	type: "embedded_resource_text"
+	mimeType?: string | null
+	text: string
+	uri: string
+}
+export interface ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob {
+	type: "embedded_resource_blob"
+	blob: string
+	mimeType?: string | null
+	uri: string
+}
+
+export type ACPToolOutput_MediaContent_Text = {
+	text: string
+	type: "text"
+}
+export type ACPToolOutput_MediaContent_Image = {
+	data: string
+	mimeType: string
+	type: "image"
+	uri?: string | null
+}
+export type ACPToolOutput_MediaContent_Audio = {
+	data: string
+	mimeType: string
+	type: "audio"
+}
+export type ACPToolOutput_MediaContent_ResourceLink = {
+	description?: string | null
+	mimeType?: string | null
+	name: string
+	size?: number | null
+	title?: string | null
+	type: "resource_link"
+	uri: string
+}
+export type ACPToolOutput_MediaContent_Resource = {
+	resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource
+	type: "resource"
+}
+export type ACPToolOutput_AnyMediaContent =
+	| ACPToolOutput_MediaContent_Text
+	| ACPToolOutput_MediaContent_Image
+	| ACPToolOutput_MediaContent_Audio
+	| ACPToolOutput_MediaContent_ResourceLink
+	| ACPToolOutput_MediaContent_Resource
+
+export type ACPToolOutput_MediaContent = {
+	content: ACPToolOutput_AnyMediaContent
+	type: "content"
+}
+
+export type ACPToolOutput_Diff = {
+	newText: string
+	oldText?: string | null
+	path: string
+	type: "diff"
+}
+export type ACPToolOutput_Terminal = {
+	terminalId: string
+	type: "terminal"
+}
+
+export type ACPToolOutput_Content = ACPToolOutput_MediaContent | ACPToolOutput_Diff | ACPToolOutput_Terminal

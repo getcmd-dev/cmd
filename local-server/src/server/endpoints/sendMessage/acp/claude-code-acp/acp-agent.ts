@@ -95,6 +95,8 @@ export type ClaudeAgentMeta = {
 	options?: Options
 }
 
+export type ACPLogger = Pick<Console, "log" | "error">
+
 // Implement the ACP Agent interface
 export class ClaudeAcpAgent implements Agent {
 	sessions: {
@@ -105,12 +107,14 @@ export class ClaudeAcpAgent implements Agent {
 	fileContentCache: { [key: string]: string }
 	backgroundTerminals: { [key: string]: BackgroundTerminal } = {}
 	clientCapabilities?: ClientCapabilities
+	logger: ACPLogger
 
-	constructor(client: AgentSideConnection) {
+	constructor(client: AgentSideConnection, logger: ACPLogger = console) {
 		this.sessions = {}
 		this.client = client
 		this.toolUseCache = {}
 		this.fileContentCache = {}
+		this.logger = logger
 	}
 
 	async initialize(request: InitializeRequest): Promise<InitializeResponse> {
@@ -208,7 +212,7 @@ export class ClaudeAcpAgent implements Agent {
 		const newOptions: Options = {
 			systemPrompt,
 			settingSources: ["user", "project", "local"],
-			stderr: (err) => console.error("Claude Code error", err),
+			stderr: (err) => this.logger.error("Claude Code error", err),
 			...options,
 			// It seems that Claude Code doesn't cancels cleanly when the abort controller passed as an option
 			// aborts.
@@ -400,7 +404,7 @@ export class ClaudeAcpAgent implements Agent {
 						typeof message.message.content === "string" &&
 						message.message.content.includes("<local-command-stdout>")
 					) {
-						console.log("assistant message", message.message.content)
+						this.logger.log("assistant message", message.message.content)
 						break
 					}
 
@@ -408,7 +412,7 @@ export class ClaudeAcpAgent implements Agent {
 						typeof message.message.content === "string" &&
 						message.message.content.includes("<local-command-stderr>")
 					) {
-						console.error("assistant error", message.message.content)
+						this.logger.error("assistant error", message.message.content)
 						break
 					}
 					// Skip these user messages for now, since they seem to just be messages we don't want in the feed
@@ -434,6 +438,7 @@ export class ClaudeAcpAgent implements Agent {
 						this.toolUseCache,
 						this.fileContentCache,
 						this.client,
+						this.logger,
 					)
 					break
 				}
@@ -449,6 +454,7 @@ export class ClaudeAcpAgent implements Agent {
 						this.toolUseCache,
 						this.fileContentCache,
 						this.client,
+						this.logger,
 					)
 					break
 				}
@@ -687,6 +693,7 @@ export async function sendAcpNotifications(
 	toolUseCache: ToolUseCache,
 	fileContentCache: { [key: string]: string },
 	client: AgentSideConnection,
+	logger: ACPLogger,
 ): Promise<void> {
 	const notifications: SessionNotification[] = []
 	const _meta = {
@@ -747,7 +754,7 @@ export async function sendAcpNotifications(
 		const handleToolResult = async (toolUse: CachedToolUse) => {
 			const chunk = toolUse.output
 			if (!toolUse.toolResponse || !chunk) {
-				console.log(
+				logger.log(
 					`skipping handleToolResult update for ${toolUse.id}. toolResponse: ${!!toolUse.toolResponse} output: ${!!toolUse.output}`,
 				)
 				// Wait for both output formats to be available before broadcasting the update.
@@ -755,7 +762,7 @@ export async function sendAcpNotifications(
 			}
 
 			if (toolUse.name !== "TodoWrite") {
-				console.log("sending handleToolResult update")
+				logger.log("sending handleToolResult update")
 				await client.sessionUpdate({
 					_meta,
 					sessionId,
@@ -800,7 +807,6 @@ export async function sendAcpNotifications(
 					break
 				case "tool_use":
 					toolUseCache[chunk.id] = chunk
-					console.log(`register hook ${sessionId} ${chunk.id}`)
 					registerHookCallback(chunk.id, {
 						onPostToolUseHook: async (toolUseId, toolInput, toolResponse) => {
 							const toolUse = toolUseCache[toolUseId]
@@ -808,7 +814,7 @@ export async function sendAcpNotifications(
 								toolUse.toolResponse = toolResponse
 								await handleToolResult(toolUse)
 							} else {
-								console.error(
+								logger.error(
 									`[claude-code-acp] Got a tool result from a hook for tool use that wasn't tracked: ${toolUseId}`,
 								)
 							}
@@ -843,7 +849,7 @@ export async function sendAcpNotifications(
 				case "tool_result": {
 					const toolUse = toolUseCache[chunk.tool_use_id]
 					if (!toolUse) {
-						console.error(
+						logger.error(
 							`[claude-code-acp] Got a tool result for tool use that wasn't tracked: ${chunk.tool_use_id}`,
 						)
 						break
