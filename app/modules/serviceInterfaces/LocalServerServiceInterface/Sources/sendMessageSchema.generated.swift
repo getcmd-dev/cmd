@@ -739,6 +739,7 @@ extension Schema {
     case anthropic = "anthropic"
     case openrouter = "openrouter"
     case claudeCode = "claude_code"
+    case codex = "codex"
     case groq = "groq"
     case gemini = "gemini"
   }    

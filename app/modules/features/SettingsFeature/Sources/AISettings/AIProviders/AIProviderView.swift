@@ -223,6 +223,8 @@ extension AIProvider {
       "High-speed inference for open-weight LLMs"
     case .claudeCode:
       "Claude Code"
+    case .codex:
+      "Codex"
     case .gemini:
       "Gemini"
     default:

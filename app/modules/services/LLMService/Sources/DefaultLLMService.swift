@@ -404,6 +404,8 @@ extension Schema.APIProvider {
         return .openrouter
       case .claudeCode:
         return .claudeCode
+      case .codex:
+        return .codex
       case .groq:
         return .groq
       case .gemini:

@@ -29,6 +29,13 @@ extension AIProvider {
         installationInstructions: URL(string: "https://docs.anthropic.com/en/docs/claude-code/setup#standard-installation")!,
         llmProvider: self)
 
+    case .codex:
+      .init(
+        name: "Codex",
+        defaultExecutableName: "codex",
+        installationInstructions: URL(string: "https://developers.openai.com/codex/cli/")!,
+        llmProvider: self)
+
     default:
       nil
     }

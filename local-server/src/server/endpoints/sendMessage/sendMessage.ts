@@ -72,30 +72,32 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 
 			const tools = body.tools
 
-			if (body.provider.name == "claude_code") {
+			if (body.provider.name == "claude_code" || body.provider.name == "codex") {
+				// External agent, route to appropriate handler based on provider.
 				const threadId = body.threadId
 				if (!threadId) {
 					throw new UserFacingError({
-						message: "Thread ID is required for Claude Code provider.",
+						message: `Thread ID is required for ${body.provider.name} provider.`,
 					})
 				}
-				// Claude Code is treated as a special case.
 				const localExecutable = body.provider.settings.localExecutable
 				if (!localExecutable) {
 					throw new UserFacingError({
-						message: "Local executable is required for Claude Code provider.",
+						message: `Local executable is required for ${body.provider.name} provider.`,
 					})
 				}
-				const useNewClaudeCodeApi = body.useNewClaudeCodeApi === true
-				logInfo(`Using new Claude Code API: ${useNewClaudeCodeApi}`)
-				const sendMessageToClaudeCodeImpl = useNewClaudeCodeApi
-					? // ? sendMessageToClaudeCode2
-						sendMessageToCodex
-					: sendMessageToClaudeCode
-				await sendMessageToClaudeCodeImpl(
-					{ messages, localExecutable, port: getPort(), threadId, router, tools },
-					res,
-				)
+
+				// Route to appropriate handler based on provider
+				let sendMessageImpl
+				if (body.provider.name == "codex") {
+					sendMessageImpl = sendMessageToCodex
+				} else {
+					const useNewClaudeCodeApi = body.useNewClaudeCodeApi === true
+					logInfo(`Using new Claude Code API: ${useNewClaudeCodeApi}`)
+					sendMessageImpl = useNewClaudeCodeApi ? sendMessageToClaudeCode2 : sendMessageToClaudeCode
+				}
+
+				await sendMessageImpl({ messages, localExecutable, port: getPort(), threadId, router, tools }, res)
 				return
 			}
 
