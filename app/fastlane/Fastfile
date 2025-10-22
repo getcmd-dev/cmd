@@ -417,8 +417,8 @@ platform :mac do
     archive_path = result[:archive_path]
     build_path = result[:build_path]
 
-    # Upload symbols to Sentry and Bugsnag
-    upload_release_symbols(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path)
+    # Upload symbols without creating a Sentry release
+    upload_release_symbols(version: version, app_binary_path: app_binary_path, archive_path: archive_path, build_path: build_path, skip_release_creation: true)
 
     puts "Build artifact completed. DMG available at: #{result[:dmg_path]}"
   end
@@ -429,29 +429,36 @@ platform :mac do
     app_binary_path = options.fetch(:app_binary_path, nil)
     archive_path = options[:archive_path]
     build_path = options[:build_path]
+    skip_release_creation = options.fetch(:skip_release_creation, false)
 
     # Verify dSYM UUID matches binary
     binary_uuid = sh("dwarfdump --uuid '#{app_binary_path}' | awk '{print $2}'").strip
     dsym_uuid = sh("dwarfdump --uuid '#{archive_path}/dSYMs/cmd.app.dSYM' | awk '{print $2}'").strip
     raise "UUID mismatch between binary and dSYM. This will prevent traces from being symbolicated" unless binary_uuid == dsym_uuid
 
-    sentry_create_release(
-      auth_token: load_secret("SENTRY_AUTH_TOKEN"),
-      org_slug: "getcmd",
-      project_slug: "cmd-mac-app",
-      version: version,
-      app_identifier: "dev.getcmd.command",
-      finalize: true,
-    )
+    unless skip_release_creation
+      sentry_create_release(
+        auth_token: load_secret("SENTRY_AUTH_TOKEN"),
+        org_slug: "getcmd",
+        project_slug: "cmd-mac-app",
+        version: version,
+        app_identifier: "dev.getcmd.command",
+        finalize: true,
+      )
+    end
+
     sh("sentry-cli debug-files upload --auth-token #{load_secret("SENTRY_AUTH_TOKEN")} --org getcmd --project cmd-mac-app --include-sources --wait '#{archive_path}'")
-    sentry_set_commits(
-      org_slug: "getcmd",
-      project_slug: "cmd-mac-app",
-      version: version,
-      app_identifier: "dev.getcmd.command",
-      auto: true,
-      clear: false,
-    )
+
+    unless skip_release_creation
+      sentry_set_commits(
+        org_slug: "getcmd",
+        project_slug: "cmd-mac-app",
+        version: version,
+        app_identifier: "dev.getcmd.command",
+        auto: true,
+        clear: false,
+      )
+    end
 
     plist_path = "#{build_path}/release/cmd.app/Contents/Info.plist"
     bugsnap_api_key = sh("plutil -convert json -o - #{plist_path} | jq -r '.bugsnag.apiKey'").strip
