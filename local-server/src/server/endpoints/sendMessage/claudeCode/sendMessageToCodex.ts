@@ -107,18 +107,18 @@ const createEventStream = async (
 	// Provide a name for the conversation, if needed.
 	// TODO: expose the models in cmd directly to the API, so that the conversation naming
 	// can be done like for any AI provider with a lower tier model.
-	// if (!existingSessionId) {
-	// 	void nameConversation(messageContent).then((name) => {
-	// 		sendCommandToHostApp({
-	// 			type: "execute-command",
-	// 			command: "set_conversation_name",
-	// 			input: {
-	// 				name,
-	// 				threadId,
-	// 			},
-	// 		})
-	// 	})
-	// }
+	if (!existingSessionId) {
+		void nameConversation(messageContent).then((name) => {
+			sendCommandToHostApp({
+				type: "execute-command",
+				command: "set_conversation_name",
+				input: {
+					name,
+					threadId,
+				},
+			})
+		})
+	}
 
 	acpClient = acpClient || new CodexACPClient()
 	const { sessionId, events } = await acpClient.prompt(
@@ -164,25 +164,25 @@ const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<
 }
 
 /* Name the conversation based on the first message. */
-// const nameConversation = async (messages: ContentBlock[]): Promise<string> => {
-// 	const codex = new Codex()
-// 	const thread = codex.startThread()
-// 	const mergedMessage = messages
-// 		.filter((message) => message.type === "text")
-// 		.map((message) => message.text)
-// 		.join("\n")
-// 	const result =
-// 		await thread.run(`You are an expert in naming conversations. Below is the first message of a conversation and you need to provide a concise and descriptive name for the conversation, under 50 characters.
+const nameConversation = async (messages: ContentBlock[]): Promise<string> => {
+	const codex = new Codex()
+	const thread = codex.startThread()
+	const mergedMessage = messages
+		.filter((message) => message.type === "text")
+		.map((message) => message.text)
+		.join("\n")
+	const result =
+		await thread.run(`You are an expert in naming conversations. Below is the first message of a conversation and you need to provide a concise and descriptive name for the conversation, under 50 characters.
 
-// 		YOU MUST RESPOND WITH ONLY THE NAME OF THE CONVERSATION, NOTHING ELSE.
+		YOU MUST RESPOND WITH ONLY THE NAME OF THE CONVERSATION, NOTHING ELSE.
 
-// 		good output example : \`Fixing the login flow in the app\`
-// 		bad output example: \`Here's a concise summary of the conversation: Fixing the login flow in the app\`
-// 		bad output example: \`I'm happy to assist you with that. Here's a concise summary of the conversation: Fixing the login flow in the app\`)
+		good output example : \`Fixing the login flow in the app\`
+		bad output example: \`Here's a concise summary of the conversation: Fixing the login flow in the app\`
+		bad output example: \`I'm happy to assist you with that. Here's a concise summary of the conversation: Fixing the login flow in the app\`)
 
-// 		Conversation to give a name to:
-// 		${mergedMessage}
-// `)
+		Conversation to give a name to:
+		${mergedMessage}
+`)
 
-// 	return result.finalResponse || "New conversation"
-// }
+	return result.finalResponse || "New conversation"
+}
