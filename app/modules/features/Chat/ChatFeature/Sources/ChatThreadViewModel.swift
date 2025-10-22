@@ -309,6 +309,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
         let res = try await response
         usageInfo.set(to: res.usageInfo)
 
+        if let tokenUsage = res.usageInfo {
+          defaultLogger
+            .log(
+              "Token usage - Input: \(tokenUsage.inputTokens), Output: \(tokenUsage.outputTokens), Total: \(tokenUsage.inputTokens + tokenUsage.outputTokens), Context size: \(selectedModel.contextSize)")
+        }
+
         recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
       streamingTask = (task: task, id: taskId)
