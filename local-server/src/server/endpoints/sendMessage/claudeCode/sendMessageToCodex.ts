@@ -33,7 +33,7 @@ export const sendMessageToCodex = async (
 		tools,
 	})
 	await respondUsingResponseStream(eventStream, res)
-	logInfo("done responsing, terminating request")
+	logInfo("done responding, terminating request")
 	res.end()
 }
 
