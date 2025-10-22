@@ -71,7 +71,7 @@ const createEventStream = async (
 	})
 	const eventStream = new AsyncStream<ResponseChunkWithoutIndex>()
 
-	// get the id of the Claude Code session to resume
+	// get the id of the Codex session to resume
 	const existingSessionId = ((): string | undefined => {
 		for (const message of messages) {
 			if (message.role === "assistant") {
