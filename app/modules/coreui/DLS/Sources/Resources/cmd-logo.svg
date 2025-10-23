@@ -1,18 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-  
-  <rect x="3" y="2" width="3" height="1" fill="#FFFFFF"/>
-  <rect x="10" y="2" width="3" height="1" fill="#FFFFFF"/>
-  <rect x="3" y="13" width="3" height="1" fill="#FFFFFF"/>
-  <rect x="10" y="13" width="3" height="1" fill="#FFFFFF"/>
+  <!-- CMD logo drawn as ordered centerlines for animation -->
+  <!-- Drawing order flows continuously, forming a smooth path -->
 
-  <rect x="2" y="3" width="1" height="3" fill="#FFFFFF"/>
-  <rect x="2" y="10" width="1" height="3" fill="#FFFFFF"/>
-  <rect x="13" y="3" width="1" height="3" fill="#FFFFFF"/>
-  <rect x="13" y="10" width="1" height="3" fill="#FFFFFF"/>
+  <!-- 1. Start: Top-left horizontal (left to right) -->
+  <line x1="3" y1="2.5" x2="6" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
 
-  <rect x="3" y="6" width="10" height="1" fill="#FFFFFF"/>
-  <rect x="3" y="9" width="10" height="1" fill="#FFFFFF"/>
-  <rect x="6" y="3" width="1" height="10" fill="#FFFFFF"/>
-  <rect x="9" y="3" width="1" height="10" fill="#FFFFFF"/>
+  <!-- 2. Left center vertical down (connects near x=6) -->
+  <line x1="6.5" y1="3" x2="6.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 3. Bottom-left horizontal (moves left from center) -->
+  <line x1="6" y1="13.5" x2="3" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 4. Bottom-left vertical up (connects at x=3) -->
+  <line x1="2.5" y1="13" x2="2.5" y2="10" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 5. Bottom center horizontal right (from left side) -->
+  <line x1="3" y1="9.5" x2="13" y2="9.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 11. Right bottom vertical down (from right side) -->
+  <line x1="13.5" y1="10" x2="13.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 12. Bottom-right horizontal (moves left) -->
+  <line x1="13" y1="13.5" x2="10" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 6. Right center vertical down (connects near x=13) -->
+  <line x1="9.5" y1="13" x2="9.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 7. Top-right horizontal (moves right from center) -->
+  <line x1="10" y1="2.5" x2="13" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 8. Top-right vertical down (connects at x=13) -->
+  <line x1="13.5" y1="3" x2="13.5" y2="6" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 9. Top center horizontal left (from right side) -->
+  <line x1="13" y1="6.5" x2="3" y2="6.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+
+  <!-- 10. Top-left vertical down (connects at x=3) -->
+  <line x1="2.5" y1="6" x2="2.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
 </svg>

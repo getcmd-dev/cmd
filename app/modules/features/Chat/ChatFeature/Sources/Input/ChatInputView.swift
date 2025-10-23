@@ -260,7 +260,7 @@ struct ChatInputView: View {
     Button(action: {
       inputViewModel.didCancelMessage()
     }) {
-      Image(systemName: "stop.circle.fill")
+      CMDLogoDrawingAnimation(size: 14)
         .tappableTransparentBackground()
     }
     .acceptClickThrough()
