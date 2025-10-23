@@ -13,10 +13,12 @@ struct ChatMessageList: View {
   /// Initializer for previews
   init(
     events: [ChatEvent],
-    onRestoreTapped: ((Checkpoint) -> Void)? = nil)
+    onRestoreTapped: ((Checkpoint) -> Void)? = nil,
+    isStreaming: Bool = false)
   {
     self.events = events
     self.onRestoreTapped = onRestoreTapped
+    self.isStreaming = isStreaming
   }
   #endif
 
@@ -25,6 +27,7 @@ struct ChatMessageList: View {
     onRestoreTapped = { [weak viewModel] checkpoint in
       viewModel?.handleRestore(checkpoint: checkpoint)
     }
+    isStreaming = viewModel.isStreamingResponse
   }
 
   var body: some View {
@@ -35,6 +38,7 @@ struct ChatMessageList: View {
           EmptyChatView()
             .padding(ChatView.Constants.chatPadding)
         }
+
         LazyVStack(spacing: 0) {
           ForEach(events) { event in
             switch event {
@@ -87,6 +91,16 @@ struct ChatMessageList: View {
         scrollViewHeight = scrollViewSize.height
       }
     }
+
+    // Streaming animation
+    Spacer(minLength: 0)
+    if isStreaming {
+      HStack {
+        CMDLogoDrawingAnimation(size: 24)
+        Spacer(minLength: 0)
+      }
+      .padding(.horizontal, ChatView.Constants.chatPadding)
+    }
   }
 
   private enum Constants {
@@ -98,6 +112,8 @@ struct ChatMessageList: View {
   @State private var contentIsScrolledDown = true
   @State private var contentWasScrolledDownByUser = true
   @State private var isUserScrolling = false
+
+  private let isStreaming: Bool
 
   private let events: [ChatEvent]
   private let onRestoreTapped: ((Checkpoint) -> Void)?
