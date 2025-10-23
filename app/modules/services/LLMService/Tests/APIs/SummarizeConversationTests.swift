@@ -60,7 +60,7 @@ final class SummarizeConversationTests {
       model: .claudeSonnet)
 
     // Then
-    #expect(summary == expectedSummary)
+    #expect(summary.summary == expectedSummary)
   }
 
   // MARK: - Test summarizeConversation with empty response
@@ -88,7 +88,7 @@ final class SummarizeConversationTests {
       model: .claudeSonnet)
 
     // Then
-    #expect(summary == "")
+    #expect(summary.summary == "")
   }
 
   // MARK: - Test summarizeConversation with server error
@@ -148,7 +148,7 @@ final class SummarizeConversationTests {
       model: .claudeSonnet)
 
     // Then
-    #expect(summary == expectedSummary)
+    #expect(summary.summary == expectedSummary)
   }
 
   // MARK: - Test summarizeConversation with long conversation
@@ -194,6 +194,6 @@ final class SummarizeConversationTests {
       model: .claudeSonnet)
 
     // Then
-    #expect(summary == expectedSummary)
+    #expect(summary.summary == expectedSummary)
   }
 }
