@@ -4,38 +4,38 @@
   <!-- Drawing order flows continuously, forming a smooth path -->
 
   <!-- 1. Start: Top-left horizontal (left to right) -->
-  <line x1="3" y1="2.5" x2="6" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="3" y1="2.5" x2="6" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 2. Left center vertical down (connects near x=6) -->
-  <line x1="6.5" y1="3" x2="6.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="6.5" y1="3" x2="6.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 3. Bottom-left horizontal (moves left from center) -->
-  <line x1="6" y1="13.5" x2="3" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="6" y1="13.5" x2="3" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 4. Bottom-left vertical up (connects at x=3) -->
-  <line x1="2.5" y1="13" x2="2.5" y2="10" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="2.5" y1="13" x2="2.5" y2="10" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 5. Bottom center horizontal right (from left side) -->
-  <line x1="3" y1="9.5" x2="13" y2="9.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="3" y1="9.5" x2="13" y2="9.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 11. Right bottom vertical down (from right side) -->
-  <line x1="13.5" y1="10" x2="13.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="13.5" y1="10" x2="13.5" y2="13" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 12. Bottom-right horizontal (moves left) -->
-  <line x1="13" y1="13.5" x2="10" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="13" y1="13.5" x2="10" y2="13.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 6. Right center vertical down (connects near x=13) -->
-  <line x1="9.5" y1="13" x2="9.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="9.5" y1="13" x2="9.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 7. Top-right horizontal (moves right from center) -->
-  <line x1="10" y1="2.5" x2="13" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="10" y1="2.5" x2="13" y2="2.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 8. Top-right vertical down (connects at x=13) -->
-  <line x1="13.5" y1="3" x2="13.5" y2="6" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="13.5" y1="3" x2="13.5" y2="6" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 9. Top center horizontal left (from right side) -->
-  <line x1="13" y1="6.5" x2="3" y2="6.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="13" y1="6.5" x2="3" y2="6.5" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 
   <!-- 10. Top-left vertical down (connects at x=3) -->
-  <line x1="2.5" y1="6" x2="2.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="square"/>
+  <line x1="2.5" y1="6" x2="2.5" y2="3" stroke="#FFFFFF" stroke-width="1" stroke-linecap="butt"/>
 </svg>

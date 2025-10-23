@@ -3,14 +3,25 @@
 
 import SwiftUI
 
+// MARK: - CMDLogoDrawingAnimation
+
 /// An animated view that progressively draws the CMD logo with a smooth visual effect
 public struct CMDLogoDrawingAnimation: View {
 
   public init(size: CGFloat = 16, drawingWindowLength: CGFloat = 0.75) {
     self.size = size
     // Calculate stroke width based on size to match the SVG's 1-unit thickness in a 16x16 viewport
-    self.strokeWidth = size / 16.0
+    strokeWidth = size / 16.0
     self.drawingWindowLength = drawingWindowLength
+  }
+
+  public var body: some View {
+    CMDLogoDrawingAnimationRepresentable(
+      size: size,
+      strokeWidth: strokeWidth,
+      drawingWindowLength: drawingWindowLength,
+      animationDuration: animationDuration)
+      .frame(width: size, height: size)
   }
 
   private let size: CGFloat
@@ -18,18 +29,9 @@ public struct CMDLogoDrawingAnimation: View {
   private let drawingWindowLength: CGFloat // Proportion of total path that's visible at once (0.0 to 1.0)
   private let animationDuration: Double = 2
 
-  public var body: some View {
-    CMDLogoDrawingAnimationRepresentable(
-      size: size,
-      strokeWidth: strokeWidth,
-      drawingWindowLength: drawingWindowLength,
-      animationDuration: animationDuration
-    )
-    .frame(width: size, height: size)
-  }
 }
 
-// MARK: - NSViewRepresentable
+// MARK: - CMDLogoDrawingAnimationRepresentable
 
 private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
   let size: CGFloat
@@ -37,15 +39,17 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
   let drawingWindowLength: CGFloat
   let animationDuration: Double
 
-  func makeNSView(context: Context) -> NSView {
+  func makeNSView(context _: Context) -> NSView {
     let view = NSView()
     view.wantsLayer = true
     view.layer = CALayer()
 
     // Parse the SVG file and create a continuous path from the line elements
     // The SVG contains lines in a specific order that flows around the logo
-    guard let svgURL = Bundle.module.url(forResource: "cmd-logo", withExtension: "svg"),
-          let combinedPath = parseCMDLogoSVG(from: svgURL, targetSize: size) else {
+    guard
+      let svgURL = Bundle.module.url(forResource: "cmd-logo", withExtension: "svg"),
+      let combinedPath = parseCMDLogoSVG(from: svgURL, targetSize: size)
+    else {
       return view
     }
 
@@ -59,7 +63,7 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
       layer.path = combinedPath
       layer.fillColor = NSColor.clear.cgColor
       layer.lineWidth = strokeWidth
-      layer.lineCap = .butt  // Use butt caps to prevent overlapping at segment boundaries
+      layer.lineCap = .butt // Use butt caps to prevent overlapping at segment boundaries
       layer.lineJoin = .round
       layer.strokeColor = NSColor.white.cgColor
 
@@ -102,7 +106,7 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
     return view
   }
 
-  func updateNSView(_ nsView: NSView, context: Context) {
+  func updateNSView(_: NSView, context _: Context) {
     // Nothing to update
   }
 
@@ -132,15 +136,17 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
     for _ in 0..<2 {
       for match in matches {
         // Extract x1, y1, x2, y2 coordinates from the regex match
-        guard match.numberOfRanges == 5,
-              let x1Range = Range(match.range(at: 1), in: svgString),
-              let y1Range = Range(match.range(at: 2), in: svgString),
-              let x2Range = Range(match.range(at: 3), in: svgString),
-              let y2Range = Range(match.range(at: 4), in: svgString),
-              let x1Value = Double(svgString[x1Range]),
-              let y1Value = Double(svgString[y1Range]),
-              let x2Value = Double(svgString[x2Range]),
-              let y2Value = Double(svgString[y2Range]) else {
+        guard
+          match.numberOfRanges == 5,
+          let x1Range = Range(match.range(at: 1), in: svgString),
+          let y1Range = Range(match.range(at: 2), in: svgString),
+          let x2Range = Range(match.range(at: 3), in: svgString),
+          let y2Range = Range(match.range(at: 4), in: svgString),
+          let x1Value = Double(svgString[x1Range]),
+          let y1Value = Double(svgString[y1Range]),
+          let x2Value = Double(svgString[x2Range]),
+          let y2Value = Double(svgString[y2Range])
+        else {
           continue
         }
 
