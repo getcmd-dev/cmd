@@ -2,8 +2,14 @@ name: Build Release Artifact
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 permissions:
   contents: read
+concurrency:
+  group: build-artifact-main
+  cancel-in-progress: false
 jobs:
   build-artifact:
     runs-on: macos-26
