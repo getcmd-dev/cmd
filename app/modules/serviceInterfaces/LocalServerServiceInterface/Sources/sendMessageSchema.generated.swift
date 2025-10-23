@@ -1016,12 +1016,14 @@ extension Schema {
     public let type = "usage"
     public let inputTokens: Int
     public let outputTokens: Int
+    public let cachedInputTokens: Int
     public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case inputTokens = "inputTokens"
       case outputTokens = "outputTokens"
+      case cachedInputTokens = "cachedInputTokens"
       case idx = "idx"
     }
   
@@ -1029,10 +1031,12 @@ extension Schema {
         type: String = "usage",
         inputTokens: Int,
         outputTokens: Int,
+        cachedInputTokens: Int,
         idx: Int
     ) {
       self.inputTokens = inputTokens
       self.outputTokens = outputTokens
+      self.cachedInputTokens = cachedInputTokens
       self.idx = idx
     }
   
@@ -1040,6 +1044,7 @@ extension Schema {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       inputTokens = try container.decode(Int.self, forKey: .inputTokens)
       outputTokens = try container.decode(Int.self, forKey: .outputTokens)
+      cachedInputTokens = try container.decode(Int.self, forKey: .cachedInputTokens)
       idx = try container.decode(Int.self, forKey: .idx)
     }
   
@@ -1048,6 +1053,7 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(inputTokens, forKey: .inputTokens)
       try container.encode(outputTokens, forKey: .outputTokens)
+      try container.encode(cachedInputTokens, forKey: .cachedInputTokens)
       try container.encode(idx, forKey: .idx)
     }
   }

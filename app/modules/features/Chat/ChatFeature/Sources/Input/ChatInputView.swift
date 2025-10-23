@@ -21,9 +21,11 @@ struct ChatInputView: View {
 
   init(
     inputViewModel: ChatInputViewModel,
+    threadViewModel: ChatThreadViewModel? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
+    self.threadViewModel = threadViewModel
     _isStreamingResponse = isStreamingResponse
     #if DEBUG
     _debugTextViewHandler = nil
@@ -34,9 +36,11 @@ struct ChatInputView: View {
   init(
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
+    threadViewModel: ChatThreadViewModel? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
+    self.threadViewModel = threadViewModel
     _isStreamingResponse = isStreamingResponse
     self._debugTextViewHandler = _debugTextViewHandler
   }
@@ -68,6 +72,14 @@ struct ChatInputView: View {
           .frame(height: 6)
         bottomRow
       }
+      .overlay(alignment: .topTrailing) {
+        // Context usage controls positioned at top right
+        if shouldShowContextControls {
+          contextUsageControls
+            .padding(.top, 8)
+            .padding(.trailing, 8)
+        }
+      }
       .overlay {
         DragDropAreaView(
           shape: AnyShape(RoundedRectangle(cornerRadius: Self.cornerRadius)),
@@ -85,7 +97,12 @@ struct ChatInputView: View {
           results: searchResults,
           didSelect: inputViewModel.handleDidSelect,
           searchInput: $inputViewModel.externalSearchQuery)
-          .readingSize { size in searchResultsViewHeight = size.height }
+          .readingSize { size in
+            if abs(size.height - searchResultsViewHeight) > 0.5 {
+              print("setting searchResultsViewHeight")
+              searchResultsViewHeight = size.height
+            }
+          }
           .offset(y: -searchResultsViewHeight)
           .onOutsideTap {
             inputViewModel.handleCloseSearch()
@@ -101,6 +118,8 @@ struct ChatInputView: View {
 
   @State private var searchResultsViewHeight: CGFloat = 0
 
+  @State private var isHoveringContextIndicator = false
+
   @Environment(\.colorScheme) private var colorScheme
 
   /// Is a streaming chat response in progress
@@ -111,6 +130,10 @@ struct ChatInputView: View {
   @Bindable private var inputViewModel: ChatInputViewModel
 
   @Environment(Router.self) private var router
+
+  private let threadViewModel: ChatThreadViewModel?
+
+  @Dependency(\.llmService) private var llmService
 
   private let sidePadding: CGFloat = 6
 
@@ -220,7 +243,9 @@ struct ChatInputView: View {
           .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
           } action: { size in
-            scrollViewContentSize = size
+            if abs(size.width - scrollViewContentSize.width) > 0.5 || abs(size.height - scrollViewContentSize.height) > 0.5 {
+              scrollViewContentSize = size
+            }
           }
       }
     }.defaultScrollAnchor(.bottom)
@@ -275,6 +300,58 @@ struct ChatInputView: View {
     inputViewModel.pendingToolApproval != nil
   }
 
+  // MARK: - Context Usage Controls
+
+  /// Whether to show context usage controls
+  private var shouldShowContextControls: Bool {
+    guard threadViewModel != nil else { return false }
+    guard let selectedModel = inputViewModel.selectedModel else { return false }
+    // Don't show controls when chatting with external agent
+    let provider = llmService.provider(for: selectedModel).currentValue
+    return !(provider?.isExternalAgent ?? false)
+  }
+
+  @ViewBuilder
+  private var contextUsageControls: some View {
+    if let threadViewModel, let tokenUsage = threadViewModel.latestTokenUsage, let model = inputViewModel.selectedModel {
+      HStack(spacing: 6) {
+        // Show compact button only on hover
+        if isHoveringContextIndicator {
+          Button(action: {
+            Task {
+              await threadViewModel.compactConversation()
+            }
+          }) {
+            SVGImage(resourceBundle.url(forResource: "compactContext", withExtension: "svg") ?? URL(filePath: ""))
+              .frame(width: 14, height: 14)
+          }
+          .tappableTransparentBackground()
+          .acceptClickThrough()
+          .buttonStyle(.plain)
+          .foregroundColor(.primary)
+          .disabled(threadViewModel.isCompactingConversation)
+          .transition(.opacity.combined(with: .move(edge: .trailing)))
+        }
+
+        CircularProgressIndicator(
+          progress: tokenUsage.usageRatio(for: model),
+          size: 20)
+      }
+      .overlay(alignment: .bottomTrailing) {
+        if isHoveringContextIndicator {
+          tokenUsageDetailsOverlay(tokenUsage: tokenUsage, model: model)
+            .fixedSize(horizontal: true, vertical: true)
+            .offset(x: 0, y: -32)
+        }
+      }
+      .onHover { hovering in
+        withAnimation(.easeInOut(duration: 0.2)) {
+          isHoveringContextIndicator = hovering
+        }
+      }
+    }
+  }
+
   private func approvalView(for pendingToolApproval: ToolApprovalRequest) -> some View {
     ToolApprovalView(
       request: pendingToolApproval,
@@ -317,6 +394,20 @@ struct ChatInputView: View {
     }
     return false
   }
+
+  @ViewBuilder
+  private func tokenUsageDetailsOverlay(tokenUsage: TokenUsageEvent, model: AIModel) -> some View {
+    VStack(alignment: .trailing, spacing: 4) {
+      Text("Context Usage")
+        .font(.caption.weight(.semibold))
+      Text("\(tokenUsage.totalTokens.formatted()) / \(model.contextSize.formatted())")
+        .font(.caption2)
+      Text("\(Int(tokenUsage.usageRatio(for: model) * 100))% used")
+        .font(.caption2)
+    }
+    .padding(8)
+    .with(cornerRadius: 6, backgroundColor: colorScheme.secondarySystemBackground)
+  }
 }
 
 // MARK: - AIModel + MenuItem
@@ -328,3 +419,5 @@ extension AIModel: MenuItem { }
 extension ChatMode: MenuItem {
   public var id: String { rawValue }
 }
+
+private let resourceBundle = Bundle.module

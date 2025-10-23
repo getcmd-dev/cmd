@@ -1,4 +1,4 @@
-import watch from "node-watch"
+import chokidar from "chokidar"
 import { execSync, spawn } from "child_process"
 import { computeAndSaveHash } from "../build.js"
 import generateSwiftSchema from "./generateSwiftSchema.js"
@@ -9,7 +9,7 @@ const isWatcherDisabled = (): boolean => {
 	return existsSync("../.build/disable-watcher")
 }
 
-watch("./dist/main.bundle.cjs", { recursive: true }, async function (evt, name) {
+chokidar.watch("./dist/main.bundle.cjs", { ignoreInitial: true }).on("all", async (evt, name) => {
 	if (isWatcherDisabled()) {
 		return
 	}
@@ -27,7 +27,7 @@ watch("./dist/main.bundle.cjs", { recursive: true }, async function (evt, name) 
 	})
 })
 
-watch("./src/server/schemas", { recursive: true }, function (evt, name) {
+chokidar.watch("./src/server/schemas", { ignoreInitial: true }).on("all", (evt, name) => {
 	if (isWatcherDisabled()) {
 		return
 	}
@@ -39,33 +39,26 @@ watch("./src/server/schemas", { recursive: true }, function (evt, name) {
 	}
 })
 
-watch(
-	"../app/modules",
-	{
-		recursive: true,
-		filter: (filePath, _) => {
-			if (filePath.includes(".build")) {
-				return false
-			}
-			const fileName = filePath.split("/").pop()
-			if (
-				fileName === "Package.swift" ||
-				fileName === "Module.swift" ||
-				!fileName?.endsWith(".swift") ||
-				fileName.includes(".generated.")
-			) {
-				return false
-			}
-			try {
-				execSync(`git check-ignore ${filePath}`)
-				return false
-			} catch {
-				// The command fails when the file is not ignored.
-			}
-			return true
-		},
-	},
-	function (evt, filePath) {
+chokidar
+	.watch("../app/modules/**/*.swift", {
+		ignoreInitial: true,
+		ignored: [
+			"**/.build/**",
+			"**/Package.swift",
+			"**/Module.swift",
+			"**/*.generated.*.swift",
+			(filePath) => {
+				try {
+					execSync(`git check-ignore ${filePath}`)
+					return true
+				} catch {
+					// The command fails when the file is not ignored.
+					return false
+				}
+			},
+		],
+	})
+	.on("all", (evt, filePath) => {
 		try {
 			if (isWatcherDisabled()) {
 				return
@@ -90,5 +83,4 @@ watch(
 		} catch (error) {
 			console.error(`Error watching file changes: ${error as Error}`)
 		}
-	},
-)
+	})

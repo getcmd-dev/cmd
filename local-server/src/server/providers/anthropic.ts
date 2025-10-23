@@ -1,7 +1,7 @@
 import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
-import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
-import { ModelMessage } from "ai"
+import { AnthropicMessageMetadata, AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
+import { LanguageModelUsage, ModelMessage, ProviderMetadata } from "ai"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
 import { UserFacingError } from "../errors"
 import { ProviderModelFullInfo } from "./provider"
@@ -73,6 +73,24 @@ export class AnthropicAIProvider implements AIProvider {
 			referenceModels,
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
+	}
+	extractTokenUsage(usage: LanguageModelUsage, providerMetadata: ProviderMetadata): LanguageModelUsage {
+		// Vercel doesn't do this well. See https://github.com/vercel/ai/issues/8349
+		const anthropicMetadata = providerMetadata.anthropic as unknown as AnthropicMessageMetadata
+		if (!anthropicMetadata) {
+			return usage
+		}
+		const inputTokens =
+			((anthropicMetadata.usage.input_tokens as number) ?? 0) +
+			((anthropicMetadata.usage.cache_creation_input_tokens as number) ?? 0)
+		const outputTokens = (anthropicMetadata.usage.output_tokens as number) ?? 0
+		return {
+			...usage,
+			inputTokens,
+			outputTokens,
+			totalTokens: inputTokens + outputTokens,
+			cachedInputTokens: anthropicMetadata.usage.cache_read_input_tokens as number | undefined,
+		}
 	}
 	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Anthropic.model.id claude-sonnet-4-5-20250929

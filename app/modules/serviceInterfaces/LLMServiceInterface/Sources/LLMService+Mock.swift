@@ -32,7 +32,7 @@ public final class MockLLMService: LLMService {
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
 
-  public var onSummarizeConversation: (@Sendable ([Schema.Message], AIModel) async throws -> String)?
+  public var onSummarizeConversation: (@Sendable ([Schema.Message], AIModel) async throws -> SummarizeConversationResponse)?
 
   public var onListModelsAvailable: (@Sendable (AIProvider) -> [AIProviderModel])?
 
@@ -92,9 +92,11 @@ public final class MockLLMService: LLMService {
   public func summarizeConversation(
     messageHistory: [Schema.Message],
     model: AIModel)
-    async throws -> String
+    async throws -> SummarizeConversationResponse
   {
-    try await onSummarizeConversation?(messageHistory, model) ?? "Mock conversation summary"
+    try await onSummarizeConversation?(messageHistory, model) ?? SummarizeConversationResponse(
+      summary: "Mock conversation summary",
+      usageInfo: nil)
   }
 
   public func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {

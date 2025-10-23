@@ -181,7 +181,7 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
-  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String {
+  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> SummarizeConversationResponse {
     var messages = messageHistory
     messages.append(.init(
       role: .user,
@@ -190,6 +190,7 @@ final class DefaultLLMService: LLMService {
           text: "Please provide a comprehensive summary of this conversation, highlighting the main topics discussed, key decisions made, and any important outcomes or next steps.")),
       ]))
 
+    let usageInfo = Atomic<LLMUsageInfo?>(nil)
     let assistantMessage = try await streamCompletionResponse(
       system: Prompt.summarizationSystemPrompt,
       messageHistory: messages,
@@ -198,9 +199,10 @@ final class DefaultLLMService: LLMService {
       enableReasoning: false,
       context: nil,
       handleUpdateStream: { _ in },
-      handleUsageInfo: { _ in })
+      handleUsageInfo: { usage in usageInfo.set(to: usage) })
 
-    return assistantMessage.content.first?.asText?.content ?? ""
+    let summary = assistantMessage.content.first?.asText?.content ?? ""
+    return SummarizeConversationResponse(summary: summary, usageInfo: usageInfo.value)
   }
 
   private let userDefaults: UserDefaultsI
@@ -343,6 +345,7 @@ final class DefaultLLMService: LLMService {
 
       let usage = try await helper.processStream()
       if let usage {
+        print("received usage info \(usage.inputTokens) | \(usage.outputTokens)")
         handleUsageInfo(usage)
       }
 

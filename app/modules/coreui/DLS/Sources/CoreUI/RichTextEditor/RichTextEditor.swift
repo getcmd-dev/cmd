@@ -219,7 +219,9 @@ public struct RichTextEditor: NSViewRepresentable {
 
     if needsFocus {
       textView.onFocus = {
-        $needsFocus.wrappedValue = false
+        if needsFocus {
+          $needsFocus.wrappedValue = false
+        }
       }
     } else {
       textView.onFocus = nil

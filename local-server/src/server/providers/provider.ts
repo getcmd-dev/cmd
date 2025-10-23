@@ -1,4 +1,4 @@
-import { ModelMessage, JSONValue, LanguageModel } from "ai"
+import { ModelMessage, JSONValue, LanguageModel, LanguageModelUsage, ProviderMetadata } from "ai"
 import { APIProviderName } from "../schemas/sendMessageSchema"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
 
@@ -187,4 +187,5 @@ export interface AIProvider {
 	 * @returns Array of models with their metadata
 	 */
 	listModels: (config: ProviderConfig, referenceModels: ProviderModelFullInfo[]) => Promise<ProviderModel[]>
+	extractTokenUsage?: (usage: LanguageModelUsage, providerMetadata: ProviderMetadata) => LanguageModelUsage
 }

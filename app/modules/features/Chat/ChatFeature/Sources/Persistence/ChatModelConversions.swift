@@ -152,6 +152,14 @@ extension ChatEvent {
 
     case .message(let message):
       self = .message(.init(content: .init(from: message.content), role: message.role, info: message.info))
+
+    case .tokenUsage(let tokenUsage):
+      self = .tokenUsage(.init(
+        id: tokenUsage.id,
+        inputTokens: tokenUsage.inputTokens,
+        cachedInputTokens: tokenUsage.cachedInputTokens,
+        outputTokens: tokenUsage.outputTokens,
+        timestamp: tokenUsage.timestamp))
     }
   }
 
@@ -167,6 +175,14 @@ extension ChatEvent {
         message: checkpoint.message,
         projectRoot: checkpoint.projectRoot,
         taskId: checkpoint.taskId))
+
+    case .tokenUsage(let tokenUsage):
+      .tokenUsage(.init(
+        id: tokenUsage.id,
+        inputTokens: tokenUsage.inputTokens,
+        cachedInputTokens: tokenUsage.cachedInputTokens,
+        outputTokens: tokenUsage.outputTokens,
+        timestamp: tokenUsage.timestamp))
     }
   }
 

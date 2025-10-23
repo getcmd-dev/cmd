@@ -635,6 +635,62 @@ struct ChatThreadViewModelTests {
     ])
   }
 
+  // MARK: - Token Usage Tests
+
+  @MainActor
+  @Test("latestTokenUsage is initialized from events when thread is deserialized")
+  func latestTokenUsageInitializedFromEvents() async throws {
+    // given
+    let tokenUsageEvent1 = TokenUsageEvent(
+      inputTokens: 100,
+      cachedInputTokens: 50,
+      outputTokens: 30)
+    let tokenUsageEvent2 = TokenUsageEvent(
+      inputTokens: 200,
+      cachedInputTokens: 100,
+      outputTokens: 50)
+
+    let events: [ChatEvent] = [
+      .message(.init(content: .text(.init(projectRoot: nil, text: "Hello", attachments: [])), role: .user)),
+      .tokenUsage(tokenUsageEvent1),
+      .message(.init(content: .text(.init(projectRoot: nil, text: "World", attachments: [])), role: .assistant)),
+      .tokenUsage(tokenUsageEvent2),
+    ]
+
+    // when
+    let sut = ChatThreadViewModel(
+      id: UUID(),
+      name: "Test Thread",
+      messages: [],
+      events: events)
+
+    // then
+    #expect(sut.latestTokenUsage?.id == tokenUsageEvent2.id)
+    #expect(sut.latestTokenUsage?.inputTokens == 200)
+    #expect(sut.latestTokenUsage?.cachedInputTokens == 100)
+    #expect(sut.latestTokenUsage?.outputTokens == 50)
+  }
+
+  @MainActor
+  @Test("latestTokenUsage is nil when no token usage events exist")
+  func latestTokenUsageNilWhenNoEvents() async throws {
+    // given
+    let events: [ChatEvent] = [
+      .message(.init(content: .text(.init(projectRoot: nil, text: "Hello", attachments: [])), role: .user)),
+      .message(.init(content: .text(.init(projectRoot: nil, text: "World", attachments: [])), role: .assistant)),
+    ]
+
+    // when
+    let sut = ChatThreadViewModel(
+      id: UUID(),
+      name: "Test Thread",
+      messages: [],
+      events: events)
+
+    // then
+    #expect(sut.latestTokenUsage == nil)
+  }
+
   // MARK: - ChatService Retention Integration Tests
 
   @MainActor

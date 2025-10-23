@@ -46,6 +46,7 @@ public struct ChatView: View {
 
         ChatInputView(
           inputViewModel: viewModel.tab.input,
+          threadViewModel: viewModel.tab,
           isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {

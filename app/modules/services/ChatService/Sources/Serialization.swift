@@ -330,6 +330,10 @@ extension ChatEventModel: Codable {
       let data = try container.decode(Checkpoint.self, forKey: .data)
       self = .checkpoint(data)
 
+    case "tokenUsage":
+      let data = try container.decode(TokenUsageEventModel.self, forKey: .data)
+      self = .tokenUsage(data)
+
     default:
       throw DecodingError.dataCorruptedError(forKey: .type, in: container, debugDescription: "Unknown event type: \(type)")
     }
@@ -345,6 +349,10 @@ extension ChatEventModel: Codable {
 
     case .checkpoint(let data):
       try container.encode("checkpoint", forKey: .type)
+      try container.encode(data, forKey: .data)
+
+    case .tokenUsage(let data):
+      try container.encode("tokenUsage", forKey: .type)
       try container.encode(data, forKey: .data)
     }
   }
