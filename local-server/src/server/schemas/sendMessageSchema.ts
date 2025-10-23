@@ -122,9 +122,16 @@ export interface ResponseError {
 	idx?: number
 }
 
+/**
+ * Usage information for one API call to an AI provider.
+ * The size of the consumed context window after this call is:
+ * `inputTokens + cachedInputTokens` + `outputTokens`.
+ */
 export interface ResponseUsage {
 	type: "usage"
 	/**
+	 * The number of new input tokens received by the provider.
+	 * Tokens that are part of the prompt but already cached are not included in this count.
 	 * @format integer
 	 */
 	inputTokens: number
@@ -132,6 +139,11 @@ export interface ResponseUsage {
 	 * @format integer
 	 */
 	outputTokens: number
+	/**
+	 * The number of input tokens received by the provider that were already cached.
+	 * @format integer
+	 */
+	cachedInputTokens: number
 	/**
 	 * @format integer
 	 */

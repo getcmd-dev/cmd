@@ -74,10 +74,15 @@ extension [ChatEvent] {
         switch event {
         case .checkpoint:
           break
+
         case .message(let message):
           if let streamRepresentation = message.content.streamRepresentation {
             return .init(id: event.id, content: streamRepresentation)
           }
+
+        case .tokenUsage:
+          // Token usage events are not sent to the completion service
+          break
         }
         return nil
       }

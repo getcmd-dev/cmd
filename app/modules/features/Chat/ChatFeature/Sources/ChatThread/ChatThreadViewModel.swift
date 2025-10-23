@@ -77,9 +77,13 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     self.projectInfo = projectInfo
     self.createdAt = createdAt
     context = ChatThreadContext(knownFilesContent: knownFilesContent)
-    self.events = events ?? messages.flatMap { message in
+    let events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
+    self.events = events
+
+    // Initialize latestTokenUsage from events if available
+    latestTokenUsage = events.lazy.compactMap(\.tokenUsage).last
 
     @Dependency(\.chatHistoryService) var chatHistoryService
     self.chatHistoryService = chatHistoryService
@@ -108,6 +112,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   private(set) var isShowingChatHistory = false
 
   private(set) var context: ChatThreadContext
+
+  /// The latest token usage information from the most recent message
+  private(set) var latestTokenUsage: TokenUsageEvent?
+
+  /// Whether a conversation compaction is in progress
+  private(set) var isCompactingConversation = false
 
   private(set) var name: String? {
     didSet {
@@ -142,13 +152,50 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
     // Release the strong reference and buffer for reuse when cancelling
     chatService.stopKeepingAlive(self, for: id)
-    Task.detached {
-      await self.persistThread()
-    }
+    persistThread()
   }
 
   func handleToggleChatHistory() {
     isShowingChatHistory.toggle()
+  }
+
+  /// Manually compact the conversation by summarizing it
+  @MainActor
+  func compactConversation() async {
+    guard summarizationTask == nil else { return }
+    guard let model = input.selectedModel else { return }
+
+    summarizationTask = Task {
+      let response = try await llmService.summarizeConversation(
+        messageHistory: messages.apiFormat,
+        model: model)
+      messages.append(.init(content: [.conversationSummary(.init(
+        projectRoot: projectInfo?.dirPath,
+        deltas: [response.summary],
+        attachments: []))], role: .user))
+
+      if let usageInfo = response.usageInfo {
+        // In the next turn, only the response from the summarization will be sent.
+        // So we update our token count only accounting for the output.
+        // TODO: When we'll also track cost, the cost of the input tokens for the summarization should not be lost.
+        let tokenUsageEvent = TokenUsageEvent(
+          inputTokens: 0,
+          cachedInputTokens: 0,
+          outputTokens: usageInfo.outputTokens)
+        latestTokenUsage = tokenUsageEvent
+        events.append(.tokenUsage(tokenUsageEvent))
+      }
+
+      persistThread()
+    }
+    isCompactingConversation = true
+    do {
+      try await summarizationTask?.value
+    } catch {
+      defaultLogger.error("Failed to compact conversation", error)
+    }
+    summarizationTask = nil
+    isCompactingConversation = false
   }
 
   /// Add new message content to the chat thread. Usually this is done automatically by sending the content of the input in `sendMessage`.
@@ -221,12 +268,10 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
         let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
         guard let self else { return }
         name = conversationName
-        await persistThread()
+        persistThread()
       }
     }
-    Task {
-      await persistThread()
-    }
+    persistThread()
 
     // Send the message to the server and stream the response.
     let indexOfLastEventFromThisMessage = Atomic(events.count - 1)
@@ -287,15 +332,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       indexOfLastEventFromThisMessage.set(to: events.count - 1)
                       newMessageState.content = content
-
                       // Persistence
-                      Task.detached {
-                        await self.persistThread()
-                      }
+                      persistThread()
                       if let toolUse = newContent.asToolUse?.toolUse {
-                        Task.detached { [weak self] in
+                        Task { [weak self] in
                           for await _ in toolUse.futureUpdates {
-                            await self?.persistThread()
+                            self?.persistThread()
                           }
                         }
                       }
@@ -320,7 +362,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       streamingTask = nil
 
       // Save the conversation after successful completion
-      await persistThread()
+      persistThread()
 
       // Release the strong reference and buffer for reuse after streaming and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
@@ -350,7 +392,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       }
 
       // Save even after error to preserve the failure state
-      await persistThread()
+      persistThread()
 
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
@@ -368,30 +410,16 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   /// Persist the current chat thread to the chat history service, so that it can be reloaded at the next app launch.
-  func persistThread() async {
-    // Check if there are any changes to save
-    let hasNewMessages = messages.count > lastSavedMessageCount
-    let hasNewEvents = events.count > lastSavedEventCount
-
-    if !hasChangedSinceLastSave, !hasNewMessages, !hasNewEvents {
-      // No changes to save
-      return
-    }
-
-    do {
-      let persistentTab = persistentModel
-
-      // Save the complete tab with all resolved relationships
-      try await chatHistoryService.save(chatThread: persistentTab)
-
-      // Update tracking variables
-      lastSavedMessageCount = messages.count
-      lastSavedEventCount = events.count
-      hasChangedSinceLastSave = false
-    } catch {
-      defaultLogger.error("Failed to save chat tab: \(name ?? "unnamed")", error)
+  func persistThread() {
+    persistenceQueue.queue { [weak self] in
+      await self?.performPersistence()
+      // Add a 250ms delay after persisting to further limit CPU usage
+      try? await Task.sleep(for: .milliseconds(250))
     }
   }
+
+  /// Queue for debouncing persistence calls to limit CPU usage while ensuring the last call executes
+  private let persistenceQueue = ReplaceableTaskQueue<Void>()
 
   // MARK: - Persistence Methods
 
@@ -427,6 +455,34 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
   }
 
+  /// Internal method that performs the actual persistence operation.
+  /// This is called through the debounced queue.
+  @MainActor
+  private func performPersistence() async {
+    // Check if there are any changes to save
+    let hasNewMessages = messages.count > lastSavedMessageCount
+    let hasNewEvents = events.count > lastSavedEventCount
+
+    if !hasChangedSinceLastSave, !hasNewMessages, !hasNewEvents {
+      // No changes to save
+      return
+    }
+
+    do {
+      let persistentTab = persistentModel
+
+      // Save the complete tab with all resolved relationships
+      try await chatHistoryService.save(chatThread: persistentTab)
+
+      // Update tracking variables
+      lastSavedMessageCount = messages.count
+      lastSavedEventCount = events.count
+      hasChangedSinceLastSave = false
+    } catch {
+      defaultLogger.error("Failed to save chat tab: \(name ?? "unnamed")", error)
+    }
+  }
+
   private func updateFocusFileInfo() async {
     // Check if the focused file in Xcode has changed and add it as context
     if let currentFocusedFile = await xcodeObserver.focusedTabURL {
@@ -458,7 +514,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
             .input
           if params.threadId == id.uuidString {
             name = params.name
-            await persistThread()
+            persistThread()
             return true
           }
         } catch {
@@ -530,21 +586,19 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   private func handle(usageInfo: LLMUsageInfo, model: AIModel) async throws {
+    // Store token usage event
+    let tokenUsageEvent = TokenUsageEvent(
+      inputTokens: usageInfo.inputTokens,
+      cachedInputTokens: usageInfo.cachedInputTokens,
+      outputTokens: usageInfo.outputTokens)
+    latestTokenUsage = tokenUsageEvent
+    events.append(.tokenUsage(tokenUsageEvent))
+    persistThread()
+
     // Handle usage info, including if the conversation needs compatcing
     if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
       defaultLogger.log("Summarizing conversation")
-
-      summarizationTask = Task {
-        let conversationSummary = try await llmService.summarizeConversation(
-          messageHistory: messages.apiFormat,
-          model: model)
-        messages.append(.init(content: [.conversationSummary(.init(
-          projectRoot: nil,
-          deltas: [conversationSummary],
-          attachments: []))], role: .user))
-      }
-      try await summarizationTask?.value
-      summarizationTask = nil
+      await compactConversation()
     }
   }
 
@@ -615,7 +669,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
           }
         }
       }
-      await persistThread()
+      persistThread()
     } catch {
       defaultLogger.error("Failed to create checkpoint", error)
     }
@@ -656,34 +710,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 }
 
 // MARK: - ChatEvent
-
-enum ChatEvent: Identifiable {
-  case message(_ message: ChatMessageContentWithRole)
-  case checkpoint(_ checkpoint: Checkpoint)
-
-  var message: ChatMessageContentWithRole? {
-    if case .message(let message) = self {
-      return message
-    }
-    return nil
-  }
-
-  var checkpoint: Checkpoint? {
-    if case .checkpoint(let checkpoint) = self {
-      return checkpoint
-    }
-    return nil
-  }
-
-  var id: String {
-    switch self {
-    case .message(let message):
-      message.id.uuidString
-    case .checkpoint(let checkpoint):
-      checkpoint.id
-    }
-  }
-}
 
 extension ChatThreadViewModel.SelectedProjectInfo {
   /// Whether the project is a Swift package

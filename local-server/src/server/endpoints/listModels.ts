@@ -23,7 +23,7 @@ const getProviderModelFullInfosWithCaching = async (): Promise<ProviderModelFull
 	return promise
 }
 
-export const registerEndpoint = (router: Router, modelProviders: AIProvider[]) => {
+export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/models", async (req: Request, res: Response) => {
 		const body = req.body as ListModelsInput
 		// Input validation
@@ -34,8 +34,8 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[]) =
 			})
 		}
 
-		const modelProvider = modelProviders.find((provider) => provider.name === body.provider.name)
-		if (!modelProvider) {
+		const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
+		if (!aiProvider) {
 			// Likely an external agent. // TODO: handle this as well.
 			res.json({
 				models: [],
@@ -43,7 +43,7 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[]) =
 			return
 		}
 		const allModels = await getProviderModelFullInfosWithCaching()
-		let models = await modelProvider.listModels(body.provider.settings, allModels)
+		let models = await aiProvider.listModels(body.provider.settings, allModels)
 		// Ensure no two models have the same global id from a given provider
 		models = deduplicate(models)
 

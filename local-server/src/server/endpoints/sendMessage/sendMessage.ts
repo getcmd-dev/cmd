@@ -42,7 +42,7 @@ import {
 import { sendMessageToClaudeCode as sendMessageToClaudeCode2 } from "./claudeCode/sendMessageToClaudeCode2"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
 
-export const registerEndpoint = (router: Router, modelProviders: AIProvider[], getPort: () => number) => {
+export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getPort: () => number) => {
 	registerClaudeCodeEndpoint(router)
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
@@ -101,15 +101,15 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 				return
 			}
 
-			const modelProvider = modelProviders.find((provider) => provider.name === body.provider.name)
-			if (!modelProvider) {
+			const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
+			if (!aiProvider) {
 				throw new UserFacingError({
 					message: `Unsupported API provider ${body.provider.name}.`,
 				})
 			}
 			const modelName = body.model
 			const { model, generalProviderOptions, addProviderOptionsToMessages, addProviderOptionsToTools } =
-				await modelProvider.build({
+				await aiProvider.build({
 					provider: body.provider.settings,
 					modelName,
 					reasoningBudget: body.enableReasoning ? 12000 : undefined,
@@ -137,7 +137,7 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 				abortController.abort()
 			})
 
-			const { fullStream, usage } = await streamText({
+			const { fullStream, usage, providerMetadata } = await streamText({
 				model,
 				abortSignal: abortController.signal,
 				tools: (addProviderOptionsToTools
@@ -159,11 +159,14 @@ export const registerEndpoint = (router: Router, modelProviders: AIProvider[], g
 
 			let idx = await respondUsingResponseStream(mapStream(fullStream), res)
 
-			const usageInfo = await usage
+			const usageInfo =
+				aiProvider.extractTokenUsage?.(await usage, (await providerMetadata) || {}) || (await usage)
+
 			const usageRes: ResponseUsage = {
 				type: "usage",
 				inputTokens: usageInfo.inputTokens || 0,
 				outputTokens: usageInfo.outputTokens || 0,
+				cachedInputTokens: usageInfo.cachedInputTokens || 0,
 				idx: idx++,
 			}
 

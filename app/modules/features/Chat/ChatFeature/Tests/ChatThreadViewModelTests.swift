@@ -387,7 +387,7 @@ struct ChatThreadViewModelTests {
 
     mockLLMService.onSummarizeConversation = { _, _ in
       summarizeConversationCalled.set(to: true)
-      return expectedSummary
+      return SummarizeConversationResponse(summary: expectedSummary, usageInfo: nil)
     }
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
@@ -401,6 +401,7 @@ struct ChatThreadViewModelTests {
         usageInfo: LLMUsageInfo(
           inputTokens: model.contextSize * 4 / 5, // 80% of context
           outputTokens: 15000, // Total > 80% of context
+          cachedInputTokens: 0,
           idx: 0))
     }
 
@@ -434,7 +435,7 @@ struct ChatThreadViewModelTests {
 
     mockLLMService.onSummarizeConversation = { _, _ in
       summarizeConversationCalled.set(to: true)
-      return "This should not be called"
+      return SummarizeConversationResponse(summary: "This should not be called", usageInfo: nil)
     }
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
@@ -448,6 +449,7 @@ struct ChatThreadViewModelTests {
         usageInfo: LLMUsageInfo(
           inputTokens: model.contextSize * 3 / 5, // 60% of context
           outputTokens: 10000, // Total < 80% of context
+          cachedInputTokens: 0,
           idx: 0))
     }
 
@@ -484,7 +486,7 @@ struct ChatThreadViewModelTests {
     mockLLMService.onSummarizeConversation = { messageHistory, model in
       capturedModel.set(to: model)
       capturedMessageHistory.set(to: messageHistory)
-      return "Summary"
+      return SummarizeConversationResponse(summary: "Summary", usageInfo: nil)
     }
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
@@ -498,6 +500,7 @@ struct ChatThreadViewModelTests {
         usageInfo: LLMUsageInfo(
           inputTokens: model.contextSize * 4 / 5, // 80% of context
           outputTokens: 15000, // Total > 80% of context
+          cachedInputTokens: 0,
           idx: 0))
     }
 
@@ -534,6 +537,7 @@ struct ChatThreadViewModelTests {
         usageInfo: LLMUsageInfo(
           inputTokens: model.contextSize * 4 / 5, // 80% of context
           outputTokens: 15000, // Total > 80% of context
+          cachedInputTokens: 0,
           idx: 0))
     }
 
@@ -573,7 +577,7 @@ struct ChatThreadViewModelTests {
       summarizationStarted.fulfill()
       // Complete summarization after the second message is sent to test concurrent behavior.
       try await fulfillment(of: secondMessageSentByUser)
-      return "Conversation summary of previous messages"
+      return SummarizeConversationResponse(summary: "Conversation summary of previous messages", usageInfo: nil)
     }
 
     let sendMessageCallCount = Atomic(0)
@@ -592,6 +596,7 @@ struct ChatThreadViewModelTests {
           usageInfo: LLMUsageInfo(
             inputTokens: model.contextSize * 4 / 5, // 80% of context - triggers summarization
             outputTokens: 15000,
+            cachedInputTokens: 0,
             idx: 0))
 
       default:
@@ -633,6 +638,255 @@ struct ChatThreadViewModelTests {
         "Second message",
       ],
     ])
+  }
+
+  // MARK: - Token Usage Tests
+
+  @MainActor
+  @Test("latestTokenUsage is initialized from events when thread is deserialized")
+  func latestTokenUsageInitializedFromEvents() async throws {
+    // given
+    let tokenUsageEvent1 = TokenUsageEvent(
+      inputTokens: 100,
+      cachedInputTokens: 50,
+      outputTokens: 30)
+    let tokenUsageEvent2 = TokenUsageEvent(
+      inputTokens: 200,
+      cachedInputTokens: 100,
+      outputTokens: 50)
+
+    let events: [ChatEvent] = [
+      .message(.init(content: .text(.init(projectRoot: nil, text: "Hello", attachments: [])), role: .user)),
+      .tokenUsage(tokenUsageEvent1),
+      .message(.init(content: .text(.init(projectRoot: nil, text: "World", attachments: [])), role: .assistant)),
+      .tokenUsage(tokenUsageEvent2),
+    ]
+
+    // when
+    let sut = ChatThreadViewModel(
+      id: UUID(),
+      name: "Test Thread",
+      messages: [],
+      events: events)
+
+    // then
+    #expect(sut.latestTokenUsage?.id == tokenUsageEvent2.id)
+    #expect(sut.latestTokenUsage?.inputTokens == 200)
+    #expect(sut.latestTokenUsage?.cachedInputTokens == 100)
+    #expect(sut.latestTokenUsage?.outputTokens == 50)
+  }
+
+  @MainActor
+  @Test("latestTokenUsage is nil when no token usage events exist")
+  func latestTokenUsageNilWhenNoEvents() async throws {
+    // given
+    let events: [ChatEvent] = [
+      .message(.init(content: .text(.init(projectRoot: nil, text: "Hello", attachments: [])), role: .user)),
+      .message(.init(content: .text(.init(projectRoot: nil, text: "World", attachments: [])), role: .assistant)),
+    ]
+
+    // when
+    let sut = ChatThreadViewModel(
+      id: UUID(),
+      name: "Test Thread",
+      messages: [],
+      events: events)
+
+    // then
+    #expect(sut.latestTokenUsage == nil)
+  }
+
+  @MainActor
+  @Test("token usage event is added when receiving usageInfo from sendMessage")
+  func tokenUsageEventAddedWhenReceivingUsageInfo() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+
+    let usageInfo = LLMUsageInfo(
+      inputTokens: 150,
+      outputTokens: 75,
+      cachedInputTokens: 50,
+      idx: 0)
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: usageInfo)
+    }
+
+    let sut = ChatThreadViewModel()
+    sut.input.textInput = TextInput([.text("Test message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
+    #expect(tokenUsageEvents.count == 1)
+
+    let tokenUsage = try #require(tokenUsageEvents.first)
+    #expect(tokenUsage.inputTokens == 150)
+    #expect(tokenUsage.cachedInputTokens == 50)
+    #expect(tokenUsage.outputTokens == 75)
+  }
+
+  @MainActor
+  @Test("latestTokenUsage is updated when receiving usageInfo from sendMessage")
+  func latestTokenUsageUpdatedWhenReceivingUsageInfo() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+
+    let usageInfo = LLMUsageInfo(
+      inputTokens: 200,
+      outputTokens: 50,
+      cachedInputTokens: 100,
+      idx: 0)
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: usageInfo)
+    }
+
+    let sut = ChatThreadViewModel()
+    #expect(sut.latestTokenUsage == nil)
+
+    sut.input.textInput = TextInput([.text("Test message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    let latestTokenUsage = try #require(sut.latestTokenUsage)
+    #expect(latestTokenUsage.inputTokens == 200)
+    #expect(latestTokenUsage.cachedInputTokens == 100)
+    #expect(latestTokenUsage.outputTokens == 50)
+  }
+
+  @MainActor
+  @Test("multiple messages update latestTokenUsage to most recent")
+  func multipleMessagesUpdateLatestTokenUsage() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+
+    let firstUsageInfo = LLMUsageInfo(
+      inputTokens: 100,
+      outputTokens: 30,
+      cachedInputTokens: 20,
+      idx: 0)
+
+    let secondUsageInfo = LLMUsageInfo(
+      inputTokens: 200,
+      outputTokens: 60,
+      cachedInputTokens: 50,
+      idx: 0)
+
+    let callCount = Atomic(0)
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let count = callCount.increment()
+      let assistantMessage = AssistantMessage("Test response \(count)")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: count == 1 ? firstUsageInfo : secondUsageInfo)
+    }
+
+    let sut = ChatThreadViewModel()
+
+    // when
+    sut.input.textInput = TextInput([.text("First message")])
+    await sut.sendMessage()
+
+    sut.input.textInput = TextInput([.text("Second message")])
+    await sut.sendMessage()
+
+    // then
+    let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
+    #expect(tokenUsageEvents.count == 2)
+
+    let latestTokenUsage = try #require(sut.latestTokenUsage)
+    #expect(latestTokenUsage.inputTokens == 200)
+    #expect(latestTokenUsage.cachedInputTokens == 50)
+    #expect(latestTokenUsage.outputTokens == 60)
+  }
+
+  @MainActor
+  @Test("compactConversation creates token usage event with output tokens only")
+  func compactConversationCreatesTokenUsageEvent() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    mockLLMService._activeModels.send([.gpt])
+
+    let summarizationUsageInfo = LLMUsageInfo(
+      inputTokens: 1000,
+      outputTokens: 150,
+      cachedInputTokens: 200,
+      idx: 0)
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      SummarizeConversationResponse(
+        summary: "Conversation summary",
+        usageInfo: summarizationUsageInfo)
+    }
+
+    let sut = ChatThreadViewModel()
+    let initialEventCount = sut.events.count
+
+    // when
+    await sut.compactConversation()
+
+    // then
+    let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
+    #expect(tokenUsageEvents.count == 1)
+
+    let tokenUsage = try #require(tokenUsageEvents.first)
+    // For compaction, only output tokens are counted in the next turn
+    #expect(tokenUsage.inputTokens == 0)
+    #expect(tokenUsage.cachedInputTokens == 0)
+    #expect(tokenUsage.outputTokens == 150)
+
+    // Verify latestTokenUsage is updated
+    let latestTokenUsage = try #require(sut.latestTokenUsage)
+    #expect(latestTokenUsage.id == tokenUsage.id)
+  }
+
+  @MainActor
+  @Test("compactConversation does not create token usage event when usageInfo is nil")
+  func compactConversationNoTokenUsageWhenUsageInfoNil() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    mockLLMService._activeModels.send([.gpt])
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      SummarizeConversationResponse(
+        summary: "Conversation summary",
+        usageInfo: nil)
+    }
+
+    let sut = ChatThreadViewModel()
+
+    // when
+    await sut.compactConversation()
+
+    // then
+    let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
+    #expect(tokenUsageEvents.count == 0)
+    #expect(sut.latestTokenUsage == nil)
   }
 
   // MARK: - ChatService Retention Integration Tests

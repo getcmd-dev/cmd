@@ -50,7 +50,7 @@ public protocol LLMService: Sendable {
   func nameConversation(firstMessage: String) async throws -> String
 
   /// Generate a summary of a conversation based on the message history.
-  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String
+  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> SummarizeConversationResponse
 
   /// All the models available.
   /// Note: those models might not have been enabled by the user.
@@ -148,6 +148,18 @@ public struct SendMessageResponse: Sendable {
 
   public init(newMessages: [AssistantMessage], usageInfo: LLMUsageInfo?) {
     self.newMessages = newMessages
+    self.usageInfo = usageInfo
+  }
+}
+
+// MARK: - SummarizeConversationResponse
+
+public struct SummarizeConversationResponse: Sendable {
+  public let summary: String
+  public let usageInfo: LLMUsageInfo?
+
+  public init(summary: String, usageInfo: LLMUsageInfo?) {
+    self.summary = summary
     self.usageInfo = usageInfo
   }
 }

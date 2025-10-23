@@ -45,6 +45,10 @@ struct ChatMessageList: View {
 
             case .checkpoint(let checkpoint):
               CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
+
+            case .tokenUsage:
+              // Token usage events are not displayed in the UI
+              EmptyView()
             }
           }
         }
