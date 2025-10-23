@@ -11,7 +11,7 @@ import Testing
 
 struct UnknownToolTests {
   @Test
-  func test_originalToolCanBeDecodedAsUnknownTool() throws {
+  func test_originalToolCanBeDecodedAsUnknownTool() async throws {
     // Given - Create a tool use with an MCP tool
     let tool = TestTool(output: .success(.object(["foo": "bar"])))
     let originalToolUse = TestTool.Use(
@@ -22,6 +22,11 @@ struct UnknownToolTests {
       internalState: nil,
       initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
     originalToolUse.startExecuting()
+
+    // Wait for the status to be updated asynchronously
+    for await status in originalToolUse.status.futureUpdates {
+      if case .completed = status { break }
+    }
 
     // Encode the original tool use
     let data = try JSONEncoder().encode(WrappedToolUse(toolUse: originalToolUse))
