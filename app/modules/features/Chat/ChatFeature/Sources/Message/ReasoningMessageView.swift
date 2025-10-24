@@ -31,19 +31,15 @@ struct ReasoningMessageView: View {
 //      }
 //      .buttonStyle(.plain)
 //      if isExpanded {
-        Text(plainTextContent)
-          .font(.system(size: 12, weight: .regular))
-          .foregroundColor(.secondary)
+      Text(plainTextContent)
+        .font(.system(size: 12, weight: .regular))
+        .foregroundColor(.secondary)
 //          .padding(.leading)
 //      }
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
-
-  @State private var isExpanded = false
-
-  @State private var isHovered = false
 
   /// Some providers, like Codex, will use markdown formating for reasoning.
   /// We remove it and display plain text.
@@ -52,27 +48,6 @@ struct ReasoningMessageView: View {
     let attStr = colorScheme.markDownStyle
       .markdown(for: reasoning.text.trimmingCharacters(in: .whitespacesAndNewlines))
     return NSAttributedString(attStr).string
-  }
-
-  private var thinkingDescription: String {
-    "Thinking"
-  }
-
-  private func iconName(isHovered: Bool) -> String {
-    if reasoning.isStreaming {
-      return "brain"
-    }
-    if isExpanded {
-      return "chevron.down"
-    }
-    if isHovered {
-      return "chevron.right"
-    }
-    return "brain"
-  }
-
-  private func iconSize(isHovered: Bool) -> CGFloat {
-    iconName(isHovered: isHovered) == "brain" ? 16 : 8
   }
 
 }

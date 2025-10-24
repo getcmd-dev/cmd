@@ -326,18 +326,18 @@ public struct ToolError: Error, CustomNSError, LocalizedError {
 
   public let value: JSON.Value
 
-  public var errorDescription: String {
+  public var errorDescription: String? {
     Self.errorDescription(for: value)
   }
 
   public var errorUserInfo: [String: Any] {
     [
-      NSLocalizedDescriptionKey: errorDescription,
+      NSLocalizedDescriptionKey: Self.errorDescription(for: value),
     ]
   }
 
-  var localizedDescription: String {
-    errorDescription
+  public var localizedDescription: String {
+    Self.errorDescription(for: value)
   }
 
   private static func errorDescription(for value: JSON.Value) -> String {
