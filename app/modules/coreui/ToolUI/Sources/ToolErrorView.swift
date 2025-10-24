@@ -16,7 +16,7 @@ public struct ToolErrorView: View {
   }
 
   public var body: some View {
-    Text(colorScheme.markDownStyle.markdown(for: error.toolUseErrorDescription))
+    Text(plainText)
       .textSelection(.enabled)
       .foregroundColor(colorScheme.redError)
   }
@@ -24,6 +24,11 @@ public struct ToolErrorView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   private let error: Error
+
+  private var plainText: String {
+    let attrString = colorScheme.markDownStyle.markdown(for: error.toolUseErrorDescription)
+    return NSAttributedString(attrString).string
+  }
 }
 
 extension Error {

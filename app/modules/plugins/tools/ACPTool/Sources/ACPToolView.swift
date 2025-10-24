@@ -28,7 +28,7 @@ struct ToolUseView: View {
     case .completed(.success(let output)):
       successView(output: output)
     case .completed(.failure(let error)):
-      ToolErrorView(error)
+      failureView(error: error)
     }
   }
 
@@ -41,8 +41,7 @@ struct ToolUseView: View {
   private var pendingApprovalView: some View {
     HStack {
       Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
+        .forTool(with: foregroundColor)
       Text("Waiting for approval: \(title)")
         .foregroundColor(foregroundColor)
     }
@@ -52,8 +51,7 @@ struct ToolUseView: View {
   private var rejectedView: some View {
     HStack {
       Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
+        .forTool(with: foregroundColor)
       Text("Rejected: \(title)")
         .foregroundColor(foregroundColor)
     }
@@ -63,8 +61,7 @@ struct ToolUseView: View {
   private var runningView: some View {
     HStack {
       Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
+        .forTool(with: foregroundColor)
       Text("\(title)...")
         .foregroundColor(foregroundColor)
     }
@@ -116,19 +113,13 @@ struct ToolUseView: View {
       HStack {
         if isExpanded {
           Icon(systemName: "chevron.down")
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
+            .forTool(with: foregroundColor)
         } else if isHovered {
           Icon(systemName: "chevron.right")
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
+            .forTool(with: foregroundColor)
         } else {
           Icon(systemName: toolIconName)
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
+            .forTool(with: foregroundColor)
         }
 
         Text(title)
@@ -141,6 +132,19 @@ struct ToolUseView: View {
         contentView(for: output)
       }
     }.onHover { isHovered = $0 }
+  }
+
+  @ViewBuilder
+  private func failureView(error: Error) -> some View {
+    VStack(alignment: .leading) {
+      HStack {
+        Icon(systemName: toolIconName)
+          .forTool(with: foregroundColor)
+        Text(title)
+          .foregroundColor(foregroundColor)
+      }
+      ToolErrorView(error)
+    }
   }
 
   @ViewBuilder
@@ -260,4 +264,12 @@ struct ToolUseView: View {
     .foregroundColor(.secondary)
   }
 
+}
+
+extension Icon {
+  fileprivate func forTool(with foregroundColor: Color) -> some View {
+    frame(width: 14, height: 14)
+      .foregroundColor(foregroundColor)
+      .frame(width: 15)
+  }
 }

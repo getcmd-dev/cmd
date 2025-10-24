@@ -344,14 +344,23 @@ public struct ToolError: Error, CustomNSError, LocalizedError {
     switch value {
     case .string(let value):
       value
+
     case .array(let array):
-      array.map(Self.errorDescription(for:)).joined(separator: ", ")
+      if array.isEmpty {
+        "The tool failed"
+      } else {
+        array.map(Self.errorDescription(for:)).joined(separator: ", ")
+      }
+
     case .number(let value):
       "\(value)"
+
     case .bool(let value):
       "\(value)"
+
     case .null:
       "null"
+
     case .object(let value):
       value
         .mapValues(Self.errorDescription(for:))
