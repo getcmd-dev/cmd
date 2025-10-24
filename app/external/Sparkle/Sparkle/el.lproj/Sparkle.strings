@@ -1,0 +1,113 @@
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available." = "Το %1$@ %2$@ είναι η τελευταία διαθέσιμη έκδοση.";
+
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available.\n(You are currently running version %@.)" = "Το %1$@ %2$@ είναι η τελευταία διαθέσιμη έκδοση.\n(Η παρούσα εκδοσή σας είναι η %3$@.)";
+
+/* Description text for SUUpdateAlert when the update is downloadable. */
+"%@ %@ is now available—you have %@. Would you like to download it now?" = "Το %1$@ %2$@ είναι η νέα έκδοση--έχετε την %3$@. Θέλετε να την κατεβάσετε τώρα;";
+
+/* The download progress in a unit of bytes, e.g. 100 KB */
+"%@ downloaded" = "%@ λήφθησαν";
+
+/* The download progress in units of bytes, e.g. 100 KB of 1,0 MB */
+"%@ of %@" = "%1$@ από %2$@";
+
+/* Description text for SUUpdateAlert when the update has already been downloaded and ready to install. */
+"%1$@ %2$@ has been downloaded and is ready to use! Would you like to install it and relaunch %1$@ now?" = "Το %1$@ %2$@ κατέβηκε. Είναι έτοιμο προς εγκατάσταση! Θέλετε να εγκαταστήσετε και να επανεκκινήσετε το %1$@ τώρα;";
+
+/* No comment provided by engineer. */
+"%1$@ can’t be updated because it was opened from a read-only or a temporary location." = "Το %1$@ δεν μπορεί να ενημερωθεί όσο τρέχει από έναν δίσκο ανάγνωσης-μόνο ή έναν οπτικό δίσκο.";
+
+/* No comment provided by engineer. */
+"A new version of %@ is available!" = "Μία νέα έκδοση του %@ είναι διαθέσιμη!";
+
+/* No comment provided by engineer. */
+"A new version of %@ is ready to install!" = "Μία νέα έκδοση του %@ είναι έτοιμη για εγκατάσταση!";
+
+/* No comment provided by engineer. */
+"An error occurred in retrieving update information. Please try again later." = "Υπήρξε ένα σφάλμα κατά την ανάκτηση των πληροφοριών ενημέρωσης. Παρακαλώ δοκιμάστε αργότερα.";
+
+/* No comment provided by engineer. */
+"An error occurred while downloading the update. Please try again later." = "Υπήρξε ένα σφάλμα κατά την λήψη της ενημέρωσης. Παρακαλώ δοκιμάστε αργότερα.";
+
+/* No comment provided by engineer. */
+"An error occurred while extracting the archive. Please try again later." = "Υπήρξε ένα σφάλμα κατά την εξαγωγή του αρχείου. Παρακαλώ δοκιμάστε αργότερα.";
+
+/* No comment provided by engineer. */
+"An error occurred while parsing the update feed." = "Υπήρξε ένα σφάλμα κατά την ανάλυση του feed ενημερώσεων.";
+
+/* No comment provided by engineer. */
+"Cancel" = "Ακύρωση";
+
+/* No comment provided by engineer. */
+"Cancel Update" = "Ακύρωση Ενημέρωσης";
+
+/* No comment provided by engineer. */
+"Checking for updates…" = "Έλεγχος για ενημερώσεις…";
+
+/* Take care not to overflow the status window. */
+"Downloading update…" = "Λήψη ενημέρωσης…";
+
+/* Take care not to overflow the status window. */
+"Extracting update…" = "Εξαγωγή ενημέρωσης…";
+
+/* No comment provided by engineer. */
+"Install and Relaunch" = "Εγκατάσταση και Επανεκκίνηση";
+
+/* Take care not to overflow the status window. */
+"Installing update…" = "Εγκατάσταση ενημέρωσης…";
+
+/* No comment provided by engineer. */
+"OK" = "OK";
+
+/* No comment provided by engineer. */
+"Ready to Install" = "Έτοιμο προς Εγκατάσταση";
+
+/* No comment provided by engineer. */
+"Should %1$@ automatically check for updates? You can always check for updates manually from the %1$@ menu." = "Θέλετε το %1$@ να ελέγχει αυτόματα για ενημερώσεις; Μπορείτε να ελέγχετε πάντα για επιθυμητές ενημερώσεις από το μενού %1$@.";
+
+/* No comment provided by engineer. */
+"Update Error!" = "Σφάλμα Ενημέρωσης!";
+
+/* No comment provided by engineer. */
+"Updating %@" = "Ενημέρωση %@";
+
+/* No comment provided by engineer. */
+"Use Finder to copy %1$@ to the Applications folder, relaunch it from there, and try again." = "Αντιγράψτε το %1$@ στον φάκελο εφαρμογών συστήματος, επανεκκινήστε το από εκεί και ξαναδοκιμάστε.";
+
+/* Status message shown when the user checks for updates but is already current or the feed doesn't contain any updates. */
+"You’re up to date!" = "Είστε ενημερωμένοι!";
+
+/* Software Update title/label */
+"Software Update" = "Ενημέρωση προγράμματος";
+
+/* Remind Me Later choice for update alert */
+"Remind Me Later" = "Υπενθύμιση Αργότερα";
+
+/* Skip This Version choice for update alert */
+"Skip This Version" = "Παράλειψη Έκδοσης";
+
+/* Install Update choice for update alert */
+"Install Update" = "Εγκατάσταση Ενημέρωσης";
+
+/* Automatically download and install updates in the future option for update alert */
+"Automatically download and install updates in the future" = "Αυτόματη λήψη και εγκατάσταση ενημερώσεων στο μέλλον";
+
+/* Check for updates automatically response for update permission dialog */
+"Check Automatically" = "Αυτόματος Ελεγχος";
+
+/* Don't check for updates automatically response for update permission dialog */
+"Don’t Check" = "Κανένας έλεγχος";
+
+/* Title question for update permission dialog */
+"Check for updates automatically?" = "Αυτόματος έλεγχος για ενημερώσεις;";
+
+/* Include anonymous system profile choice for update permission dialog */
+"Include anonymous system profile" = "Συμπερίληψη του ανώνυμου προφίλ του συστήματός σας";
+
+/* Automatically download and install updates choice for update permission dialog */
+"Automatically download and install updates" = "Αυτόματη λήψη και εγκατάσταση ενημερώσεων";
+
+/* Anonymous system profile information disclosure for update permission dialog */
+"Anonymous system profile information is used to help us plan future development work. Please contact us if you have any questions about this.\n\nThis is the information that would be sent:" = "Οι ανώνυμες πληροφορίες του προφίλ του συστήματός σας, μας βοηθούν στο σχεδιασμό της μελλοντικής ανάπτυξης του προγράμματος. Παρακαλώ επικοινωνήστε μαζί μας άν έχετε ερωτήσεις.\n\nΑυτές είναι οι πληροφορίες που θα σταλούν σε εμάς:";

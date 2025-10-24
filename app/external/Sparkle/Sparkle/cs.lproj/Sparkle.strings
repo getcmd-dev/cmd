@@ -1,0 +1,182 @@
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available." = "%1$@ %2$@ je nejnovější dostupná verze";
+
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available.\n(You are currently running version %@.)" = "%1$@ %2$@ je nejnovější dostupná verze.\n(Aktuálně používáte verzi %3$@.)";
+
+/* Description text for SUUpdateAlert when the critical update is downloadable. */
+"%@ %@ is now available—you have %@. This is an important update; would you like to download it now?" = "Verze %1$@ %2$@ je nyní k dispozici – nainstalována je %3$@. Tato aktualizace je důležitá; přejete si ji nyní stáhnout?";
+
+/* Description text for SUUpdateAlert when the update is downloadable. */
+"%@ %@ is now available—you have %@. Would you like to download it now?" = "Je k dispozici %1$@ %2$@ - nainstalována je %3$@. Přejete si nyní stáhnout aktualizaci?";
+
+/* Description text for SUUpdateAlert when the update informational with no download. */
+"%@ %@ is now available—you have %@. Would you like to learn more about this update on the web?" = "%1$@ %2$@ je nyní k dispozici – nainstalována je %3$@. Přejete si zobrazit o této aktualizaci další informace?";
+
+/* The download progress in a unit of bytes, e.g. 100 KB */
+"%@ downloaded" = "staženo %@";
+
+/* No comment provided by engineer. */
+"%@ is now updated to version %@!" = "Aplikace %1$@ je nyní aktualizována na verzi %2$@! ";
+
+/* No comment provided by engineer. */
+"%@ is now updated!" = "%@ je nyní aktuální!";
+
+/* The download progress in units of bytes, e.g. 100 KB of 1,0 MB */
+"%@ of %@" = "%1$@ z %2$@";
+
+/* Description text for SUUpdateAlert when the critical update has already been downloaded and ready to install. */
+"%1$@ %2$@ has been downloaded and is ready to use! This is an important update; would you like to install it and relaunch %1$@ now?" = "Aplikace %1$@ %2$@ byla stažena a je připravena k použití po příštím spuštění! Toto je důležitá aktualizace; přejete si aplikaci %1$@ nyní nainstalovat a znovu spustit?";
+
+/* Description text for SUUpdateAlert when the update has already been downloaded and ready to install. */
+"%1$@ %2$@ has been downloaded and is ready to use! Would you like to install it and relaunch %1$@ now?" = "Aplikace %1$@ %2$@ byla stažena a je připravena k použití po příštím spuštění! Přejete si aplikaci %1$@ nyní nainstalovat a znovu spustit?";
+
+/* No comment provided by engineer. */
+"%1$@ %2$@ is available but your macOS version is too new for this update. This update only supports up to macOS %3$@." = "%1$@ %2$@ je k dispozici, ale vaše verze macOS je pro tuto aktualizaci příliš nová. Aktualizace podporuje nejvýše macOS %3$@.";
+
+/* No comment provided by engineer. */
+"%1$@ %2$@ is available but your macOS version is too old to install it. At least macOS %3$@ is required." = "%1$@ %2$@ je k dispozici, ale vaše verze macOS je pro tuto aktualizaci příliš stará. Je potřeba alespoň macOS %3$@.";
+
+/* No comment provided by engineer. */
+"%1$@ can’t be updated if it’s running from the location it was downloaded to." = "Aplikace %1$@ nemůže být aktualizována pokud je spuštěna z umístění, ve kterém je stažena.";
+
+/* No comment provided by engineer. */
+"%1$@ can’t be updated because it was opened from a read-only or a temporary location." = "Aplikace %1$@ nemůže být aktualizována, protože je spuštěna z dočasného umístění nebo z umístění, na které nelze zapisovat.";
+
+/* No comment provided by engineer. */
+"A new version of %@ is available!" = "Je dostupná nová verze aplikace %@!";
+
+/* No comment provided by engineer. */
+"A new version of %@ is ready to install!" = "Nová verze %@ je připravena k instalaci!";
+
+/* No comment provided by engineer. */
+"An error occurred in retrieving update information. Please try again later." = "Při získávání údajů o aktualizaci se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while connecting to the installer. Please try again later." = "Při připojování k instalátoru se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while downloading the update. Please try again later." = "Při stahování souboru se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while extracting the archive. Please try again later." = "Při rozbalování archivu se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while launching the installer. Please try again later." = "Při spouštění instalátoru se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while parsing the update feed." = "Při zpracování údajů o aktualizaci se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while running the updater. Please try again later." = "Při provádění aktualizace se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An error occurred while starting the installer. Please try again later." = "Při spouštění instalátoru se vyskytla chyba. Zkuste to prosím později.";
+
+/* No comment provided by engineer. */
+"An important update to %@ is ready to install" = "Důležitá aktualizace %@ je připravena k instalaci";
+
+/* No comment provided by engineer. */
+"Cancel" = "Zrušit";
+
+/* No comment provided by engineer. */
+"Cancel Update" = "Zrušit aktualizaci";
+
+/* Take care not to overflow the status window. */
+"Downloading update…" = "Stahuje se aktualizace…";
+
+/* Take care not to overflow the status window. */
+"Extracting update…" = "Rozbaluje se aktualizace…";
+
+/* No comment provided by engineer. */
+"Failed to resume installing update." = "Nepodařilo se pokračovat v aktualizaci.";
+
+/* No comment provided by engineer. */
+"Checking for updates…" = "Hledání aktualizací…";
+
+/* No comment provided by engineer. */
+"Install and Relaunch" = "Instalovat a znovu spustit";
+
+/* Alternate title for 'Remind Me Later' button when downloaded updates can be resumed */
+"Install on Quit" = "Instalovat a ukončit";
+
+/* Take care not to overflow the status window. */
+"Installing update…" = "Instaluje se aktualizace…";
+
+/* Alternate title for 'Install Update' button when there's no download in RSS feed. */
+"Learn More…" = "Další informace…";
+
+/* No comment provided by engineer. */
+"OK" = "OK";
+
+/* No comment provided by engineer. */
+"Quit %1$@, move it into your Applications folder, relaunch it from there and try again." = "Ukončete %1$@, spusťte %1$@ ze složky Aplikace a spusťte aktualizaci znovu.";
+
+/* No comment provided by engineer. */
+"Ready to Install" = "Připraveno k instalaci";
+
+/* No comment provided by engineer. */
+"Should %1$@ automatically check for updates? You can always check for updates manually from the %1$@ menu." = "Přejete si, aby aplikace %1$@ automaticky vyhledávala aktualizace? Tuto volbu můžete kdykoliv změnit v nabídce %1$@.";
+
+/* No comment provided by engineer. */
+"The update is improperly signed and could not be validated. Please try again later or contact the app developer." = "Tato aktualizace není správně podepsaná a nelze ji ověřit. Zkuste to prosím později nebo kontaktujte vývojáře aplikace.";
+
+/* No comment provided by engineer. */
+"Unable to Check For Updates" = "Hledání aktualizací se nezdařilo";
+
+/* No comment provided by engineer. */
+"Update Error!" = "Chyba při aktualizaci!";
+
+/* No comment provided by engineer. */
+"Update Installed" = "Aktualizace dokončena";
+
+/* No comment provided by engineer. */
+"Updating %@" = "Aktualizuje se %@";
+
+/* No comment provided by engineer. */
+"Use Finder to copy %1$@ to the Applications folder, relaunch it from there, and try again." = "Přesuňte %1$@ do složky Aplikace a spusťte ji z tohoto umístění znovu.";
+
+/* No comment provided by engineer. */
+"Version History" = "Historie verzí";
+
+/* Status message shown when the user checks for updates but is already current or the feed doesn't contain any updates. */
+"You’re up to date!" = "Vaše verze je aktuální!";
+
+/* No comment provided by engineer. */
+"Your macOS version is too new" = "Vaše verze macOS je příliš nová";
+
+/* No comment provided by engineer. */
+"Your macOS version is too old" = "Vaše verze macOS je příliš stará";
+
+/* Software Update title/label */
+"Software Update" = "Aktualizace aplikace";
+
+/* Remind Me Later choice for update alert */
+"Remind Me Later" = "Připomenout později";
+
+/* Skip This Version choice for update alert */
+"Skip This Version" = "Přeskočit tuto verzi";
+
+/* Install Update choice for update alert */
+"Install Update" = "Instalovat aktualizaci";
+
+/* Automatically download and install updates in the future option for update alert */
+"Automatically download and install updates in the future" = "V budoucnu stahovat a instalovat aktualizace automaticky";
+
+/* Check for updates automatically response for update permission dialog */
+"Check Automatically" = "Automaticky vyhledávat";
+
+/* Don't check for updates automatically response for update permission dialog */
+"Don’t Check" = "Nevyhledávat";
+
+/* Title question for update permission dialog */
+"Check for updates automatically?" = "Vyhledávat aktualizace automaticky?";
+
+/* Include anonymous system profile choice for update permission dialog */
+"Include anonymous system profile" = "Odeslat anonymní systémový profil";
+
+/* Automatically download and install updates choice for update permission dialog */
+"Automatically download and install updates" = "Stahovat a instalovat aktualizace automaticky";
+
+/* Anonymous system profile information disclosure for update permission dialog */
+"Anonymous system profile information is used to help us plan future development work. Please contact us if you have any questions about this.\n\nThis is the information that would be sent:" = "Informace z anonymního systémového profilu pomáhají vývojářům lépe plánovat budoucí vývoj aplikace.\nBudete-li mít nějaký dotaz, obraťte se na nás.\n\nToto jsou informace, které budou odeslány:";

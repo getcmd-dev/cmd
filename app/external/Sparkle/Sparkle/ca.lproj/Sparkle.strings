@@ -1,0 +1,77 @@
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available." = "%@ %@ és la versió disponible més actual.";
+
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available.\n(You are currently running version %@.)" = "%@ %@ és la versió disponible més actual.\n(You are currently running version %@.)";
+
+/* Description text for SUUpdateAlert when the update is downloadable. */
+"%@ %@ is now available—you have %@. Would you like to download it now?" = "%@ %@ està disponible (ara teniu %@). Voleu actualitzar?";
+
+/* The download progress in units of bytes, e.g. 100 KB of 1,0 MB */
+"%@ of %@" = "%1$@ de %2$@";
+
+/* No comment provided by engineer. */
+"%1$@ can’t be updated because it was opened from a read-only or a temporary location." = "%1$@ no es pot actualitzar quan funciona des d'un disc d'imatge.";
+
+/* No comment provided by engineer. */
+"A new version of %@ is available!" = "Hi ha una nova versió de %@ disponible!";
+
+/* No comment provided by engineer. */
+"An error occurred in retrieving update information. Please try again later." = "Hi ha hagut un error obtenint la informació d'actualització. Torneu a provar-ho més tard.";
+
+/* No comment provided by engineer. */
+"An error occurred while extracting the archive. Please try again later." = "Hi ha hagut un error al extreure l'arxiu? Torneu a provar-ho més tard.";
+
+/* No comment provided by engineer. */
+"Cancel" = "Cancel·la";
+
+/* Take care not to overflow the status window. */
+"Downloading update…" = "Descarregant l'actualització…";
+
+/* Take care not to overflow the status window. */
+"Extracting update…" = "Extraient l'actualització…";
+
+/* No comment provided by engineer. */
+"Install and Relaunch" = "Instal·la i reinicia";
+
+/* Alternate title for 'Remind Me Later' button when downloaded updates can be resumed */
+"Install on Quit" = "Reinicia el programa més tard";
+
+/* Take care not to overflow the status window. */
+"Installing update…" = "Instal·lant l'actualització…";
+
+/* No comment provided by engineer. */
+"OK" = "D'acord";
+
+/* No comment provided by engineer. */
+"Ready to Install" = "A punt per instal·lar";
+
+/* No comment provided by engineer. */
+"Should %1$@ automatically check for updates? You can always check for updates manually from the %1$@ menu." = "Voleu que %1$@ comprovi si hi ha noves actualitzacions al iniciar? Si no, podeu inciar la comprovació manualment des del menú %1$@.";
+
+/* No comment provided by engineer. */
+"Update Error!" = "Error d'actualització!";
+
+/* No comment provided by engineer. */
+"Updating %@" = "Actualitzant %@";
+
+/* No comment provided by engineer. */
+"Use Finder to copy %1$@ to the Applications folder, relaunch it from there, and try again." = "Moveu %1$@ al vostre directori Aplicacions, reinicieu-lo, i torneu a provar-ho.";
+
+/* Status message shown when the user checks for updates but is already current or the feed doesn't contain any updates. */
+"You’re up to date!" = "Ja esteu al dia!";
+
+/* Software Update title/label */
+"Software Update" = "Actualització del programari";
+
+/* Remind Me Later choice for update alert */
+"Remind Me Later" = "Recorda-m'ho més tard";
+
+/* Skip This Version choice for update alert */
+"Skip This Version" = "Omet aquesta versió";
+
+/* Install Update choice for update alert */
+"Install Update" = "Instal·la l'actualització";
+
+/* Automatically download and install updates in the future option for update alert */
+"Automatically download and install updates in the future" = "Descarrega i instal·la les actualitzacions automàticament en el futur";

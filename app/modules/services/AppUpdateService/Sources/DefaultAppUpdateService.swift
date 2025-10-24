@@ -35,15 +35,15 @@ final class DefaultAppUpdateService: AppUpdateService {
   }
 
   func checkForUpdatesContinously() {
-    #if DEBUG
-    // Only check for updates in release.
-    return
-    #else
+//    #if DEBUG
+//    // Only check for updates in release.
+//    return
+//    #else
     canCheckForUpdates = true
     Task { @MainActor in
       startCheckingForUpdates()
     }
-    #endif
+//    #endif
   }
 
   func relaunch() {
@@ -310,9 +310,14 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
     updateLogger.info("Started extracting update")
   }
 
-  func showExtractionReceivedProgress(_ progress: Double) {
-    updateLogger.info("Extraction progress: \(Int(progress * 100))%")
-  }
+    func showExtractionReceivedProgress(_ progress: Double) {
+        updateLogger.info("Extraction progress: \(Int(progress * 100))%")
+    }
+//func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
+//    updateLogger.info("Ready to install and relaunch - dismissing")
+//    onReadyToInstall()
+//    reply(SPUUserUpdateChoice.dismiss)
+//  }
 
   func showReadyToInstallAndRelaunch() async -> SPUUserUpdateChoice {
     updateLogger.info("Ready to install and relaunch - dismissing")

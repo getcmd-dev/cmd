@@ -1,0 +1,113 @@
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available." = "%1$@ %2$@ je najnovejša verzija programa.";
+
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available.\n(You are currently running version %@.)" = "%1$@ %2$@ je najnovejša verzija programa.\n(You are currently running version %3$@.)";
+
+/* Description text for SUUpdateAlert when the update is downloadable. */
+"%@ %@ is now available—you have %@. Would you like to download it now?" = "Na voljo je %1$@ %2$@ — vi imate %3$@. Ga želite prenesti s spleta sedaj?";
+
+/* The download progress in a unit of bytes, e.g. 100 KB */
+"%@ downloaded" = "prenešenih je %@";
+
+/* The download progress in units of bytes, e.g. 100 KB of 1,0 MB */
+"%@ of %@" = "%1$@ od %2$@";
+
+/* Description text for SUUpdateAlert when the update has already been downloaded and ready to install. */
+"%1$@ %2$@ has been downloaded and is ready to use! Would you like to install it and relaunch %1$@ now?" = "%1$@ %2$@ je bil uspešno prenešen s spleta in je pripravljen na namestitev. Ga želite namestiti in ponovno zagnati takoj?";
+
+/* No comment provided by engineer. */
+"%1$@ can’t be updated because it was opened from a read-only or a temporary location." = "Programa %1$@ ni mogoče posodobiti, ker ga poganjate iz lokacije, kamor pisanje ni dovoljeno (pogosto je to slika diska dmg ali optična enota).";
+
+/* No comment provided by engineer. */
+"A new version of %@ is available!" = "Na voljo je nova verzija programa %@.";
+
+/* No comment provided by engineer. */
+"A new version of %@ is ready to install!" = "Najnovejša verzija programa %@ je že nameščena.";
+
+/* No comment provided by engineer. */
+"An error occurred in retrieving update information. Please try again later." = "Med iskanjem posodobitev je prišlo do napake. Prosimo poskusite ponovno čez nekaj časa.";
+
+/* No comment provided by engineer. */
+"An error occurred while downloading the update. Please try again later." = "Med prenašanje posodobitve s spleta je prišlo do napake. Prosimo poskusite ponovno čez nekaj časa.";
+
+/* No comment provided by engineer. */
+"An error occurred while extracting the archive. Please try again later." = "Med odpiranjem arhiva je prišlo do napake. Prosimo poskusite ponovno čez nekaj časa.";
+
+/* No comment provided by engineer. */
+"An error occurred while parsing the update feed." = "Napaka pri interpretaciji RSS vira s posodobitvami.";
+
+/* No comment provided by engineer. */
+"Cancel" = "Prekliči";
+
+/* No comment provided by engineer. */
+"Cancel Update" = "Prekliči posodabljanje";
+
+/* No comment provided by engineer. */
+"Checking for updates…" = "Iskanje posodobitev …";
+
+/* Take care not to overflow the status window. */
+"Downloading update…" = "Prenašanje posodobitve …";
+
+/* Take care not to overflow the status window. */
+"Extracting update…" = "Razpakiranje posodobitve …";
+
+/* No comment provided by engineer. */
+"Install and Relaunch" = "Namesti in ponovno zaženi";
+
+/* Take care not to overflow the status window. */
+"Installing update…" = "Nameščanje posodobitve …";
+
+/* No comment provided by engineer. */
+"OK" = "V redu";
+
+/* No comment provided by engineer. */
+"Ready to Install" = "Pripravljen na namestitev";
+
+/* No comment provided by engineer. */
+"Should %1$@ automatically check for updates? You can always check for updates manually from the %1$@ menu." = "Naj %1$@ samodejno preverja, če so na voljo posodobitve? To lahko kadarkoli preverite tudi sami iz menija za %1$@.";
+
+/* No comment provided by engineer. */
+"Update Error!" = "Napaka pri posodabljanju";
+
+/* No comment provided by engineer. */
+"Updating %@" = "Posodabljam %@";
+
+/* No comment provided by engineer. */
+"Use Finder to copy %1$@ to the Applications folder, relaunch it from there, and try again." = "Poskusite %1$@ premakniti v direktorij z aplikacijami (Applications), ga ponovno zagnati in šele nato posodobiti.";
+
+/* Status message shown when the user checks for updates but is already current or the feed doesn't contain any updates. */
+"You’re up to date!" = "Uporabljate zadnjo verzijo.";
+
+/* Software Update title/label */
+"Software Update" = "Posodabljanje programske opreme";
+
+/* Remind Me Later choice for update alert */
+"Remind Me Later" = "Spomni me kasneje";
+
+/* Skip This Version choice for update alert */
+"Skip This Version" = "Preskoči to verzijo";
+
+/* Install Update choice for update alert */
+"Install Update" = "Namesti posodobitev";
+
+/* Automatically download and install updates in the future option for update alert */
+"Automatically download and install updates in the future" = "V prihodnje samodejno nameščaj posodobitve";
+
+/* Check for updates automatically response for update permission dialog */
+"Check Automatically" = "Samodejno preverjaj";
+
+/* Don't check for updates automatically response for update permission dialog */
+"Don’t Check" = "Ne preverjaj";
+
+/* Title question for update permission dialog */
+"Check for updates automatically?" = "Naj občasno preverjam, če so na voljo posodobitve?";
+
+/* Include anonymous system profile choice for update permission dialog */
+"Include anonymous system profile" = "Vključi anonimni profil sistema";
+
+/* Automatically download and install updates choice for update permission dialog */
+"Automatically download and install updates" = "Samodejno namestite posodobitve";
+
+/* Anonymous system profile information disclosure for update permission dialog */
+"Anonymous system profile information is used to help us plan future development work. Please contact us if you have any questions about this.\n\nThis is the information that would be sent:" = "Anonimni profil sistema se uporablja za načrtovanje nadaljnega razvoja programa. V primeru vprašanj nas lahko kontaktirate.\n\nPošljejo se sledeče informacije:";

@@ -1,0 +1,86 @@
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available." = "%@ %@ er nýjasta útgáfan sem er fáanleg þessa stundina.";
+
+/* No comment provided by engineer. */
+"%@ %@ is currently the newest version available.\n(You are currently running version %@.)" = "%@ %@ er nýjasta útgáfan sem er fáanleg þessa stundina.\n(You are currently running version %@.)";
+
+/* Description text for SUUpdateAlert when the update is downloadable. */
+"%@ %@ is now available—you have %@. Would you like to download it now?" = "Útgafa %2$@ af %1$@ er nú fáanlegt en þú ert með %3$@. Viltu sækja hana núna?";
+
+/* The download progress in units of bytes, e.g. 100 KB of 1,0 MB */
+"%@ of %@" = "%@ af %@";
+
+/* No comment provided by engineer. */
+"A new version of %@ is available!" = "Ný útgáfa af %@ er fáanleg!";
+
+/* No comment provided by engineer. */
+"An error occurred in retrieving update information. Please try again later." = "Villa kom upp við að sækja uppfærsluupplýsingar. Vinsamlegast reynið síðar.";
+
+/* No comment provided by engineer. */
+"An error occurred while extracting the archive. Please try again later." = "Villa kom upp við afþjöppun skráarsafns. Vinsamlegast reynið síðar.";
+
+/* No comment provided by engineer. */
+"Cancel" = "Hætta við";
+
+/* Take care not to overflow the status window. */
+"Downloading update…" = "Sækja nýja útgáfu…";
+
+/* Take care not to overflow the status window. */
+"Extracting update…" = "Afþjappa uppfærslu…";
+
+/* No comment provided by engineer. */
+"Install and Relaunch" = "Setja upp og ræsa aftur";
+
+/* Take care not to overflow the status window. */
+"Installing update…" = "Set inn uppfærslu…";
+
+/* No comment provided by engineer. */
+"OK" = "Í lagi";
+
+/* No comment provided by engineer. */
+"Ready to Install" = "Innsetning reiðubúin";
+
+/* No comment provided by engineer. */
+"Should %1$@ automatically check for updates? You can always check for updates manually from the %1$@ menu." = "Viltu að forritið %1$@ athugi með uppfærslur þegar það er ræst? Ef ekki getur þú athugað handvirkt af %1$@-valblaðinu.";
+
+/* No comment provided by engineer. */
+"Update Error!" = "Villa við uppfærslu!";
+
+/* No comment provided by engineer. */
+"Updating %@" = "Uppfæri %@";
+
+/* Status message shown when the user checks for updates but is already current or the feed doesn't contain any updates. */
+"You’re up to date!" = "Það er allt uppfært hjá þér!";
+
+/* Software Update title/label */
+"Software Update" = "Hugbúnaðaruppfærsla";
+
+/* Remind Me Later choice for update alert */
+"Remind Me Later" = "Áminntu mig síðar";
+
+/* Skip This Version choice for update alert */
+"Skip This Version" = "Sleppa þessari útgáfu";
+
+/* Install Update choice for update alert */
+"Install Update" = "Innsetja";
+
+/* Automatically download and install updates in the future option for update alert */
+"Automatically download and install updates in the future" = "Sækja og innsetja uppfærslur sjálfkrafa framvegis";
+
+/* Check for updates automatically response for update permission dialog */
+"Check Automatically" = "Kanna sjálfkrafa";
+
+/* Don't check for updates automatically response for update permission dialog */
+"Don’t Check" = "Ekki kanna";
+
+/* Title question for update permission dialog */
+"Check for updates automatically?" = "Athuga sjálfkrafa með uppfærslur?";
+
+/* Include anonymous system profile choice for update permission dialog */
+"Include anonymous system profile" = "Innifela nafnlausa kerfisskýrslu";
+
+/* Automatically download and install updates choice for update permission dialog */
+"Automatically download and install updates" = "Sækja og innsetja uppfærslur sjálfkrafa";
+
+/* Anonymous system profile information disclosure for update permission dialog */
+"Anonymous system profile information is used to help us plan future development work. Please contact us if you have any questions about this.\n\nThis is the information that would be sent:" = "Upplýsingar úr nafnlausum kerfisskýrslum eru notaðar til að hjálpa okkur við framtíðarþróun hugbúnaðarins. Ekki hika við að hafa samband ef spurningar vakna um þetta.\n\nÞetta eru upplýsingarnar sem yrðu sendar:";
