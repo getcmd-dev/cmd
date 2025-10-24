@@ -202,7 +202,6 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	}
 
 	async sessionUpdate(params: acp.SessionNotification): Promise<void> {
-		logInfo(`[CodexACPClient] Session ${params.sessionId} update: ${JSON.stringify(params, null, 2)}`)
 		const handler = this.eventHandlerByACPSessionId[params.sessionId]
 		if (handler) {
 			handler(params)

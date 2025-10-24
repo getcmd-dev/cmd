@@ -319,11 +319,45 @@ extension ToolUse {
 
 // MARK: - ToolError
 
-public struct ToolError: Error {
-  public let value: JSON.Value
-
+public struct ToolError: Error, CustomNSError, LocalizedError {
   public init(_ value: JSON.Value) {
     self.value = value
+  }
+
+  public let value: JSON.Value
+
+  public var errorDescription: String {
+    Self.errorDescription(for: value)
+  }
+
+  public var errorUserInfo: [String: Any] {
+    [
+      NSLocalizedDescriptionKey: errorDescription,
+    ]
+  }
+
+  var localizedDescription: String {
+    errorDescription
+  }
+
+  private static func errorDescription(for value: JSON.Value) -> String {
+    switch value {
+    case .string(let value):
+      value
+    case .array(let array):
+      array.map(Self.errorDescription(for:)).joined(separator: ", ")
+    case .number(let value):
+      "\(value)"
+    case .bool(let value):
+      "\(value)"
+    case .null:
+      "null"
+    case .object(let value):
+      value
+        .mapValues(Self.errorDescription(for:))
+        .map({ "\($0.key): \($0.value)" })
+        .joined(separator: "\n")
+    }
   }
 }
 
