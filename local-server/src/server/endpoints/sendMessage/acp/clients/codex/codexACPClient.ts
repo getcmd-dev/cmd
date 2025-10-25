@@ -141,7 +141,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 				sessionManager.eventHandler.yield(event)
 			} else {
 				logError(
-					`[CodexACPClient] No event handler found for session ${acpSessionId}.
+					`[CodexACPClient] No event handler found for session ${acpSessionId}. Starting new session.
 					Event: ${JSON.stringify(event, null, 2)}.`,
 				)
 			}
@@ -177,7 +177,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 			const isApproved = await permissionRequestHandler({
 				toolCallId: params.toolCall.toolCallId,
 				input: params.toolCall.rawInput,
-				toolName: (params.toolCall._meta?.toolName as string) || params.toolCall.kind!,
+				toolName: (params.toolCall._meta?.toolName as string) || `acp_${params.toolCall.kind!}`,
 			})
 			if (isApproved) {
 				return {

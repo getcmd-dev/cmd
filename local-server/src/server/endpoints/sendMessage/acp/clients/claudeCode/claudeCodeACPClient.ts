@@ -173,7 +173,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 			const isApproved = await permissionRequestHandler({
 				toolCallId: params.toolCall.toolCallId,
 				input: params.toolCall.rawInput,
-				toolName: (params.toolCall._meta?.toolName as string) || params.toolCall.kind!,
+				toolName: (params.toolCall._meta?.toolName as string) || `acp_${params.toolCall.kind!}`,
 			})
 			if (isApproved) {
 				return {
