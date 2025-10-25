@@ -124,10 +124,6 @@ final class AIModelsManager: AIModelsManagerProtocol {
         .eraseToAnyPublisher())
   }
 
-//  func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-//    modelsAvailable(for: provider).currentValue
-//  }
-
   func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
     let publisher = llmModelByProvider.subscribeToValue(for: provider)
     return .init(publisher.currentValue ?? [], publisher: publisher.map { $0 ?? [] }.eraseToAnyPublisher())

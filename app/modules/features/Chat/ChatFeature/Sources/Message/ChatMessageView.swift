@@ -188,6 +188,7 @@ struct ToolUseView: View {
         "input": .init(encoding: toolUse.input),
         "output": (try? toolUse.currentOutput).map({ try? .init(encoding: $0) }) ??? .null,
         "toolUseId": .string(toolUse.toolUseId),
+        "toolName": .string(toolUse.toolName),
       ])),
       let string = String(data: data, encoding: .utf8)
     {

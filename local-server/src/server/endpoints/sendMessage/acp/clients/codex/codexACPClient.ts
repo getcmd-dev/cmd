@@ -37,6 +37,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		string,
 		({ toolCallId, input, toolName }: { toolCallId: string; input: unknown; toolName: string }) => Promise<boolean>
 	> = {}
+	private spawnError?: Error
 
 	constructor() {
 		const agentPath = process.env.CODEX_ACP_PATH
@@ -47,6 +48,11 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		// Spawn the agent as a subprocess
 		const agentProcess = spawn(agentPath, {
 			stdio: ["pipe", "pipe", "inherit"],
+		})
+
+		agentProcess.on("error", (err) => {
+			this.spawnError = err
+			logError(`Failed to spawn codex process at ${agentPath}: ${err.message}`)
 		})
 
 		// Create streams to communicate with the agent
@@ -97,6 +103,9 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		sessionInitializationParams: CodexACPSessionInitializationParams,
 		threadId: string,
 	): Promise<SessionManager> {
+		if (this.spawnError) {
+			throw new Error(`Cannot create session: codex process failed to spawn - ${this.spawnError.message}`)
+		}
 		const abortController = sessionInitializationParams.abortController || new AbortController()
 		// Initialize the connection
 		await this.clientConnection.initialize({

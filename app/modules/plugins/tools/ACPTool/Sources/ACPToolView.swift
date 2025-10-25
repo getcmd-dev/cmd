@@ -1,7 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodePreview
 import DLS
+import FileDiffFoundation
 // import Down
 import Markdown
 import SwiftUI
@@ -239,18 +241,40 @@ struct ToolUseView: View {
     VStack(alignment: .leading, spacing: 4) {
       Text("Changed: \(diff.path)")
         .font(.headline)
-      if let oldText = diff.oldText {
-        Text("- \(oldText)")
-          .font(.system(.body, design: .monospaced))
-          .foregroundColor(.red)
+
+      ScrollView(.horizontal, showsIndicators: true) {
+        DiffView(change: createFileDiffViewModel(from: diff))
       }
-      Text("+ \(diff.newText)")
-        .font(.system(.body, design: .monospaced))
-        .foregroundColor(.green)
+      .frame(maxHeight: 400)
     }
     .padding(8)
     .background(Color.secondary.opacity(0.1))
     .cornerRadius(4)
+  }
+
+  private func createFileDiffViewModel(from diff: ToolsSchema.ACPToolOutput_Diff) -> FileDiffViewModel {
+    FileDiffViewModel(
+      filePath: URL(fileURLWithPath: diff.path),
+      baseLineContent: diff.oldText ?? "",
+      targetContent: diff.newText,
+      canBeApplied: false,
+      formattedDiff: nil)
+
+//    // Trigger async diff computation
+//    Task {
+//      do {
+//        let formattedDiff = try await FileDiff.getColoredDiff(
+//          oldContent: diff.oldText ?? "",
+//          newContent: diff.newText,
+//          highlightColors: .codeHighlight)
+//        await MainActor.run {
+//          viewModel.formattedDiff = formattedDiff
+//        }
+//      } catch {
+//        // If diff computation fails, the view will show without formatting
+//        // This is acceptable as it's better than showing nothing
+//      }
+//    }
   }
 
   @ViewBuilder

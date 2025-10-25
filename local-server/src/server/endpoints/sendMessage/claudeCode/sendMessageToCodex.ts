@@ -1,4 +1,4 @@
-import { logInfo } from "@/logger"
+import { logError, logInfo } from "@/logger"
 import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
 import { Codex } from "@openai/codex-sdk"
 import { Response } from "express"
@@ -111,16 +111,20 @@ const createEventStream = async (
 	// TODO: expose the models in cmd directly to the API, so that the conversation naming
 	// can be done like for any AI provider with a lower tier model.
 	if (!existingSessionId) {
-		void nameConversation(messageContent).then((name) => {
-			sendCommandToHostApp({
-				type: "execute-command",
-				command: "set_conversation_name",
-				input: {
-					name,
-					threadId,
-				},
+		nameConversation(messageContent, executableInfo.path)
+			.then((name) => {
+				sendCommandToHostApp({
+					type: "execute-command",
+					command: "set_conversation_name",
+					input: {
+						name,
+						threadId,
+					},
+				})
 			})
-		})
+			.catch((error) => {
+				logError("Failed to name conversation with Codex", error)
+			})
 	}
 
 	acpClient = acpClient || new CodexACPClient()
@@ -167,8 +171,10 @@ const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<
 }
 
 /* Name the conversation based on the first message. */
-const nameConversation = async (messages: ContentBlock[]): Promise<string> => {
-	const codex = new Codex()
+const nameConversation = async (messages: ContentBlock[], executablePath): Promise<string> => {
+	const codex = new Codex({
+		codexPathOverride: executablePath,
+	})
 	const thread = codex.startThread()
 	const mergedMessage = messages
 		.filter((message) => message.type === "text")

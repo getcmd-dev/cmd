@@ -1,4 +1,4 @@
-import { logError } from "@/logger"
+import { logError, logInfo } from "@/logger"
 import { SessionNotification } from "@agentclientprotocol/sdk"
 
 import {
@@ -246,10 +246,11 @@ const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InternalToo
 		}
 		case "Edit": {
 			const o = output as EditOutput
+			logInfo(`Edit output: ${JSON.stringify(o)}`)
 			return {
 				// TODO: improve this result format
 				type: "edit_files_output",
-				result: o.message,
+				result: o.message || "success",
 			} satisfies EditFilesToolOutput
 		}
 		case "Read": {
@@ -265,9 +266,10 @@ const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InternalToo
 		}
 		case "Write": {
 			const o = output as WriteOutput
+			logInfo(`Write output: ${JSON.stringify(o)}`)
 			return {
 				type: "edit_files_output",
-				result: o.message,
+				result: o.message || "success",
 			} satisfies EditFilesToolOutput
 		}
 		case "Glob": {

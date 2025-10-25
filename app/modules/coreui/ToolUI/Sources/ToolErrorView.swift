@@ -13,20 +13,49 @@ import ToolTypesFoundation
 public struct ToolErrorView: View {
   public init(_ error: Error) {
     self.error = error
+    toolUseErrorDescription = error.toolUseErrorDescription
   }
 
   public var body: some View {
-    Text(plainText)
-      .textSelection(.enabled)
-      .foregroundColor(colorScheme.redError)
+    if toolUseErrorDescription.count > 300 {
+      VStack(alignment: .leading, spacing: 8) {
+        HStack {
+          Text("Tool failed")
+            .foregroundColor(colorScheme.redError)
+
+          Button(action: {
+            isExpanded.toggle()
+          }) {
+            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+              .foregroundColor(.secondary)
+          }
+          .buttonStyle(.plain)
+        }
+
+        if isExpanded {
+          Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+            .textSelection(.enabled)
+            .foregroundColor(.primary)
+        }
+      }
+    } else {
+      Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+        .textSelection(.enabled)
+        .foregroundColor(colorScheme.redError)
+    }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+  @State private var isExpanded = false
+
+  private let toolUseErrorDescription: String
 
   private let error: Error
+}
 
-  private var plainText: String {
-    let attrString = colorScheme.markDownStyle.markdown(for: error.toolUseErrorDescription)
+extension String {
+  func asPlainText(colorScheme: ColorScheme) -> String {
+    let attrString = colorScheme.markDownStyle.markdown(for: self)
     return NSAttributedString(attrString).string
   }
 }
