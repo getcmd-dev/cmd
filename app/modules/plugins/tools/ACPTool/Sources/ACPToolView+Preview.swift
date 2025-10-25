@@ -47,8 +47,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: """
                   import Foundation
 
@@ -67,7 +67,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "let version = \"2.0\"",
               oldText: "let version = \"1.0\"",
               path: "/path/to/Config.swift")),
@@ -82,7 +82,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .execute,
           content: [
-            .aCPToolOutputTerminal(.init(
+            .aCPToolTerminalContent(.init(
               terminalId: "terminal-123")),
           ])))),
         input: .init(
@@ -113,8 +113,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "File contents here...")))),
           ])))),
         input: .init(
@@ -126,7 +126,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "new content",
               oldText: "old content",
               path: "/path/to/file.swift")),
@@ -205,14 +205,14 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "Modified 3 files successfully")))),
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "let version = \"2.0\"",
               oldText: "let version = \"1.0\"",
               path: "/path/to/Config.swift")),
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "import SwiftUI",
               oldText: nil,
               path: "/path/to/View.swift")),
@@ -227,8 +227,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .fetch,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentResourceLink(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentResourceLink(.init(
                 description: "API documentation for Swift",
                 name: "Swift Docs",
                 uri: "https://docs.swift.org")))),
@@ -243,9 +243,9 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentResource(.init(
-                resource: .aCPToolOutputMediaContentResourceEmbeddedResourceText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentResource(.init(
+                resource: .aCPToolMediaContentResourceEmbeddedResourceText(.init(
                   text: "Resource content here...",
                   uri: "file:///path/to/resource.txt")))))),
           ])))),
@@ -266,8 +266,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "File contents...")))),
           ])))),
         input: .init(

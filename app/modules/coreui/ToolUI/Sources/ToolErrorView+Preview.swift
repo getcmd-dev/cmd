@@ -21,10 +21,10 @@ import ToolTypesFoundation
 
 #Preview("Tool Error - ToolError with content") {
   ToolErrorView(ToolError(try! JSON.Value(encoding: [
-    ToolsSchema.ACPToolOutput_Content
-      .aCPToolOutputMediaContent(.init(content: .aCPToolOutputMediaContentText(.init(text: "Something bad happened:")))),
-    ToolsSchema.ACPToolOutput_Content
-      .aCPToolOutputMediaContent(.init(content: .aCPToolOutputMediaContentText(.init(text: "404 Not found")))),
+    ToolsSchema.ACPTool_Content
+      .aCPToolMediaContent(.init(content: .aCPToolMediaContentText(.init(text: "Something bad happened:")))),
+    ToolsSchema.ACPTool_Content
+      .aCPToolMediaContent(.init(content: .aCPToolMediaContentText(.init(text: "404 Not found")))),
   ])))
   .frame(minWidth: 200, minHeight: 50)
 }

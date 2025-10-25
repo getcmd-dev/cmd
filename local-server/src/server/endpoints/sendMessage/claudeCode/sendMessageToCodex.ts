@@ -132,8 +132,8 @@ const createEventStream = async (
 		{ cwd: localExecutable.cwd },
 		messageContent,
 		threadId,
-		async ({ toolCallId, input, toolName }) => {
-			return await askAppForPermission({ toolCallId, input, toolName, eventStream })
+		async ({ toolCall, toolName }) => {
+			return await askAppForPermission({ toolCall, toolName, eventStream })
 		},
 	)
 	abortController.signal.addEventListener("abort", async () => {

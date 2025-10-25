@@ -63,12 +63,12 @@ extension String {
 extension Error {
   public var toolUseErrorDescription: String {
     if let toolError = self as? ToolError {
-      if let content = try? (self as? ToolError)?.value.decode(as: [ToolsSchema.ACPToolOutput_Content].self) {
+      if let content = try? (self as? ToolError)?.value.decode(as: [ToolsSchema.ACPTool_Content].self) {
         let textContent = content.compactMap { content in
           switch content {
-          case .aCPToolOutputMediaContent(let mediaContent):
+          case .aCPToolMediaContent(let mediaContent):
             switch mediaContent.content {
-            case .aCPToolOutputMediaContentText(let text):
+            case .aCPToolMediaContentText(let text):
               text.text
             default:
               nil
