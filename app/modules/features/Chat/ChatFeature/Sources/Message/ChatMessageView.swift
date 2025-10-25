@@ -179,7 +179,7 @@ struct ToolUseView: View {
   @Dependency(\.userDefaults) private var userDefaults
 
   private var shouldShowToolInputCopyButton: Bool {
-      userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
+    userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
   }
 
   private var debugToolData: String? {
@@ -187,6 +187,7 @@ struct ToolUseView: View {
       let data = try? JSONEncoder().encode(JSON.object([
         "input": .init(encoding: toolUse.input),
         "output": (try? toolUse.currentOutput).map({ try? .init(encoding: $0) }) ??? .null,
+        "toolUseId": .string(toolUse.toolUseId),
       ])),
       let string = String(data: data, encoding: .utf8)
     {

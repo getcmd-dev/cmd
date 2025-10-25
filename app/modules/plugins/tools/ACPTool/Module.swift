@@ -3,8 +3,10 @@ Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
+    "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
+    "FileDiffFoundation",
     "JSONFoundation",
     "LoggingServiceInterface",
     "Markdown",

@@ -58,7 +58,7 @@ const toolNameMapping: { [k: string]: string } = {
 	Write: "edit_file",
 	Bash: "bash",
 	LS: "list_files",
-	Grep: "search",
+	Grep: "search_files",
 }
 
 export async function* withParsedToolCalls(
@@ -324,7 +324,7 @@ const mapToolOutput = (toolName: string, output: ToolOutputSchemas): InternalToo
 				return {
 					type: "search_files_output",
 					outputForLLm: o.counts
-						.map((countsByFile) => `${countsByFile.file}: ${countsByFile.count} matches`)
+						?.map((countsByFile) => `${countsByFile.file}: ${countsByFile.count} matches`)
 						.join("\n"),
 					results: [],
 					hasMore: false,
