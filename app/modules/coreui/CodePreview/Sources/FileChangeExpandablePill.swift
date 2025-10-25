@@ -8,7 +8,7 @@ import SwiftUI
 // MARK: - FileEditState
 
 /// Represents the current state of a file edit operation.
-public enum FileEditState {
+public enum FileEditState: Sendable {
   case suggested
   case applied
   case rejected
@@ -250,13 +250,6 @@ public struct FileChangeExpandablePill: View {
     Task {
       await handleOpenFile(change.filePath)
     }
-//    Task {
-//      do {
-//        try await xcodeController.open(file: change.filePath, line: nil, column: nil)
-//      } catch {
-//        print("Failed to open file: \(error)")
-//      }
-//    }
   }
 }
 

@@ -175,6 +175,7 @@ describe("mapToolCallContent", () => {
 			const unsupportedToolCall = {
 				type: "content",
 				content: {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					type: "unsupported" as any,
 				},
 			} as ToolCallContent

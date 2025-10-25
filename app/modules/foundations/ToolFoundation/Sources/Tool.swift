@@ -363,8 +363,8 @@ public struct ToolError: Error, CustomNSError, LocalizedError {
 
     case .object(let value):
       value
-        .mapValues(Self.errorDescription(for:))
-        .map({ "\($0.key): \($0.value)" })
+        .sorted(by: { $0.key < $1.key })
+        .map({ "\($0.key): \(Self.errorDescription(for: $0.value))" })
         .joined(separator: "\n")
     }
   }

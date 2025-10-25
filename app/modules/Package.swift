@@ -131,6 +131,7 @@ targets.append(
       "ToolFoundation",
       "ToolTypesFoundation",
       "ToolUI",
+      "XcodeControllerServiceInterface",
     ],
     path: "./plugins/tools/ACPTool"))
 
@@ -341,7 +342,6 @@ targets.append(
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
-      "CodePreview",
       "ConcurrencyFoundation",
       "DLS",
       "JSONFoundation",
@@ -615,6 +615,7 @@ targets.append(
       "DLS",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "FileIcon",
       "FoundationInterfaces",
       "HighlighterServiceInterface",
       "LoggingServiceInterface",

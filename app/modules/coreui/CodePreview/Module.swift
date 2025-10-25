@@ -7,6 +7,7 @@ Target.module(
     "DLS",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
+    "FileIcon",
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "LoggingServiceInterface",

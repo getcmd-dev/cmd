@@ -2,14 +2,15 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import CodePreview
+import Dependencies
 import DLS
 import FileDiffFoundation
-// import Down
 import Markdown
 import SwiftUI
 import ToolFoundation
 import ToolTypesFoundation
 import ToolUI
+import XcodeControllerServiceInterface
 
 // MARK: - ToolUseView
 
@@ -274,11 +275,19 @@ struct DiffContentView: View {
       handleApply: { },
       handleReject: { },
       handleCopy: { },
-      handleOpenFile: { _ in })
+      handleOpenFile: { file in
+        do {
+          try await xcodeController.open(file: file, line: nil, column: nil)
+        } catch {
+          print("Failed to open file: \(error)")
+        }
+      })
       .padding(.leading, 11)
   }
 
   @State private var viewModel: FileDiffViewModel
+
+  @Dependency(\.xcodeController) private var xcodeController
 
   private static func createFileDiffViewModel(from diff: ToolsSchema.ACPTool_DiffContent) -> FileDiffViewModel {
     let viewModel = FileDiffViewModel(

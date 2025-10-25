@@ -14,4 +14,5 @@ Target.module(
     "ToolFoundation",
     "ToolTypesFoundation",
     "ToolUI",
+    "XcodeControllerServiceInterface",
   ])
