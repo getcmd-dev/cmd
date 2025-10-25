@@ -58,7 +58,7 @@ const toolNameMapping: { [k: string]: string } = {
 	Write: "edit_file",
 	Bash: "bash",
 	LS: "list_files",
-	Grep: "search",
+	Grep: "search_files",
 }
 
 export async function* withParsedToolCalls(
