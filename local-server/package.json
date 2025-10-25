@@ -43,6 +43,7 @@
 		"@openrouter/ai-sdk-provider": "^1.1.2",
 		"@sentry/node": "^10.10.0",
 		"ai": "^5.0.22",
+		"diff": "^8.0.2",
 		"express": "^4.21.2",
 		"express-promise-router": "^4.1.1",
 		"fzf": "^0.5.2",
