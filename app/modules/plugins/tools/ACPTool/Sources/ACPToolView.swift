@@ -5,6 +5,7 @@ import CodePreview
 import Dependencies
 import DLS
 import FileDiffFoundation
+import LoggingServiceInterface
 import Markdown
 import SwiftUI
 import ToolFoundation
@@ -39,7 +40,7 @@ struct ToolUseView: View {
     static let hstackSpacing: CGFloat = 4
   }
 
-  @State private var isExpanded = false
+  @State private var isExpanded: Bool?
   @State private var isHovered = false
 
   @Environment(\.colorScheme) private var colorScheme
@@ -47,7 +48,7 @@ struct ToolUseView: View {
   @ViewBuilder
   private var pendingApprovalView: some View {
     VStack(alignment: .leading) {
-      contentView(content: toolUse.input.content)
+      contentView(content: toolUse.input.content, isExpandedByDefault: true)
 
       ThreeDotsLoadingAnimation(baseText: "Waiting for approval")
     }
@@ -104,11 +105,11 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func contentView(content: [ToolsSchema.ACPTool_Content]?) -> some View {
+  private func contentView(content: [ToolsSchema.ACPTool_Content]?, isExpandedByDefault: Bool = false) -> some View {
     if let content {
       VStack(alignment: .leading) {
         HStack(spacing: Constants.hstackSpacing) {
-          if isExpanded {
+          if isExpanded ?? isExpandedByDefault {
             Icon(systemName: "chevron.down")
               .forTool(with: foregroundColor)
           } else if isHovered {
@@ -125,9 +126,9 @@ struct ToolUseView: View {
             .foregroundColor(foregroundColor)
         }
         .tappableTransparentBackground()
-        .onTapGesture { isExpanded.toggle() }
+        .onTapGesture { isExpanded = !(isExpanded ?? isExpandedByDefault) }
         .acceptClickThrough()
-        if isExpanded {
+        if isExpanded ?? isExpandedByDefault {
           contentView(for: content)
         }
       }.onHover { isHovered = $0 }
@@ -146,14 +147,7 @@ struct ToolUseView: View {
   @ViewBuilder
   private func failureView(error: Error) -> some View {
     VStack(alignment: .leading) {
-      HStack(spacing: Constants.hstackSpacing) {
-        Icon(systemName: toolIconName)
-          .forTool(with: foregroundColor)
-        Text(title)
-          .lineLimit(1)
-          .truncationMode(.middle)
-          .foregroundColor(foregroundColor)
-      }
+      contentView(content: toolUse.input.content)
       ToolErrorView(error)
     }
   }
@@ -279,10 +273,9 @@ struct DiffContentView: View {
         do {
           try await xcodeController.open(file: file, line: nil, column: nil)
         } catch {
-          print("Failed to open file: \(error)")
+          defaultLogger.error("Failed to open file", error)
         }
       })
-      .padding(.leading, 11)
   }
 
   @State private var viewModel: FileDiffViewModel

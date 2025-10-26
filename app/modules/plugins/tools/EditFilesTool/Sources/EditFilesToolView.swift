@@ -60,6 +60,7 @@ struct ToolUseView: View {
             print("Failed to open file: \(error)")
           }
         })
+        .padding(.horizontal, 4)
     }
   }
 
