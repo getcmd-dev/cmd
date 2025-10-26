@@ -192,7 +192,6 @@ public struct FileChangeExpandablePill: View {
       }
     }
     .with(cornerRadius: Constants.cornerRadius, borderColor: colorScheme.textAreaBorderColor)
-    .padding(.horizontal, 4)
   }
 
   let change: FileDiffViewModel

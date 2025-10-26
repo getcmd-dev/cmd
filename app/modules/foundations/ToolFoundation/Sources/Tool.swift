@@ -406,6 +406,18 @@ extension ToolUse {
   }
 }
 
+extension ToolUseExecutionStatus {
+  /// Converts in-flight status to cancelled, unless it is already completed or not started.
+  public var completedOrCancelled: Self {
+    switch self {
+    case .notStarted, .completed, .approvalRejected:
+      self
+    case .running, .pendingApproval:
+      .completed(.failure(CancellationError()))
+    }
+  }
+}
+
 extension AsyncStream.Continuation {
   public func complete<Output>(with result: Result<Output, Error>) where Element == ToolUseExecutionStatus<Output> {
     yield(.completed(result))

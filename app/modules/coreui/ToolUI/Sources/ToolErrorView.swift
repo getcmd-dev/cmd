@@ -17,31 +17,35 @@ public struct ToolErrorView: View {
   }
 
   public var body: some View {
-    if toolUseErrorDescription.count > 300 {
-      VStack(alignment: .leading, spacing: 8) {
-        HStack {
-          Text("Tool failed")
-            .foregroundColor(colorScheme.redError)
-
-          Button(action: {
-            isExpanded.toggle()
-          }) {
-            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-              .foregroundColor(.secondary)
-          }
-          .buttonStyle(.plain)
-        }
-
-        if isExpanded {
-          Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
-            .textSelection(.enabled)
-            .foregroundColor(.primary)
-        }
-      }
+    if error is CancellationError {
+      Text("Cancelled")
+        .foregroundColor(.secondary)
     } else {
-      Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
-        .textSelection(.enabled)
-        .foregroundColor(colorScheme.redError)
+      if toolUseErrorDescription.count > 300 {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Button(action: {
+              isExpanded.toggle()
+            }) {
+              Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            Text("Tool failed")
+              .foregroundColor(colorScheme.redError)
+          }
+
+          if isExpanded {
+            Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+              .textSelection(.enabled)
+              .foregroundColor(.primary)
+          }
+        }
+      } else {
+        Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+          .textSelection(.enabled)
+          .foregroundColor(colorScheme.redError)
+      }
     }
   }
 
