@@ -233,6 +233,43 @@ final class AIModelsManager: AIModelsManagerProtocol {
     }
   }
 
+  /// Return the list of models that are active.
+  /// - Parameters:
+  ///   - models: The list of models to choose from, typically all known models
+  ///   - enabledModels: The models that have been enabled by the user.
+  ///   - providerModelsByModelId: The list of known providers for each model
+  ///   - configuredProviders: The providers that have been configured by the user.
+  private static func filterActiveModels(
+    models: [AIModel],
+    enabledModels: [AIModelID],
+    providerModelsByModelId: [AIModelID: [AIProviderModel]],
+    configuredProviders: Set<AIProvider>)
+    -> [AIModel]
+  {
+    let enabledModels = Set(enabledModels)
+    return models.filter { model in
+      // Get the list of providers that support the model
+      guard let providerModels = providerModelsByModelId[model.id], !providerModels.isEmpty else {
+        return false
+      }
+
+      // Check if at least one of the providers for this model is configured
+      let hasConfiguredProvider = providerModels.contains { configuredProviders.contains($0.provider) }
+      guard hasConfiguredProvider else {
+        return false
+      }
+
+      // Check if it should be active
+      let isEnabled = enabledModels.contains(model.id)
+      // Check if the model is from an external agent
+      let isExternalAgent = providerModels.contains { providerModel in
+        providerModel.provider.isExternalAgent
+      }
+
+      return isEnabled || isExternalAgent
+    }
+  }
+
   private func fetchAndSaveModelsAvailable(
     for provider: AIProvider,
     settings: AIProviderSettings)
@@ -354,8 +391,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
         }
         return (
           state.modelByModelId.sortedValues,
-          state.llmModelByProvider.wrappedValue.reduce(into: [:]) { $0[$1.key] = $1.value }
-        )
+          state.llmModelByProvider.wrappedValue.reduce(into: [:]) { $0[$1.key] = $1.value })
       }
       mutableModels.send(modelInfos)
 
@@ -388,43 +424,6 @@ final class AIModelsManager: AIModelsManagerProtocol {
     await queue.queue {
       await _updateModels(from: previous, to: current)
     }.value
-  }
-    
-    /// Return the list of models that are active.
-    /// - Parameters:
-    ///   - models: The list of models to choose from, typically all known models
-    ///   - enabledModels: The models that have been enabled by the user.
-    ///   - providerModelsByModelId: The list of known providers for each model
-    ///   - configuredProviders: The providers that have been configured by the user.
-  private static func filterActiveModels(
-    models: [AIModel],
-    enabledModels: [AIModelID],
-    providerModelsByModelId: [AIModelID: [AIProviderModel]],
-    configuredProviders: Set<AIProvider>)
-    -> [AIModel]
-  {
-      let enabledModels = Set(enabledModels)
-    return models.filter { model in
-      // Get the list of providers that support the model
-      guard let providerModels = providerModelsByModelId[model.id], !providerModels.isEmpty else {
-        return false
-      }
-
-      // Check if at least one of the providers for this model is configured
-      let hasConfiguredProvider = providerModels.contains { configuredProviders.contains($0.provider) }
-      guard hasConfiguredProvider else {
-        return false
-      }
-
-      // Check if it should be active
-      let isEnabled = enabledModels.contains(model.id)
-      // Check if the model is from an external agent
-      let isExternalAgent = providerModels.contains { providerModel in
-        providerModel.provider.isExternalAgent
-      }
-
-      return isEnabled || isExternalAgent
-    }
   }
 
 }

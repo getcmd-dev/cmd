@@ -485,8 +485,10 @@ class AIModelsManagerTests {
 
     sut.activeModels.sink { models in
       // Wait for both models to be active
-      if models.count == 2 &&
-         models.map(\.slug).sorted() == ["claude-haiku-35", "claude-sonnet-4"] {
+      if
+        models.count == 2,
+        models.map(\.slug).sorted() == ["claude-haiku-35", "claude-sonnet-4"]
+      {
         receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
@@ -735,11 +737,10 @@ class AIModelsManagerTests {
 
     // then
     try await fulfillment(of: [modelsReady])
-      let activeModels = sut.activeModels.currentValue
-          #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
-          #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
-          #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
-        
+    let activeModels = sut.activeModels.currentValue
+    #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
+    #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
+    #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
   }
 
   @Test("External agent models remain active when enabledModels changes")
@@ -787,7 +788,7 @@ class AIModelsManagerTests {
 
     sut.activeModels.sink { models in
       // Even when enabledModels is empty, claudeCode should still be active
-      if models.count == 1 && models.first?.slug == "claudeCode" {
+      if models.count == 1, models.first?.slug == "claudeCode" {
         receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
@@ -866,7 +867,7 @@ class AIModelsManagerTests {
 
     sut.activeModels.sink { models in
       // Wait for the state where only openAI model is active
-      if models.count == 1 && models.first?.id == openAIModel.modelInfo.id {
+      if models.count == 1, models.first?.id == openAIModel.modelInfo.id {
         receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
@@ -916,8 +917,10 @@ class AIModelsManagerTests {
 
     sut.activeModels.sink { models in
       // Wait for the state where both models are active
-      if models.count == 2 &&
-         models.map(\.id).sorted() == [anthropicModel.modelInfo.id, openAIModel.modelInfo.id].sorted() {
+      if
+        models.count == 2,
+        models.map(\.id).sorted() == [anthropicModel.modelInfo.id, openAIModel.modelInfo.id].sorted()
+      {
         receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
