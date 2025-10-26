@@ -392,7 +392,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
     
     /// Return the list of models that are active.
     /// - Parameters:
-    ///   - models: The list of models to chose from, typically all known models
+    ///   - models: The list of models to choose from, typically all known models
     ///   - enabledModels: The models that have been enabled by the user.
     ///   - providerModelsByModelId: The list of known providers for each model
     ///   - configuredProviders: The providers that have been configured by the user.
