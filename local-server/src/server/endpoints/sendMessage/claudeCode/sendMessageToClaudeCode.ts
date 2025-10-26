@@ -111,6 +111,9 @@ const createClaudeCodeEventStream = async (
 		logInfo("response finished")
 		responseCompletedByServer = true
 		responseIsTerminated = true
+		// We still call abort here, as the server-side termination could come from an error
+		// in the event stream, in which case we need to stop the agent.
+		abortController.abort()
 	})
 	const abortController = new AbortController()
 	res.on("close", () => {

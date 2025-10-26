@@ -4,8 +4,17 @@ import { spawn } from "child_process"
 
 process.on("unhandledRejection", (reason, promise) => {
 	// Log the error and prevent crash
-	logError(`Unhandled Rejection at: ${promise}, reason: ${reason}`)
+	let message = `Unhandled Rejection at: ${promise}`
+
+	if (reason instanceof Error) {
+		message += `\nReason: ${reason.message}\nStack:\n${reason.stack}`
+	} else {
+		message += `\nReason: ${JSON.stringify(reason, null, 2)}`
+	}
+
+	logError(message)
 })
+
 process.on("uncaughtException", (err) => {
 	logError("Caught exception: ", err)
 })

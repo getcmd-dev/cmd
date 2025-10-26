@@ -350,6 +350,8 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 			text += chunk.text
 		} else if (chunk.type === "tool_call") {
 			logInfo(`Received tool call:\n${JSON.stringify(chunk)}`)
+		} else if (chunk.type === "tool_result") {
+			logInfo(`Received tool result:\n${JSON.stringify(chunk)}`)
 		} else if (chunk.type === "error") {
 			logInfo(`Received error:\n${JSON.stringify(chunk)}`)
 		}

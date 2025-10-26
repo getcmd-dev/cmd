@@ -1,13 +1,16 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodePreview
+import Dependencies
 import DLS
-// import Down
+import FileDiffFoundation
 import Markdown
 import SwiftUI
 import ToolFoundation
 import ToolTypesFoundation
 import ToolUI
+import XcodeControllerServiceInterface
 
 // MARK: - ToolUseView
 
@@ -24,12 +27,16 @@ struct ToolUseView: View {
     case .approvalRejected:
       rejectedView
     case .running:
-      runningView
+      contentView(content: toolUse.input.content)
     case .completed(.success(let output)):
-      successView(output: output)
+      contentView(content: output.content)
     case .completed(.failure(let error)):
-      ToolErrorView(error)
+      failureView(error: error)
     }
+  }
+
+  private enum Constants {
+    static let hstackSpacing: CGFloat = 4
   }
 
   @State private var isExpanded = false
@@ -39,12 +46,10 @@ struct ToolUseView: View {
 
   @ViewBuilder
   private var pendingApprovalView: some View {
-    HStack {
-      Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
-      Text("Waiting for approval: \(title)")
-        .foregroundColor(foregroundColor)
+    VStack(alignment: .leading) {
+      contentView(content: toolUse.input.content)
+
+      ThreeDotsLoadingAnimation(baseText: "Waiting for approval")
     }
   }
 
@@ -52,20 +57,8 @@ struct ToolUseView: View {
   private var rejectedView: some View {
     HStack {
       Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
+        .forTool(with: foregroundColor)
       Text("Rejected: \(title)")
-        .foregroundColor(foregroundColor)
-    }
-  }
-
-  @ViewBuilder
-  private var runningView: some View {
-    HStack {
-      Icon(systemName: toolIconName)
-        .frame(width: 14, height: 14)
-        .foregroundColor(foregroundColor)
-      Text("\(title)...")
         .foregroundColor(foregroundColor)
     }
   }
@@ -111,70 +104,91 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(output: ACPTool.Use.Output) -> some View {
-    VStack(alignment: .leading) {
-      HStack {
-        if isExpanded {
-          Icon(systemName: "chevron.down")
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
-        } else if isHovered {
-          Icon(systemName: "chevron.right")
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
-        } else {
-          Icon(systemName: toolIconName)
-            .frame(width: 14, height: 14)
-            .foregroundColor(foregroundColor)
-            .frame(width: 15)
-        }
+  private func contentView(content: [ToolsSchema.ACPTool_Content]?) -> some View {
+    if let content {
+      VStack(alignment: .leading) {
+        HStack(spacing: Constants.hstackSpacing) {
+          if isExpanded {
+            Icon(systemName: "chevron.down")
+              .forTool(with: foregroundColor)
+          } else if isHovered {
+            Icon(systemName: "chevron.right")
+              .forTool(with: foregroundColor)
+          } else {
+            Icon(systemName: toolIconName)
+              .forTool(with: foregroundColor)
+          }
 
-        Text(title)
+          Text(title)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .foregroundColor(foregroundColor)
+        }
+        .tappableTransparentBackground()
+        .onTapGesture { isExpanded.toggle() }
+        .acceptClickThrough()
+        if isExpanded {
+          contentView(for: content)
+        }
+      }.onHover { isHovered = $0 }
+    } else {
+      HStack(spacing: Constants.hstackSpacing) {
+        Icon(systemName: toolIconName)
+          .forTool(with: foregroundColor)
+        Text("\(title)...")
+          .lineLimit(1)
+          .truncationMode(.middle)
           .foregroundColor(foregroundColor)
       }
-      .tappableTransparentBackground()
-      .onTapGesture { isExpanded.toggle() }
-      .acceptClickThrough()
-      if isExpanded {
-        contentView(for: output)
-      }
-    }.onHover { isHovered = $0 }
+    }
   }
 
   @ViewBuilder
-  private func contentView(for output: ACPTool.Use.Output) -> some View {
+  private func failureView(error: Error) -> some View {
+    VStack(alignment: .leading) {
+      HStack(spacing: Constants.hstackSpacing) {
+        Icon(systemName: toolIconName)
+          .forTool(with: foregroundColor)
+        Text(title)
+          .lineLimit(1)
+          .truncationMode(.middle)
+          .foregroundColor(foregroundColor)
+      }
+      ToolErrorView(error)
+    }
+  }
+
+  @ViewBuilder
+  private func contentView(for content: [ToolsSchema.ACPTool_Content]) -> some View {
     VStack(alignment: .leading, spacing: 8) {
-      ForEach(Array(output.content.enumerated()), id: \.offset) { _, content in
+      ForEach(Array(content.enumerated()), id: \.offset) { _, content in
         contentItemView(for: content)
       }
     }
-    .padding(.leading, 20)
   }
 
   @ViewBuilder
-  private func contentItemView(for content: ToolsSchema.ACPToolOutput_Content) -> some View {
+  private func contentItemView(for content: ToolsSchema.ACPTool_Content) -> some View {
     switch content {
-    case .aCPToolOutputMediaContent(let mediaContent):
+    case .aCPToolMediaContent(let mediaContent):
       mediaContentView(for: mediaContent.content)
-    case .aCPToolOutputDiff(let diff):
-      diffView(for: diff)
-    case .aCPToolOutputTerminal(let terminal):
+    case .aCPToolDiffContent(let diff):
+      DiffContentView(diff: diff)
+    case .aCPToolTerminalContent(let terminal):
       terminalView(for: terminal)
     }
   }
 
   @ViewBuilder
-  private func mediaContentView(for content: ToolsSchema.ACPToolOutput_AnyMediaContent) -> some View {
+  private func mediaContentView(for content: ToolsSchema.ACPTool_AnyMediaContent) -> some View {
     switch content {
-    case .aCPToolOutputMediaContentText(let textContent):
+    case .aCPToolMediaContentText(let textContent):
       Text(colorScheme.markDownStyle.markdown(for: textContent.text))
         .font(.system(.body, design: .monospaced))
         .textSelection(.enabled)
         .foregroundColor(.secondary)
 
-    case .aCPToolOutputMediaContentImage(let imageContent):
+    case .aCPToolMediaContentImage(let imageContent):
       if
         let data = Data(base64Encoded: imageContent.data),
         let nsImage = NSImage(data: data)
@@ -188,11 +202,11 @@ struct ToolUseView: View {
           .foregroundColor(.secondary)
       }
 
-    case .aCPToolOutputMediaContentAudio(let audioContent):
+    case .aCPToolMediaContentAudio(let audioContent):
       Text("[Audio: \(audioContent.mimeType)]")
         .foregroundColor(.secondary)
 
-    case .aCPToolOutputMediaContentResourceLink(let resourceLink):
+    case .aCPToolMediaContentResourceLink(let resourceLink):
       VStack(alignment: .leading, spacing: 4) {
         Text(resourceLink.name)
           .font(.headline)
@@ -206,15 +220,15 @@ struct ToolUseView: View {
           .foregroundColor(.blue)
       }
 
-    case .aCPToolOutputMediaContentResource(let resource):
+    case .aCPToolMediaContentResource(let resource):
       resourceContentView(for: resource.resource)
     }
   }
 
   @ViewBuilder
-  private func resourceContentView(for resource: ToolsSchema.ACPToolOutput_MediaContent_Resource_EmbeddedResource) -> some View {
+  private func resourceContentView(for resource: ToolsSchema.ACPTool_MediaContent_Resource_EmbeddedResource) -> some View {
     switch resource {
-    case .aCPToolOutputMediaContentResourceEmbeddedResourceText(let textResource):
+    case .aCPToolMediaContentResourceEmbeddedResourceText(let textResource):
       VStack(alignment: .leading, spacing: 4) {
         Text("Resource: \(textResource.uri)")
           .font(.caption)
@@ -224,40 +238,77 @@ struct ToolUseView: View {
           .textSelection(.enabled)
       }
 
-    case .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(let blobResource):
+    case .aCPToolMediaContentResourceEmbeddedResourceBlob(let blobResource):
       Text("[Binary Resource: \(blobResource.uri)]")
         .foregroundColor(.secondary)
     }
   }
 
   @ViewBuilder
-  private func diffView(for diff: ToolsSchema.ACPToolOutput_Diff) -> some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text("Changed: \(diff.path)")
-        .font(.headline)
-      if let oldText = diff.oldText {
-        Text("- \(oldText)")
-          .font(.system(.body, design: .monospaced))
-          .foregroundColor(.red)
-      }
-      Text("+ \(diff.newText)")
-        .font(.system(.body, design: .monospaced))
-        .foregroundColor(.green)
-    }
-    .padding(8)
-    .background(Color.secondary.opacity(0.1))
-    .cornerRadius(4)
-  }
-
-  @ViewBuilder
-  private func terminalView(for terminal: ToolsSchema.ACPToolOutput_Terminal) -> some View {
-    HStack {
+  private func terminalView(for terminal: ToolsSchema.ACPTool_TerminalContent) -> some View {
+    HStack(spacing: Constants.hstackSpacing) {
       Icon(systemName: "terminal")
-        .frame(width: 14, height: 14)
+        .forTool(with: foregroundColor)
       Text("Terminal: \(terminal.terminalId)")
         .font(.system(.body, design: .monospaced))
     }
     .foregroundColor(.secondary)
   }
 
+}
+
+// MARK: - DiffContentView
+
+struct DiffContentView: View {
+  init(diff: ToolsSchema.ACPTool_DiffContent) {
+    self.diff = diff
+    _viewModel = .init(initialValue: Self.createFileDiffViewModel(from: diff))
+  }
+
+  let diff: ToolsSchema.ACPTool_DiffContent
+
+  var body: some View {
+    FileChangeExpandablePill(
+      change: viewModel,
+      editState: .applied,
+      startsExpanded: true,
+      handleApply: { },
+      handleReject: { },
+      handleCopy: { },
+      handleOpenFile: { file in
+        do {
+          try await xcodeController.open(file: file, line: nil, column: nil)
+        } catch {
+          print("Failed to open file: \(error)")
+        }
+      })
+      .padding(.leading, 11)
+  }
+
+  @State private var viewModel: FileDiffViewModel
+
+  @Dependency(\.xcodeController) private var xcodeController
+
+  private static func createFileDiffViewModel(from diff: ToolsSchema.ACPTool_DiffContent) -> FileDiffViewModel {
+    let viewModel = FileDiffViewModel(
+      filePath: URL(fileURLWithPath: diff.path),
+      baseLineContent: diff.oldText ?? "",
+      targetContent: diff.newText,
+      canBeApplied: false,
+      formattedDiff: nil)
+    // Trigger diff computation
+    viewModel.handle(newChanges: [
+      .init(search: diff.oldText ?? "", replace: diff.newText),
+    ])
+    return viewModel
+  }
+
+}
+
+extension Icon {
+  fileprivate func forTool(with foregroundColor: Color) -> some View {
+    frame(width: 14, height: 14)
+      .foregroundColor(foregroundColor)
+      .frame(width: 15)
+  }
 }

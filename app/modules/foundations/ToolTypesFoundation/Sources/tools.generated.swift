@@ -1061,23 +1061,27 @@ extension ToolsSchema {
     public let kind: ACPToolKind
     public let title: String
     public let rawInput: JSON?
+    public let content: [ACPTool_Content]?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case kind = "kind"
       case title = "title"
       case rawInput = "rawInput"
+      case content = "content"
     }
   
     public init(
         type: String = "acp_tool_input",
         kind: ACPToolKind,
         title: String,
-        rawInput: JSON? = nil
+        rawInput: JSON? = nil,
+        content: [ACPTool_Content]? = nil
     ) {
       self.kind = kind
       self.title = title
       self.rawInput = rawInput
+      self.content = content
     }
   
     public init(from decoder: Decoder) throws {
@@ -1085,6 +1089,7 @@ extension ToolsSchema {
       kind = try container.decode(ACPToolKind.self, forKey: .kind)
       title = try container.decode(String.self, forKey: .title)
       rawInput = try container.decodeIfPresent(JSON?.self, forKey: .rawInput)
+      content = try container.decodeIfPresent([ACPTool_Content]?.self, forKey: .content)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -1093,49 +1098,11 @@ extension ToolsSchema {
       try container.encode(kind, forKey: .kind)
       try container.encode(title, forKey: .title)
       try container.encodeIfPresent(rawInput, forKey: .rawInput)
+      try container.encodeIfPresent(content, forKey: .content)
     }
   }
-  public struct ACPToolOutput: Codable, Sendable {
-    public let type = "acp_tool_output"
-    public let kind: ACPToolKind
-    public let content: [ACPToolOutput_Content]
-    public let rawOutput: JSON?
-  
-    private enum CodingKeys: String, CodingKey {
-      case type = "type"
-      case kind = "kind"
-      case content = "content"
-      case rawOutput = "rawOutput"
-    }
-  
-    public init(
-        type: String = "acp_tool_output",
-        kind: ACPToolKind,
-        content: [ACPToolOutput_Content],
-        rawOutput: JSON? = nil
-    ) {
-      self.kind = kind
-      self.content = content
-      self.rawOutput = rawOutput
-    }
-  
-    public init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-      kind = try container.decode(ACPToolKind.self, forKey: .kind)
-      content = try container.decode([ACPToolOutput_Content].self, forKey: .content)
-      rawOutput = try container.decodeIfPresent(JSON?.self, forKey: .rawOutput)
-    }
-  
-    public func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(type, forKey: .type)
-      try container.encode(kind, forKey: .kind)
-      try container.encode(content, forKey: .content)
-      try container.encodeIfPresent(rawOutput, forKey: .rawOutput)
-    }
-  }
-  public struct ACPToolOutput_MediaContent: Codable, Sendable {
-    public let content: ACPToolOutput_AnyMediaContent
+  public struct ACPTool_MediaContent: Codable, Sendable {
+    public let content: ACPTool_AnyMediaContent
     public let type = "content"
   
     private enum CodingKeys: String, CodingKey {
@@ -1144,7 +1111,7 @@ extension ToolsSchema {
     }
   
     public init(
-        content: ACPToolOutput_AnyMediaContent,
+        content: ACPTool_AnyMediaContent,
         type: String = "content"
     ) {
       self.content = content
@@ -1152,7 +1119,7 @@ extension ToolsSchema {
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      content = try container.decode(ACPToolOutput_AnyMediaContent.self, forKey: .content)
+      content = try container.decode(ACPTool_AnyMediaContent.self, forKey: .content)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -1161,7 +1128,7 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public struct ACPToolOutput_Diff: Codable, Sendable {
+  public struct ACPTool_DiffContent: Codable, Sendable {
     public let newText: String
     public let oldText: String?
     public let path: String
@@ -1200,7 +1167,7 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public struct ACPToolOutput_Terminal: Codable, Sendable {
+  public struct ACPTool_TerminalContent: Codable, Sendable {
     public let terminalId: String
     public let type = "terminal"
   
@@ -1227,10 +1194,10 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public enum ACPToolOutput_Content: Codable, Sendable {
-    case aCPToolOutputMediaContent(_ value: ACPToolOutput_MediaContent)
-    case aCPToolOutputDiff(_ value: ACPToolOutput_Diff)
-    case aCPToolOutputTerminal(_ value: ACPToolOutput_Terminal)
+  public enum ACPTool_Content: Codable, Sendable {
+    case aCPToolMediaContent(_ value: ACPTool_MediaContent)
+    case aCPToolDiffContent(_ value: ACPTool_DiffContent)
+    case aCPToolTerminalContent(_ value: ACPTool_TerminalContent)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -1241,11 +1208,11 @@ extension ToolsSchema {
       let type = try container.decode(String.self, forKey: .type)
       switch type {
         case "content":
-          self = .aCPToolOutputMediaContent(try ACPToolOutput_MediaContent(from: decoder))
+          self = .aCPToolMediaContent(try ACPTool_MediaContent(from: decoder))
         case "diff":
-          self = .aCPToolOutputDiff(try ACPToolOutput_Diff(from: decoder))
+          self = .aCPToolDiffContent(try ACPTool_DiffContent(from: decoder))
         case "terminal":
-          self = .aCPToolOutputTerminal(try ACPToolOutput_Terminal(from: decoder))
+          self = .aCPToolTerminalContent(try ACPTool_TerminalContent(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -1253,16 +1220,16 @@ extension ToolsSchema {
   
     public func encode(to encoder: Encoder) throws {
       switch self {
-        case .aCPToolOutputMediaContent(let value):
+        case .aCPToolMediaContent(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputDiff(let value):
+        case .aCPToolDiffContent(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputTerminal(let value):
+        case .aCPToolTerminalContent(let value):
           try value.encode(to: encoder)
       }
     }
   }
-  public struct ACPToolOutput_MediaContent_Text: Codable, Sendable {
+  public struct ACPTool_MediaContent_Text: Codable, Sendable {
     public let text: String
     public let type = "text"
   
@@ -1289,7 +1256,7 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public struct ACPToolOutput_MediaContent_Image: Codable, Sendable {
+  public struct ACPTool_MediaContent_Image: Codable, Sendable {
     public let data: String
     public let mimeType: String
     public let type = "image"
@@ -1328,7 +1295,7 @@ extension ToolsSchema {
       try container.encodeIfPresent(uri, forKey: .uri)
     }
   }
-  public struct ACPToolOutput_MediaContent_Audio: Codable, Sendable {
+  public struct ACPTool_MediaContent_Audio: Codable, Sendable {
     public let data: String
     public let mimeType: String
     public let type = "audio"
@@ -1361,7 +1328,7 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public struct ACPToolOutput_MediaContent_ResourceLink: Codable, Sendable {
+  public struct ACPTool_MediaContent_ResourceLink: Codable, Sendable {
     public let description: String?
     public let mimeType: String?
     public let name: String
@@ -1418,8 +1385,8 @@ extension ToolsSchema {
       try container.encode(uri, forKey: .uri)
     }
   }
-  public struct ACPToolOutput_MediaContent_Resource: Codable, Sendable {
-    public let resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource
+  public struct ACPTool_MediaContent_Resource: Codable, Sendable {
+    public let resource: ACPTool_MediaContent_Resource_EmbeddedResource
     public let type = "resource"
   
     private enum CodingKeys: String, CodingKey {
@@ -1428,7 +1395,7 @@ extension ToolsSchema {
     }
   
     public init(
-        resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource,
+        resource: ACPTool_MediaContent_Resource_EmbeddedResource,
         type: String = "resource"
     ) {
       self.resource = resource
@@ -1436,7 +1403,7 @@ extension ToolsSchema {
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      resource = try container.decode(ACPToolOutput_MediaContent_Resource_EmbeddedResource.self, forKey: .resource)
+      resource = try container.decode(ACPTool_MediaContent_Resource_EmbeddedResource.self, forKey: .resource)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -1445,12 +1412,12 @@ extension ToolsSchema {
       try container.encode(type, forKey: .type)
     }
   }
-  public enum ACPToolOutput_AnyMediaContent: Codable, Sendable {
-    case aCPToolOutputMediaContentText(_ value: ACPToolOutput_MediaContent_Text)
-    case aCPToolOutputMediaContentImage(_ value: ACPToolOutput_MediaContent_Image)
-    case aCPToolOutputMediaContentAudio(_ value: ACPToolOutput_MediaContent_Audio)
-    case aCPToolOutputMediaContentResourceLink(_ value: ACPToolOutput_MediaContent_ResourceLink)
-    case aCPToolOutputMediaContentResource(_ value: ACPToolOutput_MediaContent_Resource)
+  public enum ACPTool_AnyMediaContent: Codable, Sendable {
+    case aCPToolMediaContentText(_ value: ACPTool_MediaContent_Text)
+    case aCPToolMediaContentImage(_ value: ACPTool_MediaContent_Image)
+    case aCPToolMediaContentAudio(_ value: ACPTool_MediaContent_Audio)
+    case aCPToolMediaContentResourceLink(_ value: ACPTool_MediaContent_ResourceLink)
+    case aCPToolMediaContentResource(_ value: ACPTool_MediaContent_Resource)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -1461,15 +1428,15 @@ extension ToolsSchema {
       let type = try container.decode(String.self, forKey: .type)
       switch type {
         case "text":
-          self = .aCPToolOutputMediaContentText(try ACPToolOutput_MediaContent_Text(from: decoder))
+          self = .aCPToolMediaContentText(try ACPTool_MediaContent_Text(from: decoder))
         case "image":
-          self = .aCPToolOutputMediaContentImage(try ACPToolOutput_MediaContent_Image(from: decoder))
+          self = .aCPToolMediaContentImage(try ACPTool_MediaContent_Image(from: decoder))
         case "audio":
-          self = .aCPToolOutputMediaContentAudio(try ACPToolOutput_MediaContent_Audio(from: decoder))
+          self = .aCPToolMediaContentAudio(try ACPTool_MediaContent_Audio(from: decoder))
         case "resource_link":
-          self = .aCPToolOutputMediaContentResourceLink(try ACPToolOutput_MediaContent_ResourceLink(from: decoder))
+          self = .aCPToolMediaContentResourceLink(try ACPTool_MediaContent_ResourceLink(from: decoder))
         case "resource":
-          self = .aCPToolOutputMediaContentResource(try ACPToolOutput_MediaContent_Resource(from: decoder))
+          self = .aCPToolMediaContentResource(try ACPTool_MediaContent_Resource(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -1477,20 +1444,20 @@ extension ToolsSchema {
   
     public func encode(to encoder: Encoder) throws {
       switch self {
-        case .aCPToolOutputMediaContentText(let value):
+        case .aCPToolMediaContentText(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputMediaContentImage(let value):
+        case .aCPToolMediaContentImage(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputMediaContentAudio(let value):
+        case .aCPToolMediaContentAudio(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputMediaContentResourceLink(let value):
+        case .aCPToolMediaContentResourceLink(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputMediaContentResource(let value):
+        case .aCPToolMediaContentResource(let value):
           try value.encode(to: encoder)
       }
     }
   }
-  public struct ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text: Codable, Sendable {
+  public struct ACPTool_MediaContent_Resource_EmbeddedResource_Text: Codable, Sendable {
     public let type = "embedded_resource_text"
     public let mimeType: String?
     public let text: String
@@ -1529,7 +1496,7 @@ extension ToolsSchema {
       try container.encode(uri, forKey: .uri)
     }
   }
-  public struct ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob: Codable, Sendable {
+  public struct ACPTool_MediaContent_Resource_EmbeddedResource_Blob: Codable, Sendable {
     public let type = "embedded_resource_blob"
     public let blob: String
     public let mimeType: String?
@@ -1568,9 +1535,9 @@ extension ToolsSchema {
       try container.encode(uri, forKey: .uri)
     }
   }
-  public enum ACPToolOutput_MediaContent_Resource_EmbeddedResource: Codable, Sendable {
-    case aCPToolOutputMediaContentResourceEmbeddedResourceText(_ value: ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text)
-    case aCPToolOutputMediaContentResourceEmbeddedResourceBlob(_ value: ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob)
+  public enum ACPTool_MediaContent_Resource_EmbeddedResource: Codable, Sendable {
+    case aCPToolMediaContentResourceEmbeddedResourceText(_ value: ACPTool_MediaContent_Resource_EmbeddedResource_Text)
+    case aCPToolMediaContentResourceEmbeddedResourceBlob(_ value: ACPTool_MediaContent_Resource_EmbeddedResource_Blob)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -1581,9 +1548,9 @@ extension ToolsSchema {
       let type = try container.decode(String.self, forKey: .type)
       switch type {
         case "embedded_resource_text":
-          self = .aCPToolOutputMediaContentResourceEmbeddedResourceText(try ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text(from: decoder))
+          self = .aCPToolMediaContentResourceEmbeddedResourceText(try ACPTool_MediaContent_Resource_EmbeddedResource_Text(from: decoder))
         case "embedded_resource_blob":
-          self = .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(try ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob(from: decoder))
+          self = .aCPToolMediaContentResourceEmbeddedResourceBlob(try ACPTool_MediaContent_Resource_EmbeddedResource_Blob(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -1591,10 +1558,49 @@ extension ToolsSchema {
   
     public func encode(to encoder: Encoder) throws {
       switch self {
-        case .aCPToolOutputMediaContentResourceEmbeddedResourceText(let value):
+        case .aCPToolMediaContentResourceEmbeddedResourceText(let value):
           try value.encode(to: encoder)
-        case .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(let value):
+        case .aCPToolMediaContentResourceEmbeddedResourceBlob(let value):
           try value.encode(to: encoder)
       }
+    }
+  }
+  public struct ACPToolOutput: Codable, Sendable {
+    public let type = "acp_tool_output"
+    public let kind: ACPToolKind
+    public let content: [ACPTool_Content]
+    public let rawOutput: JSON?
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case kind = "kind"
+      case content = "content"
+      case rawOutput = "rawOutput"
+    }
+  
+    public init(
+        type: String = "acp_tool_output",
+        kind: ACPToolKind,
+        content: [ACPTool_Content],
+        rawOutput: JSON? = nil
+    ) {
+      self.kind = kind
+      self.content = content
+      self.rawOutput = rawOutput
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      kind = try container.decode(ACPToolKind.self, forKey: .kind)
+      content = try container.decode([ACPTool_Content].self, forKey: .content)
+      rawOutput = try container.decodeIfPresent(JSON?.self, forKey: .rawOutput)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(kind, forKey: .kind)
+      try container.encode(content, forKey: .content)
+      try container.encodeIfPresent(rawOutput, forKey: .rawOutput)
     }
   }}
