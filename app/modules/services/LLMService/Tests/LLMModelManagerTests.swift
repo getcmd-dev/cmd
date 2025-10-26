@@ -441,6 +441,9 @@ class AIModelsManagerTests {
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
     let settingsService = MockSettingsService(Settings(
+      llmProviderSettings: [
+        .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      ],
       enabledModels: ["claude-sonnet-4"]))
     let sut = AIModelsManager(
       localServer: MockLocalServer(),
@@ -468,6 +471,9 @@ class AIModelsManagerTests {
       "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
     ])
     let settingsService = MockSettingsService(Settings(
+      llmProviderSettings: [
+        .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      ],
       enabledModels: ["claude-sonnet-4"]))
     let sut = AIModelsManager(
       localServer: MockLocalServer(),
@@ -476,14 +482,12 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     let receivedUpdates = expectation(description: "Received activeModels update")
-    let updateCount = Atomic(0)
 
     sut.activeModels.sink { models in
-      let count = updateCount.increment()
-      if count == 2 { // First update is initial value, second is after our change
-        #expect(models.count == 2)
-        #expect(models.map(\.slug).sorted() == ["claude-haiku-35", "claude-sonnet-4"])
-        receivedUpdates.fulfill()
+      // Wait for both models to be active
+      if models.count == 2 &&
+         models.map(\.slug).sorted() == ["claude-haiku-35", "claude-sonnet-4"] {
+        receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
 
@@ -719,7 +723,7 @@ class AIModelsManagerTests {
       shellService: MockShellService())
 
     let modelsReady = expectation(description: "Both models are active")
-    sut.models.sink { models in
+    sut.activeModels.sink { models in
       if
         models.count == 2,
         models.contains(where: { $0.slug == "claude-sonnet-4" }),
@@ -731,10 +735,11 @@ class AIModelsManagerTests {
 
     // then
     try await fulfillment(of: [modelsReady])
-    let activeModels = sut.activeModels.currentValue
-    #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
-    #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
-    #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
+      let activeModels = sut.activeModels.currentValue
+          #expect(activeModels.count == 2) // Both claude-sonnet AND claudeCode
+          #expect(activeModels.contains(where: { $0.slug == "claude-sonnet-4" }))
+          #expect(activeModels.contains(where: { $0.slug == "claudeCode" })) // Even though not in enabledModels
+        
   }
 
   @Test("External agent models remain active when enabledModels changes")
@@ -779,20 +784,150 @@ class AIModelsManagerTests {
     try await fulfillment(of: [initialModelsReady])
 
     let receivedUpdates = expectation(description: "Received activeModels update")
-    let updateCount = Atomic(0)
 
     sut.activeModels.sink { models in
-      let count = updateCount.increment()
-      if count == 2 { // First update is initial value, second is after our change
-        // Even when enabledModels is empty, claudeCode should still be active
-        #expect(models.count == 1)
-        #expect(models.first?.slug == "claudeCode")
-        receivedUpdates.fulfill()
+      // Even when enabledModels is empty, claudeCode should still be active
+      if models.count == 1 && models.first?.slug == "claudeCode" {
+        receivedUpdates.fulfillAtMostOnce()
       }
     }.store(in: &cancellables)
 
     // when
     settingsService.update(setting: \.enabledModels, to: []) // Clear all enabled models
+
+    // then
+    try await fulfillment(of: [receivedUpdates])
+  }
+
+  @Test("activeModels filters out models without provider configured")
+  func test_activeModels_filtersModelsWithoutProvider() async throws {
+    // given
+    let anthropicModel = makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)
+    let openAIModel = makeTestModel(providerId: "gpt-5", slug: "gpt-latest", provider: .openAI)
+
+    let modelsData = makePersistedProviderModelsJSON(
+      anthropic: [anthropicModel],
+      openAI: [openAIModel])
+
+    let fileManager = MockFileManager(files: [
+      "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
+    ])
+
+    // Configure only Anthropic provider (not OpenAI)
+    let settingsService = MockSettingsService(.init(
+      llmProviderSettings: [
+        .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      ],
+      enabledModels: [anthropicModel.modelInfo.id, openAIModel.modelInfo.id]))
+
+    let sut = AIModelsManager(
+      localServer: MockLocalServer(),
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    // when
+    let activeModels = sut.activeModels.currentValue
+
+    // then
+    // Only anthropic model should be active since openAI provider is not configured
+    #expect(activeModels.count == 1)
+    #expect(activeModels.first?.id == anthropicModel.modelInfo.id)
+  }
+
+  @Test("activeModels updates when provider is removed")
+  func test_activeModels_updatesWhenProviderRemoved() async throws {
+    // given
+    let anthropicModel = makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)
+    let openAIModel = makeTestModel(providerId: "gpt-5", slug: "gpt-latest", provider: .openAI)
+
+    let modelsData = makePersistedProviderModelsJSON(
+      anthropic: [anthropicModel],
+      openAI: [openAIModel])
+
+    let fileManager = MockFileManager(files: [
+      "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
+    ])
+
+    let settingsService = MockSettingsService(.init(
+      llmProviderSettings: [
+        .anthropic: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+        .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+      ],
+      enabledModels: [anthropicModel.modelInfo.id, openAIModel.modelInfo.id]))
+
+    let sut = AIModelsManager(
+      localServer: MockLocalServer(),
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    let receivedUpdates = expectation(description: "Received activeModels update")
+
+    sut.activeModels.sink { models in
+      // Wait for the state where only openAI model is active
+      if models.count == 1 && models.first?.id == openAIModel.modelInfo.id {
+        receivedUpdates.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
+
+    // when
+    // Remove anthropic provider
+    settingsService.update(setting: \.llmProviderSettings, to: [
+      .openAI: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    ])
+
+    // then
+    try await fulfillment(of: [receivedUpdates])
+  }
+
+  @Test("activeModels updates when provider is added")
+  func test_activeModels_updatesWhenProviderAdded() async throws {
+    // given
+    let anthropicModel = makeTestModel(providerId: "claude-sonnet", slug: "claude-sonnet-4", provider: .anthropic)
+    let openAIModel = makeTestModel(providerId: "gpt-5", slug: "gpt-latest", provider: .openAI)
+
+    let modelsData = makePersistedProviderModelsJSON(
+      anthropic: [anthropicModel],
+      openAI: [openAIModel])
+
+    let fileManager = MockFileManager(files: [
+      "/mock/applicationSupport/\(Bundle.main.hostAppBundleId)/llmProviders.json": modelsData,
+    ])
+
+    // Start with only OpenAI provider
+    let settingsService = MockSettingsService(.init(
+      llmProviderSettings: [
+        .openAI: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      ],
+      enabledModels: [anthropicModel.modelInfo.id, openAIModel.modelInfo.id]))
+
+    let sut = AIModelsManager(
+      localServer: MockLocalServer(),
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: MockShellService())
+
+    // Initially, only openAI model should be active
+    #expect(sut.activeModels.currentValue.count == 1)
+    #expect(sut.activeModels.currentValue.first?.id == openAIModel.modelInfo.id)
+
+    let receivedUpdates = expectation(description: "Received activeModels update after adding provider")
+
+    sut.activeModels.sink { models in
+      // Wait for the state where both models are active
+      if models.count == 2 &&
+         models.map(\.id).sorted() == [anthropicModel.modelInfo.id, openAIModel.modelInfo.id].sorted() {
+        receivedUpdates.fulfillAtMostOnce()
+      }
+    }.store(in: &cancellables)
+
+    // when
+    // Add anthropic provider
+    settingsService.update(setting: \.llmProviderSettings, to: [
+      .openAI: AIProviderSettings(apiKey: "test-key", baseUrl: nil, executable: nil, createdOrder: 1),
+      .anthropic: AIProviderSettings(apiKey: "test-key-2", baseUrl: nil, executable: nil, createdOrder: 2),
+    ])
 
     // then
     try await fulfillment(of: [receivedUpdates])
