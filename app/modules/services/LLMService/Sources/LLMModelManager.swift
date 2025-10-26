@@ -73,9 +73,10 @@ final class AIModelsManager: AIModelsManagerProtocol {
     modelsByProviderId = .init(llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.id] = model
     })
-    providerModelsByModelId = .init(llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
+    let providerModelsByModelIdDict = llmModelByProvider.values.flatMap(\.self).reduce(into: [:]) { acc, model in
       acc[model.modelInfo.id, default: []].append(model)
-    })
+    }
+    providerModelsByModelId = .init(providerModelsByModelIdDict)
     let modelByModelId = PublishedDictionary<AIModelID, AIModel>(llmModelByProvider.values.flatMap(\.self)
       .reduce(into: [:]) { acc, model in
         acc[model.modelInfo.id] = model.modelInfo
@@ -85,6 +86,15 @@ final class AIModelsManager: AIModelsManagerProtocol {
     _availableModels = .init(Self.availableModels(
       settings: settingsService.value(for: \.llmProviderSettings),
       models: llmModelByProvider))
+
+    // Initialize activeModels with the current state
+    let configuredProviders = Set(settingsService.value(for: \.llmProviderSettings).keys)
+    let initialActiveModels = Self.filterActiveModels(
+      models: modelByModelId.sortedValues,
+      enabledModels: settingsService.value(for: \.enabledModels),
+      providerModelsByModelId: providerModelsByModelIdDict,
+      configuredProviders: configuredProviders)
+    _activeModels = .init(initialActiveModels)
 
     observerChangesToSettings()
   }
@@ -98,14 +108,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
   }
 
   var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
-    ReadonlyCurrentValueSubject<[AIModel], Never>(
-      filterActiveModels(models.currentValue),
-      publisher: models.map { @Sendable [weak self] models in
-        guard let self else { return [] }
-        return filterActiveModels(models)
-      }
-      .removeDuplicates()
-      .eraseToAnyPublisher())
+    _activeModels.readonly()
   }
 
   func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
@@ -146,6 +149,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
   }
 
   private let _availableModels: CurrentValueSubject<[AIModel], Never>
+  private let _activeModels: CurrentValueSubject<[AIModel], Never>
 
   private let localServer: LocalServer
   private let settingsService: SettingsService
@@ -229,6 +233,43 @@ final class AIModelsManager: AIModelsManagerProtocol {
     }
   }
 
+  /// Return the list of models that are active.
+  /// - Parameters:
+  ///   - models: The list of models to choose from, typically all known models
+  ///   - enabledModels: The models that have been enabled by the user.
+  ///   - providerModelsByModelId: The list of known providers for each model
+  ///   - configuredProviders: The providers that have been configured by the user.
+  private static func filterActiveModels(
+    models: [AIModel],
+    enabledModels: [AIModelID],
+    providerModelsByModelId: [AIModelID: [AIProviderModel]],
+    configuredProviders: Set<AIProvider>)
+    -> [AIModel]
+  {
+    let enabledModels = Set(enabledModels)
+    return models.filter { model in
+      // Get the list of providers that support the model
+      guard let providerModels = providerModelsByModelId[model.id], !providerModels.isEmpty else {
+        return false
+      }
+
+      // Check if at least one of the providers for this model is configured
+      let hasConfiguredProvider = providerModels.contains { configuredProviders.contains($0.provider) }
+      guard hasConfiguredProvider else {
+        return false
+      }
+
+      // Check if it should be active
+      let isEnabled = enabledModels.contains(model.id)
+      // Check if the model is from an external agent
+      let isExternalAgent = providerModels.contains { providerModel in
+        providerModel.provider.isExternalAgent
+      }
+
+      return isEnabled || isExternalAgent
+    }
+  }
+
   private func fetchAndSaveModelsAvailable(
     for provider: AIProvider,
     settings: AIProviderSettings)
@@ -305,12 +346,30 @@ final class AIModelsManager: AIModelsManagerProtocol {
         guard let self else { return }
         await updateModels(from: previous, to: llmProviderSettings)
         _availableModels.send(Self.availableModels(settings: llmProviderSettings, models: llmModelByProvider.wrappedValue))
+        updateActiveModels()
       }
     }.store(in: &cancellables)
+
     settingsService.liveValue(for: \.enabledModels).sink { @Sendable [weak self] _ in
       guard let self else { return }
-      mutableModels.send(mutableModels.value) // This will trigger a new filtering of active models
+      updateActiveModels()
     }.store(in: &cancellables)
+
+    // Update activeModels when the models list changes
+    mutableModels.sink { @Sendable [weak self] _ in
+      guard let self else { return }
+      updateActiveModels()
+    }.store(in: &cancellables)
+  }
+
+  private func updateActiveModels() {
+    let configuredProviders = Set(settingsService.value(for: \.llmProviderSettings).keys)
+    let activeModels = Self.filterActiveModels(
+      models: modelByModelId.sortedValues,
+      enabledModels: settingsService.value(for: \.enabledModels),
+      providerModelsByModelId: providerModelsByModelId.wrappedValue,
+      configuredProviders: configuredProviders)
+    _activeModels.send(activeModels)
   }
 
   private func updateModels(
@@ -326,11 +385,13 @@ final class AIModelsManager: AIModelsManagerProtocol {
     {
       // Remove providers that are no longer present
       let removedProviders = (previous ?? [:]).keys.filter { current?[$0] == nil }
-      let modelInfos = inLock { state in
+      let (modelInfos, modelsToPersist) = inLock { state in
         for provider in removedProviders {
           Self.remove(provider: provider, from: &state)
         }
-        return state.modelByModelId.sortedValues
+        return (
+          state.modelByModelId.sortedValues,
+          state.llmModelByProvider.wrappedValue.reduce(into: [:]) { $0[$1.key] = $1.value })
       }
       mutableModels.send(modelInfos)
 
@@ -350,27 +411,19 @@ final class AIModelsManager: AIModelsManagerProtocol {
         await group.waitForAll()
       }
 
-      do {
-        try Self.persist(
-          models: llmModelByProvider.wrappedValue.reduce(into: [:], { $0[$1.key] = $1.value }),
-          fileManager: fileManager)
-      } catch {
-        defaultLogger.error("Failed to persist models", error)
+      // Only persist if we removed providers (fetched models handle their own persistence)
+      if !removedProviders.isEmpty {
+        do {
+          try Self.persist(models: modelsToPersist, fileManager: fileManager)
+        } catch {
+          defaultLogger.error("Failed to persist models", error)
+        }
       }
     }
     // Ensure that those updates are serial, since they rely on the change between two states.
     await queue.queue {
       await _updateModels(from: previous, to: current)
     }.value
-  }
-
-  private func filterActiveModels(_ models: [AIModel]) -> [AIModel] {
-    models.filter { model in
-      settingsService.value(for: \.enabledModels).contains(model.id) ||
-        // The model that represent an external agent should always be considered active.
-        // To disable it, the user can disable the provider instead.
-        providerModelsByModelId[model.id]?.first?.provider.isExternalAgent == true
-    }
   }
 
 }
