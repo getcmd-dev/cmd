@@ -494,11 +494,7 @@ actor RequestStreamingHelper: Sendable {
         toolUseId: toolUsePermissionRequest.toolUseId,
         approvalResult: permissionResponse))
 
-      if isUsingNewClaudeCodeApi {
-        _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission/acp", data: data)
-      } else {
-        _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
-      }
+      _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission/acp", data: data)
     } catch {
       defaultLogger
         .error(

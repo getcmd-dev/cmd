@@ -295,7 +295,7 @@ struct RequestStreamingHelperReasoningTests {
     let localServer = MockLocalServer()
     localServer.onPostRequest = { path, data, _ in
       #expect(permissionRequested.isFulfilled)
-      #expect(path == "sendMessage/toolUse/permission")
+      #expect(path == "sendMessage/toolUse/permission/acp")
       #expect(data.jsonString() == """
         {
           "approvalResult" : {

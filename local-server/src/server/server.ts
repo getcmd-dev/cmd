@@ -9,7 +9,7 @@ import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/too
 import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/checkpoint"
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
 import { registerEndpoint as registerListModelsEndpoint } from "./endpoints/listModels"
-import { registerEndpoint as registerACPClientEndpoints } from "./endpoints/sendMessage/acp/clients/ACPClient"
+import { registerEndpoint as registerACPClientEndpoint } from "./endpoints/sendMessage/acp/clients/ACPClient"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -56,7 +56,7 @@ registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)
 registerCheckpointEndpoints(router)
 registerGetFileIconEndpoint(router)
-registerACPClientEndpoints(router)
+registerACPClientEndpoint(router)
 
 if (process.env.NODE_ENV === "production") {
 	setupExpressErrorHandler(app)
