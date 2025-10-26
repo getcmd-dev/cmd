@@ -30,7 +30,7 @@ const assistantMessageMetadata: Omit<APIAssistantMessage, "content"> = {
 
 describe("sendMessageToClaudeCode", () => {
 	let sendMessageToClaudeCode: typeof import("../sendMessageToClaudeCode").sendMessageToClaudeCode
-	let registerEndpoint: typeof import("../sendMessageToClaudeCode").registerEndpoint
+	let registerEndpoint: typeof import("../../acp/clients/ACPClient").registerEndpoint
 	let res: MockResponse
 
 	let query: MockedQuery
@@ -81,8 +81,8 @@ describe("sendMessageToClaudeCode", () => {
 			),
 		}))
 
-		const { sendMessageToClaudeCode: sendMessageToClaudeCodeImpl, registerEndpoint: registerEndpointImpl } =
-			await import("../sendMessageToClaudeCode")
+		const { sendMessageToClaudeCode: sendMessageToClaudeCodeImpl } = await import("../sendMessageToClaudeCode")
+		const { registerEndpoint: registerEndpointImpl } = await import("../../acp/clients/ACPClient")
 		sendMessageToClaudeCode = sendMessageToClaudeCodeImpl
 		registerEndpoint = registerEndpointImpl
 	})
@@ -987,8 +987,8 @@ describe("sendMessageToClaudeCode", () => {
 				body: requestBody,
 			}
 
-			// Find and call the POST handler for /sendMessage/toolUse/permission
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			// Find and call the POST handler for /sendMessage/toolUse/permission/acp
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			expect(routes).toHaveLength(1)
 
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
@@ -1064,7 +1064,7 @@ describe("sendMessageToClaudeCode", () => {
 
 			mockRequest = { body: requestBody }
 
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
 
 			await postRoute!.handle(mockRequest as Request, mockResponse as Response, jest.fn())
@@ -1090,7 +1090,7 @@ describe("sendMessageToClaudeCode", () => {
 
 			mockRequest = { body: requestBody }
 
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
 
 			await expect(
@@ -1106,7 +1106,7 @@ describe("sendMessageToClaudeCode", () => {
 
 			mockRequest = { body: requestBody }
 
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
 
 			await expect(
@@ -1122,7 +1122,7 @@ describe("sendMessageToClaudeCode", () => {
 
 			mockRequest = { body: requestBody }
 
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
 
 			await expect(
@@ -1199,7 +1199,7 @@ describe("sendMessageToClaudeCode", () => {
 			await yieldToEventLoop()
 
 			// Approve first tool
-			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission")
+			const routes = router.stack.filter((layer) => layer.route?.path === "/sendMessage/toolUse/permission/acp")
 			const postRoute = routes[0]?.route?.stack.find((layer) => layer.method === "post")
 
 			mockRequest = {

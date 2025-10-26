@@ -15,8 +15,7 @@ import { UserFacingError } from "@/server/errors"
 import { AsyncStream } from "@/utils/asyncStream"
 import { ACPToolInput, ACPToolOutput } from "@/server/schemas/toolsSchema"
 import { mapToolCallContent } from "./helper"
-
-const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
+import { pendingToolApprovalRequests } from "../../pendingToolApprovalRequests"
 
 export interface ACPClient<SessionInitializationParams extends { cwd: string }> {
 	prompt(

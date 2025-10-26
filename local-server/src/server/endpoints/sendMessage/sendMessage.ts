@@ -35,15 +35,11 @@ import {
 	ProviderMetadata,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
-import {
-	sendMessageToClaudeCode,
-	registerEndpoint as registerClaudeCodeEndpoint,
-} from "./claudeCode/sendMessageToClaudeCode"
+import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 import { sendMessageToClaudeCode as sendMessageToClaudeCode2 } from "./claudeCode/sendMessageToClaudeCode2"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getPort: () => number) => {
-	registerClaudeCodeEndpoint(router)
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
 			throw new UserFacingError({
