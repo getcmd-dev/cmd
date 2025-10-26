@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import ChatHistoryServiceInterface
 import CodePreview
 import Dependencies
@@ -8,6 +9,7 @@ import DLS
 import FileDiffTypesFoundation
 import FileIcon
 import FoundationInterfaces
+import JSONFoundation
 import LoggingServiceInterface
 // import Down
 import Markdown
@@ -156,9 +158,9 @@ struct ToolUseView: View {
           Spacer()
           IconButton(
             action: {
-              if let debugInput {
+              if let debugToolData {
                 NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(debugInput, forType: .string)
+                NSPasteboard.general.setString(debugToolData, forType: .string)
               }
             },
             systemName: "doc.on.doc",
@@ -177,16 +179,17 @@ struct ToolUseView: View {
   @Dependency(\.userDefaults) private var userDefaults
 
   private var shouldShowToolInputCopyButton: Bool {
-    #if DEBUG
-    return true
-    #else
-    return userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
-    #endif
+    userDefaults.bool(forKey: .showToolInputCopyButtonInRelease)
   }
 
-  private var debugInput: String? {
+  private var debugToolData: String? {
     if
-      let data = try? JSONEncoder().encode(toolUse.input),
+      let data = try? JSONEncoder().encode(JSON.object([
+        "input": .init(encoding: toolUse.input),
+        "output": (try? toolUse.currentOutput).map({ try? .init(encoding: $0) }) ??? .null,
+        "toolUseId": .string(toolUse.toolUseId),
+        "toolName": .string(toolUse.toolName),
+      ])),
       let string = String(data: data, encoding: .utf8)
     {
       return string

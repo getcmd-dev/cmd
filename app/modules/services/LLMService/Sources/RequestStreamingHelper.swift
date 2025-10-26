@@ -413,17 +413,39 @@ actor RequestStreamingHelper: Sendable {
     defaultLogger
       .log("Received tool permission request for \(toolUsePermissionRequest.toolName) #\(toolUsePermissionRequest.toolUseId)")
 
-    guard
-      let toolUse = result.content
+    let toolUse: any ToolUse
+    if
+      let existingToolUse = result.content
         .compactMap(\.asToolUseRequest)
         .first(where: { toolUseRequest in
           toolUseRequest.id == toolUsePermissionRequest.toolUseId
         })?.toolUse
-    else {
-      defaultLogger.error("Could not find tool use matching #\(toolUsePermissionRequest.toolUseId)")
-      await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
-      return
+    {
+      toolUse = existingToolUse
+    } else {
+      // If we haven't received a tool use request when a permission arrives, we create one.
+      let request = Schema.ToolUseRequest(
+        toolName: toolUsePermissionRequest.toolName,
+        input: toolUsePermissionRequest.input,
+        toolUseId: toolUsePermissionRequest.toolUseId,
+        idx: toolUsePermissionRequest.idx)
+      await handle(toolUseRequest: request)
+
+      // Now the toolUse should be available
+      guard
+        let existingToolUse = result.content
+          .compactMap(\.asToolUseRequest)
+          .first(where: { toolUseRequest in
+            toolUseRequest.id == toolUsePermissionRequest.toolUseId
+          })?.toolUse
+      else {
+        defaultLogger.error("Could not find tool use matching #\(toolUsePermissionRequest.toolUseId)")
+        await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
+        return
+      }
+      toolUse = existingToolUse
     }
+
     guard let context else {
       defaultLogger.error("No context available to handle tool use #\(toolUsePermissionRequest.toolUseId)")
       assertionFailure("No context available to handle tool use.")

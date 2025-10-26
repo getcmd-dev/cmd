@@ -97,6 +97,8 @@ export type ClaudeAgentMeta = {
 
 export type ACPLogger = Pick<Console, "log" | "error">
 
+export let acpLogger: ACPLogger = console
+
 // Implement the ACP Agent interface
 export class ClaudeAcpAgent implements Agent {
 	sessions: {
@@ -115,6 +117,7 @@ export class ClaudeAcpAgent implements Agent {
 		this.toolUseCache = {}
 		this.fileContentCache = {}
 		this.logger = logger
+		acpLogger = logger
 	}
 
 	async initialize(request: InitializeRequest): Promise<InitializeResponse> {
@@ -809,6 +812,9 @@ export async function sendAcpNotifications(
 					toolUseCache[chunk.id] = chunk
 					registerHookCallback(chunk.id, {
 						onPostToolUseHook: async (toolUseId, toolInput, toolResponse) => {
+							logger.log(
+								`Got a tool result from a hook for tool use #${toolUseId}: ${JSON.stringify(toolResponse)}`,
+							)
 							const toolUse = toolUseCache[toolUseId]
 							if (toolUse) {
 								toolUse.toolResponse = toolResponse
