@@ -1,7 +1,6 @@
 import { logError, logInfo } from "@/logger"
 import * as acp from "@agentclientprotocol/sdk"
 
-import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "child_process"
@@ -9,7 +8,8 @@ import { Readable, Writable } from "stream"
 
 export type CodexACPSessionInitializationParams = {
 	cwd: string
-} & Options
+	abortController?: AbortController
+}
 
 type SessionManager = {
 	acpSessionId: string
@@ -43,9 +43,17 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 			throw new Error("CODEX_ACP_PATH environment variable is not set")
 		}
 
+		// Set proxy if configured
+		const env: NodeJS.ProcessEnv = {}
+		const codexProxy = process.env.CODEX_PROXY
+		if (codexProxy) {
+			env["HTTP_PROXY"] = codexProxy
+		}
+
 		// Spawn the agent as a subprocess
 		const agentProcess = spawn(agentPath, {
 			stdio: ["pipe", "pipe", "inherit"],
+			env,
 		})
 
 		agentProcess.on("error", (err) => {
@@ -113,6 +121,11 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		const sessionResult = await this.clientConnection.newSession({
 			cwd: sessionInitializationParams.cwd,
 			mcpServers: [],
+		})
+		// TODO: also support read-only?
+		await this.clientConnection.setSessionMode({
+			sessionId: sessionResult.sessionId,
+			modeId: "auto",
 		})
 		const acpSessionId = sessionResult.sessionId
 
