@@ -44,7 +44,9 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		}
 
 		// Set proxy if configured
-		const env: NodeJS.ProcessEnv = {}
+		const env: NodeJS.ProcessEnv = {
+			...process.env,
+		}
 		const codexProxy = process.env.CODEX_PROXY
 		if (codexProxy) {
 			env["HTTP_PROXY"] = codexProxy
