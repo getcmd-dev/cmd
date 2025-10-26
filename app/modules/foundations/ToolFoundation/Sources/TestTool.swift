@@ -49,7 +49,7 @@ public struct TestTool: Tool {
       isReadonly = callingTool.isReadonly
       output = callingTool.output
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
