@@ -15,6 +15,7 @@ import { UserFacingError } from "@/server/errors"
 import { AsyncStream } from "@/utils/asyncStream"
 import { ACPToolInput, ACPToolOutput } from "@/server/schemas/toolsSchema"
 import { mapToolCallContent } from "./helper"
+import { attachmentAsPart } from "../../helpers"
 
 const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
 
@@ -47,28 +48,13 @@ export const toACPContentBlocks = (messages: Message[]): ContentBlock[] => {
 					type: "text",
 				})
 				content.attachments?.forEach((attachment) => {
-					if (attachment.type === "file_attachment") {
-						result.push({
-							text: `<file_attachment>
-								<path>${attachment.path}</path>
-								<content>${attachment.content}</content>
-							</file_attachment>`,
-							type: "text",
-						})
-					} else if (attachment.type === "file_selection_attachment") {
-						result.push({
-							text: `<file_selection_attachment>
-								<path>${attachment.path}</path>
-								<selection>${attachment.content}</selection>
-								<start_line>${attachment.startLine}</start_line>
-								<end_line>${attachment.endLine}</end_line>
-							</file_selection_attachment>`,
-							type: "text",
-						})
-					} else if (attachment.type === "image_attachment") {
+					const messagePart = attachmentAsPart(attachment)
+					if (messagePart.type === "text") {
+						result.push(messagePart)
+					} else if (messagePart.type === "image") {
 						// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
-						const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
-						const fileExtension = attachment.mimeType.split("/").pop()
+						const base64Data = messagePart.url.replace(/^data:image\/\w+;base64,/, "")
+						const fileExtension = messagePart.mimeType.split("/").pop()
 						const mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" = (() => {
 							switch (fileExtension) {
 								case "png":

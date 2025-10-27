@@ -5,6 +5,7 @@ import ChatHistoryServiceInterface
 import Dependencies
 import FileSuggestionServiceInterface
 import Foundation
+import FoundationInterfaces
 import SwiftTesting
 import Testing
 import XcodeObserverServiceInterface
@@ -71,6 +72,35 @@ struct ChatInputViewModelFileHandlingTests {
     try await fulfillment(of: exp)
     #expect(viewModel.searchResults?.count == 1)
     _ = cancellable
+  }
+
+  @MainActor
+  @Test("selecting a directory search result creates folder attachment")
+  func test_handleDidSelect_folderSearchResult() async throws {
+    let folderURL = URL(filePath: "/project/Sources")
+    let mockFileManager = MockFileManager(
+      files: [
+        folderURL.appendingPathComponent("FileA.swift"): "// file a",
+        folderURL.appendingPathComponent("Nested/FileB.swift"): "// file b",
+      ],
+      directories: [folderURL, folderURL.appendingPathComponent("Nested")])
+
+    try withDependencies {
+      $0.fileManager = mockFileManager
+    } operation: {
+      let viewModel = ChatInputViewModel()
+      viewModel.handleDidSelect(searchResult: FileSuggestion(
+        path: folderURL,
+        displayPath: "Sources",
+        matchedRanges: [],
+        isDirectory: true))
+
+      #expect(viewModel.attachments.count == 1)
+      let folderAttachment = try #require(viewModel.attachments.first?.folder)
+      #expect(folderAttachment.path == folderURL)
+      #expect(folderAttachment.files.count == 1)
+      #expect(folderAttachment.files.contains(where: { $0.name == "FileA.swift" }))
+    }
   }
 
   @MainActor

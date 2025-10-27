@@ -139,7 +139,14 @@ public final class MockFileManager: FileManagerI {
       return []
     }
 
-    return files.keys.filter { $0.path.hasPrefix(url.path) }
+    let directories = directories.map(\.standardized)
+    let files = files.keys.map(\.standardized)
+    let normalized = url.standardized
+
+    let directFiles = files.filter { $0.deletingLastPathComponent() == normalized }
+    let directDirectories = directories.filter { $0.deletingLastPathComponent() == normalized }
+
+    return directFiles + directDirectories
   }
 
   public func enumerator(

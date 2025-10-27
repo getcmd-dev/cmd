@@ -296,6 +296,14 @@ extension AttachmentModel {
         startLine: fileSelectionAttachment.startLine,
         endLine: fileSelectionAttachment.endLine))
 
+    case .folder(let folderAttachment):
+      return .folderAttachment(Schema.FolderAttachment(
+        path: folderAttachment.path.path(),
+        entries: folderAttachment.files.map { entry in
+          let relativePath = URL(fileURLWithPath: entry.path).pathRelative(to: folderAttachment.path)
+          return .init(path: entry.path, relativePath: relativePath)
+        }))
+
     case .buildError(let buildError):
       return .buildErrorAttachment(Schema.BuildErrorAttachment(
         filePath: buildError.filePath.path(),

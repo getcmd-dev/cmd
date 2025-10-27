@@ -51,6 +51,34 @@ struct DragDropTests {
   }
 
   @MainActor
+  @Test("folder attachment creation through drop")
+  func test_folderAttachmentCreation_throughDrop() async throws {
+    let folderURL = URL(filePath: "/path/to/folder")
+    let nestedFolderURL = folderURL.appendingPathComponent("Nested")
+    let fileURLs = [
+      folderURL.appendingPathComponent("FileA.swift"),
+      nestedFolderURL.appendingPathComponent("FileB.swift"),
+    ]
+    let mockFileManager = MockFileManager(
+      files: Dictionary(
+        uniqueKeysWithValues: fileURLs.map { ($0, "// \($0.lastPathComponent) content") }),
+      directories: [folderURL, nestedFolderURL])
+
+    try withDependencies {
+      $0.fileManager = mockFileManager
+    } operation: {
+      let viewModel = ChatInputViewModel()
+      _ = viewModel.handleDrop(of: .file(folderURL))
+
+      #expect(viewModel.attachments.count == 1)
+      let folderAttachment = try #require(viewModel.attachments[0].folder)
+      #expect(folderAttachment.path == folderURL)
+      #expect(folderAttachment.files.count == 1)
+      #expect(folderAttachment.files.contains(where: { $0.name == "FileA.swift" }))
+    }
+  }
+
+  @MainActor
   @Test("handling text drop")
   func test_handleDrop_text() {
     let viewModel = ChatInputViewModel(

@@ -43,14 +43,16 @@ struct DefaultFileSuggestionServiceTests {
       xcodeObserver: xcodeObserver)
 
     let workspacePath = URL(fileURLWithPath: "/fake/path/TestXcodeProjParsing.xcodeproj")
-    let suggestions = try await sut.suggestFiles(for: "Content", in: workspacePath, top: 5)
-    #expect(suggestions.map(\.displayPath) == [
+    let suggestions = try await sut.suggestFiles(for: "Content", in: workspacePath, top: 10)
+    let fileSuggestions = suggestions.filter { !$0.isDirectory }
+    #expect(fileSuggestions.prefix(5).map(\.displayPath) == [
       "TestXcodeProjParsing/Assets.xcassets/AccentColor.colorset/Contents.json",
       "TestXcodeProjParsing/Assets.xcassets/AppIcon.appiconset/Contents.json",
       "TestXcodeProjParsing/Assets.xcassets/Contents.json",
       "TestXcodeProjParsing/Preview Content/Preview Assets.xcassets/Contents.json",
       "TestXcodeProjParsing/ContentView.swift",
     ])
+    #expect(suggestions.contains { $0.isDirectory })
   }
 
   @Test("caching")
@@ -70,13 +72,16 @@ struct DefaultFileSuggestionServiceTests {
 
     let workspacePath = URL(fileURLWithPath: "/fake/path/SPM")
     let suggestions = try await sut.suggestFiles(for: "", in: workspacePath, top: 5)
-    #expect(suggestions.map(\.displayPath) == [
+    let fileDisplayPaths = suggestions.filter { !$0.isDirectory }.map(\.displayPath)
+    #expect(fileDisplayPaths == [
       "Package.swift",
       "Sources/TestSPM/TestSPM.swift",
       "Tests/TestSPMTests/TestSPMTests.swift",
     ])
+    #expect(suggestions.contains { $0.isDirectory })
     let newSuggestions = try await sut.suggestFiles(for: "Test", in: workspacePath, top: 5)
-    #expect(newSuggestions.map(\.displayPath) == [
+    let newFileDisplayPaths = newSuggestions.filter { !$0.isDirectory }.map(\.displayPath)
+    #expect(newFileDisplayPaths == [
       "Tests/TestSPMTests/TestSPMTests.swift",
       "Sources/TestSPM/TestSPM.swift",
     ])
@@ -111,12 +116,13 @@ struct DefaultFileSuggestionServiceTests {
 
       let suggestions = try await pendingSuggestions
       let newSuggestions = try await pendingNewSuggestions
-      #expect(suggestions.map(\.displayPath) == [
+      #expect(suggestions.filter { !$0.isDirectory }.map(\.displayPath) == [
         "Package.swift",
         "Sources/TestSPM/TestSPM.swift",
         "Tests/TestSPMTests/TestSPMTests.swift",
       ])
-      #expect(newSuggestions.map(\.displayPath) == [
+      #expect(suggestions.contains { $0.isDirectory })
+      #expect(newSuggestions.filter { !$0.isDirectory }.map(\.displayPath) == [
         "Tests/TestSPMTests/TestSPMTests.swift",
         "Sources/TestSPM/TestSPM.swift",
       ])
