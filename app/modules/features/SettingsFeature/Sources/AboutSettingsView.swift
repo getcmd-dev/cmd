@@ -32,6 +32,28 @@ struct AboutSettingsView: View {
             Divider()
           }
           InfoRow(label: "Version", value: Bundle.main.shortVersion)
+          HoveredButton(
+            action: { handleCheckForUpdatesTapped() },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            isEnable: !isCheckingForUpdates,
+            content: {
+              HStack(spacing: 6) {
+                if isCheckingForUpdates {
+                  ProgressView()
+                    .controlSize(.small)
+                }
+                Text(isCheckingForUpdates ? "Checking..." : "Check for Updates")
+              }
+            })
+            .frame(maxWidth: .infinity, alignment: .leading)
+          if let status = manualUpdateStatus {
+            Text(status.message)
+              .font(.caption)
+              .foregroundColor(status.kind == .error ? .red : .secondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
           InfoRow(label: "Build", value: Bundle.main.version)
           InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
           Divider()
@@ -146,8 +168,54 @@ struct AboutSettingsView: View {
     }
   }
 
+  @State private var isCheckingForUpdates = false
+  @State private var manualUpdateStatus: ManualUpdateStatus?
+  @Environment(\.colorScheme) private var colorScheme
+
   @Dependency(\.appUpdateService) private var appUpdateService: AppUpdateService
   @Dependency(\.permissionsService) private var permissionsService: PermissionsService
+
+  private func handleCheckForUpdatesTapped() {
+    guard !isCheckingForUpdates else { return }
+    if case .updateAvailable(let info) = appUpdateService.hasUpdateAvailable.currentValue {
+      manualUpdateStatus = ManualUpdateStatus(
+        message: (info?.version)
+          .map { "Version \($0) is ready to install. Relaunch to update." }
+          ?? "An update is ready to install. Relaunch to update.",
+        kind: .info)
+      return
+    }
+
+    manualUpdateStatus = nil
+    isCheckingForUpdates = true
+    let autoChecksEnabled = automaticallyCheckForUpdates
+
+    Task {
+      await appUpdateService.checkForUpdates()
+      let result = appUpdateService.hasUpdateAvailable.currentValue
+      await MainActor.run {
+        switch result {
+        case .updateAvailable(let info):
+          manualUpdateStatus = ManualUpdateStatus(
+            message: (info?.version)
+              .map { "Version \($0) is ready to install. Relaunch to update." }
+              ?? "An update is ready to install. Relaunch to update.",
+            kind: .info)
+
+        case .noUpdateAvailable:
+          manualUpdateStatus = ManualUpdateStatus(
+            message: "You're up to date.",
+            kind: .info)
+        }
+
+        if autoChecksEnabled, case .noUpdateAvailable = result {
+          appUpdateService.checkForUpdatesContinously()
+        }
+
+        isCheckingForUpdates = false
+      }
+    }
+  }
 
 }
 
@@ -240,6 +308,18 @@ struct AppUpdateRow: View {
     }
   }
 
+}
+
+// MARK: - ManualUpdateStatus
+
+private struct ManualUpdateStatus: Equatable {
+  enum Kind {
+    case info
+    case error
+  }
+
+  let message: String
+  let kind: Kind
 }
 
 // MARK: - PermissionStatusRow

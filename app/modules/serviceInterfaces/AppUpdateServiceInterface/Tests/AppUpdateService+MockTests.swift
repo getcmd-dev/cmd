@@ -84,6 +84,19 @@ struct MockAppUpdateServiceTests {
   }
 
   @Test
+  func test_checkForUpdatesCallsCallback() async throws {
+    let sut = MockAppUpdateService()
+    let exp = expectation(description: "Check for updates called")
+
+    sut.onCheckForUpdates = {
+      exp.fulfill()
+    }
+
+    await sut.checkForUpdates()
+    try await fulfillment(of: exp)
+  }
+
+  @Test
   func test_ignoreUpdate_calls_onIgnoreUpdate() async throws {
     let sut = MockAppUpdateService()
     let exp = expectation(description: "Ignore update called")

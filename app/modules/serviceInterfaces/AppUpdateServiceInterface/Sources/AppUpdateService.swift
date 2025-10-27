@@ -34,7 +34,9 @@ public protocol AppUpdateService: Sendable {
   func stopCheckingForUpdates()
   /// Keep checking for updates in the background at regular intervals. When an update is available, download it.
   func checkForUpdatesContinously()
-  /// Whether there an app update has been installed.
+  /// Trigger a manual check for updates.
+  func checkForUpdates() /// Whether there an app update has been installed.
+    async
   var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> { get }
   /// Ignore the current update and don't show info about it again (the update might still be installed at the next launch)
   func ignore(update: AppUpdateInfo?)
