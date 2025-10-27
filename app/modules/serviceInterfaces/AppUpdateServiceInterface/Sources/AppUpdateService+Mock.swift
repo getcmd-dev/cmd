@@ -17,6 +17,7 @@ public final class MockAppUpdateService: AppUpdateService {
   public var onRelaunch: (@Sendable () -> Void)?
   public var onStopCheckingForUpdates: (@Sendable () -> Void)?
   public var onCheckForUpdatesContinuously: (@Sendable () -> Void)?
+  public var onCheckForUpdates: (@Sendable () -> Void)?
   public var onIgnoreUpdate: (@Sendable (AppUpdateInfo?) -> Void)?
   public var onIsUpdateIgnored: (@Sendable (AppUpdateInfo?) -> Bool)?
 
@@ -34,6 +35,10 @@ public final class MockAppUpdateService: AppUpdateService {
 
   public func checkForUpdatesContinously() {
     onCheckForUpdatesContinuously?()
+  }
+
+  public func checkForUpdates() async {
+    onCheckForUpdates?()
   }
 
   public func ignore(update: AppUpdateInfo?) {
