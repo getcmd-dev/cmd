@@ -553,26 +553,31 @@ extension Schema {
     public let type = "folder_attachment"
     public let path: String
     public let entries: [Entries]
+    public let hasMoreContent: Bool?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case path = "path"
       case entries = "entries"
+      case hasMoreContent = "hasMoreContent"
     }
   
     public init(
         type: String = "folder_attachment",
         path: String,
-        entries: [Entries]
+        entries: [Entries],
+        hasMoreContent: Bool? = nil
     ) {
       self.path = path
       self.entries = entries
+      self.hasMoreContent = hasMoreContent
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       path = try container.decode(String.self, forKey: .path)
       entries = try container.decode([Entries].self, forKey: .entries)
+      hasMoreContent = try container.decodeIfPresent(Bool?.self, forKey: .hasMoreContent)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -580,6 +585,7 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(path, forKey: .path)
       try container.encode(entries, forKey: .entries)
+      try container.encodeIfPresent(hasMoreContent, forKey: .hasMoreContent)
     }
   
     public struct Entries: Codable, Sendable {

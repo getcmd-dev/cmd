@@ -269,7 +269,7 @@ extension ChatMessageContent {
 
 extension AttachmentModel {
 
-  fileprivate var apiFormat: Schema.MessageAttachment {
+  var apiFormat: Schema.MessageAttachment {
     switch self {
     case .file(let fileAttachment):
       return .fileAttachment(Schema.FileAttachment(
@@ -297,12 +297,17 @@ extension AttachmentModel {
         endLine: fileSelectionAttachment.endLine))
 
     case .folder(let folderAttachment):
+      let limit = 50
+      let limitedFiles = folderAttachment.files.prefix(limit)
+      let hasMoreContent = folderAttachment.files.count > limit
+
       return .folderAttachment(Schema.FolderAttachment(
         path: folderAttachment.path.path(),
-        entries: folderAttachment.files.map { entry in
+        entries: limitedFiles.map { entry in
           let relativePath = URL(fileURLWithPath: entry.path).pathRelative(to: folderAttachment.path)
           return .init(path: entry.path, relativePath: relativePath)
-        }))
+        },
+        hasMoreContent: hasMoreContent ? true : nil))
 
     case .buildError(let buildError):
       return .buildErrorAttachment(Schema.BuildErrorAttachment(

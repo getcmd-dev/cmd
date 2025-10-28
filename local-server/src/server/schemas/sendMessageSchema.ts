@@ -243,6 +243,7 @@ export interface FolderAttachment {
 	type: "folder_attachment"
 	path: string
 	entries: { path: string; relativePath: string }[]
+	hasMoreContent?: boolean
 }
 
 export interface BuildErrorAttachment {

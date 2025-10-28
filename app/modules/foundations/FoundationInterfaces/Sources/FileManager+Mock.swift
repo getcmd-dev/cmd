@@ -33,7 +33,9 @@ public final class MockFileManager: FileManagerI {
   public private(set) var directories = [URL]()
 
   public func isDirectory(at path: URL) -> Bool {
-    directories.map(\.standardized.path).contains(path.standardized.path)
+    inLock { state in
+      state.directories.map(\.standardized.path).contains(path.standardized.path)
+    }
   }
 
   public func observeChangesToContent(
@@ -45,25 +47,25 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func read(contentsOf url: URL, encoding _: String.Encoding) throws -> String {
-    guard let content = read(url)?.asString else {
+    guard let content = inLock({ $0.files[path(matching: url, in: $0)] })?.asString else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func read(dataFrom url: URL) throws -> Data {
-    guard let content = read(url) else {
+    guard let content = inLock({ $0.files[path(matching: url, in: $0)] }) else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func write(data: Data, to url: URL, options _: Data.WritingOptions) throws {
-    set(url, to: data)
+    inLock { $0.files[path(matching: url, in: $0)] = data }
   }
 
   public func write(string: String, to url: URL, options _: Data.WritingOptions) throws {
-    set(url, to: string.asData)
+    inLock { $0.files[path(matching: url, in: $0)] = string.asData }
   }
 
   public func createDirectory(
@@ -124,7 +126,7 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func fileExists(atPath path: String) -> Bool {
-    files[self.path(matching: path)] != nil
+    inLock { $0.files[self.path(matching: path)] != nil }
   }
 
   public func contentsOfDirectory(
@@ -139,14 +141,16 @@ public final class MockFileManager: FileManagerI {
       return []
     }
 
-    let directories = directories.map(\.standardized)
-    let files = files.keys.map(\.standardized)
-    let normalized = url.standardized
+    return inLock { state in
+      let directories = state.directories.map(\.standardized)
+      let files = state.files.keys.map(\.standardized)
+      let normalized = url.standardized
 
-    let directFiles = files.filter { $0.deletingLastPathComponent() == normalized }
-    let directDirectories = directories.filter { $0.deletingLastPathComponent() == normalized }
+      let directFiles = files.filter { $0.deletingLastPathComponent() == normalized }
+      let directDirectories = directories.filter { $0.deletingLastPathComponent() == normalized }
 
-    return directFiles + directDirectories
+      return directFiles + directDirectories
+    }
   }
 
   public func enumerator(

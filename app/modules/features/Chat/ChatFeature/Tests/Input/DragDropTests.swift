@@ -74,7 +74,7 @@ struct DragDropTests {
       let folderAttachment = try #require(viewModel.attachments[0].folder)
       #expect(folderAttachment.path == folderURL)
       #expect(folderAttachment.files.count == 1)
-      #expect(folderAttachment.files.contains(where: { $0.name == "FileA.swift" }))
+      #expect(folderAttachment.files.contains(where: { URL(fileURLWithPath: $0.path).lastPathComponent == "FileA.swift" }))
     }
   }
 
