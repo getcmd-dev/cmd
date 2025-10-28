@@ -37,7 +37,7 @@ public final class ClaudeCodeBashTool: Tool {
           Input(command: "", timeout: nil, description: nil)
         }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

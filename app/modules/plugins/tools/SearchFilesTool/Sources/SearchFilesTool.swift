@@ -50,7 +50,7 @@ public final class SearchFilesTool: Tool {
         regex: input.regex,
         filePattern: input.filePattern)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: resolvedInput))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: resolvedInput))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

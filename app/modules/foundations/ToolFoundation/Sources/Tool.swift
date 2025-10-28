@@ -436,11 +436,54 @@ extension ToolUse {
 
 // MARK: - ToolError
 
-public struct ToolError: Error {
-  public let value: JSON.Value
-
+public struct ToolError: Error, CustomNSError, LocalizedError {
   public init(_ value: JSON.Value) {
     self.value = value
+  }
+
+  public let value: JSON.Value
+
+  public var errorDescription: String? {
+    Self.errorDescription(for: value)
+  }
+
+  public var errorUserInfo: [String: Any] {
+    [
+      NSLocalizedDescriptionKey: Self.errorDescription(for: value),
+    ]
+  }
+
+  public var localizedDescription: String {
+    Self.errorDescription(for: value)
+  }
+
+  private static func errorDescription(for value: JSON.Value) -> String {
+    switch value {
+    case .string(let value):
+      value
+
+    case .array(let array):
+      if array.isEmpty {
+        "The tool failed"
+      } else {
+        array.map(Self.errorDescription(for:)).joined(separator: ", ")
+      }
+
+    case .number(let value):
+      "\(value)"
+
+    case .bool(let value):
+      "\(value)"
+
+    case .null:
+      "null"
+
+    case .object(let value):
+      value
+        .sorted(by: { $0.key < $1.key })
+        .map({ "\($0.key): \(Self.errorDescription(for: $0.value))" })
+        .joined(separator: "\n")
+    }
   }
 }
 
@@ -479,6 +522,18 @@ extension ToolUse {
       return str
     }
     return stringOutput
+  }
+}
+
+extension ToolUseExecutionStatus {
+  /// Converts in-flight status to cancelled, unless it is already completed or not started.
+  public var completedOrCancelled: Self {
+    switch self {
+    case .notStarted, .completed, .approvalRejected:
+      self
+    case .running, .pendingApproval:
+      .completed(.failure(CancellationError()))
+    }
   }
 }
 

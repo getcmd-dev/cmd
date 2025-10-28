@@ -40,7 +40,7 @@ public final class ClaudeCodeTodoWriteTool: Tool {
           Input(todos: [])
         }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

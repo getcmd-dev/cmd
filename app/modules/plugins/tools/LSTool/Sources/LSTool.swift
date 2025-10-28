@@ -49,7 +49,7 @@ public final class LSTool: Tool {
         recursive: input.recursive)
       directoryPath = URL(fileURLWithPath: resolvedInput.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: resolvedInput))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: resolvedInput))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

@@ -48,29 +48,29 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
       // Add content representation based on output content
       for content in output.content {
         switch content {
-        case .aCPToolOutputMediaContent(let mediaContent):
+        case .aCPToolMediaContent(let mediaContent):
           switch mediaContent.content {
-          case .aCPToolOutputMediaContentText(let textContent):
+          case .aCPToolMediaContentText(let textContent):
             representation += "  ⎿ \(textContent.text.prefix(100))\n"
-          case .aCPToolOutputMediaContentImage(let imageContent):
+          case .aCPToolMediaContentImage(let imageContent):
             representation += "  ⎿ [Image: \(imageContent.mimeType)]\n"
-          case .aCPToolOutputMediaContentAudio(let audioContent):
+          case .aCPToolMediaContentAudio(let audioContent):
             representation += "  ⎿ [Audio: \(audioContent.mimeType)]\n"
-          case .aCPToolOutputMediaContentResourceLink(let resourceLink):
+          case .aCPToolMediaContentResourceLink(let resourceLink):
             representation += "  ⎿ [Resource: \(resourceLink.name)]\n"
-          case .aCPToolOutputMediaContentResource(let resource):
+          case .aCPToolMediaContentResource(let resource):
             switch resource.resource {
-            case .aCPToolOutputMediaContentResourceEmbeddedResourceText(let textResource):
+            case .aCPToolMediaContentResourceEmbeddedResourceText(let textResource):
               representation += "  ⎿ [Embedded Resource: \(textResource.uri)]\n"
-            case .aCPToolOutputMediaContentResourceEmbeddedResourceBlob(let blobResource):
+            case .aCPToolMediaContentResourceEmbeddedResourceBlob(let blobResource):
               representation += "  ⎿ [Embedded Resource: \(blobResource.uri)]\n"
             }
           }
 
-        case .aCPToolOutputDiff(let diff):
+        case .aCPToolDiffContent(let diff):
           representation += "  ⎿ [Diff: \(diff.path)]\n"
 
-        case .aCPToolOutputTerminal(let terminal):
+        case .aCPToolTerminalContent(let terminal):
           representation += "  ⎿ [Terminal: \(terminal.terminalId)]\n"
         }
       }

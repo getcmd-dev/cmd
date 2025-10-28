@@ -365,12 +365,3 @@ extension EditFilesToolUseViewModel: ViewRepresentable, StreamRepresentable {
     return representation
   }
 }
-
-// MARK: - FileEditState
-
-enum FileEditState {
-  case suggested
-  case applied
-  case rejected
-  case error(String)
-}

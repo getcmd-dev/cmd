@@ -43,7 +43,7 @@ public final class ClaudeCodeEditTool: Tool {
           Input(file_path: "", old_string: "", new_string: "", replace_all: nil)
         }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

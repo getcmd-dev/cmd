@@ -31,6 +31,7 @@ import { spawn } from "@/utils/spawn-promise"
 import { homedir } from "os"
 import { sendCommandToHostApp } from "../../interProcessesBridge"
 import { v4 as uuidv4 } from "uuid"
+import { pendingToolApprovalRequests } from "../pendingToolApprovalRequests"
 
 // Constants
 const TOOL_NAME_PREFIX = "claude_code_"
@@ -48,8 +49,6 @@ function createInputHash(input: unknown): string {
 // The permission request doesn't contain the tool use id, so we need to look at past tool use requests to
 // find the matching one and pull its id that can then be forwarded.
 const toolUseRequests = new Map<string, Array<Omit<ToolUseRequest, "idx"> & { timestamp: number; inputHash: string }>>()
-
-const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
 
 type ExtendedSDKMessage = SDKMessage | Omit<ToolUsePermissionRequest, "idx">
 
@@ -111,6 +110,9 @@ const createClaudeCodeEventStream = async (
 		logInfo("response finished")
 		responseCompletedByServer = true
 		responseIsTerminated = true
+		// We still call abort here, as the server-side termination could come from an error
+		// in the event stream, in which case we need to stop the agent.
+		abortController.abort()
 	})
 	const abortController = new AbortController()
 	res.on("close", () => {
@@ -678,43 +680,6 @@ const isToolUsePermissionRequest = (message: ExtendedSDKMessage): message is Omi
 type SessionIdInfo = {
 	type: "session_id"
 	sessionId: string
-}
-
-export const registerEndpoint = (router: Router) => {
-	// This endpoint is used to receive the result of pending tool permission requests.
-	router.post("/sendMessage/toolUse/permission", async (req: Request, res: Response) => {
-		const body = req.body as ApproveToolUseRequestParams
-		const { toolUseId, approvalResult } = body
-
-		if (!toolUseId || typeof toolUseId !== "string") {
-			throw new UserFacingError({
-				message: "Invalid toolUseId",
-				statusCode: 400,
-			})
-		}
-
-		if (!approvalResult || !approvalResult.type) {
-			throw new UserFacingError({
-				message: "Invalid approvalResult",
-				statusCode: 400,
-			})
-		}
-
-		logInfo(`received tool use permission request: ${toolUseId}, ${JSON.stringify(approvalResult)}.`)
-
-		const pendingRequest = pendingToolApprovalRequests.get(toolUseId)
-		if (!pendingRequest) {
-			throw new UserFacingError({
-				message: `No pending tool use approval request found for tool use ${toolUseId}`,
-				statusCode: 404,
-			})
-		}
-
-		// Remove from pending requests and resolve
-		pendingToolApprovalRequests.delete(toolUseId)
-		pendingRequest(approvalResult)
-		res.json({ success: true })
-	})
 }
 
 function arrayToAsyncIterable<T>(arr: T[], endStream: Promise<void>): AsyncIterable<T> {

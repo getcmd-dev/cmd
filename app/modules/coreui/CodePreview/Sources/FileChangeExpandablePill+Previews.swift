@@ -1,35 +1,29 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import CodePreview
-import DLS
-import FileDiffFoundation
-import FileDiffTypesFoundation
 import Foundation
-import LocalServerServiceInterface
 import SwiftUI
-import ToolFoundation
 
 #if DEBUG
 // MARK: - Preview Provider
 
-struct FileChangeView_Previews: PreviewProvider {
+struct FileChangeExpandablePill_Previews: PreviewProvider {
   static var previews: some View {
     Group {
       // Preview collapsed state
-      FileChangeView(change: mockFileDiffViewModel, editState: .applied)
+      FileChangeExpandablePill(change: mockFileDiffViewModel, editState: .applied)
         .frame(width: 500)
         .preferredColorScheme(.dark)
         .previewDisplayName("Collapsed State")
 
       // Preview expanded state (pre-expanded)
-      FileChangeView(change: mockFileDiffViewModel, editState: .rejected, initiallyExpanded: true)
+      FileChangeExpandablePill(change: mockFileDiffViewModel, editState: .rejected, initiallyExpanded: true)
         .frame(width: 500, height: 600)
         .preferredColorScheme(.dark)
         .previewDisplayName("Expanded State")
 
       // Error state
-      FileChangeView(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
+      FileChangeExpandablePill(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
         .frame(width: 500)
         .preferredColorScheme(.dark)
         .previewDisplayName("Error State")

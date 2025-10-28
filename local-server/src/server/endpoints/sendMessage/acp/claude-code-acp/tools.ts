@@ -1,7 +1,7 @@
 import { PlanEntry, ToolCallContent, ToolCallLocation, ToolKind } from "@agentclientprotocol/sdk"
 import { replaceAndCalculateLocation, SYSTEM_REMINDER, toolNames } from "./mcp-server"
 import { ToolResultBlockParam } from "@anthropic-ai/sdk/resources"
-import { CachedToolUse } from "./acp-agent"
+import { acpLogger, CachedToolUse } from "./acp-agent"
 import { HookCallback, HookInput, HookJSONOutput } from "@anthropic-ai/claude-agent-sdk"
 
 interface ToolInfo {
@@ -608,8 +608,14 @@ export const postToolUseHook: HookCallback = async (
 	toolUseID: string | undefined,
 ): Promise<HookJSONOutput> => {
 	if (input.hook_event_name === "PostToolUse" && toolUseID) {
-		await globalToolUseRegistry[toolUseID]?.onPostToolUseHook?.(toolUseID, input.tool_input, input.tool_response)
-		delete globalToolUseRegistry[toolUseID]
+		const onPostToolUseHook = globalToolUseRegistry[toolUseID]?.onPostToolUseHook
+		if (onPostToolUseHook) {
+			await onPostToolUseHook(toolUseID, input.tool_input, input.tool_response)
+			delete globalToolUseRegistry[toolUseID]
+		} else {
+			acpLogger.error(`No onPostToolUseHook found for tool use ID: ${toolUseID}`)
+			delete globalToolUseRegistry[toolUseID]
+		}
 	}
 	return { continue: true }
 }

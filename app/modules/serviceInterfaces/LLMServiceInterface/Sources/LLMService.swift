@@ -93,9 +93,7 @@ public protocol LLMService: Sendable {
     newSettings: Settings.AIProviderSettings)
     async throws -> [AIProviderModel]
 
-  /// A read-only subject that publishes the currently active models.
-  ///
-  /// This provides reactive updates whenever the set of active models changes.
+  /// The models that have a provider configured and are enabled (ie the models that the user is able to use given their current configuration).
   var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
 
   /// Returns the low tier model from configured providers with the cheapest input cost.

@@ -1,4 +1,4 @@
-import { ContentBlock, SessionNotification } from "@agentclientprotocol/sdk"
+import { ContentBlock, SessionNotification, ToolCallUpdate } from "@agentclientprotocol/sdk"
 import {
 	Message,
 	ReasoningDelta,
@@ -15,8 +15,7 @@ import { UserFacingError } from "@/server/errors"
 import { AsyncStream } from "@/utils/asyncStream"
 import { ACPToolInput, ACPToolOutput } from "@/server/schemas/toolsSchema"
 import { mapToolCallContent } from "./helper"
-
-const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
+import { pendingToolApprovalRequests } from "../../pendingToolApprovalRequests"
 
 export interface ACPClient<SessionInitializationParams extends { cwd: string }> {
 	prompt(
@@ -24,12 +23,10 @@ export interface ACPClient<SessionInitializationParams extends { cwd: string }> 
 		message: ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
-			toolCallId,
-			input,
+			toolCall,
 			toolName,
 		}: {
-			toolCallId: string
-			input: unknown
+			toolCall: ToolCallUpdate
 			toolName: string
 		}) => Promise<boolean>,
 		abortController?: AbortController,
@@ -175,6 +172,7 @@ export async function* toMessageStream(
 							kind,
 							title: event.update.title || "",
 							rawInput: event.update.rawInput,
+							content: event.update.content?.map(mapToolCallContent),
 						} satisfies ACPToolInput,
 					} satisfies Omit<ToolUseRequest, "idx">
 				}
@@ -231,7 +229,7 @@ export async function* toMessageStream(
 											success: {
 												...update,
 												kind,
-												content: (update.content || []).map(mapToolCallContent),
+												content: update.content?.map(mapToolCallContent) || [],
 												type: "acp_tool_output",
 											} satisfies ACPToolOutput,
 										}
@@ -266,26 +264,30 @@ type SessionIdInfo = {
 }
 
 export const askAppForPermission = async ({
-	toolCallId,
-	input,
+	toolCall,
 	toolName,
 	eventStream,
 }: {
-	toolCallId: string
-	input: unknown
+	toolCall: ToolCallUpdate
 	toolName: string
 	eventStream: AsyncStream<ResponseChunkWithoutIndex>
 }): Promise<boolean> => {
-	logInfo(`Received permission request for ${toolCallId}: ${JSON.stringify(input, null, 2)}`)
+	logInfo(`Received permission request for ${toolCall.toolCallId}: ${JSON.stringify(toolCall.rawInput, null, 2)}`)
 
 	const response = await new Promise<ApprovalResult>((resolve) => {
-		pendingToolApprovalRequests.set(toolCallId, resolve)
+		pendingToolApprovalRequests.set(toolCall.toolCallId, resolve)
 
 		eventStream.yield({
 			type: "tool_use_permission_request",
 			toolName,
-			toolUseId: toolCallId,
-			input: input as Record<string, unknown>,
+			toolUseId: toolCall.toolCallId,
+			input: {
+				type: "acp_tool_input",
+				kind: toolCall.kind || "other",
+				title: toolCall.title || "",
+				rawInput: toolCall.rawInput,
+				content: toolCall.content?.map(mapToolCallContent) || [],
+			} satisfies ACPToolInput,
 		} satisfies Omit<ToolUsePermissionRequest, "idx">)
 	})
 
