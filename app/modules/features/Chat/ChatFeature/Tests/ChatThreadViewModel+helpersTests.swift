@@ -403,11 +403,9 @@ struct ChatThreadViewModelHelpersTests {
     let folderURL = URL(filePath: "/project/src")
     let entries = [
       AttachmentModel.FolderAttachmentModel.Entry(
-        path: "/project/src/main.swift",
-        isDirectory: false),
+        path: "/project/src/main.swift"),
       AttachmentModel.FolderAttachmentModel.Entry(
-        path: "/project/src/utils",
-        isDirectory: true),
+        path: "/project/src/utils"),
     ]
     let attachment = AttachmentModel.folder(.init(
       id: UUID(),
@@ -437,8 +435,7 @@ struct ChatThreadViewModelHelpersTests {
     let folderURL = URL(filePath: "/project/large")
     let entries = (1...100).map { i in
       AttachmentModel.FolderAttachmentModel.Entry(
-        path: "/project/large/file\(i).swift",
-        isDirectory: false)
+        path: "/project/large/file\(i).swift")
     }
     let attachment = AttachmentModel.folder(.init(
       id: UUID(),
@@ -466,8 +463,7 @@ struct ChatThreadViewModelHelpersTests {
     let folderURL = URL(filePath: "/project/exact")
     let entries = (1...50).map { i in
       AttachmentModel.FolderAttachmentModel.Entry(
-        path: "/project/exact/file\(i).swift",
-        isDirectory: false)
+        path: "/project/exact/file\(i).swift")
     }
     let attachment = AttachmentModel.folder(.init(
       id: UUID(),
@@ -492,8 +488,7 @@ struct ChatThreadViewModelHelpersTests {
     let folderURL = URL(filePath: "/project/edge")
     let entries = (1...51).map { i in
       AttachmentModel.FolderAttachmentModel.Entry(
-        path: "/project/edge/file\(i).swift",
-        isDirectory: false)
+        path: "/project/edge/file\(i).swift")
     }
     let attachment = AttachmentModel.folder(.init(
       id: UUID(),

@@ -6,6 +6,7 @@ import ConcurrencyFoundation
 import Foundation
 import ThreadSafe
 
+#if DEBUG
 // MARK: - MockFileManager
 
 @ThreadSafe
@@ -33,9 +34,7 @@ public final class MockFileManager: FileManagerI {
   public private(set) var directories = [URL]()
 
   public func isDirectory(at path: URL) -> Bool {
-    inLock { state in
-      state.directories.map(\.standardized.path).contains(path.standardized.path)
-    }
+    directories.map(\.standardized.path).contains(path.standardized.path)
   }
 
   public func observeChangesToContent(
@@ -47,25 +46,25 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func read(contentsOf url: URL, encoding _: String.Encoding) throws -> String {
-    guard let content = inLock({ $0.files[path(matching: url, in: $0)] })?.asString else {
+    guard let content = read(url)?.asString else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func read(dataFrom url: URL) throws -> Data {
-    guard let content = inLock({ $0.files[path(matching: url, in: $0)] }) else {
+    guard let content = read(url) else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
     }
     return content
   }
 
   public func write(data: Data, to url: URL, options _: Data.WritingOptions) throws {
-    inLock { $0.files[path(matching: url, in: $0)] = data }
+    set(url, to: data)
   }
 
   public func write(string: String, to url: URL, options _: Data.WritingOptions) throws {
-    inLock { $0.files[path(matching: url, in: $0)] = string.asData }
+    set(url, to: string.asData)
   }
 
   public func createDirectory(
@@ -126,7 +125,7 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func fileExists(atPath path: String) -> Bool {
-    inLock { $0.files[self.path(matching: path)] != nil }
+    files[self.path(matching: path)] != nil
   }
 
   public func contentsOfDirectory(
@@ -244,3 +243,4 @@ extension String {
     data(using: .utf8)
   }
 }
+#endif
