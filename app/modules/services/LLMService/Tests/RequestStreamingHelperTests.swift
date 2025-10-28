@@ -295,7 +295,7 @@ struct RequestStreamingHelperReasoningTests {
     let localServer = MockLocalServer()
     localServer.onPostRequest = { path, data, _ in
       #expect(permissionRequested.isFulfilled)
-      #expect(path == "sendMessage/toolUse/permission")
+      #expect(path == "sendMessage/toolUse/permission/acp")
       #expect(data.jsonString() == """
         {
           "approvalResult" : {
@@ -550,5 +550,53 @@ struct RequestStreamingHelperToolFailureTests {
     }
 
     Issue.record("Expected TestExternalTool.Use or FailedToolUse, got \(type(of: toolMessage.toolUse))")
+  }
+
+  @Test("Handle tool use permission request before tool use received")
+  func testHandleToolUsePermissionBeforeToolUse() async throws {
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+
+    let tool = TestTool()
+    let mockLocalServer = MockLocalServer()
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [tool],
+      context: TestChatContext(projectRoot: URL(filePath: "/test")),
+      isExternalAgent: false,
+      isTaskCancelled: { false },
+      localServer: mockLocalServer,
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    // Send permission request BEFORE tool use request
+    // This tests the new flow where permission arrives before the tool use
+    let permissionRequest = Schema.ToolUsePermissionRequest(
+      toolName: "mock_tool",
+      input: ["arg": .string("test value")],
+      toolUseId: "tool-123",
+      idx: 0)
+    let permissionChunk = Schema.StreamedResponseChunk.toolUsePermissionRequest(permissionRequest)
+    let permissionData = try JSONEncoder().encode(permissionChunk)
+
+    continuation.yield(permissionData)
+    continuation.finish()
+
+    _ = try await helper.processStream()
+
+    let finalMessage = result.value
+
+    // Verify that a tool use was created even though we only received a permission request
+    #expect(finalMessage.content.count == 1)
+
+    guard case .tool(let toolMessage) = finalMessage.content.first else {
+      Issue.record("Expected tool use content")
+      return
+    }
+
+    // Verify the tool use was created from the permission request
+    #expect(toolMessage.id == "tool-123")
+    #expect(toolMessage.toolName == "mock_tool")
   }
 }

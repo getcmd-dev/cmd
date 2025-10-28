@@ -146,8 +146,8 @@ public final class MockFileManager: FileManagerI {
       let files = state.files.keys.map(\.standardized)
       let normalized = url.standardized
 
-      let directFiles = files.filter { $0.deletingLastPathComponent() == normalized }
-      let directDirectories = directories.filter { $0.deletingLastPathComponent() == normalized }
+      let directFiles = files.filter { $0.deletingLastPathComponent().path == normalized.path }
+      let directDirectories = directories.filter { $0.deletingLastPathComponent().path == normalized.path }
 
       return directFiles + directDirectories
     }

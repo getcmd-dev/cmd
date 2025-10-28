@@ -1,7 +1,7 @@
-import { ACPToolOutput_Content } from "@/server/schemas/toolsSchema"
+import { ACPTool_Content } from "@/server/schemas/toolsSchema"
 import { ToolCallContent } from "@agentclientprotocol/sdk"
 
-export const mapToolCallContent = (toolCall: ToolCallContent): ACPToolOutput_Content => {
+export const mapToolCallContent = (toolCall: ToolCallContent): ACPTool_Content => {
 	switch (toolCall.type) {
 		case "diff": {
 			return toolCall

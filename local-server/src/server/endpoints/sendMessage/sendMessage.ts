@@ -35,16 +35,12 @@ import {
 	ProviderMetadata,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
-import {
-	sendMessageToClaudeCode,
-	registerEndpoint as registerClaudeCodeEndpoint,
-} from "./claudeCode/sendMessageToClaudeCode"
+import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 import { sendMessageToClaudeCode as sendMessageToClaudeCode2 } from "./claudeCode/sendMessageToClaudeCode2"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getPort: () => number) => {
-	registerClaudeCodeEndpoint(router)
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
 			throw new UserFacingError({
@@ -351,6 +347,8 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 			text += chunk.text
 		} else if (chunk.type === "tool_call") {
 			logInfo(`Received tool call:\n${JSON.stringify(chunk)}`)
+		} else if (chunk.type === "tool_result") {
+			logInfo(`Received tool result:\n${JSON.stringify(chunk)}`)
 		} else if (chunk.type === "error") {
 			logInfo(`Received error:\n${JSON.stringify(chunk)}`)
 		}
@@ -393,7 +391,16 @@ const mapMessage = (message: Message): ModelMessage => {
 					})
 				}
 				content.attachments?.forEach((attachment) => {
-					result.push(attachmentAsPart(attachment))
+					const part = attachmentAsPart(attachment)
+					if (part.type === "text") {
+						result.push(part)
+					} else {
+						result.push({
+							type: "image",
+							image: part.url,
+							mediaType: part.mimeType,
+						})
+					}
 				})
 				return result
 			}),

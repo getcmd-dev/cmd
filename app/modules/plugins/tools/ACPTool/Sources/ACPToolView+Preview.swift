@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import ToolFoundation
 import ToolTypesFoundation
 
 #if DEBUG
@@ -46,8 +47,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: """
                   import Foundation
 
@@ -66,7 +67,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "let version = \"2.0\"",
               oldText: "let version = \"1.0\"",
               path: "/path/to/Config.swift")),
@@ -81,7 +82,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .execute,
           content: [
-            .aCPToolOutputTerminal(.init(
+            .aCPToolTerminalContent(.init(
               terminalId: "terminal-123")),
           ])))),
         input: .init(
@@ -112,8 +113,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "File contents here...")))),
           ])))),
         input: .init(
@@ -125,7 +126,7 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "new content",
               oldText: "old content",
               path: "/path/to/file.swift")),
@@ -204,14 +205,14 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .edit,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "Modified 3 files successfully")))),
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "let version = \"2.0\"",
               oldText: "let version = \"1.0\"",
               path: "/path/to/Config.swift")),
-            .aCPToolOutputDiff(.init(
+            .aCPToolDiffContent(.init(
               newText: "import SwiftUI",
               oldText: nil,
               path: "/path/to/View.swift")),
@@ -226,8 +227,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .fetch,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentResourceLink(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentResourceLink(.init(
                 description: "API documentation for Swift",
                 name: "Swift Docs",
                 uri: "https://docs.swift.org")))),
@@ -242,9 +243,9 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentResource(.init(
-                resource: .aCPToolOutputMediaContentResourceEmbeddedResourceText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentResource(.init(
+                resource: .aCPToolMediaContentResourceEmbeddedResourceText(.init(
                   text: "Resource content here...",
                   uri: "file:///path/to/resource.txt")))))),
           ])))),
@@ -265,8 +266,8 @@ import ToolTypesFoundation
         status: .Just(.completed(.success(.init(
           kind: .read,
           content: [
-            .aCPToolOutputMediaContent(.init(
-              content: .aCPToolOutputMediaContentText(.init(
+            .aCPToolMediaContent(.init(
+              content: .aCPToolMediaContentText(.init(
                 text: "File contents...")))),
           ])))),
         input: .init(
@@ -277,6 +278,59 @@ import ToolTypesFoundation
     .padding()
   }
   .frame(minWidth: 500, minHeight: 200)
+}
+
+#Preview("Parsing raw input") {
+  ScrollView {
+    VStack(alignment: .leading, spacing: 16) {
+      ACPTool.use(toolName: "search", toolUseId: "search", jsonInput: """
+                            {
+                              "kind": "search",
+                              "rawInput": {
+                                "command": [
+                                  "bash",
+                                  "-lc",
+                                  "rg \\\"folder\\\" modules/features/Chat/ChatFeature -n"
+                                ],
+                                "cwd": "/Users/guigui/dev/conductor/cmd/.conductor/san-marino-v1/app",
+                                "parsed_cmd": [
+                                  {
+                                    "path": "ChatFeature",
+                                    "query": "folder",
+                                    "type": "search",
+                                    "cmd": "rg folder modules/features/Chat/ChatFeature -n"
+                                  }
+                                ],
+                                "call_id": "call_98AY4bp4nSZbk38jfVYMj7rc"
+                              },
+                              "type": "acp_tool_input",
+                              "title": "Search folder in ChatFeature"
+                            }
+        """)
+    }
+    .padding()
+  }
+  .frame(minWidth: 500, minHeight: 200)
+}
+
+extension ACPTool {
+  @MainActor
+  static func use(toolName: String, toolUseId: String, jsonInput: String) -> some View {
+    if let toolUse = try? use(toolName: toolName, toolUseId: toolUseId, jsonInput: jsonInput) {
+      return AnyView(toolUse.viewModel.body)
+    } else {
+      return AnyView(Text("error"))
+    }
+  }
+
+  private static func use(toolName: String, toolUseId: String, jsonInput: String) throws -> ACPTool.Use {
+    let tool = ACPTool(id: toolName, referenceId: toolName, displayName: toolName)
+    let data = jsonInput.utf8Data
+    return try tool.use(
+      toolUseId: toolUseId,
+      input: data,
+      context: ToolExecutionContext())
+  }
 }
 
 #endif

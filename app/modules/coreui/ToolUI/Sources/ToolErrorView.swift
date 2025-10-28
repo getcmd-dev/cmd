@@ -13,28 +13,66 @@ import ToolTypesFoundation
 public struct ToolErrorView: View {
   public init(_ error: Error) {
     self.error = error
+    toolUseErrorDescription = error.toolUseErrorDescription
   }
 
   public var body: some View {
-    Text(colorScheme.markDownStyle.markdown(for: error.toolUseErrorDescription))
-      .textSelection(.enabled)
-      .foregroundColor(colorScheme.redError)
+    if error is CancellationError {
+      Text("Cancelled")
+        .foregroundColor(.secondary)
+    } else {
+      if toolUseErrorDescription.count > 300 {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Button(action: {
+              isExpanded.toggle()
+            }) {
+              Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            Text("Tool failed")
+              .foregroundColor(colorScheme.redError)
+          }
+
+          if isExpanded {
+            Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+              .textSelection(.enabled)
+              .foregroundColor(.primary)
+          }
+        }
+      } else {
+        Text(toolUseErrorDescription.asPlainText(colorScheme: colorScheme))
+          .textSelection(.enabled)
+          .foregroundColor(colorScheme.redError)
+      }
+    }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+  @State private var isExpanded = false
+
+  private let toolUseErrorDescription: String
 
   private let error: Error
+}
+
+extension String {
+  func asPlainText(colorScheme: ColorScheme) -> String {
+    let attrString = colorScheme.markDownStyle.markdown(for: self)
+    return NSAttributedString(attrString).string
+  }
 }
 
 extension Error {
   public var toolUseErrorDescription: String {
     if let toolError = self as? ToolError {
-      if let content = try? (self as? ToolError)?.value.decode(as: [ToolsSchema.ACPToolOutput_Content].self) {
+      if let content = try? (self as? ToolError)?.value.decode(as: [ToolsSchema.ACPTool_Content].self) {
         let textContent = content.compactMap { content in
           switch content {
-          case .aCPToolOutputMediaContent(let mediaContent):
+          case .aCPToolMediaContent(let mediaContent):
             switch mediaContent.content {
-            case .aCPToolOutputMediaContentText(let text):
+            case .aCPToolMediaContentText(let text):
               text.text
             default:
               nil

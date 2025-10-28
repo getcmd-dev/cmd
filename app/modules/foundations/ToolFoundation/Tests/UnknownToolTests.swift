@@ -105,6 +105,28 @@ struct UnknownToolTests {
     #expect(type(of: finalToolUse.callingTool) == type(of: originalToolUse.callingTool))
   }
 
+  @Test
+  func test_initialInFlightStatusCompletesAsCancelled() {
+    let tool = TestTool()
+    let toolUse = TestTool.Use(
+      callingTool: tool,
+      toolUseId: "tool-use-id",
+      input: .null,
+      context: toolExecutionContext,
+      internalState: nil,
+      initialStatus: .running)
+
+    if case .completed(let result) = toolUse.status.value {
+      if case .failure(let error) = result {
+        #expect(error is CancellationError)
+      } else {
+        #expect(false, "Expected failure result when initial status is non-terminal.")
+      }
+    } else {
+      #expect(false, "Expected completed status when initial status is non-terminal.")
+    }
+  }
+
   private let toolExecutionContext = ToolExecutionContext()
 }
 

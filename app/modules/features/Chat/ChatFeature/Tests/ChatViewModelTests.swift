@@ -1199,6 +1199,7 @@ extension DependencyValues {
     llmService = MockLLMService(activeModels: [.claudeSonnet, .gpt])
     self.settingsService = settingsService
     userDefaults = mockUserDefaults
+    xcodeObserver = MockXcodeObserver(AXState<XcodeState>.unknown)
   }
 }
 

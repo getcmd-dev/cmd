@@ -36,7 +36,7 @@ public final class ClaudeCodeGrepTool: Tool {
       input.projectRoot = input.projectRoot ?? context.projectRoot?.path
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       _internalState = internalState ?? .init(rootPath: input.projectRoot ?? "/")

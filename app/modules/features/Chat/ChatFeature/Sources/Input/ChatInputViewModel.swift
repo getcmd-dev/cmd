@@ -600,13 +600,7 @@ final class ChatInputViewModel {
     var entries = [AttachmentModel.FolderAttachmentModel.Entry]()
 
     for childURL in children {
-      do {
-        let resourceValues = try childURL.resourceValues(forKeys: [.isDirectoryKey])
-        let isDirectory = resourceValues.isDirectory ?? false
-        entries.append(.init(path: childURL.path, isDirectory: isDirectory))
-      } catch {
-        continue
-      }
+      entries.append(.init(path: childURL.path))
     }
 
     // Accept directories even if they only contain subdirectories (no files)

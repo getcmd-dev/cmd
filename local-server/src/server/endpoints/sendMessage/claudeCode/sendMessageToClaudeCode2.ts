@@ -61,6 +61,9 @@ const createEventStream = async (
 		logInfo("response finished")
 		responseCompletedByServer = true
 		responseIsTerminated = true
+		// We still call abort here, as the server-side termination could come from an error
+		// in the event stream, in which case we need to stop the agent.
+		abortController.abort()
 	})
 	const abortController = new AbortController()
 	res.on("close", () => {
@@ -188,8 +191,8 @@ const createEventStream = async (
 			options,
 			messageContent,
 			threadId,
-			async ({ toolCallId, input, toolName }) => {
-				return await askAppForPermission({ toolCallId, input, toolName, eventStream })
+			async ({ toolCall, toolName }) => {
+				return await askAppForPermission({ toolCall, toolName, eventStream })
 			},
 		)
 		abortController.signal.addEventListener("abort", async () => {
