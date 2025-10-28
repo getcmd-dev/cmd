@@ -20,6 +20,8 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version-file: "./local-server/.nvmrc"
+    - name: Enable Corepack
+      run: corepack enable
     - uses: gsabran/setup-swift@main
       with:
         swift-version: "6.2"
