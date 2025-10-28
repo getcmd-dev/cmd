@@ -35,13 +35,13 @@ public final class ClaudeCodeReadTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(file_path: "", offset: nil, limit: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(file_path: "", offset: nil, limit: nil)
+        }
 
       filePath = URL(fileURLWithPath: input.file_path)
 
@@ -210,9 +210,10 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
     }()
 
     let mappedInput = ReadFileTool.Use.Input(path: status.value.input?.file_path ?? "", lineRange: lineRange)
-    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ReadFileTool.Use.Input, ReadFileTool.Use.Output>>.createMapped(from: status) { status in
-      status.mapInput { _ in mappedInput }
-    }
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ReadFileTool.Use.Input, ReadFileTool.Use.Output>>
+      .createMapped(from: status) { status in
+        status.mapInput { _ in mappedInput }
+      }
     return AnyToolUseViewModel(ToolUseViewModel(
       status: mappedStatus, input: mappedInput, projectRoot: context.projectRoot))
   }

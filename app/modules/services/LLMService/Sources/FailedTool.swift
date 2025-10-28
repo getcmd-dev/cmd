@@ -22,15 +22,17 @@ struct FailedToolUse: ToolUse {
     self.context = context
     self.toolUseId = toolUseId
 
-    let input: Input
-    switch inputResult {
-    case .success(let value):
-      input = value
-    case .failure(let decodingError):
-      input = Input(errorDescription: decodingError.error)
-    }
+    let input: Input =
+      switch inputResult {
+      case .success(let value):
+        value
+      case .failure(let decodingError):
+        Input(errorDescription: decodingError.error)
+      }
 
-    let (status, updateStatus) = Status.makeStream(initial: .completed(input: input, result: .failure(AppError(input.errorDescription))))
+    let (status, updateStatus) = Status.makeStream(initial: .completed(
+      input: input,
+      result: .failure(AppError(input.errorDescription))))
     updateStatus.finish()
     self.status = status
     self.updateStatus = updateStatus

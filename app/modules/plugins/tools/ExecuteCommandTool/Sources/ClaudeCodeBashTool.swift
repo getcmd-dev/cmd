@@ -29,13 +29,13 @@ public final class ClaudeCodeBashTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(command: "", timeout: nil, description: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(command: "", timeout: nil, description: nil)
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -184,9 +184,10 @@ extension ClaudeCodeBashTool.Use: DisplayableToolUse {
       cwd: nil,
       canModifySourceFiles: true,
       canModifyDerivedFiles: true)
-    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ExecuteCommandTool.Use.Input, ExecuteCommandTool.Use.Output>>.createMapped(from: status) { status in
-      status.mapInput { _ in mappedInput }
-    }
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ExecuteCommandTool.Use.Input, ExecuteCommandTool.Use.Output>>
+      .createMapped(from: status) { status in
+        status.mapInput { _ in mappedInput }
+      }
 
     return AnyToolUseViewModel(ToolUseViewModel(
       command: status.value.input?.command ?? "",

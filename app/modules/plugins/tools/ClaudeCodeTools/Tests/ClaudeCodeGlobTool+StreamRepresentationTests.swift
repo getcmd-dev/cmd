@@ -12,11 +12,12 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .running)
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "*.swift", path: nil)
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "*.swift", path: nil))
+      input: input)
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -25,6 +26,7 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful glob with multiple files")
   func test_streamRepresentationSuccessMultipleFiles() {
     // given
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "**/*.swift", path: nil)
     let output = ClaudeCodeGlobTool.Use.Output(
       files: [
         "/project/src/main.swift",
@@ -33,11 +35,11 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
         "/project/views/ContentView.swift",
         "/project/models/User.swift",
       ])
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "**/*.swift", path: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -52,13 +54,14 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful glob with single file")
   func test_streamRepresentationSuccessSingleFile() {
     // given
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "main.swift", path: nil)
     let output = ClaudeCodeGlobTool.Use.Output(
       files: ["/project/src/main.swift"])
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "main.swift", path: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -73,12 +76,13 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful glob with no files")
   func test_streamRepresentationSuccessNoFiles() {
     // given
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "*.nonexistent", path: nil)
     let output = ClaudeCodeGlobTool.Use.Output(files: [])
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "*.nonexistent", path: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -93,12 +97,13 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @Test("streamRepresentation shows failure with error")
   func test_streamRepresentationFailure() {
     // given
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "invalid[pattern", path: nil)
     let error = AppError("Invalid glob pattern")
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "invalid[pattern", path: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -121,16 +126,17 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
 
     for pattern in complexPatterns {
       // given
+      let input = ClaudeCodeGlobTool.Use.Input(pattern: pattern, path: nil)
       let output = ClaudeCodeGlobTool.Use.Output(
         files: [
           "/project/src/file1.swift",
           "/project/src/file2.swift",
         ])
-      let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = GlobToolUseViewModel(
         status: status,
-        input: .init(pattern: pattern, path: nil))
+        input: input)
 
       // then
       #expect(viewModel.streamRepresentation == """
@@ -146,12 +152,13 @@ struct ClaudeCodeGlobToolStreamRepresentationTests {
   @Test("streamRepresentation handles directory access error")
   func test_streamRepresentationDirectoryAccessError() {
     // given
+    let input = ClaudeCodeGlobTool.Use.Input(pattern: "/restricted/directory/*.swift", path: nil)
     let error = AppError("Permission denied")
-    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeGlobTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = GlobToolUseViewModel(
       status: status,
-      input: .init(pattern: "/restricted/directory/*.swift", path: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """

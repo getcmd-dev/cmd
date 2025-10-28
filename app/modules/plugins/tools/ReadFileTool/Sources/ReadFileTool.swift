@@ -39,14 +39,14 @@ public final class ReadFileTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding - use minimal valid input
-        input = Input(path: "", lineRange: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding - use minimal valid input
+          Input(path: "", lineRange: nil)
+        }
 
       resolvedInput = internalState ?? Input(
         path: input.path.resolvePath(from: context.projectRoot).path,

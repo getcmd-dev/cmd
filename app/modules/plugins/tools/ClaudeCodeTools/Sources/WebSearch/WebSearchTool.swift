@@ -35,14 +35,14 @@ public final class WebSearchTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = Input(query: "")
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          Input(query: "")
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -142,7 +142,7 @@ extension WebSearchTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(WebSearchToolUseViewModel(
       status: status,
-      input: input ?? Input(query: "")))
+      input: (try? input) ?? Input(query: "")))
   }
 }
 

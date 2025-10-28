@@ -42,7 +42,7 @@ extension AssistantMessage {
 
         case .tool(let toolUse):
           let toolUse = toolUse.toolUse
-          let inputValue = toolUse.input ?? EmptyObject()
+          let inputValue = (try? toolUse.input) ?? EmptyObject()
           let request = try Schema.ToolUseRequest(name: toolUse.callingTool.name, anyInput: inputValue, id: toolUse.toolUseId)
           return .toolUseRequest(request)
 

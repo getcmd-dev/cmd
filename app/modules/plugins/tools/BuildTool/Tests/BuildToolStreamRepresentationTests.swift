@@ -13,7 +13,8 @@ struct BuildToolStreamRepresentationTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = BuildTool.Use.Status.makeStream(initial: .running)
+    let input = BuildTool.Use.Input(for: .test)
+    let (status, _) = BuildTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = ToolUseViewModel(
       buildType: .test,
@@ -26,6 +27,7 @@ struct BuildToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful test build")
   func test_streamRepresentationSuccessfulTestBuild() {
     // given
+    let input = BuildTool.Use.Input(for: .test)
     let output = BuildTool.Use.Output(
       buildResult: .init(
         title: "Build",
@@ -33,7 +35,7 @@ struct BuildToolStreamRepresentationTests {
         subSections: [],
         duration: 0.5),
       isSuccess: true)
-    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = ToolUseViewModel(
       buildType: .test,
@@ -52,6 +54,7 @@ struct BuildToolStreamRepresentationTests {
   @Test("streamRepresentation shows failed run build")
   func test_streamRepresentationFailedRunBuild() {
     // given
+    let input = BuildTool.Use.Input(for: .run)
     let output = BuildTool.Use.Output(
       buildResult: .init(
         title: "Build",
@@ -61,7 +64,7 @@ struct BuildToolStreamRepresentationTests {
         subSections: [],
         duration: 1.2),
       isSuccess: false)
-    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = ToolUseViewModel(
       buildType: .run,
@@ -80,8 +83,9 @@ struct BuildToolStreamRepresentationTests {
   @Test("streamRepresentation shows build tool failure")
   func test_streamRepresentationBuildToolFailure() {
     // given
+    let input = BuildTool.Use.Input(for: .test)
     let error = AppError("Xcode not found")
-    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = BuildTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = ToolUseViewModel(
       buildType: .test,
@@ -100,16 +104,18 @@ struct BuildToolStreamRepresentationTests {
   @Test("streamRepresentation handles both build types correctly")
   func test_streamRepresentationBuildTypes() {
     // given
+    let testInput = BuildTool.Use.Input(for: .test)
     let testOutput = BuildTool.Use.Output(
       buildResult: .init(title: "Test", messages: [], subSections: [], duration: 2.5),
       isSuccess: true)
-    let (testStatus, _) = BuildTool.Use.Status.makeStream(initial: .completed(.success(testOutput)))
+    let (testStatus, _) = BuildTool.Use.Status.makeStream(initial: .completed(input: testInput, result: .success(testOutput)))
     let testViewModel = ToolUseViewModel(buildType: .test, status: testStatus)
 
+    let runInput = BuildTool.Use.Input(for: .run)
     let runOutput = BuildTool.Use.Output(
       buildResult: .init(title: "Run", messages: [], subSections: [], duration: 1.8),
       isSuccess: true)
-    let (runStatus, _) = BuildTool.Use.Status.makeStream(initial: .completed(.success(runOutput)))
+    let (runStatus, _) = BuildTool.Use.Status.makeStream(initial: .completed(input: runInput, result: .success(runOutput)))
     let runViewModel = ToolUseViewModel(buildType: .run, status: runStatus)
 
     // then

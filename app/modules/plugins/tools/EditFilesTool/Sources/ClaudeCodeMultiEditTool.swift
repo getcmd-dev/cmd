@@ -34,13 +34,13 @@ public final class ClaudeCodeMultiEditTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(file_path: "", edits: [])
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(file_path: "", edits: [])
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }

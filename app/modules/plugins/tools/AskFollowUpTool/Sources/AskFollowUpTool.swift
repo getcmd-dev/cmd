@@ -31,14 +31,14 @@ public final class AskFollowUpTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = Input(question: "", followUp: [])
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          Input(question: "", followUp: [])
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -74,8 +74,8 @@ public final class AskFollowUpTool: Tool {
       guard let input = status.value.input else { return }
 
       // Transition from pendingApproval to notStarted to running
-      let notStartedStatus: ToolUseExecutionStatus<Input, Output> = .notStarted(input: input)
-      let runningStatus: ToolUseExecutionStatus<Input, Output> = .running(input: input)
+      let notStartedStatus = ToolUseExecutionStatus<Input, Output>.notStarted(input: input)
+      let runningStatus = ToolUseExecutionStatus<Input, Output>.running(input: input)
       updateStatus.yield(notStartedStatus)
       updateStatus.yield(runningStatus)
     }

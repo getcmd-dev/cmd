@@ -137,9 +137,10 @@ struct ClaudeCodeTodoWriteToolTests {
 
       context: .init(projectRoot: URL(filePath: "/path/to/root")))
 
-    #expect(toolUse.input.todos.count == 3)
-    #expect(toolUse.input.todos[0].status == "pending")
-    #expect(toolUse.input.todos[1].status == "in_progress")
-    #expect(toolUse.input.todos[2].status == "completed")
+    let input = try #require(try toolUse.input)
+    #expect(input.todos.count == 3)
+    #expect(input.todos[0].status == "pending")
+    #expect(input.todos[1].status == "in_progress")
+    #expect(input.todos[2].status == "completed")
   }
 }

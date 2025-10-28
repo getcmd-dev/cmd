@@ -12,11 +12,12 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .running)
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: "Swift programming", allowedDomains: nil, blockedDomains: nil)
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "Swift programming", allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -25,6 +26,7 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful web search with results")
   func test_streamRepresentationSuccessWithResults() {
     // given
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: "SwiftUI best practices", allowedDomains: nil, blockedDomains: nil)
     let output = ClaudeCodeWebSearchTool.Use.Output(
       links: [
         .init(title: "SwiftUI Guide", url: "https://example.com/guide"),
@@ -32,11 +34,11 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
         .init(title: "Advanced SwiftUI", url: "https://example.com/advanced"),
       ],
       content: "Search results for SwiftUI")
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "SwiftUI best practices", allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -51,14 +53,15 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   @Test("streamRepresentation shows successful web search with no results")
   func test_streamRepresentationSuccessNoResults() {
     // given
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: "very specific obscure query", allowedDomains: nil, blockedDomains: nil)
     let output = ClaudeCodeWebSearchTool.Use.Output(
       links: [],
       content: "No results found")
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "very specific obscure query", allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -73,12 +76,13 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   @Test("streamRepresentation shows failure with error")
   func test_streamRepresentationFailure() {
     // given
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: "network error test", allowedDomains: nil, blockedDomains: nil)
     let error = AppError("Network connection failed")
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "network error test", allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -93,16 +97,17 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   @Test("streamRepresentation handles single result")
   func test_streamRepresentationSingleResult() {
     // given
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: "specific documentation page", allowedDomains: nil, blockedDomains: nil)
     let output = ClaudeCodeWebSearchTool.Use.Output(
       links: [
         .init(title: "Official Docs", url: "https://docs.example.com"),
       ],
       content: "Found specific page")
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: "specific documentation page", allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -118,17 +123,18 @@ struct ClaudeCodeWebSearchToolStreamRepresentationTests {
   func test_streamRepresentationComplexQuery() {
     // given
     let complexQuery = "\"Swift async/await\" AND (concurrency OR threading) -tutorial"
+    let input = ClaudeCodeWebSearchTool.Use.Input(query: complexQuery, allowedDomains: nil, blockedDomains: nil)
     let output = ClaudeCodeWebSearchTool.Use.Output(
       links: [
         .init(title: "Concurrency Guide", url: "https://example.com/concurrency"),
         .init(title: "Threading Best Practices", url: "https://example.com/threading"),
       ],
       content: "Advanced search results")
-    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebSearchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebSearchToolUseViewModel(
       status: status,
-      input: .init(query: complexQuery, allowedDomains: nil, blockedDomains: nil))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """

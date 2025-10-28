@@ -12,13 +12,12 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .running)
+    let input = ClaudeCodeWebFetchTool.Use.Input(url: "https://example.com", prompt: "Summarize the content")
+    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = WebFetchToolUseViewModel(
       status: status,
-      input: .init(
-        url: "https://example.com",
-        prompt: "Summarize the content"))
+      input: input)
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -28,15 +27,14 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
   func test_streamRepresentationSuccessfulFetch() {
     // given
     let testUrl = "https://docs.swift.org/swift-book/"
+    let input = ClaudeCodeWebFetchTool.Use.Input(url: testUrl, prompt: "Extract key concepts")
     let output = ClaudeCodeWebFetchTool.Use.Output(
       result: "Swift Programming Language concepts and examples...")
-    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebFetchToolUseViewModel(
       status: status,
-      input: .init(
-        url: testUrl,
-        prompt: "Extract key concepts"))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -52,14 +50,13 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
   func test_streamRepresentationFailure() {
     // given
     let testUrl = "https://invalid-url-that-does-not-exist.com"
+    let input = ClaudeCodeWebFetchTool.Use.Input(url: testUrl, prompt: "Extract information")
     let error = AppError("URL not found")
-    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = WebFetchToolUseViewModel(
       status: status,
-      input: .init(
-        url: testUrl,
-        prompt: "Extract information"))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -81,14 +78,13 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
 
     for testUrl in testCases {
       // given
+      let input = ClaudeCodeWebFetchTool.Use.Input(url: testUrl, prompt: "Process content")
       let output = ClaudeCodeWebFetchTool.Use.Output(result: "Processed content")
-      let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = WebFetchToolUseViewModel(
         status: status,
-        input: .init(
-          url: testUrl,
-          prompt: "Process content"))
+        input: input)
 
       // then
       #expect(viewModel.streamRepresentation == """
@@ -105,14 +101,13 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
   func test_streamRepresentationNetworkTimeout() {
     // given
     let testUrl = "https://slow-server.example.com"
+    let input = ClaudeCodeWebFetchTool.Use.Input(url: testUrl, prompt: "Fetch content with timeout")
     let error = AppError("Request timed out")
-    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = WebFetchToolUseViewModel(
       status: status,
-      input: .init(
-        url: testUrl,
-        prompt: "Fetch content with timeout"))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -129,15 +124,14 @@ struct ClaudeCodeWebFetchToolStreamRepresentationTests {
     // given
     let testUrl = "https://research.paper.com/article"
     let complexPrompt = "Extract methodology, results, and conclusions. Focus on quantitative data and statistical significance."
+    let input = ClaudeCodeWebFetchTool.Use.Input(url: testUrl, prompt: complexPrompt)
     let output = ClaudeCodeWebFetchTool.Use.Output(
       result: "Detailed analysis of research paper content...")
-    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeWebFetchTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = WebFetchToolUseViewModel(
       status: status,
-      input: .init(
-        url: testUrl,
-        prompt: complexPrompt))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """

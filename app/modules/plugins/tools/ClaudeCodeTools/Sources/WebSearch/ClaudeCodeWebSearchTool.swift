@@ -32,13 +32,13 @@ public final class ClaudeCodeWebSearchTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(query: "", allowedDomains: nil, blockedDomains: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(query: "", allowedDomains: nil, blockedDomains: nil)
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }

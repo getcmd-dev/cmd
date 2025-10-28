@@ -82,8 +82,7 @@ struct ClaudeCodeWebSearchToolTests {
 
     // Create the tool use
     let tool = ClaudeCodeWebSearchTool()
-    let use = ClaudeCodeWebSearchTool.Use(
-      callingTool: tool,
+    let use = tool.use(
       toolUseId: "test-id",
       input: .init(query: "MCP HTTP streaming specifications", allowedDomains: nil, blockedDomains: nil),
       context: .init())
@@ -92,7 +91,7 @@ struct ClaudeCodeWebSearchToolTests {
     try use.receive(output: .string(output))
 
     // Wait for the status to be updated
-    var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
+    var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Input, ClaudeCodeWebSearchTool.Use.Output>?
     for await status in use.status.futureUpdates {
       finalStatus = status
       if case .completed = status {
@@ -101,7 +100,7 @@ struct ClaudeCodeWebSearchToolTests {
     }
 
     // Verify the results
-    guard case .completed(.success(let result)) = finalStatus else {
+    guard case .completed(_, .success(let result)) = finalStatus else {
       #expect(Bool(false), "Expected successful completion")
       return
     }
@@ -137,15 +136,14 @@ struct ClaudeCodeWebSearchToolTests {
       """
 
     let tool = ClaudeCodeWebSearchTool()
-    let use = ClaudeCodeWebSearchTool.Use(
-      callingTool: tool,
+    let use = tool.use(
       toolUseId: "test-id",
       input: .init(query: "test query", allowedDomains: nil, blockedDomains: nil),
       context: .init())
 
     try use.receive(output: .string(output))
 
-    var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>?
+    var finalStatus: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Input, ClaudeCodeWebSearchTool.Use.Output>?
     for await status in use.status.futureUpdates {
       finalStatus = status
       if case .completed = status {
@@ -153,7 +151,7 @@ struct ClaudeCodeWebSearchToolTests {
       }
     }
 
-    guard case .completed(.success(let result)) = finalStatus else {
+    guard case .completed(_, .success(let result)) = finalStatus else {
       #expect(Bool(false), "Expected successful completion")
       return
     }
@@ -167,8 +165,7 @@ struct ClaudeCodeWebSearchToolTests {
     let output = "This is not a valid WebSearch output"
 
     let tool = ClaudeCodeWebSearchTool()
-    let use = ClaudeCodeWebSearchTool.Use(
-      callingTool: tool,
+    let use = tool.use(
       toolUseId: "test-id",
       input: .init(query: "test", allowedDomains: nil, blockedDomains: nil),
       context: .init())

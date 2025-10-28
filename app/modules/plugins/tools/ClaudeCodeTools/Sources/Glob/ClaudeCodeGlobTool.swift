@@ -30,13 +30,13 @@ public final class ClaudeCodeGlobTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(pattern: "", path: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(pattern: "", path: nil)
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }

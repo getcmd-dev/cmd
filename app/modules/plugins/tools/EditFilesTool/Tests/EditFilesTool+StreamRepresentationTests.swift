@@ -12,7 +12,8 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation returns nil when status is not completed")
     func test_streamRepresentationNilWhenNotCompleted() async throws {
-      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running)
+      let input = EditFilesTool.Use.Input(files: [])
+      let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running(input: input))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,
@@ -26,8 +27,9 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows applied file changes with relative paths")
     func test_streamRepresentationWithAppliedChanges() async throws {
+      let input = EditFilesTool.Use.Input(files: [])
       let (status, _) = EditFilesTool.Use.Status
-        .makeStream(initial: .completed(.success(.init(result: "Edit successfully applied"))))
+        .makeStream(initial: .completed(input: input, result: .success(.init(result: "Edit successfully applied"))))
       let projectRoot = URL(filePath: "/project")
 
       let viewModel = EditFilesToolUseViewModel(
@@ -58,8 +60,9 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows error file changes")
     func test_streamRepresentationWithErrorChanges() async throws {
+      let input = EditFilesTool.Use.Input(files: [])
       let (status, _) = EditFilesTool.Use.Status
-        .makeStream(initial: .completed(.success(.init(result: "Edit successfully applied"))))
+        .makeStream(initial: .completed(input: input, result: .success(.init(result: "Edit successfully applied"))))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,
@@ -84,8 +87,9 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation shows absolute paths when no projectRoot")
     func test_streamRepresentationWithAbsolutePaths() async throws {
+      let input = EditFilesTool.Use.Input(files: [])
       let (status, _) = EditFilesTool.Use.Status
-        .makeStream(initial: .completed(.success(.init(result: "Edit successfully applied"))))
+        .makeStream(initial: .completed(input: input, result: .success(.init(result: "Edit successfully applied"))))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,
@@ -111,8 +115,9 @@ extension EditFileToolTests {
     @MainActor
     @Test("streamRepresentation ignores pending status changes")
     func test_streamRepresentationIgnoresPendingChanges() async throws {
+      let input = EditFilesTool.Use.Input(files: [])
       let (status, _) = EditFilesTool.Use.Status
-        .makeStream(initial: .completed(.success(.init(result: "Edit successfully applied"))))
+        .makeStream(initial: .completed(input: input, result: .success(.init(result: "Edit successfully applied"))))
 
       let viewModel = EditFilesToolUseViewModel(
         status: status,

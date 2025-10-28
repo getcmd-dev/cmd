@@ -31,13 +31,13 @@ public final class ClaudeCodeLSTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = Input(path: "", ignore: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          Input(path: "", ignore: nil)
+        }
 
       directoryPath = URL(fileURLWithPath: input.path)
 
@@ -186,9 +186,10 @@ extension ClaudeCodeLSTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     let mappedInput = LSTool.Use.Input(path: status.value.input?.path ?? "", recursive: false)
-    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<LSTool.Use.Input, LSTool.Use.Output>>.createMapped(from: status) { status in
-      status.mapInput { _ in mappedInput }
-    }
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<LSTool.Use.Input, LSTool.Use.Output>>
+      .createMapped(from: status) { status in
+        status.mapInput { _ in mappedInput }
+      }
     return AnyToolUseViewModel(ToolUseViewModel(
       status: mappedStatus,
       directoryPath: directoryPath,

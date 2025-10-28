@@ -84,6 +84,25 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
     CurrentValueStream(initial: value, publisher: Combine.Just(value).eraseToAnyPublisher()) { finish in finish() }
   }
 
+  /// Create a new CurrentValueStream by mapping values from a source stream
+  public static func createMapped<SourceElement>(
+    from source: CurrentValueStream<SourceElement>,
+    _ transform: @escaping @Sendable (SourceElement) -> Element)
+    -> CurrentValueStream<Element> where SourceElement: Sendable
+  {
+    let initial = transform(source.value)
+    let stream = AsyncStream<Element> { continuation in
+      let sourceStream = source.futureUpdates
+      Task {
+        for await value in sourceStream {
+          continuation.yield(transform(value))
+        }
+        continuation.finish()
+      }
+    }
+    return CurrentValueStream(initial: initial, stream: stream)
+  }
+
   public func makeAsyncIterator() -> AsyncIterator {
     internalStream.makeAsyncIterator()
   }
@@ -109,24 +128,6 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
   }
 
   private let lock: OSAllocatedUnfairLock<InternalState>
-
-  /// Create a new CurrentValueStream by mapping values from a source stream
-  public static func createMapped<SourceElement>(
-    from source: CurrentValueStream<SourceElement>,
-    _ transform: @escaping @Sendable (SourceElement) -> Element
-  ) -> CurrentValueStream<Element> where SourceElement: Sendable {
-    let initial = transform(source.value)
-    let stream = AsyncStream<Element> { continuation in
-      let sourceStream = source.futureUpdates
-      Task {
-        for await value in sourceStream {
-          continuation.yield(transform(value))
-        }
-        continuation.finish()
-      }
-    }
-    return CurrentValueStream(initial: initial, stream: stream)
-  }
 
 }
 

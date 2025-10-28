@@ -33,14 +33,14 @@ public final class UnknownTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = .null
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          .null
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -80,8 +80,8 @@ public final class UnknownTool: Tool {
       guard let input = status.value.input else { return }
       if internalState?.isExternalAgent ?? callingTool.isExternalAgent {
         // The external agent will set the results
-        let notStartedStatus: ToolUseExecutionStatus<Input, Output> = .notStarted(input: input)
-        let runningStatus: ToolUseExecutionStatus<Input, Output> = .running(input: input)
+        let notStartedStatus = ToolUseExecutionStatus<Input, Output>.notStarted(input: input)
+        let runningStatus = ToolUseExecutionStatus<Input, Output>.running(input: input)
         updateStatus.yield(notStartedStatus)
         updateStatus.yield(runningStatus)
       } else {

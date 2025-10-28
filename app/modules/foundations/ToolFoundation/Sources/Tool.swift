@@ -49,7 +49,7 @@ extension Tool {
 
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
   public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    return use(toolUseId: toolUseId, input: input, context: context, initialStatus: .notStarted(input: input))
+    use(toolUseId: toolUseId, input: input, context: context, initialStatus: .notStarted(input: input))
   }
 
   public func use(toolUseId: String, input: Data, context: ToolExecutionContext) -> Use {
@@ -63,7 +63,19 @@ extension Tool {
     return use(toolUseId: toolUseId, inputResult: inputResult, context: context)
   }
 
-  func use(toolUseId: String, input: Input, context: ToolExecutionContext, initialStatus: ToolUseExecutionStatus<Input, Output>?) -> Use {
+  /// Default implementation: available in all modes.
+  /// Override this method to customize availability by mode.
+  public func isAvailableByDefault(in _: ChatMode) -> Bool {
+    true
+  }
+
+  func use(
+    toolUseId: String,
+    input: Input,
+    context: ToolExecutionContext,
+    initialStatus: ToolUseExecutionStatus<Input, Output>?)
+    -> Use
+  {
     Use(
       callingTool: self,
       toolUseId: toolUseId,
@@ -74,13 +86,13 @@ extension Tool {
   }
 
   func use(toolUseId: String, inputResult: Result<Input, ToolDecodingError>, context: ToolExecutionContext) -> Use {
-    let initialStatus: ToolUseExecutionStatus<Input, Output>?
-    switch inputResult {
-    case .success(let input):
-      initialStatus = .notStarted(input: input)
-    case .failure(let error):
-      initialStatus = .failedToDecode(error: error)
-    }
+    let initialStatus: ToolUseExecutionStatus<Input, Output>? =
+      switch inputResult {
+      case .success(let input):
+        .notStarted(input: input)
+      case .failure(let error):
+        .failedToDecode(error: error)
+      }
     return Use(
       callingTool: self,
       toolUseId: toolUseId,
@@ -88,12 +100,6 @@ extension Tool {
       context: context,
       internalState: nil,
       initialStatus: initialStatus)
-  }
-
-  /// Default implementation: available in all modes.
-  /// Override this method to customize availability by mode.
-  public func isAvailableByDefault(in _: ChatMode) -> Bool {
-    true
   }
 
 }
@@ -149,17 +155,11 @@ extension ToolUse {
 
   public var toolDisplayName: String { callingTool.displayName }
 
-  /// Get the input if it was successfully decoded. Returns nil if the tool is in failedToDecode state.
+  /// Get the input if it was successfully decoded. Throws if the input failed to decode.
   public var input: Input? {
-    status.value.input
-  }
-
-  /// Get the input, throwing an error if it failed to decode.
-  public func requireInput() throws -> Input {
-    if let input = status.value.input {
-      return input
+    get throws {
+      try status.value.requireInput()
     }
-    throw AppError(message: "Tool input failed to decode")
   }
 
   public var output: Output {
@@ -342,6 +342,49 @@ public enum ToolUseExecutionStatus<Input: Codable & Sendable, Output: Codable & 
 }
 
 extension ToolUseExecutionStatus {
+  public var input: Input? {
+    switch self {
+    case .pendingApproval(let input),
+         .approvalRejected(let input, _),
+         .notStarted(let input),
+         .running(let input),
+         .completed(let input, _):
+      input
+    case .failedToDecode:
+      nil // For failedToDecode, we only have Data, not the decoded Input
+    }
+  }
+
+  public var rawInputData: String? {
+    switch self {
+    case .failedToDecode(let error):
+      return error.inputData
+    case .pendingApproval(let input),
+         .approvalRejected(let input, _),
+         .notStarted(let input),
+         .running(let input),
+         .completed(let input, _):
+      if let data = try? JSONEncoder().encode(input), let string = String(data: data, encoding: .utf8) {
+        return string
+      }
+      return nil
+    }
+  }
+
+  /// Get the input, throwing an error if it failed to decode.
+  public func requireInput() throws -> Input {
+    switch self {
+    case .pendingApproval(let input),
+         .approvalRejected(let input, _),
+         .notStarted(let input),
+         .running(let input),
+         .completed(let input, _):
+      return input
+    case .failedToDecode(let error):
+      throw error
+    }
+  }
+
   var asOutput: Output? {
     get throws {
       if case .completed(_, let result) = self {
@@ -362,34 +405,6 @@ extension ToolUseExecutionStatus {
     }
   }
 
-  public var input: Input? {
-    switch self {
-    case .pendingApproval(let input),
-         .approvalRejected(let input, _),
-         .notStarted(let input),
-         .running(let input),
-         .completed(let input, _):
-      return input
-    case .failedToDecode:
-      return nil  // For failedToDecode, we only have Data, not the decoded Input
-    }
-  }
-
-  public var rawInputData: String? {
-    switch self {
-    case .failedToDecode(let error):
-      return error.inputData
-    case .pendingApproval(let input),
-         .approvalRejected(let input, _),
-         .notStarted(let input),
-         .running(let input),
-         .completed(let input, _):
-      if let data = try? JSONEncoder().encode(input), let string = String(data: data, encoding: .utf8) {
-        return string
-      }
-      return nil
-    }
-  }
 }
 
 extension ToolUse {
@@ -398,7 +413,7 @@ extension ToolUse {
       // If we're in failedToDecode state, we can't transition to approvalRejected
       return
     }
-    let rejectedStatus: ToolUseExecutionStatus<Input, Output> = .approvalRejected(input: input, reason: reason)
+    let rejectedStatus = ToolUseExecutionStatus<Input, Output>.approvalRejected(input: input, reason: reason)
     updateStatus.yield(rejectedStatus)
   }
 
@@ -406,7 +421,7 @@ extension ToolUse {
     guard let input = status.value.input else {
       return
     }
-    let approvalStatus: ToolUseExecutionStatus<Input, Output> = .pendingApproval(input: input)
+    let approvalStatus = ToolUseExecutionStatus<Input, Output>.pendingApproval(input: input)
     updateStatus.yield(approvalStatus)
   }
 
@@ -468,7 +483,10 @@ extension ToolUse {
 }
 
 extension AsyncStream.Continuation {
-  public func complete<Input, Output>(with result: Result<Output, Error>, input: Input) where Element == ToolUseExecutionStatus<Input, Output> {
+  public func complete<Input, Output>(with result: Result<Output, Error>, input: Input) where Element == ToolUseExecutionStatus<
+    Input,
+    Output,
+  > {
     yield(.completed(input: input, result: result))
     finish()
   }

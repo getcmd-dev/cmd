@@ -13,11 +13,12 @@ struct SearchFilesToolStreamRepresentationTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .running)
+    let input = ToolsSchema.SearchFilesToolInput(directoryPath: "/test", regex: "pattern", filePattern: nil)
+    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      input: input,
       rootPath: "/")
 
     #expect(viewModel.streamRepresentation == nil)
@@ -27,6 +28,7 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation shows success with match count")
   func test_streamRepresentationSuccess() {
     // given
+    let input = ToolsSchema.SearchFilesToolInput(directoryPath: "/test", regex: "pattern", filePattern: nil)
     let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "Search results",
       results: [
@@ -38,11 +40,11 @@ struct SearchFilesToolStreamRepresentationTests {
         ]),
       ],
       hasMore: false)
-    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      input: input,
       rootPath: "/test")
 
     // then
@@ -58,6 +60,7 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation shows success with truncated results")
   func test_streamRepresentationSuccessWithTruncation() {
     // given
+    let input = ToolsSchema.SearchFilesToolInput(directoryPath: "/test", regex: "test.*pattern", filePattern: "*.swift")
     let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "Search results",
       results: [
@@ -66,11 +69,11 @@ struct SearchFilesToolStreamRepresentationTests {
         ]),
       ],
       hasMore: true)
-    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "test.*pattern", filePattern: "*.swift"),
+      input: input,
       rootPath: "/test")
 
     // then
@@ -86,12 +89,13 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation shows failure with error")
   func test_streamRepresentationFailure() {
     // given
+    let input = ToolsSchema.SearchFilesToolInput(directoryPath: "/test", regex: "pattern", filePattern: nil)
     let error = AppError("Directory not found")
-    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "pattern", filePattern: nil),
+      input: input,
       rootPath: "/test")
 
     // then
@@ -107,15 +111,16 @@ struct SearchFilesToolStreamRepresentationTests {
   @Test("streamRepresentation handles empty results")
   func test_streamRepresentationEmptyResults() {
     // given
+    let input = ToolsSchema.SearchFilesToolInput(directoryPath: "/test", regex: "nonexistent", filePattern: nil)
     let output = ToolsSchema.SearchFilesToolOutput(
       outputForLLm: "No results",
       results: [],
       hasMore: false)
-    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = SearchFilesTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = ToolUseViewModel(
       status: status,
-      input: .init(directoryPath: "/test", regex: "nonexistent", filePattern: nil),
+      input: input,
       rootPath: "/test")
 
     // then

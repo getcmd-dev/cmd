@@ -12,7 +12,8 @@ extension LSToolTests {
     @MainActor
     @Test("streamRepresentation returns nil when status is not completed")
     func test_streamRepresentationNilWhenNotCompleted() {
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .running)
+      let input = LSTool.Use.Input(path: "/test/directory", recursive: nil)
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .running(input: input))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -26,6 +27,7 @@ extension LSToolTests {
     @Test("streamRepresentation shows successful listing with multiple files")
     func test_streamRepresentationSuccessMultipleFiles() {
       // given
+      let input = LSTool.Use.Input(path: "/test/directory", recursive: nil)
       let output = LSTool.Use.Output(
         files: [
           .init(path: "/test/directory/file1.swift", attr: "-rw-r--r--", size: "1.2KB"),
@@ -34,7 +36,7 @@ extension LSToolTests {
           .init(path: "/test/directory/image.png", attr: "-rw-r--r--", size: "45KB"),
         ],
         hasMore: false)
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -54,12 +56,13 @@ extension LSToolTests {
     @Test("streamRepresentation shows successful listing with single file")
     func test_streamRepresentationSuccessSingleFile() {
       // given
+      let input = LSTool.Use.Input(path: "/test/directory", recursive: nil)
       let output = LSTool.Use.Output(
         files: [
           .init(path: "/test/directory/single.swift", attr: "-rw-r--r--", size: "2.1KB"),
         ],
         hasMore: false)
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -79,8 +82,9 @@ extension LSToolTests {
     @Test("streamRepresentation shows successful listing with no files")
     func test_streamRepresentationSuccessNoFiles() {
       // given
+      let input = LSTool.Use.Input(path: "/test/empty", recursive: nil)
       let output = LSTool.Use.Output(files: [], hasMore: false)
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -100,8 +104,9 @@ extension LSToolTests {
     @Test("streamRepresentation shows failure with error")
     func test_streamRepresentationFailure() {
       // given
+      let input = LSTool.Use.Input(path: "/test/nonexistent", recursive: nil)
       let error = AppError("Directory not found")
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -121,8 +126,9 @@ extension LSToolTests {
     @Test("streamRepresentation handles permission denied error")
     func test_streamRepresentationPermissionError() {
       // given
+      let input = LSTool.Use.Input(path: "/restricted/directory", recursive: nil)
       let error = AppError("Permission denied")
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -142,12 +148,13 @@ extension LSToolTests {
     @Test("streamRepresentation handles absolute paths without project root")
     func test_streamRepresentationAbsolutePath() {
       // given
+      let input = LSTool.Use.Input(path: "/usr/bin", recursive: nil)
       let output = LSTool.Use.Output(
         files: [
           .init(path: "/usr/bin/swift", attr: "-rwxr-xr-x", size: "12MB"),
         ],
         hasMore: false)
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
@@ -167,11 +174,12 @@ extension LSToolTests {
     @Test("streamRepresentation handles large directory listing")
     func test_streamRepresentationLargeDirectory() {
       // given
+      let input = LSTool.Use.Input(path: "/test/large", recursive: nil)
       let files = (1...50).map { i in
         LSTool.Use.Output.File(path: "/test/large/file\(i).txt", attr: "-rw-r--r--", size: "\(i)KB")
       }
       let output = LSTool.Use.Output(files: files, hasMore: false)
-      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = LSTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,

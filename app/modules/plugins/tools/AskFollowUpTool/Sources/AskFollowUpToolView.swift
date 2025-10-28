@@ -13,7 +13,7 @@ extension AskFollowUpTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      input: input ?? Input(question: "", followUp: []),
+      input: (try? input) ?? Input(question: "", followUp: []),
       selectFollowUp: select(followUp:)))
   }
 }

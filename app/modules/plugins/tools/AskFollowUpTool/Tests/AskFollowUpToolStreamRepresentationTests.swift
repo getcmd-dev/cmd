@@ -14,11 +14,12 @@ extension AskFollowUpToolTests {
     @MainActor
     @Test("streamRepresentation returns nil when status is not completed")
     func test_streamRepresentationNilWhenNotCompleted() {
-      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .running)
+      let input = AskFollowUpTool.Use.Input(question: "What should we do next?", followUp: ["Option 1", "Option 2"])
+      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .running(input: input))
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(question: "What should we do next?", followUp: ["Option 1", "Option 2"]),
+        input: input,
         selectFollowUp: { _ in })
 
       #expect(viewModel.streamRepresentation == nil)
@@ -28,12 +29,13 @@ extension AskFollowUpToolTests {
     @Test("streamRepresentation shows success with follow-up count")
     func test_streamRepresentationSuccess() {
       // given
+      let input = AskFollowUpTool.Use.Input(question: "What should we do next?", followUp: ["Option 1", "Option 2", "Option 3"])
       let output = AskFollowUpTool.Use.Output(response: "Please choose from the options")
-      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(question: "What should we do next?", followUp: ["Option 1", "Option 2", "Option 3"]),
+        input: input,
         selectFollowUp: { _ in })
 
       // then
@@ -49,12 +51,13 @@ extension AskFollowUpToolTests {
     @Test("streamRepresentation shows success with no follow-up options")
     func test_streamRepresentationSuccessWithNoOptions() {
       // given
+      let input = AskFollowUpTool.Use.Input(question: "Simple question?", followUp: [])
       let output = AskFollowUpTool.Use.Output(response: "Direct answer")
-      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(question: "Simple question?", followUp: []),
+        input: input,
         selectFollowUp: { _ in })
 
       // then
@@ -70,12 +73,13 @@ extension AskFollowUpToolTests {
     @Test("streamRepresentation shows failure with error")
     func test_streamRepresentationFailure() {
       // given
+      let input = AskFollowUpTool.Use.Input(question: "Complex question?", followUp: ["A", "B"])
       let error = AppError("Unable to process question")
-      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(question: "Complex question?", followUp: ["A", "B"]),
+        input: input,
         selectFollowUp: { _ in })
 
       // then
@@ -92,12 +96,13 @@ extension AskFollowUpToolTests {
     func test_streamRepresentationWithLongQuestion() {
       // given
       let longQuestion = "This is a very long question that contains multiple sentences and detailed context about what we're trying to accomplish?"
+      let input = AskFollowUpTool.Use.Input(question: longQuestion, followUp: ["Yes", "No", "Maybe"])
       let output = AskFollowUpTool.Use.Output(response: "Response to long question")
-      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = AskFollowUpTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         status: status,
-        input: .init(question: longQuestion, followUp: ["Yes", "No", "Maybe"]),
+        input: input,
         selectFollowUp: { _ in })
 
       // then

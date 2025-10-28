@@ -381,7 +381,7 @@ struct RequestStreamingHelperBadInputTests {
   func testBadInputCreatesFailedToDecodeStatus() async throws {
     // Use a tool with a specific Input type that will fail on wrong JSON structure
     struct SpecificInput: Codable, Sendable {
-      let requiredField: Int  // This will fail if we send a string
+      let requiredField: Int // This will fail if we send a string
     }
     let mockTool = GenericTestTool<SpecificInput, String>(name: "test_tool", output: "success")
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
@@ -433,8 +433,8 @@ struct RequestStreamingHelperBadInputTests {
     // Check that the status is failedToDecode
     let status = await toolUse.status.lastValue
     switch status {
-    case .failedToDecode(_, let error):
-      #expect(error.localizedDescription.contains("Int"))
+    case .failedToDecode(let decodingError):
+      #expect(decodingError.error.contains("Int"))
     default:
       Issue.record("Expected failedToDecode status, got \(status)")
     }

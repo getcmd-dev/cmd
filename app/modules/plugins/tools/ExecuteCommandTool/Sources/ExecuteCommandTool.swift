@@ -35,14 +35,14 @@ public final class ExecuteCommandTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = Input(command: "", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          Input(command: "", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
+        }
 
       resolvedInput = internalState ?? Input(
         command: input.command,

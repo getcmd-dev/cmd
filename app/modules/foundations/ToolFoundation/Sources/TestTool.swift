@@ -159,17 +159,17 @@ public struct GenericTestTool<I: Codable & Sendable, O: Codable & Sendable>: Too
       isReadonly = callingTool.isReadonly
 
       // Extract input from inputResult, using initialStatus if available
-      let finalStatus: Status.Element
-      if let initialStatus = initialStatus {
-        finalStatus = initialStatus
-      } else {
-        switch inputResult {
-        case .success(let input):
-          finalStatus = .completed(input: input, result: callingTool.output)
-        case .failure(let error):
-          finalStatus = .failedToDecode(error: error)
+      let finalStatus: Status.Element =
+        if let initialStatus {
+          initialStatus
+        } else {
+          switch inputResult {
+          case .success(let input):
+            .completed(input: input, result: callingTool.output)
+          case .failure(let error):
+            .failedToDecode(error: error)
+          }
         }
-      }
 
       let (stream, updateStatus) = Status.makeStream(initial: finalStatus)
       updateStatus.finish()

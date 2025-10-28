@@ -34,8 +34,9 @@ public struct DefaultToolUseView: View {
 
         switch toolUse.status {
         case .failedToDecode(let error):
-            Text("Failed to parse input for \(toolUse.toolName)")
-              .foregroundColor(foregroundColor)
+          Text("Failed to parse input for \(toolUse.toolName)")
+            .foregroundColor(foregroundColor)
+
         case .notStarted:
           Text("\(toolUse.toolName)")
             .foregroundColor(foregroundColor)
@@ -64,8 +65,8 @@ public struct DefaultToolUseView: View {
       // Optional second row
       switch toolUse.status {
       case .failedToDecode(let error):
-          // TODO: render
-          EmptyView()
+        // TODO: render
+        EmptyView()
       case .notStarted, .pendingApproval, .approvalRejected, .running, .completed(_, .success):
         EmptyView()
       case .completed(_, .failure(let error)):
@@ -89,8 +90,9 @@ public struct DefaultToolUseView: View {
 
           switch toolUse.status {
           case .failedToDecode(let error):
-              // TODO: render
-              EmptyView()
+            // TODO: render
+            EmptyView()
+
           case .notStarted, .pendingApproval, .running, .approvalRejected:
             EmptyView()
 

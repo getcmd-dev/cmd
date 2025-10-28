@@ -10,13 +10,14 @@ extension ClaudeCodeTodoWriteToolTests {
   @MainActor
   @Test("streamRepresentation returns nil when status is not completed")
   func test_streamRepresentationNilWhenNotCompleted() {
-    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .running)
+    let input = ClaudeCodeTodoWriteTool.Use.Input(todos: [
+      .init(content: "Test task", status: "pending", id: "1"),
+    ])
+    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .running(input: input))
 
     let viewModel = TodoWriteToolUseViewModel(
       status: status,
-      input: .init(todos: [
-        .init(content: "Test task", status: "pending", id: "1"),
-      ]))
+      input: input)
 
     #expect(viewModel.streamRepresentation == nil)
   }
@@ -25,17 +26,18 @@ extension ClaudeCodeTodoWriteToolTests {
   @Test("streamRepresentation shows successful todo update with changed items")
   func test_streamRepresentationSuccessWithChangedTodos() {
     // given
+    let input = ClaudeCodeTodoWriteTool.Use.Input(todos: [
+      .init(content: "Implement feature A", status: "completed", id: "1"),
+      .init(content: "Add unit tests", status: "in_progress", id: "2"),
+      .init(content: "Write documentation", status: "pending", id: "3"),
+    ])
     let output = ClaudeCodeTodoWriteTool.Use.Output(
       message: "Todo list updated successfully")
-    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .completed(.success(output)))
+    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .completed(input: input, result: .success(output)))
 
     let viewModel = TodoWriteToolUseViewModel(
       status: status,
-      input: .init(todos: [
-        .init(content: "Implement feature A", status: "completed", id: "1"),
-        .init(content: "Add unit tests", status: "in_progress", id: "2"),
-        .init(content: "Write documentation", status: "pending", id: "3"),
-      ]))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """
@@ -52,14 +54,15 @@ extension ClaudeCodeTodoWriteToolTests {
   @Test("streamRepresentation shows failure with error")
   func test_streamRepresentationFailure() {
     // given
+    let input = ClaudeCodeTodoWriteTool.Use.Input(todos: [
+      .init(content: "Invalid task", status: "invalid", id: "1"),
+    ])
     let error = AppError("Invalid todo status")
-    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+    let (status, _) = ClaudeCodeTodoWriteTool.Use.Status.makeStream(initial: .completed(input: input, result: .failure(error)))
 
     let viewModel = TodoWriteToolUseViewModel(
       status: status,
-      input: .init(todos: [
-        .init(content: "Invalid task", status: "invalid", id: "1"),
-      ]))
+      input: input)
 
     // then
     #expect(viewModel.streamRepresentation == """

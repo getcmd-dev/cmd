@@ -244,7 +244,7 @@ extension ChatMessageContent {
 
         let request = try Schema.MessageContent.toolUseRequest(Schema.ToolUseRequest(
           name: toolUse.toolUse.toolName,
-          anyInput: toolUse.toolUse.input,
+          anyInput: (toolUse.toolUse.input) ?? EmptyObject(),
           id: toolUse.toolUse.toolUseId))
         return [
           (.assistant, request),
@@ -366,14 +366,19 @@ extension ToolUse {
     status.futureUpdates.map { event -> ToolUseExecutionStatus<EmptyObject, EmptyObject> in
       switch event {
       case .notStarted: return .notStarted(input: EmptyObject())
+
       case .running: return .running(input: EmptyObject())
+
       case .pendingApproval: return .pendingApproval(input: EmptyObject())
+
       case .approvalRejected(_, let reason): return .approvalRejected(input: EmptyObject(), reason: reason)
+
       case .completed(_, let result):
         switch result {
         case .success: return .completed(input: EmptyObject(), result: .success(EmptyObject()))
         case .failure(let error): return .completed(input: EmptyObject(), result: .failure(error))
         }
+
       case .failedToDecode(let error):
         return .failedToDecode(error: error)
       }

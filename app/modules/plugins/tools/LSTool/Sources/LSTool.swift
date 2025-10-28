@@ -35,14 +35,14 @@ public final class LSTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = Input(path: "", recursive: false)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          Input(path: "", recursive: false)
+        }
 
       resolvedInput = Input(
         path: input.path.resolvePath(from: context.projectRoot).path(),

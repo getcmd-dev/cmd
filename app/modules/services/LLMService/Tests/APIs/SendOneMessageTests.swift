@@ -267,7 +267,7 @@ final class SendOneMessageTests {
           let toolCall = try #require(message.content.last?.asToolUseRequest)
           #expect(toolCall.toolName == "read_file")
           #expect(toolCall.toolUse.toolUseId == "123")
-          #expect((toolCall.toolUse.input as? TestToolInput)?.file == "file.txt")
+          #expect((try? toolCall.toolUse.input as? TestToolInput)?.file == "file.txt")
           toolCallReceived.fulfill()
         }
       }

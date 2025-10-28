@@ -37,6 +37,7 @@ public final class ClaudeCodeGrepTool: Tool {
       case .success(var value):
         value.projectRoot = value.projectRoot ?? context.projectRoot?.path
         input = value
+
       case .failure:
         input = ClaudeCodeGrepInput(
           pattern: "",
@@ -422,9 +423,10 @@ extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
       directoryPath: input?.path ?? input?.projectRoot ?? "/",
       regex: input?.pattern ?? "",
       filePattern: input?.glob)
-    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<SearchFilesTool.Use.Input, SearchFilesTool.Use.Output>>.createMapped(from: status) { status in
-      status.mapInput { _ in mappedInput }
-    }
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<SearchFilesTool.Use.Input, SearchFilesTool.Use.Output>>
+      .createMapped(from: status) { status in
+        status.mapInput { _ in mappedInput }
+      }
     return AnyToolUseViewModel(ToolUseViewModel(status: mappedStatus, input: mappedInput, rootPath: _internalState.rootPath))
   }
 }

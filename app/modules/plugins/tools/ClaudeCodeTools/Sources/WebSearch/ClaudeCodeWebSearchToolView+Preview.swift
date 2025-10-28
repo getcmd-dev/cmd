@@ -48,19 +48,21 @@ import ToolFoundation
     toolUseId: "preview",
     inputResult: .success(input),
     context: ToolExecutionContext(),
-    initialStatus: .completed(input: input, result: .success(.init(
-      links: [
-        .init(
-          title: "HTTP Stream Transport | MCP Framework",
-          url: "https://mcp-framework.com/docs/Transports/http-stream-transport/"),
-        .init(
-          title: "MCP's New Transport Layer - A Deep Dive into the Streamable HTTP Protocol | Claude MCP Blog",
-          url: "https://www.claudemcp.com/blog/mcp-streamable-http"),
-        .init(
-          title: "Transports - Model Context Protocol",
-          url: "https://modelcontextprotocol.io/specification/2025-03-26/basic/transports"),
-      ],
-      content: "The Model Context Protocol (MCP) has introduced a new transport mechanism called \"Streamable HTTP transport\" which replaces the deprecated HTTP+SSE transport..."))))
+    initialStatus: .completed(
+      input: input,
+      result: .success(.init(
+        links: [
+          .init(
+            title: "HTTP Stream Transport | MCP Framework",
+            url: "https://mcp-framework.com/docs/Transports/http-stream-transport/"),
+          .init(
+            title: "MCP's New Transport Layer - A Deep Dive into the Streamable HTTP Protocol | Claude MCP Blog",
+            url: "https://www.claudemcp.com/blog/mcp-streamable-http"),
+          .init(
+            title: "Transports - Model Context Protocol",
+            url: "https://modelcontextprotocol.io/specification/2025-03-26/basic/transports"),
+        ],
+        content: "The Model Context Protocol (MCP) has introduced a new transport mechanism called \"Streamable HTTP transport\" which replaces the deprecated HTTP+SSE transport..."))))
   use.body
     .padding()
     .frame(width: 500)

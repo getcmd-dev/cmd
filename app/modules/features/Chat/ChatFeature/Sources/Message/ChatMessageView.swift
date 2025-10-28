@@ -185,8 +185,11 @@ struct ToolUseView: View {
   }
 
   private var debugInput: String? {
+    guard let input = try? toolUse.input else {
+      return nil
+    }
     if
-      let data = try? JSONEncoder().encode(toolUse.input),
+      let data = try? JSONEncoder().encode(input),
       let string = String(data: data, encoding: .utf8)
     {
       return string

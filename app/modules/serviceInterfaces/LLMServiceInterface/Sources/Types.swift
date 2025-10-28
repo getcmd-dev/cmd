@@ -86,7 +86,7 @@ public struct ToolUseMessage: Sendable {
   public var id: String { toolUse.toolUseId }
   public var toolName: String { toolUse.toolName }
   public var input: any Codable {
-    toolUse.input ?? EmptyObject()
+    (try? toolUse.input) ?? EmptyObject()
   }
 }
 

@@ -15,7 +15,7 @@ extension BuildTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
-      buildType: input?.for ?? .run,
+      buildType: (try? input)?.for ?? .run,
       status: status))
   }
 }

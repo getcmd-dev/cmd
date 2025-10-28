@@ -36,14 +36,14 @@ public final class SearchFilesTool: Tool {
       self.context = context
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding
-        input = Input(directoryPath: nil, regex: "", filePattern: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding
+          Input(directoryPath: nil, regex: "", filePattern: nil)
+        }
 
       resolvedInput = Input(
         directoryPath: input.directoryPath.map { $0.resolvePath(from: context.projectRoot).path },

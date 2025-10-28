@@ -32,6 +32,25 @@ public final class DefaultToolUseViewModel {
 }
 
 extension ToolUseExecutionStatus {
+  public func mapInput<MappedInput: Codable & Sendable>(_ mapInput: (Input) -> MappedInput)
+    -> ToolUseExecutionStatus<MappedInput, Output>
+  {
+    switch self {
+    case .pendingApproval(let input):
+      .pendingApproval(input: mapInput(input))
+    case .approvalRejected(let input, let reason):
+      .approvalRejected(input: mapInput(input), reason: reason)
+    case .notStarted(let input):
+      .notStarted(input: mapInput(input))
+    case .running(let input):
+      .running(input: mapInput(input))
+    case .completed(let input, let result):
+      .completed(input: mapInput(input), result: result)
+    case .failedToDecode(let error):
+      .failedToDecode(error: error)
+    }
+  }
+
   func map<MappedOutput: Codable & Sendable>(_ map: (Output) -> MappedOutput) -> ToolUseExecutionStatus<Input, MappedOutput> {
     switch self {
     case .pendingApproval(let input):
@@ -51,20 +70,4 @@ extension ToolUseExecutionStatus {
     }
   }
 
-  public func mapInput<MappedInput: Codable & Sendable>(_ mapInput: (Input) -> MappedInput) -> ToolUseExecutionStatus<MappedInput, Output> {
-    switch self {
-    case .pendingApproval(let input):
-      .pendingApproval(input: mapInput(input))
-    case .approvalRejected(let input, let reason):
-      .approvalRejected(input: mapInput(input), reason: reason)
-    case .notStarted(let input):
-      .notStarted(input: mapInput(input))
-    case .running(let input):
-      .running(input: mapInput(input))
-    case .completed(let input, let result):
-      .completed(input: mapInput(input), result: result)
-    case .failedToDecode(let error):
-      .failedToDecode(error: error)
-    }
-  }
 }

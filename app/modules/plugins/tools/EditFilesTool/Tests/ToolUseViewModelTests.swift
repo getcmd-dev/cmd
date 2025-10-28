@@ -34,7 +34,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
     let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
@@ -65,7 +65,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [testFile.path: "Hello World Test"])
     let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
@@ -115,7 +115,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",
@@ -174,7 +174,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
     let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
     let mockXcodeController = MockXcodeController()
@@ -234,7 +234,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",
@@ -293,7 +293,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [testFile.path: "Hello World"])
     let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
     let mockXcodeController = MockXcodeController()
@@ -348,7 +348,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .running(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [testFile.path: "Hello World Test"])
     let mockXcodeObserver = MockXcodeObserver(fileManager: mockFileManager)
 
@@ -398,7 +398,7 @@ struct ToolUseViewModelTests {
         ]),
     ])
 
-    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted)
+    let (status, _) = EditFilesTool.Use.Status.makeStream(initial: .notStarted(input: EditFilesTool.Use.Input(files: [])))
     let mockFileManager = MockFileManager(files: [
       file1Path.path: "Hello World",
       file2Path.path: "Test Code",

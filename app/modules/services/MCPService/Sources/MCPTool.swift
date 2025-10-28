@@ -37,13 +37,13 @@ public final class MCPTool: ToolFoundation.Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        input = [:]
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          [:]
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -59,8 +59,7 @@ public final class MCPTool: ToolFoundation.Tool {
 
     public let context: ToolFoundation.ToolExecutionContext
 
-    @MainActor
-    public lazy var viewModel: DefaultToolUseViewModel = {
+    @MainActor public lazy var viewModel: DefaultToolUseViewModel = {
       typealias MappedStatus = CurrentValueStream<ToolUseExecutionStatus<JSON.Value, JSON.Value>>
       let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<JSON.Value, JSON.Value>>.createMapped(from: self.status) {
         $0.mapInput { JSON.Value.object($0) }
@@ -105,7 +104,9 @@ public final class MCPTool: ToolFoundation.Tool {
             updateStatus.complete(with: .success(.array(response.content.map(\.jsonValue))), input: input)
           }
         } catch {
-          updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(error.localizedDescription)")), input: input)
+          updateStatus.complete(
+            with: .failure(AppError("MCP tool returned an error: \(error.localizedDescription)")),
+            input: input)
         }
       }
     }

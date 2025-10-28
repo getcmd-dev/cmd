@@ -42,14 +42,14 @@ public final class ACPTool: Tool {
       self.internalState = internalState
 
       // Extract input or create fallback
-      let input: Input
-      switch inputResult {
-      case .success(let value):
-        input = value
-      case .failure:
-        // Fallback for failed decoding - use think as a safe default
-        input = Input(kind: .think, title: "", rawInput: nil)
-      }
+      let input: Input =
+        switch inputResult {
+        case .success(let value):
+          value
+        case .failure:
+          // Fallback for failed decoding - use think as a safe default
+          Input(kind: .think, title: "", rawInput: nil)
+        }
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
@@ -143,7 +143,7 @@ extension ACPTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      input: input ?? Input(kind: .think, title: "", rawInput: nil),
+      input: (try? input) ?? Input(kind: .think, title: "", rawInput: nil),
       projectRoot: context.projectRoot))
   }
 }
