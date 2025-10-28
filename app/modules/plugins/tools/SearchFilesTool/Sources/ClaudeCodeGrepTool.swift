@@ -33,14 +33,15 @@ public final class ClaudeCodeGrepTool: Tool {
       self.context = context
 
       // Prepare inputResult by adding projectRoot if needed
-      let adjustedInputResult: Result<Input, ToolDecodingError> =
+      let adjustedInputResult: Result<Input, ToolDecodingError> = {
         switch inputResult {
         case .success(var value):
           value.projectRoot = value.projectRoot ?? context.projectRoot?.path
-          .success(value)
+          return .success(value)
         case .failure(let error):
-          .failure(error)
+          return .failure(error)
         }
+      }()
 
       let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: adjustedInputResult)
       if case .completed = stream.value { updateStatus.finish() }

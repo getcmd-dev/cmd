@@ -183,10 +183,24 @@ struct ToolUseView: View {
   }
 
   private var debugToolData: String? {
+    let inputJSON: JSON.Value
+    if let input = try? toolUse.input, let encoded = try? JSON.Value.init(encoding: input) {
+      inputJSON = encoded
+    } else {
+      inputJSON = .null
+    }
+
+    let outputJSON: JSON.Value
+    if let output = try? toolUse.currentOutput, let encoded = try? JSON.Value.init(encoding: output) {
+      outputJSON = encoded
+    } else {
+      outputJSON = .null
+    }
+
     if
       let data = try? JSONEncoder().encode(JSON.object([
-        "input": (try? toolUse.input).map({ .init(encoding: $0) }) ??? .null,
-        "output": (try? toolUse.currentOutput).map({ try? .init(encoding: $0) }) ??? .null,
+        "input": inputJSON,
+        "output": outputJSON,
         "toolUseId": .string(toolUse.toolUseId),
         "toolName": .string(toolUse.toolName),
       ])),

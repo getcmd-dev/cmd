@@ -111,12 +111,12 @@ struct UnknownToolTests {
     let toolUse = TestTool.Use(
       callingTool: tool,
       toolUseId: "tool-use-id",
-      input: .null,
+      inputResult: .success(.null),
       context: toolExecutionContext,
       internalState: nil,
-      initialStatus: .running)
+      initialStatus: .running(input: .null))
 
-    if case .completed(let result) = toolUse.status.value {
+    if case .completed(_, let result) = toolUse.status.value {
       if case .failure(let error) = result {
         #expect(error is CancellationError)
       } else {

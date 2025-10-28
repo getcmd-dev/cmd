@@ -28,11 +28,13 @@ struct ToolUseView: View {
     case .approvalRejected:
       rejectedView
     case .running(let input):
-      contentView(content: toolUse.input.content)
-    case .completed(.success(let output)):
+      contentView(content: input.content)
+    case .completed(_, .success(let output)):
       contentView(content: output.content)
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
       failureView(error: error)
+    case .failedToDecode:
+      EmptyView()
     }
   }
 
