@@ -11,7 +11,7 @@ import ToolFoundation
 extension ClaudeCodeGlobTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(GlobToolUseViewModel(status: status, input: input))
+    AnyToolUseViewModel(GlobToolUseViewModel(status: status, input: input ?? Input(pattern: "", path: nil)))
   }
 }
 
@@ -108,7 +108,7 @@ struct GlobToolUseView: View {
 
   private var output: ClaudeCodeGlobTool.Use.Output? {
     switch toolUse.status {
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       output
     default:
       nil

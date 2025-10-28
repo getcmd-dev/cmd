@@ -25,7 +25,7 @@ public final class ExecuteCommandTool: Tool {
     public init(
       callingTool: ExecuteCommandTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -33,17 +33,27 @@ public final class ExecuteCommandTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
+
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding
+        input = Input(command: "", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
+      }
+
       resolvedInput = internalState ?? Input(
         command: input.command,
         cwd: input.cwd.map { $0.resolvePath(from: context.projectRoot).path() },
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       // If the tool was running when the app was terminated, we don't support resume execution so it's set to cancelled.
-      if case .running = stream.value { updateStatus.complete(with: .failure(CancellationError())) }
+      if case .running = stream.value { updateStatus.complete(with: .failure(CancellationError()), input: input) }
       status = stream
       self.updateStatus = updateStatus
 
@@ -69,25 +79,27 @@ public final class ExecuteCommandTool: Tool {
 
     public let callingTool: ExecuteCommandTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public var internalState: InternalState? { resolvedInput }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
       try? runningProcess?.terminate()
     }
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
+
       // Transition from pendingApproval to notStarted to running
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
 
       Task {
         do {
@@ -106,25 +118,27 @@ public final class ExecuteCommandTool: Tool {
             output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
             exitCode: Int(shellResult.exitCode))
           if shellResult.exitCode == 0 {
-            updateStatus.complete(with: .success(output))
+            updateStatus.complete(with: .success(output), input: input)
           } else {
             try updateStatus
               .yield(
                 .completed(
-                  .failure(
+                  input: input,
+                  result: .failure(
                     AppError(
                       "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder.sortingKeys.encode(output), encoding: .utf8) ?? "")"))))
           }
         } catch {
-          updateStatus.complete(with: .failure(error))
+          updateStatus.complete(with: .failure(error), input: input)
         }
         runningProcess = nil
       }
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
-      updateStatus.complete(with: .success(output))
+      updateStatus.complete(with: .success(output), input: input)
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>
@@ -222,7 +236,7 @@ extension ExecuteCommandTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
-      command: input.command,
+      command: resolvedInput.command,
       status: status,
       stdout: stdoutStream,
       stderr: stderrStream,

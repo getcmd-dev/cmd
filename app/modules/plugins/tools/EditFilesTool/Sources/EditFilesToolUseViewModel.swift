@@ -51,7 +51,7 @@ final class EditFilesToolUseViewModel {
 
   typealias Input = EditFilesTool.Use.Input
 
-  var status: ToolUseExecutionStatus<EditFilesTool.Output>
+  var status: ToolUseExecutionStatus<EditFilesTool.Input, EditFilesTool.Output>
   let projectRoot: URL?
 
   @ObservationIgnored var toolUseResult: EditFilesTool.Use.FormattedOutput {

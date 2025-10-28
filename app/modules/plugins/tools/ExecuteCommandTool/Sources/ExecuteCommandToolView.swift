@@ -33,6 +33,8 @@ struct ToolUseView: View {
       content(statusDescription: "Rejected: \(toolUse.command)")
     case .running, .completed:
       content(statusDescription: toolUse.command)
+    case .failedToDecode:
+      EmptyView()
     }
   }
 
@@ -59,9 +61,9 @@ struct ToolUseView: View {
 
   private var statusColor: Color {
     switch toolUse.status {
-    case .completed(.failure):
+    case .completed(_, .failure):
       colorScheme.removedLineDiffText
-    case .completed(.success):
+    case .completed(_, .success):
       colorScheme.addedLineDiffText
     default: .gray
     }
@@ -69,7 +71,7 @@ struct ToolUseView: View {
 
   private var errorDescription: String? {
     switch toolUse.status {
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
       error.localizedDescription
     default:
       nil

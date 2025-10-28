@@ -23,7 +23,7 @@ final class ToolUseViewModel {
     Task { [weak self] in
       for await status in status.futureUpdates {
         self?.status = status
-        if case .completed(.success(let output)) = status {
+        if case .completed(_, .success(let output)) = status {
           Task {
             guard let self else { return }
             let highlightedContent = try await self.highlighter.attributedText(
@@ -39,7 +39,7 @@ final class ToolUseViewModel {
 
   let input: ReadFileTool.Use.Input
   let displayFilePath: String
-  var status: ToolUseExecutionStatus<ReadFileTool.Use.Output>
+  var status: ToolUseExecutionStatus<ReadFileTool.Use.Input, ReadFileTool.Use.Output>
   var highlightedContent: AttributedString?
 
   @ObservationIgnored
@@ -54,7 +54,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

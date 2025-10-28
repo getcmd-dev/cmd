@@ -28,7 +28,7 @@ final class ToolUseViewModel {
 
   let input: SearchFilesTool.Use.Input
   let rootPath: String?
-  var status: ToolUseExecutionStatus<SearchFilesTool.Use.Output>
+  var status: ToolUseExecutionStatus<SearchFilesTool.Use.Input, SearchFilesTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -39,7 +39,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

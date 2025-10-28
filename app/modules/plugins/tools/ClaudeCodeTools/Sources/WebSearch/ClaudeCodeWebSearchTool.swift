@@ -23,7 +23,7 @@ public final class ClaudeCodeWebSearchTool: Tool {
     public init(
       callingTool: ClaudeCodeWebSearchTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -31,9 +31,16 @@ public final class ClaudeCodeWebSearchTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(query: "", allowedDomains: nil, blockedDomains: nil)
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -49,23 +56,26 @@ public final class ClaudeCodeWebSearchTool: Tool {
 
     public let callingTool: ClaudeCodeWebSearchTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
       // Parse the output from Claude Code
       let parsedOutput = try parseWebSearchOutput(output)
-      updateStatus.complete(with: .success(parsedOutput))
+      updateStatus.complete(with: .success(parsedOutput), input: input)
     }
 
     /// Parses the output from Claude Code's web search tool.
@@ -181,7 +191,7 @@ final class WebSearchToolUseViewModel {
   }
 
   let input: ClaudeCodeWebSearchTool.Use.Input
-  var status: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Output>
+  var status: ToolUseExecutionStatus<ClaudeCodeWebSearchTool.Use.Input, ClaudeCodeWebSearchTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -192,7 +202,7 @@ extension WebSearchToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

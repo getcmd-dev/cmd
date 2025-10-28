@@ -21,7 +21,7 @@ public final class ClaudeCodeGlobTool: Tool {
     public init(
       callingTool: ClaudeCodeGlobTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -29,9 +29,16 @@ public final class ClaudeCodeGlobTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(pattern: "", path: nil)
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -47,19 +54,22 @@ public final class ClaudeCodeGlobTool: Tool {
 
     public let callingTool: ClaudeCodeGlobTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
       // Parse the glob output from Claude Code
       // The output is newline-separated file paths
@@ -68,7 +78,7 @@ public final class ClaudeCodeGlobTool: Tool {
         .map(String.init)
         .filter { !$0.isEmpty }
 
-      updateStatus.complete(with: .success(.init(files: files)))
+      updateStatus.complete(with: .success(.init(files: files)), input: input)
     }
 
   }
@@ -134,7 +144,7 @@ final class GlobToolUseViewModel {
   }
 
   let input: ClaudeCodeGlobTool.Use.Input
-  var status: ToolUseExecutionStatus<ClaudeCodeGlobTool.Use.Output>
+  var status: ToolUseExecutionStatus<ClaudeCodeGlobTool.Use.Input, ClaudeCodeGlobTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -145,7 +155,7 @@ extension GlobToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

@@ -26,7 +26,7 @@ public final class ClaudeCodeReadTool: Tool {
     public init(
       callingTool: ClaudeCodeReadTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -34,10 +34,18 @@ public final class ClaudeCodeReadTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
+
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(file_path: "", offset: nil, limit: nil)
+      }
+
       filePath = URL(fileURLWithPath: input.file_path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -58,22 +66,25 @@ public final class ClaudeCodeReadTool: Tool {
 
     public let callingTool: ClaudeCodeReadTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let data = try JSONEncoder().encode(output)
       let output = try JSONDecoder().decode(ClaudeCodeOutput.self, from: data)
-      updateStatus.complete(with: .success(.init(content: output.content, uri: input.file_path)))
+      updateStatus.complete(with: .success(.init(content: output.content, uri: input.file_path)), input: input)
 
       guard output.isText else { return }
 
@@ -184,6 +195,7 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     let lineRange: ReadFileTool.Use.Input.Range? = {
+      guard let input = status.value.input else { return nil }
       if let limit = input.limit {
         if let offset = input.offset {
           return .init(start: offset, end: offset + limit)
@@ -197,7 +209,11 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
       return nil
     }()
 
+    let mappedInput = ReadFileTool.Use.Input(path: status.value.input?.file_path ?? "", lineRange: lineRange)
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ReadFileTool.Use.Input, ReadFileTool.Use.Output>>.createMapped(from: status) { status in
+      status.mapInput { _ in mappedInput }
+    }
     return AnyToolUseViewModel(ToolUseViewModel(
-      status: status, input: .init(path: input.file_path, lineRange: lineRange), projectRoot: context.projectRoot))
+      status: mappedStatus, input: mappedInput, projectRoot: context.projectRoot))
   }
 }

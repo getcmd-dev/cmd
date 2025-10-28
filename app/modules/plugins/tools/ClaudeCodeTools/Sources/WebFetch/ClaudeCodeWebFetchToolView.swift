@@ -10,7 +10,7 @@ import ToolFoundation
 extension ClaudeCodeWebFetchTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(WebFetchToolUseViewModel(status: status, input: input))
+    AnyToolUseViewModel(WebFetchToolUseViewModel(status: status, input: input ?? Input(url: "", prompt: "")))
   }
 }
 
@@ -91,7 +91,7 @@ struct WebFetchToolUseView: View {
 
   private var output: ClaudeCodeWebFetchTool.Use.Output? {
     switch toolUse.status {
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       output
     default:
       nil

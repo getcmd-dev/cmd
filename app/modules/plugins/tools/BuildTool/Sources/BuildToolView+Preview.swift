@@ -10,15 +10,18 @@ import XcodeControllerServiceInterface
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
+      let input1 = BuildTool.Input(for: .test)
       ToolUseView(toolUse: ToolUseViewModel(
         buildType: .test,
-        status: .Just(.running)))
+        status: .Just(.running(input: input1))))
+      let input2 = BuildTool.Input(for: .run)
       ToolUseView(toolUse: ToolUseViewModel(
         buildType: .run,
-        status: .Just(.notStarted)))
+        status: .Just(.notStarted(input: input2))))
+      let input3 = BuildTool.Input(for: .run)
       ToolUseView(toolUse: ToolUseViewModel(
         buildType: .run,
-        status: .Just(.completed(.success(.init(
+        status: .Just(.completed(input: input3, result: .success(.init(
           buildResult: BuildSection(
             title: "Build Target",
             messages: [
@@ -28,9 +31,10 @@ import XcodeControllerServiceInterface
             subSections: [],
             duration: 2.5),
           isSuccess: true))))))
+      let input4 = BuildTool.Input(for: .run)
       ToolUseView(toolUse: ToolUseViewModel(
         buildType: .run,
-        status: .Just(.completed(.success(.init(
+        status: .Just(.completed(input: input4, result: .success(.init(
           buildResult: BuildSection(
             title: "Build Target",
             messages: [
@@ -46,9 +50,10 @@ import XcodeControllerServiceInterface
             subSections: [],
             duration: 1.2),
           isSuccess: false))))))
+      let input5 = BuildTool.Input(for: .run)
       ToolUseView(toolUse: ToolUseViewModel(
         buildType: .run,
-        status: .Just(.completed(.failure(AppError("Failed to build"))))))
+        status: .Just(.completed(input: input5, result: .failure(AppError("Failed to build"))))))
     }
   }
   .frame(minWidth: 200, minHeight: 500)

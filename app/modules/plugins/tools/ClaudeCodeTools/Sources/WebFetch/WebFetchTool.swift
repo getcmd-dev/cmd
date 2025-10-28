@@ -25,7 +25,7 @@ public final class WebFetchTool: Tool {
     public init(
       callingTool: WebFetchTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -33,9 +33,16 @@ public final class WebFetchTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(url: "", prompt: "")
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -50,26 +57,30 @@ public final class WebFetchTool: Tool {
 
     public let callingTool: WebFetchTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
-      updateStatus.complete(with: .success(output))
+      updateStatus.complete(with: .success(output), input: input)
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
     }
 
   }
@@ -120,6 +131,6 @@ extension WebFetchTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(WebFetchToolUseViewModel(
       status: status,
-      input: input))
+      input: input ?? Input(url: "", prompt: "")))
   }
 }

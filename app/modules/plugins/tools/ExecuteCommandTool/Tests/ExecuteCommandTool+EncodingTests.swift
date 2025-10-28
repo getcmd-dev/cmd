@@ -43,7 +43,13 @@ extension ExecuteCommandToolTests {
             "command": "pwd"
           },
           "status": {
-            "status": "notStarted"
+            "status": "notStarted",
+            "input": {
+              "type": "execute_command_input",
+              "canModifyDerivedFiles": false,
+              "canModifySourceFiles": false,
+              "command": "pwd"
+            }
           },
           "toolUseId": "exec-123"
         }
@@ -81,7 +87,14 @@ extension ExecuteCommandToolTests {
             "cwd": "/path/to/project"
           },
           "status": {
-            "status": "notStarted"
+            "status": "notStarted",
+            "input": {
+              "type": "execute_command_input",
+              "canModifyDerivedFiles": true,
+              "canModifySourceFiles": false,
+              "command": "git status",
+              "cwd": "/path/to/project"
+            }
           },
           "toolUseId": "exec-git-456"
         }
@@ -119,7 +132,14 @@ extension ExecuteCommandToolTests {
             "cwd": "/source"
           },
           "status": {
-            "status": "notStarted"
+            "status": "notStarted",
+            "input": {
+              "type": "execute_command_input",
+              "canModifyDerivedFiles": true,
+              "canModifySourceFiles": true,
+              "command": "swift build",
+              "cwd": "/source"
+            }
           },
           "toolUseId": "exec-build-789"
         }

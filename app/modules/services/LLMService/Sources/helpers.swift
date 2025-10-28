@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
@@ -41,7 +42,8 @@ extension AssistantMessage {
 
         case .tool(let toolUse):
           let toolUse = toolUse.toolUse
-          let request = try Schema.ToolUseRequest(name: toolUse.callingTool.name, anyInput: toolUse.input, id: toolUse.toolUseId)
+          let inputValue = toolUse.input ?? EmptyObject()
+          let request = try Schema.ToolUseRequest(name: toolUse.callingTool.name, anyInput: inputValue, id: toolUse.toolUseId)
           return .toolUseRequest(request)
 
         case .reasoning(let reasoning):

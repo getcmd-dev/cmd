@@ -362,18 +362,20 @@ extension ToolUse {
     return false
   }
 
-  var futureUpdates: AsyncStream<ToolUseExecutionStatus<EmptyObject>> {
-    status.futureUpdates.map { event -> ToolUseExecutionStatus<EmptyObject> in
+  var futureUpdates: AsyncStream<ToolUseExecutionStatus<EmptyObject, EmptyObject>> {
+    status.futureUpdates.map { event -> ToolUseExecutionStatus<EmptyObject, EmptyObject> in
       switch event {
-      case .notStarted: return .notStarted
-      case .running: return .running
-      case .pendingApproval: return .pendingApproval
-      case .approvalRejected(reason: let reason): return .approvalRejected(reason: reason)
-      case .completed(let result):
+      case .notStarted: return .notStarted(input: EmptyObject())
+      case .running: return .running(input: EmptyObject())
+      case .pendingApproval: return .pendingApproval(input: EmptyObject())
+      case .approvalRejected(_, let reason): return .approvalRejected(input: EmptyObject(), reason: reason)
+      case .completed(_, let result):
         switch result {
-        case .success: return .completed(.success(EmptyObject()))
-        case .failure(let error): return .completed(.failure(error))
+        case .success: return .completed(input: EmptyObject(), result: .success(EmptyObject()))
+        case .failure(let error): return .completed(input: EmptyObject(), result: .failure(error))
         }
+      case .failedToDecode(let error):
+        return .failedToDecode(error: error)
       }
     }.eraseToStream()
   }

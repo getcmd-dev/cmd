@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import Foundation
 
 private let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
 
@@ -20,15 +21,27 @@ extension ToolUse {
 
     let callingTool = try container.decode(SomeTool.self, forKey: .callingTool)
     let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
     let context = try container.decode(ToolExecutionContext.self, forKey: .context)
     let internalState = try container.decodeIfPresent(InternalState.self, forKey: .internalState)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
+    let statusValue = try container.decode(ToolUseExecutionStatus<Input, Output>.self, forKey: .status)
+
+    // Reconstruct inputResult from status
+    let inputResult: Result<Input, ToolDecodingError>
+    if case .failedToDecode(let error) = statusValue {
+      inputResult = .failure(error)
+    } else if let input = statusValue.input {
+      inputResult = .success(input)
+    } else {
+      throw DecodingError.dataCorruptedError(
+        forKey: .status,
+        in: container,
+        debugDescription: "Status has no input and is not failedToDecode")
+    }
 
     self.init(
       callingTool: callingTool,
       toolUseId: toolUseId,
-      input: input,
+      inputResult: inputResult,
       context: context,
       internalState: internalState,
       initialStatus: statusValue)
@@ -39,7 +52,6 @@ extension ToolUse {
 
     try container.encode(callingTool, forKey: .callingTool)
     try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(input, forKey: .input)
     try container.encode(context, forKey: .context)
     try container.encode(internalState, forKey: .internalState)
     try container.encode(status.value, forKey: .status)
@@ -51,7 +63,6 @@ extension ToolUse {
 enum ToolUseCodingKeys: String, CodingKey {
   case callingTool
   case toolUseId
-  case input
   case context
   case internalState
   case status
@@ -112,27 +123,37 @@ extension [CodingUserInfoKey: Any] {
 
 // MARK: - ToolUseExecutionStatus + Codable
 
-extension ToolUseExecutionStatus: Codable {
+extension ToolUseExecutionStatus: Codable where Input: Codable, Output: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let status = try container.decode(String.self, forKey: .status)
+
     switch status {
+    case "failedToDecode":
+      let decodingError = try container.decode(ToolDecodingError.self, forKey: .value)
+      self = .failedToDecode(error: decodingError)
+
     case "pendingApproval":
-      self = .pendingApproval
+      let input = try container.decode(Input.self, forKey: .input)
+      self = .pendingApproval(input: input)
 
     case "notStarted":
-      self = .notStarted
+      let input = try container.decode(Input.self, forKey: .input)
+      self = .notStarted(input: input)
 
     case "running":
-      self = .running
+      let input = try container.decode(Input.self, forKey: .input)
+      self = .running(input: input)
 
     case "rejected":
+      let input = try container.decode(Input.self, forKey: .input)
       let reason = try container.decode(String?.self, forKey: .value)
-      self = .approvalRejected(reason: reason)
+      self = .approvalRejected(input: input, reason: reason)
 
     case "completed":
+      let input = try container.decode(Input.self, forKey: .input)
       let result = try container.decode(Result<Output, Error>.self, forKey: .value)
-      self = .completed(result)
+      self = .completed(input: input, result: result)
 
     default:
       throw DecodingError.dataCorruptedError(
@@ -145,27 +166,37 @@ extension ToolUseExecutionStatus: Codable {
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     switch self {
-    case .pendingApproval:
+    case .pendingApproval(let input):
       try container.encode("pendingApproval", forKey: .status)
+      try container.encode(input, forKey: .input)
 
-    case .notStarted:
+    case .notStarted(let input):
       try container.encode("notStarted", forKey: .status)
+      try container.encode(input, forKey: .input)
 
-    case .running:
+    case .running(let input):
       try container.encode("running", forKey: .status)
+      try container.encode(input, forKey: .input)
 
-    case .approvalRejected(reason: let reason):
+    case .approvalRejected(let input, let reason):
       try container.encode("rejected", forKey: .status)
+      try container.encode(input, forKey: .input)
       try container.encode(reason, forKey: .value)
 
-    case .completed(let result):
+    case .completed(let input, let result):
       try container.encode("completed", forKey: .status)
+      try container.encode(input, forKey: .input)
       try container.encode(result, forKey: .value)
+
+    case .failedToDecode(let error):
+      try container.encode("failedToDecode", forKey: .status)
+      try container.encode(error, forKey: .value)
     }
   }
 
   private enum CodingKeys: String, CodingKey {
     case status
+    case input
     case value
   }
 }

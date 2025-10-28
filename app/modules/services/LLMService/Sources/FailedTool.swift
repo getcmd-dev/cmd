@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ConcurrencyFoundation
+import Foundation
 import JSONFoundation
 import ToolFoundation
 
@@ -12,16 +13,24 @@ struct FailedToolUse: ToolUse {
   init(
     callingTool: FailedTool,
     toolUseId: String,
-    input: Input,
+    inputResult: Result<Input, ToolDecodingError>,
     context: ToolFoundation.ToolExecutionContext,
     internalState _: InternalState? = nil,
     initialStatus _: Status.Element?)
   {
     self.callingTool = callingTool
-    self.input = input
     self.context = context
     self.toolUseId = toolUseId
-    let (status, updateStatus) = Status.makeStream(initial: .completed(.failure(AppError(input.errorDescription))))
+
+    let input: Input
+    switch inputResult {
+    case .success(let value):
+      input = value
+    case .failure(let decodingError):
+      input = Input(errorDescription: decodingError.error)
+    }
+
+    let (status, updateStatus) = Status.makeStream(initial: .completed(input: input, result: .failure(AppError(input.errorDescription))))
     updateStatus.finish()
     self.status = status
     self.updateStatus = updateStatus
@@ -32,7 +41,7 @@ struct FailedToolUse: ToolUse {
     self.init(
       callingTool: callingTool,
       toolUseId: toolUseId,
-      input: Input(errorDescription: errorDescription),
+      inputResult: .success(Input(errorDescription: errorDescription)),
       context: context,
       initialStatus: nil)
   }
@@ -49,15 +58,16 @@ struct FailedToolUse: ToolUse {
 
   typealias Output = EmptyObject
 
-  let updateStatus: AsyncStream<ToolUseExecutionStatus<EmptyObject>>.Continuation
+  let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, EmptyObject>>.Continuation
 
   let callingTool: FailedTool
   let toolUseId: String
-  let input: Input
 
-  let status: CurrentValueStream<ToolUseExecutionStatus<EmptyObject>>
+  let status: CurrentValueStream<ToolUseExecutionStatus<Input, EmptyObject>>
 
-  var errorDescription: String { input.errorDescription }
+  var input: Input? { status.value.input }
+
+  var errorDescription: String { status.value.input?.errorDescription ?? "Unknown error" }
 
   func startExecuting() { }
 

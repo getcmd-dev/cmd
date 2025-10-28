@@ -29,7 +29,7 @@ public final class EditFilesTool: Tool {
     public init(
       callingTool: EditFilesTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element?)
@@ -38,9 +38,19 @@ public final class EditFilesTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding
+        input = Input(files: [])
+      }
+
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -64,7 +74,7 @@ public final class EditFilesTool: Tool {
       }
 
       if let error {
-        updateStatus.complete(with: .failure(error))
+        updateStatus.complete(with: .failure(error), input: input)
       }
 
       if initialStatus == nil {
@@ -139,7 +149,7 @@ public final class EditFilesTool: Tool {
     public let status: Status
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public var input: Input { _input.value }
 
@@ -149,7 +159,7 @@ public final class EditFilesTool: Tool {
 
     public func receive(output: JSONFoundation.JSON.Value) throws {
       let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
-      updateStatus.complete(with: .success(output))
+      updateStatus.complete(with: .success(output), input: input)
     }
 
     public func startExecuting() {
@@ -157,8 +167,8 @@ public final class EditFilesTool: Tool {
         // Already completed (likely failed due to bad input).
         return
       }
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
 
       Task { @MainActor in
         do {
@@ -174,7 +184,7 @@ public final class EditFilesTool: Tool {
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
     }
 
     var resolvedInput: InternalState {
@@ -199,7 +209,7 @@ public final class EditFilesTool: Tool {
             toolUseResult.fileChanges.allSatisfy({ if case .applied = $0.status { true } else { false } })
           {
             // If one change failed to apply, or all were successfully applied, complete the tool use.
-            updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+            updateStatus.yield(.completed(input: input, result: toolUseResult.asToolUseResult))
           }
           // Update tracked content for successfully applied files
           context.updateFilesContent(changes: toolUseResult.fileChanges, input: mappedInput.value)

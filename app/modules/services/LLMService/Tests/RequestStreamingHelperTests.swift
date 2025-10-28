@@ -364,7 +364,7 @@ struct RequestStreamingHelperReasoningTests {
 
     let toolStatus = await toolUse.status.lastValue
     switch toolStatus {
-    case .completed(.success):
+    case .completed(_, .success):
       break
     default:
       Issue.record("Unexpected tool use status \(toolStatus)")
@@ -377,9 +377,13 @@ struct RequestStreamingHelperReasoningTests {
 @Suite("RequestStreamingHelper Bad Input Tests")
 struct RequestStreamingHelperBadInputTests {
 
-  @Test("Handle with bad input creates FailedToolUse")
-  func testBadInputCreatesFailedToolUseForNonStreamableTools() async throws {
-    let mockTool = GenericTestTool<TestToolInput, String>(name: "test_non_streamable", output: "success")
+  @Test("Handle with bad input creates tool use with failedToDecode status")
+  func testBadInputCreatesFailedToDecodeStatus() async throws {
+    // Use a tool with a specific Input type that will fail on wrong JSON structure
+    struct SpecificInput: Codable, Sendable {
+      let requiredField: Int  // This will fail if we send a string
+    }
+    let mockTool = GenericTestTool<SpecificInput, String>(name: "test_tool", output: "success")
     let result = MutableCurrentValueStream(AssistantMessage(content: []))
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
 
@@ -393,8 +397,8 @@ struct RequestStreamingHelperBadInputTests {
       localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
-    // Create malformed JSON that will cause parsing to fail - TestToolInput expects an object with "file" and "keywords" but we send wrong format
-    let malformedInput = JSON.object(["invalid": .string("format")]) // TestToolInput expects "file" and "keywords"
+    // Create input that will fail to decode - SpecificInput expects an int but we send a string
+    let malformedInput = JSON.object(["requiredField": .string("not-an-int")])
     let toolUseRequest = Schema.ToolUseRequest(
       toolName: mockTool.name,
       input: malformedInput,
@@ -417,15 +421,23 @@ struct RequestStreamingHelperBadInputTests {
       return
     }
 
-    // Should be a FailedToolUse due to bad input parsing
-    guard let failedToolUse = toolMessage.toolUse as? FailedToolUse else {
-      Issue.record("Expected FailedToolUse, got \(type(of: toolMessage.toolUse))")
+    // Should be a tool use with failedToDecode status due to bad input parsing
+    guard let toolUse = toolMessage.toolUse as? GenericTestTool<SpecificInput, String>.Use else {
+      Issue.record("Expected GenericTestTool.Use, got \(type(of: toolMessage.toolUse))")
       return
     }
 
-    #expect(failedToolUse.toolUseId == "bad-input-tool-123")
-    #expect(failedToolUse.toolName == mockTool.name)
-    #expect(failedToolUse.errorDescription.contains("Could not parse"))
+    #expect(toolUse.toolUseId == "bad-input-tool-123")
+    #expect(toolUse.toolName == mockTool.name)
+
+    // Check that the status is failedToDecode
+    let status = await toolUse.status.lastValue
+    switch status {
+    case .failedToDecode(_, let error):
+      #expect(error.localizedDescription.contains("Int"))
+    default:
+      Issue.record("Expected failedToDecode status, got \(status)")
+    }
   }
 
   @Test("Handle external tool with bad input verifies error handling")

@@ -10,7 +10,7 @@ import ToolFoundation
 extension ClaudeCodeWebSearchTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(WebSearchToolUseViewModel(status: status, input: input))
+    AnyToolUseViewModel(WebSearchToolUseViewModel(status: status, input: input ?? Input(query: "")))
   }
 }
 
@@ -153,7 +153,7 @@ struct WebSearchToolUseView: View {
 
   private var output: ClaudeCodeWebSearchTool.Use.Output? {
     switch toolUse.status {
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       output
     default:
       nil
@@ -169,9 +169,9 @@ struct WebSearchToolUseView: View {
 
   private var statusColor: Color {
     switch toolUse.status {
-    case .completed(.failure):
+    case .completed(_, .failure):
       colorScheme.removedLineDiffText
-    case .completed(.success):
+    case .completed(_, .success):
       colorScheme.addedLineDiffText
     case .running:
       Color.orange
@@ -181,14 +181,16 @@ struct WebSearchToolUseView: View {
       Color.yellow
     case .approvalRejected:
       colorScheme.removedLineDiffText
+    case .failedToDecode:
+      colorScheme.removedLineDiffText
     }
   }
 
   private var errorDescription: String? {
     switch toolUse.status {
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
       error.localizedDescription
-    case .approvalRejected(let reason):
+    case .approvalRejected(_, let reason):
       reason ?? "Tool use was rejected"
     default:
       nil

@@ -54,7 +54,7 @@ final class ToolUseViewModel {
   }
 
   let command: String
-  var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Output>
+  var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Input, ExecuteCommandTool.Use.Output>
   var std: String?
   var stdData = Data()
   let kill: () async -> Void
@@ -68,7 +68,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

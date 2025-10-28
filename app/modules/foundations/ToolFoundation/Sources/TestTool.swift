@@ -37,7 +37,7 @@ public struct TestTool: Tool {
     public init(
       callingTool: TestTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: EmptyObject? = nil,
       initialStatus: Status.Element?)
@@ -45,11 +45,10 @@ public struct TestTool: Tool {
       self.toolUseId = toolUseId
       self.callingTool = callingTool
       self.context = context
-      self.input = input
       isReadonly = callingTool.isReadonly
       output = callingTool.output
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: try! inputResult.get()))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -61,21 +60,21 @@ public struct TestTool: Tool {
 
     public typealias Output = JSON.Value
 
-    public typealias Status = CurrentValueStream<ToolUseExecutionStatus<Output>>
+    public typealias Status = CurrentValueStream<ToolUseExecutionStatus<Input, Output>>
 
     public let status: Status
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public let context: ToolExecutionContext
     public let callingTool: TestTool
     public let toolUseId: String
     public let isReadonly: Bool
-    public let input: Input
     public let output: Result<Output, Error>
 
     public func startExecuting() {
-      updateStatus.complete(with: output)
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: output, input: input)
     }
 
     public func reject(reason _: String?) { }
@@ -148,18 +147,31 @@ public struct GenericTestTool<I: Codable & Sendable, O: Codable & Sendable>: Too
     public init(
       callingTool: GenericTestTool<I, O>,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: EmptyObject? = nil,
-      initialStatus _: Status.Element?)
+      initialStatus: Status.Element?)
     {
       self.toolUseId = toolUseId
       self.callingTool = callingTool
       self.context = context
-      self.input = input
       output = callingTool.output
       isReadonly = callingTool.isReadonly
-      let (stream, updateStatus) = Status.makeStream(initial: .completed(callingTool.output))
+
+      // Extract input from inputResult, using initialStatus if available
+      let finalStatus: Status.Element
+      if let initialStatus = initialStatus {
+        finalStatus = initialStatus
+      } else {
+        switch inputResult {
+        case .success(let input):
+          finalStatus = .completed(input: input, result: callingTool.output)
+        case .failure(let error):
+          finalStatus = .failedToDecode(error: error)
+        }
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: finalStatus)
       updateStatus.finish()
       status = stream
       self.updateStatus = updateStatus
@@ -169,16 +181,15 @@ public struct GenericTestTool<I: Codable & Sendable, O: Codable & Sendable>: Too
 
     public typealias Input = I
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<O>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<I, O>>.Continuation
 
     public let context: ToolExecutionContext
     public let callingTool: GenericTestTool<I, O>
     public let toolUseId: String
     public let isReadonly: Bool
-    public let input: Input
     public let output: Result<O, Error>
 
-    public let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<O>>
+    public let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<I, O>>
 
     public func startExecuting() { }
 

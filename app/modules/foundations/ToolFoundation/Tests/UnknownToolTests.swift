@@ -17,10 +17,10 @@ struct UnknownToolTests {
     let originalToolUse = TestTool.Use(
       callingTool: tool,
       toolUseId: "tool-use-id",
-      input: [:],
+      inputResult: .success([:]),
       context: toolExecutionContext,
       internalState: nil,
-      initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
+      initialStatus: .notStarted(input: [:]) as ToolUseExecutionStatus<JSON.Value, JSON.Value>)
     originalToolUse.startExecuting()
 
     // Wait for the status to be updated asynchronously
@@ -54,10 +54,10 @@ struct UnknownToolTests {
     let originalToolUse = TestTool.Use(
       callingTool: tool,
       toolUseId: "tool-use-id",
-      input: ["foo": "bar"],
+      inputResult: .success(["foo": "bar"]),
       context: toolExecutionContext,
       internalState: nil,
-      initialStatus: .notStarted as ToolUseExecutionStatus<JSON.Value>)
+      initialStatus: nil)
 
     let originalData = try JSONEncoder().encode(WrappedToolUse(toolUse: originalToolUse))
 
@@ -86,13 +86,13 @@ struct UnknownToolTests {
           "context" : {
             "threadId" : "mock-thread-id"
           },
-          "input" : {
-            "foo" : "bar"
-          },
           "internalState" : {
             "isExternalAgent" : false
           },
           "status" : {
+            "input" : {
+              "foo" : "bar"
+            },
             "status" : "notStarted"
           },
           "toolUseId" : "tool-use-id"

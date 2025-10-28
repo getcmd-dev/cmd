@@ -25,7 +25,7 @@ struct ToolUseView: View {
 
 struct ToolUseDetailView: View {
 
-  let status: ToolUseExecutionStatus<LSTool.Use.Output>
+  let status: ToolUseExecutionStatus<LSTool.Use.Input, LSTool.Use.Output>
   let directoryPath: URL
 
   var body: some View {
@@ -38,10 +38,12 @@ struct ToolUseDetailView: View {
       rejectedView
     case .running:
       runningView
-    case .completed(.success(let files)):
+    case .completed(_, .success(let files)):
       successView(files: files)
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
       errorView(error: error)
+    case .failedToDecode:
+      EmptyView()
     }
   }
 

@@ -13,7 +13,7 @@ public final class DefaultToolUseViewModel {
 
   public init(
     toolName: String,
-    status: CurrentValueStream<ToolUseExecutionStatus<JSON.Value>>,
+    status: CurrentValueStream<ToolUseExecutionStatus<JSON.Value, JSON.Value>>,
     input: JSON.Value)
   {
     self.toolName = toolName
@@ -28,24 +28,43 @@ public final class DefaultToolUseViewModel {
 
   public let toolName: String
   public let input: String?
-  public private(set) var status: ToolUseExecutionStatus<String?>
+  public private(set) var status: ToolUseExecutionStatus<JSON.Value, String?>
 }
 
 extension ToolUseExecutionStatus {
-  func map<MappedOutput: Codable & Sendable>(_ map: (Output) -> MappedOutput) -> ToolUseExecutionStatus<MappedOutput> {
+  func map<MappedOutput: Codable & Sendable>(_ map: (Output) -> MappedOutput) -> ToolUseExecutionStatus<Input, MappedOutput> {
     switch self {
-    case .pendingApproval:
-      .pendingApproval
-    case .approvalRejected(let reason):
-      .approvalRejected(reason: reason)
-    case .notStarted:
-      .notStarted
-    case .running:
-      .running
-    case .completed(.success(let output)):
-      .completed(.success(map(output)))
-    case .completed(.failure(let error)):
-      .completed(.failure(error))
+    case .pendingApproval(let input):
+      .pendingApproval(input: input)
+    case .approvalRejected(let input, let reason):
+      .approvalRejected(input: input, reason: reason)
+    case .notStarted(let input):
+      .notStarted(input: input)
+    case .running(let input):
+      .running(input: input)
+    case .completed(let input, .success(let output)):
+      .completed(input: input, result: .success(map(output)))
+    case .completed(let input, .failure(let error)):
+      .completed(input: input, result: .failure(error))
+    case .failedToDecode(let error):
+      .failedToDecode(error: error)
+    }
+  }
+
+  public func mapInput<MappedInput: Codable & Sendable>(_ mapInput: (Input) -> MappedInput) -> ToolUseExecutionStatus<MappedInput, Output> {
+    switch self {
+    case .pendingApproval(let input):
+      .pendingApproval(input: mapInput(input))
+    case .approvalRejected(let input, let reason):
+      .approvalRejected(input: mapInput(input), reason: reason)
+    case .notStarted(let input):
+      .notStarted(input: mapInput(input))
+    case .running(let input):
+      .running(input: mapInput(input))
+    case .completed(let input, let result):
+      .completed(input: mapInput(input), result: result)
+    case .failedToDecode(let error):
+      .failedToDecode(error: error)
     }
   }
 }

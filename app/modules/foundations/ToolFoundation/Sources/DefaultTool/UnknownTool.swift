@@ -23,17 +23,26 @@ public final class UnknownTool: Tool {
     public init(
       callingTool: UnknownTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolFoundation.ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.input = input
       self.context = context
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding
+        input = .null
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -54,27 +63,29 @@ public final class UnknownTool: Tool {
 
     public let context: ToolExecutionContext
 
-    @MainActor public lazy var viewModel = DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: input)
+    @MainActor public lazy var viewModel = DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: .null)
 
     public let callingTool: UnknownTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public var isReadonly: Bool {
       callingTool.isReadonly
     }
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
       if internalState?.isExternalAgent ?? callingTool.isExternalAgent {
         // The external agent will set the results
-        updateStatus.yield(.notStarted)
-        updateStatus.yield(.running)
+        let notStartedStatus: ToolUseExecutionStatus<Input, Output> = .notStarted(input: input)
+        let runningStatus: ToolUseExecutionStatus<Input, Output> = .running(input: input)
+        updateStatus.yield(notStartedStatus)
+        updateStatus.yield(runningStatus)
       } else {
-        updateStatus.complete(with: .failure(AppError("Missing tool \(toolName)")))
+        updateStatus.complete(with: Result<Output, Error>.failure(AppError("Missing tool \(toolName)")), input: input)
       }
     }
 

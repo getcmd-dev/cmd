@@ -25,9 +25,11 @@ struct ToolUseView: View {
       rejectedView
     case .running:
       runningView
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       successView(output: output)
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
+      ToolErrorView(error)
+    case .failedToDecode(let error):
       ToolErrorView(error)
     }
   }

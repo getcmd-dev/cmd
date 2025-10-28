@@ -25,7 +25,7 @@ final class ToolUseViewModel {
 
   let directoryPath: URL
   let directoryDisplayPath: String
-  var status: ToolUseExecutionStatus<LSTool.Use.Output>
+  var status: ToolUseExecutionStatus<LSTool.Use.Input, LSTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -36,7 +36,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

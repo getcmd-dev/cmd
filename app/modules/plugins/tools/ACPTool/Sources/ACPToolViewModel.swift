@@ -29,7 +29,7 @@ final class ToolUseViewModel {
 
   let input: ACPTool.Use.Input
   let projectRoot: URL?
-  var status: ToolUseExecutionStatus<ACPTool.Use.Output>
+  var status: ToolUseExecutionStatus<ACPTool.Use.Input, ACPTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -40,7 +40,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       var representation = "⏺ \(input.title)\n"

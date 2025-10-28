@@ -13,24 +13,30 @@ typealias SearchFilesStatus = SearchFilesTool.Use.Status
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
+      let input1 = SearchFilesTool.Input(
+        directoryPath: "/path/to/dir",
+        regex: "ENV_KEY*",
+        filePattern: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.running),
-        input: SearchFilesTool.Input(
-          directoryPath: "/path/to/dir",
-          regex: "ENV_KEY*",
-          filePattern: nil),
+        status: SearchFilesStatus.Just(.running(input: input1)),
+        input: input1,
         rootPath: "/path/to/"))
 
+      let input2 = SearchFilesTool.Input(
+        directoryPath: "/path/to/dir",
+        regex: "ENV_KEY*",
+        filePattern: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.notStarted),
-        input: SearchFilesTool.Input(
-          directoryPath: "/path/to/dir",
-          regex: "ENV_KEY*",
-          filePattern: nil),
+        status: SearchFilesStatus.Just(.notStarted(input: input2)),
+        input: input2,
         rootPath: "/path/to/"))
 
+      let input3 = SearchFilesTool.Input(
+        directoryPath: "/path/to/dir",
+        regex: "ENV_KEY*",
+        filePattern: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.completed(.success(SearchFilesTool.Use.Output(
+        status: SearchFilesStatus.Just(.completed(input: input3, result: .success(SearchFilesTool.Use.Output(
           outputForLLm: "...",
           results: [
             ToolsSchema.SearchFileResult(
@@ -40,10 +46,7 @@ typealias SearchFilesStatus = SearchFilesTool.Use.Status
               ]),
           ],
           hasMore: false)))),
-        input: SearchFilesTool.Input(
-          directoryPath: "/path/to/dir",
-          regex: "ENV_KEY*",
-          filePattern: nil),
+        input: input3,
         rootPath: "/path/to/"))
     }
   }

@@ -24,15 +24,20 @@ extension ToolUseViewModel {
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
+      let input1 = ExecuteCommandTool.Use.Input(command: "ls", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
-        status: .Just(.running)))
+        status: .Just(.running(input: input1))))
+
+      let input2 = ExecuteCommandTool.Use.Input(command: "ls", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
-        status: .Just(.notStarted)))
+        status: .Just(.notStarted(input: input2))))
+
+      let input3 = ExecuteCommandTool.Use.Input(command: "ls", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
-        status: .Just(.completed(.success(.init(
+        status: .Just(.completed(input: input3, result: .success(.init(
           output: "filePath",
           exitCode: 0)))),
         stdout: .Just(.Just(String("""

@@ -31,7 +31,7 @@ public final class ACPTool: Tool {
     public init(
       callingTool: ACPTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -39,10 +39,19 @@ public final class ACPTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
       self.internalState = internalState
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding - use think as a safe default
+        input = Input(kind: .think, title: "", rawInput: nil)
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -56,39 +65,42 @@ public final class ACPTool: Tool {
 
     public let callingTool: ACPTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public let internalState: InternalState?
 
     /// ACP tools can be both readonly and non-readonly depending on the kind
     public var isReadonly: Bool {
+      guard let input = status.value.input else { return false }
       switch input.kind {
       case .read, .search, .think, .fetch:
-        true
+        return true
       case .edit, .delete, .move, .execute, .switchMode, .other:
-        false
+        return false
       }
     }
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
       // ACP tools are executed externally, so we just transition to running
       // The actual execution happens on the server side
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
-      updateStatus.complete(with: .success(output))
+      updateStatus.complete(with: .success(output), input: input)
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
     }
 
   }
@@ -131,7 +143,7 @@ extension ACPTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      input: input,
+      input: input ?? Input(kind: .think, title: "", rawInput: nil),
       projectRoot: context.projectRoot))
   }
 }

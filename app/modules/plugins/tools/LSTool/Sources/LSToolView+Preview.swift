@@ -8,16 +8,19 @@ let url = URL(filePath: "/path/to/some-directory")
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
-      ToolUseDetailView(status: .running, directoryPath: url)
-      ToolUseDetailView(status: .notStarted, directoryPath: url)
+      let input1 = LSTool.Use.Input(path: "/path/to/some-directory", recursive: false)
+      ToolUseDetailView(status: .running(input: input1), directoryPath: url)
+      ToolUseDetailView(status: .notStarted(input: input1), directoryPath: url)
       ToolUseDetailView(
-        status: .completed(.success(.init(
-          files: [
-            .init(path: "fileA.swift", attr: "-rw-r--r--", size: "10 KB"),
-            .init(path: "fileB.sh", attr: "-rwxr-xr-x", size: "1 KB"),
-            .init(path: "subdirectory", attr: "drwxr-xr-x", size: "0.2 KB"),
-          ],
-          hasMore: false))),
+        status: .completed(
+          input: input1,
+          result: .success(.init(
+            files: [
+              .init(path: "fileA.swift", attr: "-rw-r--r--", size: "10 KB"),
+              .init(path: "fileB.sh", attr: "-rwxr-xr-x", size: "1 KB"),
+              .init(path: "subdirectory", attr: "drwxr-xr-x", size: "0.2 KB"),
+            ],
+            hasMore: false))),
         directoryPath: url)
     }
   }

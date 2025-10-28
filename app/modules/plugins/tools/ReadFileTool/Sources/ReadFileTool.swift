@@ -29,7 +29,7 @@ public final class ReadFileTool: Tool {
     public init(
       callingTool: ReadFileTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -37,13 +37,23 @@ public final class ReadFileTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
+
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding - use minimal valid input
+        input = Input(path: "", lineRange: nil)
+      }
+
       resolvedInput = internalState ?? Input(
         path: input.path.resolvePath(from: context.projectRoot).path,
         lineRange: input.lineRange)
       filePath = URL(fileURLWithPath: resolvedInput.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -74,19 +84,20 @@ public final class ReadFileTool: Tool {
 
     public let callingTool: ReadFileTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public var internalState: InternalState? { resolvedInput }
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
+
       // Transition from pendingApproval to notStarted to running
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
 
       do {
         var content = try fileManager.read(contentsOf: filePath)
@@ -105,15 +116,16 @@ public final class ReadFileTool: Tool {
           content = selectedLines?.joined(separator: "\n") ?? content
         }
 
-        updateStatus.complete(with: .success(Output(content: content, uri: filePath.absoluteString)))
+        updateStatus.complete(with: .success(Output(content: content, uri: filePath.absoluteString)), input: input)
       } catch {
-        updateStatus.complete(with: .failure(error))
+        updateStatus.complete(with: .failure(error), input: input)
       }
     }
 
     public func receive(output: JSONFoundation.JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try JSONDecoder().decode(Output.self, from: JSONEncoder().encode(output))
-      updateStatus.complete(with: .success(output))
+      updateStatus.complete(with: .success(output), input: input)
       do {
         try chatContextRegistry.context(for: context.threadId).set(
           knownFileContent: fileManager.read(contentsOf: filePath),
@@ -124,7 +136,8 @@ public final class ReadFileTool: Tool {
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
     }
 
     let filePath: URL

@@ -12,7 +12,7 @@ extension ClaudeCodeTodoWriteTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(TodoWriteToolUseViewModel(
       status: status,
-      input: input,
+      input: input ?? Input(todos: []),
       preExistingTodos: internalState?.preExistingTodos))
   }
 }
@@ -105,7 +105,7 @@ struct TodoWriteToolUseView: View {
 
   private var output: ClaudeCodeTodoWriteTool.Use.Output? {
     switch toolUse.status {
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       output
     default:
       nil

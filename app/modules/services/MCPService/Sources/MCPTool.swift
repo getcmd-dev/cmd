@@ -28,17 +28,24 @@ public final class MCPTool: ToolFoundation.Tool {
     public init(
       callingTool: MCPTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolFoundation.ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.input = input
       self.context = context
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = [:]
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -53,24 +60,36 @@ public final class MCPTool: ToolFoundation.Tool {
     public let context: ToolFoundation.ToolExecutionContext
 
     @MainActor
-    public lazy var viewModel = DefaultToolUseViewModel(toolName: callingTool.name, status: status, input: .object(input))
+    public lazy var viewModel: DefaultToolUseViewModel = {
+      typealias MappedStatus = CurrentValueStream<ToolUseExecutionStatus<JSON.Value, JSON.Value>>
+      let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<JSON.Value, JSON.Value>>.createMapped(from: self.status) {
+        $0.mapInput { JSON.Value.object($0) }
+      }
+      let inputValue = self.input ?? [:]
+      return DefaultToolUseViewModel(
+        toolName: callingTool.name,
+        status: mappedStatus,
+        input: .object(inputValue))
+    }()
 
     public let callingTool: MCPTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public var isReadonly: Bool {
       callingTool.isReadonly
     }
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
       // Transition from pendingApproval to notStarted to running
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
 
       Task {
         do {
@@ -81,18 +100,19 @@ public final class MCPTool: ToolFoundation.Tool {
             var errorDescription = "unknown error"
             errorDescription = (try? JSONEncoder().encode(response.content))
               .map { String(data: $0, encoding: .utf8) } ??? errorDescription
-            updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(errorDescription)")))
+            updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(errorDescription)")), input: input)
           } else {
-            updateStatus.complete(with: .success(.array(response.content.map(\.jsonValue))))
+            updateStatus.complete(with: .success(.array(response.content.map(\.jsonValue))), input: input)
           }
         } catch {
-          updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(error.localizedDescription)")))
+          updateStatus.complete(with: .failure(AppError("MCP tool returned an error: \(error.localizedDescription)")), input: input)
         }
       }
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: .failure(CancellationError()), input: input)
     }
 
   }

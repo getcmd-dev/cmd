@@ -29,12 +29,15 @@ struct ToolUseView: View {
     case .approvalRejected:
       rejectedView
 
-    case .running, .completed(.success):
+    case .running, .completed(_, .success):
       VStack(spacing: 12) {
         toolUseChanges
       }
 
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
+      errorView(error)
+
+    case .failedToDecode(let error):
       errorView(error)
     }
   }

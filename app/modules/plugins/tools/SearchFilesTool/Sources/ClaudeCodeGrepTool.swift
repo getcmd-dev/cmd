@@ -23,7 +23,7 @@ public final class ClaudeCodeGrepTool: Tool {
     public init(
       callingTool: ClaudeCodeGrepTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -32,11 +32,29 @@ public final class ClaudeCodeGrepTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      var input = input
-      input.projectRoot = input.projectRoot ?? context.projectRoot?.path
-      self.input = input
+      var input: Input
+      switch inputResult {
+      case .success(var value):
+        value.projectRoot = value.projectRoot ?? context.projectRoot?.path
+        input = value
+      case .failure:
+        input = ClaudeCodeGrepInput(
+          pattern: "",
+          path: nil,
+          glob: nil,
+          outputMode: nil,
+          beforeContext: nil,
+          afterContext: nil,
+          contextLines: nil,
+          lineNumbers: nil,
+          caseInsensitive: nil,
+          type: nil,
+          headLimit: nil,
+          multiline: nil,
+          projectRoot: context.projectRoot?.path)
+      }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       _internalState = internalState ?? .init(rootPath: input.projectRoot ?? "/")
@@ -58,38 +76,41 @@ public final class ClaudeCodeGrepTool: Tool {
 
     public let callingTool: ClaudeCodeGrepTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
       let trimmedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
       if ["No matches found", "No files found"].contains(where: { $0 == trimmedOutput }) {
         updateStatus.complete(with: .success(Output(
           outputForLLm: output,
           results: [],
-          hasMore: false)))
+          hasMore: false)), input: input)
         return
       }
 
       // Try parsing with the simple format first
       if let result = parseSimpleGrepOutput(rawOutput: output) {
-        updateStatus.complete(with: .success(result))
+        updateStatus.complete(with: .success(result), input: input)
         return
       }
 
       // If that fails, try parsing with context format
       if let result = parseGrepOutputWithContext(rawOutput: output) {
-        updateStatus.complete(with: .success(result))
+        updateStatus.complete(with: .success(result), input: input)
         return
       }
 
@@ -98,7 +119,7 @@ public final class ClaudeCodeGrepTool: Tool {
       updateStatus.complete(with: .success(Output(
         outputForLLm: output,
         results: [],
-        hasMore: false)))
+        hasMore: false)), input: input)
     }
 
     private let _internalState: InternalState
@@ -201,6 +222,36 @@ public final class ClaudeCodeGrepTool: Tool {
 // MARK: - ClaudeCodeGrepInput
 
 public struct ClaudeCodeGrepInput: Codable, Sendable {
+  public init(
+    pattern: String,
+    path: String?,
+    glob: String?,
+    outputMode: String?,
+    beforeContext: Int?,
+    afterContext: Int?,
+    contextLines: Int?,
+    lineNumbers: Bool?,
+    caseInsensitive: Bool?,
+    type: String?,
+    headLimit: Int?,
+    multiline: Bool?,
+    projectRoot: String?)
+  {
+    self.pattern = pattern
+    self.path = path
+    self.glob = glob
+    self.outputMode = outputMode
+    self.beforeContext = beforeContext
+    self.afterContext = afterContext
+    self.contextLines = contextLines
+    self.lineNumbers = lineNumbers
+    self.caseInsensitive = caseInsensitive
+    self.type = type
+    self.headLimit = headLimit
+    self.multiline = multiline
+    self.projectRoot = projectRoot
+  }
+
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
@@ -366,10 +417,14 @@ private func parseGrepOutputWithContext(rawOutput: String) -> ToolsSchema.Search
 extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
+    let input = status.value.input
     let mappedInput = SearchFilesTool.Use.Input(
-      directoryPath: input.path ?? input.projectRoot ?? "/",
-      regex: input.pattern,
-      filePattern: input.glob)
-    return AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput, rootPath: _internalState.rootPath))
+      directoryPath: input?.path ?? input?.projectRoot ?? "/",
+      regex: input?.pattern ?? "",
+      filePattern: input?.glob)
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<SearchFilesTool.Use.Input, SearchFilesTool.Use.Output>>.createMapped(from: status) { status in
+      status.mapInput { _ in mappedInput }
+    }
+    return AnyToolUseViewModel(ToolUseViewModel(status: mappedStatus, input: mappedInput, rootPath: _internalState.rootPath))
   }
 }

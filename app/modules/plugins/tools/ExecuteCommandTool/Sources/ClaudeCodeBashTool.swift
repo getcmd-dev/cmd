@@ -20,7 +20,7 @@ public final class ClaudeCodeBashTool: Tool {
     public init(
       callingTool: ClaudeCodeBashTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -28,9 +28,16 @@ public final class ClaudeCodeBashTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(command: "", timeout: nil, description: nil)
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -51,17 +58,19 @@ public final class ClaudeCodeBashTool: Tool {
 
     public let callingTool: ClaudeCodeBashTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
       let parsedOutput = Output(output: output, exitCode: 0)
-      updateStatus.complete(with: .success(parsedOutput))
+      updateStatus.complete(with: .success(parsedOutput), input: input)
     }
 
   }
@@ -144,8 +153,9 @@ public final class ClaudeCodeBashTool: Tool {
 
 extension ClaudeCodeBashTool.Use: DisplayableToolUse {
   public func startExecuting() {
-    updateStatus.yield(.notStarted)
-    updateStatus.yield(.running)
+    guard let input = status.value.input else { return }
+    updateStatus.yield(.notStarted(input: input))
+    updateStatus.yield(.running(input: input))
   }
 
   @MainActor
@@ -154,8 +164,8 @@ extension ClaudeCodeBashTool.Use: DisplayableToolUse {
     Task {
       let output = await self.status.lastValue
       if
-        case .completed(let output) = output,
-        case .success(let success) = output,
+        case .completed(_, let result) = output,
+        case .success(let success) = result,
         let strOutput = success.output
       {
         stdoutContinuation.yield(strOutput.utf8Data)
@@ -169,9 +179,18 @@ extension ClaudeCodeBashTool.Use: DisplayableToolUse {
       stderrContinuation.finish()
     }
 
+    let mappedInput = ExecuteCommandTool.Use.Input(
+      command: status.value.input?.command ?? "",
+      cwd: nil,
+      canModifySourceFiles: true,
+      canModifyDerivedFiles: true)
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<ExecuteCommandTool.Use.Input, ExecuteCommandTool.Use.Output>>.createMapped(from: status) { status in
+      status.mapInput { _ in mappedInput }
+    }
+
     return AnyToolUseViewModel(ToolUseViewModel(
-      command: input.command,
-      status: status,
+      command: status.value.input?.command ?? "",
+      status: mappedStatus,
       stdout: Future.Just(stdoutStream),
       stderr: Future.Just(stderrStream),
       kill: { }))

@@ -25,7 +25,7 @@ public final class ClaudeCodeMultiEditTool: Tool {
     public init(
       callingTool: ClaudeCodeMultiEditTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -33,9 +33,16 @@ public final class ClaudeCodeMultiEditTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(file_path: "", edits: [])
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -78,25 +85,28 @@ public final class ClaudeCodeMultiEditTool: Tool {
 
     public let callingTool: ClaudeCodeMultiEditTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public var internalState: InternalState? { mappedInput }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output _: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "MultiEdit completed successfully"
       // TODO: handle failures
-      updateStatus.complete(with: .success(.init(result: placeholderOutput)))
+      updateStatus.complete(with: .success(.init(result: placeholderOutput)), input: input)
 
       updateTrackedFileContent()
       Task { [weak self] in
@@ -251,8 +261,20 @@ extension ClaudeCodeMultiEditTool.Use.Input {
 extension ClaudeCodeMultiEditTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(EditFilesToolUseViewModel(
-      status: status,
+    // Map from ClaudeCodeMultiEditTool.Input to EditFilesTool.Input
+    let mappedStatus = CurrentValueStream.createMapped(from: status) { [mappedInput] status in
+      let toolInput: EditFilesTool.Use.Input
+      do {
+        let data = try JSONEncoder().encode(["files": mappedInput])
+        toolInput = try JSONDecoder().decode(EditFilesTool.Use.Input.self, from: data)
+      } catch {
+        toolInput = EditFilesTool.Use.Input(files: [])
+      }
+      return status.mapInput { _ in toolInput }
+    }
+
+    return AnyToolUseViewModel(EditFilesToolUseViewModel(
+      status: mappedStatus,
       input: mappedInput,
 
       setResult: { [weak self] toolUseResult in

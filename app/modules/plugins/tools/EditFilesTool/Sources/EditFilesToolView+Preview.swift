@@ -27,12 +27,18 @@ struct FileChangeView_Previews: PreviewProvider {
         .frame(width: 500, height: 600)
         .preferredColorScheme(.dark)
         .previewDisplayName("Expanded State")
-
-      // Error state
-      FileChangeView(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
-        .frame(width: 500)
-        .preferredColorScheme(.dark)
-        .previewDisplayName("Error State")
+        
+        // Error state
+        FileChangeView(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
+          .frame(width: 500)
+          .preferredColorScheme(.dark)
+          .previewDisplayName("Error State")
+        
+        // Error state
+        FileChangeView(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
+          .frame(width: 500)
+          .preferredColorScheme(.dark)
+          .previewDisplayName("Parsing Error State")
     }
     .padding()
     .background(Color.black)

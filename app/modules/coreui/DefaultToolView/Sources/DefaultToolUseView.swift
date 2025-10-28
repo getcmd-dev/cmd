@@ -33,6 +33,9 @@ public struct DefaultToolUseView: View {
         }
 
         switch toolUse.status {
+        case .failedToDecode(let error):
+            Text("Failed to parse input for \(toolUse.toolName)")
+              .foregroundColor(foregroundColor)
         case .notStarted:
           Text("\(toolUse.toolName)")
             .foregroundColor(foregroundColor)
@@ -60,9 +63,12 @@ public struct DefaultToolUseView: View {
 
       // Optional second row
       switch toolUse.status {
-      case .notStarted, .pendingApproval, .approvalRejected, .running, .completed(.success):
+      case .failedToDecode(let error):
+          // TODO: render
+          EmptyView()
+      case .notStarted, .pendingApproval, .approvalRejected, .running, .completed(_, .success):
         EmptyView()
-      case .completed(.failure(let error)):
+      case .completed(_, .failure(let error)):
         Text(error.localizedDescription)
           .textSelection(.enabled)
           .foregroundColor(colorScheme.redError)
@@ -82,10 +88,13 @@ public struct DefaultToolUseView: View {
           .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.secondarySystemBackground)
 
           switch toolUse.status {
+          case .failedToDecode(let error):
+              // TODO: render
+              EmptyView()
           case .notStarted, .pendingApproval, .running, .approvalRejected:
             EmptyView()
 
-          case .completed(.success(let output)):
+          case .completed(_, .success(let output)):
             Text("Output")
             HStack {
               Text(output ?? "<invalid JSON>")
@@ -96,7 +105,7 @@ public struct DefaultToolUseView: View {
             }
             .with(cornerRadius: Constants.cornerRadius, backgroundColor: colorScheme.secondarySystemBackground)
 
-          case .completed(.failure):
+          case .completed(_, .failure):
             EmptyView()
           }
         }

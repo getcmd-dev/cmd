@@ -83,27 +83,27 @@ let shortJSON = try! JSONDecoder().decode(JSON.Value.self, from: """
     VStack(alignment: .leading, spacing: 10) {
       DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
-        status: Status.Just(.notStarted),
+        status: Status.Just(.notStarted(input: [:])),
         input: shortJSON))
 
       DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
-        status: Status.Just(.pendingApproval),
+        status: Status.Just(.pendingApproval(input: [:])),
         input: shortJSON))
 
       DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
-        status: Status.Just(.running),
+        status: Status.Just(.running(input: [:])),
         input: shortJSON))
 
       DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
-        status: Status.Just(.completed(.success(longJSON))),
+        status: Status.Just(.completed(input: [:], result: .success(longJSON))),
         input: shortJSON))
 
       DefaultToolUseView(toolUse: DefaultToolUseViewModel(
         toolName: "test-tool",
-        status: Status.Just(.completed(.failure(AppError("Tool call failed")))),
+        status: Status.Just(.completed(input: [:], result: .failure(AppError("Tool call failed")))),
         input: shortJSON))
     }
   }

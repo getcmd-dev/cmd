@@ -23,7 +23,7 @@ public final class ClaudeCodeTodoWriteTool: Tool {
     public init(
       callingTool: ClaudeCodeTodoWriteTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -31,9 +31,16 @@ public final class ClaudeCodeTodoWriteTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(todos: [])
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -100,22 +107,25 @@ public final class ClaudeCodeTodoWriteTool: Tool {
 
     public let callingTool: ClaudeCodeTodoWriteTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
 
-      updateStatus.complete(with: .success(.init(message: output)))
+      updateStatus.complete(with: .success(.init(message: output)), input: input)
 
       do {
         @Dependency(\.chatContextRegistry) var chatContextRegistry
@@ -268,7 +278,7 @@ final class TodoWriteToolUseViewModel {
 
   let input: ClaudeCodeTodoWriteTool.Use.Input
   let preExistingTodos: [ClaudeCodeTodoWriteTool.Use.TodoItem]?
-  var status: ToolUseExecutionStatus<ClaudeCodeTodoWriteTool.Use.Output>
+  var status: ToolUseExecutionStatus<ClaudeCodeTodoWriteTool.Use.Input, ClaudeCodeTodoWriteTool.Use.Output>
 
   var removedTodos: [ClaudeCodeTodoWriteTool.Use.TodoItem] {
     guard let preExistingTodos else {
@@ -308,7 +318,7 @@ extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success:
       var representation = """

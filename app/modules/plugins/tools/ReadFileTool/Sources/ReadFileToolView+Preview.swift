@@ -8,15 +8,20 @@ let path = "/path/to/some-file.txt"
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
+      let input1 = ReadFileTool.Use.Input(path: path, lineRange: .init(start: 1, end: 10))
       ToolUseView(toolUse: ToolUseViewModel(
-        status: .Just(.running),
-        input: .init(path: path, lineRange: .init(start: 1, end: 10)), projectRoot: nil))
+        status: .Just(.running(input: input1)),
+        input: input1, projectRoot: nil))
+
+      let input2 = ReadFileTool.Use.Input(path: path, lineRange: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: .Just(.notStarted),
-        input: .init(path: path, lineRange: nil),
+        status: .Just(.notStarted(input: input2)),
+        input: input2,
         projectRoot: nil))
+
+      let input3 = ReadFileTool.Use.Input(path: path, lineRange: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: .Just(.completed(.success(.init(
+        status: .Just(.completed(input: input3, result: .success(.init(
           content: """
             import Foundation
 
@@ -28,13 +33,14 @@ let path = "/path/to/some-file.txt"
             // for the ReadFileTool preview
             """,
           uri: "/path/to/some-file.txt")))),
-        input: .init(path: path, lineRange: nil), projectRoot: nil))
+        input: input3, projectRoot: nil))
 
+      let input4 = ReadFileTool.Use.Input(path: path, lineRange: nil)
       ToolUseView(toolUse: ToolUseViewModel(
-        status: .Just(.completed(.success(.init(
+        status: .Just(.completed(input: input4, result: .success(.init(
           content: longContent,
           uri: "/path/to/some-file.swift")))),
-        input: .init(path: path, lineRange: nil), projectRoot: nil))
+        input: input4, projectRoot: nil))
     }
   }
   .frame(minWidth: 500, minHeight: 500)

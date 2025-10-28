@@ -21,17 +21,26 @@ public final class AskFollowUpTool: Tool {
     public init(
       callingTool: AskFollowUpTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolFoundation.ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.input = input
       self.context = context
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding
+        input = Input(question: "", followUp: [])
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -56,24 +65,29 @@ public final class AskFollowUpTool: Tool {
 
     public let callingTool: AskFollowUpTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
+
       // Transition from pendingApproval to notStarted to running
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      let notStartedStatus: ToolUseExecutionStatus<Input, Output> = .notStarted(input: input)
+      let runningStatus: ToolUseExecutionStatus<Input, Output> = .running(input: input)
+      updateStatus.yield(notStartedStatus)
+      updateStatus.yield(runningStatus)
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: Result<Output, Error>.failure(CancellationError()), input: input)
     }
 
     func select(followUp: String) {
-      updateStatus.complete(with: .success(.init(response: followUp)))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: Result<Output, Error>.success(.init(response: followUp)), input: input)
     }
 
   }
@@ -144,7 +158,7 @@ final class ToolUseViewModel {
   }
 
   let input: AskFollowUpTool.Use.Input
-  var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
+  var status: ToolUseExecutionStatus<AskFollowUpTool.Use.Input, AskFollowUpTool.Output>
   let selectFollowUp: (String) -> Void
 }
 
@@ -156,7 +170,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success:
       return """

@@ -13,7 +13,7 @@ extension AskFollowUpTool.Use: DisplayableToolUse {
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      input: input,
+      input: input ?? Input(question: "", followUp: []),
       selectFollowUp: select(followUp:)))
   }
 }
@@ -34,9 +34,11 @@ struct ToolUseView: View {
       rejectedView
     case .running:
       followUpView(selection: nil)
-    case .completed(.success(let output)):
+    case .completed(_, .success(let output)):
       followUpView(selection: output.response)
-    case .completed(.failure):
+    case .completed(_, .failure):
+      EmptyView()
+    case .failedToDecode:
       EmptyView()
     }
   }

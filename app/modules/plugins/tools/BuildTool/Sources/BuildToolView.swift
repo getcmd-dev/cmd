@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import CodePreview
 import DLS
 import LocalServerServiceInterface
@@ -14,7 +15,7 @@ extension BuildTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
     AnyToolUseViewModel(ToolUseViewModel(
-      buildType: input.for,
+      buildType: input?.for ?? .run,
       status: status))
   }
 }
@@ -35,10 +36,12 @@ struct ToolUseView: View {
       rejectedContent
     case .running:
       buildingContent
-    case .completed(.success(let buildResult)):
+    case .completed(_, .success(let buildResult)):
       buildResultsContent(buildResult: buildResult)
-    case .completed(.failure(let error)):
+    case .completed(_, .failure(let error)):
       failureContent(error: error)
+    case .failedToDecode(let error):
+      failureContent(error: AppError(message: "Failed to decode input: \(error.error)"))
     }
   }
 

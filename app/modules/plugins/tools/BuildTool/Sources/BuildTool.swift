@@ -25,7 +25,7 @@ public final class BuildTool: Tool {
     public init(
       callingTool: BuildTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -33,9 +33,18 @@ public final class BuildTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      // Extract input or create fallback
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        // Fallback for failed decoding - use default build type
+        input = Input(for: .run)
+      }
+
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -63,21 +72,24 @@ public final class BuildTool: Tool {
 
     public let callingTool: BuildTool
     public let toolUseId: String
-    public let input: Input
 
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
 
     public func startExecuting() {
+      guard let input = status.value.input else { return }
+
       // Transition from pendingApproval to notStarted to running
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      let notStartedStatus: ToolUseExecutionStatus<Input, Output> = .notStarted(input: input)
+      let runningStatus: ToolUseExecutionStatus<Input, Output> = .running(input: input)
+      updateStatus.yield(notStartedStatus)
+      updateStatus.yield(runningStatus)
 
       guard let project = context.project else {
-        updateStatus.complete(with: .failure(AppError("No project selected to run build")))
+        updateStatus.complete(with: Result<Output, Error>.failure(AppError("No project selected to run build")), input: input)
         return
       }
 
@@ -87,15 +99,16 @@ public final class BuildTool: Tool {
           let buildResult = try await xcodeController.build(project: project, buildType: buildType)
 
           let isSuccess = buildResult.maxSeverity != .error
-          updateStatus.complete(with: .success(Output(buildResult: buildResult, isSuccess: isSuccess)))
+          updateStatus.complete(with: Result<Output, Error>.success(Output(buildResult: buildResult, isSuccess: isSuccess)), input: input)
         } catch {
-          updateStatus.complete(with: .failure(error))
+          updateStatus.complete(with: Result<Output, Error>.failure(error), input: input)
         }
       }
     }
 
     public func cancel() {
-      updateStatus.complete(with: .failure(CancellationError()))
+      guard let input = status.value.input else { return }
+      updateStatus.complete(with: Result<Output, Error>.failure(CancellationError()), input: input)
     }
 
     @Dependency(\.xcodeController) private var xcodeController
@@ -163,7 +176,7 @@ final class ToolUseViewModel {
   }
 
   let buildType: BuildType
-  var status: ToolUseExecutionStatus<BuildTool.Use.Output>
+  var status: ToolUseExecutionStatus<BuildTool.Use.Input, BuildTool.Use.Output>
 }
 
 // MARK: ViewRepresentable, StreamRepresentable
@@ -174,7 +187,7 @@ extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

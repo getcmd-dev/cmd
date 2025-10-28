@@ -292,10 +292,9 @@ actor RequestStreamingHelper: Sendable {
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
         let data = try JSONEncoder().encode(request.input)
-        let toolUse = try tool.use(
+        let toolUse = tool.use(
           toolUseId: request.toolUseId,
           input: data,
-
           context: context.toolExecutionContext)
 
         if !toolUse.isReadonly, isExternalAgent {

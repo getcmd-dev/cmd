@@ -10,34 +10,37 @@ typealias SearchFilesStatus = AskFollowUpTool.Use.Status
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
+      let input1 = AskFollowUpTool.Input(
+        question: "Can edit this file?", followUp: [
+          "Yes",
+          "No",
+        ])
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.running),
-        input: AskFollowUpTool.Input(
-          question: "Can edit this file?", followUp: [
-            "Yes",
-            "No",
-          ]),
+        status: SearchFilesStatus.Just(.running(input: input1)),
+        input: input1,
         selectFollowUp: { _ in }))
 
+      let input2 = AskFollowUpTool.Input(
+        question: "Can edit this file?", followUp: [
+          "Yes",
+          "No",
+        ])
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.notStarted),
-        input: AskFollowUpTool.Input(
-          question: "Can edit this file?", followUp: [
-            "Yes",
-            "No",
-          ]),
+        status: SearchFilesStatus.Just(.notStarted(input: input2)),
+        input: input2,
         selectFollowUp: { _ in }))
 
+      let input3 = AskFollowUpTool.Input(
+        question: "Can edit this file?", followUp: [
+          "Yes",
+          "No",
+          "Maybe",
+          "I'm not sure",
+          "Try and see",
+        ])
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.completed(.success(AskFollowUpTool.Use.Output(response: "Yes")))),
-        input: AskFollowUpTool.Input(
-          question: "Can edit this file?", followUp: [
-            "Yes",
-            "No",
-            "Maybe",
-            "I'm not sure",
-            "Try and see",
-          ]),
+        status: SearchFilesStatus.Just(.completed(input: input3, result: .success(AskFollowUpTool.Use.Output(response: "Yes")))),
+        input: input3,
         selectFollowUp: { _ in }))
     }
   }

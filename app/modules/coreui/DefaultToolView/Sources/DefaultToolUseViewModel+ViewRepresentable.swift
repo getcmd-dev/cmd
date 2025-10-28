@@ -15,7 +15,7 @@ extension DefaultToolUseViewModel: ViewRepresentable, StreamRepresentable {
 
   @MainActor
   public var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
+    guard case .completed(_, let result) = status else { return nil }
     switch result {
     case .success(let output):
       return """

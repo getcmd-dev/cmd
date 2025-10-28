@@ -11,10 +11,17 @@ import Testing
 
 extension ExecuteCommandToolTests {
   struct StreamRepresentationTests {
+    private static let testInput = ExecuteCommandTool.Use.Input(
+      command: "test",
+      cwd: nil,
+      canModifySourceFiles: false,
+      canModifyDerivedFiles: false
+    )
+
     @MainActor
     @Test("streamRepresentation returns nil when status is not completed")
     func test_streamRepresentationNilWhenNotCompleted() {
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .running)
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .running(input: Self.testInput))
 
       let viewModel = ToolUseViewModel(
         command: "ls -la",
@@ -33,7 +40,7 @@ extension ExecuteCommandToolTests {
       let output = ExecuteCommandTool.Use.Output(
         output: "Hello World\n",
         exitCode: 0)
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         command: "echo 'Hello World'",
@@ -58,7 +65,7 @@ extension ExecuteCommandToolTests {
       let output = ExecuteCommandTool.Use.Output(
         output: "command not found: invalid-command",
         exitCode: 127)
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         command: "invalid-command",
@@ -81,7 +88,7 @@ extension ExecuteCommandToolTests {
     func test_streamRepresentationToolFailure() {
       // given
       let error = AppError("Command execution failed")
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         command: "test command",
@@ -104,7 +111,7 @@ extension ExecuteCommandToolTests {
     func test_streamRepresentationDifferentExitCodes() {
       // given
       let output1 = ExecuteCommandTool.Use.Output(output: "", exitCode: 0)
-      let (status1, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.success(output1)))
+      let (status1, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .success(output1)))
       let viewModel1 = ToolUseViewModel(
         command: "exit 0",
         status: status1,
@@ -113,7 +120,7 @@ extension ExecuteCommandToolTests {
         kill: { })
 
       let output2 = ExecuteCommandTool.Use.Output(output: "", exitCode: 1)
-      let (status2, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.success(output2)))
+      let (status2, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .success(output2)))
       let viewModel2 = ToolUseViewModel(
         command: "exit 1",
         status: status2,
@@ -145,7 +152,7 @@ extension ExecuteCommandToolTests {
       let output = ExecuteCommandTool.Use.Output(
         output: "/usr/bin/git\n",
         exitCode: 0)
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.success(output)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .success(output)))
 
       let viewModel = ToolUseViewModel(
         command: complexCommand,
@@ -169,7 +176,7 @@ extension ExecuteCommandToolTests {
       // given
       let longErrorMessage = String(repeating: "This is a very long error message that should be trimmed. ", count: 10)
       let error = AppError(longErrorMessage)
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         command: "test command",
@@ -185,9 +192,9 @@ extension ExecuteCommandToolTests {
       let result = try #require(res)
       #expect(result.contains("⎿ Failed:"))
       let errorMessage = try #require(result.split(separator: "⎿ Failed:").last)
-      #expect(errorMessage.trimmingCharacters(in: .whitespacesAndNewlines) == """
+      #expect(String(errorMessage).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) == """
         This is a very long error message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message ... [280 characters truncated] ...r message that should be trimmed. This is a very long error message that should be trimmed. This is a very long error message that should be trimmed.
-        """.trimmingCharacters(in: .whitespacesAndNewlines))
+        """.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines))
     }
 
     @MainActor
@@ -196,7 +203,7 @@ extension ExecuteCommandToolTests {
       // given
       let shortErrorMessage = "Short error"
       let error = AppError(shortErrorMessage)
-      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(.failure(error)))
+      let (status, _) = ExecuteCommandTool.Use.Status.makeStream(initial: .completed(input: Self.testInput, result: .failure(error)))
 
       let viewModel = ToolUseViewModel(
         command: "test command",

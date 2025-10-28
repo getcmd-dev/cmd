@@ -22,7 +22,7 @@ public final class ClaudeCodeLSTool: Tool {
     public init(
       callingTool: ClaudeCodeLSTool,
       toolUseId: String,
-      input: Input,
+      inputResult: Result<Input, ToolDecodingError>,
       context: ToolExecutionContext,
       internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
@@ -30,10 +30,18 @@ public final class ClaudeCodeLSTool: Tool {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = input
+
+      let input: Input
+      switch inputResult {
+      case .success(let value):
+        input = value
+      case .failure:
+        input = Input(path: "", ignore: nil)
+      }
+
       directoryPath = URL(fileURLWithPath: input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -53,21 +61,24 @@ public final class ClaudeCodeLSTool: Tool {
 
     public let callingTool: ClaudeCodeLSTool
     public let toolUseId: String
-    public let input: Input
     public let status: Status
 
     public let context: ToolExecutionContext
 
-    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation
+
+    public var input: Input? { status.value.input }
 
     public func startExecuting() {
-      updateStatus.yield(.notStarted)
-      updateStatus.yield(.running)
+      guard let input = status.value.input else { return }
+      updateStatus.yield(.notStarted(input: input))
+      updateStatus.yield(.running(input: input))
     }
 
     public func receive(output: JSON.Value) throws {
+      guard let input = status.value.input else { return }
       let output = try requireStringOutput(from: output)
-      updateStatus.complete(with: .success(parse(rawOutput: output)))
+      updateStatus.complete(with: .success(parse(rawOutput: output)), input: input)
     }
 
     let directoryPath: URL
@@ -174,8 +185,12 @@ public final class ClaudeCodeLSTool: Tool {
 extension ClaudeCodeLSTool.Use: DisplayableToolUse {
   @MainActor
   func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(ToolUseViewModel(
-      status: status,
+    let mappedInput = LSTool.Use.Input(path: status.value.input?.path ?? "", recursive: false)
+    let mappedStatus = CurrentValueStream<ToolUseExecutionStatus<LSTool.Use.Input, LSTool.Use.Output>>.createMapped(from: status) { status in
+      status.mapInput { _ in mappedInput }
+    }
+    return AnyToolUseViewModel(ToolUseViewModel(
+      status: mappedStatus,
       directoryPath: directoryPath,
       projectRoot: context.projectRoot))
   }
