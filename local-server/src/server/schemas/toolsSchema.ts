@@ -209,47 +209,48 @@ export type ACPToolInput = {
 	kind: ACPToolKind
 	title: string
 	rawInput?: Record<string, unknown>
+	content?: ACPTool_Content[]
 }
 export type ACPToolOutput = {
 	type: "acp_tool_output"
 	kind: ACPToolKind
-	content: ACPToolOutput_Content[]
+	content: ACPTool_Content[]
 	rawOutput?: Record<string, unknown>
 }
 
-export type ACPToolOutput_MediaContent_Resource_EmbeddedResource =
-	| ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text
-	| ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob
+export type ACPTool_MediaContent_Resource_EmbeddedResource =
+	| ACPTool_MediaContent_Resource_EmbeddedResource_Text
+	| ACPTool_MediaContent_Resource_EmbeddedResource_Blob
 
-export interface ACPToolOutput_MediaContent_Resource_EmbeddedResource_Text {
+export interface ACPTool_MediaContent_Resource_EmbeddedResource_Text {
 	type: "embedded_resource_text"
 	mimeType?: string | null
 	text: string
 	uri: string
 }
-export interface ACPToolOutput_MediaContent_Resource_EmbeddedResource_Blob {
+export interface ACPTool_MediaContent_Resource_EmbeddedResource_Blob {
 	type: "embedded_resource_blob"
 	blob: string
 	mimeType?: string | null
 	uri: string
 }
 
-export type ACPToolOutput_MediaContent_Text = {
+export type ACPTool_MediaContent_Text = {
 	text: string
 	type: "text"
 }
-export type ACPToolOutput_MediaContent_Image = {
+export type ACPTool_MediaContent_Image = {
 	data: string
 	mimeType: string
 	type: "image"
 	uri?: string | null
 }
-export type ACPToolOutput_MediaContent_Audio = {
+export type ACPTool_MediaContent_Audio = {
 	data: string
 	mimeType: string
 	type: "audio"
 }
-export type ACPToolOutput_MediaContent_ResourceLink = {
+export type ACPTool_MediaContent_ResourceLink = {
 	description?: string | null
 	mimeType?: string | null
 	name: string
@@ -258,31 +259,31 @@ export type ACPToolOutput_MediaContent_ResourceLink = {
 	type: "resource_link"
 	uri: string
 }
-export type ACPToolOutput_MediaContent_Resource = {
-	resource: ACPToolOutput_MediaContent_Resource_EmbeddedResource
+export type ACPTool_MediaContent_Resource = {
+	resource: ACPTool_MediaContent_Resource_EmbeddedResource
 	type: "resource"
 }
-export type ACPToolOutput_AnyMediaContent =
-	| ACPToolOutput_MediaContent_Text
-	| ACPToolOutput_MediaContent_Image
-	| ACPToolOutput_MediaContent_Audio
-	| ACPToolOutput_MediaContent_ResourceLink
-	| ACPToolOutput_MediaContent_Resource
+export type ACPTool_AnyMediaContent =
+	| ACPTool_MediaContent_Text
+	| ACPTool_MediaContent_Image
+	| ACPTool_MediaContent_Audio
+	| ACPTool_MediaContent_ResourceLink
+	| ACPTool_MediaContent_Resource
 
-export type ACPToolOutput_MediaContent = {
-	content: ACPToolOutput_AnyMediaContent
+export type ACPTool_MediaContent = {
+	content: ACPTool_AnyMediaContent
 	type: "content"
 }
 
-export type ACPToolOutput_Diff = {
+export type ACPTool_DiffContent = {
 	newText: string
 	oldText?: string | null
 	path: string
 	type: "diff"
 }
-export type ACPToolOutput_Terminal = {
+export type ACPTool_TerminalContent = {
 	terminalId: string
 	type: "terminal"
 }
 
-export type ACPToolOutput_Content = ACPToolOutput_MediaContent | ACPToolOutput_Diff | ACPToolOutput_Terminal
+export type ACPTool_Content = ACPTool_MediaContent | ACPTool_DiffContent | ACPTool_TerminalContent

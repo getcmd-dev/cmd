@@ -11,7 +11,7 @@ import SwiftUI
     automaticallyCheckForUpdates: .constant(true),
     fileEditMode: .constant(.xcodeExtension),
     launchHostAppWhenXcodeDidActivate: .constant(true))
-    .frame(width: 600, height: 400)
+    .frame(width: 400, height: 600)
     .padding()
 }
 
@@ -21,7 +21,7 @@ import SwiftUI
     automaticallyCheckForUpdates: .constant(false),
     fileEditMode: .constant(.directIO),
     launchHostAppWhenXcodeDidActivate: .constant(false))
-    .frame(width: 600, height: 400)
+    .frame(width: 400, height: 600)
     .padding()
 }
 

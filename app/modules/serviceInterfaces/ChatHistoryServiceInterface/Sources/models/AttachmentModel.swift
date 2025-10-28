@@ -70,11 +70,9 @@ public enum AttachmentModel: Identifiable, Sendable {
 
     public struct Entry: Identifiable, Sendable, Equatable, Codable {
       public let path: String
-      public let isDirectory: Bool
 
-      public init(path: String, isDirectory: Bool) {
+      public init(path: String) {
         self.path = path
-        self.isDirectory = isDirectory
       }
 
       public var id: String {

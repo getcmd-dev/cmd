@@ -46,6 +46,16 @@ final class DefaultAppUpdateService: AppUpdateService {
     #endif
   }
 
+  func checkForUpdates() async {
+    do {
+      try await performUpdateCheck()
+    } catch is CancellationError {
+      return
+    } catch {
+      updateLogger.error("Manual update check failed", error)
+    }
+  }
+
   func relaunch() {
     Task {
       /// When an update is available, checking again for an update will make Sparkle quit and relaunch.
@@ -89,6 +99,13 @@ final class DefaultAppUpdateService: AppUpdateService {
     return (try? JSONDecoder().decode([String].self, from: Data(ignoredVersions.utf8))) ?? []
   }
 
+  private func performUpdateCheck() async throws {
+    try await Task { @MainActor in
+      let updater = UpdateChecker()
+      try await _hasUpdateAvailable.send(updater.checkForUpdates())
+    }.value
+  }
+
   private func monitorSettingChanges() {
     settingsService.liveValue(for: \.automaticallyCheckForUpdates).sink { @Sendable [weak self] automaticallyCheckForUpdates in
       if automaticallyCheckForUpdates {
@@ -113,10 +130,7 @@ final class DefaultAppUpdateService: AppUpdateService {
           break
         }
         try Task.checkCancellation()
-        let updater = UpdateChecker()
-        try await Task { @MainActor in
-          try await _hasUpdateAvailable.send(updater.checkForUpdates())
-        }.value
+        try await performUpdateCheck()
         try await Task.sleep(for: delayBetweenChecks)
       }
     }

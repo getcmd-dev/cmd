@@ -31,9 +31,15 @@ final class DefaultFileSuggestionService: FileSuggestionService {
     }
     let fuse = Fuse(threshold: 1.0, qos: .userInitiated)
 
-    let resultsWithScore = await fuse.search(String(query.reversed()), in: files.map { String($0.displayPath.reversed()) })
+    // We pre-filter the list of files on exact fuzzy match in addition to using `Ifrit.Fuse` since
+    // fuse uses a scoring methods that doesn't remove non exact match.
+    let candidateFiles = files.filter { $0.displayPath.lowercased().fuzzyMatches(query.lowercased()) }
+
+    let resultsWithScore = await fuse.search(
+      String(query.reversed()),
+      in: candidateFiles.map { String($0.displayPath.reversed()) })
       .map { result -> (FileSuggestion, Double, Int) in
-        let suggestion = files[result.index]
+        let suggestion = candidateFiles[result.index]
         let score = result.diffScore // lower is better
         let longestMatch = result.ranges.reduce(0) { max($0, $1.count) }
         return (
@@ -183,4 +189,21 @@ final class DefaultFileSuggestionService: FileSuggestionService {
     .sorted { $0.displayPath < $1.displayPath }
   }
 
+}
+
+extension String {
+  /// Return whether the string is an exact fuzzy match of the given pattern.
+  func fuzzyMatches(_ pattern: String) -> Bool {
+    let p = Array(pattern.lowercased())
+    if p.isEmpty { return true }
+
+    var i = 0
+    for ch in lowercased() {
+      if ch == p[i] {
+        i += 1
+        if i == p.count { return true }
+      }
+    }
+    return false
+  }
 }

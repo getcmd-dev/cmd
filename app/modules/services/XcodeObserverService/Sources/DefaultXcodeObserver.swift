@@ -148,23 +148,34 @@ final class DefaultXcodeObserver: XcodeObserver {
   }
 
   private func pollActiveInstance() -> AnyCancellable {
-    let isCancelled = Atomic(false)
-    let pollOnce = Atomic<@Sendable () -> Void>({ })
-    pollOnce.set(to: { [weak self] in
-      guard let self, isCancelled.value == false else { return }
-      if let pid = NSWorkspace.shared.activeApplication()?["NSApplicationProcessIdentifier"] as? Int32 {
-        handleActivation(of: pid)
+    Timer.publish(every: 1.0, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] _ in
+        guard let self else { return }
+        if let pid = NSWorkspace.shared.activeApplication()?["NSApplicationProcessIdentifier"] as? Int32 {
+          handleActivation(of: pid)
+        }
       }
+  }
 
-      Task {
-        try await Task.sleep(nanoseconds: 1_000_000_000)
-        pollOnce.value()
+  private func pollDeadProcesses() -> AnyCancellable {
+    Timer.publish(every: 1.0, on: .main, in: .common)
+      .autoconnect()
+      .sink { [weak self] _ in
+        self?.cleanupDeadProcesses()
       }
-    })
-    pollOnce.value()
+  }
 
-    return AnyCancellable {
-      isCancelled.set(to: true)
+  private func cleanupDeadProcesses() {
+    let deadObservers = inLock { state in
+      state.xcodeObservers.values.filter { observer in
+        // Check if the process is still running
+        observer.runningApplication.processIdentifier == -1 || observer.runningApplication.isTerminated
+      }
+    }
+
+    for observer in deadObservers {
+      stopTracking(xcodeApp: observer)
     }
   }
 
@@ -195,12 +206,14 @@ final class DefaultXcodeObserver: XcodeObserver {
     observeDidActivateApplicationNotification()
     observeDidDeactivateApplicationNotification()
     observeDidTerminateApplicationNotification()
-    let cancellable = pollActiveInstance()
+    let activeInstanceCancellable = pollActiveInstance()
+    let deadProcessesCancellable = pollDeadProcesses()
 
     let cancelObservations = AnyCancellable { [weak self] in
       guard let self else { return }
       NSWorkspace.shared.notificationCenter.removeObserver(self)
-      cancellable.cancel()
+      activeInstanceCancellable.cancel()
+      deadProcessesCancellable.cancel()
     }
 
     let toBeCancelled = inLock { state in
@@ -252,7 +265,12 @@ final class DefaultXcodeObserver: XcodeObserver {
   /// the activation state of _all_ instances is updated at once, and that we don't broadcast an inconsistent state
   /// where several (or no) instance are activated.
   private func handleTermination(of app: NSRunningApplication) {
-    xcodeObservers[app.processIdentifier].map(stopTracking(xcodeApp:))
+    // When an app terminates, its processIdentifier may become -1.
+    // We need to find the observer by checking all observers for a matching running application.
+    let observerToStop = inLock { state in
+      state.xcodeObservers.values.first { $0.runningApplication == app }
+    }
+    observerToStop.map(stopTracking(xcodeApp:))
   }
 
   /// Start tracking a new instance of Xcode, and update the state.
