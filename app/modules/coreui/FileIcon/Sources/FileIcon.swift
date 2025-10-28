@@ -18,14 +18,18 @@ import SwiftUI
 @MainActor
 public struct FileIcon: View {
 
-  public init(filePath: URL) {
+  public init(filePath: URL, isDirectory: Bool = false) {
     self.filePath = filePath
-    language = Self.language(for: filePath)
+    self.isDirectory = isDirectory
+    language = isDirectory ? "folder" : Self.language(for: filePath)
     let cachedImage = Self.cachedImages[language]
     image = ObservableValue<NSImage?>(cachedImage)
     if cachedImage == nil {
       Task { [self] in
-        image.value = try await Self.fetchImage(for: language, filePath: filePath, server: server)
+        image.value = try await Self.fetchImage(
+          for: language,
+          filePath: filePath,
+          server: server)
       }
     }
   }
@@ -55,6 +59,7 @@ public struct FileIcon: View {
   }
 
   let filePath: URL
+  let isDirectory: Bool
 
   private static var fileExtensionToLanguage: [String: String]?
 
@@ -70,8 +75,13 @@ extension FileIcon {
     resourceBundle.image(forResource: "\(language)-preferred")
   }
 
-  /// Fetches the image for the given language from the internet.
-  fileprivate static func fetchImage(for language: String, filePath: URL, server: LocalServer) async throws -> NSImage {
+  /// Fetches the image for the given language.
+  fileprivate static func fetchImage(
+    for language: String,
+    filePath: URL,
+    server: LocalServer)
+    async throws -> NSImage
+  {
     if let image = bundleImage(for: language) {
       cachedImages[language] = image
       return image
@@ -80,10 +90,11 @@ extension FileIcon {
     // to an icon is defined in the node package from
     // https://github.com/material-extensions/vscode-material-icon-theme .
     // So we fetch it over the local server.
+    // Note: language is already set to "folder" for directories, so we infer the type from it
     let payload = """
       {
         "path": "\(filePath.path())",
-        "type": "file"
+        "type": "\(language == "folder" ? "folder" : "file")"
       }
       """.utf8Data
 

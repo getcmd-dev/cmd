@@ -31,6 +31,7 @@ import { spawn } from "@/utils/spawn-promise"
 import { homedir } from "os"
 import { sendCommandToHostApp } from "../../interProcessesBridge"
 import { v4 as uuidv4 } from "uuid"
+import { attachmentAsPart } from "../helpers"
 import { pendingToolApprovalRequests } from "../pendingToolApprovalRequests"
 
 // Constants
@@ -159,30 +160,13 @@ const createClaudeCodeEventStream = async (
 					type: "text",
 				})
 				content.attachments?.forEach((attachment) => {
-					if (attachment.type === "file_attachment") {
-						userMessageContents.push({
-							text: `<file_attachment>
-									<path>${attachment.path}</path>
-									<content>${attachment.content}</content>
-								</file_attachment>`,
-
-							type: "text",
-						})
-					} else if (attachment.type === "file_selection_attachment") {
-						userMessageContents.push({
-							text: `<file_selection_attachment>
-									<path>${attachment.path}</path>
-									<selection>${attachment.content}</selection>
-									<start_line>${attachment.startLine}</start_line>
-									<end_line>${attachment.endLine}</end_line>
-								</file_selection_attachment>`,
-
-							type: "text",
-						})
-					} else if (attachment.type === "image_attachment") {
+					const messagePart = attachmentAsPart(attachment)
+					if (messagePart.type === "text") {
+						userMessageContents.push(messagePart)
+					} else if (messagePart.type === "image") {
 						// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
-						const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
-						const fileExtension = attachment.mimeType.split("/").pop()
+						const base64Data = messagePart.url.replace(/^data:image\/\w+;base64,/, "")
+						const fileExtension = messagePart.mimeType.split("/").pop()
 						const mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp" = (() => {
 							switch (fileExtension) {
 								case "png":

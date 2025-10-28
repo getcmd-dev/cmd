@@ -6,6 +6,7 @@ import ConcurrencyFoundation
 import Foundation
 import ThreadSafe
 
+#if DEBUG
 // MARK: - MockFileManager
 
 @ThreadSafe
@@ -139,7 +140,16 @@ public final class MockFileManager: FileManagerI {
       return []
     }
 
-    return files.keys.filter { $0.path.hasPrefix(url.path) }
+    return inLock { state in
+      let directories = state.directories.map(\.standardized)
+      let files = state.files.keys.map(\.standardized)
+      let normalized = url.standardized
+
+      let directFiles = files.filter { $0.deletingLastPathComponent().path == normalized.path }
+      let directDirectories = directories.filter { $0.deletingLastPathComponent().path == normalized.path }
+
+      return directFiles + directDirectories
+    }
   }
 
   public func enumerator(
@@ -233,3 +243,4 @@ extension String {
     data(using: .utf8)
   }
 }
+#endif

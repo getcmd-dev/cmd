@@ -43,13 +43,43 @@ struct DefaultFileSuggestionServiceTests {
       xcodeObserver: xcodeObserver)
 
     let workspacePath = URL(fileURLWithPath: "/fake/path/TestXcodeProjParsing.xcodeproj")
-    let suggestions = try await sut.suggestFiles(for: "Content", in: workspacePath, top: 5)
-    #expect(suggestions.map(\.displayPath) == [
+    let suggestions = try await sut.suggestFiles(for: "Content", in: workspacePath, top: 10)
+    let fileSuggestions = suggestions.filter { !$0.isDirectory }
+    #expect(fileSuggestions.prefix(5).map(\.displayPath) == [
       "TestXcodeProjParsing/Assets.xcassets/AccentColor.colorset/Contents.json",
       "TestXcodeProjParsing/Assets.xcassets/AppIcon.appiconset/Contents.json",
       "TestXcodeProjParsing/Assets.xcassets/Contents.json",
       "TestXcodeProjParsing/Preview Content/Preview Assets.xcassets/Contents.json",
       "TestXcodeProjParsing/ContentView.swift",
+    ])
+    #expect(suggestions.contains { $0.isDirectory })
+  }
+
+  @Test("does fuzzy matching")
+  func test_fuzzyMatching() async throws {
+    let xcodeObserver = MockXcodeObserver()
+    let callCount = Atomic(0)
+    xcodeObserver.onListFiles = { workspace in
+      #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
+      return ([
+        workspace.appendingPathComponent("Package.swift"),
+        workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
+        workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
+      ], .directory)
+    }
+    let sut = DefaultFileSuggestionService(
+      xcodeObserver: xcodeObserver)
+
+    let workspacePath = URL(fileURLWithPath: "/fake/path/SPM")
+    let suggestions = try await sut
+      .suggestFiles(for: "tEt", in: workspacePath, top: 10) // Like Test, with different casing and one missing character
+    let fileDisplayPaths = suggestions.map(\.displayPath)
+    #expect(fileDisplayPaths == [
+      "Tests",
+      "Tests/TestSPMTests",
+      "Sources/TestSPM",
+      "Tests/TestSPMTests/TestSPMTests.swift",
+      "Sources/TestSPM/TestSPM.swift",
     ])
   }
 
@@ -69,14 +99,17 @@ struct DefaultFileSuggestionServiceTests {
       xcodeObserver: xcodeObserver)
 
     let workspacePath = URL(fileURLWithPath: "/fake/path/SPM")
-    let suggestions = try await sut.suggestFiles(for: "", in: workspacePath, top: 5)
-    #expect(suggestions.map(\.displayPath) == [
+    let suggestions = try await sut.suggestFiles(for: "", in: workspacePath, top: 10)
+    let fileDisplayPaths = suggestions.filter { !$0.isDirectory }.map(\.displayPath)
+    #expect(fileDisplayPaths == [
       "Package.swift",
       "Sources/TestSPM/TestSPM.swift",
       "Tests/TestSPMTests/TestSPMTests.swift",
     ])
-    let newSuggestions = try await sut.suggestFiles(for: "Test", in: workspacePath, top: 5)
-    #expect(newSuggestions.map(\.displayPath) == [
+    #expect(suggestions.contains { $0.isDirectory })
+    let newSuggestions = try await sut.suggestFiles(for: "Test", in: workspacePath, top: 10)
+    let newFileDisplayPaths = newSuggestions.filter { !$0.isDirectory }.map(\.displayPath)
+    #expect(newFileDisplayPaths == [
       "Tests/TestSPMTests/TestSPMTests.swift",
       "Sources/TestSPM/TestSPM.swift",
     ])
@@ -104,19 +137,20 @@ struct DefaultFileSuggestionServiceTests {
 
     let workspacePath = URL(fileURLWithPath: "/fake/path/SPM")
     Task {
-      async let pendingSuggestions = sut.suggestFiles(for: "", in: workspacePath, top: 5)
+      async let pendingSuggestions = sut.suggestFiles(for: "", in: workspacePath, top: 8)
 
-      async let pendingNewSuggestions = sut.suggestFiles(for: "Test", in: workspacePath, top: 5)
+      async let pendingNewSuggestions = sut.suggestFiles(for: "Test", in: workspacePath, top: 8)
       didStartConcurrentRequests.fulfill()
 
       let suggestions = try await pendingSuggestions
       let newSuggestions = try await pendingNewSuggestions
-      #expect(suggestions.map(\.displayPath) == [
+      #expect(suggestions.filter { !$0.isDirectory }.map(\.displayPath) == [
         "Package.swift",
         "Sources/TestSPM/TestSPM.swift",
         "Tests/TestSPMTests/TestSPMTests.swift",
       ])
-      #expect(newSuggestions.map(\.displayPath) == [
+      #expect(suggestions.contains { $0.isDirectory })
+      #expect(newSuggestions.filter { !$0.isDirectory }.map(\.displayPath) == [
         "Tests/TestSPMTests/TestSPMTests.swift",
         "Sources/TestSPM/TestSPM.swift",
       ])

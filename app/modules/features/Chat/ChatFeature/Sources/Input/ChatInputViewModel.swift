@@ -325,7 +325,11 @@ final class ChatInputViewModel {
       attachments.append(attachment)
 
     case .file(let url):
-      if let attachment = createFileAttachment(from: url) {
+      if fileManager.isDirectory(at: url) {
+        if let attachment = createFolderAttachment(from: url) {
+          attachments.append(attachment)
+        }
+      } else if let attachment = createFileAttachment(from: url) {
         attachments.append(attachment)
       }
     }
@@ -333,14 +337,35 @@ final class ChatInputViewModel {
   }
 
   func handleDidSelect(searchResult: FileSuggestion?) {
+    guard let searchResult else {
+      clearSearchResults()
+      return
+    }
+
+    // Capture inlineSearch before clearing it
+    let capturedInlineSearch = inlineSearch
+
     defer {
       clearSearchResults()
     }
 
-    guard let searchResult else { return }
-
-    let attachment: AttachmentModel
-    if
+    if searchResult.isDirectory {
+      if
+        let existingAttachment = attachments.first(where: { attachment in
+          if case .folder(let folderAttachment) = attachment {
+            return folderAttachment.path == searchResult.path
+          }
+          return false
+        })
+      {
+        handleDidSelectAttachment(existingAttachment, for: searchResult, inlineSearch: capturedInlineSearch)
+      } else {
+        guard let folderAttachment = createFolderAttachment(from: searchResult.path) else {
+          return
+        }
+        handleDidSelectAttachment(folderAttachment, for: searchResult, inlineSearch: capturedInlineSearch)
+      }
+    } else if
       let existingAttachment = attachments.first(where: { attachment in
         if case .file(let fileAttachment) = attachment {
           return fileAttachment.path == searchResult.path
@@ -348,30 +373,13 @@ final class ChatInputViewModel {
         return false
       })
     {
-      attachment = existingAttachment
+      handleDidSelectAttachment(existingAttachment, for: searchResult, inlineSearch: capturedInlineSearch)
     } else {
       guard let fileAttachment = createFileAttachment(from: searchResult.path) else {
         return
       }
-      attachment = fileAttachment
+      handleDidSelectAttachment(fileAttachment, for: searchResult, inlineSearch: capturedInlineSearch)
     }
-    guard let inlineSearch else {
-      // this is an external search.
-      if !attachments.contains(where: { $0 === attachment }) {
-        attachments.append(attachment)
-      }
-      return
-    }
-
-    inlineReferences[attachment.id.uuidString] = attachment
-    let str = NSMutableAttributedString(attributedString: textInput.string)
-    let reference = TextInput.Reference(display: "@\(searchResult.path.lastPathComponent)", id: attachment.id.uuidString)
-
-    str.replaceCharacters(in: inlineSearch.1, with: reference.asReferenceBlock)
-    str.append(NSAttributedString(string: " "))
-
-    // We do not update `attachments` in this function as this is triggered by updating `textInput`.
-    textInput = TextInput(str)
   }
 
   /// Request approval for a tool use operation.
@@ -436,6 +444,30 @@ final class ChatInputViewModel {
 
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
+
+  private func handleDidSelectAttachment(
+    _ attachment: AttachmentModel,
+    for searchResult: FileSuggestion,
+    inlineSearch: (String, NSRange, CGRect?)?)
+  {
+    guard let inlineSearch else {
+      // this is an external search.
+      if !attachments.contains(where: { $0 === attachment }) {
+        attachments.append(attachment)
+      }
+      return
+    }
+
+    inlineReferences[attachment.id.uuidString] = attachment
+    let str = NSMutableAttributedString(attributedString: textInput.string)
+    let reference = TextInput.Reference(display: "@\(searchResult.path.lastPathComponent)", id: attachment.id.uuidString)
+
+    str.replaceCharacters(in: inlineSearch.1, with: reference.asReferenceBlock)
+    str.append(NSAttributedString(string: " "))
+
+    // We do not update `attachments` in this function as this is triggered by updating `textInput`.
+    textInput = TextInput(str)
+  }
 
   private func handle(keyForModelSelection key: KeyEquivalent, modifiers _: [KeyModifier]) -> Bool {
     if key == .escape || key == .return {
@@ -550,6 +582,30 @@ final class ChatInputViewModel {
       return nil
     }
     return AttachmentModel.file(.init(path: url, content: content))
+  }
+
+  private func createFolderAttachment(from url: URL) -> AttachmentModel? {
+    guard fileManager.isDirectory(at: url) else { return nil }
+
+    guard
+      let children = try? fileManager.contentsOfDirectory(
+        at: url,
+        includingPropertiesForKeys: [.isDirectoryKey],
+        options: [.skipsHiddenFiles])
+    else {
+      assertionFailure("Could not enumerate folder at \(url)")
+      return nil
+    }
+
+    var entries = [AttachmentModel.FolderAttachmentModel.Entry]()
+
+    for childURL in children {
+      entries.append(.init(path: childURL.path))
+    }
+
+    // Accept directories even if they only contain subdirectories (no files)
+    entries.sort { $0.path < $1.path }
+    return AttachmentModel.folder(.init(id: UUID(), path: url, files: entries))
   }
 
   /// When the text input changes, detect which inline references have changed, and update the attachments accordingly.

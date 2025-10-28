@@ -38,6 +38,7 @@ import { mapResponseError } from "./errorParsing"
 import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 import { sendMessageToClaudeCode as sendMessageToClaudeCode2 } from "./claudeCode/sendMessageToClaudeCode2"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
+import { attachmentAsPart } from "./helpers"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getPort: () => number) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
@@ -390,46 +391,15 @@ const mapMessage = (message: Message): ModelMessage => {
 					})
 				}
 				content.attachments?.forEach((attachment) => {
-					switch (attachment.type) {
-						case "image_attachment":
-							result.push({
-								type: "image",
-								image: attachment.url,
-								mediaType: attachment.mimeType,
-							})
-							break
-						case "file_attachment":
-							result.push({
-								type: "text",
-								text: `<full_file>
-								<path>${attachment.path}</path>
-								<content>
-								${attachment.content}
-								</content>
-							</full_file>
-							`,
-							})
-							break
-						case "file_selection_attachment":
-							result.push({
-								type: "text",
-								text: `<file_selection>
-								<path>${attachment.path}</path>
-								<start_line>${attachment.startLine}</start_line>
-								<end_line>${attachment.endLine}</end_line>
-								<content>
-								${attachment.content}
-								</content>
-							</file_selection>
-							`,
-							})
-							break
-						case "build_error_attachment":
-							result.push({
-								type: "text",
-								text: `Build Error ${attachment.filePath}:${attachment.line}:${attachment.column}: ${attachment.message}`,
-							})
-							break
+					const part = attachmentAsPart(attachment)
+					if (part.type === "text") {
+						result.push(part)
+					} else {
+						result.push({
+							type: "image",
+							image: part.url,
+							mediaType: part.mimeType,
+						})
 					}
 				})
 				return result

@@ -57,6 +57,11 @@ struct AttachmentPreview: View {
         endLine: fileSelection.endLine,
         content: fileSelection.file.content)
 
+    case .folder:
+      // Folder previews are disabled in AttachmentsView (preview function returns early for folders)
+      // This case should never be reached, but we return an empty view just in case
+      EmptyView()
+
     case .buildError(let buildError):
       VStack(alignment: .leading, spacing: 8) {
         Label(buildError.message, systemImage: "exclamationmark.triangle.fill")

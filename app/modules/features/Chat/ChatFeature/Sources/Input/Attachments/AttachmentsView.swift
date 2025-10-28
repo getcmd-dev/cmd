@@ -66,6 +66,10 @@ struct AttachmentsView: View {
   private let verticalSpacing: CGFloat = 7
 
   private func preview(attachment: AttachmentModel) {
+    // Don't show preview for folders
+    if case .folder = attachment {
+      return
+    }
     if previewedAttachment == attachment {
       previewedAttachment = nil
     } else {

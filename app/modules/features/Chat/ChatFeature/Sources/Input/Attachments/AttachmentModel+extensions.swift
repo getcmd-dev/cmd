@@ -12,6 +12,7 @@ extension AttachmentModel {
   typealias FileAttachment = AttachmentModel.FileAttachmentModel
   typealias ImageAttachment = AttachmentModel.ImageAttachmentModel
   typealias FileSelectionAttachment = AttachmentModel.FileSelectionAttachmentModel
+  typealias FolderAttachment = AttachmentModel.FolderAttachmentModel
   typealias BuildError = AttachmentModel.BuildErrorModel
 
   var file: FileAttachment? {
@@ -40,6 +41,15 @@ extension AttachmentModel {
       nil
     }
   }
+
+  var folder: FolderAttachment? {
+    switch self {
+    case .folder(let attachment):
+      attachment
+    default:
+      nil
+    }
+  }
 }
 
 // MARK: - AttachmentModel + Equatable
@@ -62,6 +72,8 @@ extension AttachmentModel: Equatable {
       false // TODO: is this needed?
     case (.fileSelection(let lhs), .fileSelection(let rhs)):
       lhs.file.path == rhs.file.path && lhs.startLine == rhs.startLine && lhs.endLine == rhs.endLine
+    case (.folder(let lhs), .folder(let rhs)):
+      lhs.path == rhs.path
     case (.buildError(let lhs), .buildError(let rhs)):
       lhs.filePath == rhs.filePath && lhs.line == rhs.line && lhs.column == rhs.column && lhs.message == rhs.message
     default:
@@ -73,6 +85,12 @@ extension AttachmentModel: Equatable {
 extension AttachmentModel.FileAttachment {
   init(path: URL, content: String) {
     self.init(id: UUID(), path: path, content: content)
+  }
+}
+
+extension AttachmentModel.FolderAttachmentModel {
+  init(path: URL, files: [AttachmentModel.FolderAttachmentModel.Entry]) {
+    self.init(id: UUID(), path: path, files: files)
   }
 }
 

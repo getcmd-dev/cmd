@@ -46,7 +46,7 @@ struct SearchResultsView: View {
             }
             ForEach(Array(zip(results.indices, results)), id: \.1.id) { index, result in
               HStack(alignment: .center, spacing: 0) {
-                FileIcon(filePath: result.path)
+                FileIcon(filePath: result.path, isDirectory: result.isDirectory)
                   .frame(width: 10, height: 10)
 
                 Text(result.path.lastPathComponent)

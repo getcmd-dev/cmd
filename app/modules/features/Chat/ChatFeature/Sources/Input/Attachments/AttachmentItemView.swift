@@ -79,6 +79,13 @@ struct AttachmentItemView: View {
         Text("\(fileSelection.file.path.lastPathComponent) (\(fileSelection.startLine)-\(fileSelection.endLine))")
       }
 
+    case .folder(let folder):
+      HStack(spacing: 3) {
+        FileIcon(filePath: folder.path, isDirectory: true)
+          .frame(width: 12, height: 12)
+        Text(folder.path.lastPathComponent)
+      }
+
     case .buildError:
       HStack { }
     }

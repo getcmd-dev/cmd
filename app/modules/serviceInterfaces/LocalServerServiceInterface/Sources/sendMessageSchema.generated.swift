@@ -549,6 +549,75 @@ extension Schema {
       try container.encode(endLine, forKey: .endLine)
     }
   }
+  public struct FolderAttachment: Codable, Sendable {
+    public let type = "folder_attachment"
+    public let path: String
+    public let entries: [Entries]
+    public let hasMoreContent: Bool?
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case path = "path"
+      case entries = "entries"
+      case hasMoreContent = "hasMoreContent"
+    }
+  
+    public init(
+        type: String = "folder_attachment",
+        path: String,
+        entries: [Entries],
+        hasMoreContent: Bool? = nil
+    ) {
+      self.path = path
+      self.entries = entries
+      self.hasMoreContent = hasMoreContent
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      path = try container.decode(String.self, forKey: .path)
+      entries = try container.decode([Entries].self, forKey: .entries)
+      hasMoreContent = try container.decodeIfPresent(Bool?.self, forKey: .hasMoreContent)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(path, forKey: .path)
+      try container.encode(entries, forKey: .entries)
+      try container.encodeIfPresent(hasMoreContent, forKey: .hasMoreContent)
+    }
+  
+    public struct Entries: Codable, Sendable {
+      public let path: String
+      public let relativePath: String
+    
+      private enum CodingKeys: String, CodingKey {
+        case path = "path"
+        case relativePath = "relativePath"
+      }
+    
+      public init(
+          path: String,
+          relativePath: String
+      ) {
+        self.path = path
+        self.relativePath = relativePath
+      }
+    
+      public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        path = try container.decode(String.self, forKey: .path)
+        relativePath = try container.decode(String.self, forKey: .relativePath)
+      }
+    
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(path, forKey: .path)
+        try container.encode(relativePath, forKey: .relativePath)
+      }
+    }
+  }
   public struct BuildErrorAttachment: Codable, Sendable {
     public let type = "build_error_attachment"
     public let filePath: String
@@ -598,6 +667,7 @@ extension Schema {
     case imageAttachment(_ value: ImageAttachment)
     case fileAttachment(_ value: FileAttachment)
     case fileSelectionAttachment(_ value: FileSelectionAttachment)
+    case folderAttachment(_ value: FolderAttachment)
     case buildErrorAttachment(_ value: BuildErrorAttachment)
   
     private enum CodingKeys: String, CodingKey {
@@ -614,6 +684,8 @@ extension Schema {
           self = .fileAttachment(try FileAttachment(from: decoder))
         case "file_selection_attachment":
           self = .fileSelectionAttachment(try FileSelectionAttachment(from: decoder))
+        case "folder_attachment":
+          self = .folderAttachment(try FolderAttachment(from: decoder))
         case "build_error_attachment":
           self = .buildErrorAttachment(try BuildErrorAttachment(from: decoder))
         default:
@@ -628,6 +700,8 @@ extension Schema {
         case .fileAttachment(let value):
           try value.encode(to: encoder)
         case .fileSelectionAttachment(let value):
+          try value.encode(to: encoder)
+        case .folderAttachment(let value):
           try value.encode(to: encoder)
         case .buildErrorAttachment(let value):
           try value.encode(to: encoder)

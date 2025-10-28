@@ -409,6 +409,10 @@ extension AttachmentModel: Codable {
       let data = try container.decode(FileSelectionAttachmentModel.self, forKey: .data)
       self = .fileSelection(data)
 
+    case "folder":
+      let data = try container.decode(FolderAttachmentModel.self, forKey: .data)
+      self = .folder(data)
+
     case "buildError":
       let data = try container.decode(BuildErrorModel.self, forKey: .data)
       self = .buildError(data)
@@ -432,6 +436,10 @@ extension AttachmentModel: Codable {
 
     case .fileSelection(let data):
       try container.encode("fileSelection", forKey: .type)
+      try container.encode(data, forKey: .data)
+
+    case .folder(let data):
+      try container.encode("folder", forKey: .type)
       try container.encode(data, forKey: .data)
 
     case .buildError(let data):
@@ -521,6 +529,35 @@ extension AttachmentModel.FileSelectionAttachmentModel: Codable {
 
   enum CodingKeys: String, CodingKey {
     case id, file, startLine, endLine
+  }
+}
+
+// MARK: - AttachmentModel.FolderAttachmentModel + Codable
+
+extension AttachmentModel.FolderAttachmentModel: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let attachmentSerializer = try decoder.attachmentSerializer
+    let id = try container.decode(UUID.self, forKey: .id)
+    let filesData = try attachmentSerializer.read(Data.self, for: id)
+    let files = try JSONDecoder().decode([AttachmentModel.FolderAttachmentModel.Entry].self, from: filesData)
+    try self.init(
+      id: id,
+      path: container.decode(URL.self, forKey: .path),
+      files: files)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    let attachmentSerializer = try encoder.attachmentSerializer
+    try container.encode(id, forKey: .id)
+    try container.encode(path, forKey: .path)
+    let filesData = try JSONEncoder().encode(files)
+    try attachmentSerializer.save(filesData, for: id)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, path, files
   }
 }
 

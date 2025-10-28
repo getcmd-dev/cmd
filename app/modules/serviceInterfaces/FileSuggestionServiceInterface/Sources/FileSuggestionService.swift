@@ -9,11 +9,18 @@ public struct FileSuggestion: Sendable, Equatable {
   public let path: URL
   public let displayPath: String
   public let matchedRanges: [ClosedRange<Int>]
+  public let isDirectory: Bool
 
-  public init(path: URL, displayPath: String, matchedRanges: [ClosedRange<Int>]) {
+  public init(
+    path: URL,
+    displayPath: String,
+    matchedRanges: [ClosedRange<Int>],
+    isDirectory: Bool = false)
+  {
     self.path = path
     self.displayPath = displayPath
     self.matchedRanges = matchedRanges
+    self.isDirectory = isDirectory
   }
 }
 

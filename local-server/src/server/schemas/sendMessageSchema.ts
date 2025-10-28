@@ -1,3 +1,5 @@
+import { ListedFileInfo } from "./listFilesSchema"
+
 export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string
@@ -203,7 +205,12 @@ export interface ReasoningMessage {
 	type: "reasoning"
 }
 
-export type MessageAttachment = ImageAttachment | FileAttachment | FileSelectionAttachment | BuildErrorAttachment
+export type MessageAttachment =
+	| ImageAttachment
+	| FileAttachment
+	| FileSelectionAttachment
+	| FolderAttachment
+	| BuildErrorAttachment
 
 export interface ImageAttachment {
 	type: "image_attachment"
@@ -230,6 +237,13 @@ export interface FileSelectionAttachment {
 	 * @format integer
 	 */
 	endLine: number
+}
+
+export interface FolderAttachment {
+	type: "folder_attachment"
+	path: string
+	entries: { path: string; relativePath: string }[]
+	hasMoreContent?: boolean
 }
 
 export interface BuildErrorAttachment {

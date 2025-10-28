@@ -9,6 +9,7 @@ public enum AttachmentModel: Identifiable, Sendable {
   case file(FileAttachmentModel)
   case image(ImageAttachmentModel)
   case fileSelection(FileSelectionAttachmentModel)
+  case folder(FolderAttachmentModel)
   case buildError(BuildErrorModel)
 
   public struct FileAttachmentModel: Identifiable, Sendable {
@@ -60,6 +61,31 @@ public enum AttachmentModel: Identifiable, Sendable {
     }
   }
 
+  public struct FolderAttachmentModel: Identifiable, Sendable {
+    public init(id: UUID, path: URL, files: [Entry]) {
+      self.id = id
+      self.path = path
+      self.files = files
+    }
+
+    public struct Entry: Identifiable, Sendable, Equatable, Codable {
+      public let path: String
+
+      public init(path: String) {
+        self.path = path
+      }
+
+      public var id: String {
+        path
+      }
+    }
+
+    public let id: UUID
+    public let path: URL
+    public let files: [Entry]
+
+  }
+
   public struct BuildErrorModel: Identifiable, Sendable {
     public let id: UUID
     public let message: String
@@ -87,6 +113,7 @@ public enum AttachmentModel: Identifiable, Sendable {
     case .file(let attachment): attachment.id
     case .image(let attachment): attachment.id
     case .fileSelection(let attachment): attachment.id
+    case .folder(let attachment): attachment.id
     case .buildError(let attachment): attachment.id
     }
   }
