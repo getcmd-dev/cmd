@@ -34,26 +34,24 @@ public final class ExecuteCommandTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      // Extract input or create fallback
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          // Fallback for failed decoding
-          Input(command: "", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      resolvedInput = internalState ?? Input(
-        command: input.command,
-        cwd: input.cwd.map { $0.resolvePath(from: context.projectRoot).path() },
-        canModifySourceFiles: input.canModifySourceFiles,
-        canModifyDerivedFiles: input.canModifyDerivedFiles)
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
+      // Set property (only meaningful if input was successfully decoded)
+      if case .success(let input) = inputResult {
+        resolvedInput = internalState ?? Input(
+          command: input.command,
+          cwd: input.cwd.map { $0.resolvePath(from: context.projectRoot).path() },
+          canModifySourceFiles: input.canModifySourceFiles,
+          canModifyDerivedFiles: input.canModifyDerivedFiles)
+      } else {
+        // Input decoding failed - use placeholder value (tool won't execute anyway)
+        resolvedInput = Input(command: "", cwd: nil, canModifySourceFiles: false, canModifyDerivedFiles: false)
+      }
       if case .completed = stream.value { updateStatus.finish() }
       // If the tool was running when the app was terminated, we don't support resume execution so it's set to cancelled.
-      if case .running = stream.value { updateStatus.complete(with: .failure(CancellationError()), input: input) }
+      if case .running = stream.value {
+        updateStatus.complete(with: .failure(CancellationError()), input: stream.value.input ?? resolvedInput)
+      }
       status = stream
       self.updateStatus = updateStatus
 

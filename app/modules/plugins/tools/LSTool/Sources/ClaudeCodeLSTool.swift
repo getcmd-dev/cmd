@@ -31,17 +31,16 @@ public final class ClaudeCodeLSTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          Input(path: "", ignore: nil)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      directoryPath = URL(fileURLWithPath: input.path)
+      // Set directoryPath (only meaningful if input was successfully decoded)
+      if case .success(let input) = inputResult {
+        directoryPath = URL(fileURLWithPath: input.path)
+      } else {
+        // Input decoding failed - use placeholder value (tool won't execute anyway)
+        directoryPath = URL(fileURLWithPath: "")
+      }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

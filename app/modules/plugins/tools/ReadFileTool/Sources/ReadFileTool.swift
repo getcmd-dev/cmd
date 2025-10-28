@@ -38,22 +38,21 @@ public final class ReadFileTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      // Extract input or create fallback
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          // Fallback for failed decoding - use minimal valid input
-          Input(path: "", lineRange: nil)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      resolvedInput = internalState ?? Input(
-        path: input.path.resolvePath(from: context.projectRoot).path,
-        lineRange: input.lineRange)
+      // Compute resolved input and file path (only meaningful if input was successfully decoded)
+      if let internalState {
+        resolvedInput = internalState
+      } else if case .success(let input) = inputResult {
+        resolvedInput = Input(
+          path: input.path.resolvePath(from: context.projectRoot).path,
+          lineRange: input.lineRange)
+      } else {
+        // Input decoding failed - use placeholder values (tool won't execute anyway)
+        resolvedInput = Input(path: "", lineRange: nil)
+      }
       filePath = URL(fileURLWithPath: resolvedInput.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

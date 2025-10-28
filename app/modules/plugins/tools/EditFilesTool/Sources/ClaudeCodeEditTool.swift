@@ -35,21 +35,14 @@ public final class ClaudeCodeEditTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          Input(file_path: "", old_string: "", new_string: "", replace_all: nil)
-        }
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
 
       // Set the baseline content using the last known value.
       // Claude Code doesn't allow updates prior to a read, so this is safe.
+      let input = inputResult.fallbackValue(Input(file_path: "", old_string: "", new_string: "", replace_all: nil))
       let (mappedInput, err) = context.mappedInput(
         persistedInput: internalState,
         rawInput: input.mappedInput,

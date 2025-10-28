@@ -529,10 +529,10 @@ extension ToolUseExecutionStatus {
   /// Converts in-flight status to cancelled, unless it is already completed or not started.
   public var completedOrCancelled: Self {
     switch self {
-    case .notStarted, .completed, .approvalRejected:
+    case .notStarted, .completed, .approvalRejected, .failedToDecode:
       self
-    case .running, .pendingApproval:
-      .completed(.failure(CancellationError()))
+    case .running(let input), .pendingApproval(let input):
+      .completed(input: input, result: .failure(CancellationError()))
     }
   }
 }
@@ -544,5 +544,51 @@ extension AsyncStream.Continuation {
   > {
     yield(.completed(input: input, result: result))
     finish()
+  }
+}
+
+// MARK: - CurrentValueStream + ToolUseExecutionStatus
+
+extension CurrentValueStream {
+  /// Creates a stream with proper handling of failed input decoding and initial status cancellation.
+  ///
+  /// - Parameters:
+  ///   - cancellingIfNotCompleted: Optional initial status. If present and not completed, it will be cancelled.
+  ///   - fallback: Result of input decoding. On failure, sets initial status to `.failedToDecode`.
+  /// - Returns: A tuple of the stream and its continuation.
+  public static func makeStream<Input: Codable & Sendable, Output: Codable & Sendable>(
+    cancellingIfNotCompleted initialStatus: ToolUseExecutionStatus<Input, Output>?,
+    fallback inputResult: Result<Input, ToolDecodingError>
+  ) -> (stream: CurrentValueStream<ToolUseExecutionStatus<Input, Output>>, continuation: AsyncStream<ToolUseExecutionStatus<Input, Output>>.Continuation)
+    where Element == ToolUseExecutionStatus<Input, Output>
+  {
+    let initial: ToolUseExecutionStatus<Input, Output>
+
+    if let initialStatus {
+      initial = initialStatus.completedOrCancelled
+    } else {
+      switch inputResult {
+      case .success(let input):
+        initial = .notStarted(input: input)
+      case .failure(let error):
+        initial = .failedToDecode(error: error)
+      }
+    }
+
+    return CurrentValueStream<Element>.makeStream(initial: initial)
+  }
+}
+
+// MARK: - Result + fallbackValue
+
+extension Result {
+  /// Returns the success value or the provided fallback on failure.
+  public func fallbackValue(_ fallback: Success) -> Success {
+    switch self {
+    case .success(let value):
+      return value
+    case .failure:
+      return fallback
+    }
   }
 }

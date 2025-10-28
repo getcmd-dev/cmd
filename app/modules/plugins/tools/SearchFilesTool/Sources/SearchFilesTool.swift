@@ -35,22 +35,18 @@ public final class SearchFilesTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      // Extract input or create fallback
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          // Fallback for failed decoding
-          Input(directoryPath: nil, regex: "", filePattern: nil)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      resolvedInput = Input(
-        directoryPath: input.directoryPath.map { $0.resolvePath(from: context.projectRoot).path },
-        regex: input.regex,
-        filePattern: input.filePattern)
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: resolvedInput))
+      // Set property (only meaningful if input was successfully decoded)
+      if case .success(let input) = inputResult {
+        resolvedInput = Input(
+          directoryPath: input.directoryPath.map { $0.resolvePath(from: context.projectRoot).path },
+          regex: input.regex,
+          filePattern: input.filePattern)
+      } else {
+        // Input decoding failed - use placeholder value (tool won't execute anyway)
+        resolvedInput = Input(directoryPath: nil, regex: "", filePattern: nil)
+      }
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

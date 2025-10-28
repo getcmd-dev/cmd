@@ -28,13 +28,13 @@ extension LSToolTests {
           "context": {
             "threadId": "mock-thread-id"
           },
-          "input": {
-            "type": "list_files_input",
-            "path": "/project",
-            "recursive": false
-          },
           "internalState" : null,
           "status": {
+            "input": {
+              "path": "/project",
+              "recursive": false,
+              "type": "list_files_input"
+            },
             "status": "notStarted"
           },
           "toolUseId": "ls-123"
@@ -56,13 +56,13 @@ extension LSToolTests {
           "context": {
             "threadId": "mock-thread-id"
           },
-          "input": {
-            "type": "list_files_input",
-            "path": "/workspace/src",
-            "recursive": true
-          },
           "internalState" : null,
           "status": {
+            "input": {
+              "path": "/workspace/src",
+              "recursive": true,
+              "type": "list_files_input"
+            },
             "status": "notStarted"
           },
           "toolUseId": "ls-recursive-456"
@@ -84,12 +84,12 @@ extension LSToolTests {
           "context": {
             "threadId": "mock-thread-id"
           },
-          "input": {
-            "type": "list_files_input",
-            "path": "/home/user/projects"
-          },
           "internalState" : null,
           "status": {
+            "input": {
+              "path": "/home/user/projects",
+              "type": "list_files_input"
+            },
             "status": "notStarted"
           },
           "toolUseId": "ls-structure-789"

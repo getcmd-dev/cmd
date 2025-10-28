@@ -35,17 +35,16 @@ public final class ClaudeCodeReadTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          Input(file_path: "", offset: nil, limit: nil)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      filePath = URL(fileURLWithPath: input.file_path)
+      // Set filePath (only meaningful if input was successfully decoded)
+      if case .success(let input) = inputResult {
+        filePath = URL(fileURLWithPath: input.file_path)
+      } else {
+        // Input decoding failed - use placeholder value (tool won't execute anyway)
+        filePath = URL(fileURLWithPath: "")
+      }
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

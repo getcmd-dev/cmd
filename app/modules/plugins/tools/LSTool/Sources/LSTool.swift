@@ -34,22 +34,19 @@ public final class LSTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      // Extract input or create fallback
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          // Fallback for failed decoding
-          Input(path: "", recursive: false)
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
-      resolvedInput = Input(
-        path: input.path.resolvePath(from: context.projectRoot).path(),
-        recursive: input.recursive)
-      directoryPath = URL(fileURLWithPath: resolvedInput.path)
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: resolvedInput))
+      // Set properties (only meaningful if input was successfully decoded)
+      if case .success(let input) = inputResult {
+        resolvedInput = Input(
+          path: input.path.resolvePath(from: context.projectRoot).path(),
+          recursive: input.recursive)
+        directoryPath = URL(fileURLWithPath: resolvedInput.path)
+      } else {
+        // Input decoding failed - use placeholder values (tool won't execute anyway)
+        resolvedInput = Input(path: "", recursive: false)
+        directoryPath = URL(fileURLWithPath: "")
+      }
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

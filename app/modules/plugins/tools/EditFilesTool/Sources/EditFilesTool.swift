@@ -38,19 +38,11 @@ public final class EditFilesTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      // Extract input or create fallback
-      let input: Input =
-        switch inputResult {
-        case .success(let value):
-          value
-        case .failure:
-          // Fallback for failed decoding
-          Input(files: [])
-        }
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: inputResult)
 
+      // Set property (only meaningful if input was successfully decoded)
+      let input = inputResult.fallbackValue(Input(files: []))
       _input = Atomic(input)
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus

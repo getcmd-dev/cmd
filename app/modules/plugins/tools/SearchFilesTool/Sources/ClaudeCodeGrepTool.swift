@@ -32,33 +32,27 @@ public final class ClaudeCodeGrepTool: Tool {
       self.toolUseId = toolUseId
       self.context = context
 
-      var input: Input
-      switch inputResult {
-      case .success(var value):
-        value.projectRoot = value.projectRoot ?? context.projectRoot?.path
-        input = value
+      // Prepare inputResult by adding projectRoot if needed
+      let adjustedInputResult: Result<Input, ToolDecodingError> =
+        switch inputResult {
+        case .success(var value):
+          value.projectRoot = value.projectRoot ?? context.projectRoot?.path
+          .success(value)
+        case .failure(let error):
+          .failure(error)
+        }
 
-      case .failure:
-        input = ClaudeCodeGrepInput(
-          pattern: "",
-          path: nil,
-          glob: nil,
-          outputMode: nil,
-          beforeContext: nil,
-          afterContext: nil,
-          contextLines: nil,
-          lineNumbers: nil,
-          caseInsensitive: nil,
-          type: nil,
-          headLimit: nil,
-          multiline: nil,
-          projectRoot: context.projectRoot?.path)
-      }
-
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus?.completedOrCancelled ?? .notStarted(input: input))
+      let (stream, updateStatus) = Status.makeStream(cancellingIfNotCompleted: initialStatus, fallback: adjustedInputResult)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
-      _internalState = internalState ?? .init(rootPath: input.projectRoot ?? "/")
+
+      let rootPath =
+        if case .success(let input) = adjustedInputResult {
+          input.projectRoot ?? "/"
+        } else {
+          context.projectRoot?.path ?? "/"
+        }
+      _internalState = internalState ?? .init(rootPath: rootPath)
       self.updateStatus = updateStatus
     }
 
