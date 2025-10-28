@@ -26,6 +26,8 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version-file: "./local-server/.nvmrc"
+    - name: Enable Corepack
+      run: corepack enable
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
