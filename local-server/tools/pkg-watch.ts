@@ -2,7 +2,7 @@ import chokidar from "chokidar"
 import { execSync, spawn } from "child_process"
 import { computeAndSaveHash } from "../build.js"
 import generateSwiftSchema from "./generateSwiftSchema.js"
-import { existsSync } from "fs"
+import { existsSync, statSync } from "fs"
 import path from "path"
 import globRegex from "glob-regex"
 
@@ -12,14 +12,18 @@ const isWatcherDisabled = (): boolean => {
 }
 
 const repoRootPath = new URL("../../", import.meta.url).pathname
+const initiallyTrackedFiles = new Set(execSync(`git ls-files`, { cwd: repoRootPath }).toString().split("\n"))
 
 chokidar
 	.watch(path.join(repoRootPath, "local-server/dist/main.bundle.cjs"), { ignoreInitial: true })
-	.on("all", async (evt, name) => {
+	.on("ready", () => {
+		console.log(`[READY] Local server bundle watcher initialized`)
+	})
+	.on("all", async (evt, filePath) => {
 		if (isWatcherDisabled()) {
 			return
 		}
-		console.log("changed.", name)
+		console.log("changed:", filePath.replace(repoRootPath, ""))
 
 		await computeAndSaveHash()
 
@@ -38,11 +42,14 @@ chokidar
 
 chokidar
 	.watch(path.join(repoRootPath, "local-server/src/server/schemas"), { ignoreInitial: true })
-	.on("all", (evt, name) => {
+	.on("ready", () => {
+		console.log(`[READY] Swift schema watcher initialized`)
+	})
+	.on("all", (evt, filePath) => {
 		if (isWatcherDisabled()) {
 			return
 		}
-		console.log("changed.", name)
+		console.log("changed:", filePath.replace(repoRootPath, ""))
 		try {
 			generateSwiftSchema()
 		} catch (error) {
@@ -53,10 +60,23 @@ chokidar
 		console.error("pkg-watch: watcher error:", error)
 	})
 
+let isReady = false
+let watchedSwiftFiles = 0
 chokidar
 	.watch(path.join(repoRootPath, "app/modules"), {
 		ignoreInitial: true,
-		ignored: (filePath) => {
+		ignored: (filePath, stats) => {
+			if (stats?.isDirectory() != false) {
+				const ignoredPatterns = ["**/.build/**"]
+				for (const pattern of ignoredPatterns) {
+					const regex = globRegex(pattern)
+					if (regex.test(filePath)) {
+						return true
+					}
+				}
+				// Return false to allow for scanning of the directory's content.
+				return false
+			}
 			// Must be a Swift file
 			const regex = globRegex("**/*.swift")
 			if (!regex.test(filePath)) {
@@ -73,21 +93,44 @@ chokidar
 			}
 
 			// Check git ignore after cheap pattern matching
-			try {
-				execSync(`git check-ignore ${filePath}`)
-				return true
-			} catch {
-				// The command fails when the file is not ignored.
-				return false
+			if (!isReady) {
+				// Initially we compare to the result of `git ls-files` to avoid making many calls to `git check-ignore`
+				// as this function is called once for each tracked file in the directory.
+				const isTracked = initiallyTrackedFiles.has(filePath.replace(repoRootPath, ""))
+				if (isTracked) {
+					watchedSwiftFiles += 1
+				}
+				return !isTracked
+			} else {
+				// After the initial scan, we compare to the result of `git check-ignore`, which is cheaper than `git ls-files`
+				try {
+					execSync(`git check-ignore ${filePath}`)
+					return true
+				} catch {
+					// The command fails when the file is not ignored.
+					watchedSwiftFiles += 1
+					return false
+				}
 			}
 		},
 	})
+	.on("ready", () => {
+		isReady = true
+		console.log(`[READY] Swift file watcher initialized, watching ${watchedSwiftFiles} .swift files`)
+	})
 	.on("all", (evt, filePath) => {
 		try {
+			const stats = statSync(filePath)
+			if (stats.isDirectory()) {
+				// Directories are not ignored at the watcher level as this would prevent the watcher from watching the directory's content.
+				// So we ignore them in the event handler.
+				return
+			}
+
 			if (isWatcherDisabled()) {
 				return
 			}
-			console.log("changed.", filePath)
+			console.log("changed:", filePath.replace(repoRootPath, ""))
 
 			const appPath = path.join(repoRootPath, "app")
 			// Look for Package.swift files in the modules directory that are not checked in. Their presence indicates that they need to be updated.
