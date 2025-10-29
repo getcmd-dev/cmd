@@ -28,7 +28,17 @@ lint_swift_command() {
 		$SWIFTFORMAT_PATH --config rules.swiftformat "$files" --cache .build/caches/swiftformat
 }
 
+# Ensures node_modules are installed in local-server
+setup_local_server() {
+	local server_dir="$(git rev-parse --show-toplevel)/local-server"
+	if [ ! -d "$server_dir/node_modules" ]; then
+		echo "Installing local-server dependencies..."
+		cd "$server_dir" && yarn install && yarn build && yarn copy-to-app
+	fi
+}
+
 lint_ts_command() {
+	setup_local_server
 	cd "$(git rev-parse --show-toplevel)/local-server" && yarn lint --fix
 }
 
@@ -140,6 +150,7 @@ clean_command() {
 }
 
 test_swift_command() {
+	setup_local_server
 	# Extract --module value if provided
 	focussed_module=""
 	parsed_args=()
@@ -166,6 +177,7 @@ test_swift_command() {
 }
 
 test_ts_command() {
+	setup_local_server
 	cd "$(git rev-parse --show-toplevel)/local-server" && yarn test "$@"
 }
 
@@ -229,6 +241,7 @@ clean)
 	;;
 watch)
 	# Watch file changes, and update derived files when necessary.
+	setup_local_server
 	cd "$ROOT_DIR/local-server" && yarn watch
 	;;
 *)
