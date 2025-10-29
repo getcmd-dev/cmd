@@ -46,8 +46,12 @@ public protocol LLMService: Sendable {
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
 
-  /// Generate a title for a conversation based on the first message.
-  func nameConversation(firstMessage: String) async throws -> String
+  /// Send a simple prompt and get the response as a string.
+  /// - Parameters:
+  ///  - prompt: The prompt to send to the model.
+  ///  - system: An optional system message to provide context to the model.
+  ///  - model: The model to use for generating the response.
+  func prompt(_ prompt: String, system: String?, model: AIModel) async throws -> String?
 
   /// Generate a summary of a conversation based on the message history.
   func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> SummarizeConversationResponse
@@ -133,6 +137,13 @@ extension LLMService {
   /// - Returns: The provider that owns the model, or nil if not found.
   public func provider(for model: AIModel) -> AIProvider? {
     provider(for: model).currentValue
+  }
+
+  /// - Parameters:
+  ///  - prompt: The prompt to send to the model.
+  ///  - model: The model to use for generating the response.
+  public func prompt(_ prompt: String, model: AIModel) async throws -> String? {
+    try await self.prompt(prompt, system: nil, model: model)
   }
 }
 

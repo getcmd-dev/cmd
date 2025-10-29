@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express"
 import { logError, logInfo, saveLogToFile } from "../../../logger"
 import { AIProvider } from "../../providers/provider"
+import { v4 as uuidv4 } from "uuid"
 import {
 	InternalContent,
 	Message,
@@ -52,10 +53,10 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getP
 
 		try {
 			const body = req.body as SendMessageRequestParams
-			let messages = body.messages
 			const system = body.system
-			messages = [
-				{
+			const messages: Message[] = []
+			if (system) {
+				messages.push({
 					role: "system",
 					content: [
 						{
@@ -63,20 +64,15 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getP
 							text: system,
 						},
 					],
-				} as Message,
-				...messages.filter((message) => message.content.length > 0),
-			]
+				})
+			}
+			body.messages.filter((message) => message.content.length > 0).forEach((m) => messages.push(m))
 
 			const tools = body.tools
 
 			if (body.provider.name == "claude_code" || body.provider.name == "codex") {
 				// External agent, route to appropriate handler based on provider.
-				const threadId = body.threadId
-				if (!threadId) {
-					throw new UserFacingError({
-						message: `Thread ID is required for ${body.provider.name} provider.`,
-					})
-				}
+				const threadId = body.threadId || uuidv4() // When no thread is provided, we use a random one to support an ephemeral conversation.
 				const localExecutable = body.provider.settings.localExecutable
 				if (!localExecutable) {
 					throw new UserFacingError({

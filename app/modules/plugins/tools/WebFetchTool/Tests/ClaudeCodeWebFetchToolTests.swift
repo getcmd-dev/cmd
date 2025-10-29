@@ -6,7 +6,7 @@ import Foundation
 import JSONFoundation
 import SwiftTesting
 import Testing
-@testable import ClaudeCodeTools
+@testable import WebFetchTool
 
 struct ClaudeCodeWebFetchToolTests {
 

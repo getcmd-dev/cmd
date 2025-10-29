@@ -1,17 +1,11 @@
-import { logError, logInfo } from "@/logger"
+import { logInfo } from "@/logger"
 import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSchema"
 import { Response } from "express"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "@/utils/spawn-promise"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
-import { ContentBlock } from "@agentclientprotocol/sdk"
-import { sendCommandToHostApp } from "../../interProcessesBridge"
 import { CodexACPClient } from "../acp/clients/codex/codexACPClient"
-import { mkdtemp, readFile } from "fs/promises"
-import { join } from "path"
-import { tmpdir } from "os"
-import { randomUUID } from "crypto"
 
 // TODO: support resuming the conversation after the app restarts.
 
@@ -110,26 +104,6 @@ const createEventStream = async (
 
 	const messageContent = toACPContentBlocks(newUserMessages)
 
-	// Provide a name for the conversation, if needed.
-	// TODO: expose the models in cmd directly to the API, so that the conversation naming
-	// can be done like for any AI provider with a lower tier model.
-	if (!existingSessionId) {
-		nameConversation(messageContent, executableInfo, localExecutable.cwd)
-			.then((name) => {
-				sendCommandToHostApp({
-					type: "execute-command",
-					command: "set_conversation_name",
-					input: {
-						name,
-						threadId,
-					},
-				})
-			})
-			.catch((error) => {
-				logError("Failed to name conversation with Codex", error)
-			})
-	}
-
 	acpClient = acpClient || new CodexACPClient()
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },
@@ -171,54 +145,4 @@ const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<
 		throw new Error(`Executable ${execName} not found in PATH`)
 	}
 	return { path: execPath, args }
-}
-
-/* Name the conversation based on the first message. */
-const nameConversation = async (
-	messages: ContentBlock[],
-	executableInfo: { path: string; args: string[] },
-	cwd: string,
-): Promise<string> => {
-	const mergedMessage = messages
-		.filter((message) => message.type === "text")
-		.map((message) => message.text)
-		.join("\n")
-
-	const prompt = `You are an expert in naming conversations. Below is the first message of a conversation and you need to provide a concise and descriptive name for the conversation, under 50 characters.
-
-		YOU MUST RESPOND WITH ONLY THE NAME OF THE CONVERSATION, NOTHING ELSE.
-
-		good output example : \`Fixing the login flow in the app\`
-		bad output example: \`Here's a concise summary of the conversation: Fixing the login flow in the app\`
-		bad output example: \`I'm happy to assist you with that. Here's a concise summary of the conversation: Fixing the login flow in the app\`)
-
-		Conversation to give a name to:
-		${mergedMessage}`
-
-	// Create a temporary directory and file for output
-	const uniqueId = randomUUID()
-	const tempDir = await mkdtemp(join(tmpdir(), `codex-naming`))
-	const outputFile = join(tempDir, `output-${uniqueId}.txt`)
-
-	try {
-		// Use codex exec command with --output-last-message flag
-		await spawn(executableInfo.path, {
-			args: [
-				...executableInfo.args,
-				"exec",
-				prompt,
-				"--output-last-message",
-				outputFile,
-				"--skip-git-repo-check",
-			],
-			cwd: cwd,
-		})
-
-		// Read the output from the temporary file
-		const result = await readFile(outputFile, "utf-8")
-		return result.trim() || "New conversation"
-	} catch (error) {
-		logError("Failed to name conversation with Codex exec", error)
-		return "New conversation"
-	}
 }

@@ -25,13 +25,14 @@ final class DefaultLLMService: LLMService {
     settingsService: SettingsService,
     userDefaults: UserDefaultsI,
     shellService: ShellService,
-    fileManager _: FileManagerI,
+    fileManager: FileManagerI,
     llmModelsManager: AIModelsManagerProtocol)
   {
     self.server = server
     self.settingsService = settingsService
     self.userDefaults = userDefaults
     self.shellService = shellService
+    self.fileManager = fileManager
     self.llmModelsManager = llmModelsManager
 
     #if DEBUG
@@ -151,34 +152,19 @@ final class DefaultLLMService: LLMService {
       handleUsageInfo: handleUsageInfo)
   }
 
-  func nameConversation(firstMessage: String) async throws -> String {
-    guard let lowTierModel = lowTierModel() else {
-      defaultLogger.error("Unable to name conversation: no low tier model available")
-      return "New conversation"
-    }
-    if provider(for: lowTierModel.modelInfo)?.isExternalAgent == true {
-      // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
-      return "New conversation"
-    }
-
+  func prompt(_ prompt: String, system: String?, model: AIModel) async throws -> String? {
     let assistantMessage = try await streamCompletionResponse(
-      system: """
-        Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
-
-        good output example : `Fixing the login flow in the app`
-        bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
-        """,
+      system: system,
       messageHistory: [.init(
         role: .user,
-        content: [.textMessage(.init(text: "Please write a 5-10 word title the following conversation:\n\n\(firstMessage)"))])],
+        content: [.textMessage(.init(text: prompt))])],
       tools: [],
-      model: lowTierModel.modelInfo,
+      model: model,
       enableReasoning: false,
       context: nil,
       handleUpdateStream: { _ in },
       handleUsageInfo: { _ in })
-
-    return assistantMessage.content.first?.asText?.content ?? "New conversation"
+    return assistantMessage.content.compactMap(\.asText).first?.content
   }
 
   func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> SummarizeConversationResponse {
@@ -208,6 +194,8 @@ final class DefaultLLMService: LLMService {
   private let userDefaults: UserDefaultsI
 
   private let shellService: ShellService
+
+  private let fileManager: FileManagerI
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
@@ -255,7 +243,7 @@ final class DefaultLLMService: LLMService {
   ///   - handleUpdateStream: Closure called with streaming updates as the response is generated
   ///   - handleUsageInfo: Closure called when usage information is available.
   private func streamCompletionResponse(
-    system: String,
+    system: String?,
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool],
     model: AIModel,
@@ -290,6 +278,7 @@ final class DefaultLLMService: LLMService {
         provider: provider,
         settings: providerSettings,
         shellService: shellService,
+        fileManager: fileManager,
         projectRoot: context?.projectRoot?.path),
       threadId: context?.threadId,
       useNewClaudeCodeApi: isUsingNewClaudeCodeApi)
@@ -396,7 +385,13 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: AIProvider, settings: AIProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
+  init(
+    provider: AIProvider,
+    settings: AIProviderSettings,
+    shellService: ShellService,
+    fileManager: FileManagerI,
+    projectRoot: String?)
+  async throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -417,11 +412,11 @@ extension Schema.APIProvider {
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    let localExecutable: Schema.LocalExecutable? = try await {
+    let localExecutable: Schema.LocalExecutable? = await {
       guard let executable = settings.executable else { return nil }
-      guard let projectRoot else {
-        throw AppError("Cannot use external agent without a project")
-      }
+      // If no projectRoot is provided, we default to the folder where .cmd settings are defined
+      // We assume that in this case the call doesn't need to use local files.
+      let projectRoot = projectRoot ?? fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd").path
       return await Schema.LocalExecutable(
         executable: executable,
         env: JSON(shellService.env),

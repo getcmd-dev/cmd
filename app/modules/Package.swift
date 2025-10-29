@@ -195,6 +195,7 @@ targets.append(
       "ShellServiceInterface",
       "ThreadSafe",
       "ToolFoundation",
+      "WebFetchTool",
       "XcodeControllerService",
       "XcodeControllerServiceInterface",
       "XcodeObserverService",
@@ -1476,6 +1477,31 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "WebFetchTool",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "SwiftSoup", package: "SwiftSoup"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DLS",
+      "JSONFoundation",
+      "LLMServiceInterface",
+      "LocalServerServiceInterface",
+      "LoggingServiceInterface",
+      "ToolFoundation",
+      "ToolTypesFoundation",
+    ],
+    testsDependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "JSONFoundation",
+      "SwiftTesting",
+      "WebFetchTool",
+    ],
+    path: "./plugins/tools/WebFetchTool"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "XcodeControllerService",
     dependencies: [
       .product(name: "XCLogParser", package: "XCLogParser"),
@@ -1625,6 +1651,7 @@ let package = Package(
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
     .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.1"),
+    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.11.1"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),

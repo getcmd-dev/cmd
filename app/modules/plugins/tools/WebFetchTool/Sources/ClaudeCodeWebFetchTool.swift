@@ -122,51 +122,11 @@ public final class ClaudeCodeWebFetchTool: Tool {
 
 }
 
-// MARK: - WebFetchToolUseViewModel
+// MARK: - ClaudeCodeWebFetchTool.Use + DisplayableToolUse
 
-@Observable
-@MainActor
-final class WebFetchToolUseViewModel {
-
-  init(status: ClaudeCodeWebFetchTool.Use.Status, input: ClaudeCodeWebFetchTool.Use.Input) {
-    self.status = status.value
-    self.input = input
-    Task { [weak self] in
-      for await status in status.futureUpdates {
-        self?.status = status
-      }
-    }
-  }
-
-  let input: ClaudeCodeWebFetchTool.Use.Input
-  var status: ToolUseExecutionStatus<ClaudeCodeWebFetchTool.Use.Output>
-}
-
-// MARK: ViewRepresentable, StreamRepresentable
-
-extension WebFetchToolUseViewModel: ViewRepresentable, StreamRepresentable {
+extension ClaudeCodeWebFetchTool.Use: DisplayableToolUse {
   @MainActor
-  var body: AnyView { AnyView(WebFetchToolUseView(toolUse: self)) }
-
-  @MainActor
-  var streamRepresentation: String? {
-    guard case .completed(let result) = status else { return nil }
-    switch result {
-    case .success:
-      return """
-        ⏺ WebFetch(\(input.url))
-          ⎿ Content fetched and processed
-
-
-        """
-
-    case .failure(let error):
-      return """
-        ⏺ WebFetch(\(input.url))
-          ⎿ Failed: \(error.localizedDescription)
-
-
-        """
-    }
+  func createViewModel() -> AnyToolUseViewModel {
+    AnyToolUseViewModel(WebFetchToolUseViewModel(status: status, input: input))
   }
 }

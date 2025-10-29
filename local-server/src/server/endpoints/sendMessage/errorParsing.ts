@@ -1,3 +1,4 @@
+import { logError } from "@/logger"
 import { ResponseError } from "@/server/schemas/sendMessageSchema"
 
 /**
@@ -28,6 +29,8 @@ const parseErrorMessage = (error: UnknownError): string | undefined => {
 				return info.message || info.error?.message
 			} catch {}
 			return responseBody
+		} else if (error.error) {
+			return error.error.message
 		} else {
 			return error.message
 		}
@@ -53,9 +56,19 @@ const parseErrorStatusCode = (error: UnknownError): number | undefined => {
 
 export const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
 	const error = err as UnknownError
+
+	let message = parseErrorMessage(error)
+	if (!message) {
+		logError(`No error message parsed in the response body ${JSON.stringify(error, null, 2)}`)
+		try {
+			message = JSON.stringify(error)
+		} catch {
+			message = "Error sending message"
+		}
+	}
 	return {
 		type: "error",
-		message: parseErrorMessage(error) || "Error sending message",
+		message: message,
 		statusCode: parseErrorStatusCode(error) || 400,
 		idx: idx(),
 	}
@@ -66,6 +79,7 @@ type UnknownError =
 	| string
 	| {
 			responseBody: string | unknown | undefined
+			error: { message?: string } | undefined
 			message: string | undefined
 			statusCode: number | undefined
 	  }

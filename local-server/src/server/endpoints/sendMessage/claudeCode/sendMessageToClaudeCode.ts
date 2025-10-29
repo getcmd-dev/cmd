@@ -9,8 +9,7 @@ import {
 	ToolUseRequest,
 } from "@/server/schemas/sendMessageSchema"
 import type { ContentBlockParam } from "@anthropic-ai/sdk/resources"
-import { ModelMessage, UserModelMessage } from "ai"
-import { Request, Response, Router } from "express"
+import { Response, Router } from "express"
 import {
 	SDKAssistantMessage,
 	SDKResultMessage,
@@ -21,15 +20,10 @@ import {
 } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
-import { readFile } from "fs/promises"
 import { registerMCPServerEndpoints } from "./mcp"
-import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
+import { ApprovalResult } from "@/server/schemas/toolApprovalSchema"
 import { createHash } from "crypto"
-import { UserFacingError } from "@/server/errors"
-import { JSONL } from "@/utils/jsonl"
 import { spawn } from "@/utils/spawn-promise"
-import { homedir } from "os"
-import { sendCommandToHostApp } from "../../interProcessesBridge"
 import { v4 as uuidv4 } from "uuid"
 import { attachmentAsPart } from "../helpers"
 import { pendingToolApprovalRequests } from "../pendingToolApprovalRequests"
@@ -434,7 +428,6 @@ async function* mapStream(
 	res: Response,
 ): AsyncIterable<ResponseChunkWithoutIndex> {
 	let hasSentSessionId = false
-	let hasKickOffConversationNaming = false
 	const toolNames: { [toolId: string]: string } = {}
 
 	for await (const event of stream) {
@@ -591,56 +584,6 @@ async function* mapStream(
 		} else {
 			logInfo(`Ignoring non-SDK message: ${JSON.stringify(event)}`)
 		}
-
-		if (!hasKickOffConversationNaming) {
-			hasKickOffConversationNaming = true
-			readConversationSummary(event.session_id, threadId, res).catch((e) => {
-				logError(e)
-			})
-		}
-	}
-}
-
-/** Read the data written to disk by CC to find a conversation name / summary that can be used to name the conversation in the host app */
-export const readConversationSummary = async (sessionId: string, threadId: string, res: Response): Promise<void> => {
-	if (process.env.JEST_WORKER_ID !== undefined) {
-		// Skipped during tests
-		return
-	}
-	let isCancelled = false
-	res.on("close", () => {
-		// Give a bit of time for CC to write down the conversation data.
-		setTimeout(() => {
-			isCancelled = true
-		}, 1000)
-	})
-	while (!isCancelled) {
-		try {
-			const res = await spawn("find", { args: [`${homedir()}/.claude/projects`, "-name", `${sessionId}.jsonl`] })
-			const conversationDataPath = res.stdout.trim()
-			if (conversationDataPath.length > 0) {
-				const conversationContent = await readFile(conversationDataPath, "utf8")
-				const conversationData = JSONL.parse(conversationContent)
-				for (const data of conversationData.reverse() as Array<{
-					type: string
-					summary: string | undefined
-				}>) {
-					if (data.type === "summary" && data.summary !== undefined) {
-						logInfo(`sending conversation name: ${data.summary}`)
-						sendCommandToHostApp({
-							type: "execute-command",
-							command: "set_conversation_name",
-							input: {
-								name: data.summary,
-								threadId,
-							},
-						})
-						return
-					}
-				}
-			}
-		} catch {}
-		await new Promise((resolve) => setTimeout(resolve, 100))
 	}
 }
 

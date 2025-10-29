@@ -57,6 +57,7 @@ Target.module(
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
+    "WebFetchTool",
     "XcodeControllerService",
     "XcodeControllerServiceInterface",
     "XcodeObserverService",

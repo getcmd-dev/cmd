@@ -314,6 +314,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
       provider: provider,
       settings: settings,
       shellService: shellService,
+      fileManager: fileManager,
       projectRoot: nil)
 
     let data = try JSONEncoder().encode(Schema.ListModelsInput(provider: .init(
