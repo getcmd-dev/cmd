@@ -608,6 +608,31 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "CodeCompletionService",
+    dependencies: [
+      "CodeCompletionServiceInterface",
+      "DependencyFoundation",
+      "LoggingServiceInterface",
+      "ThreadSafe",
+    ],
+    testsDependencies: [
+      "CodeCompletionService",
+      "CodeCompletionServiceInterface",
+      "SwiftTesting",
+    ],
+    path: "./services/CodeCompletionService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "CodeCompletionServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "XcodeObserverServiceInterface",
+    ],
+    path: "./serviceInterfaces/CodeCompletionServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "CodePreview",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
