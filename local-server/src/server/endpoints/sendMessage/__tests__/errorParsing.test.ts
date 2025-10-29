@@ -49,6 +49,32 @@ describe("mapResponseError", () => {
 				idx: 42,
 			})
 		})
+
+		it("should handle insufficient_quota error", () => {
+			// Open AI format
+			const result = mapResponseError(
+				{
+					type: "error",
+					sequence_number: 2,
+					error: {
+						type: "insufficient_quota",
+						code: "insufficient_quota",
+						message:
+							"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+						param: null,
+					},
+				},
+				mockIdx,
+			)
+
+			expect(result).toEqual({
+				type: "error",
+				message:
+					"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+				statusCode: 400,
+				idx: 42,
+			})
+		})
 	})
 
 	describe("OpenRouter error", () => {

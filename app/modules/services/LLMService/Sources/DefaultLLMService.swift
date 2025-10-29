@@ -25,13 +25,14 @@ final class DefaultLLMService: LLMService {
     settingsService: SettingsService,
     userDefaults: UserDefaultsI,
     shellService: ShellService,
-    fileManager _: FileManagerI,
+    fileManager: FileManagerI,
     llmModelsManager: AIModelsManagerProtocol)
   {
     self.server = server
     self.settingsService = settingsService
     self.userDefaults = userDefaults
     self.shellService = shellService
+    self.fileManager = fileManager
     self.llmModelsManager = llmModelsManager
 
     #if DEBUG
@@ -194,6 +195,8 @@ final class DefaultLLMService: LLMService {
 
   private let shellService: ShellService
 
+  private let fileManager: FileManagerI
+
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
   #endif
@@ -275,6 +278,7 @@ final class DefaultLLMService: LLMService {
         provider: provider,
         settings: providerSettings,
         shellService: shellService,
+        fileManager: fileManager,
         projectRoot: context?.projectRoot?.path),
       threadId: context?.threadId,
       useNewClaudeCodeApi: isUsingNewClaudeCodeApi)
@@ -381,7 +385,13 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: AIProvider, settings: AIProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
+  init(
+    provider: AIProvider,
+    settings: AIProviderSettings,
+    shellService: ShellService,
+    fileManager: FileManagerI,
+    projectRoot: String?)
+  async throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -402,11 +412,11 @@ extension Schema.APIProvider {
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    let localExecutable: Schema.LocalExecutable? = try await {
+    let localExecutable: Schema.LocalExecutable? = await {
       guard let executable = settings.executable else { return nil }
-      guard let projectRoot else {
-        throw AppError("Cannot use external agent without a project")
-      }
+      // If no projectRoot is provided, we default to the folder where .cmd settings are defined
+      // We assume that in this case the call doesn't need to use local files.
+      let projectRoot = projectRoot ?? fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd").path
       return await Schema.LocalExecutable(
         executable: executable,
         env: JSON(shellService.env),

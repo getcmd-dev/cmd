@@ -87,7 +87,7 @@ const openAiFetch: typeof fetch = (input, init) => {
 
 	// Remove strict from the schema validation
 	body.tools = [
-		...body.tools.map((tool) => ({
+		...(body.tools ?? []).map((tool) => ({
 			...tool,
 			function: {
 				...tool.function,

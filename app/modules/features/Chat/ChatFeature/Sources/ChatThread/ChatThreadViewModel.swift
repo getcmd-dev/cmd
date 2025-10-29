@@ -1,7 +1,6 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-import AppEventServiceInterface
 import AppFoundation
 import ChatFoundation
 import ChatHistoryServiceInterface
@@ -270,17 +269,23 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     if !textInput.string.string.isEmpty, name == nil, let selectedModel = input.selectedModel {
       let llmService = llmService
       Task { [weak self] in
-        let conversationName = try await self?.llmService.prompt(
-          "Please write a 5-10 word title the following conversation:\n\n\(textInput.string.string)",
-          system: """
+        do {
+          let conversationName = try await self?.llmService.prompt(
+            """
             Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
 
             good output example : `Fixing the login flow in the app`
             bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
-            """, model: llmService.lowTierModel()?.modelInfo ?? selectedModel)
-        guard let self else { return }
-        name = conversationName
-        persistThread()
+
+            Please write a 5-10 word title the following conversation:\n\n\(textInput.string.string)
+            """,
+            model: llmService.lowTierModel()?.modelInfo ?? selectedModel)
+          guard let self else { return }
+          name = conversationName
+          persistThread()
+        } catch {
+          print(error)
+        }
       }
     }
     persistThread()
@@ -517,30 +522,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
   }
 
-  private func handle(appEvent: AppEvent) async -> Bool {
-    switch appEvent {
-    case let event as ExecuteExtensionRequestEvent:
-      if event.command == "set_conversation_name" {
-        do {
-          let params = try JSONDecoder().decode(ExtensionRequest<Schema.NameConversationCommandParams>.self, from: event.data)
-            .input
-          if params.threadId == id.uuidString {
-            name = params.name
-            persistThread()
-            return true
-          }
-        } catch {
-          defaultLogger.error("Failed to handle app event", error)
-        }
-      }
-      break
-
-    default:
-      break
-    }
-    return false
-  }
-
   private func setUp() {
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable [weak self] state in
       guard state.focusedWorkspace != nil else { return }
@@ -563,11 +544,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
     @Dependency(\.chatContextRegistry) var chatContextRegistry
     chatContextRegistry.register(context: context, for: id.uuidString)
-
-    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
-    appEventHandlerRegistry.registerHandler { [weak self] event in
-      await self?.handle(appEvent: event) ?? false
-    }
   }
 
   private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {

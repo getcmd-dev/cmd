@@ -5,15 +5,6 @@ import DLS
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ClaudeCodeWebFetchTool.Use + DisplayableToolUse
-
-extension ClaudeCodeWebFetchTool.Use: DisplayableToolUse {
-  @MainActor
-  func createViewModel() -> AnyToolUseViewModel {
-    AnyToolUseViewModel(WebFetchToolUseViewModel(status: status, input: input))
-  }
-}
-
 // MARK: - WebFetchToolUseView
 
 struct WebFetchToolUseView: View {
@@ -54,20 +45,19 @@ struct WebFetchToolUseView: View {
                   .foregroundColor(colorScheme.toolUseForeground)
                   .frame(maxWidth: .infinity, alignment: .leading)
                   .textSelection(.enabled)
+                  .readingSize { size in
+                    if abs(outputHeight ?? -1 - size.height) > 0.5 {
+                      outputHeight = size.height
+                    }
+                  }
               }
-              .frame(maxHeight: 200)
+              .frame(height: scrollViewHeight)
             }
           } else {
             HStack {
               Rectangle()
                 .fill(Color.clear)
                 .frame(width: 8, height: 8)
-
-              Text(output.result)
-                .font(.caption)
-                .foregroundColor(colorScheme.toolUseForeground)
-                .lineLimit(1)
-                .truncationMode(.tail)
             }
           }
         }
@@ -76,10 +66,19 @@ struct WebFetchToolUseView: View {
     .onHover { isHovered = $0 }
   }
 
+  @State private var outputHeight: CGFloat?
+
   @State private var isExpanded = false
   @State private var isHovered = false
 
   @Environment(\.colorScheme) private var colorScheme
+
+  private var scrollViewHeight: CGFloat {
+    if let outputHeight {
+      return min(outputHeight, 100)
+    }
+    return 0
+  }
 
   private var foregroundColor: Color {
     if isHovered {

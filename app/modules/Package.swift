@@ -195,6 +195,7 @@ targets.append(
       "ShellServiceInterface",
       "ThreadSafe",
       "ToolFoundation",
+      "WebFetchTool",
       "XcodeControllerService",
       "XcodeControllerServiceInterface",
       "XcodeObserverService",
@@ -582,7 +583,6 @@ targets.append(
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "JSONScanner", package: "JSONScanner"),
-      .product(name: "SwiftSoup", package: "SwiftSoup"),
       "AppFoundation",
       "ChatFoundation",
       "ChatServiceInterface",
@@ -590,9 +590,7 @@ targets.append(
       "DLS",
       "FileIcon",
       "JSONFoundation",
-      "LLMServiceInterface",
       "LocalServerServiceInterface",
-      "LoggingServiceInterface",
       "ShellServiceInterface",
       "ToolFoundation",
       "ToolTypesFoundation",
@@ -1476,6 +1474,24 @@ targets.append(
       "ToolTypesFoundation",
     ],
     path: "./coreui/ToolUI"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "WebFetchTool",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "SwiftSoup", package: "SwiftSoup"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DLS",
+      "JSONFoundation",
+      "LLMServiceInterface",
+      "LocalServerServiceInterface",
+      "LoggingServiceInterface",
+      "ToolFoundation",
+      "ToolTypesFoundation",
+    ],
+    path: "./plugins/tools/WebFetchTool"))
 
 targets.append(
   contentsOf: Target.module(

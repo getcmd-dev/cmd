@@ -195,3 +195,18 @@ struct WebSearchToolUseView: View {
     }
   }
 }
+
+// MARK: - LinkView
+
+struct LinkView: View {
+  let url: String
+
+  var body: some View {
+    if let url = URL(string: url) {
+      PlainLink(url.absoluteString, destination: url)
+    } else {
+      Text(url)
+    }
+  }
+
+}

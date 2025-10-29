@@ -145,6 +145,33 @@ describe("sendMessage endpoint", () => {
 
 			jest.useRealTimers()
 		})
+
+		it("should handle undefined system parameter", async () => {
+			// given
+			const chunks: ResponseChunkWithoutIndex[] = [
+				{ type: "text_delta", text: "Response without system message" },
+			]
+
+			async function* mockStream() {
+				for (const chunk of chunks) {
+					yield chunk
+				}
+			}
+
+			// when
+			await respondUsingResponseStream(mockStream(), mockResponse as Response)
+
+			// then
+			const writtenChunks = writtenData.filter((d) => !d.includes('"type":"ping"'))
+			expect(writtenChunks.length).toBe(1)
+
+			const parsedChunks = writtenChunks.map((d) => JSON.parse(d.trim()))
+			expect(parsedChunks[0]).toEqual({
+				type: "text_delta",
+				text: "Response without system message",
+				idx: expect.any(Number),
+			})
+		})
 	})
 
 	describe("usage info integration", () => {

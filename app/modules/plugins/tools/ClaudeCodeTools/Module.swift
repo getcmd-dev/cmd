@@ -3,7 +3,6 @@ Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "JSONScanner", package: "JSONScanner"),
-    .product(name: "SwiftSoup", package: "SwiftSoup"),
     "AppFoundation",
     "ChatFoundation",
     "ChatServiceInterface",
@@ -11,9 +10,7 @@ Target.module(
     "DLS",
     "FileIcon",
     "JSONFoundation",
-    "LLMServiceInterface",
     "LocalServerServiceInterface",
-    "LoggingServiceInterface",
     "ShellServiceInterface",
     "ToolFoundation",
     "ToolTypesFoundation",
