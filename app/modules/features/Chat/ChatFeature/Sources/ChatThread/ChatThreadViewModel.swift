@@ -267,9 +267,17 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
     let messages = messages.apiFormat
 
-    if !textInput.string.string.isEmpty, name == nil {
+    if !textInput.string.string.isEmpty, name == nil, let selectedModel = input.selectedModel {
+      let llmService = llmService
       Task { [weak self] in
-        let conversationName = try await self?.llmService.nameConversation(firstMessage: textInput.string.string)
+        let conversationName = try await self?.llmService.prompt(
+          "Please write a 5-10 word title the following conversation:\n\n\(textInput.string.string)",
+          system: """
+            Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
+
+            good output example : `Fixing the login flow in the app`
+            bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
+            """, model: llmService.lowTierModel()?.modelInfo ?? selectedModel)
         guard let self else { return }
         name = conversationName
         persistThread()

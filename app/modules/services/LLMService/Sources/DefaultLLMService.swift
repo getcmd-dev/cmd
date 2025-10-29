@@ -151,34 +151,19 @@ final class DefaultLLMService: LLMService {
       handleUsageInfo: handleUsageInfo)
   }
 
-  func nameConversation(firstMessage: String) async throws -> String {
-    guard let lowTierModel = lowTierModel() else {
-      defaultLogger.error("Unable to name conversation: no low tier model available")
-      return "New conversation"
-    }
-    if provider(for: lowTierModel.modelInfo)?.isExternalAgent == true {
-      // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
-      return "New conversation"
-    }
-
+  func prompt(_ prompt: String, system: String?, model: AIModel) async throws -> String? {
     let assistantMessage = try await streamCompletionResponse(
-      system: """
-        Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
-
-        good output example : `Fixing the login flow in the app`
-        bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
-        """,
+      system: system,
       messageHistory: [.init(
         role: .user,
-        content: [.textMessage(.init(text: "Please write a 5-10 word title the following conversation:\n\n\(firstMessage)"))])],
+        content: [.textMessage(.init(text: prompt))])],
       tools: [],
-      model: lowTierModel.modelInfo,
+      model: model,
       enableReasoning: false,
       context: nil,
       handleUpdateStream: { _ in },
       handleUsageInfo: { _ in })
-
-    return assistantMessage.content.first?.asText?.content ?? "New conversation"
+    return assistantMessage.content.compactMap(\.asText).first?.content
   }
 
   func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> SummarizeConversationResponse {
@@ -255,7 +240,7 @@ final class DefaultLLMService: LLMService {
   ///   - handleUpdateStream: Closure called with streaming updates as the response is generated
   ///   - handleUsageInfo: Closure called when usage information is available.
   private func streamCompletionResponse(
-    system: String,
+    system: String?,
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool],
     model: AIModel,

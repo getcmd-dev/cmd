@@ -582,6 +582,7 @@ targets.append(
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
       .product(name: "JSONScanner", package: "JSONScanner"),
+      .product(name: "SwiftSoup", package: "SwiftSoup"),
       "AppFoundation",
       "ChatFoundation",
       "ChatServiceInterface",
@@ -589,7 +590,9 @@ targets.append(
       "DLS",
       "FileIcon",
       "JSONFoundation",
+      "LLMServiceInterface",
       "LocalServerServiceInterface",
+      "LoggingServiceInterface",
       "ShellServiceInterface",
       "ToolFoundation",
       "ToolTypesFoundation",
@@ -1625,6 +1628,7 @@ let package = Package(
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
     .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.1"),
+    .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.11.1"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),

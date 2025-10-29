@@ -30,7 +30,7 @@ public final class MockLLMService: LLMService {
     (UpdateStream) -> Void)
   async throws -> SendMessageResponse)?
 
-  public var onNameConversation: (@Sendable (String) async throws -> String)?
+  public var onPrompt: (@Sendable (String, String?, AIModel) async throws -> String?)?
 
   public var onSummarizeConversation: (@Sendable ([Schema.Message], AIModel) async throws -> SummarizeConversationResponse)?
 
@@ -85,8 +85,8 @@ public final class MockLLMService: LLMService {
       ?? SendMessageResponse(newMessages: [], usageInfo: nil)
   }
 
-  public func nameConversation(firstMessage: String) async throws -> String {
-    try await onNameConversation?(firstMessage) ?? "Unnamed Conversation"
+  public func prompt(_ prompt: String, system: String?, model: AIModel) async throws -> String? {
+    try await onPrompt?(prompt, system, model)
   }
 
   public func summarizeConversation(
