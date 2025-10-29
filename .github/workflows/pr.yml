@@ -127,8 +127,6 @@ jobs:
       with:
         path: local-server/node_modules
         key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install && yarn build && yarn copy-to-app
     - name: Load SPM cache
       uses: actions/cache@v4
       with:
@@ -236,8 +234,6 @@ jobs:
       with:
         path: local-server/node_modules
         key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install
     - name: Run tests
       run: ./cmd.sh test:ts
 
@@ -284,8 +280,6 @@ jobs:
       with:
         path: local-server/node_modules
         key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install
     - name: Run linter
       run: ./cmd.sh lint:ts
     - name: Verify that `cmd lint:ts` did not change outputs (if it did, please re-run it and re-commit!)
