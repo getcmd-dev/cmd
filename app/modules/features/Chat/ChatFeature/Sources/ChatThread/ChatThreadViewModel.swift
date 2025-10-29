@@ -272,19 +272,20 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
         do {
           let conversationName = try await self?.llmService.prompt(
             """
-            Summarize this coding conversation in under 50 characters.\nCapture the main task, key files and problems addressed. Respond with ONLY the summary, nothing else
+            Give a title for this coding conversation in under 50 characters.\nCapture the main goal. Respond with ONLY the title, nothing else
 
-            good output example : `Fixing the login flow in the app`
-            bad output example: `Here's a concise summary of the conversation: Fixing the login flow in the app`
+            good output example : `Fixing the login flow`
+            bad output example: `Here's a concise summary of the conversation: Fixing the login flow`
+            bad output example: `This conversation is about fixing the login flow`
 
-            Please write a 5-10 word title the following conversation:\n\n\(textInput.string.string)
+            Coding conversation:\n\n\(textInput.string.string)
             """,
             model: llmService.lowTierModel()?.modelInfo ?? selectedModel)
           guard let self else { return }
           name = conversationName
           persistThread()
         } catch {
-          print(error)
+          defaultLogger.error("Failed to name conversation", error)
         }
       }
     }
