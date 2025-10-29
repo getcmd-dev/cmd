@@ -6,7 +6,7 @@ import Dependencies
 import Foundation
 import SwiftTesting
 import Testing
-@testable import ClaudeCodeTools
+@testable import WebFetchTool
 
 struct ClaudeCodeWebFetchToolStreamRepresentationTests {
   @MainActor

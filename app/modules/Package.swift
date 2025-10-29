@@ -1491,6 +1491,13 @@ targets.append(
       "ToolFoundation",
       "ToolTypesFoundation",
     ],
+    testsDependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "JSONFoundation",
+      "SwiftTesting",
+      "WebFetchTool",
+    ],
     path: "./plugins/tools/WebFetchTool"))
 
 targets.append(

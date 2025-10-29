@@ -12,4 +12,11 @@ Target.module(
     "LoggingServiceInterface",
     "ToolFoundation",
     "ToolTypesFoundation",
+  ],
+  testsDependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "JSONFoundation",
+    "SwiftTesting",
+    "WebFetchTool",
   ])

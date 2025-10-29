@@ -4,7 +4,7 @@
 import Foundation
 import Testing
 
-@testable import ClaudeCodeTools
+@testable import WebFetchTool
 
 @Suite("ClaudeCodeWebFetchTool Encoding Tests")
 struct ClaudeCodeWebFetchToolEncodingTests {

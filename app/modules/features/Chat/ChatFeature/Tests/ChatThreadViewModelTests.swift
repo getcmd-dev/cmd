@@ -2,7 +2,6 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
-import AppEventServiceInterface
 import ChatFoundation
 import ChatHistoryServiceInterface
 import ChatServiceInterface
@@ -29,58 +28,9 @@ private let otherFileURL = URL(fileURLWithPath: "/Users/test/MyProject/OtherFile
 
 @Suite("ChatThreadViewModelTests", .dependencies {
   $0.withAllModelAvailable()
-  $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
   $0.xcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL, focussedTabURL: fileURL)
 })
 struct ChatThreadViewModelTests {
-
-  // MARK: - App Event Registry Tests
-
-  @MainActor
-  @Test("View model registers handler with app event registry on initialization")
-  func viewModelRegistersHandlerWithAppEventRegistry() async throws {
-    // Setup
-    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
-    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
-    let handlerRegistered = Atomic<Bool>(false)
-
-    mockEventRegistry.onRegisterHandler = { _ in
-      handlerRegistered.set(to: true)
-    }
-
-    // when
-    let sut = ChatThreadViewModel()
-
-    // then
-    #expect(handlerRegistered.value == true)
-    _ = sut // Keep reference
-  }
-
-  @MainActor
-  @Test("View model handles non-ExecuteExtensionRequestEvent events")
-  func viewModelHandlesNonExecuteExtensionRequestEventEvents() async throws {
-    // given
-    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
-    let mockEventRegistry = try #require(appEventHandlerRegistry as? MockAppEventHandlerRegistry)
-    let registeredHandler = Atomic<(@Sendable (AppEvent) async -> Bool)?>(nil)
-
-    mockEventRegistry.onRegisterHandler = { handler in
-      registeredHandler.set(to: handler)
-    }
-
-    let sut = ChatThreadViewModel()
-
-    // Create a custom event that is not ExecuteExtensionRequestEvent
-    struct CustomEvent: AppEvent { }
-    let event = CustomEvent()
-
-    // when
-    let handled = await registeredHandler.value?(event)
-
-    // then
-    #expect(handled == false)
-    _ = sut // Keep reference
-  }
 
   @MainActor
   @Test("receiving messages updates state")
