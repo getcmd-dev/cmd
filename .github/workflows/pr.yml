@@ -66,18 +66,23 @@ jobs:
         machine: github.com
         username: oauth2
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Load derived data & SPM cache
+    - name: Load SPM packages cache
       uses: actions/cache@v4
       with:
-        path:
-          app/build/derived_data
-          app/modules/.build
+        path: |
           ~/Library/Caches/org.swift.swiftpm
           ~/Library/org.swift.swiftpm
-          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
-        key: ${{ runner.os }}_app_derived_data_${{ hashFiles('app/modules/Package.swift', 'app/modules/Package.resolved') }}
+        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}_app_derived_data_
+          ${{ runner.os }}_spm_packages_
+    - name: Load release build cache
+      uses: actions/cache@v4
+      with:
+        path: app/build/derived_data
+        key: ${{ runner.os }}_release_build_${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}_release_build_main
+          ${{ runner.os }}_release_build_
     - name: Install fastlane dependencies
       run: |
         cd app/fastlane && gem install bundler && bundle install
@@ -133,13 +138,19 @@ jobs:
       uses: actions/cache@v4
       with:
         path:
-          app/modules/.build
           ~/Library/Caches/org.swift.swiftpm
           ~/Library/org.swift.swiftpm
-          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
-        key: ${{ runner.os }}_spm_app_modules_${{ hashFiles('app/modules/Package.swift', 'app/modules/Package.resolved') }}
+        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}_spm_app_modules_
+          ${{ runner.os }}_spm_packages_
+    - name: Load modules build cache
+      uses: actions/cache@v4
+      with:
+        path: app/modules/.build
+        key: ${{ runner.os }}_modules_build_${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}_modules_build_main
+          ${{ runner.os }}_modules_build_
     - name: Run app module tests
       run: ./cmd.sh test:swift
 
@@ -212,6 +223,8 @@ jobs:
       with:
         path: app/tools/dependencies/tmp/bin
         key: ${{ runner.os }}_spm_tools_${{ hashFiles('app/tools/dependencies/**') }}
+        restore-keys: |
+          ${{ runner.os }}_spm_tools_
     - name: Run sync dependencies
       run: ./cmd.sh sync:dependencies
     - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)

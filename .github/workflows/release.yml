@@ -28,6 +28,11 @@ jobs:
         node-version-file: "./local-server/.nvmrc"
     - name: Enable Corepack
       run: corepack enable
+    - name: Load npm cache
+      uses: actions/cache@v4
+      with:
+        path: local-server/node_modules
+        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -42,11 +47,23 @@ jobs:
         npm install --global @bugsnag/cli
         brew install graphicsmagick imagemagick sentry-cli
         cd app/fastlane && gem install bundler && bundle install
-    - name: Load derived data cache
-      uses: actions/cache/restore@v4
+    - name: Load SPM packages cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Caches/org.swift.swiftpm
+          ~/Library/org.swift.swiftpm
+        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}_spm_packages_
+    - name: Load release build cache
+      uses: actions/cache@v4
       with:
         path: app/build/derived_data
-        key: ${{ runner.os }}_app_derived_data_main
+        key: ${{ runner.os }}_release_build_${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}_release_build_main
+          ${{ runner.os }}_release_build_
     - name: Publish release
       run: cd app/fastlane && bundle exec fastlane mac distribute_release
       env:

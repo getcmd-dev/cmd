@@ -53,8 +53,15 @@ jobs:
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
-    - name: Cache derived data
+    - name: Cache SPM packages
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          ~/Library/Caches/org.swift.swiftpm
+          ~/Library/org.swift.swiftpm
+        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
+    - name: Cache release build
       uses: actions/cache/save@v4
       with:
         path: app/build/derived_data
-        key: ${{ runner.os }}_app_derived_data_main
+        key: ${{ runner.os }}_release_build_main
