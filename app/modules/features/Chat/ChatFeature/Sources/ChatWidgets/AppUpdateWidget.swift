@@ -50,43 +50,59 @@ struct VisibleAppUpdateWidget: View {
 
   var body: some View {
     if !hasIgnoredUpdate {
-      VStack(alignment: .leading) {
-        HStack {
-          Text("Update available")
-            .font(.headline)
-            .padding(.bottom, 2)
-          Spacer()
-          IconButton(action: {
-            onIgnoreTapped()
-            hasIgnoredUpdate = true
-          }, systemName: "xmark")
-            .frame(width: 12, height: 12)
+      HStack(alignment: .center, spacing: 0) {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("New update available")
+          Text("Restart to use the latest.")
+            .font(.system(size: .bodySize, weight: .light))
         }
-        if let appUpdateInfo {
-          Text("Version: \(appUpdateInfo.version) is now available.")
-          if let currentAppVersion {
-            Text("Current: \(currentAppVersion)")
-              .font(.caption)
-          }
+
+        Spacer(minLength: 0)
+        HStack(spacing: 8) {
+          HoveredButton(
+            action: {
+              _ = URL(string: "https://getcmd.dev/changelog").map(NSWorkspace.shared.open)
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: .clear,
+            padding: 8,
+            content: {
+              Text("See changes")
+            })
+            .with(cornerRadius: 6, borderColor: colorScheme.textAreaBorderColor)
+
+          HoveredButton(
+            action: {
+              onRelaunchTapped()
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground.inverted,
+            backgroundColor: colorScheme.secondarySystemBackground.inverted,
+            padding: 8,
+            content: {
+              Text("Restart")
+                .foregroundColor(.primary.inverted)
+            })
+            .with(cornerRadius: 6)
         }
-        if let releaseNotesURL = appUpdateInfo?.releaseNotesURL {
-          Link("Release Notes", destination: releaseNotesURL)
-        }
-        HoveredButton(
-          action: {
-            onRelaunchTapped()
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 5,
-          content: {
-            Text("Relaunch")
-          })
-          .frame(maxWidth: .infinity, alignment: .center)
       }
-      .padding(10)
+      .padding(12)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .with(cornerRadius: 6, borderColor: colorScheme.textAreaBorderColor)
+      .with(
+        cornerRadius: 8,
+        backgroundColor: colorScheme.primaryBackground,
+        borderColor: colorScheme.textAreaBorderColor)
+      .overlay(alignment: .topLeading) {
+        IconButton(action: {
+          onIgnoreTapped()
+          hasIgnoredUpdate = true
+        }, systemName: "xmark")
+          .frame(width: 10, height: 10)
+          .padding(4)
+          .background(colorScheme.primaryBackground)
+          .clipShape(Circle())
+          .overlay(Circle().stroke(colorScheme.textAreaBorderColor, lineWidth: 1))
+          .offset(x: -6, y: -6)
+      }
       .padding()
     }
   }
