@@ -100,7 +100,7 @@ var targets = [Target]()
 let package = Package(
   name: "Packages",
   platforms: [
-    .macOS("15.2"),
+    .macOS("15.0"),
   ],
   products: [
     .library(

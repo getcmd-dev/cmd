@@ -94,10 +94,10 @@ jobs:
         cd app
         deployment_target=$(xcodebuild -project ./command.xcodeproj -showBuildSettings 2>&1 | grep "^    MACOSX_DEPLOYMENT_TARGET = " | head -n 1 | sed 's/^    MACOSX_DEPLOYMENT_TARGET = //')
         echo "Found MACOSX_DEPLOYMENT_TARGET: $deployment_target"
-        if [ "$deployment_target" = "15.2" ]; then
-          echo "✓ Deployment target is correctly set to 15.2"
+        if [ "$deployment_target" = "15.0" ]; then
+          echo "✓ Deployment target is correctly set to 15.0"
         else
-          echo "✗ Expected MACOSX_DEPLOYMENT_TARGET to be 15.2, but found: `$deployment_target`"
+          echo "✗ Expected MACOSX_DEPLOYMENT_TARGET to be 15.0, but found: `$deployment_target`"
           exit 1
         fi
 
