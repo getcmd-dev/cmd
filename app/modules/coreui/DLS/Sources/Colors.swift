@@ -50,7 +50,7 @@ extension NSColor {
 }
 
 extension Color {
-  var inverted: Color {
+  public var inverted: Color {
     Color(nsColor: nsColor.inverted)
   }
 
