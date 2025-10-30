@@ -100,7 +100,7 @@ var targets = [Target]()
 let package = Package(
   name: "Packages",
   platforms: [
-    .macOS("15.2"),
+    .macOS("15.0"),
   ],
   products: [
     .library(
@@ -123,7 +123,7 @@ let package = Package(
     .package(url: "https://github.com/appstefan/highlightswift", from: "1.1.0"),
     .package(
       url: "https://github.com/gsabran/Down",
-      revision: "14309dd8781c7613063344727454ffbbebc8e8bd"),
+      revision: "d2e9d901bbf9e7492a1603ed3dbf307c1089d7f2"),
     .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.9.0"),
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),

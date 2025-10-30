@@ -455,7 +455,7 @@ struct SyncTests {
          
          let package = Package(
         @@ -119,7 +120,8 @@ let package = Package(
-             .macOS("15.2")
+             .macOS("15.0")
            ],
            products: [
         -    .library(name: "ModuleB", targets: ["ModuleB"])

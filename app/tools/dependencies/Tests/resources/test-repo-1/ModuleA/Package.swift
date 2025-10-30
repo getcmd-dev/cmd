@@ -117,7 +117,7 @@ targets.append(
 let package = Package(
   name: "ModuleA",
   platforms: [
-    .macOS("15.2")
+    .macOS("15.0")
   ],
   products: [
     .library(name: "ModuleA", targets: ["ModuleA"])
