@@ -4,16 +4,12 @@
 import Combine
 import ConcurrencyFoundation
 import Foundation
+import GithubCopilotServiceInterface
+import LoggingServiceInterface
 
 // MARK: - LoginStatus
 
-enum LoginStatus {
-  case loggedOut
-  case loggingIn
-  case loggedIn(user: String)
-}
-
-extension GithubCopilotService {
+extension DefaultGithubCopilotService {
 
   var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> {
     _loginStatus.readonly()
@@ -23,13 +19,13 @@ extension GithubCopilotService {
     let authServer = try await authServer.value
     try await authServer.didInitialize.value
 
-    print("🔐 Checking authentication status...")
+    defaultLogger.log("Checking authentication status...")
     // Send empty object {} as params (required by Copilot LSP)
     let emptyParams = [String: String]()
     let resultData = try await authServer.sendRequest("checkStatus", params: emptyParams)
     let decoder = JSONDecoder()
     let result = try decoder.decode(CheckStatusResult.self, from: resultData)
-    print("🔐 Status: \(result.status.rawValue), User: \(result.user ?? "none")")
+    defaultLogger.log("Status: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
       switch (result.status, result.user) {
@@ -49,17 +45,15 @@ extension GithubCopilotService {
     let authServer = try await authServer.value
     try await authServer.didInitialize.value
 
-    print("🔐 Initiating sign in...")
+    defaultLogger.log("Initiating sign in...")
     // Send empty object {} as params (required by Copilot LSP)
     let emptyParams = [String: String]()
     let resultData = try await authServer.sendRequest("signInInitiate", params: emptyParams)
     let decoder = JSONDecoder()
     let result = try decoder.decode(SignInInitiateResult.self, from: resultData)
 
-    if let userCode = result.userCode, let verificationUri = result.verificationUri {
-      print("🔐 Sign in at: \(verificationUri)")
-      print("🔐 Enter code: \(userCode)")
-    }
+    defaultLogger.log("Sign in at: \(result.verificationUri)")
+    defaultLogger.log("Enter code: \(result.userCode)")
 
     return result
   }
@@ -68,12 +62,12 @@ extension GithubCopilotService {
     let authServer = try await authServer.value
     try await authServer.didInitialize.value
 
-    print("🔐 Confirming sign in...")
+    defaultLogger.log("Confirming sign in...")
     let params = SignInConfirmParams(userCode: userCode)
     let resultData = try await authServer.sendRequest("signInConfirm", params: params)
     let decoder = JSONDecoder()
     let result = try decoder.decode(SignInConfirmResult.self, from: resultData)
-    print("🔐 Sign in result: \(result.status.rawValue), User: \(result.user ?? "none")")
+    defaultLogger.log("Sign in result: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
       switch (result.status, result.user) {
@@ -92,11 +86,11 @@ extension GithubCopilotService {
     let authServer = try await authServer.value
     try await authServer.didInitialize.value
 
-    print("🔐 Signing out...")
+    defaultLogger.log("Signing out...")
     // Send empty object {} as params (required by Copilot LSP)
     let emptyParams = [String: String]()
     _ = try await authServer.sendRequest("signOut", params: emptyParams)
-    print("🔐 Signed out")
+    defaultLogger.log("Signed out")
     _loginStatus.send(.loggedOut)
   }
 }

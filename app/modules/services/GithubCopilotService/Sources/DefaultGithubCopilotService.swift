@@ -3,17 +3,21 @@
 
 import AppFoundation
 @preconcurrency import Combine
+import DependencyFoundation
 import Foundation
 import FoundationInterfaces
+import GithubCopilotServiceInterface
+import LoggingServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
 
-@ThreadSafe
-public final class GithubCopilotService: Sendable {
+// MARK: - DefaultGithubCopilotService
 
-  init(workspaceRoot: URL, shellService: ShellService, fileManager: FileManagerI) {
-    self.workspaceRoot = workspaceRoot
+@ThreadSafe
+final class DefaultGithubCopilotService: GithubCopilotService {
+
+  init(shellService: ShellService, fileManager: FileManagerI) {
     self.shellService = shellService
     self.fileManager = fileManager
 
@@ -26,21 +30,7 @@ public final class GithubCopilotService: Sendable {
     self.setAuthServer = setAuthServer
 
     Task {
-      do {
-        let executablePath = try await self.install()
-        setExecutablePath(.success(executablePath))
-        let authServer = GithubCopilotServer(
-          executablePath: executablePath,
-          workspaceRoot: fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".cmd"),
-          shellService: shellService,
-          fileManager: fileManager)
-        setAuthServer(.success(authServer))
-      } catch {
-        setExecutablePath(.failure(error))
-        setAuthServer(.failure(error))
-      }
-
-      _ = try await self.checkStatus()
+      try await setup()
     }
   }
 
@@ -54,8 +44,28 @@ public final class GithubCopilotService: Sendable {
   private let executableVersion = "1.389.0"
 
   private let shellService: ShellService
-  private let workspaceRoot: URL
   private let fileManager: FileManagerI
+
+  private func setup() async throws {
+    print("init!!")
+    do {
+      let executablePath = try await install()
+      setExecutablePath(.success(executablePath))
+      let authServer = GithubCopilotServer(
+        executablePath: executablePath,
+        // Use this folder that we know to exist as the workspace root, as we need to provide one
+        workspaceRoot: fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".cmd"),
+        shellService: shellService,
+        fileManager: fileManager)
+      setAuthServer(.success(authServer))
+    } catch {
+      setExecutablePath(.failure(error))
+      setAuthServer(.failure(error))
+      defaultLogger.error("Failed to initialize Github Copilot: \(error)", error)
+    }
+
+    _ = try await checkStatus()
+  }
 
   private func install() async throws -> URL {
     guard
@@ -75,15 +85,20 @@ public final class GithubCopilotService: Sendable {
       else {
         throw AppError("Path for Copilot language server install script not found")
       }
-      guard let installationScript = Bundle.main.url(forResource: "install-copilot-language-server", withExtension: "sh") else {
+      guard let installationScript = resourceBundle.url(forResource: "install-language-server", withExtension: "sh") else {
         throw AppError("Copilot language server installation script not found in bundle")
       }
       // Copy installation script to Application Support
+      if fileManager.fileExists(atPath: installScriptPath.path) {
+        try fileManager.removeItem(atPath: installScriptPath.path)
+      }
       try fileManager.copyItem(atPath: installationScript.path, toPath: installScriptPath.path)
+      try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: installScriptPath.path)
+
       var env = await shellService.env
       env["COPILOT_LANGUAGE_SERVER_VERSION"] = executableVersion
       env["COPILOT_LANGUAGE_SERVER_INSTALL_PATH"] = executablePath.path
-      try await shellService.run("/bin/bash \"\(installScriptPath.path)\"", env: env)
+      try await shellService.runAndThrows("/bin/bash \"\(installScriptPath.path)\"", env: env)
     }
 
     if !fileManager.fileExists(atPath: executablePath.path) {
@@ -92,3 +107,19 @@ public final class GithubCopilotService: Sendable {
     return executablePath
   }
 }
+
+extension BaseProviding where
+  Self: FileManagerProviding,
+  Self: ShellServiceProviding
+{
+  public var githubCopilotService: GithubCopilotService {
+    shared {
+      DefaultGithubCopilotService(
+        shellService: self.shellService,
+        fileManager: self.fileManager)
+    }
+  }
+
+}
+
+private let resourceBundle = Bundle.module

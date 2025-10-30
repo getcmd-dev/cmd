@@ -5,6 +5,7 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import LoggingServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 
@@ -23,7 +24,7 @@ actor StdioTransport {
   }
 
   deinit {
-    print("deinit transport")
+    defaultLogger.log("deinit transport")
   }
 
   struct Connection: Sendable {
@@ -79,7 +80,7 @@ actor StdioTransport {
 
     Task { [weak self] in
       for await data in stdout.fileHandleForReading.dataStream.jsonStream {
-        print("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
+        defaultLogger.log("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
         self?.stdoutContinuation.yield(data)
       }
       self?.stdoutContinuation.finish()
@@ -91,7 +92,7 @@ actor StdioTransport {
       let error = stderr.fileHandleForReading.readDataToEndOfFile()
       let errorStr = String(data: error, encoding: .utf8)
 
-      print("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
+      defaultLogger.log("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
       Task {
         await self.closeConnection(to: process, stderr: stderr)
       }
@@ -106,14 +107,14 @@ actor StdioTransport {
           guard !isTerminated.value else {
             throw AppError("Process has terminated")
           }
-          print("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
+          defaultLogger.log("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
 
           stdin.fileHandleForWriting.write(data)
           // LSP uses Content-Length framing, no newline needed
           // stdin.fileHandleForWriting.write(Self.newLine)
         })))
     } catch {
-      print("Error while establishing MCP connection", error)
+      defaultLogger.error("Error while establishing MCP connection", error)
       continuation(.failure(error))
     }
     connection = try await promise.value
@@ -136,14 +137,14 @@ actor StdioTransport {
         let data = (try? stderr.fileHandleForReading.readToEnd()),
         let err = String(data: data, encoding: .utf8)
       {
-        print("MCP stdio connection terminated. Stderr:\n\(err)")
+        defaultLogger.log("MCP stdio connection terminated. Stderr:\n\(err)")
         disconnectionHandler?(AppError(err))
       } else {
-        print("MCP stdio connection terminated")
+        defaultLogger.log("MCP stdio connection terminated")
         disconnectionHandler?(AppError("MCP stdio connection terminated with exit code \(exitCode)"))
       }
     }
-    print("MCP stdio connection terminated with exit code 0")
+    defaultLogger.log("MCP stdio connection terminated with exit code 0")
   }
 }
 
@@ -238,7 +239,7 @@ extension FileHandle {
 
     readabilityHandler = { handle in
       let data = handle.availableData
-      print("dataStream received data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
+      defaultLogger.log("dataStream received data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
 
       if data.isEmpty {
         handle.readabilityHandler = nil

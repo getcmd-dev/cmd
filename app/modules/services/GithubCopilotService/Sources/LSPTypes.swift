@@ -109,28 +109,11 @@ enum CopilotAccountStatus: String, Codable {
   case alreadySignedIn = "AlreadySignedIn"
 }
 
-// MARK: - SignInInitiateStatus
-
-enum SignInInitiateStatus: String, Codable {
-  case promptUserDeviceFlow = "PromptUserDeviceFlow"
-  case alreadySignedIn = "AlreadySignedIn"
-}
-
 // MARK: - CheckStatusResult
 
 struct CheckStatusResult: Codable {
   let status: CopilotAccountStatus
   let user: String?
-}
-
-// MARK: - SignInInitiateResult
-
-struct SignInInitiateResult: Codable {
-  let status: SignInInitiateStatus
-  let userCode: String?
-  let verificationUri: String?
-  let expiresIn: Int?
-  let interval: Int?
 }
 
 // MARK: - SignInConfirmParams

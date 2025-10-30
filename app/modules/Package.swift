@@ -161,6 +161,7 @@ targets.append(
       "CheckpointService",
       "CheckpointServiceInterface",
       "ClaudeCodeTools",
+      "CodeCompletionFoundation",
       "CodeCompletionService",
       "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
@@ -173,7 +174,9 @@ targets.append(
       "FileSuggestionService",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
+      "GithubCopilotFeature",
       "GithubCopilotService",
+      "GithubCopilotServiceInterface",
       "HighlighterServiceInterface",
       "LLMService",
       "LLMServiceInterface",
@@ -909,12 +912,36 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "GithubCopilotFeature",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "DLS",
+      "GithubCopilotFeatureInterface",
+      "GithubCopilotServiceInterface",
+      "RoutingFoundation",
+    ],
+    path: "./features/GithubCopilotFeature"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "GithubCopilotFeatureInterface",
+    dependencies: [
+      "RoutingFoundation",
+    ],
+    path: "./featureInterfaces/GithubCopilotFeatureInterface"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "GithubCopilotService",
     dependencies: [
       "AppFoundation",
       "CodeCompletionFoundation",
       "ConcurrencyFoundation",
+      "DependencyFoundation",
       "FoundationInterfaces",
+      "GithubCopilotServiceInterface",
+      "LoggingServiceInterface",
       "SettingsServiceInterface",
       "ShellServiceInterface",
       "ThreadSafe",
@@ -923,6 +950,19 @@ targets.append(
       .process("Resources/install-language-server.sh"),
     ],
     path: "./services/GithubCopilotService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "GithubCopilotServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "CodeCompletionFoundation",
+      "ConcurrencyFoundation",
+      "DependencyFoundation",
+      "ThreadSafe",
+    ],
+    path: "./serviceInterfaces/GithubCopilotServiceInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1310,6 +1350,7 @@ targets.append(
       "DLS",
       "ExtensionEventsInterface",
       "FoundationInterfaces",
+      "GithubCopilotFeatureInterface",
       "LLMFoundation",
       "LLMServiceInterface",
       "LocalServerServiceInterface",
@@ -1338,10 +1379,15 @@ targets.append(
       "SettingsServiceInterface",
       "SwiftTesting",
     ],
-    interfaceDependencies: [
+    path: "./features/SettingsFeature"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "SettingsFeatureInterface",
+    dependencies: [
       "RoutingFoundation",
     ],
-    path: "./features/SettingsFeature"))
+    path: "./featureInterfaces/SettingsFeatureInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1446,6 +1492,7 @@ targets.append(
     name: "ShellServiceInterface",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
       "LoggingServiceInterface",
       "ThreadSafe",
     ],

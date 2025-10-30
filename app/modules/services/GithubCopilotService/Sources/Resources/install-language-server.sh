@@ -7,7 +7,7 @@ set -e
 
 # Version of the language server to download
 VERSION="$COPILOT_LANGUAGE_SERVER_VERSION"
-BINARY_PATH="$COPILOT_LANGUAGE_SERVER_PATH"
+BINARY_PATH="$COPILOT_LANGUAGE_SERVER_INSTALL_PATH"
 
 # Determine architecture
 ARCH=$(uname -m)

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import LoggingServiceInterface
 
 // MARK: - JSONRPCRequest
 
@@ -104,33 +105,33 @@ actor DataChannel {
     while true {
       // Try to parse a message from buffer
       if let message = try parseMessage() {
-        print("📦 Parsed complete message from buffer")
+        defaultLogger.log("Parsed complete message from buffer")
         return message
       }
 
       // Read more data asynchronously
-      print("📦 Buffer has \(buffer.count) bytes, reading more data...")
+      defaultLogger.log("Buffer has \(buffer.count) bytes, reading more data...")
       let handle = outputPipe.fileHandleForReading
 
       // Use background thread to avoid blocking the actor
       let newData = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
         DispatchQueue.global(qos: .userInitiated).async {
           do {
-            print("📦 Attempting to read from stdout...")
+            defaultLogger.log("Attempting to read from stdout...")
             guard let data = try handle.read(upToCount: 4096), !data.isEmpty else {
-              print("📦 No data read from stdout (EOF)")
+              defaultLogger.log("No data read from stdout (EOF)")
               continuation.resume(throwing: DataChannelError.processDied)
               return
             }
-            print("📦 Read \(data.count) bytes from stdout")
+            defaultLogger.log("Read \(data.count) bytes from stdout")
             if let string = String(data: data, encoding: .utf8) {
-              print("📦 Raw data: \(string)")
+              defaultLogger.log("Raw data: \(string)")
             } else {
-              print("📦 Raw bytes (not UTF-8): \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
+              defaultLogger.log("Raw bytes (not UTF-8): \(data.map { String(format: "%02x", $0) }.joined(separator: " "))")
             }
             continuation.resume(returning: data)
           } catch {
-            print("📦 Error reading from stdout: \(error)")
+            defaultLogger.log("Error reading from stdout: \(error)")
             continuation.resume(throwing: error)
           }
         }
@@ -235,19 +236,19 @@ actor JSONRPCConnection {
 
   func startReading() {
     Task {
-      print("📖 Starting message reading loop...")
+      defaultLogger.log("Starting message reading loop...")
       while true {
         do {
-          print("📖 Waiting for message...")
+          defaultLogger.log("Waiting for message...")
           guard let messageData = try await dataChannel.readMessage() else {
-            print("❌ Connection closed")
+            defaultLogger.log("Connection closed")
             break
           }
 
-          print("📖 Received message data of size: \(messageData.count)")
+          defaultLogger.log("Received message data of size: \(messageData.count)")
           try await handleMessage(messageData)
         } catch {
-          print("❌ Error reading message: \(error)")
+          defaultLogger.log("Error reading message: \(error)")
           break
         }
       }
@@ -264,7 +265,7 @@ actor JSONRPCConnection {
     let jsonData = try encoder.encode(message)
 
     let jsonString = String(data: jsonData, encoding: .utf8)!
-    print("📤 Sending: \(jsonString)\n")
+    defaultLogger.log("Sending: \(jsonString)\n")
 
     let header = "Content-Length: \(jsonData.count)\r\n\r\n"
     var messageData = header.data(using: .utf8)!
@@ -275,7 +276,7 @@ actor JSONRPCConnection {
 
   private func handleMessage(_ data: Data) async throws {
     let jsonString = String(data: data, encoding: .utf8) ?? "<invalid utf8>"
-    print("📥 Received: \(jsonString)")
+    defaultLogger.log("Received: \(jsonString)")
 
     let decoder = JSONDecoder()
     let response = try decoder.decode(JSONRPCResponse.self, from: data)

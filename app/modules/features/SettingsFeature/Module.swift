@@ -9,6 +9,7 @@ Target.module(
     "DLS",
     "ExtensionEventsInterface",
     "FoundationInterfaces",
+    "GithubCopilotFeatureInterface",
     "LLMFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
@@ -36,7 +37,4 @@ Target.module(
     "SettingsFeature",
     "SettingsServiceInterface",
     "SwiftTesting",
-  ],
-  interfaceDependencies: [
-    "RoutingFoundation",
   ])

@@ -5,8 +5,10 @@ import AppFoundation
 import Dependencies
 import DLS
 import FoundationInterfaces
+import GithubCopilotFeatureInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import RoutingFoundation
 import SwiftUI
 
 // MARK: - InternalSettingsView
@@ -139,8 +141,12 @@ struct InternalSettingsView: View {
           .stroke(Color.gray.opacity(0.2), lineWidth: 1))
     }
 
+    AnyView(router.embed(route: GithubCopilotRoute()))
+
     Spacer()
   }
+
+  @Environment(Router.self) private var router
 
   @Environment(\.colorScheme) private var colorScheme
 

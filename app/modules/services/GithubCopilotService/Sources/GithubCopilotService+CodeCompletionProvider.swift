@@ -5,7 +5,7 @@ import AppFoundation
 import CodeCompletionFoundation
 import Foundation
 
-extension GithubCopilotService: CodeCompletionProvider {
+extension DefaultGithubCopilotService {
   public var id: String {
     "github-copilot"
   }

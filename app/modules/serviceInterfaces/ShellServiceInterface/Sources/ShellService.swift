@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import Combine
 import Foundation
 import LoggingServiceInterface
@@ -104,6 +105,23 @@ extension ShellService {
     async throws -> CommandExecutionResult
   {
     try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
+  }
+
+  /// Convenience method for executing a shell command without stream handling.
+  /// See the main run method for detailed parameter documentation.
+  @discardableResult
+  public func runAndThrows(
+    _ command: String,
+    cwd: String? = nil,
+    useInteractiveShell: Bool = false,
+    env: [String: String]? = nil)
+    async throws -> String?
+  {
+    let executionResut = try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
+    if executionResut.exitCode != 0 {
+      throw AppError("\(command) exited with code \(executionResut.exitCode). Stderr: \(executionResut.stderr ?? "nil")")
+    }
+    return executionResut.stdout
   }
 
   /// Convenience method for executing a shell command and returning only stdout.

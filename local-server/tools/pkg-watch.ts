@@ -120,8 +120,7 @@ chokidar
 	})
 	.on("all", (evt, filePath) => {
 		try {
-			const stats = statSync(filePath)
-			if (stats.isDirectory()) {
+			if (evt !== "unlink" && evt !== "unlinkDir" && statSync(filePath).isDirectory()) {
 				// Directories are not ignored at the watcher level as this would prevent the watcher from watching the directory's content.
 				// So we ignore them in the event handler.
 				return
@@ -147,7 +146,7 @@ chokidar
 
 			execSync(`${appPath}/../cmd.sh sync:dependencies ${generateAllPackages ? "--all" : ""}`)
 		} catch (error) {
-			console.error(`Error watching file changes: ${error as Error}`)
+			console.error(`Error watching file changes for ${filePath} ${evt}: ${error as Error}`)
 		}
 	})
 	.on("error", (error) => {
