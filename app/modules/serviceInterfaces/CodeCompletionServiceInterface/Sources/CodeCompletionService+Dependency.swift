@@ -25,4 +25,3 @@ extension DependencyValues {
 public protocol CodeCompletionServiceProviding {
   var codeCompletionService: CodeCompletionService { get }
 }
-

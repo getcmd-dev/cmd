@@ -13,12 +13,15 @@ import ChatService
 import ChatServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
+import CodeCompletionService
+import CodeCompletionServiceInterface
 import Combine
 import Dependencies
 import FileSuggestionService
 import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
+import GithubCopilotService
 import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
@@ -198,6 +201,14 @@ extension AppScope: ChatCompletionServiceProviding { }
 // MARK: - AppScope + ChatServiceProviding
 
 extension AppScope: ChatServiceProviding { }
+
+// MARK: - AppScope + CodeCompletionProvidersPluginProviding
+
+extension AppScope: CodeCompletionProvidersPluginProviding {
+  var codeCompletionProviders: [any CodeCompletionProvider] {
+    [GithubCopilotService()]
+  }
+}
 
 // MARK: - AppScope + MCPServiceProviding
 

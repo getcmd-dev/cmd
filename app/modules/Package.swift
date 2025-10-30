@@ -161,6 +161,8 @@ targets.append(
       "CheckpointService",
       "CheckpointServiceInterface",
       "ClaudeCodeTools",
+      "CodeCompletionService",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "DefaultToolView",
       "DependencyFoundation",
@@ -171,6 +173,7 @@ targets.append(
       "FileSuggestionService",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
+      "GithubCopilotService",
       "HighlighterServiceInterface",
       "LLMService",
       "LLMServiceInterface",
@@ -608,17 +611,24 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
-    name: "CodeCompletionService",
+    name: "CodeCompletionFoundation",
     dependencies: [
-      "CodeCompletionServiceInterface",
-      "DependencyFoundation",
-      "LoggingServiceInterface",
+      "AppFoundation",
       "ThreadSafe",
     ],
-    testsDependencies: [
-      "CodeCompletionService",
+    path: "./foundations/CodeCompletionFoundation"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "CodeCompletionService",
+    dependencies: [
+      "AppFoundation",
+      "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
-      "SwiftTesting",
+      "DependencyFoundation",
+      "SettingsServiceInterface",
+      "ThreadSafe",
+      "XcodeObserverServiceInterface",
     ],
     path: "./services/CodeCompletionService"))
 
@@ -627,6 +637,9 @@ targets.append(
     name: "CodeCompletionServiceInterface",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "CodeCompletionFoundation",
+      "ThreadSafe",
       "XcodeObserverServiceInterface",
     ],
     path: "./serviceInterfaces/CodeCompletionServiceInterface"))
@@ -893,6 +906,23 @@ targets.append(
     ],
     testsDependencies: [],
     path: "./foundations/FoundationInterfaces"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "GithubCopilotService",
+    dependencies: [
+      "AppFoundation",
+      "CodeCompletionFoundation",
+      "ConcurrencyFoundation",
+      "FoundationInterfaces",
+      "SettingsServiceInterface",
+      "ShellServiceInterface",
+      "ThreadSafe",
+    ],
+    resources: [
+      .process("Resources/install-language-server.sh"),
+    ],
+    path: "./services/GithubCopilotService"))
 
 targets.append(
   contentsOf: Target.module(

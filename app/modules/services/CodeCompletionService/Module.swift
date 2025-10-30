@@ -1,3 +1,11 @@
 Target.module(
   name: "CodeCompletionService",
-  dependencies: [])
+  dependencies: [
+    "AppFoundation",
+    "CodeCompletionFoundation",
+    "CodeCompletionServiceInterface",
+    "DependencyFoundation",
+    "SettingsServiceInterface",
+    "ThreadSafe",
+    "XcodeObserverServiceInterface",
+  ])
