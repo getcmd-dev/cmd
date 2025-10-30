@@ -22,6 +22,13 @@ jobs:
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: local-server/node_modules
+        key: ${{ runner.os }}_node_modules_${{ hashFiles('local-server/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}_node_modules_
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
@@ -40,5 +47,9 @@ jobs:
     - name: Cache derived data
       uses: actions/cache/save@v4
       with:
-        path: app/build/derived_data
-        key: ${{ runner.os }}-app-derived-data-main
+        path: |
+          app/build/derived_data
+          app/modules/.build
+          ~/Library/Caches/org.swift.swiftpm
+          ~/Library/org.swift.swiftpm
+        key: ${{ runner.os }}_app_derived_data_${{ hashFiles('app/modules/Package.swift', 'app/modules/Package.resolved') }}
