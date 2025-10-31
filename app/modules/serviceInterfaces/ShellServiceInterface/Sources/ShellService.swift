@@ -74,7 +74,7 @@ public protocol ShellService: Sendable {
   ///   - env: Additional environment variables to merge with the shell environment.
   ///          These variables override any existing variables with the same name.
   ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
-  ///          When useInteractiveShell is false, these are used as the entire environement and replace the inherited one.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   ///   - body: Optional handler for processing stdin/stdout/stderr streams during execution
   /// - Returns: The execution result containing exit code and output streams
   /// - Throws: Shell execution errors
@@ -102,7 +102,7 @@ extension ShellService {
   ///   - env: Additional environment variables to merge with the shell environment.
   ///          These variables override any existing variables with the same name.
   ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
-  ///          When useInteractiveShell is false, these are used as the entire environement and replace the inherited one.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   /// - Returns: The execution result containing exit code and output streams
   /// - Throws: Shell execution errors
   @discardableResult
@@ -124,7 +124,7 @@ extension ShellService {
   ///   - env: Additional environment variables to merge with the shell environment.
   ///          These variables override any existing variables with the same name.
   ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
-  ///          When useInteractiveShell is false, these are used as the entire environement and replace the inherited one.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   /// - Returns: The stdout output as a string, or nil if no output was produced
   /// - Throws: An error if the command exits with a non-zero code
   @discardableResult
@@ -135,11 +135,11 @@ extension ShellService {
     env: [String: String]? = nil)
     async throws -> String?
   {
-    let executionResut = try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
-    if executionResut.exitCode != 0 {
-      throw AppError("\(command) exited with code \(executionResut.exitCode). Stderr: \(executionResut.stderr ?? "nil")")
+    let executionResult = try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
+    if executionResult.exitCode != 0 {
+      throw AppError("\(command) exited with code \(executionResult.exitCode). Stderr: \(executionResult.stderr ?? "nil")")
     }
-    return executionResut.stdout
+    return executionResult.stdout
   }
 
   /// Run the provided command and return the stdout output as a string, or nil if no output was produced.
@@ -150,7 +150,7 @@ extension ShellService {
   ///   - env: Additional environment variables to merge with the shell environment.
   ///          These variables override any existing variables with the same name.
   ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
-  ///          When useInteractiveShell is false, these are used as the entire environement and replace the inherited one.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   /// - Returns: The stdout output as a string, or nil if no output was produced
   /// - Throws: Shell execution errors
   public func stdout(
