@@ -54,30 +54,20 @@ struct TelemetryConfiguration: Codable {
 
 /// Helper to build configuration responses for workspace/configuration requests
 enum WorkspaceConfigurationBuilder {
-  static func buildResponse(for items: [[String: Any]]) throws -> [[String: Any]] {
-    items.map { item in
-      guard let section = item["section"] as? String else {
-        return [:]
-      }
-
-      switch section {
+  static func buildResponse(for request: WorkspaceConfigurationRequestParameters) throws -> JSON.Value {
+    try .array(request.items.map { item in
+      switch item.section {
       case "github.copilot":
-        return try! encodeToDictionary(GitHubCopilotConfiguration.default)
+        try .init(encoding: GitHubCopilotConfiguration.default)
       case "github-enterprise":
-        return try! encodeToDictionary(GitHubEnterpriseConfiguration.default)
+        try .init(encoding: GitHubEnterpriseConfiguration.default)
       case "http":
-        return try! encodeToDictionary(HTTPConfiguration.default)
+        try .init(encoding: HTTPConfiguration.default)
       case "telemetry":
-        return try! encodeToDictionary(TelemetryConfiguration.default)
+        try .init(encoding: TelemetryConfiguration.default)
       default:
-        return [:]
+        JSON.Value.object([:])
       }
-    }
-  }
-
-  private static func encodeToDictionary(_ value: some Encodable) throws -> [String: Any] {
-    let data = try JSONEncoder().encode(value)
-    let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-    return dict ?? [:]
+    })
   }
 }

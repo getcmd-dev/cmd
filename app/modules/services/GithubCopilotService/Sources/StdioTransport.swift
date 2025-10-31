@@ -23,10 +23,6 @@ actor StdioTransport {
     stdoutContinuation = continuation
   }
 
-  deinit {
-    defaultLogger.log("deinit transport")
-  }
-
   struct Connection: Sendable {
     let process: Process
     let stdinWriter: @Sendable (Data) throws -> Void
@@ -80,7 +76,7 @@ actor StdioTransport {
 
     Task { [weak self] in
       for await data in stdout.fileHandleForReading.dataStream.jsonStream {
-        defaultLogger.log("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
+        defaultLogger.trace("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
         self?.stdoutContinuation.yield(data)
       }
       self?.stdoutContinuation.finish()
@@ -92,7 +88,7 @@ actor StdioTransport {
       let error = stderr.fileHandleForReading.readDataToEndOfFile()
       let errorStr = String(data: error, encoding: .utf8)
 
-      defaultLogger.log("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
+      defaultLogger.trace("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
       Task {
         await self.closeConnection(to: process, stderr: stderr)
       }
@@ -107,7 +103,7 @@ actor StdioTransport {
           guard !isTerminated.value else {
             throw AppError("Process has terminated")
           }
-          defaultLogger.log("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
+          defaultLogger.trace("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
 
           stdin.fileHandleForWriting.write(data)
           // LSP uses Content-Length framing, no newline needed
@@ -137,14 +133,14 @@ actor StdioTransport {
         let data = (try? stderr.fileHandleForReading.readToEnd()),
         let err = String(data: data, encoding: .utf8)
       {
-        defaultLogger.log("MCP stdio connection terminated. Stderr:\n\(err)")
+        defaultLogger.log("Stdio connection terminated. Stderr:\n\(data)")
         disconnectionHandler?(AppError(err))
       } else {
-        defaultLogger.log("MCP stdio connection terminated")
-        disconnectionHandler?(AppError("MCP stdio connection terminated with exit code \(exitCode)"))
+        defaultLogger.log("Stdio connection terminated")
+        disconnectionHandler?(AppError("Stdio connection terminated with exit code \(exitCode)"))
       }
     }
-    defaultLogger.log("MCP stdio connection terminated with exit code 0")
+    defaultLogger.log("Stdio connection terminated with exit code 0")
   }
 }
 

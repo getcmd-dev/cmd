@@ -75,6 +75,13 @@ struct JRPCResponse: Codable {
   let id: Int
   let result: JSON.Value?
   let error: JRPCError?
+
+  init(id: Int, result: JSON.Value?, error: JRPCError?) {
+    jsonrpc = "2.0"
+    self.id = id
+    self.result = result
+    self.error = error
+  }
 }
 
 // MARK: - JRPCError

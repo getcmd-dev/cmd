@@ -16,19 +16,25 @@ public final class MockGithubCopilotService: GithubCopilotService {
   }
 
   public var _loginStatus = CurrentValueSubject<LoginStatus, Never>(.loggedOut)
+  public var _isLSPServerInstalled = CurrentValueSubject<Bool, Never>(false)
 
   public let id: String
 
   public var onProvideCompletion: (@Sendable () async throws -> CompletionSuggestion)?
   public var onDidSave: (@Sendable (URL, String) -> Void)?
+  public var onInstallLSPServer: (@Sendable () async throws -> Void)?
 
   public var onCheckStatus: (@Sendable () async throws -> LoginStatus)?
-  public var onInitiateSignIn: (@Sendable () async throws -> SignInInitiateResult)?
+  public var onInitiateSignIn: (@Sendable () async throws -> SignInInitiationResult)?
   public var onConfirmSignIn: (@Sendable (String) async throws -> Void)?
   public var onSignOut: (@Sendable () async throws -> Void)?
 
   public var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> {
     _loginStatus.readonly()
+  }
+
+  public var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> {
+    _isLSPServerInstalled.readonly()
   }
 
   public func provideCompletion() async throws -> CompletionSuggestion {
@@ -49,7 +55,7 @@ public final class MockGithubCopilotService: GithubCopilotService {
     return try await onCheckStatus()
   }
 
-  public func initiateSignIn() async throws -> SignInInitiateResult {
+  public func initiateSignIn() async throws -> SignInInitiationResult {
     guard let onInitiateSignIn else {
       throw AppError("No onInitiateSignIn provided")
     }
@@ -62,6 +68,10 @@ public final class MockGithubCopilotService: GithubCopilotService {
 
   public func signOut() async throws {
     try await onSignOut?()
+  }
+
+  public func installLSPServer() async throws {
+    try await onInstallLSPServer?()
   }
 }
 #endif

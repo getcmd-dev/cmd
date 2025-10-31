@@ -17,12 +17,8 @@ extension DefaultGithubCopilotService {
 
   func checkStatus() async throws -> LoginStatus {
     let authServer = try await authServer.value
-    try await authServer.didInitialize.value
-
-    defaultLogger.log("Checking authentication status...")
     // Send empty object {} as params (required by Copilot LSP)
     let result: CheckStatusResult = try await authServer.sendRequest("checkStatus", params: .object([:]))
-    defaultLogger.log("Status: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
       switch (result.status, result.user) {
@@ -38,28 +34,18 @@ extension DefaultGithubCopilotService {
     return loginStatus
   }
 
-  func initiateSignIn() async throws -> SignInInitiateResult {
+  func initiateSignIn() async throws -> SignInInitiationResult {
     let authServer = try await authServer.value
-    try await authServer.didInitialize.value
 
-    defaultLogger.log("Initiating sign in...")
     // Send empty object {} as params (required by Copilot LSP)
-    let result: SignInInitiateResult = try await authServer.sendRequest("signInInitiate", params: .object([:]))
-
-    defaultLogger.log("Sign in at: \(result.verificationUri)")
-    defaultLogger.log("Enter code: \(result.userCode)")
-
-    return result
+    return try await authServer.sendRequest("signInInitiate", params: .object([:]))
   }
 
   func confirmSignIn(userCode: String) async throws {
     let authServer = try await authServer.value
-    try await authServer.didInitialize.value
 
-    defaultLogger.log("Confirming sign in...")
     let params = SignInConfirmParams(userCode: userCode)
     let result: SignInConfirmResult = try await authServer.sendRequest("signInConfirm", params: .init(encoding: params))
-    defaultLogger.log("Sign in result: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
       switch (result.status, result.user) {
@@ -76,12 +62,8 @@ extension DefaultGithubCopilotService {
 
   func signOut() async throws {
     let authServer = try await authServer.value
-    try await authServer.didInitialize.value
-
-    defaultLogger.log("Signing out...")
     // Send empty object {} as params (required by Copilot LSP)
-    _ = try await authServer.sendRequest("signOut", params: .object([:]))
-    defaultLogger.log("Signed out")
+    _ = try await authServer.sendRawRequest("signOut", params: .object([:]))
     _loginStatus.send(.loggedOut)
   }
 }

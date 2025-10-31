@@ -7,10 +7,18 @@ import ConcurrencyFoundation
 // MARK: - GithubCopilotService
 
 public protocol GithubCopilotService: CodeCompletionProvider {
+  /// Download and install the LSP server for GitHub Copilot
+  func installLSPServer() async throws
+  /// Check the authentication status for the user
   func checkStatus() async throws -> LoginStatus
-  func initiateSignIn() async throws -> SignInInitiateResult
+  /// Start the sign-in process for GitHub Copilot
+  func initiateSignIn() async throws -> SignInInitiationResult
   func confirmSignIn(userCode: String) async throws
+  /// Sign out the current user
   func signOut() async throws
+  /// Whether the LSP server is installed
+  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> { get }
+  /// The current login status
   var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> { get }
 }
 
@@ -22,9 +30,9 @@ public enum LoginStatus: Sendable {
   case loggedIn(user: String)
 }
 
-// MARK: - SignInInitiateResult
+// MARK: - SignInInitiationResult
 
-public struct SignInInitiateResult: Sendable, Codable {
+public struct SignInInitiationResult: Sendable, Codable {
   public let status: SignInInitiateStatus
   public let userCode: String
   public let verificationUri: String

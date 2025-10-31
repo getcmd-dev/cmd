@@ -39,10 +39,10 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
-        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "test-anthropic-api-key",
@@ -91,6 +91,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -143,6 +144,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -305,6 +307,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -346,6 +349,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -506,6 +510,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -549,6 +554,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -690,6 +696,7 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",
@@ -705,11 +712,10 @@ struct SettingsCodableTests {
               "shift",
               "control"
             ]
-          },
+          }
         },
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
-        "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -775,6 +781,7 @@ struct SettingsCodableTests {
           },
           "ask" : {}
         },
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -818,6 +825,7 @@ struct SettingsCodableTests {
             "tools" : ["search", "web_search"]
           }
         },
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -855,6 +863,7 @@ struct SettingsCodableTests {
             "tools" : []
           }
         },
+        "codeCompletionProviderId" : null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},

@@ -20,6 +20,13 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   init(shellService: ShellService, fileManager: FileManagerI) {
     self.shellService = shellService
     self.fileManager = fileManager
+    let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+      .appendingPathComponent(Bundle.main.hostAppBundleId)
+      .appendingPathComponent("copilot-language-server-\(executableVersion)")
+    self.expectedExecutablePath = expectedExecutablePath
+
+    _isLSPServerInstalled = CurrentValueSubject<Bool, Never>(
+      expectedExecutablePath.map { fileManager.fileExists(atPath: $0.path) } ?? false)
 
     let (executablePath, setExecutablePath) = Future<URL, Error>.make()
     self.executablePath = executablePath
@@ -29,28 +36,29 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     self.authServer = authServer
     self.setAuthServer = setAuthServer
 
-    Task {
-      try await setup()
+    if _isLSPServerInstalled.value {
+      // If the server is already installed, calling `installLSPServer` will start the auth server
+      Task {
+        try await installLSPServer()
+      }
     }
   }
 
   var _loginStatus = CurrentValueSubject<LoginStatus, Never>(.loggedOut)
+  var _isLSPServerInstalled: CurrentValueSubject<Bool, Never>
 
   let executablePath: Future<URL, Error>
   let setExecutablePath: @Sendable (Result<URL, Error>) -> Void
   let authServer: Future<GithubCopilotServer, Error>
   let setAuthServer: @Sendable (Result<GithubCopilotServer, Error>) -> Void
 
-  private var cancellables = Set<AnyCancellable>()
-  private let executableVersion = "1.389.0"
+  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> {
+    _isLSPServerInstalled.readonly()
+  }
 
-  private let shellService: ShellService
-  private let fileManager: FileManagerI
-
-  private func setup() async throws {
-    print("init!!")
+  func installLSPServer() async throws {
     do {
-      let executablePath = try await install()
+      let executablePath = try await downloadExecutableIfNeeded()
       setExecutablePath(.success(executablePath))
       let authServer = GithubCopilotServer(
         executablePath: executablePath,
@@ -67,9 +75,18 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       setAuthServer(.failure(error))
       defaultLogger.error("Failed to initialize Github Copilot: \(error)", error)
     }
+    _isLSPServerInstalled.send(true)
 
     _ = try await checkStatus()
   }
+
+  private var cancellables = Set<AnyCancellable>()
+  private let executableVersion = "1.389.0"
+
+  private let shellService: ShellService
+  private let fileManager: FileManagerI
+
+  private let expectedExecutablePath: URL?
 
   private func handle(authServerNotification: JRPCNotification) {
     if authServerNotification.method == "didChangeStatus" {
@@ -88,11 +105,9 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     }
   }
 
-  private func install() async throws -> URL {
+  private func downloadExecutableIfNeeded() async throws -> URL {
     guard
-      let executablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-        .appendingPathComponent(Bundle.main.hostAppBundleId)
-        .appendingPathComponent("copilot-language-server-\(executableVersion)")
+      let executablePath = expectedExecutablePath
     else {
       throw AppError("Path for Copilot language server executable not found")
     }

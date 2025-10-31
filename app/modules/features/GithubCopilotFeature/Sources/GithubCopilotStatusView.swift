@@ -16,164 +16,177 @@ struct GithubCopilotStatusView: View {
       Text("GitHub Copilot Integration")
         .fontWeight(.bold)
 
-      // Status Section
-      VStack(alignment: .leading, spacing: 10) {
-        HStack {
-          Text("Status:")
-            .fontWeight(.semibold)
-          Spacer()
-          statusBadge
-        }
-
-        if let username = viewModel.username {
-          HStack {
-            Text("User:")
-              .fontWeight(.semibold)
-            Text(username)
-            Spacer()
-          }
-        }
-
-        if let error = viewModel.error {
-          HStack(alignment: .top) {
-            Image(systemName: "exclamationmark.triangle.fill")
-              .foregroundStyle(.red)
-            Text(error)
-              .font(.caption)
-              .foregroundStyle(.red)
-          }
-          .padding(8)
-          .background(Color.red.opacity(0.1))
-          .cornerRadius(8)
-        }
-
-        if let signInInfo = viewModel.signInInfo {
-          VStack(alignment: .leading, spacing: 8) {
-            Text("Sign In Required")
-              .fontWeight(.semibold)
-
-            HStack {
-              VStack(alignment: .leading) {
-                Text("1. Visit:")
-                  .font(.caption)
-                Text(signInInfo.verificationUri)
-                  .font(.system(.body, design: .monospaced))
-                  .textSelection(.enabled)
-              }
-            }
-
-            HStack {
-              VStack(alignment: .leading) {
-                Text("2. Enter code:")
-                  .font(.caption)
-                Text(signInInfo.userCode)
-                  .font(.system(.title2, design: .monospaced))
-                  .fontWeight(.bold)
-                  .textSelection(.enabled)
-              }
-            }
-          }
-          .padding()
-          .background(Color.blue.opacity(0.1))
-          .cornerRadius(8)
-        }
+      if viewModel.isLSPServerInstalled {
+        lspServerStatus
+      } else {
+        installLSPServerView
       }
-      .padding(.horizontal)
-
-      Divider()
-
-      // Actions
-      VStack(spacing: 12) {
-        // Authentication buttons
-        if case .loggedOut = viewModel.authStatus {
-          Button(action: {
-            Task {
-              try await viewModel.startSignIn()
-            }
-          }) {
-            HStack {
-              Image(systemName: "person.badge.key")
-              Text("Start Sign In")
-            }
-            .frame(maxWidth: .infinity)
-          }
-          .buttonStyle(.borderedProminent)
-        }
-
-        if viewModel.signInInfo != nil {
-          Button(action: {
-            Task {
-              try await viewModel.confirmSignIn()
-            }
-          }) {
-            HStack {
-              Image(systemName: "checkmark.circle")
-              Text("Confirm Sign In")
-            }
-            .frame(maxWidth: .infinity)
-          }
-          .buttonStyle(.bordered)
-        }
-
-        if case .loggedIn(user: _) = viewModel.authStatus {
-          Button(action: {
-            Task {
-              await viewModel.testCompletion()
-            }
-          }) {
-            HStack {
-              Image(systemName: "wand.and.stars")
-              Text("Test Completion")
-            }
-            .frame(maxWidth: .infinity)
-          }
-          .buttonStyle(.borderedProminent)
-        }
-
-        HStack {
-          if case .loggedIn(user: _) = viewModel.authStatus {
-            Button(action: {
-              Task {
-                try await viewModel.signOut()
-              }
-            }) {
-              HStack {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                Text("Sign Out")
-              }
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-          }
-        }
-
-        Button(action: {
-          showConsole = true
-        }) {
-          HStack {
-            Image(systemName: "terminal")
-            Text("View Console Logs")
-          }
-          .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.bordered)
-      }
-      .padding(.horizontal)
-
-      Spacer()
-
-      // Footer
-      Text("Check Xcode console for detailed logs")
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(.bottom)
     }
     .padding()
   }
 
   @State private var viewModel: GithubCopilotStatusViewModel
 
-  @State private var showConsole = false
+  private var installLSPServerView: some View {
+    VStack(spacing: 12) {
+      Text("GitHub Copilot LSP Server is not installed.")
+        .fontWeight(.semibold)
+
+      if viewModel.isInstallingLSPServer {
+        Text("Installing LSP Server...")
+      } else {
+        Button(action: {
+          Task {
+            try await viewModel.installLSPServer()
+          }
+        }) {
+          HStack {
+            Image(systemName: "arrow.down.circle")
+            Text("Install LSP Server")
+          }
+          .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+    }
+    .padding(.horizontal)
+  }
+
+  @ViewBuilder
+  private var lspServerStatus: some View {
+    // Status Section
+    VStack(alignment: .leading, spacing: 10) {
+      HStack {
+        Text("Status:")
+          .fontWeight(.semibold)
+        Spacer()
+        statusBadge
+      }
+
+      if let username = viewModel.username {
+        HStack {
+          Text("User:")
+            .fontWeight(.semibold)
+          Text(username)
+          Spacer()
+        }
+      }
+
+      if let error = viewModel.error {
+        HStack(alignment: .top) {
+          Image(systemName: "exclamationmark.triangle.fill")
+            .foregroundStyle(.red)
+          Text(error)
+            .font(.caption)
+            .foregroundStyle(.red)
+        }
+        .padding(8)
+        .background(Color.red.opacity(0.1))
+        .cornerRadius(8)
+      }
+
+      if let signInInfo = viewModel.signInInfo {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Sign In Required")
+            .fontWeight(.semibold)
+
+          HStack {
+            VStack(alignment: .leading) {
+              Text("1. Visit:")
+                .font(.caption)
+              Text(signInInfo.verificationUri)
+                .font(.system(.body, design: .monospaced))
+                .textSelection(.enabled)
+            }
+          }
+
+          HStack {
+            VStack(alignment: .leading) {
+              Text("2. Enter code:")
+                .font(.caption)
+              Text(signInInfo.userCode)
+                .font(.system(.title2, design: .monospaced))
+                .fontWeight(.bold)
+                .textSelection(.enabled)
+            }
+          }
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(8)
+      }
+    }
+    .padding(.horizontal)
+
+    Divider()
+
+    // Actions
+    VStack(spacing: 12) {
+      // Authentication buttons
+      if case .loggedOut = viewModel.authStatus {
+        Button(action: {
+          Task {
+            try await viewModel.startSignIn()
+          }
+        }) {
+          HStack {
+            Image(systemName: "person.badge.key")
+            Text("Start Sign In")
+          }
+          .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+
+      if viewModel.signInInfo != nil {
+        Button(action: {
+          Task {
+            try await viewModel.confirmSignIn()
+          }
+        }) {
+          HStack {
+            Image(systemName: "checkmark.circle")
+            Text("Confirm Sign In")
+          }
+          .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+      }
+
+      if case .loggedIn(user: _) = viewModel.authStatus {
+        Button(action: {
+          Task {
+            await viewModel.testCompletion()
+          }
+        }) {
+          HStack {
+            Image(systemName: "wand.and.stars")
+            Text("Test Completion")
+          }
+          .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+      }
+
+      HStack {
+        if case .loggedIn(user: _) = viewModel.authStatus {
+          Button(action: {
+            Task {
+              try await viewModel.signOut()
+            }
+          }) {
+            HStack {
+              Image(systemName: "rectangle.portrait.and.arrow.right")
+              Text("Sign Out")
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.bordered)
+        }
+      }
+    }
+    .padding(.horizontal)
+  }
 
   private var statusBadge: some View {
     HStack {

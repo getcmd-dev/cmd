@@ -12,28 +12,50 @@ final class GithubCopilotStatusViewModel: Sendable {
   init() {
     @Dependency(\.githubCopilotService) var githubCopilotService
     self.githubCopilotService = githubCopilotService
-    cancellable = githubCopilotService.loginStatus.sink { @Sendable status in
+
+    let loginStatus = githubCopilotService.loginStatus
+    authStatus = loginStatus.currentValue
+    let isLSPServerInstalled = githubCopilotService.isLSPServerInstalled
+    self.isLSPServerInstalled = isLSPServerInstalled.currentValue
+
+    loginStatus.sink { @Sendable status in
       Task { @MainActor [weak self] in
-        guard let self else { return }
-        switch status {
-        case .loggedIn(user: let username):
-          self.username = username
-        default:
-          username = nil
-        }
-        authStatus = status
+        self?.authStatus = status
       }
+    }.store(in: &cancellables)
+
+    githubCopilotService.isLSPServerInstalled.sink { @Sendable isInstalled in
+      Task { @MainActor [weak self] in
+        self?.isLSPServerInstalled = isInstalled
+      }
+    }.store(in: &cancellables)
+  }
+
+  private(set) var isLSPServerInstalled: Bool
+  private(set) var error: String?
+  private(set) var signInInfo: SignInInitiationResult?
+  private(set) var authStatus: LoginStatus
+  private(set) var isInstallingLSPServer = false
+
+  var username: String? {
+    switch authStatus {
+    case .loggedIn(user: let username):
+      username
+    default:
+      nil
     }
   }
 
-  var cancellable: AnyCancellable?
-  var username: String?
-  var error: String?
-  var signInInfo: SignInInitiateResult?
-  var authStatus = LoginStatus.loggedOut
-
   func startSignIn() async throws {
     signInInfo = try await githubCopilotService.initiateSignIn()
+  }
+
+  func installLSPServer() async throws {
+    guard !isInstallingLSPServer else { return }
+    isInstallingLSPServer = true
+    defer { isInstallingLSPServer = false }
+
+    try await githubCopilotService.installLSPServer()
   }
 
   func confirmSignIn() async throws {
@@ -48,6 +70,8 @@ final class GithubCopilotStatusViewModel: Sendable {
   func signOut() async throws {
     try await githubCopilotService.signOut()
   }
+
+  private var cancellables = Set<AnyCancellable>()
 
   private let githubCopilotService: GithubCopilotService
 }

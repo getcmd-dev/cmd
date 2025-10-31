@@ -1,6 +1,8 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+// TODO: look at moving to using https://github.com/ChimeHQ/LanguageClient if we need more LSP functionality / type safety.
+
 import Foundation
 import JSONFoundation
 
@@ -218,4 +220,15 @@ struct CompletionTelemetryParams: Codable {
 
 struct DidChangeStatusNotificationParams: Decodable {
   let kind: String
+}
+
+// MARK: - WorkspaceConfigurationRequestParameters
+
+/// workspace/configuration
+struct WorkspaceConfigurationRequestParameters: Decodable {
+  let items: [ConfigurationItem]
+
+  struct ConfigurationItem: Decodable {
+    let section: String
+  }
 }
