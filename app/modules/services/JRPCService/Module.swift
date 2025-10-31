@@ -6,6 +6,4 @@ Target.module(
     "DependencyFoundation",
     "JRPCServiceInterface",
     "LoggingServiceInterface",
-    "SettingsServiceInterface",
-    "ShellServiceInterface",
   ])

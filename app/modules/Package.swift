@@ -988,8 +988,6 @@ targets.append(
       "DependencyFoundation",
       "JRPCServiceInterface",
       "LoggingServiceInterface",
-      "SettingsServiceInterface",
-      "ShellServiceInterface",
     ],
     path: "./services/JRPCService"))
 
