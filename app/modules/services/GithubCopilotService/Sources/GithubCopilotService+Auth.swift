@@ -21,10 +21,7 @@ extension DefaultGithubCopilotService {
 
     defaultLogger.log("Checking authentication status...")
     // Send empty object {} as params (required by Copilot LSP)
-    let emptyParams = [String: String]()
-    let resultData = try await authServer.sendRequest("checkStatus", params: emptyParams)
-    let decoder = JSONDecoder()
-    let result = try decoder.decode(CheckStatusResult.self, from: resultData)
+    let result: CheckStatusResult = try await authServer.sendRequest("checkStatus", params: .object([:]))
     defaultLogger.log("Status: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
@@ -47,10 +44,7 @@ extension DefaultGithubCopilotService {
 
     defaultLogger.log("Initiating sign in...")
     // Send empty object {} as params (required by Copilot LSP)
-    let emptyParams = [String: String]()
-    let resultData = try await authServer.sendRequest("signInInitiate", params: emptyParams)
-    let decoder = JSONDecoder()
-    let result = try decoder.decode(SignInInitiateResult.self, from: resultData)
+    let result: SignInInitiateResult = try await authServer.sendRequest("signInInitiate", params: .object([:]))
 
     defaultLogger.log("Sign in at: \(result.verificationUri)")
     defaultLogger.log("Enter code: \(result.userCode)")
@@ -64,9 +58,7 @@ extension DefaultGithubCopilotService {
 
     defaultLogger.log("Confirming sign in...")
     let params = SignInConfirmParams(userCode: userCode)
-    let resultData = try await authServer.sendRequest("signInConfirm", params: params)
-    let decoder = JSONDecoder()
-    let result = try decoder.decode(SignInConfirmResult.self, from: resultData)
+    let result: SignInConfirmResult = try await authServer.sendRequest("signInConfirm", params: .init(encoding: params))
     defaultLogger.log("Sign in result: \(result.status.rawValue), User: \(result.user ?? "none")")
 
     let loginStatus: LoginStatus =
@@ -88,8 +80,7 @@ extension DefaultGithubCopilotService {
 
     defaultLogger.log("Signing out...")
     // Send empty object {} as params (required by Copilot LSP)
-    let emptyParams = [String: String]()
-    _ = try await authServer.sendRequest("signOut", params: emptyParams)
+    _ = try await authServer.sendRequest("signOut", params: .object([:]))
     defaultLogger.log("Signed out")
     _loginStatus.send(.loggedOut)
   }

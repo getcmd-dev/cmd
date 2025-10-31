@@ -5,6 +5,7 @@ import AppFoundation
 @preconcurrency import Combine
 import Foundation
 import FoundationInterfaces
+import JSONFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
@@ -42,11 +43,18 @@ public final class GithubCopilotServer: Sendable {
     }
   }
 
+  let notifications = PassthroughSubject<JRPCNotification, Never>()
   let executablePath: URL
   let didInitialize: Future<Void, Error>
   let setDidInitialize: @Sendable (Result<Void, Error>) -> Void
 
-  func sendRequest(_ method: String, params: (some Encodable)?) async throws -> Data {
+  func sendRequest<Response: Decodable>(_ method: String, params: JSON?) async throws -> Response {
+    let result = try await sendRequest(method, params: params)
+    let resultData = try JSONEncoder().encode(result)
+    return try JSONDecoder().decode(Response.self, from: resultData)
+  }
+
+  func sendRequest(_ method: String, params: JSON?) async throws -> JSON.Value {
     guard let transport else {
       throw CopilotError.notConnected
     }
@@ -54,12 +62,7 @@ public final class GithubCopilotServer: Sendable {
     let id = nextId
     nextId += 1
 
-    let request =
-      if let params {
-        JSONRPCRequest(id: id, method: method, params: params)
-      } else {
-        JSONRPCRequest(id: id, method: method, params: nil as String?)
-      }
+    let request = JRPCRequest(id: id, method: method, params: params?.asValue)
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(request)
@@ -95,7 +98,7 @@ public final class GithubCopilotServer: Sendable {
         version: version,
         text: text))
 
-    try await sendNotification("textDocument/didOpen", params: params)
+    try await sendNotification("textDocument/didOpen", params: .init(encoding: params))
   }
 
   func didChangeTextDocument(uri: String, version: Int, text: String) async throws {
@@ -106,7 +109,7 @@ public final class GithubCopilotServer: Sendable {
       textDocument: TextDocumentIdentifier(uri: uri, version: version),
       contentChanges: [TextDocumentContentChangeEvent(text: text)])
 
-    try await sendNotification("textDocument/didChange", params: params)
+    try await sendNotification("textDocument/didChange", params: .init(encoding: params))
   }
 
   func didSaveTextDocument(uri: String, version: Int, text: String?) async throws {
@@ -117,7 +120,7 @@ public final class GithubCopilotServer: Sendable {
       textDocument: TextDocumentIdentifier(uri: uri, version: version),
       text: text)
 
-    try await sendNotification("textDocument/didSave", params: params)
+    try await sendNotification("textDocument/didSave", params: .init(encoding: params))
   }
 
   func didCloseTextDocument(uri: String, version: Int) async throws {
@@ -127,7 +130,7 @@ public final class GithubCopilotServer: Sendable {
     let params = DidCloseTextDocumentParams(
       textDocument: TextDocumentIdentifier(uri: uri, version: version))
 
-    try await sendNotification("textDocument/didClose", params: params)
+    try await sendNotification("textDocument/didClose", params: .init(encoding: params))
   }
 
   // MARK: - Completion Methods
@@ -151,9 +154,7 @@ public final class GithubCopilotServer: Sendable {
       context: InlineCompletionContext(triggerKind: 1), // Invoked
     )
 
-    let resultData = try await sendRequest("textDocument/inlineCompletion", params: params)
-    let decoder = JSONDecoder()
-    let result = try decoder.decode(InlineCompletionList.self, from: resultData)
+    let result: InlineCompletionList = try await sendRequest("textDocument/inlineCompletion", params: .init(encoding: params))
 
     defaultLogger.log("Received \(result.items.count) completions")
     for (index, item) in result.items.enumerated() {
@@ -165,7 +166,7 @@ public final class GithubCopilotServer: Sendable {
 
   private var transport: StdioTransport?
   private var nextId = 1
-  private var pendingRequests = [Int: CheckedContinuation<Data, Error>]()
+  private var pendingRequests = [Int: CheckedContinuation<JSON.Value, Error>]()
 
   private let shellService: ShellService
   private let workspaceRoot: URL
@@ -243,57 +244,28 @@ public final class GithubCopilotServer: Sendable {
   }
 
   private func handleMessage(_ data: Data) async throws {
-    let jsonString = String(data: data, encoding: .utf8) ?? "<invalid utf8>"
-    defaultLogger.log("Received: \(jsonString)")
+    let message = try JSONDecoder().decode(JRPCMessage.self, from: data)
 
-    // Parse as generic JSON first to determine message type
-    guard let jsonObject = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-      defaultLogger.log("Failed to parse message as JSON object")
-      return
-    }
+    switch message {
+    case .notification(let notification):
+      handle(notification: notification)
 
-    let hasMethod = jsonObject["method"] != nil
-    let hasId = jsonObject["id"] != nil
-    let hasResult = jsonObject["result"] != nil
-    let hasError = jsonObject["error"] != nil
-
-    if hasMethod, hasId {
-      // This is a REQUEST from the server
-      let method = jsonObject["method"] as! String
-      let id = jsonObject["id"]!
-      defaultLogger.log("Request FROM server: \(method) (id=\(id))")
-      await handleServerRequest(method: method, id: id, params: jsonObject["params"])
-    } else if hasId, hasResult || hasError {
-      // This is a RESPONSE to our request
-      let decoder = JSONDecoder()
-      let response = try decoder.decode(JSONRPCResponse.self, from: data)
-
-      if let id = response.id {
-        defaultLogger.log("Response has id: \(id)")
-        if let continuation = pendingRequests.removeValue(forKey: id) {
-          defaultLogger.log("Found pending request for id: \(id)")
-          if let error = response.error {
-            defaultLogger.log("Response has error: \(error)")
-            continuation.resume(throwing: JSONRPCResponseError(error: error))
-          } else if let result = response.result {
-            defaultLogger.log("Response has result, encoding...")
-            let resultData = try JSONEncoder().encode(result)
-            defaultLogger.log("Resuming continuation with \(resultData.count) bytes")
-            continuation.resume(returning: resultData)
-          } else {
-            defaultLogger.log("Response has no result or error, returning empty")
-            continuation.resume(returning: Data())
-          }
+    case .response(let response):
+      let id = response.id
+      if let continuation = pendingRequests.removeValue(forKey: id) {
+        if let error = response.error {
+          continuation.resume(throwing: JRPCResponseError(error: error))
+        } else if let result = response.result {
+          continuation.resume(returning: result)
         } else {
-          defaultLogger.log("No pending request found for id: \(id)")
+          continuation.resume(throwing: AppError("Invalid JRPC response: no result or error"))
         }
+      } else {
+        defaultLogger.error("No pending JRPC request found for id: \(id)")
       }
-    } else if hasMethod {
-      // This is a NOTIFICATION from the server
-      let method = jsonObject["method"] as! String
-      defaultLogger.log("Notification: \(method)")
-      let params = jsonObject["params"].map { AnyCodable($0) }
-      handleNotification(method: method, params: params)
+
+    case .request(let request):
+      await handleServerRequest(method: request.method, id: request.id, params: request.params)
     }
   }
 
@@ -327,13 +299,13 @@ public final class GithubCopilotServer: Sendable {
       result = NSNull()
 
     default:
-      defaultLogger.log(" → Unknown request method, responding with null")
+      defaultLogger.log(" → Unknown request method \(method), responding with null")
       result = NSNull()
     }
 
     // Send response
     let response: [String: Any] = [
-      "jsonrpc": "2.0",
+      "JRPC": "2.0",
       "id": id,
       "result": result ?? NSNull(),
     ]
@@ -353,17 +325,13 @@ public final class GithubCopilotServer: Sendable {
     }
   }
 
-  private func sendNotification(_ method: String, params: (some Encodable)?) async throws {
+  private func sendNotification(_ method: String, params: JSON?) async throws {
     guard let transport else {
       throw CopilotError.notConnected
     }
 
     let notification =
-      if let params {
-        JSONRPCNotification(method: method, params: params)
-      } else {
-        JSONRPCNotification(method: method, params: nil as String?)
-      }
+      JRPCNotification(method: method, params: params)
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(notification)
@@ -387,9 +355,9 @@ public final class GithubCopilotServer: Sendable {
       processId: Int(ProcessInfo.processInfo.processIdentifier),
       rootUri: workspaceRoot.path,
       initializationOptions: [
-        "editorInfo": AnyCodable(["name": "CopilotPlugin", "version": "1.0"]),
-        "editorPluginInfo": AnyCodable(["name": "copilot-plugin", "version": "1.0"]),
-        "copilotCapabilities": AnyCodable([
+        "editorInfo": .object(["name": "CopilotPlugin", "version": "1.0"]),
+        "editorPluginInfo": .object(["name": "copilot-plugin", "version": "1.0"]),
+        "copilotCapabilities": .object([
           "watchedFiles": true,
           "didChangeFeatureFlags": true,
         ]),
@@ -399,13 +367,11 @@ public final class GithubCopilotServer: Sendable {
         WorkspaceFolder(uri: workspaceRoot.absoluteString, name: workspaceRoot.lastPathComponent),
       ])
 
-    let resultData = try await sendRequest("initialize", params: params)
-    let decoder = JSONDecoder()
-    let _ = try decoder.decode(InitializeResult.self, from: resultData)
+    let result: InitializeResult = try await sendRequest("initialize", params: .init(encoding: params))
+    _ = result
 
     // Send initialized notification with empty object
-    let emptyParams = [String: String]()
-    try await sendNotification("initialized", params: emptyParams)
+    try await sendNotification("initialized", params: .object([:]))
 
     // Give the language server a moment to process the initialized notification
     // The agent service needs to be fully initialized before accepting other requests
@@ -417,19 +383,8 @@ public final class GithubCopilotServer: Sendable {
 
   // MARK: - Notification Handling
 
-  private func handleNotification(method: String, params _: AnyCodable?) {
-    defaultLogger.log("Notification: \(method)")
-
-    switch method {
-    case "$/progress":
-      defaultLogger.log(" Progress update")
-    case "copilot/didChangeFeatureFlags":
-      defaultLogger.log(" Feature flags changed")
-    case "copilot/didChangeStatus":
-      defaultLogger.log(" Status changed")
-    default:
-      defaultLogger.log(" Unhandled notification")
-    }
+  private func handle(notification: JRPCNotification) {
+    notifications.send(notification)
   }
 }
 

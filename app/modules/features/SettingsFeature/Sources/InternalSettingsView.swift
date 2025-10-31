@@ -26,124 +26,126 @@ struct InternalSettingsView: View {
   @Binding var defaultLogLevel: LogLevel
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 20) {
-      VStack(spacing: 16) {
-        InternalSettingsRow("Show internal settings in Debug app", value: $showInternalSettingsInRelease)
+    ScrollView {
+      VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 16) {
+          InternalSettingsRow("Show internal settings in Debug app", value: $showInternalSettingsInRelease)
 
-        InternalSettingsRow(
-          "Repeat last LLM interaction",
-          caption: "Enable for debugging LLM responses",
-          value: $repeatLastLLMInteraction)
+          InternalSettingsRow(
+            "Repeat last LLM interaction",
+            caption: "Enable for debugging LLM responses",
+            value: $repeatLastLLMInteraction)
 
-        InternalSettingsRow(
-          "Show onboarding again",
-          caption: "Show onboarding flow at next app launch",
-          value: $showOnboardingScreenAgain)
+          InternalSettingsRow(
+            "Show onboarding again",
+            caption: "Show onboarding flow at next app launch",
+            value: $showOnboardingScreenAgain)
 
-        InternalSettingsRow(
-          "Point Release Xcode Extension to Debug App",
-          caption: "Use the debug version of the extension for development",
-          value: $pointReleaseXcodeExtensionToDebugApp)
+          InternalSettingsRow(
+            "Point Release Xcode Extension to Debug App",
+            caption: "Use the debug version of the extension for development",
+            value: $pointReleaseXcodeExtensionToDebugApp)
 
-        InternalSettingsRow(
-          "Invert the default chat position",
-          caption: "Useful when using both the Debug and Release apps to avoid overlaps",
-          value: $defaultChatPositionIsInverted)
+          InternalSettingsRow(
+            "Invert the default chat position",
+            caption: "Useful when using both the Debug and Release apps to avoid overlaps",
+            value: $defaultChatPositionIsInverted)
 
-        InternalSettingsRow(
-          "Enable network proxy",
-          caption: "Proxy network requests through a local proxy server",
-          value: $enableNetworkProxy)
+          InternalSettingsRow(
+            "Enable network proxy",
+            caption: "Proxy network requests through a local proxy server",
+            value: $enableNetworkProxy)
 
-        InternalSettingsRow(
-          "Use new Claude Code API",
-          caption: "Route Claude Code requests through the experimental implementation",
-          value: $useNewClaudeCodeApi)
+          InternalSettingsRow(
+            "Use new Claude Code API",
+            caption: "Route Claude Code requests through the experimental implementation",
+            value: $useNewClaudeCodeApi)
 
-        InternalSettingsRow(
-          "Show tool input copy button in Release",
-          caption: "Display the copy button for tool inputs in Release builds",
-          value: $showToolInputCopyButtonInRelease)
+          InternalSettingsRow(
+            "Show tool input copy button in Release",
+            caption: "Display the copy button for tool inputs in Release builds",
+            value: $showToolInputCopyButtonInRelease)
 
-        VStack(alignment: .leading, spacing: 4) {
-          Text("Default log level for file persistence")
-          Text("Controls which log messages are written to log files and shown in Console.app")
-            .font(.caption)
-            .foregroundColor(.secondary)
-          Picker("Log Level", selection: $defaultLogLevel) {
-            Text("Trace").tag(LogLevel.trace)
-            Text("Debug").tag(LogLevel.debug)
-            Text("Info").tag(LogLevel.info)
-            Text("Warn").tag(LogLevel.warn)
-            Text("Error").tag(LogLevel.error)
-            Text("Critical").tag(LogLevel.critical)
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Default log level for file persistence")
+            Text("Controls which log messages are written to log files and shown in Console.app")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Picker("Log Level", selection: $defaultLogLevel) {
+              Text("Trace").tag(LogLevel.trace)
+              Text("Debug").tag(LogLevel.debug)
+              Text("Info").tag(LogLevel.info)
+              Text("Warn").tag(LogLevel.warn)
+              Text("Error").tag(LogLevel.error)
+              Text("Critical").tag(LogLevel.critical)
+            }
+            .pickerStyle(.menu)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
           }
-          .pickerStyle(.menu)
-          .padding(.top, 14)
-          .padding(.bottom, 4)
+
+          #if DEBUG
+          InternalSettingsRow(
+            "Enable analytics and crash reporting",
+            caption: "Send usage data and crash reports for debugging",
+            value: $enableAnalyticsAndCrashReporting)
+          #endif
+
+          HoveredButton(
+            action: {
+              Task {
+                let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+                defaultLogger.error(AppError(message))
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                let arr = [Int]()
+                _ = arr[100]
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Crash the app (out of bound)") })
+
+          HoveredButton(
+            action: {
+              Task {
+                let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+                defaultLogger.error(AppError(message))
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+                fatalError(message)
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Crash the app (fatal error)") })
+
+          HoveredButton(
+            action: {
+              Task {
+                _ = try? await server.getRequest(path: "error")
+              }
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Create server error") })
         }
-
-        #if DEBUG
-        InternalSettingsRow(
-          "Enable analytics and crash reporting",
-          caption: "Send usage data and crash reports for debugging",
-          value: $enableAnalyticsAndCrashReporting)
-        #endif
-
-        HoveredButton(
-          action: {
-            Task {
-              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
-              defaultLogger.error(AppError(message))
-              try await Task.sleep(nanoseconds: 1_000_000_000)
-              let arr = [Int]()
-              _ = arr[100]
-            }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8,
-          content: { Text("Crash the app (out of bound)") })
-
-        HoveredButton(
-          action: {
-            Task {
-              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
-              defaultLogger.error(AppError(message))
-              try await Task.sleep(nanoseconds: 1_000_000_000)
-              fatalError(message)
-            }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8,
-          content: { Text("Crash the app (fatal error)") })
-
-        HoveredButton(
-          action: {
-            Task {
-              _ = try? await server.getRequest(path: "error")
-            }
-          },
-          onHoverColor: colorScheme.tertiarySystemBackground,
-          backgroundColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8,
-          content: { Text("Create server error") })
+        .padding(16)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
       }
-      .padding(16)
-      .background(Color(NSColor.controlBackgroundColor))
-      .cornerRadius(8)
-      .overlay(
-        RoundedRectangle(cornerRadius: 8)
-          .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+
+      AnyView(router.embed(route: GithubCopilotRoute()))
+
+      Spacer()
     }
-
-    AnyView(router.embed(route: GithubCopilotRoute()))
-
-    Spacer()
   }
 
   @Environment(Router.self) private var router

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import JSONFoundation
 
 // MARK: - Position
 
@@ -38,17 +39,17 @@ struct FormattingOptions: Codable {
 
 // MARK: - InitializeParams
 
-struct InitializeParams: Codable {
+struct InitializeParams: Encodable {
   let processId: Int
   let rootUri: String?
-  let initializationOptions: [String: AnyCodable]?
+  let initializationOptions: [String: JSON.Value]?
   let capabilities: ClientCapabilities
   let workspaceFolders: [WorkspaceFolder]?
 }
 
 // MARK: - ClientCapabilities
 
-struct ClientCapabilities: Codable {
+struct ClientCapabilities: Encodable {
   let workspace: WorkspaceClientCapabilities?
   let textDocument: TextDocumentClientCapabilities?
 
@@ -60,20 +61,20 @@ struct ClientCapabilities: Codable {
 
 // MARK: - WorkspaceClientCapabilities
 
-struct WorkspaceClientCapabilities: Codable {
+struct WorkspaceClientCapabilities: Encodable {
   let workspaceFolders = true
   let configuration = true
 }
 
 // MARK: - TextDocumentClientCapabilities
 
-struct TextDocumentClientCapabilities: Codable {
+struct TextDocumentClientCapabilities: Encodable {
   let synchronization = TextDocumentSyncClientCapabilities()
 }
 
 // MARK: - TextDocumentSyncClientCapabilities
 
-struct TextDocumentSyncClientCapabilities: Codable {
+struct TextDocumentSyncClientCapabilities: Encodable {
   let dynamicRegistration = true
   let willSave = true
   let willSaveWaitUntil = true
@@ -213,70 +214,8 @@ struct CompletionTelemetryParams: Codable {
   let completionId: String
 }
 
-// MARK: - AnyCodable
+// MARK: - DidChangeStatusNotificationParams
 
-struct AnyCodable: Codable {
-  init(_ value: Any) {
-    self.value = value
-  }
-
-  init(from decoder: Decoder) throws {
-    let container = try decoder.singleValueContainer()
-
-    if let bool = try? container.decode(Bool.self) {
-      value = bool
-    } else if let int = try? container.decode(Int.self) {
-      value = int
-    } else if let double = try? container.decode(Double.self) {
-      value = double
-    } else if let string = try? container.decode(String.self) {
-      value = string
-    } else if let array = try? container.decode([AnyCodable].self) {
-      value = array.map(\.value)
-    } else if let dictionary = try? container.decode([String: AnyCodable].self) {
-      value = dictionary.mapValues { $0.value }
-    } else {
-      value = NSNull()
-    }
-  }
-
-  let value: Any
-
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-
-    // Handle NSNumber explicitly to avoid ambiguity between Bool and Int
-    if let number = value as? NSNumber {
-      // Check if it's a boolean using CFBoolean
-      let boolType = CFBooleanGetTypeID()
-      let numberType = CFGetTypeID(number)
-      if numberType == boolType {
-        try container.encode(number.boolValue)
-      } else if let int = number as? Int {
-        try container.encode(int)
-      } else if let double = number as? Double {
-        try container.encode(double)
-      } else {
-        try container.encode(number.intValue)
-      }
-      return
-    }
-
-    switch value {
-    case let bool as Bool:
-      try container.encode(bool)
-    case let int as Int:
-      try container.encode(int)
-    case let double as Double:
-      try container.encode(double)
-    case let string as String:
-      try container.encode(string)
-    case let array as [Any]:
-      try container.encode(array.map { AnyCodable($0) })
-    case let dictionary as [String: Any]:
-      try container.encode(dictionary.mapValues { AnyCodable($0) })
-    default:
-      try container.encodeNil()
-    }
-  }
+struct DidChangeStatusNotificationParams: Decodable {
+  let kind: String
 }

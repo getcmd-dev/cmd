@@ -41,6 +41,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   let authServer: Future<GithubCopilotServer, Error>
   let setAuthServer: @Sendable (Result<GithubCopilotServer, Error>) -> Void
 
+  private var cancellables = Set<AnyCancellable>()
   private let executableVersion = "1.389.0"
 
   private let shellService: ShellService
@@ -58,6 +59,9 @@ final class DefaultGithubCopilotService: GithubCopilotService {
         shellService: shellService,
         fileManager: fileManager)
       setAuthServer(.success(authServer))
+      authServer.notifications.sink { @Sendable [weak self] notification in
+        self?.handle(authServerNotification: notification)
+      }.store(in: &cancellables)
     } catch {
       setExecutablePath(.failure(error))
       setAuthServer(.failure(error))
@@ -65,6 +69,23 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     }
 
     _ = try await checkStatus()
+  }
+
+  private func handle(authServerNotification: JRPCNotification) {
+    if authServerNotification.method == "didChangeStatus" {
+      Task {
+        do {
+          let params = try authServerNotification.params?.decode(as: DidChangeStatusNotificationParams.self)
+          if params?.kind == "Normal", !_loginStatus.value.isLoggedIn {
+            _ = try await checkStatus()
+          } else if params?.kind != "Normal", _loginStatus.value.isLoggedIn {
+            _ = try await checkStatus()
+          }
+        } catch {
+          defaultLogger.error("Failed to handle auth server didChangeStatus notification", error)
+        }
+      }
+    }
   }
 
   private func install() async throws -> URL {
@@ -105,6 +126,17 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       throw AppError("Failed to install Copilot language server executable")
     }
     return executablePath
+  }
+}
+
+extension LoginStatus {
+  var isLoggedIn: Bool {
+    switch self {
+    case .loggedIn:
+      true
+    default:
+      false
+    }
   }
 }
 

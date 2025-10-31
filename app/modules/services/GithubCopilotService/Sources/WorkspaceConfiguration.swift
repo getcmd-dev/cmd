@@ -2,12 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import JSONFoundation
 
 // MARK: - GitHubCopilotConfiguration
 
 struct GitHubCopilotConfiguration: Codable {
   var enable: [String: Bool]? // e.g. {"*": true}
-  var advanced: [String: AnyCodable]?
+  var advanced: [String: JSON.Value]?
 
   static var `default`: GitHubCopilotConfiguration {
     GitHubCopilotConfiguration(

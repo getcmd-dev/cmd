@@ -6,28 +6,15 @@ import SwiftUI
 // MARK: - GithubCopilotStatusView
 
 struct GithubCopilotStatusView: View {
-  let viewModel: GithubCopilotStatusViewModel
+  init(viewModel: GithubCopilotStatusViewModel) {
+    _viewModel = State(initialValue: viewModel)
+  }
 
   var body: some View {
     VStack(spacing: 20) {
-      // Header
-      VStack {
-        Image(systemName: "cpu")
-          .imageScale(.large)
-          .font(.system(size: 48))
-          .foregroundStyle(.blue)
-
-        Text("GitHub Copilot Integration")
-          .font(.title)
-          .fontWeight(.bold)
-
-        Text("Test App")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-      }
-      .padding(.top)
-
       Divider()
+      Text("GitHub Copilot Integration")
+        .fontWeight(.bold)
 
       // Status Section
       VStack(alignment: .leading, spacing: 10) {
@@ -97,100 +84,79 @@ struct GithubCopilotStatusView: View {
 
       // Actions
       VStack(spacing: 12) {
-        if !viewModel.isInitialized {
-//                    Button(action: {
-//                        Task {
-//                            await viewModel.initialize()
-//                        }
-//                    }) {
-//                        HStack {
-//                            if viewModel.isInitializing {
-//                                ProgressView()
-//                                    .scaleEffect(0.8)
-//                            } else {
-//                                Image(systemName: "power")
-//                            }
-//                            Text(viewModel.isInitializing ? "Initializing..." : "Initialize Copilot")
-//                        }
-//                        .frame(maxWidth: .infinity)
-//                    }
-//                    .buttonStyle(.borderedProminent)
-//                    .disabled(viewModel.isInitializing)
-        } else {
-          // Authentication buttons
-          if case .loggedOut = viewModel.authStatus {
-            Button(action: {
-              Task {
-                try await viewModel.startSignIn()
-              }
-            }) {
-              HStack {
-                Image(systemName: "person.badge.key")
-                Text("Start Sign In")
-              }
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-          }
-
-          if viewModel.signInInfo != nil {
-            Button(action: {
-              Task {
-                try await viewModel.confirmSignIn()
-              }
-            }) {
-              HStack {
-                Image(systemName: "checkmark.circle")
-                Text("Confirm Sign In")
-              }
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-          }
-
-          if case .loggedIn(user: _) = viewModel.authStatus {
-            Button(action: {
-              Task {
-                await viewModel.testCompletion()
-              }
-            }) {
-              HStack {
-                Image(systemName: "wand.and.stars")
-                Text("Test Completion")
-              }
-              .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-          }
-
-          HStack {
-            if case .loggedIn(user: _) = viewModel.authStatus {
-              Button(action: {
-                Task {
-                  await viewModel.signOut()
-                }
-              }) {
-                HStack {
-                  Image(systemName: "rectangle.portrait.and.arrow.right")
-                  Text("Sign Out")
-                }
-                .frame(maxWidth: .infinity)
-              }
-              .buttonStyle(.bordered)
-            }
-          }
-
+        // Authentication buttons
+        if case .loggedOut = viewModel.authStatus {
           Button(action: {
-            showConsole = true
+            Task {
+              try await viewModel.startSignIn()
+            }
           }) {
             HStack {
-              Image(systemName: "terminal")
-              Text("View Console Logs")
+              Image(systemName: "person.badge.key")
+              Text("Start Sign In")
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.borderedProminent)
+        }
+
+        if viewModel.signInInfo != nil {
+          Button(action: {
+            Task {
+              try await viewModel.confirmSignIn()
+            }
+          }) {
+            HStack {
+              Image(systemName: "checkmark.circle")
+              Text("Confirm Sign In")
             }
             .frame(maxWidth: .infinity)
           }
           .buttonStyle(.bordered)
         }
+
+        if case .loggedIn(user: _) = viewModel.authStatus {
+          Button(action: {
+            Task {
+              await viewModel.testCompletion()
+            }
+          }) {
+            HStack {
+              Image(systemName: "wand.and.stars")
+              Text("Test Completion")
+            }
+            .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(.borderedProminent)
+        }
+
+        HStack {
+          if case .loggedIn(user: _) = viewModel.authStatus {
+            Button(action: {
+              Task {
+                try await viewModel.signOut()
+              }
+            }) {
+              HStack {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                Text("Sign Out")
+              }
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+          }
+        }
+
+        Button(action: {
+          showConsole = true
+        }) {
+          HStack {
+            Image(systemName: "terminal")
+            Text("View Console Logs")
+          }
+          .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
       }
       .padding(.horizontal)
 
@@ -204,6 +170,8 @@ struct GithubCopilotStatusView: View {
     }
     .padding()
   }
+
+  @State private var viewModel: GithubCopilotStatusViewModel
 
   @State private var showConsole = false
 

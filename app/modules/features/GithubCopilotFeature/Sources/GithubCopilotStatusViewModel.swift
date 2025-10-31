@@ -30,27 +30,24 @@ final class GithubCopilotStatusViewModel: Sendable {
   var username: String?
   var error: String?
   var signInInfo: SignInInitiateResult?
-  var isInitialized = false
-  var isInitializing = false
   var authStatus = LoginStatus.loggedOut
 
   func startSignIn() async throws {
-    isInitializing = true
-    _ = try await githubCopilotService.initiateSignIn()
+    signInInfo = try await githubCopilotService.initiateSignIn()
   }
 
   func confirmSignIn() async throws {
     guard let userCode = signInInfo?.userCode else {
       throw AppError("User code is missing.")
     }
-    isInitializing = false
-    isInitialized = true
     try await githubCopilotService.confirmSignIn(userCode: userCode)
   }
 
   func testCompletion() async { }
 
-  func signOut() async { }
+  func signOut() async throws {
+    try await githubCopilotService.signOut()
+  }
 
   private let githubCopilotService: GithubCopilotService
 }

@@ -941,6 +941,7 @@ targets.append(
       "DependencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotServiceInterface",
+      "JSONFoundation",
       "LoggingServiceInterface",
       "SettingsServiceInterface",
       "ShellServiceInterface",
