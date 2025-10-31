@@ -101,9 +101,13 @@ extension FileIcon {
     let response: IconResponse = try await server.postRequest(path: "/icon", data: payload)
 
     @Dependency(\.fileManager) var fileManager
-    let iconsPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent(Bundle.main.hostAppBundleId)
-      .appendingPathComponent("icons")
+    guard
+      let iconsPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        .appendingPathComponent(Bundle.main.hostAppBundleId)
+        .appendingPathComponent("icons")
+    else {
+      throw AppError(message: "Could not find application support directory")
+    }
     try fileManager.createDirectory(atPath: iconsPath.path, withIntermediateDirectories: true)
 
     let iconPath = iconsPath.appendingPathComponent(response.iconPath).standardized

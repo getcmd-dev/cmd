@@ -1,5 +1,5 @@
 {
-  "originHash" : "eb1c3d7d031af6ab34266468e1335da7f4e7afc7af244b427e97e2288644dcf8",
+  "originHash" : "de15484edbd7f520847bb0217842945b3f4671944f1aa78521458d0cd44617e0",
   "pins" : [
     {
       "identity" : "aexml",
@@ -69,7 +69,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gsabran/Down",
       "state" : {
-        "revision" : "14309dd8781c7613063344727454ffbbebc8e8bd"
+        "revision" : "d2e9d901bbf9e7492a1603ed3dbf307c1089d7f2"
       }
     },
     {

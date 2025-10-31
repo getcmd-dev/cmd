@@ -179,9 +179,13 @@ final class AIModelsManager: AIModelsManagerProtocol {
   }
 
   private static func loadModels(fileManager: FileManagerI) throws -> [AIProvider: [AIProviderModel]] {
-    let cacheURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent(Bundle.main.hostAppBundleId)
-      .appendingPathComponent("llmProviders.json")
+    guard
+      let cacheURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        .appendingPathComponent(Bundle.main.hostAppBundleId)
+        .appendingPathComponent("llmProviders.json")
+    else {
+      throw AppError(message: "Could not find application support directory")
+    }
     let decoder = JSONDecoder()
 
     let data = try fileManager.read(dataFrom: cacheURL)
@@ -189,9 +193,13 @@ final class AIModelsManager: AIModelsManagerProtocol {
   }
 
   private static func persist(models: [AIProvider: [AIProviderModel]], fileManager: FileManagerI) throws {
-    let cacheURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      .appendingPathComponent(Bundle.main.hostAppBundleId)
-      .appendingPathComponent("llmProviders.json")
+    guard
+      let cacheURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        .appendingPathComponent(Bundle.main.hostAppBundleId)
+        .appendingPathComponent("llmProviders.json")
+    else {
+      throw AppError(message: "Could not find application support directory")
+    }
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
 

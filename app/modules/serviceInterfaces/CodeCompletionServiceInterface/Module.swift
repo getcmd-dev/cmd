@@ -1,11 +1,9 @@
 Target.module(
-  name: "ShellServiceInterface",
+  name: "CodeCompletionServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
-    "LoggingServiceInterface",
+    "CodeCompletionFoundation",
     "ThreadSafe",
-  ],
-  testsDependencies: [
-    "ShellServiceInterface",
+    "XcodeObserverServiceInterface",
   ])

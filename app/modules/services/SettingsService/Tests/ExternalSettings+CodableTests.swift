@@ -33,6 +33,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
@@ -82,6 +83,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -131,6 +133,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -284,6 +287,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -322,6 +326,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -474,6 +479,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -514,6 +520,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -646,6 +653,7 @@ struct ExternalSettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
+        "codeCompletionProviderId": null,
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",

@@ -13,12 +13,17 @@ import ChatService
 import ChatServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
+import CodeCompletionFoundation
+import CodeCompletionService
+import CodeCompletionServiceInterface
 import Combine
 import Dependencies
 import FileSuggestionService
 import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
+import GithubCopilotService
+import GithubCopilotServiceInterface
 import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
@@ -85,12 +90,6 @@ extension ChatServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatService { AppScope.shared.chatService }
 }
 
-// MARK: - MCPServiceDependencyKey + DependencyKey
-
-extension MCPServiceDependencyKey: DependencyKey {
-  public static var liveValue: MCPService { AppScope.shared.mcpService }
-}
-
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
 
 extension CheckpointServiceDependencyKey: DependencyKey {
@@ -111,6 +110,12 @@ extension FileSuggestionServiceDependencyKey: DependencyKey {
   public static var liveValue: FileSuggestionService { AppScope.shared.fileSuggestionService }
 }
 
+// MARK: - GithubCopilotServiceDependencyKey + DependencyKey
+
+extension GithubCopilotServiceDependencyKey: DependencyKey {
+  public static var liveValue: GithubCopilotService { AppScope.shared.githubCopilotService }
+}
+
 // MARK: - HighlighterServiceDependencyKey + DependencyKey
 
 extension HighlighterServiceDependencyKey: DependencyKey {
@@ -121,6 +126,12 @@ extension HighlighterServiceDependencyKey: DependencyKey {
 
 extension LLMServiceDependencyKey: DependencyKey {
   public static var liveValue: LLMService { AppScope.shared.llmService }
+}
+
+// MARK: - MCPServiceDependencyKey + DependencyKey
+
+extension MCPServiceDependencyKey: DependencyKey {
+  public static var liveValue: MCPService { AppScope.shared.mcpService }
 }
 
 // MARK: - PermissionsServiceDependencyKey + DependencyKey
@@ -198,6 +209,14 @@ extension AppScope: ChatCompletionServiceProviding { }
 // MARK: - AppScope + ChatServiceProviding
 
 extension AppScope: ChatServiceProviding { }
+
+// MARK: - AppScope + CodeCompletionProvidersPluginProviding
+
+extension AppScope: CodeCompletionProvidersPluginProviding {
+  var codeCompletionProviders: [any CodeCompletionProvider] {
+    [githubCopilotService]
+  }
+}
 
 // MARK: - AppScope + MCPServiceProviding
 

@@ -29,7 +29,8 @@ struct ExternalSettings: Sendable, Equatable {
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
-    mcpServers: [String: MCPServerConfiguration] = [:])
+    mcpServers: [String: MCPServerConfiguration] = [:],
+    codeCompletionProviderId: String? = nil)
   {
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
@@ -44,6 +45,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.keyboardShortcuts = keyboardShortcuts
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
+    self.codeCompletionProviderId = codeCompletionProviderId
   }
 
   static let defaultSettings = ExternalSettings()
@@ -64,7 +66,7 @@ struct ExternalSettings: Sendable, Equatable {
   let keyboardShortcuts: KeyboardShortcuts
   let userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   let mcpServers: [String: MCPServerConfiguration]
-
+  let codeCompletionProviderId: String?
 }
 
 // MARK: - InternalSettings
@@ -139,7 +141,8 @@ extension ExternalSettings: Codable {
       userDefinedXcodeShortcuts: container
         .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? Self.defaultSettings
         .userDefinedXcodeShortcuts,
-      mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:])
+      mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:],
+      codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil)
   }
 
   func encode(to encoder: any Encoder) throws {
@@ -193,6 +196,9 @@ extension ExternalSettings: Codable {
     }
     if encodeAllValues || mcpServers != Self.defaultSettings.mcpServers {
       try container.encode(MCPServerConfigurations(configurations: mcpServers), forKey: "mcpServers")
+    }
+    if encodeAllValues || codeCompletionProviderId != Self.defaultSettings.codeCompletionProviderId {
+      try container.encode(codeCompletionProviderId, forKey: "codeCompletionProviderId")
     }
   }
 }
@@ -287,7 +293,8 @@ extension Settings {
       keyboardShortcuts: externalSettings.keyboardShortcuts,
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
       mcpServers: externalSettings.mcpServers,
-      defaultLogLevel: internalSettings.defaultLogLevel)
+      defaultLogLevel: internalSettings.defaultLogLevel,
+      codeCompletionProviderId: externalSettings.codeCompletionProviderId)
   }
 
   var externalSettings: ExternalSettings {
@@ -304,7 +311,8 @@ extension Settings {
       toolPreferences: toolPreferences,
       keyboardShortcuts: keyboardShortcuts,
       userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
-      mcpServers: mcpServers)
+      mcpServers: mcpServers,
+      codeCompletionProviderId: codeCompletionProviderId)
   }
 
   func internalSettings() -> InternalSettings {

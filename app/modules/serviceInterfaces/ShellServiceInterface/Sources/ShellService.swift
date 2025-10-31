@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import Combine
 import Foundation
 import LoggingServiceInterface
@@ -73,7 +74,7 @@ public protocol ShellService: Sendable {
   ///   - env: Additional environment variables to merge with the shell environment.
   ///          These variables override any existing variables with the same name.
   ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
-  ///          When useInteractiveShell is false, these are used as the entire environement and replace the inherited one.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   ///   - body: Optional handler for processing stdin/stdout/stderr streams during execution
   /// - Returns: The execution result containing exit code and output streams
   /// - Throws: Shell execution errors
@@ -93,8 +94,17 @@ public protocol ShellService: Sendable {
 
 extension ShellService {
 
-  /// Convenience method for executing a shell command without stream handling.
-  /// See the main run method for detailed parameter documentation.
+  /// Run the provided command and return the result.
+  /// - Parameters:
+  ///   - command: The shell command to execute
+  ///   - cwd: Working directory for command execution. If nil, uses the current directory.
+  ///   - useInteractiveShell: When true, loads the full interactive shell environment (zsh profile, etc.)
+  ///   - env: Additional environment variables to merge with the shell environment.
+  ///          These variables override any existing variables with the same name.
+  ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
+  /// - Returns: The execution result containing exit code and output streams
+  /// - Throws: Shell execution errors
   @discardableResult
   public func run(
     _ command: String,
@@ -106,9 +116,43 @@ extension ShellService {
     try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
   }
 
-  /// Convenience method for executing a shell command and returning only stdout.
-  /// See the main run method for detailed parameter documentation.
+  /// Run the provided command and throw an error if the command exits with a non-zero code.
+  /// - Parameters:
+  ///   - command: The shell command to execute
+  ///   - cwd: Working directory for command execution. If nil, uses the current directory.
+  ///   - useInteractiveShell: When true, loads the full interactive shell environment (zsh profile, etc.)
+  ///   - env: Additional environment variables to merge with the shell environment.
+  ///          These variables override any existing variables with the same name.
+  ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
   /// - Returns: The stdout output as a string, or nil if no output was produced
+  /// - Throws: An error if the command exits with a non-zero code
+  @discardableResult
+  public func runAndThrows(
+    _ command: String,
+    cwd: String? = nil,
+    useInteractiveShell: Bool = false,
+    env: [String: String]? = nil)
+    async throws -> String?
+  {
+    let executionResult = try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, env: env, body: nil)
+    if executionResult.exitCode != 0 {
+      throw AppError("\(command) exited with code \(executionResult.exitCode). Stderr: \(executionResult.stderr ?? "nil")")
+    }
+    return executionResult.stdout
+  }
+
+  /// Run the provided command and return the stdout output as a string, or nil if no output was produced.
+  /// - Parameters:
+  ///   - command: The shell command to execute
+  ///   - cwd: Working directory for command execution. If nil, uses the current directory.
+  ///   - useInteractiveShell: When true, loads the full interactive shell environment (zsh profile, etc.)
+  ///   - env: Additional environment variables to merge with the shell environment.
+  ///          These variables override any existing variables with the same name.
+  ///          When useInteractiveShell is true, these are merged with the interactive shell environment.
+  ///          When useInteractiveShell is false, these are used as the entire environment and replace the inherited one.
+  /// - Returns: The stdout output as a string, or nil if no output was produced
+  /// - Throws: Shell execution errors
   public func stdout(
     _ command: String,
     cwd: String? = nil,

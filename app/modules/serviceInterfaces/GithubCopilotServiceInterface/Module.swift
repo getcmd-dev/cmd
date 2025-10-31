@@ -1,11 +1,10 @@
 Target.module(
-  name: "ShellServiceInterface",
+  name: "GithubCopilotServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
-    "LoggingServiceInterface",
+    "CodeCompletionFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
     "ThreadSafe",
-  ],
-  testsDependencies: [
-    "ShellServiceInterface",
   ])
