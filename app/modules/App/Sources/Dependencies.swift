@@ -25,6 +25,8 @@ import FoundationInterfaces
 import GithubCopilotService
 import GithubCopilotServiceInterface
 import HighlighterServiceInterface
+import JRPCService
+import JRPCServiceInterface
 import LLMService
 import LLMServiceInterface
 import LocalServerService
@@ -164,6 +166,12 @@ extension ShellServiceDependencyKey: DependencyKey {
   public static var liveValue: ShellService { AppScope.shared.shellService }
 }
 
+// MARK: - JRPCServiceDependencyKey + DependencyKey
+
+extension JRPCServiceDependencyKey: DependencyKey {
+  public static var liveValue: JRPCService { AppScope.shared.jrpcService }
+}
+
 // MARK: - ToolsPluginDependencyKey + DependencyKey
 
 extension ToolsPluginDependencyKey: DependencyKey {
@@ -261,6 +269,10 @@ extension AppScope: SettingsServiceProviding { }
 // MARK: - AppScope + ShellServiceProviding
 
 extension AppScope: ShellServiceProviding { }
+
+// MARK: - AppScope + JRPCServiceProviding
+
+extension AppScope: JRPCServiceProviding { }
 
 // MARK: - AppScope + ToolsPluginProviding
 

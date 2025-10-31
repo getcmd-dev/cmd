@@ -178,6 +178,8 @@ targets.append(
       "GithubCopilotService",
       "GithubCopilotServiceInterface",
       "HighlighterServiceInterface",
+      "JRPCService",
+      "JRPCServiceInterface",
       "LLMService",
       "LLMServiceInterface",
       "LocalServerService",
@@ -941,6 +943,7 @@ targets.append(
       "DependencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotServiceInterface",
+      "JRPCServiceInterface",
       "JSONFoundation",
       "LoggingServiceInterface",
       "SettingsServiceInterface",
@@ -975,6 +978,31 @@ targets.append(
       "DependencyFoundation",
     ],
     path: "./serviceInterfaces/HighlighterServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "JRPCService",
+    dependencies: [
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "DependencyFoundation",
+      "JRPCServiceInterface",
+      "LoggingServiceInterface",
+      "SettingsServiceInterface",
+      "ShellServiceInterface",
+    ],
+    path: "./services/JRPCService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "JRPCServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "ThreadSafe",
+    ],
+    path: "./serviceInterfaces/JRPCServiceInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1175,6 +1203,7 @@ targets.append(
       "ChatFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
+      "JRPCServiceInterface",
       "JSONFoundation",
       "LoggingServiceInterface",
       "MCPServiceInterface",

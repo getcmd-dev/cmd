@@ -7,6 +7,7 @@ Target.module(
     "DependencyFoundation",
     "FoundationInterfaces",
     "GithubCopilotServiceInterface",
+    "JRPCServiceInterface",
     "JSONFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",

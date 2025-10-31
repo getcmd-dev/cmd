@@ -40,6 +40,8 @@ Target.module(
     "GithubCopilotService",
     "GithubCopilotServiceInterface",
     "HighlighterServiceInterface",
+    "JRPCService",
+    "JRPCServiceInterface",
     "LLMService",
     "LLMServiceInterface",
     "LocalServerService",

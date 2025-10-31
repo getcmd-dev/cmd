@@ -6,6 +6,7 @@ Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "JRPCServiceInterface",
     "JSONFoundation",
     "LoggingServiceInterface",
     "MCPServiceInterface",
