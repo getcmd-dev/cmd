@@ -625,12 +625,14 @@ targets.append(
   contentsOf: Target.module(
     name: "CodeCompletionService",
     dependencies: [
+      "AccessibilityFoundation",
+      "AppEventServiceInterface",
       "AppFoundation",
+      "ChatAppEvents",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
       "DependencyFoundation",
       "SettingsServiceInterface",
-      "ThreadSafe",
       "XcodeObserverServiceInterface",
     ],
     path: "./services/CodeCompletionService"))

@@ -20,7 +20,8 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   init(shellService: ShellService, fileManager: FileManagerI) {
     self.shellService = shellService
     self.fileManager = fileManager
-    let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+    let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+      .first?
       .appendingPathComponent(Bundle.main.hostAppBundleId)
       .appendingPathComponent("copilot-language-server-\(executableVersion)")
     self.expectedExecutablePath = expectedExecutablePath
@@ -80,6 +81,29 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     _ = try await checkStatus()
   }
 
+  /// Returns the LSP server for the given workspace.
+  func lspServer(for workspace: URL) throws -> GithubCopilotServer {
+    guard let expectedExecutablePath else {
+      throw AppError("Path for Copilot language server executable not found")
+    }
+    if let server = servers[workspace] {
+      return server
+    }
+    guard _isLSPServerInstalled.value else {
+      throw AppError("Copilot LSP server is not installed")
+    }
+    guard _loginStatus.value.isLoggedIn else {
+      throw AppError("User is not logged in to Github Copilot")
+    }
+    let server = GithubCopilotServer(
+      executablePath: expectedExecutablePath,
+      workspaceRoot: workspace,
+      shellService: shellService,
+      fileManager: fileManager)
+    servers[workspace] = server
+    return server
+  }
+
   private var cancellables = Set<AnyCancellable>()
   private let executableVersion = "1.389.0"
 
@@ -87,6 +111,9 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   private let fileManager: FileManagerI
 
   private let expectedExecutablePath: URL?
+
+  /// Each workspace needs its own LSP server instance
+  private var servers = [URL: GithubCopilotServer]()
 
   private func handle(authServerNotification: JRPCNotification) {
     if authServerNotification.method == "didChangeStatus" {
@@ -142,6 +169,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     }
     return executablePath
   }
+
 }
 
 extension LoginStatus {

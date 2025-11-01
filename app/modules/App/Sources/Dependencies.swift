@@ -96,6 +96,12 @@ extension CheckpointServiceDependencyKey: DependencyKey {
   public static var liveValue: CheckpointService { AppScope.shared.checkpointService }
 }
 
+// MARK: - CodeCompletionServiceDependencyKey + DependencyKey
+
+extension CodeCompletionServiceDependencyKey: DependencyKey {
+  public static var liveValue: CodeCompletionService { AppScope.shared.codeCompletionService }
+}
+
 // MARK: - FileManagerDependencyKey + DependencyKey
 
 extension FileManagerDependencyKey: DependencyKey {
@@ -214,7 +220,10 @@ extension AppScope: ChatServiceProviding { }
 
 extension AppScope: CodeCompletionProvidersPluginProviding {
   var codeCompletionProviders: [any CodeCompletionProvider] {
-    [githubCopilotService]
+    [
+      //      MockCodeCompletionProvider(),
+      githubCopilotService,
+    ]
   }
 }
 

@@ -9,6 +9,7 @@
 //
 import AppUpdateServiceInterface
 import ChatCompletionServiceInterface
+import CodeCompletionServiceInterface
 import Dependencies
 import LoggingServiceInterface
 import XcodeObserverServiceInterface
@@ -26,6 +27,10 @@ extension commandApp {
     // Initiate the local HTTP server to support chat completion
     @Dependency(\.chatCompletion) var chatCompletion
     chatCompletion.start()
+
+    // Initiate the code completion service that will listen to trigger events.
+    @Dependency(\.codeCompletionService) var codeCompletionService
+    _ = codeCompletionService
 
     // Setup login item for first time if not already enabled
     // Ensure the launch agent is up to date and enabled
