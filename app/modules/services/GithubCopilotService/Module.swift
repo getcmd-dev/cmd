@@ -16,4 +16,16 @@ Target.module(
   ],
   resources: [
     .process("Resources/install-language-server.sh"),
+  ],
+  testsDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "GithubCopilotService",
+    "GithubCopilotServiceInterface",
+    "JRPCServiceInterface",
+    "JSONFoundation",
+    "LoggingServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
   ])

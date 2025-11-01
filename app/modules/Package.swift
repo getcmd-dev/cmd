@@ -953,6 +953,18 @@ targets.append(
     resources: [
       .process("Resources/install-language-server.sh"),
     ],
+    testsDependencies: [
+      "AppFoundation",
+      "ConcurrencyFoundation",
+      "FoundationInterfaces",
+      "GithubCopilotService",
+      "GithubCopilotServiceInterface",
+      "JRPCServiceInterface",
+      "JSONFoundation",
+      "LoggingServiceInterface",
+      "ShellServiceInterface",
+      "SwiftTesting",
+    ],
     path: "./services/GithubCopilotService"))
 
 targets.append(
@@ -1213,6 +1225,7 @@ targets.append(
     testsDependencies: [
       .product(name: "MCP", package: "swift-sdk"),
       "ConcurrencyFoundation",
+      "JRPCServiceInterface",
       "JSONFoundation",
       "MCPService",
       "MCPServiceInterface",

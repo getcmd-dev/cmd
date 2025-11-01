@@ -19,6 +19,8 @@ public final class MockStdioConnection: StdioConnection {
   public var onDisconnect: (@Sendable () async -> Void) = { }
   public var onSend: (@Sendable (Data) async throws -> Void) = { _ in }
 
+  public let streamContinuation: AsyncThrowingStream<Data, Swift.Error>.Continuation
+
   public func connect() async throws {
     try await onConnect()
   }
@@ -40,8 +42,6 @@ public final class MockStdioConnection: StdioConnection {
   }
 
   private let stream: AsyncThrowingStream<Data, Swift.Error>
-  private let streamContinuation: AsyncThrowingStream<Data, Swift.Error>.Continuation
-
   private var disconnectionHandler: (@Sendable (Error?) -> Void)?
 
 }
