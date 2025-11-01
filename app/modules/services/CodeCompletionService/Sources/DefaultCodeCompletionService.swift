@@ -112,7 +112,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   /// Set up event sources from XcodeObserver to trigger LSP text document events
   private func setupEventSources() {
     // Subscribe to state changes from XcodeObserver
-    xcodeObserver.statePublisher.dropFirst().sink { @Sendable newState in
+    xcodeObserver.statePublisher.sink { @Sendable newState in
       Task { [weak self] in
         await self?.handleStateChange(newState)
       }
