@@ -3,8 +3,8 @@
 
 import Testing
 
-@preconcurrency import Combine
 import AppFoundation
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -58,14 +58,14 @@ struct GithubCopilotServerTests {
             // Respond with initialize result
             Task {
               let response = """
-              {
-                "jsonrpc": "2.0",
-                "id": \(request.id),
-                "result": {
-                  "capabilities": {}
+                {
+                  "jsonrpc": "2.0",
+                  "id": \(request.id),
+                  "result": {
+                    "capabilities": {}
+                  }
                 }
-              }
-              """
+                """
               mockStdioConnection.streamContinuation.yield(response.utf8Data)
             }
           }
@@ -118,8 +118,7 @@ struct GithubCopilotServerTests {
           }
         }
         """,
-        ignoring: ["id", "params"]
-      )
+        ignoring: ["id", "params"])
     }
 
     // Keep server alive
@@ -151,14 +150,14 @@ struct GithubCopilotServerTests {
           if request.method == "initialize" {
             // Respond to initialize
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "capabilities": {}
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           } else if request.method == "checkStatus" {
             checkStatusRequestId.set(to: request.id)
@@ -169,15 +168,15 @@ struct GithubCopilotServerTests {
 
             // Respond with logged in status
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "status": "OK",
-                "user": "testuser"
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "status": "OK",
+                  "user": "testuser"
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           }
 
@@ -232,14 +231,14 @@ struct GithubCopilotServerTests {
           if request.method == "initialize" {
             // Respond to initialize
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "capabilities": {}
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           } else if request.method == "signInInitiate" {
             signInInitiateRequestId.set(to: request.id)
@@ -250,18 +249,18 @@ struct GithubCopilotServerTests {
 
             // Respond with device flow
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "status": "PromptUserDeviceFlow",
-                "userCode": "ABCD-1234",
-                "verificationUri": "https://github.com/login/device",
-                "expiresIn": 900,
-                "interval": 5
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "status": "PromptUserDeviceFlow",
+                  "userCode": "ABCD-1234",
+                  "verificationUri": "https://github.com/login/device",
+                  "expiresIn": 900,
+                  "interval": 5
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           }
 
@@ -320,14 +319,14 @@ struct GithubCopilotServerTests {
           if request.method == "initialize" {
             // Respond to initialize
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "capabilities": {}
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           } else if request.method == "signInConfirm" {
             signInConfirmRequestId.set(to: request.id)
@@ -344,15 +343,15 @@ struct GithubCopilotServerTests {
 
             // Respond with success
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "status": "OK",
-                "user": "testuser"
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "status": "OK",
+                  "user": "testuser"
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           }
 
@@ -410,14 +409,14 @@ struct GithubCopilotServerTests {
           if request.method == "initialize" {
             // Respond to initialize
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {
-                "capabilities": {}
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
               }
-            }
-            """
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           } else if request.method == "signOut" {
             signOutRequestId.set(to: request.id)
@@ -428,12 +427,12 @@ struct GithubCopilotServerTests {
 
             // Respond with success (empty object)
             let response = """
-            {
-              "jsonrpc": "2.0",
-              "id": \(request.id),
-              "result": {}
-            }
-            """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {}
+              }
+              """
             mockStdioConnection.streamContinuation.yield(response.utf8Data)
           }
 
