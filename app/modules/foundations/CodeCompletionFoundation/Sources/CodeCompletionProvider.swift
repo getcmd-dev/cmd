@@ -25,28 +25,28 @@ public protocol CodeCompletionProvider: Sendable {
   /// A unique identifier for the provider.
   /// It should remain stable across app updates.
   var id: String { get }
-  /// handle a notification that a file has been opened.
+  /// Handle a notification that a file has been opened.
   /// - Parameters:
   ///  - workspace: The URL of the workspace within which the file resides.
   ///  - file: The URL of the file that was saved.
   ///  - content: The content of the file when it was opened.
   ///  - version: An increasing number representing the version of the file.
   func didOpen(workspace: URL, file: URL, content: String, version: Int)
-  /// handle a notification that a file has been changed.
+  /// Handle a notification that a file has been changed.
   /// - Parameters:
   ///  - workspace: The URL of the workspace within which the file resides.
   ///  - file: The URL of the file that was saved.
   ///  - content: The content of the file after it was changed.
   ///  - version: An increasing number representing the version of the file.
   func didChange(workspace: URL, file: URL, content: String, version: Int)
-  /// handle a notification that a file has been saved.
+  /// Handle a notification that a file has been saved.
   /// - Parameters:
   ///  - workspace: The URL of the workspace within which the file resides.
   ///  - file: The URL of the file that was saved.
   ///  - content: The content of the file when it was saved.
   ///  - version: An increasing number representing the version of the file.
   func didSave(workspace: URL, file: URL, content: String, version: Int)
-  /// handle a notification that a file has been closed.
+  /// Handle a notification that a file has been closed.
   /// - Parameters:
   ///  - workspace: The URL of the workspace within which the file resides.
   ///  - file: The URL of the file that was saved.

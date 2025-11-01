@@ -95,9 +95,6 @@ public final class GithubCopilotServer: Sendable {
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(request)
 
-    let jsonString = String(data: jsonData, encoding: .utf8)!
-    defaultLogger.log("Sending: \(jsonString)\n")
-
     // LSP protocol requires Content-Length header
     // Note: StdioTransport will add \n after this, which is fine for LSP
     let header = "Content-Length: \(jsonData.count)\r\n\r\n"

@@ -26,7 +26,7 @@ extension DefaultGithubCopilotService {
           uri: file.absoluteString,
           version: version,
           position: .init(line: selection.start.line, character: selection.start.character),
-          tabSize: 2,
+          tabSize: 2, // TODO
           insertSpaces: true).items.first
     else {
       return nil
@@ -49,12 +49,11 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  /// Call
   func didOpen(workspace: URL, file: URL, content: String, version: Int) {
     Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
       try await self.lspServer(for: workspace).didOpenTextDocument(
         uri: file.absoluteString,
-        languageId: "swift",
+        languageId: "swift", // TODO
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
         version: version,
         text: content)
@@ -62,7 +61,7 @@ extension DefaultGithubCopilotService {
   }
 
   func didChange(workspace: URL, file: URL, content: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
+    Task(loggingErrorWith: "Failed to send didChange notification to LSP server") {
       try await self.lspServer(for: workspace).didChangeTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
@@ -72,7 +71,7 @@ extension DefaultGithubCopilotService {
   }
 
   func didSave(workspace: URL, file: URL, content: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
+    Task(loggingErrorWith: "Failed to send didSave notification to LSP server") {
       try await self.lspServer(for: workspace).didSaveTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
@@ -82,7 +81,7 @@ extension DefaultGithubCopilotService {
   }
 
   func didClose(workspace: URL, file: URL, content _: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
+    Task(loggingErrorWith: "Failed to send didClose notification to LSP server") {
       try await self.lspServer(for: workspace).didCloseTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
