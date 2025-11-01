@@ -6,6 +6,7 @@ import Testing
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import JRPCServiceInterface
 import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
@@ -33,6 +34,7 @@ struct DefaultMCPServiceTests {
       var sut: DefaultMCPService? = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
+        jrpcService: MockJRPCService(),
         connect: { _, configuration in
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
           weakConnection.value = connection
@@ -69,6 +71,7 @@ struct DefaultMCPServiceTests {
       let sut = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
+        jrpcService: MockJRPCService(),
         connect: { _, configuration in
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
           weakConnection.value = connection
@@ -107,6 +110,7 @@ struct DefaultMCPServiceTests {
       let sut = DefaultMCPService(
         settingsService: settingsService,
         shellService: MockShellService(),
+        jrpcService: MockJRPCService(),
         connect: { _, configuration in
           let counter = connectionCreationCount.increment()
           let connection = MockMCPServerConnection(tools: [], configuration: configuration)
@@ -152,6 +156,7 @@ struct DefaultMCPServiceTests {
     let sut = DefaultMCPService(
       settingsService: settingsService,
       shellService: MockShellService(),
+      jrpcService: MockJRPCService(),
       connect: { _, configuration in
         switch configuration {
         case .http:
@@ -186,6 +191,7 @@ struct DefaultMCPServiceTests {
     let sut = DefaultMCPService(
       settingsService: settingsService,
       shellService: MockShellService(),
+      jrpcService: MockJRPCService(),
       connect: { _, configuration in
         switch configuration {
         case .http:

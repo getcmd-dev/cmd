@@ -6,6 +6,7 @@ Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "JRPCServiceInterface",
     "JSONFoundation",
     "LoggingServiceInterface",
     "MCPServiceInterface",
@@ -17,6 +18,7 @@ Target.module(
   testsDependencies: [
     .product(name: "MCP", package: "swift-sdk"),
     "ConcurrencyFoundation",
+    "JRPCServiceInterface",
     "JSONFoundation",
     "MCPService",
     "MCPServiceInterface",

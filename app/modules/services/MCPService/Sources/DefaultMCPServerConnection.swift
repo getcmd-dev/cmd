@@ -128,7 +128,7 @@ protocol DisconnectableTransport: Transport {
   /// Registers a callback to be invoked when the transport disconnects.
   /// - Parameter callback: A sendable closure called with an optional error when disconnection occurs.
   ///   If the error is nil, the disconnection was intentional; otherwise, it indicates an unexpected failure.
-  func onDisconnection(_: @escaping @Sendable (Error?) -> Void)
+  func onDisconnection(_: @escaping @Sendable (Error?) -> Void) async
 }
 
 // TODO: make HTTPTransport conform to DisconnectableTransport.

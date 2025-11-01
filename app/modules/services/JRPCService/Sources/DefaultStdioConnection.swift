@@ -5,18 +5,19 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import JRPCServiceInterface
 import LoggingServiceInterface
-import SettingsServiceInterface
-import ShellServiceInterface
 
-// MARK: - StdioTransport
+// MARK: - DefaultStdioConnection
 
-// TODO: merge with the implementation in MCPService
-
-actor StdioTransport {
-  init(command: String, shellService: ShellService) {
+actor DefaultStdioConnection: StdioConnection {
+  init(command: String, env: [String: String], pwd: String?, delimitation: STDIODelimitation) {
     self.command = command
-    self.shellService = shellService
+
+    self.env = env
+    self.pwd = pwd
+
+    self.delimitation = delimitation
 
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
     stdoutStream = stream
@@ -27,6 +28,8 @@ actor StdioTransport {
     let process: Process
     let stdinWriter: @Sendable (Data) throws -> Void
   }
+
+  static let newLine = Data("\n".utf8)
 
   var disconnectionHandler: (@Sendable ((any Error)?) -> Void)?
 
@@ -46,7 +49,7 @@ actor StdioTransport {
     try connection.stdinWriter(data)
   }
 
-  func receive() -> AsyncThrowingStream<Data, any Error> {
+  nonisolated func receive() -> AsyncThrowingStream<Data, any Error> {
     stdoutStream
   }
 
@@ -57,7 +60,7 @@ actor StdioTransport {
     // In MacOS, zsh is the default since macOS Catalina 10.15.7. We can safely assume it is available.
     process.launchPath = "/bin/zsh"
     process.arguments = ["-c"] + [command]
-    process.environment = await shellService.env
+    process.environment = env
 
     // Input/output
     let stdin = Pipe()
@@ -66,6 +69,9 @@ actor StdioTransport {
     process.standardInput = stdin
     process.standardOutput = stdout
     process.standardError = stderr
+    if let pwd {
+      process.currentDirectoryPath = pwd
+    }
 
     cancellable = AnyCancellable {
       // Ensures that the process is terminated when the Transport is de-referenced.
@@ -96,6 +102,7 @@ actor StdioTransport {
 
     do {
       try process.launchThrowably()
+      let delimitation = delimitation
 
       continuation(.success(Connection(
         process: process,
@@ -103,20 +110,33 @@ actor StdioTransport {
           guard !isTerminated.value else {
             throw AppError("Process has terminated")
           }
-          defaultLogger.trace("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
+          let dataToSend: Data
 
-          stdin.fileHandleForWriting.write(data)
-          // LSP uses Content-Length framing, no newline needed
-          // stdin.fileHandleForWriting.write(Self.newLine)
+          switch delimitation {
+          case .newLine:
+            dataToSend = data + Self.newLine
+
+          case .contentLength:
+            let header = "Content-Length: \(data.count)\r\n\r\n"
+            dataToSend = Data(header.utf8) + data
+
+          case .none:
+            dataToSend = data
+          }
+          defaultLogger.trace("stdio sending data: `\(String(data: dataToSend, encoding: .utf8) ?? "nil")`\n")
+          stdin.fileHandleForWriting.write(dataToSend)
         })))
     } catch {
-      defaultLogger.error("Error while establishing MCP connection", error)
+      defaultLogger.error("Error while establishing Stdio connection", error)
       continuation(.failure(error))
     }
     connection = try await promise.value
   }
 
-  private let shellService: ShellService
+  private let env: [String: String]?
+  private let pwd: String?
+
+  private let delimitation: STDIODelimitation
 
   private let stdoutStream: AsyncThrowingStream<Data, Error>
   private let stdoutContinuation: AsyncThrowingStream<Data, Error>.Continuation

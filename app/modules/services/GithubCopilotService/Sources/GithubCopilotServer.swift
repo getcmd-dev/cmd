@@ -5,6 +5,7 @@ import AppFoundation
 @preconcurrency import Combine
 import Foundation
 import FoundationInterfaces
+import JRPCServiceInterface
 import JSONFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
@@ -18,13 +19,14 @@ import ThreadSafe
 @ThreadSafe
 public final class GithubCopilotServer: Sendable {
 
-  init(executablePath: URL, workspaceRoot: URL, shellService: ShellService, fileManager: FileManagerI) {
+  init(executablePath: URL, workspaceRoot: URL, shellService: ShellService, fileManager: FileManagerI, jrpcService: JRPCService) {
     self.workspaceRoot = workspaceRoot
     self.shellService = shellService
     self.fileManager = fileManager
+    self.jrpcService = jrpcService
     self.executablePath = executablePath
 
-    let (initializedTransport, setInitializedTransport) = Future<StdioTransport, Error>.make()
+    let (initializedTransport, setInitializedTransport) = Future<StdioConnection, Error>.make()
     self.initializedTransport = initializedTransport
     self.setInitializedTransport = setInitializedTransport
 
@@ -47,10 +49,10 @@ public final class GithubCopilotServer: Sendable {
 
   let notifications = PassthroughSubject<JRPCNotification, Never>()
   let executablePath: URL
-  let initializedTransport: Future<StdioTransport, Error>
-  let setInitializedTransport: @Sendable (Result<StdioTransport, Error>) -> Void
+  let initializedTransport: Future<StdioConnection, Error>
+  let setInitializedTransport: @Sendable (Result<StdioConnection, Error>) -> Void
 
-  func sendNotification(_ method: String, params: JSON?, initializingTransport: StdioTransport? = nil) async throws {
+  func sendNotification(_ method: String, params: JSON?, initializingTransport: StdioConnection? = nil) async throws {
     let transport = try await {
       if let initializingTransport { return initializingTransport }
       return try await initializedTransport.value
@@ -71,7 +73,7 @@ public final class GithubCopilotServer: Sendable {
   func sendRequest<Response: Decodable>(
     _ method: String,
     params: JSON?,
-    initializingTransport: StdioTransport? = nil)
+    initializingTransport: StdioConnection? = nil)
     async throws -> Response
   {
     let result = try await sendRawRequest(method, params: params, initializingTransport: initializingTransport)
@@ -79,7 +81,7 @@ public final class GithubCopilotServer: Sendable {
     return try JSONDecoder().decode(Response.self, from: resultData)
   }
 
-  func sendRawRequest(_ method: String, params: JSON?, initializingTransport: StdioTransport? = nil) async throws -> JSON.Value {
+  func sendRawRequest(_ method: String, params: JSON?, initializingTransport: StdioConnection? = nil) async throws -> JSON.Value {
     let transport = try await {
       if let initializingTransport { return initializingTransport }
       return try await initializedTransport.value
@@ -186,8 +188,9 @@ public final class GithubCopilotServer: Sendable {
   private let shellService: ShellService
   private let workspaceRoot: URL
   private let fileManager: FileManagerI
+  private let jrpcService: JRPCService
 
-  private func start() async throws -> StdioTransport {
+  private func start() async throws -> StdioConnection {
     defaultLogger.trace("Starting Copilot language server...")
     defaultLogger.trace("Executable path: \(executablePath.path)")
 
@@ -195,7 +198,8 @@ public final class GithubCopilotServer: Sendable {
     let command = "\"\(executablePath.path)\" --stdio"
     defaultLogger.trace("Command: \(command)")
 
-    let transport = StdioTransport(command: command, shellService: shellService)
+    let env = await shellService.env
+    let transport = jrpcService.createConnection(command: command, env: env, pwd: nil, delimitation: .contentLength)
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
@@ -224,7 +228,7 @@ public final class GithubCopilotServer: Sendable {
 
   // MARK: - Message Handling
 
-  private func startReading(from transport: StdioTransport) {
+  private func startReading(from transport: StdioConnection) {
     Task {
       do {
         let stream = await transport.receive()
@@ -318,7 +322,7 @@ public final class GithubCopilotServer: Sendable {
 
   // MARK: - LSP Initialize
 
-  private func initialize(initializingTransport: StdioTransport) async throws {
+  private func initialize(initializingTransport: StdioConnection) async throws {
     let params = InitializeParams(
       processId: Int(ProcessInfo.processInfo.processIdentifier),
       rootUri: workspaceRoot.path,

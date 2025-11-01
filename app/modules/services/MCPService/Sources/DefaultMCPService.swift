@@ -6,6 +6,7 @@ import AppFoundation
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
+import JRPCServiceInterface
 import JSONFoundation
 import LoggingServiceInterface
 import MCP
@@ -23,11 +24,13 @@ actor DefaultMCPService: MCPService {
   init(
     settingsService: SettingsService,
     shellService: ShellService,
+    jrpcService: JRPCService,
     connect: @Sendable @escaping (Transport, MCPServerConfiguration) async throws -> MCPServerConnection)
   {
     _connect = connect
     self.settingsService = settingsService
     self.shellService = shellService
+    self.jrpcService = jrpcService
 
     _servers = CurrentValueSubject([:])
 
@@ -47,10 +50,17 @@ actor DefaultMCPService: MCPService {
   }
 
   func connect(to server: MCPServerConfiguration) async throws -> MCPServerConnection {
-    let transport: Transport = try {
+    let transport: Transport = try await {
       switch server {
       case .stdio(let config):
-        return shellService.transport(command: config.command + (config.args?.map { " " + $0 }.joined() ?? ""))
+        let command = config.command + (config.args?.map { " " + $0 }.joined() ?? "")
+        let env = await shellService.env
+        return StdioTransport(connection: jrpcService.createConnection(
+          command: command,
+          env: env,
+          pwd: nil,
+          delimitation: .newLine))
+
       case .http(let config):
         guard let endpoint = URL(string: config.url) else {
           throw AppError("Invalid URL: \(config.url)")
@@ -73,6 +83,7 @@ actor DefaultMCPService: MCPService {
   private let _connect: @Sendable (Transport, MCPServerConfiguration) async throws -> MCPServerConnection
 
   private let shellService: ShellService
+  private let jrpcService: JRPCService
 
   // MARK: - Private Properties
 
@@ -184,13 +195,15 @@ actor DefaultMCPService: MCPService {
 
 extension BaseProviding where
   Self: SettingsServiceProviding,
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: JRPCServiceProviding
 {
   public var mcpService: MCPService {
     shared {
       DefaultMCPService(
         settingsService: settingsService,
         shellService: shellService,
+        jrpcService: jrpcService,
         connect: { transport, configuration in
           try await DefaultMCPServerConnection(transport: transport, configuration: configuration)
         })
@@ -198,11 +211,11 @@ extension BaseProviding where
   }
 }
 
-extension ShellService {
-  func transport(command: String) -> Transport {
-    StdioTransport(command: command, shellService: self)
-  }
-}
+// extension ShellService {
+//  func transport(command: String) -> Transport {
+//    StdioTransport(command: command, shellService: self)
+//  }
+// }
 
 extension MCPServerConfiguration {
   func connectionConfigurationDiffers(from other: MCPServerConfiguration) -> Bool {
