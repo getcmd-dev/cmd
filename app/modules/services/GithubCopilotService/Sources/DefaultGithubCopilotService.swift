@@ -7,6 +7,7 @@ import DependencyFoundation
 import Foundation
 import FoundationInterfaces
 import GithubCopilotServiceInterface
+import JRPCServiceInterface
 import LoggingServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
@@ -17,9 +18,10 @@ import ThreadSafe
 @ThreadSafe
 final class DefaultGithubCopilotService: GithubCopilotService {
 
-  init(shellService: ShellService, fileManager: FileManagerI) {
+  init(shellService: ShellService, fileManager: FileManagerI, jrpcService: JRPCService) {
     self.shellService = shellService
     self.fileManager = fileManager
+    self.jrpcService = jrpcService
     let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
       .appendingPathComponent(Bundle.main.hostAppBundleId)
       .appendingPathComponent("copilot-language-server-\(executableVersion)")
@@ -65,7 +67,8 @@ final class DefaultGithubCopilotService: GithubCopilotService {
         // Use this folder that we know to exist as the workspace root, as we need to provide one
         workspaceRoot: fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".cmd"),
         shellService: shellService,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        jrpcService: jrpcService)
       setAuthServer(.success(authServer))
       authServer.notifications.sink { @Sendable [weak self] notification in
         self?.handle(authServerNotification: notification)
@@ -85,6 +88,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
 
   private let shellService: ShellService
   private let fileManager: FileManagerI
+  private let jrpcService: JRPCService
 
   private let expectedExecutablePath: URL?
 
@@ -157,13 +161,15 @@ extension LoginStatus {
 
 extension BaseProviding where
   Self: FileManagerProviding,
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: JRPCServiceProviding
 {
   public var githubCopilotService: GithubCopilotService {
     shared {
       DefaultGithubCopilotService(
-        shellService: self.shellService,
-        fileManager: self.fileManager)
+        shellService: shellService,
+        fileManager: fileManager,
+        jrpcService: jrpcService)
     }
   }
 
