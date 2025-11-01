@@ -272,12 +272,18 @@ public final class GithubCopilotServer: Sendable {
     defaultLogger.log("Handling server request: \(method)")
 
     let response: JRPCResponse
+    let httpConfiguration: HTTPConfiguration =
+      if let copilotProxy = await shellService.env["GITHUB_COPILOT_PROXY"] {
+        .init(proxy: copilotProxy, proxyStrictSSL: false)
+      } else {
+        .default
+      }
 
     switch method {
     case "workspace/configuration":
       if
         let request = try? params?.decode(as: WorkspaceConfigurationRequestParameters.self),
-        let data = try? WorkspaceConfigurationBuilder.buildResponse(for: request)
+        let data = try? WorkspaceConfigurationBuilder.buildResponse(for: request, httpConfiguration: httpConfiguration)
       {
         defaultLogger.log(" → Responding with \(request.items.count) configurations")
         response = JRPCResponse(id: id, result: data, error: nil)

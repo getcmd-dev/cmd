@@ -31,6 +31,7 @@ extension DefaultGithubCopilotService {
     else {
       return nil
     }
+
     if let range = completion.range {
       return CompletionSuggestion(
         file: file,
