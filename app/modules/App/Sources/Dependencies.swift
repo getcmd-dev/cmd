@@ -229,7 +229,6 @@ extension AppScope: ChatServiceProviding { }
 extension AppScope: CodeCompletionProvidersPluginProviding {
   var codeCompletionProviders: [any CodeCompletionProvider] {
     [
-      //      MockCodeCompletionProvider(),
       githubCopilotService,
     ]
   }

@@ -57,10 +57,12 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
+    // TODO: remove
     return codeCompletionProviders.first
 //    return nil
   }
 
+  // TODO: support timeout
   func suggestCompletion(timeout _: TimeInterval) async throws -> CompletionSuggestion? {
     guard let provider = configuredProvider else {
       throw AppError("No code completion provider configured")
