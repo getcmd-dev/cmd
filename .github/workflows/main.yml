@@ -10,6 +10,20 @@ concurrency:
   group: main_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
+  build_release_app:
+    uses: ./.github/workflows/jobs/build-release-app.yml
+    with:
+      save_cache: true
+      cache_key_suffix: main
+    secrets: inherit
+
+  test_swift_app:
+    uses: ./.github/workflows/jobs/test-swift-app.yml
+    with:
+      save_cache: true
+      cache_key_suffix: main
+    secrets: inherit
+
   warm_up_release_app_cache:
     runs-on: macos-26
     timeout-minutes: 60
@@ -34,6 +48,9 @@ jobs:
       with:
         path: local-server/node_modules
         key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}_npm_modules_main
+          ${{ runner.os }}_npm_modules_
     - name: Install node dependencies
       run: cd local-server && yarn install && yarn build && yarn copy-to-app
     # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
