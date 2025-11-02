@@ -7,26 +7,18 @@ import Foundation
 
 public struct CompletionSuggestion: Sendable {
   public let file: URL
-  public let startPosition: CursorPosition
+  /// The position where the completion starts (inclusive) in the old content.
+  public let startPosition: Position
+  /// The position where the completion ends (exclusive) in the old content.
+  public let endPosition: Position
   public let completion: String
   public let id: UUID
 
-  public init(file: URL, startPosition: CursorPosition, completion: String, id: UUID) {
+  public init(file: URL, startPosition: Position, endPosition: Position, completion: String, id: UUID) {
     self.file = file
     self.startPosition = startPosition
+    self.endPosition = endPosition
     self.completion = completion
     self.id = id
-  }
-}
-
-// MARK: - CursorPosition
-
-public struct CursorPosition: Codable, Equatable, Sendable {
-  public let line: Int
-  public let character: Int
-
-  public init(line: Int, character: Int) {
-    self.line = line
-    self.character = character
   }
 }

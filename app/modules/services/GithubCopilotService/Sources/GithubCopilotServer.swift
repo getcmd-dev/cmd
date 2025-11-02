@@ -95,9 +95,6 @@ public final class GithubCopilotServer: Sendable {
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(request)
 
-    let jsonString = String(data: jsonData, encoding: .utf8)!
-    defaultLogger.log("Sending: \(jsonString)\n")
-
     // LSP protocol requires Content-Length header
     // Note: StdioTransport will add \n after this, which is fine for LSP
     let header = "Content-Length: \(jsonData.count)\r\n\r\n"
@@ -276,12 +273,18 @@ public final class GithubCopilotServer: Sendable {
     defaultLogger.log("Handling server request: \(method)")
 
     let response: JRPCResponse
+    let httpConfiguration: HTTPConfiguration =
+      if let copilotProxy = await shellService.env["GITHUB_COPILOT_PROXY"] {
+        .init(proxy: copilotProxy, proxyStrictSSL: false)
+      } else {
+        .default
+      }
 
     switch method {
     case "workspace/configuration":
       if
         let request = try? params?.decode(as: WorkspaceConfigurationRequestParameters.self),
-        let data = try? WorkspaceConfigurationBuilder.buildResponse(for: request)
+        let data = try? WorkspaceConfigurationBuilder.buildResponse(for: request, httpConfiguration: httpConfiguration)
       {
         defaultLogger.log(" → Responding with \(request.items.count) configurations")
         response = JRPCResponse(id: id, result: data, error: nil)

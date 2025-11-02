@@ -37,3 +37,9 @@ public struct NewChatEvent: AppEvent {
 public struct HideChatEvent: AppEvent {
   public init() { }
 }
+
+// MARK: - SuggestCodeCompletionEvent
+
+public struct SuggestCodeCompletionEvent: AppEvent {
+  public init() { }
+}
