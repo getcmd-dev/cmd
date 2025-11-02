@@ -1,0 +1,110 @@
+name: Build release app
+
+on:
+  workflow_call:
+    inputs:
+      save_cache:
+        description: "Whether to save cache (true) or only load (false)"
+        required: true
+        type: boolean
+      cache_key_suffix:
+        description: "Suffix for cache keys (e.g., main). If not provided, uses hash-based keys."
+        required: false
+        type: string
+
+jobs:
+  build_release_app:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: gsabran/setup-swift@main
+        with:
+          swift-version: "6.2"
+          soft-fail-version-check: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0"
+      - name: Restore npm cache
+        uses: actions/cache/restore@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ inputs.cache_key_suffix || hashFiles('local-server/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}_npm_modules_main
+            ${{ runner.os }}_npm_modules_
+      - name: Install node dependencies
+        run: cd local-server && yarn install && yarn build && yarn copy-to-app
+      # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
+      - uses: extractions/netrc@v1
+        with:
+          machine: github.com
+          username: oauth2
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore SPM packages cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}_spm_packages_${{ inputs.cache_key_suffix || hashFiles('app/modules/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}_spm_packages_main
+            ${{ runner.os }}_spm_packages_
+      - name: Restore release build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: app/build/derived_data
+          key: ${{ runner.os }}_release_build_${{ inputs.cache_key_suffix || hashFiles('app/**') }}
+          restore-keys: |
+            ${{ runner.os }}_release_build_main
+            ${{ runner.os }}_release_build_
+      - name: Install fastlane dependencies
+        run: |
+          cd app/fastlane && gem install bundler && bundle install
+      - name: Build app in Release mode
+        run: cd app/fastlane && bundle exec fastlane mac build_release
+        env:
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
+          FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+      - name: Verify min deployment version
+        run: |
+          cd app
+          deployment_target=$(xcodebuild -project ./command.xcodeproj -showBuildSettings 2>&1 | grep "^    MACOSX_DEPLOYMENT_TARGET = " | head -n 1 | sed 's/^    MACOSX_DEPLOYMENT_TARGET = //')
+          echo "Found MACOSX_DEPLOYMENT_TARGET: $deployment_target"
+          if [ "$deployment_target" = "15.0" ]; then
+            echo "✓ Deployment target is correctly set to 15.0"
+          else
+            echo "✗ Expected MACOSX_DEPLOYMENT_TARGET to be 15.0, but found: `$deployment_target`"
+            exit 1
+          fi
+      - name: Save release build cache
+        if: ${{ inputs.save_cache }}
+        uses: actions/cache/save@v4
+        with:
+          path: app/build/derived_data
+          key: ${{ runner.os }}_release_build_${{ inputs.cache_key_suffix || hashFiles('app/**') }}
+      - name: Save SPM packages cache
+        if: ${{ inputs.save_cache }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}_spm_packages_${{ inputs.cache_key_suffix || hashFiles('app/modules/Package.resolved') }}
+      - name: Save npm cache
+        if: ${{ inputs.save_cache }}
+        uses: actions/cache/save@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ inputs.cache_key_suffix || hashFiles('local-server/yarn.lock') }}
