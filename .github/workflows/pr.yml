@@ -221,7 +221,7 @@ jobs:
     - name: Cache dependencies binary
       uses: actions/cache@v4
       with:
-        path: app/tools/dependencies/tmp/bin
+        path: ~/.cmd/dev/tmp/bin/sync-package-dependencies
         key: ${{ runner.os }}_spm_tools_${{ hashFiles('app/tools/dependencies/**') }}
         restore-keys: |
           ${{ runner.os }}_spm_tools_

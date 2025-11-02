@@ -8,7 +8,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
-CACHE_DIR="$HOME/.cmd/dev/tmp/bin"
+BASE_CACHE_DIR="$HOME/.cmd/dev/tmp/bin/sync-package-dependencies"
+CACHE_DIR="$BASE_CACHE_DIR"
 
 # Calculate hash of all git-tracked source files
 CURRENT_HASH=$(git ls-files . 2>/dev/null | sort | xargs cat 2>/dev/null | shasum -a 256 | cut -d' ' -f1)
@@ -29,6 +30,16 @@ REBUILD=false
 if [ ! -f "${BINARY}" ]; then
 	echo "No cached binary at $BINARY. Rebuilding..."
 	REBUILD=true
+
+	# Keep last 5 most recent files/directories.
+	# This limits cache size, while allowing for cache hits for recent versions - which is useful when changing branches around a version change.
+	if [ -d "${BASE_CACHE_DIR}" ]; then
+		echo "Keeping last 10 most recent cache entries..."
+		cd "${BASE_CACHE_DIR}"
+		# List all items sorted by modification time (newest first), skip first 10, remove rest
+		ls -dt 2>/dev/null | tail -n +6 | xargs rm -rf 2>/dev/null || true
+		cd - >/dev/null
+	fi
 fi
 
 mkdir -p "${CACHE_DIR}"
