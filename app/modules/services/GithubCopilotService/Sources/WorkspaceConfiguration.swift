@@ -54,17 +54,24 @@ struct TelemetryConfiguration: Codable {
 
 /// Helper to build configuration responses for workspace/configuration requests
 enum WorkspaceConfigurationBuilder {
-  static func buildResponse(for request: WorkspaceConfigurationRequestParameters) throws -> JSON.Value {
+  static func buildResponse(
+    for request: WorkspaceConfigurationRequestParameters,
+    copilotConfiguration: GitHubCopilotConfiguration = .default,
+    enterpriseConfiguration: GitHubEnterpriseConfiguration = .default,
+    httpConfiguration: HTTPConfiguration = .default,
+    telemetryConfiguration: TelemetryConfiguration = .default)
+    throws -> JSON.Value
+  {
     try .array(request.items.map { item in
       switch item.section {
       case "github.copilot":
-        try .init(encoding: GitHubCopilotConfiguration.default)
+        try .init(encoding: copilotConfiguration)
       case "github-enterprise":
-        try .init(encoding: GitHubEnterpriseConfiguration.default)
+        try .init(encoding: enterpriseConfiguration)
       case "http":
-        try .init(encoding: HTTPConfiguration.default)
+        try .init(encoding: httpConfiguration)
       case "telemetry":
-        try .init(encoding: TelemetryConfiguration.default)
+        try .init(encoding: telemetryConfiguration)
       default:
         JSON.Value.object([:])
       }

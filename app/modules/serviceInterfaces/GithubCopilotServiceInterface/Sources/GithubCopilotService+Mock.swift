@@ -9,7 +9,7 @@ import Foundation
 import ThreadSafe
 
 #if DEBUG
-@ThreadSafe
+@ThreadSafe @dynamicMemberLookup
 public final class MockGithubCopilotService: GithubCopilotService {
   public init(id: String = "mock-code-completion-provider") {
     self.id = id
@@ -20,8 +20,6 @@ public final class MockGithubCopilotService: GithubCopilotService {
 
   public let id: String
 
-  public var onProvideCompletion: (@Sendable () async throws -> CompletionSuggestion)?
-  public var onDidSave: (@Sendable (URL, String) -> Void)?
   public var onInstallLSPServer: (@Sendable () async throws -> Void)?
 
   public var onCheckStatus: (@Sendable () async throws -> LoginStatus)?
@@ -37,15 +35,43 @@ public final class MockGithubCopilotService: GithubCopilotService {
     _isLSPServerInstalled.readonly()
   }
 
-  public func provideCompletion() async throws -> CompletionSuggestion {
-    guard let onProvideCompletion else {
-      throw AppError("No completion provided")
-    }
-    return try await onProvideCompletion()
+  public func suggestCompletion(
+    workspace: URL,
+    file: URL,
+    content: String,
+    version: Int,
+    selection: Range,
+    pasteboardContent: String?)
+    async throws -> CompletionSuggestion?
+  {
+    try await codeCompletionProvider.suggestCompletion(
+      workspace: workspace,
+      file: file,
+      content: content,
+      version: version,
+      selection: selection,
+      pasteboardContent: pasteboardContent)
   }
 
-  public func didSave(file: URL, content: String) {
-    onDidSave?(file, content)
+  public subscript<T>(dynamicMember keyPath: WritableKeyPath<MockCodeCompletionProvider, T>) -> T {
+    get { codeCompletionProvider[keyPath: keyPath] }
+    set { codeCompletionProvider[keyPath: keyPath] = newValue }
+  }
+
+  public func didSave(workspace: URL, file: URL, content: String, version: Int) {
+    codeCompletionProvider.didSave(workspace: workspace, file: file, content: content, version: version)
+  }
+
+  public func didOpen(workspace: URL, file: URL, content: String, version: Int) {
+    codeCompletionProvider.didOpen(workspace: workspace, file: file, content: content, version: version)
+  }
+
+  public func didChange(workspace: URL, file: URL, content: String, version: Int) {
+    codeCompletionProvider.didChange(workspace: workspace, file: file, content: content, version: version)
+  }
+
+  public func didClose(workspace: URL, file: URL, content: String, version: Int) {
+    codeCompletionProvider.didClose(workspace: workspace, file: file, content: content, version: version)
   }
 
   public func checkStatus() async throws -> LoginStatus {
@@ -73,5 +99,8 @@ public final class MockGithubCopilotService: GithubCopilotService {
   public func installLSPServer() async throws {
     try await onInstallLSPServer?()
   }
+
+  private var codeCompletionProvider = MockCodeCompletionProvider()
+
 }
 #endif

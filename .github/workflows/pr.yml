@@ -238,3 +238,20 @@ jobs:
         run: ./cmd.sh lint:rb
       - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
         run: git diff --exit-code
+
+  lint_yaml:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Run linter
+        run: ./cmd.sh lint:yaml
+      - name: Verify that `cmd lint:yaml` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code

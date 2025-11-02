@@ -56,8 +56,9 @@ export OPEN_ROUTER_LOCAL_SERVER_PROXY="http://localhost:10002/api/v1"
 export OPENAI_LOCAL_SERVER_PROXY="http://localhost:10003/v1"
 export GROQ_LOCAL_SERVER_PROXY="http://localhost:10004/openai/v1"
 export GEMINI_LOCAL_SERVER_PROXY="http://localhost:10005/v1beta"
+export GITHUB_COPILOT_PROXY="http://localhost:9090"
 
-# Claude Code (with proxyman):
+# Claude Code (with Proxyman):
 cat > "$HOME/.claude/start_with_proxy.sh" << 'EOF'
 #!/bin/zsh
 
@@ -70,6 +71,13 @@ chmod +x "$HOME/.claude/start_with_proxy.sh"
 export CLAUDE_CODE_PROXY="$HOME/.claude/start_with_proxy.sh"
 
 # If you use Proxyman, this will allow Claude Code to be proxied (this works for any node.js program)
+
+
+# Codex (with Proxyman)
+export CODEX_PROXY="http://localhost:9090"
+# In Proxyman, save the SSL certificate (Certificate > Export > Root Certificate as pem)
+export NODE_EXTRA_CA_CERTS="/path/to/saved/ssl/certificate/proxyman.pem"
+export NODE_TLS_REJECT_UNAUTHORIZED=0
 ```
 - Set a reverse proxy in your proxy tool. For instance in Proxyman (Tools > Reverse Proxy...):
 <img height="width: 100%" src="./docs/assets/proxy-setup.png"/>

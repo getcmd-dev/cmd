@@ -76,6 +76,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     on(.addContextToNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: nil))
     on(.hideChat, trigger: HideChatEvent())
     on(.new, trigger: NewChatEvent())
+    on(.suggestCodeCompletion, trigger: SuggestCodeCompletionEvent())
   }
 
   // MARK: - Settings integration
@@ -118,10 +119,12 @@ extension KeyboardShortcuts.Name {
   // Xcode shortcuts
   static let addContext = Self("addContext", default: .init(.i, modifiers: [.command]))
   static let addContextToNewThread = Self("addContextToNewThread", default: .init(.i, modifiers: [.command, .shift]))
+  static let suggestCodeCompletion = Self("suggestCodeCompletion", default: .init(.escape, modifiers: [.command, .shift]))
 
   static let xcodeShortcuts = [
     Self.addContext,
     Self.addContextToNewThread,
+    Self.suggestCodeCompletion,
   ]
   /// Host app shortcuts
   static let new = Self("new", default: .init(.n, modifiers: [.command]))
