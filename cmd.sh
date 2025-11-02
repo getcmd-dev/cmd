@@ -57,7 +57,7 @@ lint_yaml_command() {
 	cd "$(git rev-parse --show-toplevel)" &&
 		git ls-files '*.yml' '*.yaml' |
 		grep -v '^\.yamllint\.yml$' |
-			xargs prettier --write
+			xargs npx --yes prettier@latest --write
 }
 
 sync_dependencies_command() {

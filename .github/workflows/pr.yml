@@ -340,11 +340,11 @@ jobs:
       - name: MacOS version
         run: sw_vers
       - uses: actions/checkout@v4
-      - name: Set up Homebrew
-        id: set_up_homebrew
-        uses: Homebrew/actions/setup-homebrew@master
-      - name: Install prettier
-        run: brew install prettier
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
       - name: Run linter
         run: ./cmd.sh lint:yaml
       - name: Verify that `cmd lint:yaml` did not change outputs (if it did, please re-run it and re-commit!)
