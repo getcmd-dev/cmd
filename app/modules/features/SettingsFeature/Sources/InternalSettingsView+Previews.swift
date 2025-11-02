@@ -16,7 +16,8 @@ import SwiftUI
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
     useNewClaudeCodeApi: .constant(false),
-    defaultLogLevel: .constant(.info))
+    defaultLogLevel: .constant(.info),
+    enableCodeCompletion: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -32,7 +33,8 @@ import SwiftUI
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
     useNewClaudeCodeApi: .constant(true),
-    defaultLogLevel: .constant(.debug))
+    defaultLogLevel: .constant(.debug),
+    enableCodeCompletion: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }

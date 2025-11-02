@@ -195,6 +195,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var enableCodeCompletion: Bool {
+    get {
+      settings.enableCodeCompletion
+    }
+    set {
+      settings.enableCodeCompletion = newValue
+      settingsService.update(setting: \.enableCodeCompletion, to: newValue)
+    }
+  }
+
   var chatModeConfigurations: [String: SettingsServiceInterface.Settings.ChatModeConfiguration] {
     get {
       settings.chatModeConfigurations

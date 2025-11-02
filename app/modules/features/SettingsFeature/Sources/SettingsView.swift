@@ -84,7 +84,8 @@ public struct SettingsView: View {
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
           useNewClaudeCodeApi: $viewModel.useNewClaudeCodeApi,
-          defaultLogLevel: $viewModel.defaultLogLevel)
+          defaultLogLevel: $viewModel.defaultLogLevel,
+          enableCodeCompletion: $viewModel.enableCodeCompletion)
 
       case .about:
         AboutSettingsView(
