@@ -35,7 +35,7 @@ jobs:
   build_release_app:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
-    uses: ./.github/workflows/jobs/build-release-app.yml
+    uses: ./.github/workflows/reusable-build-release-app.yml
     with:
       save_cache: false
     secrets: inherit
@@ -43,7 +43,7 @@ jobs:
   test_swift_app:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
-    uses: ./.github/workflows/jobs/test-swift-app.yml
+    uses: ./.github/workflows/reusable-test-swift-app.yml
     with:
       save_cache: false
     secrets: inherit
