@@ -45,7 +45,7 @@ lint_ts_command() {
 lint_shell_command() {
 	cd "$(git rev-parse --show-toplevel)" &&
 		git ls-files '*.sh' |
-		while read file; do shfmt -w "$file"; done
+		xargs shfmt -w
 }
 
 lint_ruby_command() {
@@ -56,7 +56,8 @@ lint_ruby_command() {
 lint_yaml_command() {
 	cd "$(git rev-parse --show-toplevel)" &&
 		git ls-files '*.yml' '*.yaml' |
-		while read file; do [ -f "$file" ] && prettier --write "$file"; done
+		grep -v '^\.yamllint\.yml$' |
+			xargs prettier --write
 }
 
 sync_dependencies_command() {
