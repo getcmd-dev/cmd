@@ -1,7 +1,6 @@
 AllCops:
   Include:
-    - '**/*.rb'
-    
+    - "**/*.rb"
+
 inherit_gem:
   rubocop-shopify: rubocop.yml
-

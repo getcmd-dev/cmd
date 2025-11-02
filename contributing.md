@@ -21,6 +21,7 @@ cmd install:swiftformat
 brew install jc
 brew install jq
 brew install shfmt
+brew install prettier
 
 # Enable Corepack for Yarn (uses version from package.json)
 corepack enable

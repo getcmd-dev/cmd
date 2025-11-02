@@ -53,6 +53,12 @@ lint_ruby_command() {
 		git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
 }
 
+lint_yaml_command() {
+	cd "$(git rev-parse --show-toplevel)" &&
+		git ls-files '*.yml' '*.yaml' |
+		while read file; do [ -f "$file" ] && prettier --write "$file"; done
+}
+
 sync_dependencies_command() {
 	cd "$(git rev-parse --show-toplevel)/app" &&
 		./tools/dependencies/sync.sh "$@"
@@ -198,11 +204,15 @@ lint:shell)
 lint:rb)
 	lint_ruby_command "$@"
 	;;
+lint:yaml)
+	lint_yaml_command "$@"
+	;;
 lint)
 	lint_swift_command &&
 		lint_ts_command &&
 		lint_shell_command &&
-		lint_ruby_command
+		lint_ruby_command &&
+		lint_yaml_command
 	;;
 test:swift)
 	test_swift_command "$@"
