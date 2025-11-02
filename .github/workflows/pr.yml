@@ -2,10 +2,10 @@ name: Integration tests
 
 on:
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+      - "docs/**"
+      - "**/*.md"
 concurrency:
   group: integration_tests_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
@@ -38,73 +38,73 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
-    - name: Enable Corepack
-      run: corepack enable
-    - uses: gsabran/setup-swift@main
-      with:
-        swift-version: "6.2"
-        soft-fail-version-check: true
-    - uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '26.0'
-    - name: Load npm cache
-      uses: actions/cache@v4
-      with:
-        path: local-server/node_modules
-        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install node dependencies
-      run: cd local-server && yarn install && yarn build && yarn copy-to-app
-    # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
-    - uses: extractions/netrc@v1
-      with:
-        machine: github.com
-        username: oauth2
-        password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Load SPM packages cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Caches/org.swift.swiftpm
-          ~/Library/org.swift.swiftpm
-        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}_spm_packages_
-    - name: Load release build cache
-      uses: actions/cache@v4
-      with:
-        path: app/build/derived_data
-        key: ${{ runner.os }}_release_build_${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}_release_build_main
-          ${{ runner.os }}_release_build_
-    - name: Install fastlane dependencies
-      run: |
-        cd app/fastlane && gem install bundler && bundle install
-    - name: Build app in Release mode
-      run: cd app/fastlane && bundle exec fastlane mac build_release
-      env:
-        FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
-        FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
-        MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
-        FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
-        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
-    - name: Verify min deployment version
-      run: |
-        cd app
-        deployment_target=$(xcodebuild -project ./command.xcodeproj -showBuildSettings 2>&1 | grep "^    MACOSX_DEPLOYMENT_TARGET = " | head -n 1 | sed 's/^    MACOSX_DEPLOYMENT_TARGET = //')
-        echo "Found MACOSX_DEPLOYMENT_TARGET: $deployment_target"
-        if [ "$deployment_target" = "15.0" ]; then
-          echo "✓ Deployment target is correctly set to 15.0"
-        else
-          echo "✗ Expected MACOSX_DEPLOYMENT_TARGET to be 15.0, but found: `$deployment_target`"
-          exit 1
-        fi
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: gsabran/setup-swift@main
+        with:
+          swift-version: "6.2"
+          soft-fail-version-check: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0"
+      - name: Load npm cache
+        uses: actions/cache@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+      - name: Install node dependencies
+        run: cd local-server && yarn install && yarn build && yarn copy-to-app
+      # See https://github.com/actions/runner-images/issues/10722#issuecomment-2387952421
+      - uses: extractions/netrc@v1
+        with:
+          machine: github.com
+          username: oauth2
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Load SPM packages cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}_spm_packages_
+      - name: Load release build cache
+        uses: actions/cache@v4
+        with:
+          path: app/build/derived_data
+          key: ${{ runner.os }}_release_build_${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}_release_build_main
+            ${{ runner.os }}_release_build_
+      - name: Install fastlane dependencies
+        run: |
+          cd app/fastlane && gem install bundler && bundle install
+      - name: Build app in Release mode
+        run: cd app/fastlane && bundle exec fastlane mac build_release
+        env:
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: 60
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: 10
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
+          FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+      - name: Verify min deployment version
+        run: |
+          cd app
+          deployment_target=$(xcodebuild -project ./command.xcodeproj -showBuildSettings 2>&1 | grep "^    MACOSX_DEPLOYMENT_TARGET = " | head -n 1 | sed 's/^    MACOSX_DEPLOYMENT_TARGET = //')
+          echo "Found MACOSX_DEPLOYMENT_TARGET: $deployment_target"
+          if [ "$deployment_target" = "15.0" ]; then
+            echo "✓ Deployment target is correctly set to 15.0"
+          else
+            echo "✗ Expected MACOSX_DEPLOYMENT_TARGET to be 15.0, but found: `$deployment_target`"
+            exit 1
+          fi
 
   test_swift_app:
     runs-on: macos-26
@@ -112,47 +112,46 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: gsabran/setup-swift@main
-      with:
-        swift-version: "6.2"
-        soft-fail-version-check: true
-    - uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '26.0'
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
-    - name: Enable Corepack
-      run: corepack enable
-    - name: Load npm cache
-      uses: actions/cache@v4
-      with:
-        path: local-server/node_modules
-        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install && yarn build && yarn copy-to-app
-    - name: Load SPM cache
-      uses: actions/cache@v4
-      with:
-        path:
-          ~/Library/Caches/org.swift.swiftpm
-          ~/Library/org.swift.swiftpm
-        key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}_spm_packages_
-    - name: Load modules build cache
-      uses: actions/cache@v4
-      with:
-        path: app/modules/.build
-        key: ${{ runner.os }}_modules_build_${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}_modules_build_main
-          ${{ runner.os }}_modules_build_
-    - name: Run app module tests
-      run: ./cmd.sh test:swift
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: gsabran/setup-swift@main
+        with:
+          swift-version: "6.2"
+          soft-fail-version-check: true
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Load npm cache
+        uses: actions/cache@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+      - name: Install dependencies
+        run: cd local-server && yarn install && yarn build && yarn copy-to-app
+      - name: Load SPM cache
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}_spm_packages_
+      - name: Load modules build cache
+        uses: actions/cache@v4
+        with:
+          path: app/modules/.build
+          key: ${{ runner.os }}_modules_build_${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}_modules_build_main
+            ${{ runner.os }}_modules_build_
+      - name: Run app module tests
+        run: ./cmd.sh test:swift
 
   test_app_tools:
     runs-on: macos-26
@@ -160,26 +159,25 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app_tools == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: gsabran/setup-swift@main
-      with:
-        swift-version: "6.2"
-        soft-fail-version-check: true
-    - name: Load SPM cache
-      uses: actions/cache@v4
-      with:
-        path:
-          app/tools/dependencies/.build
-          ~/Library/Caches/org.swift.swiftpm
-          ~/Library/org.swift.swiftpm
-          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
-        key: ${{ runner.os }}_spm_dependencies_tool_${{ hashFiles('app/tools/dependencies/Package.swift') }}
-        restore-keys: |
-          ${{ runner.os }}_spm_dependencies_tool_
-    - name: Run app tools tests
-      run: cd app/tools/dependencies && swift test
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: gsabran/setup-swift@main
+        with:
+          swift-version: "6.2"
+          soft-fail-version-check: true
+      - name: Load SPM cache
+        uses: actions/cache@v4
+        with:
+          path: app/tools/dependencies/.build
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages/
+          key: ${{ runner.os }}_spm_dependencies_tool_${{ hashFiles('app/tools/dependencies/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}_spm_dependencies_tool_
+      - name: Run app tools tests
+        run: cd app/tools/dependencies && swift test
 
   lint_swift:
     runs-on: macos-26
@@ -187,18 +185,18 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - name: Set up Homebrew
-      id: set_up_homebrew
-      uses: Homebrew/actions/setup-homebrew@master
-    - name: Install swiftformat
-      run: brew install swiftformat
-    - name: Run linter
-      run: ./cmd.sh lint:swift
-    - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
-      run: git diff --exit-code
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - name: Set up Homebrew
+        id: set_up_homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install swiftformat
+        run: brew install swiftformat
+      - name: Run linter
+        run: ./cmd.sh lint:swift
+      - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
 
   sync_app_dependencies:
     runs-on: macos-26
@@ -206,29 +204,29 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.app == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: gsabran/setup-swift@main
-      with:
-        swift-version: "6.2"
-        soft-fail-version-check: true
-    - name: Set up Homebrew
-      id: set_up_homebrew
-      uses: Homebrew/actions/setup-homebrew@master
-    - name: Install swiftformat
-      run: brew install swiftformat
-    - name: Cache dependencies binary
-      uses: actions/cache@v4
-      with:
-        path: ~/.cmd/dev/tmp/bin/sync-package-dependencies
-        key: ${{ runner.os }}_spm_tools_${{ hashFiles('app/tools/dependencies/**') }}
-        restore-keys: |
-          ${{ runner.os }}_spm_tools_
-    - name: Run sync dependencies
-      run: ./cmd.sh sync:dependencies
-    - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
-      run: git diff --exit-code
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: gsabran/setup-swift@main
+        with:
+          swift-version: "6.2"
+          soft-fail-version-check: true
+      - name: Set up Homebrew
+        id: set_up_homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install swiftformat
+        run: brew install swiftformat
+      - name: Cache dependencies binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmd/dev/tmp/bin/sync-package-dependencies
+          key: ${{ runner.os }}_spm_tools_${{ hashFiles('app/tools/dependencies/**') }}
+          restore-keys: |
+            ${{ runner.os }}_spm_tools_
+      - name: Run sync dependencies
+        run: ./cmd.sh sync:dependencies
+      - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
 
   test_node:
     runs-on: macos-26
@@ -236,23 +234,23 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
-    - name: Enable Corepack
-      run: corepack enable
-    - name: Load npm cache
-      uses: actions/cache@v4
-      with:
-        path: local-server/node_modules
-        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install
-    - name: Run tests
-      run: ./cmd.sh test:ts
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Load npm cache
+        uses: actions/cache@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+      - name: Install dependencies
+        run: cd local-server && yarn install
+      - name: Run tests
+        run: ./cmd.sh test:ts
 
   tsc:
     runs-on: macos-26
@@ -260,23 +258,23 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
-    - name: Enable Corepack
-      run: corepack enable
-    - name: Load npm cache
-      uses: actions/cache@v4
-      with:
-        path: local-server/node_modules
-        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install
-    - name: Run tests
-      run: cd local-server && yarn tsc
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Load npm cache
+        uses: actions/cache@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+      - name: Install dependencies
+        run: cd local-server && yarn install
+      - name: Run tests
+        run: cd local-server && yarn tsc
 
   lint_node:
     runs-on: macos-26
@@ -284,54 +282,70 @@ jobs:
     needs: detect_changes
     if: ${{ needs.detect_changes.outputs.local_server == 'true' }}
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version-file: "./local-server/.nvmrc"
-    - name: Enable Corepack
-      run: corepack enable
-    - name: Load npm cache
-      uses: actions/cache@v4
-      with:
-        path: local-server/node_modules
-        key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
-    - name: Install dependencies
-      run: cd local-server && yarn install
-    - name: Run linter
-      run: ./cmd.sh lint:ts
-    - name: Verify that `cmd lint:ts` did not change outputs (if it did, please re-run it and re-commit!)
-      run: git diff --exit-code
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Load npm cache
+        uses: actions/cache@v4
+        with:
+          path: local-server/node_modules
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
+      - name: Install dependencies
+        run: cd local-server && yarn install
+      - name: Run linter
+        run: ./cmd.sh lint:ts
+      - name: Verify that `cmd lint:ts` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
 
   lint_shell:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - name: Set up Homebrew
-      id: set_up_homebrew
-      uses: Homebrew/actions/setup-homebrew@master
-    - name: Install shfmt
-      run: brew install shfmt
-    - name: Run linter
-      run: ./cmd.sh lint:shell
-    - name: Verify that `cmd lint:shell` did not change outputs (if it did, please re-run it and re-commit!)
-      run: git diff --exit-code
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - name: Set up Homebrew
+        id: set_up_homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+      - name: Install shfmt
+        run: brew install shfmt
+      - name: Run linter
+        run: ./cmd.sh lint:shell
+      - name: Verify that `cmd lint:shell` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
 
   lint_ruby:
     runs-on: macos-26
     timeout-minutes: 60
     steps:
-    - name: MacOS version
-      run: sw_vers
-    - uses: actions/checkout@v4
-    - name: Install rubocop
-      run:
-        gem install bundler && bundle install
-    - name: Run linter
-      run: ./cmd.sh lint:rb
-    - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
-      run: git diff --exit-code
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - name: Install rubocop
+        run: gem install bundler && bundle install
+      - name: Run linter
+        run: ./cmd.sh lint:rb
+      - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
+
+  lint_yaml:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: MacOS version
+        run: sw_vers
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: "./local-server/.nvmrc"
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Run linter
+        run: ./cmd.sh lint:yaml
+      - name: Verify that `cmd lint:yaml` did not change outputs (if it did, please re-run it and re-commit!)
+        run: git diff --exit-code
