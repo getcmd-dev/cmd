@@ -14,12 +14,10 @@ jobs:
     uses: ./.github/workflows/reusable-build-release-app.yml
     with:
       save_cache: true
-      cache_key_suffix: main
     secrets: inherit
 
   test_swift_app:
     uses: ./.github/workflows/reusable-test-swift-app.yml
     with:
       save_cache: true
-      cache_key_suffix: main
     secrets: inherit

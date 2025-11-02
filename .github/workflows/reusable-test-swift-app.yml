@@ -7,10 +7,6 @@ on:
         description: "Whether to save cache (true) or only load (false)"
         required: true
         type: boolean
-      cache_key_suffix:
-        description: "Suffix for cache keys (e.g., main). If not provided, uses hash-based keys."
-        required: false
-        type: string
 
 jobs:
   test_swift_app:
@@ -36,9 +32,8 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: local-server/node_modules
-          key: ${{ runner.os }}_npm_modules_${{ inputs.cache_key_suffix || hashFiles('local-server/yarn.lock') }}
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
           restore-keys: |
-            ${{ runner.os }}_npm_modules_main
             ${{ runner.os }}_npm_modules_
       - name: Install dependencies
         run: cd local-server && yarn install && yarn build && yarn copy-to-app
@@ -47,17 +42,15 @@ jobs:
         with:
           path: ~/Library/Caches/org.swift.swiftpm
             ~/Library/org.swift.swiftpm
-          key: ${{ runner.os }}_spm_packages_${{ inputs.cache_key_suffix || hashFiles('app/modules/Package.resolved') }}
+          key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}_spm_packages_main
             ${{ runner.os }}_spm_packages_
       - name: Restore modules build cache
         uses: actions/cache/restore@v4
         with:
           path: app/modules/.build
-          key: ${{ runner.os }}_modules_build_${{ inputs.cache_key_suffix || hashFiles('app/modules/**') }}
+          key: ${{ runner.os }}_modules_build_${{ hashFiles('app/modules/**') }}
           restore-keys: |
-            ${{ runner.os }}_modules_build_main
             ${{ runner.os }}_modules_build_
       - name: Run app module tests
         run: ./cmd.sh test:swift
@@ -66,17 +59,17 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: app/modules/.build
-          key: ${{ runner.os }}_modules_build_${{ inputs.cache_key_suffix || hashFiles('app/modules/**') }}
+          key: ${{ runner.os }}_modules_build_${{ hashFiles('app/modules/**') }}
       - name: Save SPM cache
         if: ${{ inputs.save_cache }}
         uses: actions/cache/save@v4
         with:
           path: ~/Library/Caches/org.swift.swiftpm
             ~/Library/org.swift.swiftpm
-          key: ${{ runner.os }}_spm_packages_${{ inputs.cache_key_suffix || hashFiles('app/modules/Package.resolved') }}
+          key: ${{ runner.os }}_spm_packages_${{ hashFiles('app/modules/Package.resolved') }}
       - name: Save npm cache
         if: ${{ inputs.save_cache }}
         uses: actions/cache/save@v4
         with:
           path: local-server/node_modules
-          key: ${{ runner.os }}_npm_modules_${{ inputs.cache_key_suffix || hashFiles('local-server/yarn.lock') }}
+          key: ${{ runner.os }}_npm_modules_${{ hashFiles('local-server/yarn.lock') }}
