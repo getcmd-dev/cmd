@@ -2,10 +2,10 @@ name: Main integration tests
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
     paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
+      - "docs/**"
+      - "**/*.md"
 concurrency:
   group: main_${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
