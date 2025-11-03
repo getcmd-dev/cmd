@@ -42,8 +42,10 @@ final class WindowsView {
 
   private var sidePanel: SidePanel?
   private var setupWindow: SetupWindow?
+  private var codeCompletionWindow: CodeCompletionWindow?
 
   private func update(to newState: WindowsViewModel.State, from oldState: WindowsViewModel.State) {
+    showCompletion()
     if newState.isOnboardingVisible != oldState.isOnboardingVisible {
       if newState.isOnboardingVisible {
         showSetupWindow()
@@ -76,6 +78,14 @@ final class WindowsView {
           self?.viewModel.handle(.didShowSettings)
         }
       }
+    }
+  }
+
+  private func showCompletion() {
+    if codeCompletionWindow == nil {
+      codeCompletionWindow = CodeCompletionWindow(windowsViewModel: viewModel)
+      codeCompletionWindow?.show()
+      codeCompletionWindow?.orderFrontRegardless()
     }
   }
 

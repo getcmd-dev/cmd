@@ -4,5 +4,6 @@ Target.module(
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
+    "LoggingServiceInterface",
     "ThreadSafe",
   ])

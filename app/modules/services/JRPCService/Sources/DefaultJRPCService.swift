@@ -14,10 +14,10 @@ final class DefaultJRPCService: JRPCService {
     command: String,
     env: [String: String],
     pwd: String?,
-    delimitation: STDIODelimitation)
+    configuration: STDIOConfiguration)
     -> StdioConnection
   {
-    DefaultStdioConnection(command: command, env: env, pwd: pwd, delimitation: delimitation)
+    DefaultStdioConnection(command: command, env: env, pwd: pwd, configuration: configuration)
   }
 }
 

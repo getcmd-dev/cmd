@@ -2,46 +2,51 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
-import AppEventServiceInterface
 import AppFoundation
 import AppKit
 import ChatAppEvents
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import SettingsServiceInterface
 import XcodeObserverServiceInterface
 
-// MARK: - DefaultCodeCompletionService
+// MARK: - WorkspaceIndex
 
 // TODO: buffer updates for file change (don't do every char)
 // TODO: get tabSize etc, maybe from XcodeExtension?
 // TODO: setup file watched to detect file save.
 // TODO: check if URL is a stable key for dictionaries
 
+final class WorkspaceIndex: Workspace {
+  init(url: URL, files: @escaping @Sendable () -> [URL]) {
+    self.url = url
+    _files = files
+  }
+
+  let url: URL
+  let _files: @Sendable () -> [URL]
+
+  var files: [URL] { _files() }
+
+}
+
+// MARK: - DefaultCodeCompletionService
+
 actor DefaultCodeCompletionService: CodeCompletionService {
   init(
     xcodeObserver: XcodeObserver,
     getPasteboardContent: @escaping @Sendable () -> String?,
     codeCompletionProviders: [any CodeCompletionProvider],
-    settingsService: SettingsService,
-    appEventHandlerRegistry: AppEventHandlerRegistry)
+    settingsService: SettingsService)
   {
     self.xcodeObserver = xcodeObserver
     self.getPasteboardContent = getPasteboardContent
     self.codeCompletionProviders = codeCompletionProviders
     self.settingsService = settingsService
-    appEventHandlerRegistry.registerHandler { [weak self] appEvent in
-      if let appEvent = appEvent as? SuggestCodeCompletionEvent {
-        Task {
-          try await self?.suggestCompletion(timeout: 10)
-        }
-        return true
-      }
-      return false
-    }
 
     // Set up event sources from XcodeObserver
     Task {
@@ -63,33 +68,46 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   }
 
   // TODO: support timeout
-  func suggestCompletion(timeout _: TimeInterval) async throws -> CompletionSuggestion? {
+  func suggestCompletion(
+    workspace: URL,
+    file: URL,
+    content: String,
+    selection: Range,
+    timeout _: TimeInterval)
+    async throws -> CompletionSuggestion?
+  {
     guard let provider = configuredProvider else {
       throw AppError("No code completion provider configured")
     }
-    guard let workspace = xcodeObserver.state.focusedWorkspace else {
-      throw AppError("No focused Xcode workspace")
+//    guard let workspace = xcodeObserver.state.focusedWorkspace else {
+//      throw AppError("No focused Xcode workspace")
+//    }
+//    guard let focussedFile = await xcodeObserver.focusedTabURL(in: workspace) else {
+//      throw AppError("No focused file in Xcode workspace")
+//    }
+    if let fileState = openFiles[workspace]?[file], fileState.content == content {
+      // Nothing
+    } else {
+      openFiles[workspace] = openFiles[workspace] ?? [:]
+      openFiles[workspace]?[file] = .init(content: content, version: 0)
+      notifyProviders { provider in
+        provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
+      }
     }
-    guard let focussedFile = await xcodeObserver.focusedTabURL(in: workspace) else {
-      throw AppError("No focused file in Xcode workspace")
-    }
-    guard let fileState = openFiles[workspace.url]?[focussedFile] else {
-      throw AppError("No content for focused file in Xcode workspace")
-    }
-    guard let editor = workspace.editors.first(where: { $0.isFocused }) else {
-      throw AppError("No focused editor in Xcode workspace")
-    }
-    let selections = editor.selections
-    guard selections.count == 1, let selection = selections.first else {
-      throw AppError("Multiple selections are not supported")
-    }
+//    guard let editor = workspace.editors.first(where: { $0.isFocused }) else {
+//      throw AppError("No focused editor in Xcode workspace")
+//    }
+//    let selections = editor.selections
+//    guard selections.count == 1, let selection = selections.first else {
+//      throw AppError("Multiple selections are not supported")
+//    }
 
     return try await provider.suggestCompletion(
-      workspace: workspace.url,
-      file: focussedFile,
-      content: fileState.content,
-      version: fileState.version,
-      selection: selection.range,
+      workspace: workspace,
+      file: file,
+      content: content,
+      version: openFiles[workspace]?[file]?.version ?? 0,
+      selection: selection,
       pasteboardContent: getPasteboardContent())
   }
 
@@ -98,8 +116,11 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   private struct FileState {
     let content: String
     let version: Int
+    let isOpened = false
   }
 
+  /// Workspaces being initalized. While a workspace is initialize, it cannot receive events.
+  private var workspacesBeingInitialized = Set<URL>()
   private let xcodeObserver: XcodeObserver
   private let getPasteboardContent: @Sendable () -> String?
   private let codeCompletionProviders: [any CodeCompletionProvider]
@@ -107,7 +128,37 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   private var cancellables = [AnyCancellable]()
 
   /// Track which files are currently open within each workspace
+  nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
   private var openFiles = [URL: [URL: FileState]]()
+
+  private func initialize(workspace: URL) {
+    guard workspacesBeingInitialized.insert(workspace).inserted else { return }
+    Task { [weak self] in
+      do {
+        // list files
+        let files = try await self?.xcodeObserver.listFiles(in: workspace).0
+        await self?.didInitialize(workspace: workspace, files: files)
+        // setup file watcher (TODO)
+      } catch {
+        print("Error setting up workspace: \(error)")
+        await self?.didInitialize(workspace: workspace, files: nil)
+      }
+    }
+  }
+
+  private func didInitialize(workspace: URL, files: [URL]?) {
+    if let files {
+      filesPerWorkspace[workspace] = Set(files)
+      notifyProviders { provider in
+        provider.setUp(workspace: WorkspaceIndex(
+          url: workspace,
+          files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
+      }
+      openFiles[workspace] = [:]
+      handleStateChange(xcodeObserver.state)
+    }
+    workspacesBeingInitialized.remove(workspace)
+  }
 
   /// Set up event sources from XcodeObserver to trigger LSP text document events
   private func setupEventSources() {
@@ -125,9 +176,16 @@ actor DefaultCodeCompletionService: CodeCompletionService {
 
     // Track all currently open files in all workspaces
     var currentlyOpenFiles = [URL: Set<URL>]()
+    var currentlyTrackedWorkspaces = Set<URL>()
 
     for xcodeApp in state.xcodesState {
       for workspace in xcodeApp.workspaces {
+        currentlyTrackedWorkspaces.insert(workspace.url)
+        if openFiles[workspace.url] == nil {
+          // new workspace
+          initialize(workspace: workspace.url)
+          break
+        }
         openFiles[workspace.url] = openFiles[workspace.url, default: [:]]
         currentlyOpenFiles[workspace.url] = currentlyOpenFiles[workspace.url, default: Set()]
 
@@ -157,6 +215,10 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     }
 
     for (workspaceURL, openFilesInWorkspace) in openFiles {
+      if !currentlyTrackedWorkspaces.contains(workspaceURL) {
+        // Stop tracking the workspace if it's no longer open
+        notifyProviders { $0.close(workspace: workspaceURL) }
+      }
       // textDocument/didClose: Detect files that were closed
       let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
       let closedFiles = openFilesInWorkspace.keys.filter { !currentlyOpenFiles.contains($0) }
@@ -191,8 +253,7 @@ extension CursorRange {
 extension BaseProviding where
   Self: XcodeObserverProviding,
   Self: CodeCompletionProvidersPluginProviding,
-  Self: SettingsServiceProviding,
-  Self: AppEventHandlerRegistryProviding
+  Self: SettingsServiceProviding
 {
   public var codeCompletionService: CodeCompletionService {
     shared {
@@ -200,8 +261,7 @@ extension BaseProviding where
         xcodeObserver: xcodeObserver,
         getPasteboardContent: { NSPasteboard.general.string(forType: .string) },
         codeCompletionProviders: codeCompletionProviders,
-        settingsService: settingsService,
-        appEventHandlerRegistry: appEventHandlerRegistry)
+        settingsService: settingsService)
     }
   }
 }

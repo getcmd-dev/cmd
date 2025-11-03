@@ -232,3 +232,48 @@ struct WorkspaceConfigurationRequestParameters: Decodable {
     let section: String
   }
 }
+
+// MARK: - DidChangeWatchedFilesNotificationParameters
+
+struct DidChangeWatchedFilesNotificationParameters: Codable {
+  var workspaceUri: String
+  var changes: [FileEvent]
+
+  init(workspaceUri: String, changes: [FileEvent]) {
+    self.workspaceUri = workspaceUri
+    self.changes = changes
+  }
+}
+
+// MARK: - FileEvent
+
+/// An event describing a file change.
+struct FileEvent: Codable, Hashable, Sendable {
+  var uri: String
+  var type: FileChangeType
+
+  init(uri: String, type: FileChangeType) {
+    self.uri = uri
+    self.type = type
+  }
+}
+
+// MARK: - FileChangeType
+
+/// The type of file event.
+///
+/// In LSP, this is an integer, so we don't use a closed set.
+struct FileChangeType: RawRepresentable, Codable, Hashable, Sendable {
+  var rawValue: Int
+
+  init(rawValue: Int) {
+    self.rawValue = rawValue
+  }
+
+  /// The file was created.
+  static let created = FileChangeType(rawValue: 1)
+  /// The file was changed.
+  static let changed = FileChangeType(rawValue: 2)
+  /// The file was deleted.
+  static let deleted = FileChangeType(rawValue: 3)
+}

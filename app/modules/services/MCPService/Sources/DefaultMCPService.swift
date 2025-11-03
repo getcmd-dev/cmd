@@ -59,7 +59,7 @@ actor DefaultMCPService: MCPService {
           command: command,
           env: env,
           pwd: nil,
-          delimitation: .newLine))
+          configuration: .init(delimitation: .newLine)))
 
       case .http(let config):
         guard let endpoint = URL(string: config.url) else {

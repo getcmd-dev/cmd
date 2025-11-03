@@ -48,7 +48,7 @@ public final class MockStdioConnection: StdioConnection {
 
 public final class MockJRPCService: JRPCService {
   public init(
-    onCreateConnection: @escaping @Sendable (String, [String: String], String?, STDIODelimitation)
+    onCreateConnection: @escaping @Sendable (String, [String: String], String?, STDIOConfiguration)
       -> StdioConnection = { _, _, _, _ in MockStdioConnection() })
   {
     self.onCreateConnection = onCreateConnection
@@ -58,13 +58,13 @@ public final class MockJRPCService: JRPCService {
     command: String,
     env: [String: String],
     pwd: String?,
-    delimitation: STDIODelimitation)
+    configuration: STDIOConfiguration)
     -> StdioConnection
   {
-    onCreateConnection(command, env, pwd, delimitation)
+    onCreateConnection(command, env, pwd, configuration)
   }
 
-  private let onCreateConnection: @Sendable (String, [String: String], String?, STDIODelimitation) -> StdioConnection
+  private let onCreateConnection: @Sendable (String, [String: String], String?, STDIOConfiguration) -> StdioConnection
 
 }
 #endif

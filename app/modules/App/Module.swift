@@ -23,6 +23,7 @@ Target.module(
     "CheckpointService",
     "CheckpointServiceInterface",
     "ClaudeCodeTools",
+    "CodeCompletionFeature",
     "CodeCompletionFoundation",
     "CodeCompletionService",
     "CodeCompletionServiceInterface",

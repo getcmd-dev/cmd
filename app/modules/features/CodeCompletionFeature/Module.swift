@@ -1,13 +1,10 @@
 Target.module(
-  name: "CodeCompletionService",
+  name: "CodeCompletionFeature",
   dependencies: [
-    "AccessibilityFoundation",
-    "AppFoundation",
-    "ChatAppEvents",
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "CodeCompletionFeatureInterface",
     "CodeCompletionFoundation",
     "CodeCompletionServiceInterface",
-    "ConcurrencyFoundation",
-    "DependencyFoundation",
     "SettingsServiceInterface",
     "XcodeObserverServiceInterface",
   ])
