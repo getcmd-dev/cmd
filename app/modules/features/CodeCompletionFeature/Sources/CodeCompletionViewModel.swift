@@ -101,7 +101,8 @@ final class CodeCompletionViewModel {
       self.editorState = editorState
       let taskId = UUID()
       let task = Task { [weak self] in
-        try await Task.sleep(nanoseconds: 250_000_000) // 250ms debounce
+        let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+        try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
         try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
         guard let self, completionTask?.id == taskId else { return }
         let completion = try await codeCompletionService.suggestCompletion(
