@@ -13,27 +13,31 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
   public init(id: String = "mock-code-completion-provider") {
     self.id = id
 
-    onDidSave = { _, file, _, _ in
-      print("MockCodeCompletionProvider didSave called", file)
-    }
-    onDidOpen = { _, file, _, _ in
-      print("MockCodeCompletionProvider didOpen called", file)
-    }
-    onDidChange = { _, file, _, _ in
-      print("MockCodeCompletionProvider didChange called", file)
-    }
-    onDidClose = { _, file, _, _ in
-      print("MockCodeCompletionProvider didClose called", file)
-    }
+    onSetUp = { _ in }
+    onClose = { _ in }
+    onDidSave = { _, _, _, _ in }
+    onDidOpen = { _, _, _, _ in }
+    onDidChange = { _, _, _, _ in }
+    onDidClose = { _, _, _, _ in }
   }
 
   public let id: String
 
+  public var onSetUp: @Sendable (Workspace) -> Void
+  public var onClose: @Sendable (URL) -> Void
   public var onSuggestCompletion: (@Sendable (URL, URL, String, Int, Range, String?) async throws -> CompletionSuggestion?)?
   public var onDidSave: @Sendable (URL, URL, String, Int) -> Void
   public var onDidOpen: @Sendable (URL, URL, String, Int) -> Void
   public var onDidChange: @Sendable (URL, URL, String, Int) -> Void
   public var onDidClose: @Sendable (URL, URL, String, Int) -> Void
+
+  public func setUp(workspace: Workspace) {
+    onSetUp(workspace)
+  }
+
+  public func close(workspace: URL) {
+    onClose(workspace)
+  }
 
   public func suggestCompletion(
     workspace: URL,

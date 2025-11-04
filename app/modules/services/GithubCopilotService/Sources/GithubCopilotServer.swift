@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import CodeCompletionFoundation
 @preconcurrency import Combine
 import Foundation
 import FoundationInterfaces
@@ -19,8 +20,14 @@ import ThreadSafe
 @ThreadSafe
 public final class GithubCopilotServer: Sendable {
 
-  init(executablePath: URL, workspaceRoot: URL, shellService: ShellService, fileManager: FileManagerI, jrpcService: JRPCService) {
-    self.workspaceRoot = workspaceRoot
+  init(
+    executablePath: URL,
+    workspace: Workspace,
+    shellService: ShellService,
+    fileManager: FileManagerI,
+    jrpcService: JRPCService)
+  {
+    self.workspace = workspace
     self.shellService = shellService
     self.fileManager = fileManager
     self.jrpcService = jrpcService
@@ -61,13 +68,7 @@ public final class GithubCopilotServer: Sendable {
     let notification = JRPCNotification(method: method, params: params)
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(notification)
-
-    // LSP protocol requires Content-Length header
-    let header = "Content-Length: \(jsonData.count)\r\n\r\n"
-    var messageData = Data(header.utf8)
-    messageData.append(jsonData)
-
-    try await transport.send(messageData)
+    try await transport.send(jsonData)
   }
 
   func sendRequest<Response: Decodable>(
@@ -94,14 +95,7 @@ public final class GithubCopilotServer: Sendable {
 
     let encoder = JSONEncoder()
     let jsonData = try encoder.encode(request)
-
-    // LSP protocol requires Content-Length header
-    // Note: StdioTransport will add \n after this, which is fine for LSP
-    let header = "Content-Length: \(jsonData.count)\r\n\r\n"
-    var messageData = Data(header.utf8)
-    messageData.append(jsonData)
-
-    try await transport.send(messageData)
+    try await transport.send(jsonData)
 
     return try await withCheckedThrowingContinuation { continuation in
       pendingRequests[id] = continuation
@@ -183,7 +177,7 @@ public final class GithubCopilotServer: Sendable {
   private var pendingRequests = [Int: CheckedContinuation<JSON.Value, Error>]()
 
   private let shellService: ShellService
-  private let workspaceRoot: URL
+  private let workspace: Workspace
   private let fileManager: FileManagerI
   private let jrpcService: JRPCService
 
@@ -196,7 +190,15 @@ public final class GithubCopilotServer: Sendable {
     defaultLogger.trace("Command: \(command)")
 
     let env = await shellService.env
-    let transport = jrpcService.createConnection(command: command, env: env, pwd: nil, delimitation: .contentLength)
+    let transport = jrpcService.createConnection(
+      command: command,
+      env: env,
+      pwd: nil,
+      configuration: .init(
+        // LSP protocol requires Content-Length header
+        delimitation: .contentLength,
+        logger: defaultLogger
+          .subLogger(subsystem: "github-copilot-lsp-server")))
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
@@ -228,7 +230,7 @@ public final class GithubCopilotServer: Sendable {
   private func startReading(from transport: StdioConnection) {
     Task {
       do {
-        let stream = await transport.receive()
+        let stream = transport.receive()
         var messageCount = 0
         for try await message in stream {
           messageCount += 1
@@ -262,11 +264,27 @@ public final class GithubCopilotServer: Sendable {
       }
 
     case .request(let request):
-      await handle(request: request)
+      do {
+        try await handle(request: request)
+      } catch {
+        // Respond with an internal error
+        let response = JRPCResponse(
+          id: request.id,
+          result: nil,
+          error: .init(code: -32603, message: error.localizedDescription, data: nil))
+
+        do {
+          let jsonData = try JSONEncoder().encode(response)
+          let transport = try await initializedTransport.value
+          try await transport.send(jsonData)
+        } catch {
+          defaultLogger.log("Failed to send response to server request: \(error)")
+        }
+      }
     }
   }
 
-  private func handle(request: JRPCRequest) async {
+  private func handle(request: JRPCRequest) async throws {
     let method = request.method
     let params = request.params
     let id = request.id
@@ -295,8 +313,25 @@ public final class GithubCopilotServer: Sendable {
 
     case "copilot/watchedFiles":
       // Server is asking for watched files
-      defaultLogger.log(" → Responding with null (no files to watch)")
-      response = JRPCResponse(id: id, result: .null, error: nil)
+      var files = workspace.files
+      // Respond with the first 100 files, and send the rest with notifications.
+      let params = DidChangeWatchedFilesNotificationParameters(
+        workspaceUri: workspace.url.absoluteString,
+        changes: files.prefix(100).map { .init(uri: $0.absoluteString, type: .created) })
+      response = try JRPCResponse(id: id, result: .init(encoding: params), error: nil)
+      defaultLogger.log(" → Responding with \(files.count) files to watch")
+
+      files.removeFirst(min(100, files.count))
+      while !files.isEmpty {
+        let chunk = files.prefix(100)
+        let params = DidChangeWatchedFilesNotificationParameters(
+          workspaceUri: workspace.url.absoluteString,
+          changes: chunk.map { .init(uri: $0.absoluteString, type: .created) })
+        try await sendNotification(
+          "workspace/didChangeWatchedFiles",
+          params: .init(encoding: params))
+        files.removeFirst(min(100, files.count))
+      }
 
     default:
       defaultLogger.log(" → Unknown request method \(method), responding with null")
@@ -305,13 +340,8 @@ public final class GithubCopilotServer: Sendable {
 
     do {
       let jsonData = try JSONEncoder().encode(response)
-
-      let header = "Content-Length: \(jsonData.count)\r\n\r\n"
-      var messageData = Data(header.utf8)
-      messageData.append(jsonData)
-
       let transport = try await initializedTransport.value
-      try await transport.send(messageData)
+      try await transport.send(jsonData)
     } catch {
       defaultLogger.log("Failed to send response to server request: \(error)")
     }
@@ -322,19 +352,21 @@ public final class GithubCopilotServer: Sendable {
   private func initialize(initializingTransport: StdioConnection) async throws {
     let params = InitializeParams(
       processId: Int(ProcessInfo.processInfo.processIdentifier),
-      rootUri: workspaceRoot.path,
+      rootUri: workspace.root.path, // TODO? uri?
+      rootPath: workspace.root.path,
       initializationOptions: [
-        "editorInfo": .object(["name": "Xcode", "version": "1.0"]),
-        "editorPluginInfo": .object(["name": "copilot-plugin", "version": "1.0"]),
+        "editorInfo": .object(["name": "Xcode", "version": "26.0"]),
+        "editorPluginInfo": .object(["name": "copilot-xcode", "version": "0.0.0"]),
         "copilotCapabilities": .object([
-          "watchedFiles": true,
+          "watchedFiles": .bool(workspace.root.path != "/"),
           "didChangeFeatureFlags": true,
           "stateDatabase": true,
         ]),
+        "githubAppId": "",
       ],
-      capabilities: ClientCapabilities(),
+      capabilities: ClientCapabilities(workspace: .init()),
       workspaceFolders: [
-        WorkspaceFolder(uri: workspaceRoot.absoluteString, name: workspaceRoot.lastPathComponent),
+        WorkspaceFolder(uri: workspace.root.absoluteString, name: workspace.root.lastPathComponent),
       ])
 
     let result: InitializeResult = try await sendRequest(
@@ -345,13 +377,6 @@ public final class GithubCopilotServer: Sendable {
 
     // Send initialized notification with empty object
     try await sendNotification("initialized", params: .object([:]), initializingTransport: initializingTransport)
-
-//    // Give the language server a moment to process the initialized notification
-//    // The agent service needs to be fully initialized before accepting other requests
-//    defaultLogger.log("Waiting for agent service to initialize...")
-//    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-//
-//    defaultLogger.log("Language server initialized")
   }
 
   // MARK: - Notification Handling

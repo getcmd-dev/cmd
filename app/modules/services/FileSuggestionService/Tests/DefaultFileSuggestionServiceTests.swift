@@ -17,27 +17,26 @@ struct DefaultFileSuggestionServiceTests {
     let xcodeObserver = MockXcodeObserver()
     xcodeObserver.onListFiles = { workspace in
       // Simulate listing files for xcodeproj
-      ([
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing.xcodeproj/project.pbxproj"),
-        workspace.deletingLastPathComponent()
-          .appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/AccentColor.colorset/Contents.json"),
-        workspace.deletingLastPathComponent()
-          .appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/AppIcon.appiconset/Contents.json"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/Contents.json"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/Config.xcconfig"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/ContentView.swift"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/Info.plist"),
-        workspace.deletingLastPathComponent()
-          .appendingPathComponent("TestXcodeProjParsing/Preview Content/Preview Assets.xcassets/Contents.json"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/TestXcodeProjParsing.entitlements"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsing/TestXcodeProjParsingApp.swift"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsingTests.xctest"),
-        workspace.deletingLastPathComponent().appendingPathComponent("TestXcodeProjParsingTests/TestXcodeProjParsingTests.swift"),
-        workspace.deletingLastPathComponent()
-          .appendingPathComponent("TestXcodeProjParsingUITests/TestXcodeProjParsingUITests.swift"),
-        workspace.deletingLastPathComponent()
-          .appendingPathComponent("TestXcodeProjParsingUITests/TestXcodeProjParsingUITestsLaunchTests.swift"),
-      ], .xcodeProject)
+      let rootDir = workspace.deletingLastPathComponent()
+      return ListFilesResult(
+        files: [
+          rootDir.appendingPathComponent("TestXcodeProjParsing.xcodeproj/project.pbxproj"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/AccentColor.colorset/Contents.json"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/AppIcon.appiconset/Contents.json"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Assets.xcassets/Contents.json"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Config.xcconfig"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/ContentView.swift"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Info.plist"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/Preview Content/Preview Assets.xcassets/Contents.json"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/TestXcodeProjParsing.entitlements"),
+          rootDir.appendingPathComponent("TestXcodeProjParsing/TestXcodeProjParsingApp.swift"),
+          rootDir.appendingPathComponent("TestXcodeProjParsingTests.xctest"),
+          rootDir.appendingPathComponent("TestXcodeProjParsingTests/TestXcodeProjParsingTests.swift"),
+          rootDir.appendingPathComponent("TestXcodeProjParsingUITests/TestXcodeProjParsingUITests.swift"),
+          rootDir.appendingPathComponent("TestXcodeProjParsingUITests/TestXcodeProjParsingUITestsLaunchTests.swift"),
+        ],
+        workspaceType: .xcodeProject,
+        workspaceRoot: rootDir)
     }
     let sut = DefaultFileSuggestionService(
       xcodeObserver: xcodeObserver)
@@ -61,11 +60,14 @@ struct DefaultFileSuggestionServiceTests {
     let callCount = Atomic(0)
     xcodeObserver.onListFiles = { workspace in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
-      return ([
-        workspace.appendingPathComponent("Package.swift"),
-        workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
-        workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
-      ], .directory)
+      return ListFilesResult(
+        files: [
+          workspace.appendingPathComponent("Package.swift"),
+          workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
+          workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
+        ],
+        workspaceType: .directory,
+        workspaceRoot: workspace)
     }
     let sut = DefaultFileSuggestionService(
       xcodeObserver: xcodeObserver)
@@ -89,11 +91,14 @@ struct DefaultFileSuggestionServiceTests {
     let callCount = Atomic(0)
     xcodeObserver.onListFiles = { workspace in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
-      return ([
-        workspace.appendingPathComponent("Package.swift"),
-        workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
-        workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
-      ], .directory)
+      return ListFilesResult(
+        files: [
+          workspace.appendingPathComponent("Package.swift"),
+          workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
+          workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
+        ],
+        workspaceType: .directory,
+        workspaceRoot: workspace)
     }
     let sut = DefaultFileSuggestionService(
       xcodeObserver: xcodeObserver)
@@ -126,11 +131,14 @@ struct DefaultFileSuggestionServiceTests {
     xcodeObserver.onListFiles = { workspace in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       try await fulfillment(of: didStartConcurrentRequests)
-      return ([
-        workspace.appendingPathComponent("Package.swift"),
-        workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
-        workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
-      ], .directory)
+      return ListFilesResult(
+        files: [
+          workspace.appendingPathComponent("Package.swift"),
+          workspace.appendingPathComponent("Sources/TestSPM/TestSPM.swift"),
+          workspace.appendingPathComponent("Tests/TestSPMTests/TestSPMTests.swift"),
+        ],
+        workspaceType: .directory,
+        workspaceRoot: workspace)
     }
     let sut = DefaultFileSuggestionService(
       xcodeObserver: xcodeObserver)

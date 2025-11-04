@@ -25,6 +25,11 @@ public protocol CodeCompletionProvider: Sendable {
   /// A unique identifier for the provider.
   /// It should remain stable across app updates.
   var id: String { get }
+
+  func setUp(workspace: Workspace)
+
+  func close(workspace: URL)
+
   /// Handle a notification that a file has been opened.
   /// - Parameters:
   ///  - workspace: The URL of the workspace within which the file resides.
@@ -59,4 +64,30 @@ public protocol CodeCompletionProvider: Sendable {
 
 public protocol CodeCompletionProvidersPluginProviding {
   var codeCompletionProviders: [any CodeCompletionProvider] { get }
+}
+
+// MARK: - Workspace
+
+/// Represents a workspace with its files.
+public protocol Workspace: Sendable {
+  /// The files currently tracked in the workspace
+  var files: [URL] { get }
+  /// The URL of the workspace
+  var url: URL { get }
+  /// The URL of the workspace
+  var root: URL { get }
+}
+
+// MARK: - FrozenWorkspace
+
+public struct FrozenWorkspace: Workspace {
+  public let url: URL
+  public let root: URL
+  public let files: [URL]
+
+  public init(url: URL, root: URL, files: [URL]) {
+    self.url = url
+    self.files = files
+    self.root = root
+  }
 }

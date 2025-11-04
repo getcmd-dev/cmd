@@ -6,6 +6,14 @@ import Foundation
 import XcodeObserverServiceInterface
 
 public protocol CodeCompletionService: Sendable {
-  func suggestCompletion(timeout: TimeInterval) async throws -> CompletionSuggestion?
+
+  func suggestCompletion(
+    workspace: URL,
+    file: URL,
+    content: String,
+    selection: Range,
+    timeout: TimeInterval)
+    async throws -> CompletionSuggestion?
+
   func logCompletionAcceptance(suggestion: CompletionSuggestion, accepted: Bool)
 }

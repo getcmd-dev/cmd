@@ -30,7 +30,8 @@ struct ExternalSettings: Sendable, Equatable {
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
     mcpServers: [String: MCPServerConfiguration] = [:],
-    codeCompletionProviderId: String? = nil)
+    codeCompletionProviderId: String? = nil,
+    enableCodeCompletion: Bool = false)
   {
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
@@ -46,6 +47,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
     self.codeCompletionProviderId = codeCompletionProviderId
+    self.enableCodeCompletion = enableCodeCompletion
   }
 
   static let defaultSettings = ExternalSettings()
@@ -67,6 +69,7 @@ struct ExternalSettings: Sendable, Equatable {
   let userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   let mcpServers: [String: MCPServerConfiguration]
   let codeCompletionProviderId: String?
+  let enableCodeCompletion: Bool
 }
 
 // MARK: - InternalSettings
@@ -142,7 +145,9 @@ extension ExternalSettings: Codable {
         .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? Self.defaultSettings
         .userDefinedXcodeShortcuts,
       mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:],
-      codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil)
+      codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil,
+      enableCodeCompletion: container.resilientlyDecodeIfPresent(Bool.self, forKey: "enableCodeCompletion") ?? Self
+        .defaultSettings.enableCodeCompletion)
   }
 
   func encode(to encoder: any Encoder) throws {
@@ -199,6 +204,9 @@ extension ExternalSettings: Codable {
     }
     if encodeAllValues || codeCompletionProviderId != Self.defaultSettings.codeCompletionProviderId {
       try container.encode(codeCompletionProviderId, forKey: "codeCompletionProviderId")
+    }
+    if encodeAllValues || enableCodeCompletion != Self.defaultSettings.enableCodeCompletion {
+      try container.encode(enableCodeCompletion, forKey: "enableCodeCompletion")
     }
   }
 }
@@ -294,7 +302,8 @@ extension Settings {
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
       mcpServers: externalSettings.mcpServers,
       defaultLogLevel: internalSettings.defaultLogLevel,
-      codeCompletionProviderId: externalSettings.codeCompletionProviderId)
+      codeCompletionProviderId: externalSettings.codeCompletionProviderId,
+      enableCodeCompletion: externalSettings.enableCodeCompletion)
   }
 
   var externalSettings: ExternalSettings {
@@ -312,7 +321,8 @@ extension Settings {
       keyboardShortcuts: keyboardShortcuts,
       userDefinedXcodeShortcuts: userDefinedXcodeShortcuts,
       mcpServers: mcpServers,
-      codeCompletionProviderId: codeCompletionProviderId)
+      codeCompletionProviderId: codeCompletionProviderId,
+      enableCodeCompletion: enableCodeCompletion)
   }
 
   func internalSettings() -> InternalSettings {

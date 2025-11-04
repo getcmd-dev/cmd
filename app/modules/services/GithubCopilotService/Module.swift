@@ -19,6 +19,7 @@ Target.module(
   ],
   testsDependencies: [
     "AppFoundation",
+    "CodeCompletionFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "GithubCopilotService",

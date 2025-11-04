@@ -161,6 +161,7 @@ targets.append(
       "CheckpointService",
       "CheckpointServiceInterface",
       "ClaudeCodeTools",
+      "CodeCompletionFeature",
       "CodeCompletionFoundation",
       "CodeCompletionService",
       "CodeCompletionServiceInterface",
@@ -208,6 +209,7 @@ targets.append(
       "XcodeControllerServiceInterface",
       "XcodeObserverService",
       "XcodeObserverServiceInterface",
+      "XcodeObserverWindowsAdapter",
       "XPCServiceInterface",
     ],
     resources: [],
@@ -616,6 +618,25 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "CodeCompletionFeature",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AccessibilityFoundation",
+      "AccessibilityObjCFoundation",
+      "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
+      "DLS",
+      "FoundationInterfaces",
+      "LoggingServiceInterface",
+      "RoutingFoundation",
+      "SettingsServiceInterface",
+      "XcodeObserverServiceInterface",
+      "XcodeObserverWindowsAdapter",
+    ],
+    path: "./features/CodeCompletionFeature"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "CodeCompletionFoundation",
     dependencies: [
       "AppFoundation",
@@ -628,13 +649,25 @@ targets.append(
     name: "CodeCompletionService",
     dependencies: [
       "AccessibilityFoundation",
-      "AppEventServiceInterface",
       "AppFoundation",
       "ChatAppEvents",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
+      "ConcurrencyFoundation",
       "DependencyFoundation",
       "SettingsServiceInterface",
+      "XcodeObserverServiceInterface",
+    ],
+    testsDependencies: [
+      "AccessibilityFoundation",
+      "AppFoundation",
+      "CodeCompletionFoundation",
+      "CodeCompletionService",
+      "CodeCompletionServiceInterface",
+      "ConcurrencyFoundation",
+      "SettingsServiceInterface",
+      "SwiftTesting",
+      "ThreadSafe",
       "XcodeObserverServiceInterface",
     ],
     path: "./services/CodeCompletionService"))
@@ -957,6 +990,7 @@ targets.append(
     ],
     testsDependencies: [
       "AppFoundation",
+      "CodeCompletionFoundation",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotService",
@@ -1003,6 +1037,9 @@ targets.append(
       "JRPCServiceInterface",
       "LoggingServiceInterface",
     ],
+    testsDependencies: [
+      "JRPCService",
+    ],
     path: "./services/JRPCService"))
 
 targets.append(
@@ -1012,6 +1049,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "ConcurrencyFoundation",
+      "LoggingServiceInterface",
       "ThreadSafe",
     ],
     path: "./serviceInterfaces/JRPCServiceInterface"))
@@ -1742,6 +1780,17 @@ targets.append(
       "XcodeObserverServiceInterface",
     ],
     path: "./serviceInterfaces/XcodeObserverServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "XcodeObserverWindowsAdapter",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AccessibilityFoundation",
+      "AccessibilityObjCFoundation",
+      "XcodeObserverServiceInterface",
+    ],
+    path: "./serviceAdapters/XcodeObserverWindowsAdapter"))
 
 targets.append(
   contentsOf: Target.module(

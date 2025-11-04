@@ -12,14 +12,21 @@ public final class MockCodeCompletionService: CodeCompletionService {
 
   public init() { }
 
-  public var onSuggestCompletion: (@Sendable (TimeInterval) async throws -> CompletionSuggestion?)?
+  public var onSuggestCompletion: (@Sendable (URL, URL, String, Range, TimeInterval) async throws -> CompletionSuggestion?)?
   public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
 
-  public func suggestCompletion(timeout: TimeInterval) async throws -> CompletionSuggestion? {
+  public func suggestCompletion(
+    workspace: URL,
+    file: URL,
+    content: String,
+    selection: Range,
+    timeout: TimeInterval)
+    async throws -> CompletionSuggestion?
+  {
     guard let onSuggestCompletion else {
       throw AppError("No completion provided")
     }
-    return try await onSuggestCompletion(timeout)
+    return try await onSuggestCompletion(workspace, file, content, selection, timeout)
   }
 
   public func logCompletionAcceptance(suggestion: CompletionSuggestion, accepted: Bool) {

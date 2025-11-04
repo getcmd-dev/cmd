@@ -12,11 +12,11 @@ import XcodeObserverServiceInterface
 /// A window that tracks and positions itself in relation to an Xcode workspace window.
 /// This window can automatically manage its position and visibility based on the state of the tracked Xcode window
 /// and the activation state of both applications.
-class XcodeWindow: NSWindow {
+open class XcodeWindow: NSWindow {
 
   // MARK: - Initialization
 
-  init(contentRect: NSRect) {
+  public init(contentRect: NSRect) {
     @Dependency(\.xcodeObserver) var xcodeObserver
     axNotificationPublisher = xcodeObserver.axNotifications
     super.init(contentRect: contentRect, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -26,14 +26,50 @@ class XcodeWindow: NSWindow {
     updatePositionContinuously()
   }
 
-  /// The level that the window should have when it is active.
-  var activatedLevel: NSWindow.Level {
-    .floating
+  // MARK: - Public API
+
+  /// Update the window's level (floating / normal) to match whether Xcode is the frontmost application.
+  open func updateLevel() {
+    if isActive {
+      level = activatedLevel
+    } else {
+      level = .normal
+    }
+  }
+
+  /// Subclasses should override this function. It is called when the window's position needs to be updated.
+  /// - Returns: The frame that the window should be positioned at, or nil if the position cannot be determined.
+  open func getFrame() -> CGRect? {
+    nil
+  }
+
+  /// Hides the window and deactivates it.
+  open func hide() {
+    isShown = false
+    deactivate()
+    setIsVisible(false)
+  }
+
+  /// Shows the window and activates it.
+  open func show() {
+    isShown = true
+    setIsVisible(true)
+    activate()
+  }
+
+  open override func miniaturize(_ sender: Any?) {
+    isShown = false
+    super.miniaturize(sender)
+  }
+
+  open override func deminiaturize(_ sender: Any?) {
+    isShown = true
+    super.deminiaturize(sender)
   }
 
   /// Whether the window will automatically position itself in relationship to Xcode.
   /// If false, the window's position will be managed by the user who can drag it.
-  var isPositionAutomaticallyManaged = true {
+  public var isPositionAutomaticallyManaged = true {
     didSet {
       if isPositionAutomaticallyManaged {
         if shouldBeVisibleWhenAutomaticallyManaged {
@@ -48,7 +84,7 @@ class XcodeWindow: NSWindow {
   }
 
   /// The window (usually an Xcode workspace) that is tracked and that this window can be positioned in relationship to.
-  private(set) var trackedWindow: AnyAXUIElement? {
+  public private(set) var trackedWindow: AnyAXUIElement? {
     didSet {
       if trackedWindow != oldValue {
         trackedWindowNumber = nil
@@ -60,7 +96,7 @@ class XcodeWindow: NSWindow {
   }
 
   /// Whether the tracked window is on screen
-  var isTrackedWindowOnScreen: Bool {
+  public var isTrackedWindowOnScreen: Bool {
     guard let trackedWindow else { return false }
     if isTrackedWindowMiniaturized == true {
       // When the window is miniaturized, the window info's isOnScreen is not reliable, so we track this state separately.
@@ -79,45 +115,9 @@ class XcodeWindow: NSWindow {
     return !windowInfos.isEmpty
   }
 
-  // MARK: - Public API
-
-  /// Update the window's level (floating / normal) to match whether Xcode is the frontmost application.
-  func updateLevel() {
-    if isActive {
-      level = activatedLevel
-    } else {
-      level = .normal
-    }
-  }
-
-  /// Subclasses should override this function. It is called when the window's position needs to be updated.
-  /// - Returns: The frame that the window should be positioned at, or nil if the position cannot be determined.
-  func getFrame() -> CGRect? {
-    nil
-  }
-
-  /// Hides the window and deactivates it.
-  func hide() {
-    isShown = false
-    deactivate()
-    setIsVisible(false)
-  }
-
-  /// Shows the window and activates it.
-  func show() {
-    isShown = true
-    setIsVisible(true)
-    activate()
-  }
-
-  override func miniaturize(_ sender: Any?) {
-    isShown = false
-    super.miniaturize(sender)
-  }
-
-  override func deminiaturize(_ sender: Any?) {
-    isShown = true
-    super.deminiaturize(sender)
+  /// The level that the window should have when it is active.
+  var activatedLevel: NSWindow.Level {
+    .floating
   }
 
   // MARK: - Constants

@@ -11,13 +11,14 @@ import LoggingServiceInterface
 // MARK: - DefaultStdioConnection
 
 actor DefaultStdioConnection: StdioConnection {
-  init(command: String, env: [String: String], pwd: String?, delimitation: STDIODelimitation) {
+  init(command: String, env: [String: String], pwd: String?, configuration: STDIOConfiguration) {
     self.command = command
 
     self.env = env
     self.pwd = pwd
 
-    self.delimitation = delimitation
+    delimitation = configuration.delimitation
+    logger = configuration.logger
 
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
     stdoutStream = stream
@@ -46,7 +47,24 @@ actor DefaultStdioConnection: StdioConnection {
     guard let connection else {
       throw AppError("Not connected")
     }
+    logger?.trace("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
     try connection.stdinWriter(data)
+  }
+
+  func writeLog(data: Data) {
+    let logPath = FileManager.default.homeDirectoryForCurrentUser
+      .appendingPathComponent("Downloads")
+      .appendingPathComponent("cmd.jrpc.jsonl")
+
+    if FileManager.default.fileExists(atPath: logPath.path) {
+      if let fileHandle = try? FileHandle(forWritingTo: logPath) {
+        fileHandle.seekToEndOfFile()
+        fileHandle.write(data)
+        try? fileHandle.close()
+      }
+    } else {
+      try? data.write(to: logPath, options: .atomic)
+    }
   }
 
   nonisolated func receive() -> AsyncThrowingStream<Data, any Error> {
@@ -55,6 +73,7 @@ actor DefaultStdioConnection: StdioConnection {
 
   func connect() async throws {
     let (promise, continuation) = Future<Connection, Error>.make()
+    let logger = logger
 
     let process = Process()
     // In MacOS, zsh is the default since macOS Catalina 10.15.7. We can safely assume it is available.
@@ -72,6 +91,7 @@ actor DefaultStdioConnection: StdioConnection {
     if let pwd {
       process.currentDirectoryPath = pwd
     }
+    let stderrData = Atomic(Data())
 
     cancellable = AnyCancellable {
       // Ensures that the process is terminated when the Transport is de-referenced.
@@ -82,19 +102,29 @@ actor DefaultStdioConnection: StdioConnection {
 
     Task { [weak self] in
       for await data in stdout.fileHandleForReading.dataStream.jsonStream {
-        defaultLogger.trace("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
+        logger?.trace("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
         self?.stdoutContinuation.yield(data)
       }
       self?.stdoutContinuation.finish()
     }
 
+    Task {
+      for await data in stderr.fileHandleForReading.dataStream {
+        stderrData.mutate {
+          $0.append(data)
+          // only keep last 4KB
+          $0 = $0.suffix(4096)
+        }
+        logger?.error("Stdio stderr: \(String(data: data, encoding: .utf8) ?? "nil")")
+      }
+    }
+
     let isTerminated = Atomic(false)
     process.terminationHandler = { process in
       isTerminated.set(to: true)
-      let error = stderr.fileHandleForReading.readDataToEndOfFile()
-      let errorStr = String(data: error, encoding: .utf8)
+      let errorStr = String(data: stderrData.value, encoding: .utf8)
 
-      defaultLogger.trace("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
+      logger?.trace("Stdio process terminated with exit code \(process.terminationStatus). Stderr: \(errorStr ?? "nil")")
       Task {
         await self.closeConnection(to: process, stderr: stderr)
       }
@@ -123,11 +153,11 @@ actor DefaultStdioConnection: StdioConnection {
           case .none:
             dataToSend = data
           }
-          defaultLogger.trace("stdio sending data: `\(String(data: dataToSend, encoding: .utf8) ?? "nil")`\n")
+          logger?.trace("stdio sending data: `\(String(data: dataToSend, encoding: .utf8) ?? "nil")`\n")
           stdin.fileHandleForWriting.write(dataToSend)
         })))
     } catch {
-      defaultLogger.error("Error while establishing Stdio connection", error)
+      logger?.error("Error while establishing Stdio connection", error)
       continuation(.failure(error))
     }
     connection = try await promise.value
@@ -137,6 +167,7 @@ actor DefaultStdioConnection: StdioConnection {
   private let pwd: String?
 
   private let delimitation: STDIODelimitation
+  private let logger: Logger?
 
   private let stdoutStream: AsyncThrowingStream<Data, Error>
   private let stdoutContinuation: AsyncThrowingStream<Data, Error>.Continuation
@@ -153,14 +184,14 @@ actor DefaultStdioConnection: StdioConnection {
         let data = (try? stderr.fileHandleForReading.readToEnd()),
         let err = String(data: data, encoding: .utf8)
       {
-        defaultLogger.log("Stdio connection terminated. Stderr:\n\(data)")
+        logger?.log("Stdio connection terminated. Stderr:\n\(data)")
         disconnectionHandler?(AppError(err))
       } else {
-        defaultLogger.log("Stdio connection terminated")
+        logger?.log("Stdio connection terminated")
         disconnectionHandler?(AppError("Stdio connection terminated with exit code \(exitCode)"))
       }
     }
-    defaultLogger.log("Stdio connection terminated with exit code 0")
+    logger?.log("Stdio connection terminated with exit code 0")
   }
 }
 
@@ -255,7 +286,6 @@ extension FileHandle {
 
     readabilityHandler = { handle in
       let data = handle.availableData
-      defaultLogger.log("dataStream received data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
 
       if data.isEmpty {
         handle.readabilityHandler = nil

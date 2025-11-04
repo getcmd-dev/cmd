@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodeCompletionFeature
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -10,7 +11,6 @@ import SettingsFeatureInterface
 
 @MainActor
 final class WindowsView {
-
   @MainActor
   init(viewModel: WindowsViewModel) {
     self.viewModel = viewModel

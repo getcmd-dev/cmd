@@ -28,10 +28,11 @@ struct DefaultXcodeObserverListFilesTests {
       fileManager: fileManager)
 
     let workspacePath = path(for: "TestXcodeProjParsing/TestXcodeProjParsing.xcodeproj")
-    let (files, workspaceType) = try await sut.listFiles(in: workspacePath)
-    #expect(workspaceType == .xcodeProject)
+    let filesInfo = try await sut.listFiles(in: workspacePath)
+    #expect(filesInfo.workspaceType == .xcodeProject)
     let rootDir = workspacePath.deletingLastPathComponent()
-    let displayPaths = files.map { $0.pathRelative(to: rootDir) }.sorted()
+    #expect(filesInfo.workspaceRoot == rootDir)
+    let displayPaths = filesInfo.files.map { $0.pathRelative(to: rootDir) }.sorted()
     #expect(displayPaths == [
       "TestXcodeProjParsing.xcodeproj/project.pbxproj",
       "TestXcodeProjParsing.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
@@ -56,18 +57,23 @@ struct DefaultXcodeObserverListFilesTests {
     let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
     let shellService = MockShellService()
     shellService.onRun = { command, cwd, _, _, _ in
-      #expect(command == "swift package describe --type json")
-      #expect(cwd?.hasSuffix("/SPM") == true)
-      return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)
+      if command == "git rev-parse --show-toplevel" {
+        return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
+      } else {
+        #expect(command == "swift package describe --type json")
+        #expect(cwd?.hasSuffix("/SPM") == true)
+        return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)
+      }
     }
     let sut = DefaultXcodeObserver(
       fileManager: fileManager,
       shellService: shellService)
 
     let workspacePath = path(for: "SPM")
-    let (files, workspaceType) = try await sut.listFiles(in: workspacePath)
-    #expect(workspaceType == .directory)
-    let displayPaths = files.map { $0.pathRelative(to: workspacePath) }.sorted()
+    let filesInfo = try await sut.listFiles(in: workspacePath)
+    #expect(filesInfo.workspaceType == .directory)
+    #expect(filesInfo.workspaceRoot == workspacePath)
+    let displayPaths = filesInfo.files.map { $0.pathRelative(to: workspacePath) }.sorted()
     #expect(displayPaths == [
       "Package.swift",
       "Sources/TestSPM/TestSPM.swift",
@@ -84,12 +90,47 @@ struct DefaultXcodeObserverListFilesTests {
 
     let sut = DefaultXcodeObserver(
       fileManager: fileManager)
-    let (files, workspaceType) = try await sut.listFiles(in: workspacePath)
-    #expect(workspaceType == .directory)
-    let displayPaths = files.map { $0.pathRelative(to: workspacePath) }.sorted()
+    let filesInfo = try await sut.listFiles(in: workspacePath)
+    #expect(filesInfo.workspaceType == .directory)
+    #expect(filesInfo.workspaceRoot == workspacePath)
+    let displayPaths = filesInfo.files.map { $0.pathRelative(to: workspacePath) }.sorted()
     #expect(displayPaths == [
       "subdirectory/test.txt",
     ])
+  }
+
+  @Test("git ignore filtering") @MainActor
+  func testGitIgnoreFiltering() async throws {
+    // given
+    let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
+    let workspacePath = path(for: "directory")
+
+    let shellService = MockShellService()
+    let gitCheckIgnoreCalled = Atomic<Bool>(false)
+    shellService.onRun = { command, _, _, _, _ in
+      if command == "git rev-parse --show-toplevel" {
+        // Simulate being in a git repo
+        return CommandExecutionResult(exitCode: 0, stdout: workspacePath.path)
+      } else if command.hasPrefix("echo"), command.contains("git check-ignore") {
+        gitCheckIgnoreCalled.mutate { $0 = true }
+        // Simulate that subdirectory/test.txt is git ignored
+        return CommandExecutionResult(exitCode: 0, stdout: "\(workspacePath.path)/subdirectory/test.txt")
+      }
+      return CommandExecutionResult(exitCode: 1, stderr: "Unknown command")
+    }
+
+    let sut = DefaultXcodeObserver(
+      fileManager: fileManager,
+      shellService: shellService)
+
+    // when
+    let filesInfo = try await sut.listFiles(in: workspacePath)
+
+    // then
+    #expect(filesInfo.workspaceType == .directory)
+    #expect(filesInfo.workspaceRoot == workspacePath)
+    #expect(gitCheckIgnoreCalled.value)
+    #expect(filesInfo.files.isEmpty)
   }
 
   private let spmPackageDescription = """

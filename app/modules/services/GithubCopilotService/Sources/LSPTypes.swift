@@ -44,6 +44,7 @@ struct FormattingOptions: Codable {
 struct InitializeParams: Encodable {
   let processId: Int
   let rootUri: String?
+  let rootPath: String?
   let initializationOptions: [String: JSON.Value]?
   let capabilities: ClientCapabilities
   let workspaceFolders: [WorkspaceFolder]?
@@ -55,9 +56,9 @@ struct ClientCapabilities: Encodable {
   let workspace: WorkspaceClientCapabilities?
   let textDocument: TextDocumentClientCapabilities?
 
-  init() {
-    workspace = WorkspaceClientCapabilities()
-    textDocument = TextDocumentClientCapabilities()
+  init(workspace: WorkspaceClientCapabilities? = nil, textDocument: TextDocumentClientCapabilities? = nil) {
+    self.workspace = workspace
+    self.textDocument = textDocument
   }
 }
 
@@ -65,6 +66,7 @@ struct ClientCapabilities: Encodable {
 
 struct WorkspaceClientCapabilities: Encodable {
   let workspaceFolders = true
+  let applyEdit = false
   let configuration = true
 }
 
@@ -231,4 +233,49 @@ struct WorkspaceConfigurationRequestParameters: Decodable {
   struct ConfigurationItem: Decodable {
     let section: String
   }
+}
+
+// MARK: - DidChangeWatchedFilesNotificationParameters
+
+struct DidChangeWatchedFilesNotificationParameters: Codable {
+  var workspaceUri: String
+  var changes: [FileEvent]
+
+  init(workspaceUri: String, changes: [FileEvent]) {
+    self.workspaceUri = workspaceUri
+    self.changes = changes
+  }
+}
+
+// MARK: - FileEvent
+
+/// An event describing a file change.
+struct FileEvent: Codable, Hashable, Sendable {
+  var uri: String
+  var type: FileChangeType
+
+  init(uri: String, type: FileChangeType) {
+    self.uri = uri
+    self.type = type
+  }
+}
+
+// MARK: - FileChangeType
+
+/// The type of file event.
+///
+/// In LSP, this is an integer, so we don't use a closed set.
+struct FileChangeType: RawRepresentable, Codable, Hashable, Sendable {
+  var rawValue: Int
+
+  init(rawValue: Int) {
+    self.rawValue = rawValue
+  }
+
+  /// The file was created.
+  static let created = FileChangeType(rawValue: 1)
+  /// The file was changed.
+  static let changed = FileChangeType(rawValue: 2)
+  /// The file was deleted.
+  static let deleted = FileChangeType(rawValue: 3)
 }

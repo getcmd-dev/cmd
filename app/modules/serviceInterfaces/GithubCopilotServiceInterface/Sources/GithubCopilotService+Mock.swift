@@ -11,6 +11,7 @@ import ThreadSafe
 #if DEBUG
 @ThreadSafe @dynamicMemberLookup
 public final class MockGithubCopilotService: GithubCopilotService {
+
   public init(id: String = "mock-code-completion-provider") {
     self.id = id
   }
@@ -56,6 +57,14 @@ public final class MockGithubCopilotService: GithubCopilotService {
   public subscript<T>(dynamicMember keyPath: WritableKeyPath<MockCodeCompletionProvider, T>) -> T {
     get { codeCompletionProvider[keyPath: keyPath] }
     set { codeCompletionProvider[keyPath: keyPath] = newValue }
+  }
+
+  public func setUp(workspace: Workspace) {
+    codeCompletionProvider.setUp(workspace: workspace)
+  }
+
+  public func close(workspace: URL) {
+    codeCompletionProvider.close(workspace: workspace)
   }
 
   public func didSave(workspace: URL, file: URL, content: String, version: Int) {

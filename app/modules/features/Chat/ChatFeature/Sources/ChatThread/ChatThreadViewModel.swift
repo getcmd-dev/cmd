@@ -26,7 +26,6 @@ import ToolFoundation
 import XcodeObserverServiceInterface
 
 // MARK: - ChatThreadViewModel
-
 @MainActor @Observable
 final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 

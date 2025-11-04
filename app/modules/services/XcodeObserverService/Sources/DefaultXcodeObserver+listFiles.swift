@@ -2,14 +2,18 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import LoggingServiceInterface
+import ShellServiceInterface
 import XcodeObserverServiceInterface
 import XcodeProj
 
 extension DefaultXcodeObserver {
-  func listFiles(in workspace: URL) async throws -> ([URL], WorkspaceType) {
+  func listFiles(in workspace: URL) async throws -> ListFilesResult {
     let workspaceType: WorkspaceType
     let files: [URL]
-    if let xcodeProj = try? XcodeProj(path: .init(workspace.path)) {
+    // When an .xcworkspace is opened, we look for the corresponding .xcodeproj which is where the project structure is defined.
+    // `XcodeProj` only works with an .xcodeproj file.
+    if let xcodeProj = try? XcodeProj(path: .init(workspace.path.replacingOccurrences(of: ".xcworkspace", with: ".xcodeproj"))) {
       workspaceType = .xcodeProject
       let rootDir = workspace.deletingLastPathComponent()
       files = listFilesAvailable(inProject: xcodeProj, in: rootDir)
@@ -25,8 +29,12 @@ extension DefaultXcodeObserver {
         files = listFilesAvailable(inDirectory: workspace)
       }
     }
-    let uniqueFiles = Set(files.map(\.standardized))
-    return (Array(uniqueFiles), workspaceType)
+    let workspaceRoot = workspaceType == .xcodeProject ? workspace.deletingLastPathComponent() : workspace
+    let uniqueFiles = await Set(files.filterGitIgnoredFiles(root: workspaceRoot, shellService: shellService).map(\.standardized))
+    return ListFilesResult(
+      files: Array(uniqueFiles),
+      workspaceType: workspaceType,
+      workspaceRoot: workspaceRoot)
   }
 
   private func listFilesAvailable(inProject xcodeproj: XcodeProj, in projectDir: URL) -> [URL] {
@@ -151,6 +159,36 @@ struct SPMPackageDescription: Decodable {
 
     struct Resource: Decodable {
       let path: String
+    }
+  }
+}
+
+extension [URL] {
+  /// - Parameters:
+  ///   - root: The root of the repo from where we should check for the existence of a git repo
+  ///   - Returns: The current array without files not tracked by git, or all files if not within a git repo
+  func filterGitIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
+    do {
+      let isGitRepo = await {
+        do {
+          try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
+          return true
+        } catch {
+          return false
+        }
+      }()
+      guard isGitRepo else {
+        return self
+      }
+      let untrackedFiles = try await Set(shellService.runAndThrows(
+        "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
+        cwd: root.path)?
+        .split(separator: "\n")
+        .map(String.init) ?? [])
+      return self.filter({ !untrackedFiles.contains($0.path) })
+    } catch {
+      defaultLogger.error("Failed to filter git ignored files", error)
+      return self
     }
   }
 }

@@ -34,6 +34,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
@@ -84,6 +85,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -134,6 +136,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -288,6 +291,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -327,6 +331,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -480,6 +485,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -521,6 +527,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -654,6 +661,7 @@ struct ExternalSettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "codeCompletionProviderId": null,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",

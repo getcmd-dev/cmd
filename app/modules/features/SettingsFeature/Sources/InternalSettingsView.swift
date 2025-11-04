@@ -24,6 +24,7 @@ struct InternalSettingsView: View {
   @Binding var showToolInputCopyButtonInRelease: Bool
   @Binding var useNewClaudeCodeApi: Bool
   @Binding var defaultLogLevel: LogLevel
+  @Binding var enableCodeCompletion: Bool
 
   var body: some View {
     ScrollView {
@@ -65,6 +66,11 @@ struct InternalSettingsView: View {
             "Show tool input copy button in Release",
             caption: "Display the copy button for tool inputs in Release builds",
             value: $showToolInputCopyButtonInRelease)
+
+          InternalSettingsRow(
+            "Enable code completion",
+            caption: "Enable code completion feature",
+            value: $enableCodeCompletion)
 
           VStack(alignment: .leading, spacing: 4) {
             Text("Default log level for file persistence")

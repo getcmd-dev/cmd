@@ -147,8 +147,8 @@ final class DefaultFileSuggestionService: FileSuggestionService {
   /// List all available files in the project.
   private func listFilesAvailable(in workspace: URL) async throws -> ([FileSuggestion], URL) {
     let rootDir: URL
-    let (files, workspaceType) = try await xcodeObserver.listFiles(in: workspace)
-    switch workspaceType {
+    let filesInfo = try await xcodeObserver.listFiles(in: workspace)
+    switch filesInfo.workspaceType {
     case .xcodeProject:
       rootDir = workspace.deletingLastPathComponent()
     case .swiftPackage:
@@ -157,7 +157,7 @@ final class DefaultFileSuggestionService: FileSuggestionService {
       rootDir = workspace
     }
 
-    let suggestions = files.map { file in
+    let suggestions = filesInfo.files.map { file in
       let standardizedFile = file.standardizedFileURL
       let relativePath = standardizedFile.pathRelative(to: rootDir)
       return FileSuggestion(

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import CodeCompletionFoundation
 @preconcurrency import Combine
 import DependencyFoundation
 import Foundation
@@ -58,6 +59,16 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     _isLSPServerInstalled.readonly()
   }
 
+  func setUp(workspace: Workspace) {
+    do {
+      _ = try createLSPServer(for: workspace)
+    } catch { }
+  }
+
+  func close(workspace: URL) {
+    servers.removeValue(forKey: workspace)
+  }
+
   func installLSPServer() async throws {
     do {
       let executablePath = try await downloadExecutableIfNeeded()
@@ -65,7 +76,10 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       let authServer = GithubCopilotServer(
         executablePath: executablePath,
         // Use this folder that we know to exist as the workspace root, as we need to provide one
-        workspaceRoot: fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".cmd"),
+        workspace: FrozenWorkspace(
+          url: URL(filePath: "/"),
+          root: URL(filePath: "/"),
+          files: []),
         shellService: shellService,
         fileManager: fileManager,
         jrpcService: jrpcService)
@@ -84,27 +98,28 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   }
 
   /// Returns the LSP server for the given workspace.
-  func lspServer(for workspace: URL) throws -> GithubCopilotServer {
+  func createLSPServer(for workspace: Workspace) throws -> GithubCopilotServer {
     guard let expectedExecutablePath else {
       throw AppError("Path for Copilot language server executable not found")
     }
-    if let server = servers[workspace] {
+    if let server = servers[workspace.url] {
       return server
     }
     guard _isLSPServerInstalled.value else {
       throw AppError("Copilot LSP server is not installed")
     }
-    guard _loginStatus.value.isLoggedIn else {
-      throw AppError("User is not logged in to Github Copilot")
-    }
     let server = GithubCopilotServer(
       executablePath: expectedExecutablePath,
-      workspaceRoot: workspace,
+      workspace: workspace,
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: jrpcService)
-    servers[workspace] = server
+    servers[workspace.url] = server
     return server
+  }
+
+  func lspServer(for workspace: URL) -> GithubCopilotServer? {
+    servers[workspace]
   }
 
   private var cancellables = Set<AnyCancellable>()
