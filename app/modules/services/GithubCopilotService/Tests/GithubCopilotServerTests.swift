@@ -4,6 +4,7 @@
 import Testing
 
 import AppFoundation
+import CodeCompletionFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
@@ -84,7 +85,7 @@ struct GithubCopilotServerTests {
     // when
     let server = GithubCopilotServer(
       executablePath: executablePath,
-      workspaceRoot: workspaceRoot,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: mockJRPCService)
@@ -97,8 +98,7 @@ struct GithubCopilotServerTests {
 
     // Verify the initialize request structure
     if
-      sentMessages.value.count >= 1,
-      let firstMessageData = try? Self.parseMessage(sentMessages.value[0])
+      let firstMessageData = sentMessages.value.first
     {
       firstMessageData.expectToMatch(
         """
@@ -188,7 +188,7 @@ struct GithubCopilotServerTests {
 
     let server = GithubCopilotServer(
       executablePath: executablePath,
-      workspaceRoot: workspaceRoot,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: mockJRPCService)
@@ -272,7 +272,7 @@ struct GithubCopilotServerTests {
 
     let server = GithubCopilotServer(
       executablePath: executablePath,
-      workspaceRoot: workspaceRoot,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: mockJRPCService)
@@ -363,7 +363,7 @@ struct GithubCopilotServerTests {
 
     let server = GithubCopilotServer(
       executablePath: executablePath,
-      workspaceRoot: workspaceRoot,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: mockJRPCService)
@@ -444,7 +444,7 @@ struct GithubCopilotServerTests {
 
     let server = GithubCopilotServer(
       executablePath: executablePath,
-      workspaceRoot: workspaceRoot,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
       shellService: shellService,
       fileManager: fileManager,
       jrpcService: mockJRPCService)
@@ -465,26 +465,7 @@ struct GithubCopilotServerTests {
 
   // MARK: - Helper Methods
 
-  private static func parseMessage(_ data: Data) throws -> Data? {
-    // LSP messages have Content-Length header followed by JSON
-    guard let string = String(data: data, encoding: .utf8) else {
-      return nil
-    }
-
-    // Split by double CRLF to separate headers from body
-    let parts = string.components(separatedBy: "\r\n\r\n")
-    guard parts.count >= 2 else {
-      return nil
-    }
-
-    let body = parts[1]
-    return body.data(using: .utf8)
-  }
-
   private static func parseJRPCMessage(_ data: Data) throws -> JRPCMessage? {
-    guard let jsonData = try parseMessage(data) else {
-      return nil
-    }
-    return try JSONDecoder().decode(JRPCMessage.self, from: jsonData)
+    try JSONDecoder().decode(JRPCMessage.self, from: data)
   }
 }

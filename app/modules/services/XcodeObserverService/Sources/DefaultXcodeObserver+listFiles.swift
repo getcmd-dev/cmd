@@ -165,7 +165,7 @@ extension [URL] {
   /// - Parameters:
   ///   - root: The root of the repo from where we should check for the existence of a git repo
   ///   - Returns: The current array without files not tracked by git, or all files if not within a git repo
-  func filterGitIgnoredFiles(root _: URL, shellService _: ShellService) async -> [URL] {
+  func filterGitIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
     do {
       let isGitRepo = await {
         do {

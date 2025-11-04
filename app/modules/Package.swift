@@ -22,7 +22,8 @@ extension Target {
     interfaceDependencies: [Target.Dependency]? = nil,
     interfaceTestsDependencies: [Target.Dependency]? = nil,
     interfaceTestsResources: [PackageDescription.Resource]? = nil,
-    path: String)
+    path: String
+  )
     -> [Target]
   {
     var targets = [Target]()
@@ -35,7 +36,7 @@ extension Target {
         path: "\(path)/Sources",
         resources: resources,
         swiftSettings: [
-          .unsafeFlags(["-Xfrontend", "-disable-availability-checking"]),
+          .unsafeFlags(["-Xfrontend", "-disable-availability-checking"])
         ]))
 
     if let testsDependencies {
@@ -74,7 +75,8 @@ extension Target {
     macroDependencies: [Target.Dependency] = [],
     dependencies: [Target.Dependency],
     testsDependencies: [Target.Dependency]? = nil,
-    path: String)
+    path: String
+  )
     -> [Target]
   {
     let macroTarget = Target.macro(
@@ -104,7 +106,7 @@ targets.append(
     name: "AccessibilityFoundation",
     dependencies: [],
     testsDependencies: [
-      "AccessibilityFoundation",
+      "AccessibilityFoundation"
     ],
     path: "./foundations/AccessibilityFoundation"))
 
@@ -275,7 +277,7 @@ targets.append(
     name: "AppFoundation",
     dependencies: [],
     testsDependencies: [
-      "AppFoundation",
+      "AppFoundation"
     ],
     path: "./foundations/AppFoundation"))
 
@@ -620,19 +622,12 @@ targets.append(
     name: "CodeCompletionFeature",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
-      "CodeCompletionFeatureInterface",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
       "SettingsServiceInterface",
       "XcodeObserverServiceInterface",
     ],
     path: "./features/CodeCompletionFeature"))
-
-targets.append(
-  contentsOf: Target.module(
-    name: "CodeCompletionFeatureInterface",
-    dependencies: [],
-    path: "./featureInterfaces/CodeCompletionFeatureInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -725,7 +720,7 @@ targets.append(
       "ToolFoundation",
     ],
     testsDependencies: [
-      "DefaultToolView",
+      "DefaultToolView"
     ],
     path: "./coreui/DefaultToolView"))
 
@@ -733,7 +728,7 @@ targets.append(
   contentsOf: Target.module(
     name: "DependencyFoundation",
     dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "Dependencies", package: "swift-dependencies")
     ],
     path: "./foundations/DependencyFoundation"))
 
@@ -750,7 +745,7 @@ targets.append(
       .process("Resources/mcp.svg"),
     ],
     testsDependencies: [
-      "DLS",
+      "DLS"
     ],
     path: "./coreui/DLS"))
 
@@ -886,7 +881,7 @@ targets.append(
       "ShellServiceInterface",
     ],
     resources: [
-      .process("Resources/fileIcons"),
+      .process("Resources/fileIcons")
     ],
     path: "./coreui/FileIcon"))
 
@@ -951,7 +946,7 @@ targets.append(
   contentsOf: Target.module(
     name: "GithubCopilotFeatureInterface",
     dependencies: [
-      "RoutingFoundation",
+      "RoutingFoundation"
     ],
     path: "./featureInterfaces/GithubCopilotFeatureInterface"))
 
@@ -973,10 +968,11 @@ targets.append(
       "ThreadSafe",
     ],
     resources: [
-      .process("Resources/install-language-server.sh"),
+      .process("Resources/install-language-server.sh")
     ],
     testsDependencies: [
       "AppFoundation",
+      "CodeCompletionFoundation",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotService",
@@ -1048,10 +1044,10 @@ targets.append(
   contentsOf: Target.module(
     name: "LLMFoundation",
     dependencies: [
-      "AppFoundation",
+      "AppFoundation"
     ],
     testsDependencies: [
-      "LLMFoundation",
+      "LLMFoundation"
     ],
     path: "./foundations/LLMFoundation"))
 
@@ -1223,7 +1219,7 @@ targets.append(
       "LoggingServiceInterface",
     ],
     testsDependencies: [
-      "Markdown",
+      "Markdown"
     ],
     path: "./coreui/Markdown"))
 
@@ -1368,10 +1364,10 @@ targets.append(
   contentsOf: Target.module(
     name: "RoutingFoundation",
     dependencies: [
-      "AppFoundation",
+      "AppFoundation"
     ],
     testsDependencies: [
-      "RoutingFoundation",
+      "RoutingFoundation"
     ],
     path: "./foundations/RoutingFoundation"))
 
@@ -1449,7 +1445,7 @@ targets.append(
   contentsOf: Target.module(
     name: "SettingsFeatureInterface",
     dependencies: [
-      "RoutingFoundation",
+      "RoutingFoundation"
     ],
     path: "./featureInterfaces/SettingsFeatureInterface"))
 
@@ -1523,7 +1519,7 @@ targets.append(
   contentsOf: Target.module(
     name: "SharedUtilsFoundation",
     dependencies: [
-      "LoggingServiceInterface",
+      "LoggingServiceInterface"
     ],
     path: "./foundations/SharedUtilsFoundation"))
 
@@ -1531,7 +1527,7 @@ targets.append(
   contentsOf: Target.module(
     name: "SharedValuesFoundation",
     dependencies: [
-      "FileDiffFoundation",
+      "FileDiffFoundation"
     ],
     path: "./foundations/SharedValuesFoundation"))
 
@@ -1547,7 +1543,7 @@ targets.append(
       "ThreadSafe",
     ],
     testsDependencies: [
-      "ShellService",
+      "ShellService"
     ],
     path: "./services/ShellService"))
 
@@ -1561,7 +1557,7 @@ targets.append(
       "ThreadSafe",
     ],
     testsDependencies: [
-      "ShellServiceInterface",
+      "ShellServiceInterface"
     ],
     path: "./serviceInterfaces/ShellServiceInterface"))
 
@@ -1624,7 +1620,7 @@ targets.append(
   contentsOf: Target.module(
     name: "ToolTypesFoundation",
     dependencies: [
-      "JSONFoundation",
+      "JSONFoundation"
     ],
     path: "./foundations/ToolTypesFoundation"))
 
@@ -1744,7 +1740,7 @@ targets.append(
       "XcodeObserverServiceInterface",
     ],
     testsResources: [
-      .copy("resources/"),
+      .copy("resources/")
     ],
     path: "./services/XcodeObserverService"))
 
@@ -1760,7 +1756,7 @@ targets.append(
       "ThreadSafe",
     ],
     testsDependencies: [
-      "XcodeObserverServiceInterface",
+      "XcodeObserverServiceInterface"
     ],
     path: "./serviceInterfaces/XcodeObserverServiceInterface"))
 
@@ -1776,23 +1772,23 @@ targets.append(
 let package = Package(
   name: "Packages",
   platforms: [
-    .macOS("15.0"),
+    .macOS("15.0")
   ],
   products: [
     .library(
       name: "App",
       targets: [
-        "App",
+        "App"
       ]),
     .library(
       name: "AppExtension",
       targets: [
-        "AppExtension",
+        "AppExtension"
       ]),
     .library(
       name: "AppLauncher",
       targets: [
-        "AppLauncher",
+        "AppLauncher"
       ]),
   ],
   dependencies: [

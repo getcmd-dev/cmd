@@ -41,7 +41,6 @@ public final class GithubCopilotServer: Sendable {
       do {
         let transport = try await self.start()
         setInitializedTransport(.success(transport))
-        await addOpenfiles()
       } catch {
         setInitializedTransport(.failure(error))
       }
