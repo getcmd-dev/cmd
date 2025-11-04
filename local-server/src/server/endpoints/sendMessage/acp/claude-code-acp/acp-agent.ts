@@ -370,8 +370,12 @@ export class ClaudeAcpAgent implements Agent {
 							break
 						case "compact_boundary":
 							break
+						case "hook_response":
+							break
 						default:
-							unreachable(message as never)
+							// @ts-expect-error this is expected to be unreachable
+							this.logger.error(`unhandled system message subtype ${message.subtype}`)
+							break
 					}
 					break
 				case "result": {
@@ -463,7 +467,9 @@ export class ClaudeAcpAgent implements Agent {
 				}
 
 				default:
-					unreachable(message as never)
+					// @ts-expect-error this is expected to be unreachable
+					this.logger.error(`unhandled message type ${message.type}`)
+					break
 			}
 		}
 		throw new Error("Session did not end in result")
