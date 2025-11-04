@@ -21,6 +21,8 @@ import XcodeObserverServiceInterface
 // TODO: setup file watched to detect file save.
 // TODO: check if URL is a stable key for dictionaries
 
+/// A representation of the files in a workspace.
+/// The list of files is kept up to date.
 final class WorkspaceIndex: Workspace {
   init(url: URL, root: URL, files: @escaping @Sendable () -> [URL]) {
     self.url = url
@@ -56,17 +58,11 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     }
   }
 
-  deinit {
-    for cancellable in cancellables { cancellable.cancel() }
-  }
-
   var configuredProvider: (any CodeCompletionProvider)? {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
-    // TODO: remove
-    return codeCompletionProviders.first
-//    return nil
+    return nil
   }
 
   // TODO: support timeout
@@ -81,12 +77,6 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     guard let provider = configuredProvider else {
       throw AppError("No code completion provider configured")
     }
-//    guard let workspace = xcodeObserver.state.focusedWorkspace else {
-//      throw AppError("No focused Xcode workspace")
-//    }
-//    guard let focussedFile = await xcodeObserver.focusedTabURL(in: workspace) else {
-//      throw AppError("No focused file in Xcode workspace")
-//    }
     if let fileState = openFiles[workspace]?[file], fileState.content == content {
       // Nothing
     } else {
@@ -96,13 +86,6 @@ actor DefaultCodeCompletionService: CodeCompletionService {
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
     }
-//    guard let editor = workspace.editors.first(where: { $0.isFocused }) else {
-//      throw AppError("No focused editor in Xcode workspace")
-//    }
-//    let selections = editor.selections
-//    guard selections.count == 1, let selection = selections.first else {
-//      throw AppError("Multiple selections are not supported")
-//    }
 
     return try await provider.suggestCompletion(
       workspace: workspace,

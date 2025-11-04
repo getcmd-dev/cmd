@@ -105,7 +105,6 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     if let server = servers[workspace.url] {
       return server
     }
-    //
     guard _isLSPServerInstalled.value else {
       throw AppError("Copilot LSP server is not installed")
     }

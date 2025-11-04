@@ -13,25 +13,12 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
   public init(id: String = "mock-code-completion-provider") {
     self.id = id
 
-    onSetUp = { _ in
-      print("MockCodeCompletionProvider setUp called")
-    }
-    onClose = { _ in
-      print("MockCodeCompletionProvider close called")
-    }
-
-    onDidSave = { _, file, _, _ in
-      print("MockCodeCompletionProvider didSave called", file)
-    }
-    onDidOpen = { _, file, _, _ in
-      print("MockCodeCompletionProvider didOpen called", file)
-    }
-    onDidChange = { _, file, _, _ in
-      print("MockCodeCompletionProvider didChange called", file)
-    }
-    onDidClose = { _, file, _, _ in
-      print("MockCodeCompletionProvider didClose called", file)
-    }
+    onSetUp = { _ in }
+    onClose = { _ in }
+    onDidSave = { _, _, _, _ in }
+    onDidOpen = { _, _, _, _ in }
+    onDidChange = { _, _, _, _ in }
+    onDidClose = { _, _, _, _ in }
   }
 
   public let id: String

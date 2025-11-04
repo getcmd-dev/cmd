@@ -166,41 +166,27 @@ extension [URL] {
   ///   - root: The root of the repo from where we should check for the existence of a git repo
   ///   - Returns: The current array without files not tracked by git, or all files if not within a git repo
   func filterGitIgnoredFiles(root _: URL, shellService _: ShellService) async -> [URL] {
-    self.filter { url in
-      [
-        ".git",
-        ".svn",
-        ".hg",
-        "CVS",
-        ".DS_Store",
-        "Thumbs.db",
-        "node_modules",
-        "bower_components",
-        "Preview Content",
-        ".swiftpm",
-      ].contains(where: { url.path.contains($0) }) == false
+    do {
+      let isGitRepo = await {
+        do {
+          try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
+          return true
+        } catch {
+          return false
+        }
+      }()
+      guard isGitRepo else {
+        return self
+      }
+      let untrackedFiles = try await Set(shellService.runAndThrows(
+        "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
+        cwd: root.path)?
+        .split(separator: "\n")
+        .map(String.init) ?? [])
+      return self.filter({ !untrackedFiles.contains($0.path) })
+    } catch {
+      defaultLogger.error("Failed to filter git ignored files", error)
+      return self
     }
-//    do {
-//      let isGitRepo = await {
-//        do {
-//          try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
-//          return true
-//        } catch {
-//          return false
-//        }
-//      }()
-//      guard isGitRepo else {
-//        return self
-//      }
-//      let untrackedFiles = try await Set(shellService.runAndThrows(
-//        "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
-//        cwd: root.path)?
-//        .split(separator: "\n")
-//        .map(String.init) ?? [])
-//      return self.filter({ !untrackedFiles.contains($0.path) })
-//    } catch {
-//      defaultLogger.error("Failed to filter git ignored files", error)
-//      return self
-//    }
   }
 }

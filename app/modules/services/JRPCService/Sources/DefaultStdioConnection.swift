@@ -97,7 +97,6 @@ actor DefaultStdioConnection: StdioConnection {
     }
   }
 
-  ///
   nonisolated func receive() -> AsyncThrowingStream<Data, any Error> {
     stdoutStream
   }

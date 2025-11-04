@@ -20,7 +20,6 @@ import ThreadSafe
 @ThreadSafe
 public final class GithubCopilotServer: Sendable {
 
-  ///
   init(
     executablePath: URL,
     workspace: Workspace,
