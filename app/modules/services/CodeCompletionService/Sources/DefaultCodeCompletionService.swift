@@ -22,11 +22,13 @@ import XcodeObserverServiceInterface
 // TODO: check if URL is a stable key for dictionaries
 
 final class WorkspaceIndex: Workspace {
-  init(url: URL, files: @escaping @Sendable () -> [URL]) {
+  init(url: URL, root: URL, files: @escaping @Sendable () -> [URL]) {
     self.url = url
+    self.root = root
     _files = files
   }
 
+  let root: URL
   let url: URL
   let _files: @Sendable () -> [URL]
 
@@ -136,22 +138,26 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     Task { [weak self] in
       do {
         // list files
-        let files = try await self?.xcodeObserver.listFiles(in: workspace).0
-        await self?.didInitialize(workspace: workspace, files: files)
+        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
+        let files = workspaceInfo?.files
+        let workspaceType = workspaceInfo?.workspaceType
+        let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files)
         // setup file watcher (TODO)
       } catch {
         print("Error setting up workspace: \(error)")
-        await self?.didInitialize(workspace: workspace, files: nil)
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil)
       }
     }
   }
 
-  private func didInitialize(workspace: URL, files: [URL]?) {
+  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?) {
     if let files {
       filesPerWorkspace[workspace] = Set(files)
       notifyProviders { provider in
         provider.setUp(workspace: WorkspaceIndex(
           url: workspace,
+          root: workspaceRoot,
           files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
       }
       openFiles[workspace] = [:]

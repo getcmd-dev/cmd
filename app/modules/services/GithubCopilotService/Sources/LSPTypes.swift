@@ -44,6 +44,7 @@ struct FormattingOptions: Codable {
 struct InitializeParams: Encodable {
   let processId: Int
   let rootUri: String?
+  let rootPath: String?
   let initializationOptions: [String: JSON.Value]?
   let capabilities: ClientCapabilities
   let workspaceFolders: [WorkspaceFolder]?
@@ -55,9 +56,9 @@ struct ClientCapabilities: Encodable {
   let workspace: WorkspaceClientCapabilities?
   let textDocument: TextDocumentClientCapabilities?
 
-  init() {
-    workspace = WorkspaceClientCapabilities()
-    textDocument = TextDocumentClientCapabilities()
+  init(workspace: WorkspaceClientCapabilities? = nil, textDocument: TextDocumentClientCapabilities? = nil) {
+    self.workspace = workspace
+    self.textDocument = textDocument
   }
 }
 
@@ -65,6 +66,7 @@ struct ClientCapabilities: Encodable {
 
 struct WorkspaceClientCapabilities: Encodable {
   let workspaceFolders = true
+  let applyEdit = false
   let configuration = true
 }
 

@@ -14,7 +14,9 @@ public protocol XcodeObserver: Sendable {
   /// Return the content of the file.
   /// The read strategy (IDE version / from disk) should match the write strategy defined in `fileEditMode`.
   func getContent(of file: URL) throws -> String
-  func listFiles(in workspace: URL) async throws -> ([URL], WorkspaceType)
+  /// List the files in the Xcode workspace.
+  /// Included files are visible to Xcode, and tracked by git if in a git repo.
+  func listFiles(in workspace: URL) async throws -> ListFilesResult
 }
 
 // MARK: - WorkspaceType
@@ -23,6 +25,20 @@ public enum WorkspaceType {
   case xcodeProject
   case swiftPackage
   case directory
+}
+
+// MARK: - ListFilesResult
+
+public struct ListFilesResult {
+  public let files: [URL]
+  public let workspaceType: WorkspaceType
+  public let workspaceRoot: URL
+
+  public init(files: [URL], workspaceType: WorkspaceType, workspaceRoot: URL) {
+    self.files = files
+    self.workspaceType = workspaceType
+    self.workspaceRoot = workspaceRoot
+  }
 }
 
 extension XcodeObserver {
@@ -61,7 +77,7 @@ extension XcodeObserver {
       // We therefore perform a more expensive operation to list all files in the workspace to find a match.
 
       let editor = workspace.editors.first(where: { $0.isFocused }),
-      let matchingFiles = try? await listFiles(in: workspace.url).0
+      let matchingFiles = try? await listFiles(in: workspace.url).files
         .filter({ $0.lastPathComponent == editor.fileName }),
       matchingFiles.count == 1,
       let path = matchingFiles.first

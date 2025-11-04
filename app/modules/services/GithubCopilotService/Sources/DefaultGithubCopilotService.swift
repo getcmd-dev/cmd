@@ -77,7 +77,8 @@ final class DefaultGithubCopilotService: GithubCopilotService {
         executablePath: executablePath,
         // Use this folder that we know to exist as the workspace root, as we need to provide one
         workspace: FrozenWorkspace(
-          url: fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".cmd"),
+          url: URL(filePath: "/"),
+          root: URL(filePath: "/"),
           files: []),
         shellService: shellService,
         fileManager: fileManager,

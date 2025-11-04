@@ -20,8 +20,9 @@ import ThreadSafe
 @ThreadSafe
 public final class GithubCopilotServer: Sendable {
 
+  ///
   init(
-    git executablePath: URL,
+    executablePath: URL,
     workspace: Workspace,
     shellService: ShellService,
     fileManager: FileManagerI,
@@ -200,7 +201,11 @@ public final class GithubCopilotServer: Sendable {
       configuration: .init(
         // LSP protocol requires Content-Length header
         delimitation: .contentLength,
-        logger: defaultLogger.subLogger(subsystem: "github-copilot-lsp-server")))
+        // TODO: clean up
+        logger: workspace.url.path == "/Users/guigui/.cmd"
+          ? nil
+          : defaultLogger
+            .subLogger(subsystem: "github-copilot-lsp-server")))
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
@@ -274,6 +279,14 @@ public final class GithubCopilotServer: Sendable {
           id: request.id,
           result: nil,
           error: .init(code: -32603, message: error.localizedDescription, data: nil))
+
+        do {
+          let jsonData = try JSONEncoder().encode(response)
+          let transport = try await initializedTransport.value
+          try await transport.send(jsonData)
+        } catch {
+          defaultLogger.log("Failed to send response to server request: \(error)")
+        }
       }
     }
   }
@@ -292,6 +305,7 @@ public final class GithubCopilotServer: Sendable {
         .default
       }
 
+    //
     switch method {
     case "workspace/configuration":
       if
@@ -307,14 +321,25 @@ public final class GithubCopilotServer: Sendable {
 
     case "copilot/watchedFiles":
       // Server is asking for watched files
-      let files = workspace.files
-      // Respond with the first 100 files, and send the rest with notifications. (TODO)
+      var files = workspace.files
+      // Respond with the first 100 files, and send the rest with notifications.
       let params = DidChangeWatchedFilesNotificationParameters(
         workspaceUri: workspace.url.absoluteString,
-        changes: files.map { .init(uri: $0.absoluteString, type: .created) })
+        changes: files.prefix(100).map { .init(uri: $0.absoluteString, type: .created) })
       response = try JRPCResponse(id: id, result: .init(encoding: params), error: nil)
-
       defaultLogger.log(" → Responding with \(files.count) files to watch")
+
+      files.removeFirst(min(100, files.count))
+      while !files.isEmpty {
+        let chunk = files.prefix(100)
+        let params = DidChangeWatchedFilesNotificationParameters(
+          workspaceUri: workspace.url.absoluteString,
+          changes: chunk.map { .init(uri: $0.absoluteString, type: .created) })
+        try await sendNotification(
+          "workspace/didChangeWatchedFiles",
+          params: .init(encoding: params))
+        files.removeFirst(min(100, files.count))
+      }
 
     default:
       defaultLogger.log(" → Unknown request method \(method), responding with null")
@@ -335,19 +360,21 @@ public final class GithubCopilotServer: Sendable {
   private func initialize(initializingTransport: StdioConnection) async throws {
     let params = InitializeParams(
       processId: Int(ProcessInfo.processInfo.processIdentifier),
-      rootUri: workspace.url.path,
+      rootUri: workspace.root.path, // TODO? uri?
+      rootPath: workspace.root.path,
       initializationOptions: [
-        "editorInfo": .object(["name": "Xcode", "version": "1.0"]),
-        "editorPluginInfo": .object(["name": "copilot-plugin", "version": "1.0"]),
+        "editorInfo": .object(["name": "Xcode", "version": "26.0"]),
+        "editorPluginInfo": .object(["name": "copilot-xcode", "version": "0.0.0"]),
         "copilotCapabilities": .object([
-          "watchedFiles": true,
+          "watchedFiles": .bool(workspace.root.path != "/"),
           "didChangeFeatureFlags": true,
           "stateDatabase": true,
         ]),
+        "githubAppId": "",
       ],
-      capabilities: ClientCapabilities(),
+      capabilities: ClientCapabilities(workspace: .init()),
       workspaceFolders: [
-        WorkspaceFolder(uri: workspace.url.absoluteString, name: workspace.url.lastPathComponent),
+        WorkspaceFolder(uri: workspace.root.absoluteString, name: workspace.root.lastPathComponent),
       ])
 
     let result: InitializeResult = try await sendRequest(

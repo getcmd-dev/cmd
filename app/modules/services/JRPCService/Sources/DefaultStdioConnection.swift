@@ -48,9 +48,56 @@ actor DefaultStdioConnection: StdioConnection {
       throw AppError("Not connected")
     }
     logger?.trace("stdio sending data: \(String(data: data, encoding: .utf8) ?? "nil")\n")
+    logToFile(data, additionalInfo: [
+      "_sessionId": "\(Unmanaged.passUnretained(self).toOpaque())",
+      "_direction": "sending",
+    ])
     try connection.stdinWriter(data)
   }
 
+  func writeLog(data: Data) {
+    let logPath = FileManager.default.homeDirectoryForCurrentUser
+      .appendingPathComponent("Downloads")
+      .appendingPathComponent("cmd.jrpc.jsonl")
+
+    if FileManager.default.fileExists(atPath: logPath.path) {
+      if let fileHandle = try? FileHandle(forWritingTo: logPath) {
+        fileHandle.seekToEndOfFile()
+        fileHandle.write(data)
+        try? fileHandle.close()
+      }
+    } else {
+      try? data.write(to: logPath, options: .atomic)
+    }
+  }
+
+  func logToFile(_ data: Data, additionalInfo: [String: String] = [:]) {
+    guard logger != nil else {
+      return
+    }
+    guard var json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
+      writeLog(data: "Failed to deserialize:".data(using: .utf8)!)
+      writeLog(data: data)
+      return
+    }
+    for (key, value) in additionalInfo {
+      json[key] = value
+    }
+    guard let data = try? JSONSerialization.data(withJSONObject: json, options: []) else {
+      writeLog(data: "Failed to serialize:".data(using: .utf8)!)
+      writeLog(data: data)
+      return
+    }
+    let str = String(data: data, encoding: .utf8) ?? "<corrupted>"
+
+    let logMessage = "\(str)\n"
+
+    if let data = logMessage.data(using: .utf8) {
+      writeLog(data: data)
+    }
+  }
+
+  ///
   nonisolated func receive() -> AsyncThrowingStream<Data, any Error> {
     stdoutStream
   }
@@ -86,6 +133,10 @@ actor DefaultStdioConnection: StdioConnection {
 
     Task { [weak self] in
       for await data in stdout.fileHandleForReading.dataStream.jsonStream {
+        await self?.logToFile(data, additionalInfo: [
+          "_sessionId": "\(Unmanaged.passUnretained(self!).toOpaque())",
+          "_direction": "received",
+        ])
         logger?.trace("stdio received data: \(String(data: data, encoding: .utf8) ?? "nil")")
         self?.stdoutContinuation.yield(data)
       }

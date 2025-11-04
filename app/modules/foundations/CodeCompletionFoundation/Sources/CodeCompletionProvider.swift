@@ -74,16 +74,20 @@ public protocol Workspace: Sendable {
   var files: [URL] { get }
   /// The URL of the workspace
   var url: URL { get }
+  /// The URL of the workspace
+  var root: URL { get }
 }
 
 // MARK: - FrozenWorkspace
 
 public struct FrozenWorkspace: Workspace {
   public let url: URL
+  public let root: URL
   public let files: [URL]
 
-  public init(url: URL, files: [URL]) {
+  public init(url: URL, root: URL, files: [URL]) {
     self.url = url
     self.files = files
+    self.root = root
   }
 }
