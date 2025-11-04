@@ -4,7 +4,6 @@
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
-import CodeCompletionFeature
 import Dependencies
 import DLS
 import FoundationInterfaces
@@ -13,12 +12,11 @@ import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
+import XcodeObserverWindowsAdapter
 
 /// A side panel displayed on the side of Xcode.
 final class CodeCompletionWindow: XcodeWindow {
-  init(windowsViewModel: WindowsViewModel) {
-    self.windowsViewModel = windowsViewModel
-
+  init() {
     super.init(contentRect: .zero)
 
     styleMask = [.borderless]
@@ -59,9 +57,6 @@ final class CodeCompletionWindow: XcodeWindow {
   override func getFrame() -> CGRect? {
     guard let trackedWindow else { return nil }
     let frame = frame(from: trackedWindow)
-    if frame == .zero {
-      windowsViewModel.handle(.closeSidePanel)
-    }
     if let frame {
       lastWindowFrame = frame
     }
@@ -70,9 +65,6 @@ final class CodeCompletionWindow: XcodeWindow {
 
   private var lastWindowFrame: CGRect?
 
-  private let windowsViewModel: WindowsViewModel
-
-  /// This
   @MainActor
   private func frame(from _: AnyAXUIElement) -> CGRect? {
     CGRect(origin: .zero, size: CGSize(width: 300, height: 100))

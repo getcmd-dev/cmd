@@ -463,6 +463,746 @@ struct GithubCopilotServerTests {
     _ = server
   }
 
+  // MARK: - Server Request Handling Tests
+
+  @Test("workspace/configuration request is handled correctly")
+  func test_workspaceConfigurationRequest() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectConfigurationResponse = expectation(description: "configuration response sent")
+    let responseData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .response(let response):
+          // This is the response to our workspace/configuration request
+          responseData.set(to: data)
+          expectConfigurationResponse.fulfill()
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    // Simulate the server sending a workspace/configuration request
+    let configRequest = """
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "workspace/configuration",
+        "params": {
+          "items": []
+        }
+      }
+      """
+    mockStdioConnection.streamContinuation.yield(configRequest.utf8Data)
+
+    // then
+    try await fulfillment(of: expectConfigurationResponse)
+
+    let response = try #require(responseData.value)
+    let parsedResponse = try JSONDecoder().decode(JRPCResponse.self, from: response)
+    #expect(parsedResponse.id == 1)
+    #expect(parsedResponse.error == nil)
+
+    _ = server
+  }
+
+  @Test("copilot/watchedFiles request with less than 100 files")
+  func test_watchedFilesWithFewFiles() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    // Create a workspace with 50 files
+    let files = (0..<50).map { URL(fileURLWithPath: "/Users/test/workspace/file\($0).swift") }
+
+    let expectWatchedFilesResponse = expectation(description: "watchedFiles response sent")
+    let responseData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .response(let response):
+          // This is the response to our copilot/watchedFiles request
+          if response.id == 1 {
+            responseData.set(to: data)
+            expectWatchedFilesResponse.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: files),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    // Simulate the server sending a copilot/watchedFiles request
+    let watchedFilesRequest = """
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "copilot/watchedFiles",
+        "params": {}
+      }
+      """
+    mockStdioConnection.streamContinuation.yield(watchedFilesRequest.utf8Data)
+
+    // then
+    try await fulfillment(of: expectWatchedFilesResponse)
+
+    let response = try #require(responseData.value)
+    let parsedResponse = try JSONDecoder().decode(JRPCResponse.self, from: response)
+    #expect(parsedResponse.id == 1)
+    #expect(parsedResponse.error == nil)
+
+    // Verify the response contains the files
+    if
+      case .object(let resultObj) = parsedResponse.result,
+      case .array(let changes) = resultObj["changes"]
+    {
+      #expect(changes.count == 50)
+    }
+
+    _ = server
+  }
+
+  @Test("copilot/watchedFiles request with more than 100 files sends notifications")
+  func test_watchedFilesWithManyFiles() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    // Create a workspace with 250 files (should trigger multiple notifications)
+    let files = (0..<250).map { URL(fileURLWithPath: "/Users/test/workspace/file\($0).swift") }
+
+    let expectWatchedFilesResponse = expectation(description: "watchedFiles response sent")
+
+    let responseData = Atomic<Data?>(nil)
+    let notifications = Atomic<[JRPCNotification]>([])
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .response(let response):
+          // This is the response to our copilot/watchedFiles request
+          if response.id == 1 {
+            responseData.set(to: data)
+            expectWatchedFilesResponse.fulfill()
+          }
+
+        case .notification(let notification):
+          if notification.method == "workspace/didChangeWatchedFiles" {
+            notifications.mutate { $0.append(notification) }
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: files),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    // Simulate the server sending a copilot/watchedFiles request
+    let watchedFilesRequest = """
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "copilot/watchedFiles",
+        "params": {}
+      }
+      """
+    mockStdioConnection.streamContinuation.yield(watchedFilesRequest.utf8Data)
+
+    // then
+    try await fulfillment(of: expectWatchedFilesResponse)
+
+    // Wait a bit for notifications to be sent
+    try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+
+    // Verify the response contains the first 100 files
+    let response = try #require(responseData.value)
+    let parsedResponse = try JSONDecoder().decode(JRPCResponse.self, from: response)
+    #expect(parsedResponse.id == 1)
+    #expect(parsedResponse.error == nil)
+
+    if
+      case .object(let resultObj) = parsedResponse.result,
+      case .array(let changes) = resultObj["changes"]
+    {
+      #expect(changes.count == 100)
+    }
+
+    // Verify we got 2 additional notifications (150 additional files = 2 notifications of 100 each)
+    #expect(notifications.value.count == 2)
+
+    _ = server
+  }
+
+  @Test("unknown request method returns null response")
+  func test_unknownRequestMethod() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectUnknownResponse = expectation(description: "unknown method response sent")
+    let responseData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .response(let response):
+          // This is the response to our unknown request
+          if response.id == 1 {
+            responseData.set(to: data)
+            expectUnknownResponse.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    // Simulate the server sending an unknown request
+    let unknownRequest = """
+      {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "unknown/method",
+        "params": {}
+      }
+      """
+    mockStdioConnection.streamContinuation.yield(unknownRequest.utf8Data)
+
+    // then
+    try await fulfillment(of: expectUnknownResponse)
+
+    let response = try #require(responseData.value)
+    let parsedResponse = try JSONDecoder().decode(JRPCResponse.self, from: response)
+    #expect(parsedResponse.id == 1)
+    #expect(parsedResponse.error == nil)
+    // Verify result is .null (not nil optional, but the JSON null value)
+    if let result = parsedResponse.result {
+      #expect(result == .null)
+    }
+
+    _ = server
+  }
+
+  // MARK: - Document Sync Tests
+
+  @Test("didOpenTextDocument sends correct notification")
+  func test_didOpenTextDocument() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectDidOpen = expectation(description: "didOpen notification sent")
+    let notificationData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .notification(let notification):
+          if notification.method == "textDocument/didOpen" {
+            notificationData.set(to: data)
+            expectDidOpen.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    try await server.didOpenTextDocument(
+      uri: "file:///Users/test/workspace/test.swift",
+      languageId: "swift",
+      version: 1,
+      text: "let x = 1")
+
+    // then
+    try await fulfillment(of: expectDidOpen)
+
+    let data = try #require(notificationData.value)
+    let parsedNotification = try JSONDecoder().decode(JRPCNotification.self, from: data)
+    #expect(parsedNotification.method == "textDocument/didOpen")
+
+    _ = server
+  }
+
+  @Test("didChangeTextDocument sends correct notification")
+  func test_didChangeTextDocument() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectDidChange = expectation(description: "didChange notification sent")
+    let notificationData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .notification(let notification):
+          if notification.method == "textDocument/didChange" {
+            notificationData.set(to: data)
+            expectDidChange.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    try await server.didChangeTextDocument(
+      uri: "file:///Users/test/workspace/test.swift",
+      version: 2,
+      text: "let x = 2")
+
+    // then
+    try await fulfillment(of: expectDidChange)
+
+    let data = try #require(notificationData.value)
+    let parsedNotification = try JSONDecoder().decode(JRPCNotification.self, from: data)
+    #expect(parsedNotification.method == "textDocument/didChange")
+
+    _ = server
+  }
+
+  @Test("didSaveTextDocument sends correct notification")
+  func test_didSaveTextDocument() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectDidSave = expectation(description: "didSave notification sent")
+    let notificationData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .notification(let notification):
+          if notification.method == "textDocument/didSave" {
+            notificationData.set(to: data)
+            expectDidSave.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    try await server.didSaveTextDocument(
+      uri: "file:///Users/test/workspace/test.swift",
+      version: 2,
+      text: "let x = 2")
+
+    // then
+    try await fulfillment(of: expectDidSave)
+
+    let data = try #require(notificationData.value)
+    let parsedNotification = try JSONDecoder().decode(JRPCNotification.self, from: data)
+    #expect(parsedNotification.method == "textDocument/didSave")
+
+    _ = server
+  }
+
+  @Test("didCloseTextDocument sends correct notification")
+  func test_didCloseTextDocument() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectDidClose = expectation(description: "didClose notification sent")
+    let notificationData = Atomic<Data?>(nil)
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        case .notification(let notification):
+          if notification.method == "textDocument/didClose" {
+            notificationData.set(to: data)
+            expectDidClose.fulfill()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    try await server.didCloseTextDocument(
+      uri: "file:///Users/test/workspace/test.swift",
+      version: 2)
+
+    // then
+    try await fulfillment(of: expectDidClose)
+
+    let data = try #require(notificationData.value)
+    let parsedNotification = try JSONDecoder().decode(JRPCNotification.self, from: data)
+    #expect(parsedNotification.method == "textDocument/didClose")
+
+    _ = server
+  }
+
+  // MARK: - Completion Tests
+
+  @Test("getCompletions sends correct request and handles response")
+  func test_getCompletions() async throws {
+    // given
+    let mockStdioConnection = MockStdioConnection()
+    let mockJRPCService = MockJRPCService(onCreateConnection: { _, _, _, _ in
+      mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+    let fileManager = MockFileManager(files: [:] as [String: String], directories: [])
+    let executablePath = URL(fileURLWithPath: "/usr/local/bin/copilot")
+    let workspaceRoot = URL(fileURLWithPath: "/Users/test/workspace")
+
+    let expectCompletionRequest = expectation(description: "completion request sent")
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            // Respond to initialize
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          } else if request.method == "textDocument/inlineCompletion" {
+            expectCompletionRequest.fulfill()
+
+            // Respond with completions
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "items": [
+                    {
+                      "insertText": "func example() { return 42 }",
+                      "range": {
+                        "start": {"line": 0, "character": 0},
+                        "end": {"line": 0, "character": 0}
+                      }
+                    }
+                  ]
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    let server = GithubCopilotServer(
+      executablePath: executablePath,
+      workspace: FrozenWorkspace(url: workspaceRoot, root: workspaceRoot, files: []),
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
+    // when
+    let result = try await server.getCompletions(
+      uri: "file:///Users/test/workspace/test.swift",
+      version: 1,
+      position: Position(line: 0, character: 0),
+      tabSize: 2,
+      insertSpaces: true)
+
+    // then
+    try await fulfillment(of: expectCompletionRequest)
+    #expect(result.items.count == 1)
+    #expect(result.items[0].insertText == "func example() { return 42 }")
+
+    _ = server
+  }
+
   // MARK: - Helper Methods
 
   private static func parseJRPCMessage(_ data: Data) throws -> JRPCMessage? {

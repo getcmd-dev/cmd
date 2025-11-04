@@ -298,7 +298,6 @@ public final class GithubCopilotServer: Sendable {
         .default
       }
 
-    //
     switch method {
     case "workspace/configuration":
       if

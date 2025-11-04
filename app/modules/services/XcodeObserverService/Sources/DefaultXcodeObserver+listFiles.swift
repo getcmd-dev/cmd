@@ -11,6 +11,8 @@ extension DefaultXcodeObserver {
   func listFiles(in workspace: URL) async throws -> ListFilesResult {
     let workspaceType: WorkspaceType
     let files: [URL]
+    // When an .xcworkspace is opened, we look for the corresponding .xcodeproj which is where the project structure is defined.
+    // `XcodeProj` only works with an .xcodeproj file.
     if let xcodeProj = try? XcodeProj(path: .init(workspace.path.replacingOccurrences(of: ".xcworkspace", with: ".xcodeproj"))) {
       workspaceType = .xcodeProject
       let rootDir = workspace.deletingLastPathComponent()

@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodeCompletionFeature
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -10,7 +11,6 @@ import SettingsFeatureInterface
 
 @MainActor
 final class WindowsView {
-
   @MainActor
   init(viewModel: WindowsViewModel) {
     self.viewModel = viewModel
@@ -42,10 +42,8 @@ final class WindowsView {
 
   private var sidePanel: SidePanel?
   private var setupWindow: SetupWindow?
-  private var codeCompletionWindow: CodeCompletionWindow?
 
   private func update(to newState: WindowsViewModel.State, from oldState: WindowsViewModel.State) {
-    showCompletion()
     if newState.isOnboardingVisible != oldState.isOnboardingVisible {
       if newState.isOnboardingVisible {
         showSetupWindow()
@@ -78,14 +76,6 @@ final class WindowsView {
           self?.viewModel.handle(.didShowSettings)
         }
       }
-    }
-  }
-
-  private func showCompletion() {
-    if codeCompletionWindow == nil {
-      codeCompletionWindow = CodeCompletionWindow(windowsViewModel: viewModel)
-      codeCompletionWindow?.show()
-      codeCompletionWindow?.orderFrontRegardless()
     }
   }
 

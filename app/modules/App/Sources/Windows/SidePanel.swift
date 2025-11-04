@@ -13,6 +13,7 @@ import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
+import XcodeObserverWindowsAdapter
 
 /// A side panel displayed on the side of Xcode.
 final class SidePanel: XcodeWindow {

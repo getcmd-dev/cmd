@@ -52,9 +52,14 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     self.codeCompletionProviders = codeCompletionProviders
     self.settingsService = settingsService
 
-    // Set up event sources from XcodeObserver
+    // Subscribe to state changes from XcodeObserver
+    let cancellable = xcodeObserver.statePublisher.sink { @Sendable newState in
+      Task { [weak self] in
+        await self?.handleStateChange(newState)
+      }
+    }
     Task {
-      await setupEventSources()
+      await add(cancellable: cancellable)
     }
   }
 
@@ -101,40 +106,55 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   private struct FileState {
     let content: String
     let version: Int
-    let isOpened = false
   }
 
-  /// Workspaces being initalized. While a workspace is initialize, it cannot receive events.
-  private var workspacesBeingInitialized = Set<URL>()
+  /// State of workspace initialization
+  private enum WorkspaceState {
+    case initializing
+    case ready
+    case failed
+  }
+
+  /// Track workspace initialization state to prevent race conditions
+  private var workspaceStates = [URL: WorkspaceState]()
   private let xcodeObserver: XcodeObserver
   private let getPasteboardContent: @Sendable () -> String?
   private let codeCompletionProviders: [any CodeCompletionProvider]
   private let settingsService: SettingsService
-  private var cancellables = [AnyCancellable]()
+  private var cancellables = Set<AnyCancellable>()
 
   /// Track which files are currently open within each workspace
   nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
   private var openFiles = [URL: [URL: FileState]]()
 
+  private func add(cancellable: AnyCancellable) {
+    cancellables.insert(cancellable)
+  }
+
   private func initialize(workspace: URL) {
-    guard workspacesBeingInitialized.insert(workspace).inserted else { return }
+    // Prevent duplicate initialization - only start if workspace is not already initializing or ready
+    // Allow retry if previous initialization failed
+    let currentState = workspaceStates[workspace]
+    guard currentState != .initializing, currentState != .ready else { return }
+
+    workspaceStates[workspace] = .initializing
+
     Task { [weak self] in
       do {
         // list files
         let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
         let files = workspaceInfo?.files
-        let workspaceType = workspaceInfo?.workspaceType
         let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files)
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
         // setup file watcher (TODO)
       } catch {
         print("Error setting up workspace: \(error)")
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil)
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
       }
     }
   }
 
-  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?) {
+  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
     if let files {
       filesPerWorkspace[workspace] = Set(files)
       notifyProviders { provider in
@@ -144,19 +164,14 @@ actor DefaultCodeCompletionService: CodeCompletionService {
           files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
       }
       openFiles[workspace] = [:]
+      workspaceStates[workspace] = .ready
+      // Process any pending state changes now that initialization is complete
       handleStateChange(xcodeObserver.state)
+    } else {
+      // Failed initialization - mark as failed but don't set openFiles
+      // This allows retry on next state change
+      workspaceStates[workspace] = .failed
     }
-    workspacesBeingInitialized.remove(workspace)
-  }
-
-  /// Set up event sources from XcodeObserver to trigger LSP text document events
-  private func setupEventSources() {
-    // Subscribe to state changes from XcodeObserver
-    xcodeObserver.statePublisher.sink { @Sendable newState in
-      Task { [weak self] in
-        await self?.handleStateChange(newState)
-      }
-    }.store(in: &cancellables)
   }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events
@@ -171,9 +186,10 @@ actor DefaultCodeCompletionService: CodeCompletionService {
       for workspace in xcodeApp.workspaces {
         currentlyTrackedWorkspaces.insert(workspace.url)
         if openFiles[workspace.url] == nil {
-          // new workspace
+          // new workspace - start initialization
           initialize(workspace: workspace.url)
-          break
+          // Skip processing events for this workspace until initialization completes
+          continue
         }
         openFiles[workspace.url] = openFiles[workspace.url, default: [:]]
         currentlyOpenFiles[workspace.url] = currentlyOpenFiles[workspace.url, default: Set()]

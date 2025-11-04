@@ -10,4 +10,16 @@ Target.module(
     "DependencyFoundation",
     "SettingsServiceInterface",
     "XcodeObserverServiceInterface",
+  ],
+  testsDependencies: [
+    "AccessibilityFoundation",
+    "AppFoundation",
+    "CodeCompletionFoundation",
+    "CodeCompletionService",
+    "CodeCompletionServiceInterface",
+    "ConcurrencyFoundation",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+    "ThreadSafe",
+    "XcodeObserverServiceInterface",
   ])

@@ -71,6 +71,7 @@ Target.module(
     "XcodeControllerServiceInterface",
     "XcodeObserverService",
     "XcodeObserverServiceInterface",
+    "XcodeObserverWindowsAdapter",
     "XPCServiceInterface",
   ],
   resources: [],
