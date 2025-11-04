@@ -28,7 +28,6 @@ public final class GithubCopilotServer: Sendable {
     fileManager: FileManagerI,
     jrpcService: JRPCService)
   {
-    print("GithubCopilotServer init with executablePath: \(executablePath), workspaceRoot: \(workspace.url.path)")
     self.workspace = workspace
     self.shellService = shellService
     self.fileManager = fileManager
@@ -43,79 +42,9 @@ public final class GithubCopilotServer: Sendable {
       do {
         let transport = try await self.start()
         setInitializedTransport(.success(transport))
-        print("GithubCopilotServer \(workspace.url.path) initialized transport successfully")
-          
-          
-        if workspace.root.absoluteString == "file:///Users/guigui/dev/copilot-for-xcode/CopilotForXcode/" {
-            do {
-                let uris = [
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CustomJSONRPCServerConnection.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageClient/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/Conversation/ConversationProgressHandler.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/XPCShared/XPCExtensionService.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+StdioPipe.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+Actor.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/GitHubCopilotRequest.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONId.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Server/node_modules/webpack/lib/wasm-sync/WebAssemblyUtils.js",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/SafeInitializingServer.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Copilot for Xcode/App.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/GitHubCopilotService.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CopilotLocalProcessServer.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageServerProtocol/Sources/LanguageServerProtocol/LanguageServerProtocol.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageServerProtocol/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+PredefinedMessages.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONRPCSession.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONRPCError.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CopilotLanguageModelToolManager.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/GitHubCopilotRequest.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CustomJSONRPCServerConnection.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Copilot for Xcode/App.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/GitHubCopilotService.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Server/node_modules/webpack/lib/wasm-sync/WebAssemblyUtils.js",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/XPCShared/XPCExtensionService.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+StdioPipe.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+PredefinedMessages.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/Conversation/ConversationProgressHandler.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/DataChannel+Actor.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageClient/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/SafeInitializingServer.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONRPCError.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageServerProtocol/Package.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CopilotLanguageModelToolManager.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONId.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/JSONRPC/Sources/JSONRPC/JSONRPCSession.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Vendors/LanguageServerProtocol/Sources/LanguageServerProtocol/LanguageServerProtocol.swift",
-                  "/Users/guigui/dev/copilot-for-xcode/CopilotForXcode/Tool/Sources/GitHubCopilotService/LanguageServer/CopilotLocalProcessServer.swift",
-                ]
-                for uri in uris {
-                    let content = try fileManager.read(contentsOf: URL(filePath: uri))
-                    try await didOpenTextDocument(uri: uri, languageId: String(uri.split(separator: ".").last ?? "plaintext"), version: 0, text: content)
-                }
-                try await sendNotification("workspace/didChangeWorkspaceFolders", params: [
-                  "event": [
-                      "added": [
-                          [
-                              "name": "CopilotForXcode",
-                              "uri": "file:///Users/guigui/dev/copilot-for-xcode/CopilotForXcode/"
-                          ]
-                      ],
-                      "removed": []
-                  ]
-                ])
-            } catch {
-                print(error)
-            }
-        }
+        await addOpenfiles()
       } catch {
         setInitializedTransport(.failure(error))
-        print("GithubCopilotServer \(workspace.url.path) initialized transport successfully")
       }
     }
   }
@@ -270,11 +199,8 @@ public final class GithubCopilotServer: Sendable {
       configuration: .init(
         // LSP protocol requires Content-Length header
         delimitation: .contentLength,
-        // TODO: clean up
-        logger: workspace.url.path == "/Users/guigui/.cmd"
-          ? nil
-          : defaultLogger
-            .subLogger(subsystem: "github-copilot-lsp-server")))
+        logger: defaultLogger
+          .subLogger(subsystem: "github-copilot-lsp-server")))
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
