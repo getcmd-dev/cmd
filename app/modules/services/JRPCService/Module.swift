@@ -6,4 +6,7 @@ Target.module(
     "DependencyFoundation",
     "JRPCServiceInterface",
     "LoggingServiceInterface",
+  ],
+  testsDependencies: [
+    "JRPCService",
   ])
