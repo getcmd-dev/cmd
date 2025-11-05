@@ -15,7 +15,7 @@ struct DefaultFileSuggestionServiceTests {
   @Test("filtered search")
   func test_filteringSearch() async throws {
     let xcodeObserver = MockXcodeObserver()
-    xcodeObserver.onListFiles = { workspace in
+    xcodeObserver.onListFiles = { workspace, _ in
       // Simulate listing files for xcodeproj
       let rootDir = workspace.deletingLastPathComponent()
       return ListFilesResult(
@@ -58,7 +58,7 @@ struct DefaultFileSuggestionServiceTests {
   func test_fuzzyMatching() async throws {
     let xcodeObserver = MockXcodeObserver()
     let callCount = Atomic(0)
-    xcodeObserver.onListFiles = { workspace in
+    xcodeObserver.onListFiles = { workspace, _ in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       return ListFilesResult(
         files: [
@@ -89,7 +89,7 @@ struct DefaultFileSuggestionServiceTests {
   func test_searchUsesFilesCache() async throws {
     let xcodeObserver = MockXcodeObserver()
     let callCount = Atomic(0)
-    xcodeObserver.onListFiles = { workspace in
+    xcodeObserver.onListFiles = { workspace, _ in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       return ListFilesResult(
         files: [
@@ -128,7 +128,7 @@ struct DefaultFileSuggestionServiceTests {
     let didStartConcurrentRequests = expectation(description: "Did start concurrent requests")
     let didCompleteConcurrentRequests = expectation(description: "Did complete concurrent requests")
 
-    xcodeObserver.onListFiles = { workspace in
+    xcodeObserver.onListFiles = { workspace, _ in
       #expect(callCount.increment() == 1) // Only one call is expected to resolve files.
       try await fulfillment(of: didStartConcurrentRequests)
       return ListFilesResult(

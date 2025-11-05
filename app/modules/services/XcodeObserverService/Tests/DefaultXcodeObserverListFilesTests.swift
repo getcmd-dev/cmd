@@ -59,10 +59,13 @@ struct DefaultXcodeObserverListFilesTests {
     shellService.onRun = { command, cwd, _, _, _ in
       if command == "git rev-parse --show-toplevel" {
         return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
-      } else {
-        #expect(command == "swift package describe --type json")
+      } else if command == "swift package describe --type json" {
         #expect(cwd?.hasSuffix("/SPM") == true)
         return CommandExecutionResult(exitCode: 0, stdout: spmPackageDescription)
+      } else {
+        Issue.record("Unexpected command: \(command)")
+        // Handle any other commands (like git check-ignore) by returning empty success
+        return CommandExecutionResult(exitCode: 0, stdout: "")
       }
     }
     let sut = DefaultXcodeObserver(
@@ -116,6 +119,7 @@ struct DefaultXcodeObserverListFilesTests {
         // Simulate that subdirectory/test.txt is git ignored
         return CommandExecutionResult(exitCode: 0, stdout: "\(workspacePath.path)/subdirectory/test.txt")
       }
+      Issue.record("Unexpected command: \(command)")
       return CommandExecutionResult(exitCode: 1, stderr: "Unknown command")
     }
 
@@ -131,6 +135,121 @@ struct DefaultXcodeObserverListFilesTests {
     #expect(filesInfo.workspaceRoot == workspacePath)
     #expect(gitCheckIgnoreCalled.value)
     #expect(filesInfo.files.isEmpty)
+  }
+
+  @Test("debounce - multiple rapid calls result in single execution") @MainActor
+  func testDebounceMultipleRapidCalls() async throws {
+    // given
+    let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
+    let shellService = MockShellService()
+    let gitRevParseCallCount = Atomic<Int>(0)
+    shellService.onRun = { command, _, _, _, _ in
+      if command == "git rev-parse --show-toplevel" {
+        gitRevParseCallCount.mutate { $0 += 1 }
+        return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
+      }
+      Issue.record("Unexpected command: \(command)")
+      return CommandExecutionResult(exitCode: 0, stdout: "")
+    }
+    let sut = DefaultXcodeObserver(fileManager: fileManager, shellService: shellService)
+    let workspacePath = path(for: "directory")
+
+    // when - make 5 rapid calls with debounce
+    async let result1 = sut.listFiles(in: workspacePath, debounce: 0.1)
+    async let result2 = sut.listFiles(in: workspacePath, debounce: 0.1)
+    async let result3 = sut.listFiles(in: workspacePath, debounce: 0.1)
+    async let result4 = sut.listFiles(in: workspacePath, debounce: 0.1)
+    async let result5 = sut.listFiles(in: workspacePath, debounce: 0.1)
+
+    let results = try await (result1, result2, result3, result4, result5)
+
+    // then - all calls should return the same result
+    #expect(results.0.files == results.1.files)
+    #expect(results.1.files == results.2.files)
+    #expect(results.2.files == results.3.files)
+    #expect(results.3.files == results.4.files)
+
+    // The actual file listing should happen only once or a small number of times due to coalescing
+    #expect(gitRevParseCallCount.value == 1, "Should have called git exactly once")
+  }
+
+  @Test("debounce - calls with nil debounce execute immediately") @MainActor
+  func testDebounceNilExecutesImmediately() async throws {
+    // given
+    let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
+    let shellService = MockShellService()
+    shellService.onRun = { command, _, _, _, _ in
+      if command == "git rev-parse --show-toplevel" {
+        return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
+      }
+      Issue.record("Unexpected command: \(command)")
+      return CommandExecutionResult(exitCode: 0, stdout: "")
+    }
+    let sut = DefaultXcodeObserver(fileManager: fileManager, shellService: shellService)
+    let workspacePath = path(for: "directory")
+
+    // when
+    let startTime = Date()
+    let _ = try await sut.listFiles(in: workspacePath, debounce: nil)
+    let duration = Date().timeIntervalSince(startTime)
+
+    // then - should execute immediately (within 500ms to account for system load)
+    #expect(duration < 0.5, "Should execute immediately without debounce")
+  }
+
+  @Test("debounce - sequential calls with delay execute multiple times") @MainActor
+  func testDebounceSequentialCallsWithDelay() async throws {
+    // given
+    let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
+    let shellService = MockShellService()
+    let gitRevParseCallCount = Atomic<Int>(0)
+    shellService.onRun = { command, _, _, _, _ in
+      if command == "git rev-parse --show-toplevel" {
+        gitRevParseCallCount.mutate { $0 += 1 }
+        return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
+      }
+      Issue.record("Unexpected command: \(command)")
+      return CommandExecutionResult(exitCode: 0, stdout: "")
+    }
+    let sut = DefaultXcodeObserver(fileManager: fileManager, shellService: shellService)
+    let workspacePath = path(for: "directory")
+
+    // when - make sequential calls
+    let _ = try await sut.listFiles(in: workspacePath, debounce: 0.05)
+    let _ = try await sut.listFiles(in: workspacePath, debounce: 0.05)
+
+    // then - both calls should execute
+    #expect(gitRevParseCallCount.value == 2, "Both calls should execute when separated by sufficient delay")
+  }
+
+  @Test("debounce - sequential calls with delay and then without") @MainActor
+  func testDebounceQueuedCallIsExecutedImmediatelyByConcurrentUnqueuedCall() async throws {
+    // given
+    let fileManager = try MockFileManager(copyingFrom: URL(fileURLWithPath: Bundle.module.bundlePath))
+    let shellService = MockShellService()
+    let gitRevParseCallCount = Atomic<Int>(0)
+    shellService.onRun = { command, _, _, _, _ in
+      if command == "git rev-parse --show-toplevel" {
+        gitRevParseCallCount.mutate { $0 += 1 }
+        return CommandExecutionResult(exitCode: 1, stderr: "Not a git repository")
+      }
+      Issue.record("Unexpected command: \(command)")
+      return CommandExecutionResult(exitCode: 0, stdout: "")
+    }
+    let sut = DefaultXcodeObserver(fileManager: fileManager, shellService: shellService)
+    let workspacePath = path(for: "directory")
+
+    // when - make concurrent calls, queuing the first but not the second one.
+    let startTime = Date()
+    async let call1 = sut.listFiles(in: workspacePath, debounce: 1000)
+    async let call2 = sut.listFiles(in: workspacePath)
+    let results = try await (call1, call2)
+    let duration = Date().timeIntervalSince(startTime)
+
+    // then
+    #expect(gitRevParseCallCount.value == 1, "Only one call should be executed")
+    #expect(duration < 1, "Should execute immediately without debounce")
+    #expect(Set(results.0.files) == Set(results.1.files), "Both calls should return the same files")
   }
 
   private let spmPackageDescription = """

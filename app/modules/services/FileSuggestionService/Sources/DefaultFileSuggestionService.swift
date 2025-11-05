@@ -113,7 +113,6 @@ final class DefaultFileSuggestionService: FileSuggestionService {
       return cachedResult
     case .newTask(let (future, promise)):
       let allowedExtensions = textFileExtensions
-      let ignoredDirectories = Set([".build", "build", "xcuserdata", "DerivedData"])
       Task.detached(priority: .userInitiated) {
         do {
           let (suggestions, rootDir) = try await self.listFilesAvailable(in: workspace)
@@ -128,7 +127,8 @@ final class DefaultFileSuggestionService: FileSuggestionService {
                 return suggestion.path.pathComponents.contains(where: { Set(["build", "xcuserdata"]).contains($0) }) == false
               }
               #endif
-              return suggestion.path.pathComponents.contains(where: { ignoredDirectories.contains($0) }) == false
+              return suggestion.path.pathComponents
+                .contains(where: { Set([".build", "build", "xcuserdata", "DerivedData"]).contains($0) }) == false
             }
           let directorySuggestions = self.directorySuggestions(from: filteredFiles, root: rootDir)
           let files = filteredFiles + directorySuggestions

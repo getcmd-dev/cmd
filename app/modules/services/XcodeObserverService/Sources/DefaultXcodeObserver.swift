@@ -29,6 +29,9 @@ final class DefaultXcodeObserver: XcodeObserver {
     self.fileManager = fileManager
     self.settingsService = settingsService
     self.shellService = shellService
+    fileLister = FileLister(
+      fileManager: fileManager,
+      shellService: shellService)
 
     let accessibilityPermissionStatus = permissionsService.status(for: .accessibility)
     update(with: accessibilityPermissionStatus.currentValue)
@@ -54,6 +57,14 @@ final class DefaultXcodeObserver: XcodeObserver {
     .init(internalState.value.normalized, publisher: internalState.map(\.normalized).eraseToAnyPublisher())
   }
 
+  func listFiles(in workspace: URL, debounce: TimeInterval?) async throws -> ListFilesResult {
+    try await fileLister.listFiles(in: workspace, debounce: debounce)
+  }
+
+  func filterIgnoredFiles(from files: [URL], in workspace: URL) async -> [URL] {
+    await files.filterOutIgnoredFiles(root: workspace, shellService: shellService)
+  }
+
   func getContent(of file: URL) throws -> String {
     let fileEditMode = settingsService.value(for: \.fileEditMode)
     switch fileEditMode {
@@ -63,6 +74,8 @@ final class DefaultXcodeObserver: XcodeObserver {
       return try fileManager.read(contentsOf: file, encoding: .utf8)
     }
   }
+
+  private let fileLister: FileLister
 
   private var xcodeObservers = [Int32: XcodeAppInstanceObserver]()
   private let internalState = CurrentValueSubject<AXState<InternalXcodeState>, Never>(.unknown)
