@@ -186,6 +186,59 @@ struct WorkspaceInitializationTests {
     _ = sut
   }
 
+  @Test("Updates recent edits tracker on file changes")
+  func updatesRecentEditsTrackerOnFileChanges() async throws {
+    // given
+    let workspace1 = URL(fileURLWithPath: "/workspace1")
+    let mockCodeCompletionProvider = MockCodeCompletionProvider(id: "test-provider")
+    let mockXcodeObserver = MockXcodeObserver()
+    let mockSettingsService = MockSettingsService()
+
+    let setupExpectation = expectation(description: "setUp called")
+    let listFilesExpectation = expectation(description: "listFiles called")
+
+    mockCodeCompletionProvider.onSetUp = { _ in
+      setupExpectation.fulfill()
+    }
+
+    mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
+
+    mockXcodeObserver.onListFiles = { _ in
+      listFilesExpectation.fulfill()
+      return ListFilesResult(
+        files: [URL(fileURLWithPath: "/workspace1/file1.swift")],
+        workspaceType: .xcodeProject,
+        workspaceRoot: workspace1)
+    }
+
+    let sut = DefaultCodeCompletionService(
+      xcodeObserver: mockXcodeObserver,
+      getPasteboardContent: { nil },
+      codeCompletionProviders: [mockCodeCompletionProvider],
+      settingsService: mockSettingsService)
+
+    // when - send state changes with file edits
+    let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
+    mockXcodeObserver.mutableStatePublisher.send(state1)
+
+    // Wait for initialization
+    try await fulfillment(of: [listFilesExpectation, setupExpectation], timeout: 2)
+
+    // Send a content change
+    let state2 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 2")
+    mockXcodeObserver.mutableStatePublisher.send(state2)
+
+    // Give time for async processing
+    try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+
+    // then - verify tracker has edits
+    let tracker = await sut.recentEditsTrackers[workspace1]
+    #expect(tracker != nil)
+    let history = await tracker?.editsHistory
+    #expect(history?.count ?? 0 > 0)
+    _ = sut
+  }
+
   @Test("Retries failed workspace initialization")
   func retriesFailedWorkspaceInitialization() async throws {
     // given

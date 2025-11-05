@@ -90,6 +90,8 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     } else {
       openFiles[workspace] = openFiles[workspace] ?? [:]
       openFiles[workspace]?[file] = .init(content: content, version: 0)
+      // Update tracker before notifying providers
+      await recentEditsTrackers[workspace]?.process(updates: [(url: file, content: content)])
       notifyProviders { provider in
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
@@ -126,6 +128,11 @@ actor DefaultCodeCompletionService: CodeCompletionService {
         openFiles[workspace.url] = openFiles[workspace.url, default: [:]]
         currentlyOpenFiles[workspace.url] = currentlyOpenFiles[workspace.url, default: Set()]
 
+        // Batch updates for this workspace
+        var trackerUpdates = [(url: URL, content: String?)]()
+        var didOpenEvents = [(file: URL, content: String, version: Int)]()
+        var didChangeEvents = [(file: URL, content: String, version: Int)]()
+
         for tab in workspace.tabs {
           if let fileURL = tab.knownPath, let content = tab.lastKnownContent {
             currentlyOpenFiles[workspace.url]?.insert(fileURL)
@@ -133,19 +140,36 @@ actor DefaultCodeCompletionService: CodeCompletionService {
             // textDocument/didOpen: Detect newly opened files
             if openFiles[workspace.url]?[fileURL] == nil {
               openFiles[workspace.url]?[fileURL] = .init(content: content, version: 0)
-              notifyProviders { provider in
-                provider.didOpen(workspace: workspace.url, file: fileURL, content: content, version: 0)
-              }
+              trackerUpdates.append((url: fileURL, content: content))
+              didOpenEvents.append((file: fileURL, content: content, version: 0))
             }
 
             // textDocument/didChange: Detect content changes
             if let fileState = openFiles[workspace.url]?[fileURL], fileState.content != content {
               let version = fileState.version + 1
               openFiles[workspace.url]?[fileURL] = .init(content: content, version: version)
-              notifyProviders { provider in
-                provider.didChange(workspace: workspace.url, file: fileURL, content: content, version: version)
-              }
+              trackerUpdates.append((url: fileURL, content: content))
+              didChangeEvents.append((file: fileURL, content: content, version: version))
             }
+          }
+        }
+
+        // Send batch update to tracker
+        if !trackerUpdates.isEmpty {
+          Task { [weak self] in
+            await self?.recentEditsTrackers[workspace.url]?.process(updates: trackerUpdates)
+          }
+        }
+
+        // Send all updates to providers
+        for event in didOpenEvents {
+          notifyProviders { provider in
+            provider.didOpen(workspace: workspace.url, file: event.file, content: event.content, version: event.version)
+          }
+        }
+        for event in didChangeEvents {
+          notifyProviders { provider in
+            provider.didChange(workspace: workspace.url, file: event.file, content: event.content, version: event.version)
           }
         }
       }

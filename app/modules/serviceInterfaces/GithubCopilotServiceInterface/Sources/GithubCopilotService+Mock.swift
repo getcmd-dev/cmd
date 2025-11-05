@@ -83,6 +83,10 @@ public final class MockGithubCopilotService: GithubCopilotService {
     codeCompletionProvider.didClose(workspace: workspace, file: file, content: content, version: version)
   }
 
+  public func didDelete(workspace: URL, file: URL) {
+    codeCompletionProvider.didDelete(workspace: workspace, file: file)
+  }
+
   public func checkStatus() async throws -> LoginStatus {
     guard let onCheckStatus else {
       throw AppError("No login status provided")

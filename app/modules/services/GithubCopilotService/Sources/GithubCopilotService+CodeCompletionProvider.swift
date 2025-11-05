@@ -89,4 +89,8 @@ extension DefaultGithubCopilotService {
     }
   }
 
+  func didDelete(workspace _: URL, file _: URL) {
+    // Empty implementation - LSP server doesn't have a didDelete notification
+  }
+
 }

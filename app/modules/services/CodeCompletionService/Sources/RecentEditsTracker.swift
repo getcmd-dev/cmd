@@ -29,8 +29,8 @@ actor RecentEditsTracker: Sendable {
     // Create persistent tmp directories for diff computation
     let tmpBase = FileManager.default.temporaryDirectory
     let uuid = UUID().uuidString
-    self.oldContentDir = tmpBase.appendingPathComponent("recent-edits-old-\(uuid)", isDirectory: true)
-    self.newContentDir = tmpBase.appendingPathComponent("recent-edits-new-\(uuid)", isDirectory: true)
+    oldContentDir = tmpBase.appendingPathComponent("recent-edits-old-\(uuid)", isDirectory: true)
+    newContentDir = tmpBase.appendingPathComponent("recent-edits-new-\(uuid)", isDirectory: true)
 
     try? FileManager.default.createDirectory(at: oldContentDir, withIntermediateDirectories: true)
     try? FileManager.default.createDirectory(at: newContentDir, withIntermediateDirectories: true)
@@ -122,7 +122,7 @@ actor RecentEditsTracker: Sendable {
       "--no-index",
       "--no-color",
       oldContentDir.path,
-      newContentDir.path
+      newContentDir.path,
     ]
 
     let pipe = Pipe()
@@ -178,7 +178,7 @@ actor RecentEditsTracker: Sendable {
     let parentDir = tmpFile.deletingLastPathComponent()
     try? FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
 
-    if let content = content {
+    if let content {
       // Write content
       try? content.write(to: tmpFile, atomically: true, encoding: .utf8)
     } else {
