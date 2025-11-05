@@ -16,7 +16,9 @@ public protocol XcodeObserver: Sendable {
   func getContent(of file: URL) throws -> String
   /// List the files in the Xcode workspace.
   /// Included files are visible to Xcode, and tracked by git if in a git repo.
-  func listFiles(in workspace: URL) async throws -> ListFilesResult
+  func listFiles(in workspace: URL, debounce: TimeInterval?) async throws -> ListFilesResult
+  ///
+  func filterIgnoredFiles(from files: [URL], in workspace: URL) async -> [URL]
 }
 
 // MARK: - WorkspaceType
@@ -85,6 +87,10 @@ extension XcodeObserver {
       return path
     }
     return nil
+  }
+
+  public func listFiles(in workspace: URL) async throws -> ListFilesResult {
+    try await listFiles(in: workspace, debounce: nil)
   }
 }
 

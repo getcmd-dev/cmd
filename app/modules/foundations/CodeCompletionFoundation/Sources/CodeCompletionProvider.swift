@@ -58,6 +58,8 @@ public protocol CodeCompletionProvider: Sendable {
   ///  - content: The content of the file when it was closed.
   ///  - version: An increasing number representing the version of the file.
   func didClose(workspace: URL, file: URL, content: String, version: Int)
+
+  // TODO: Add didDelete?
 }
 
 // MARK: - CodeCompletionProvidersPluginProviding

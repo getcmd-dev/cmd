@@ -11,32 +11,15 @@ import CodeCompletionServiceInterface
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
+import FoundationInterfaces
+import LoggingServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 import XcodeObserverServiceInterface
-
-// MARK: - WorkspaceIndex
 
 // TODO: buffer updates for file change (don't do every char)
 // TODO: get tabSize etc, maybe from XcodeExtension?
-// TODO: setup file watched to detect file save.
 // TODO: check if URL is a stable key for dictionaries
-
-/// A representation of the files in a workspace.
-/// The list of files is kept up to date.
-final class WorkspaceIndex: Workspace {
-  init(url: URL, root: URL, files: @escaping @Sendable () -> [URL]) {
-    self.url = url
-    self.root = root
-    _files = files
-  }
-
-  let root: URL
-  let url: URL
-  let _files: @Sendable () -> [URL]
-
-  var files: [URL] { _files() }
-
-}
 
 // MARK: - DefaultCodeCompletionService
 
@@ -45,12 +28,16 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     xcodeObserver: XcodeObserver,
     getPasteboardContent: @escaping @Sendable () -> String?,
     codeCompletionProviders: [any CodeCompletionProvider],
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    fileManager: FileManagerI,
+    shellService: ShellService)
   {
     self.xcodeObserver = xcodeObserver
     self.getPasteboardContent = getPasteboardContent
     self.codeCompletionProviders = codeCompletionProviders
     self.settingsService = settingsService
+    self.fileManager = fileManager
+    self.shellService = shellService
 
     // Subscribe to state changes from XcodeObserver
     let cancellable = xcodeObserver.statePublisher.sink { @Sendable newState in
@@ -121,58 +108,16 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   private let getPasteboardContent: @Sendable () -> String?
   private let codeCompletionProviders: [any CodeCompletionProvider]
   private let settingsService: SettingsService
+  private let fileManager: FileManagerI
+  private let shellService: ShellService
   private var cancellables = Set<AnyCancellable>()
+
+  /// Track file watchers for each workspace
+  private var fileWatchers = [URL: AnyCancellable]()
 
   /// Track which files are currently open within each workspace
   nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
   private var openFiles = [URL: [URL: FileState]]()
-
-  private func add(cancellable: AnyCancellable) {
-    cancellables.insert(cancellable)
-  }
-
-  private func initialize(workspace: URL) {
-    // Prevent duplicate initialization - only start if workspace is not already initializing or ready
-    // Allow retry if previous initialization failed
-    let currentState = workspaceStates[workspace]
-    guard currentState != .initializing, currentState != .ready else { return }
-
-    workspaceStates[workspace] = .initializing
-
-    Task { [weak self] in
-      do {
-        // list files
-        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
-        let files = workspaceInfo?.files
-        let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
-        // setup file watcher (TODO)
-      } catch {
-        print("Error setting up workspace: \(error)")
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
-      }
-    }
-  }
-
-  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
-    if let files {
-      filesPerWorkspace[workspace] = Set(files)
-      notifyProviders { provider in
-        provider.setUp(workspace: WorkspaceIndex(
-          url: workspace,
-          root: workspaceRoot,
-          files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
-      }
-      openFiles[workspace] = [:]
-      workspaceStates[workspace] = .ready
-      // Process any pending state changes now that initialization is complete
-      handleStateChange(xcodeObserver.state)
-    } else {
-      // Failed initialization - mark as failed but don't set openFiles
-      // This allows retry on next state change
-      workspaceStates[workspace] = .failed
-    }
-  }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events
   private func handleStateChange(_ newState: AXState<XcodeState>) {
@@ -223,6 +168,8 @@ actor DefaultCodeCompletionService: CodeCompletionService {
       if !currentlyTrackedWorkspaces.contains(workspaceURL) {
         // Stop tracking the workspace if it's no longer open
         notifyProviders { $0.close(workspace: workspaceURL) }
+        // Clean up file watcher
+        fileWatchers.removeValue(forKey: workspaceURL)
       }
       // textDocument/didClose: Detect files that were closed
       let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
@@ -238,10 +185,126 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     }
   }
 
+  private func initialize(workspace: URL) {
+    // Prevent duplicate initialization - only start if workspace is not already initializing or ready
+    // Allow retry if previous initialization failed
+    let currentState = workspaceStates[workspace]
+    guard currentState != .initializing, currentState != .ready else { return }
+
+    workspaceStates[workspace] = .initializing
+
+    Task { [weak self] in
+      do {
+        // list files
+        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace, debounce: 3)
+        let files = workspaceInfo?.files
+        let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
+      } catch {
+        defaultLogger.error("Error setting up workspace", error)
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
+      }
+    }
+  }
+
+  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
+    if let files {
+      filesPerWorkspace[workspace] = Set(files)
+      notifyProviders { provider in
+        provider.setUp(workspace: WorkspaceIndex(
+          url: workspace,
+          root: workspaceRoot,
+          files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
+      }
+      openFiles[workspace] = [:]
+      workspaceStates[workspace] = .ready
+
+      // Setup file watcher for the workspace root
+      setupFileWatcher(for: workspace, root: workspaceRoot)
+
+      // Process any pending state changes now that initialization is complete
+      handleStateChange(xcodeObserver.state)
+    } else {
+      // Failed initialization - mark as failed but don't set openFiles
+      // This allows retry on next state change
+      workspaceStates[workspace] = .failed
+    }
+  }
+
   /// Helper to notify all providers of an event
   private func notifyProviders(_ action: (any CodeCompletionProvider) -> Void) {
     for provider in codeCompletionProviders {
       action(provider)
+    }
+  }
+
+  private func add(cancellable: AnyCancellable) {
+    cancellables.insert(cancellable)
+  }
+
+  /// Setup file watcher for a workspace to detect file changes on disk
+  private func setupFileWatcher(for workspace: URL, root: URL) {
+    do {
+      fileWatchers[workspace] = try fileManager.observeDirectory(at: root) { [weak self] events in
+        Task { [weak self] in
+          await self?.handleFileSystemEvents(workspace: workspace, events: events)
+        }
+      }
+    } catch {
+      defaultLogger.error("Error setting up file watcher for workspace \(workspace)", error)
+    }
+  }
+
+  /// Handle file system events detected by FSEvents
+  private func handleFileSystemEvents(workspace: URL, events: [FileSystemEvent]) async {
+    guard let openFilesInWorkspace = openFiles[workspace] else { return }
+    var eventURLs = await Set(xcodeObserver.filterIgnoredFiles(from: events.map { URL(fileURLWithPath: $0.path) }, in: workspace))
+    if eventURLs.isEmpty { return }
+
+    // Refresh the list of files in the workspace.
+    // We do this using `listFiles` instead of adding files from `events` because we only track files visible to Xcode
+    // (and tracked in git) while the file watcher watches the entire workspace directory tree.
+    // `listFiles` has a debouncing mechanism to avoid reduce load on exessive calls, limiting CPU impact.
+    // The introduced delay is an acceptable tradeoff, since updating the list of files is not particularly time-sensitive.
+    guard let currentWorkspaceFiles = try? await xcodeObserver.listFiles(in: workspace, debounce: 5).files else {
+      return
+    }
+    let currentWorkspaceFilesSet = Set(currentWorkspaceFiles)
+    let previouslyTrackedFiles = filesPerWorkspace[workspace] ?? Set()
+
+    eventURLs = eventURLs
+      .intersection(currentWorkspaceFilesSet.union(previouslyTrackedFiles))
+    filesPerWorkspace[workspace] = currentWorkspaceFilesSet
+    guard !eventURLsSet.isEmpty else { return }
+
+    // Process only events for files that are currently open
+    for event in events {
+      let eventURL = URL(fileURLWithPath: event.path)
+
+      if !eventURLs.contains(eventURL) {
+        continue
+      }
+
+      // Check if this event is for an open file
+      guard let fileState = openFilesInWorkspace[eventURL] else { continue }
+
+      // Handle file modifications
+      if event.isModified || event.isInodeMetadataModified {
+        do {
+          let contentOnDisk = try fileManager.read(contentsOf: eventURL)
+          if contentOnDisk != fileState.content {
+            // File was saved - update the cached content and notify providers
+            let version = fileState.version + 1
+            openFiles[workspace]?[eventURL] = .init(content: contentOnDisk, version: version)
+            notifyProviders { provider in
+              provider.didSave(workspace: workspace, file: eventURL, content: contentOnDisk, version: version)
+            }
+          }
+        } catch {
+          // File might have been deleted or is no longer accessible
+          // The handleStateChange will take care of cleanup when Xcode closes the file
+        }
+      }
     }
   }
 
@@ -258,7 +321,9 @@ extension CursorRange {
 extension BaseProviding where
   Self: XcodeObserverProviding,
   Self: CodeCompletionProvidersPluginProviding,
-  Self: SettingsServiceProviding
+  Self: SettingsServiceProviding,
+  Self: FileManagerProviding,
+  Self: ShellServiceProviding
 {
   public var codeCompletionService: CodeCompletionService {
     shared {
@@ -266,7 +331,9 @@ extension BaseProviding where
         xcodeObserver: xcodeObserver,
         getPasteboardContent: { NSPasteboard.general.string(forType: .string) },
         codeCompletionProviders: codeCompletionProviders,
-        settingsService: settingsService)
+        settingsService: settingsService,
+        fileManager: fileManager,
+        shellService: shellService)
     }
   }
 }

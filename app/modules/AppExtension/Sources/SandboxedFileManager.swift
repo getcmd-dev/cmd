@@ -11,6 +11,15 @@ final class SandboxedFileManager: FileManagerI {
     return wrapped.homeDirectoryForCurrentUser
   }
 
+  func observeDirectory(
+    at directory: URL,
+    onChange: @escaping @Sendable ([FoundationInterfaces.FileSystemEvent]) -> Void)
+    throws -> AnyCancellable
+  {
+    defaultLogger.error("Accessing FileManager.homeDirectoryForCurrentUser from sandboxed process")
+    return try wrapped.observeDirectory(at: directory, onChange: onChange)
+  }
+
   func enumerator(
     at url: URL,
     includingPropertiesForKeys keys: [URLResourceKey]?,

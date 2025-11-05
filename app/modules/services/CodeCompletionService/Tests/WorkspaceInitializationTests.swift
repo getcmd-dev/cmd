@@ -7,7 +7,9 @@ import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import ConcurrencyFoundation
 import Foundation
+import FoundationInterfaces
 import SettingsServiceInterface
+import ShellServiceInterface
 import SwiftTesting
 import Testing
 import ThreadSafe
@@ -56,7 +58,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -111,7 +112,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -165,7 +165,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -233,7 +232,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -303,4 +301,22 @@ private func createXcodeState(workspace: URL, file: String, content: String) -> 
             ]),
         ]),
     ]))
+}
+
+extension DefaultCodeCompletionService {
+  init(
+    xcodeObserver: MockXcodeObserver = MockXcodeObserver(),
+    codeCompletionProviders: [any CodeCompletionProvider],
+    settingsService: MockSettingsService = MockSettingsService(),
+    fileManager: MockFileManager = MockFileManager(),
+    shellService: MockShellService = MockShellService())
+  {
+    self.init(
+      xcodeObserver: xcodeObserver,
+      getPasteboardContent: { nil },
+      codeCompletionProviders: codeCompletionProviders,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: shellService)
+  }
 }
