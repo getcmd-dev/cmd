@@ -48,7 +48,7 @@ struct WorkspaceInitializationTests {
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
     // Create a mock that signals when listFiles is called
-    mockXcodeObserver.onListFiles = { _ in
+    mockXcodeObserver.onListFiles = { _, _ in
       listFilesExpectation.fulfill()
       return ListFilesResult(
         files: [URL(fileURLWithPath: "/workspace1/file1.swift")],
@@ -102,7 +102,7 @@ struct WorkspaceInitializationTests {
 
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       listFilesCallCount.mutate { $0 += 1 }
       return ListFilesResult(
         files: [workspace.appendingPathComponent("file1.swift")],
@@ -154,7 +154,7 @@ struct WorkspaceInitializationTests {
 
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       listFilesCallCount.mutate { $0 += 1 }
       listFilesExpectation.fulfill()
       return ListFilesResult(
@@ -209,7 +209,7 @@ struct WorkspaceInitializationTests {
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
     // First call fails, second succeeds
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       let callNumber = listFilesCallCount.value
       listFilesCallCount.mutate { $0 += 1 }
 

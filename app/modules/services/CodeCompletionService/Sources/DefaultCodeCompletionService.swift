@@ -167,9 +167,10 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     for (workspaceURL, openFilesInWorkspace) in openFiles {
       if !currentlyTrackedWorkspaces.contains(workspaceURL) {
         // Stop tracking the workspace if it's no longer open
-        notifyProviders { $0.close(workspace: workspaceURL) }
-        // Clean up file watcher
         fileWatchers.removeValue(forKey: workspaceURL)
+        openFiles.removeValue(forKey: workspaceURL)
+        filesPerWorkspace.mutate({ $0.removeValue(forKey: workspaceURL) })
+        notifyProviders { $0.close(workspace: workspaceURL) }
       }
       // textDocument/didClose: Detect files that were closed
       let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
@@ -196,7 +197,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     Task { [weak self] in
       do {
         // list files
-        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace, debounce: 3)
+        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
         let files = workspaceInfo?.files
         let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
         await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
@@ -210,17 +211,18 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
     if let files {
       filesPerWorkspace[workspace] = Set(files)
+      openFiles[workspace] = [:]
+      workspaceStates[workspace] = .ready
+
+      // Setup file watcher for the workspace root
+      setupFileWatcher(for: workspace, root: workspaceRoot)
+
       notifyProviders { provider in
         provider.setUp(workspace: WorkspaceIndex(
           url: workspace,
           root: workspaceRoot,
           files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
       }
-      openFiles[workspace] = [:]
-      workspaceStates[workspace] = .ready
-
-      // Setup file watcher for the workspace root
-      setupFileWatcher(for: workspace, root: workspaceRoot)
 
       // Process any pending state changes now that initialization is complete
       handleStateChange(xcodeObserver.state)
@@ -275,7 +277,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     eventURLs = eventURLs
       .intersection(currentWorkspaceFilesSet.union(previouslyTrackedFiles))
     filesPerWorkspace[workspace] = currentWorkspaceFilesSet
-    guard !eventURLsSet.isEmpty else { return }
+    guard !eventURLs.isEmpty else { return }
 
     // Process only events for files that are currently open
     for event in events {

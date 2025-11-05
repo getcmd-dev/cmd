@@ -74,7 +74,6 @@ final class FileLister: Sendable {
   }
 
   private func immediatelyListFiles(in workspace: URL) async throws -> ListFilesResult {
-    print("immediatelyListFiles")
     let workspaceType: WorkspaceType
     let files: [URL]
     // When an .xcworkspace is opened, we look for the corresponding .xcodeproj which is where the project structure is defined.
@@ -96,7 +95,8 @@ final class FileLister: Sendable {
       }
     }
     let workspaceRoot = workspaceType == .xcodeProject ? workspace.deletingLastPathComponent() : workspace
-    let uniqueFiles = await Set(files.filterOutIgnoredFiles(root: workspaceRoot, shellService: shellService).map(\.standardized))
+    let filteredFiles = await files.filterOutIgnoredFiles(root: workspaceRoot, shellService: shellService)
+    let uniqueFiles = Set(filteredFiles.map(\.standardized))
     return ListFilesResult(
       files: Array(uniqueFiles),
       workspaceType: workspaceType,
@@ -235,28 +235,32 @@ extension [URL] {
   ///   - root: The root of the repo from where we should check for the existence of a git repo
   ///   - Returns: The current array without files not tracked by git, or not part of usually ignored files when not in a git repo.
   func filterOutIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
-    do {
-      let isGitRepo = await {
-        do {
-          try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
-          return true
-        } catch {
-          return false
-        }
-      }()
-      guard isGitRepo else {
-        return self.filter({ !shouldLikelyIgnoreFile($0) })
+    let isGitRepo = await {
+      do {
+        try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
+        return true
+      } catch {
+        return false
       }
-      let untrackedFiles = try await Set(shellService.runAndThrows(
-        "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
-        cwd: root.path)?
-        .split(separator: "\n")
-        .map(String.init) ?? [])
-      return self.filter({ !untrackedFiles.contains($0.path) })
-    } catch {
-      defaultLogger.error("Failed to filter git ignored files", error)
-      return self
+    }()
+    guard isGitRepo else {
+      #if DEBUG
+      /// Skip common pattern filtering for test bundles to avoid filtering test resources
+      /// (tests run from DerivedData (xcode) or .build (spm))
+      let isTestBundle = root.path.contains(".xctest") || root.path.contains("-tool.bundle")
+      if isTestBundle {
+        return self
+      }
+      #endif
+      return self.filter({ !shouldLikelyIgnoreFile($0) })
     }
+    let untrackedFiles = try? await Set(shellService.runAndThrows(
+      "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
+      cwd: root.path)?
+      .split(separator: "\n")
+      .map(String.init) ?? [])
+    // git check-ignore exit wih status 1 when no files are ignored. This is an expected error
+    return self.filter({ untrackedFiles?.contains($0.path) != true })
   }
 
   /// Check if a file should be ignored based on common patterns
