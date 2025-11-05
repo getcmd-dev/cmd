@@ -266,7 +266,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     // Refresh the list of files in the workspace.
     // We do this using `listFiles` instead of adding files from `events` because we only track files visible to Xcode
     // (and tracked in git) while the file watcher watches the entire workspace directory tree.
-    // `listFiles` has a debouncing mechanism to avoid reduce load on exessive calls, limiting CPU impact.
+    // `listFiles` has a debouncing mechanism to reduce load on excessive calls, limiting CPU impact.
     // The introduced delay is an acceptable tradeoff, since updating the list of files is not particularly time-sensitive.
     guard let currentWorkspaceFiles = try? await xcodeObserver.listFiles(in: workspace, debounce: 5).files else {
       return
@@ -303,8 +303,14 @@ actor DefaultCodeCompletionService: CodeCompletionService {
             }
           }
         } catch {
-          // File might have been deleted or is no longer accessible
-          // The handleStateChange will take care of cleanup when Xcode closes the file
+          // Failed to read file - check if it still exists to distinguish between deletion and other errors
+          if fileManager.fileExists(atPath: eventURL.path) {
+            // File exists but can't be read (permission issues, newly created empty file, etc.)
+            // Skip notification for this event - the file will be handled when it becomes readable
+          } else {
+            // File was deleted - no action needed
+            // The handleStateChange will take care of cleanup when Xcode closes the file
+          }
         }
       }
     }

@@ -259,7 +259,7 @@ extension [URL] {
       cwd: root.path)?
       .split(separator: "\n")
       .map(String.init) ?? [])
-    // git check-ignore exit wih status 1 when no files are ignored. This is an expected error
+    // git check-ignore exit with status 1 when no files are ignored. This is an expected error
     return self.filter({ untrackedFiles?.contains($0.path) != true })
   }
 

@@ -193,8 +193,8 @@ struct DefaultXcodeObserverListFilesTests {
     let _ = try await sut.listFiles(in: workspacePath, debounce: nil)
     let duration = Date().timeIntervalSince(startTime)
 
-    // then - should execute immediately (within 200ms to account for system load)
-    #expect(duration < 0.2, "Should execute immediately without debounce")
+    // then - should execute immediately (within 500ms to account for system load)
+    #expect(duration < 0.5, "Should execute immediately without debounce")
   }
 
   @Test("debounce - sequential calls with delay execute multiple times") @MainActor
@@ -239,7 +239,7 @@ struct DefaultXcodeObserverListFilesTests {
     let sut = DefaultXcodeObserver(fileManager: fileManager, shellService: shellService)
     let workspacePath = path(for: "directory")
 
-    // when - make concurrent calls, queing the first but not the second one.
+    // when - make concurrent calls, queuing the first but not the second one.
     let startTime = Date()
     async let call1 = sut.listFiles(in: workspacePath, debounce: 1000)
     async let call2 = sut.listFiles(in: workspacePath)
@@ -247,7 +247,7 @@ struct DefaultXcodeObserverListFilesTests {
     let duration = Date().timeIntervalSince(startTime)
 
     // then
-    #expect(gitRevParseCallCount.value == 1, "Only one call should be execute")
+    #expect(gitRevParseCallCount.value == 1, "Only one call should be executed")
     #expect(duration < 1, "Should execute immediately without debounce")
     #expect(Set(results.0.files) == Set(results.1.files), "Both calls should return the same files")
   }

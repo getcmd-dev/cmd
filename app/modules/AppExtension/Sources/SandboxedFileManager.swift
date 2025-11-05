@@ -16,7 +16,7 @@ final class SandboxedFileManager: FileManagerI {
     onChange: @escaping @Sendable ([FoundationInterfaces.FileSystemEvent]) -> Void)
     throws -> AnyCancellable
   {
-    defaultLogger.error("Accessing FileManager.homeDirectoryForCurrentUser from sandboxed process")
+    defaultLogger.error("Accessing FileManager.observeDirectory(at:onChange:) from sandboxed process")
     return try wrapped.observeDirectory(at: directory, onChange: onChange)
   }
 
