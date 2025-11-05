@@ -58,8 +58,11 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
+      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
-      settingsService: mockSettingsService)
+      settingsService: mockSettingsService,
+      fileManager: MockFileManager(),
+      shellService: MockShellService())
 
     // when - send state changes rapidly before initialization completes
     let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
@@ -112,8 +115,11 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
+      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
-      settingsService: mockSettingsService)
+      settingsService: mockSettingsService,
+      fileManager: MockFileManager(),
+      shellService: MockShellService())
 
     // when - trigger initialization of both workspaces at the same time
     let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
@@ -165,8 +171,11 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
+      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
-      settingsService: mockSettingsService)
+      settingsService: mockSettingsService,
+      fileManager: MockFileManager(),
+      shellService: MockShellService())
 
     // when - trigger multiple state changes for the same workspace rapidly
     let state = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
@@ -202,7 +211,7 @@ struct WorkspaceInitializationTests {
 
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
-    mockXcodeObserver.onListFiles = { _ in
+    mockXcodeObserver.onListFiles = { _, _ in
       listFilesExpectation.fulfill()
       return ListFilesResult(
         files: [URL(fileURLWithPath: "/workspace1/file1.swift")],
@@ -214,7 +223,9 @@ struct WorkspaceInitializationTests {
       xcodeObserver: mockXcodeObserver,
       getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
-      settingsService: mockSettingsService)
+      settingsService: mockSettingsService,
+      fileManager: MockFileManager(),
+      shellService: MockShellService())
 
     // when - send state changes with file edits
     let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
@@ -285,8 +296,11 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
+      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
-      settingsService: mockSettingsService)
+      settingsService: mockSettingsService,
+      fileManager: MockFileManager(),
+      shellService: MockShellService())
 
     // when - trigger initialization, which will fail
     let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")

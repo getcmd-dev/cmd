@@ -165,9 +165,11 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     for (workspaceURL, openFilesInWorkspace) in openFiles {
       if !currentlyTrackedWorkspaces.contains(workspaceURL) {
         // Stop tracking the workspace if it's no longer open
-        notifyProviders { $0.close(workspace: workspaceURL) }
-        // Clean up recent edits tracker
+        fileWatchers.removeValue(forKey: workspaceURL)
+        openFiles.removeValue(forKey: workspaceURL)
+        filesPerWorkspace.mutate({ $0.removeValue(forKey: workspaceURL) })
         recentEditsTrackers.removeValue(forKey: workspaceURL)
+        notifyProviders { $0.close(workspace: workspaceURL) }
       }
       // textDocument/didClose: Detect files that were closed
       let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
@@ -214,73 +216,6 @@ actor DefaultCodeCompletionService: CodeCompletionService {
 
   private func add(cancellable: AnyCancellable) {
     cancellables.insert(cancellable)
-  }
-
-  /// Handle state changes from XcodeObserver and emit appropriate LSP events
-  private func handleStateChange(_ newState: AXState<XcodeState>) {
-    guard let state = newState.wrapped else { return }
-
-    // Track all currently open files in all workspaces
-    var currentlyOpenFiles = [URL: Set<URL>]()
-    var currentlyTrackedWorkspaces = Set<URL>()
-
-    for xcodeApp in state.xcodesState {
-      for workspace in xcodeApp.workspaces {
-        currentlyTrackedWorkspaces.insert(workspace.url)
-        if openFiles[workspace.url] == nil {
-          // new workspace - start initialization
-          initialize(workspace: workspace.url)
-          // Skip processing events for this workspace until initialization completes
-          continue
-        }
-        openFiles[workspace.url] = openFiles[workspace.url, default: [:]]
-        currentlyOpenFiles[workspace.url] = currentlyOpenFiles[workspace.url, default: Set()]
-
-        for tab in workspace.tabs {
-          if let fileURL = tab.knownPath, let content = tab.lastKnownContent {
-            currentlyOpenFiles[workspace.url]?.insert(fileURL)
-
-            // textDocument/didOpen: Detect newly opened files
-            if openFiles[workspace.url]?[fileURL] == nil {
-              openFiles[workspace.url]?[fileURL] = .init(content: content, version: 0)
-              notifyProviders { provider in
-                provider.didOpen(workspace: workspace.url, file: fileURL, content: content, version: 0)
-              }
-            }
-
-            // textDocument/didChange: Detect content changes
-            if let fileState = openFiles[workspace.url]?[fileURL], fileState.content != content {
-              let version = fileState.version + 1
-              openFiles[workspace.url]?[fileURL] = .init(content: content, version: version)
-              notifyProviders { provider in
-                provider.didChange(workspace: workspace.url, file: fileURL, content: content, version: version)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    for (workspaceURL, openFilesInWorkspace) in openFiles {
-      if !currentlyTrackedWorkspaces.contains(workspaceURL) {
-        // Stop tracking the workspace if it's no longer open
-        fileWatchers.removeValue(forKey: workspaceURL)
-        openFiles.removeValue(forKey: workspaceURL)
-        filesPerWorkspace.mutate({ $0.removeValue(forKey: workspaceURL) })
-        notifyProviders { $0.close(workspace: workspaceURL) }
-      }
-      // textDocument/didClose: Detect files that were closed
-      let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
-      let closedFiles = openFilesInWorkspace.keys.filter { !currentlyOpenFiles.contains($0) }
-      for fileURL in closedFiles {
-        if let fileState = openFiles[workspaceURL]?[fileURL] {
-          openFiles[workspaceURL]?.removeValue(forKey: fileURL)
-          notifyProviders { provider in
-            provider.didClose(workspace: workspaceURL, file: fileURL, content: fileState.content, version: fileState.version)
-          }
-        }
-      }
-    }
   }
 
   private func initialize(workspace: URL) {
@@ -337,10 +272,6 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     }
   }
 
-  private func add(cancellable: AnyCancellable) {
-    cancellables.insert(cancellable)
-  }
-
   /// Setup file watcher for a workspace to detect file changes on disk
   private func setupFileWatcher(for workspace: URL, root: URL) {
     do {
@@ -376,6 +307,12 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     filesPerWorkspace[workspace] = currentWorkspaceFilesSet
     guard !eventURLs.isEmpty else { return }
 
+    // Batch updates for this workspace
+    var trackerUpdates = [(url: URL, content: String?)]()
+    var didSaveEvents = [(file: URL, content: String, version: Int)]()
+    var didDeleteEvents = [URL]()
+
+    // TODO: look at tracking changes made outside of Xcode?
     // Process only events for files that are currently open
     for event in events {
       let eventURL = URL(fileURLWithPath: event.path)
@@ -392,12 +329,11 @@ actor DefaultCodeCompletionService: CodeCompletionService {
         do {
           let contentOnDisk = try fileManager.read(contentsOf: eventURL)
           if contentOnDisk != fileState.content {
-            // File was saved - update the cached content and notify providers
+            // File was saved - update the cached content
             let version = fileState.version + 1
             openFiles[workspace]?[eventURL] = .init(content: contentOnDisk, version: version)
-            notifyProviders { provider in
-              provider.didSave(workspace: workspace, file: eventURL, content: contentOnDisk, version: version)
-            }
+            trackerUpdates.append((url: eventURL, content: contentOnDisk))
+            didSaveEvents.append((file: eventURL, content: contentOnDisk, version: version))
           }
         } catch {
           // Failed to read file - check if it still exists to distinguish between deletion and other errors
@@ -405,10 +341,30 @@ actor DefaultCodeCompletionService: CodeCompletionService {
             // File exists but can't be read (permission issues, newly created empty file, etc.)
             // Skip notification for this event - the file will be handled when it becomes readable
           } else {
-            // File was deleted - no action needed
-            // The handleStateChange will take care of cleanup when Xcode closes the file
+            // File was deleted
+            trackerUpdates.append((url: eventURL, content: nil))
+            didDeleteEvents.append(eventURL)
           }
         }
+      }
+    }
+
+    // Send batch update to tracker
+    if !trackerUpdates.isEmpty {
+      Task { [weak self] in
+        await self?.recentEditsTrackers[workspace]?.process(updates: trackerUpdates)
+      }
+    }
+
+    // Send all updates to providers
+    for event in didSaveEvents {
+      notifyProviders { provider in
+        provider.didSave(workspace: workspace, file: event.file, content: event.content, version: event.version)
+      }
+    }
+    for fileURL in didDeleteEvents {
+      notifyProviders { provider in
+        provider.didDelete(workspace: workspace, file: fileURL)
       }
     }
   }
