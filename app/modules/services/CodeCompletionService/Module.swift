@@ -9,6 +9,7 @@ Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FileDiffFoundation",
+    "LoggingServiceInterface",
     "SettingsServiceInterface",
     "XcodeObserverServiceInterface",
   ],

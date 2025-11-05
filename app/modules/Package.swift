@@ -656,6 +656,7 @@ targets.append(
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "FileDiffFoundation",
+      "LoggingServiceInterface",
       "SettingsServiceInterface",
       "XcodeObserverServiceInterface",
     ],

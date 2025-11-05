@@ -63,6 +63,9 @@ actor DefaultCodeCompletionService: CodeCompletionService {
     }
   }
 
+  /// Track recent edits per workspace (workspace URL -> tracker)
+  var recentEditsTrackers = [URL: RecentEditsTracker]()
+
   var configuredProvider: (any CodeCompletionProvider)? {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
@@ -102,80 +105,6 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   }
 
   nonisolated func logCompletionAcceptance(suggestion _: CompletionSuggestion, accepted _: Bool) { }
-
-  private struct FileState {
-    let content: String
-    let version: Int
-  }
-
-  /// State of workspace initialization
-  private enum WorkspaceState {
-    case initializing
-    case ready
-    case failed
-  }
-
-  /// Track workspace initialization state to prevent race conditions
-  private var workspaceStates = [URL: WorkspaceState]()
-  private let xcodeObserver: XcodeObserver
-  private let getPasteboardContent: @Sendable () -> String?
-  private let codeCompletionProviders: [any CodeCompletionProvider]
-  private let settingsService: SettingsService
-  private var cancellables = Set<AnyCancellable>()
-
-  /// Track which files are currently open within each workspace
-  nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
-  private var openFiles = [URL: [URL: FileState]]()
-
-  /// Track recent edits per workspace
-  internal let recentEditsTracker = RecentEditsTracker()
-
-  private func add(cancellable: AnyCancellable) {
-    cancellables.insert(cancellable)
-  }
-
-  private func initialize(workspace: URL) {
-    // Prevent duplicate initialization - only start if workspace is not already initializing or ready
-    // Allow retry if previous initialization failed
-    let currentState = workspaceStates[workspace]
-    guard currentState != .initializing, currentState != .ready else { return }
-
-    workspaceStates[workspace] = .initializing
-
-    Task { [weak self] in
-      do {
-        // list files
-        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
-        let files = workspaceInfo?.files
-        let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
-        // setup file watcher (TODO)
-      } catch {
-        print("Error setting up workspace: \(error)")
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
-      }
-    }
-  }
-
-  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
-    if let files {
-      filesPerWorkspace[workspace] = Set(files)
-      notifyProviders { provider in
-        provider.setUp(workspace: WorkspaceIndex(
-          url: workspace,
-          root: workspaceRoot,
-          files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
-      }
-      openFiles[workspace] = [:]
-      workspaceStates[workspace] = .ready
-      // Process any pending state changes now that initialization is complete
-      handleStateChange(xcodeObserver.state)
-    } else {
-      // Failed initialization - mark as failed but don't set openFiles
-      // This allows retry on next state change
-      workspaceStates[workspace] = .failed
-    }
-  }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events
   func handleStateChange(_ newState: AXState<XcodeState>) {
@@ -226,6 +155,8 @@ actor DefaultCodeCompletionService: CodeCompletionService {
       if !currentlyTrackedWorkspaces.contains(workspaceURL) {
         // Stop tracking the workspace if it's no longer open
         notifyProviders { $0.close(workspace: workspaceURL) }
+        // Clean up recent edits tracker
+        recentEditsTrackers.removeValue(forKey: workspaceURL)
       }
       // textDocument/didClose: Detect files that were closed
       let currentlyOpenFiles = currentlyOpenFiles[workspaceURL] ?? Set()
@@ -238,6 +169,81 @@ actor DefaultCodeCompletionService: CodeCompletionService {
           }
         }
       }
+    }
+  }
+
+  private struct FileState {
+    let content: String
+    let version: Int
+  }
+
+  /// State of workspace initialization
+  private enum WorkspaceState {
+    case initializing
+    case ready
+    case failed
+  }
+
+  /// Track workspace initialization state to prevent race conditions
+  private var workspaceStates = [URL: WorkspaceState]()
+  private let xcodeObserver: XcodeObserver
+  private let getPasteboardContent: @Sendable () -> String?
+  private let codeCompletionProviders: [any CodeCompletionProvider]
+  private let settingsService: SettingsService
+  private var cancellables = Set<AnyCancellable>()
+
+  /// Track which files are currently open within each workspace
+  nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
+  private var openFiles = [URL: [URL: FileState]]()
+
+  private func add(cancellable: AnyCancellable) {
+    cancellables.insert(cancellable)
+  }
+
+  private func initialize(workspace: URL) {
+    // Prevent duplicate initialization - only start if workspace is not already initializing or ready
+    // Allow retry if previous initialization failed
+    let currentState = workspaceStates[workspace]
+    guard currentState != .initializing, currentState != .ready else { return }
+
+    workspaceStates[workspace] = .initializing
+
+    Task { [weak self] in
+      do {
+        // list files
+        let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
+        let files = workspaceInfo?.files
+        let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
+        // setup file watcher (TODO)
+      } catch {
+        print("Error setting up workspace: \(error)")
+        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
+      }
+    }
+  }
+
+  private func didInitialize(workspace: URL, workspaceRoot: URL, files: [URL]?, success _: Bool) {
+    if let files {
+      filesPerWorkspace[workspace] = Set(files)
+      notifyProviders { provider in
+        provider.setUp(workspace: WorkspaceIndex(
+          url: workspace,
+          root: workspaceRoot,
+          files: { [weak self] in self?.filesPerWorkspace[workspace]?.sorted(by: { $0.path < $1.path }) ?? [] }))
+      }
+      openFiles[workspace] = [:]
+
+      // Initialize recent edits tracker for this workspace
+      recentEditsTrackers[workspace] = RecentEditsTracker(root: workspaceRoot)
+
+      workspaceStates[workspace] = .ready
+      // Process any pending state changes now that initialization is complete
+      handleStateChange(xcodeObserver.state)
+    } else {
+      // Failed initialization - mark as failed but don't set openFiles
+      // This allows retry on next state change
+      workspaceStates[workspace] = .failed
     }
   }
 
