@@ -39,9 +39,6 @@ struct GithubCopilotServerTests {
 
     // Track the messages sent during initialization
     let sentMessages = Atomic<[Data]>([])
-    mockStdioConnection.onSend = { data in
-      sentMessages.mutate { $0.append(data) }
-    }
 
     // Simulate server responses
     let expectInitializeRequest = expectation(description: "initialize request sent")
@@ -57,18 +54,16 @@ struct GithubCopilotServerTests {
           if request.method == "initialize" {
             expectInitializeRequest.fulfill()
             // Respond with initialize result
-            Task {
-              let response = """
-                {
-                  "jsonrpc": "2.0",
-                  "id": \(request.id),
-                  "result": {
-                    "capabilities": {}
-                  }
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
                 }
-                """
-              mockStdioConnection.streamContinuation.yield(response.utf8Data)
-            }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
           }
 
         case .notification(let notification):
