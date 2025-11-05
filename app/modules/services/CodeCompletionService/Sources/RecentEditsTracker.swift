@@ -14,12 +14,32 @@ import LoggingServiceInterface
 
 // MARK: - RecentEditsTracker
 
+// NOTE: We manually track edits rather than using a git repository for the entire history
+// because when a file is opened mid-stream, we need to set its baseline to the current
+// content (not empty/nil), so we don't incur a diff of the full file content.
+// This allows us to only track changes that happen after the file was opened.
+
 // TODO: check behavior between open and created
 
 actor RecentEditsTracker: Sendable {
   init(diffBudget: Int = 100, root: URL) {
     self.diffBudget = diffBudget
     self.root = root
+
+    // Create persistent tmp directories for diff computation
+    let tmpBase = FileManager.default.temporaryDirectory
+    let uuid = UUID().uuidString
+    self.oldContentDir = tmpBase.appendingPathComponent("recent-edits-old-\(uuid)", isDirectory: true)
+    self.newContentDir = tmpBase.appendingPathComponent("recent-edits-new-\(uuid)", isDirectory: true)
+
+    try? FileManager.default.createDirectory(at: oldContentDir, withIntermediateDirectories: true)
+    try? FileManager.default.createDirectory(at: newContentDir, withIntermediateDirectories: true)
+  }
+
+  deinit {
+    // Clean up tmp directories
+    try? FileManager.default.removeItem(at: oldContentDir)
+    try? FileManager.default.removeItem(at: newContentDir)
   }
 
   /// The overall edit history (ordered by file, most recent is last)
@@ -33,6 +53,9 @@ actor RecentEditsTracker: Sendable {
       filesEditsHistory[update.url] = versions
 
       editsHistory.append(.init(url: update.url, content: update.content))
+
+      // Write to new content directory
+      writeToTmpDir(newContentDir, file: update.url, content: update.content)
     }
 
     var startIndex = 0
@@ -40,8 +63,12 @@ actor RecentEditsTracker: Sendable {
       if startIndex >= editsHistory.count {
         break
       }
+
+      // Update old content directory to reflect state at startIndex
+      updateOldContentDir(from: startIndex)
+
       do {
-        let diff = try computeDiff(from: 0)
+        let diff = try computeDiff()
         if size(of: diff) > diffBudget {
           startIndex += 1
         } else {
@@ -60,39 +87,67 @@ actor RecentEditsTracker: Sendable {
   private let diffBudget: Int
   /// The edit history of each file (ordered by file, most recent is last)
   private var filesEditsHistory = [URL: [FileVersion]]()
+  /// Persistent tmp directories for diff computation
+  private let oldContentDir: URL
+  private let newContentDir: URL
 
-  private func computeDiff(from idx: Int) throws -> String {
-    var newContent = [URL: String?]()
+  private func updateOldContentDir(from idx: Int) {
+    // Clear old content directory
+    clearTmpDir(oldContentDir)
+
+    // Build the state before edits starting at idx
     var beforeStateIdx = [URL: Int]()
-
     for edit in editsHistory[idx...] {
-      newContent[edit.url] = edit.content
       beforeStateIdx[edit.url] = beforeStateIdx[edit.url, default: 0] + 1
     }
-    var oldContent = [URL: String?]()
+
+    // Write old state to tmp directory
     for (url, count) in beforeStateIdx {
       if let fileHistory = filesEditsHistory[url] {
-        if fileHistory.count > count {
-          oldContent[url] = fileHistory[fileHistory.count - count - 1].content
-        } else if let content = fileHistory.first?.content {
-          oldContent[url] = content
-        } else {
-          assertionFailure("File history too short for \(url.path)")
-          oldContent[url] = nil
+        let historyIndex = fileHistory.count - count - 1
+        if historyIndex >= 0 {
+          let oldContent = fileHistory[historyIndex].content
+          writeToTmpDir(oldContentDir, file: url, content: oldContent)
         }
-      } else {
-        assertionFailure("File history missing for \(url.path)")
-        oldContent[url] = nil
+        // If historyIndex < 0, file was created in this range, so no old content
       }
     }
+  }
 
-    return try FileDiff.getGitDiff(
-      oldContent: Dictionary(uniqueKeysWithValues: oldContent.compactMapValues(\.self).map { k, v in
-        (k.pathRelative(to: root), v)
-      }),
-      newContent: Dictionary(uniqueKeysWithValues: newContent.compactMapValues(\.self).map { k, v in
-        (k.pathRelative(to: root), v)
-      }))
+  private func computeDiff() throws -> String {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+    process.arguments = [
+      "diff",
+      "--no-index",
+      "--no-color",
+      oldContentDir.path,
+      newContentDir.path
+    ]
+
+    let pipe = Pipe()
+    process.standardOutput = pipe
+    process.standardError = pipe
+
+    try process.run()
+    process.waitUntilExit()
+
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    guard let output = String(data: data, encoding: .utf8) else {
+      throw AppError("Failed to decode git diff output")
+    }
+
+    // Git diff --no-index returns exit code 1 when there are differences (which is expected)
+    // Only throw if exit code is not 0 or 1
+    if process.terminationStatus > 1 {
+      throw AppError("Git diff failed with exit code \(process.terminationStatus)")
+    }
+
+    // Remove the first 4 lines (git headers) if present
+    let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
+    guard lines.count > 4 else { return output }
+
+    return lines.dropFirst(4).joined(separator: "\n")
   }
 
   private func size(of diff: String) -> Int {
@@ -113,6 +168,39 @@ actor RecentEditsTracker: Sendable {
       }
     }
     editsHistory.removeFirst(idx)
+  }
+
+  private func writeToTmpDir(_ dir: URL, file: URL, content: String?) {
+    let relativePath = file.pathRelative(to: root)
+    let tmpFile = dir.appendingPathComponent(relativePath)
+
+    // Create parent directories if needed
+    let parentDir = tmpFile.deletingLastPathComponent()
+    try? FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+
+    if let content = content {
+      // Write content
+      try? content.write(to: tmpFile, atomically: true, encoding: .utf8)
+    } else {
+      // nil content could mean file was deleted OR created
+      // If file exists in tmp dir, it was deleted; otherwise it was created
+      let fileExists = FileManager.default.fileExists(atPath: tmpFile.path)
+      if fileExists {
+        // File was deleted - remove from tmp dir
+        try? FileManager.default.removeItem(at: tmpFile)
+      }
+      // If file doesn't exist, it was created - do nothing (leave it absent from tmp dir)
+    }
+  }
+
+  private func clearTmpDir(_ dir: URL) {
+    guard let enumerator = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: nil) else {
+      return
+    }
+
+    for case let fileURL as URL in enumerator {
+      try? FileManager.default.removeItem(at: fileURL)
+    }
   }
 }
 
