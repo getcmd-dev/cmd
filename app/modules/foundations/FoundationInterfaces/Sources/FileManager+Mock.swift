@@ -45,6 +45,24 @@ public final class MockFileManager: FileManagerI {
     fatalError("observeChangesToContent(of:onChange:) not implemented")
   }
 
+  public func observeDirectory(
+    at url: URL,
+    onChange: @escaping @Sendable ([FileSystemEvent]) -> Void)
+    throws -> AnyCancellable
+  {
+    inLock {
+      $0.directoryWatchers[url] = onChange
+    }
+    return AnyCancellable { [weak self] in
+      self?.inLock { $0.directoryWatchers.removeValue(forKey: url) }
+    }
+  }
+
+  /// Trigger directory change events for testing purposes
+  public func triggerDirectoryChange(for url: URL, events: [FileSystemEvent]) {
+    inLock { $0.directoryWatchers[url] }?(events)
+  }
+
   public func read(contentsOf url: URL, encoding _: String.Encoding) throws -> String {
     guard let content = read(url)?.asString else {
       throw NSError(domain: CocoaError.errorDomain, code: CocoaError.fileNoSuchFile.rawValue)
@@ -117,15 +135,15 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func copyItem(atPath srcPath: String, toPath dstPath: String) throws {
-    inLock { $0.files[path(matching: dstPath)] = $0.files[path(matching: srcPath)] }
+    inLock { $0.files[path: dstPath] = $0.files[path: srcPath] }
   }
 
   public func removeItem(atPath path: String) throws {
-    inLock { $0.files[self.path(matching: path)] = nil }
+    inLock { $0.files[path: path] = nil }
   }
 
   public func fileExists(atPath path: String) -> Bool {
-    files[self.path(matching: path)] != nil
+    files[path: path] != nil
   }
 
   public func contentsOfDirectory(
@@ -184,23 +202,17 @@ public final class MockFileManager: FileManagerI {
     FileHandle()
   }
 
+  private var directoryWatchers = [URL: @Sendable ([FileSystemEvent]) -> Void]()
+
   // We use URL as keys to support file properties.
   // Since URL are reference types, for most functions we need to compare path instead of references. Those helpers help do this.
 
   private func read(_ path: URL) -> Data? {
-    files[self.path(matching: path)]
+    files[path: path]
   }
 
   private func set(_ path: URL, to content: Data?) {
-    files[self.path(matching: path)] = content
-  }
-
-  private func path(matching url: URL) -> URL {
-    files.keys.first { $0.path == url.path } ?? url
-  }
-
-  private func path(matching url: String) -> URL {
-    path(matching: URL(fileURLWithPath: url))
+    files[path: path] = content
   }
 }
 
@@ -242,5 +254,34 @@ extension String {
   fileprivate var asData: Data? {
     data(using: .utf8)
   }
+}
+
+extension [URL: Data] {
+  subscript(path path: String) -> Data? {
+    get {
+      self[path: URL(fileURLWithPath: path)]
+    }
+    set {
+      self[path: URL(fileURLWithPath: path)] = newValue
+    }
+  }
+
+  subscript(path path: URL) -> Data? {
+    get {
+      self[self.path(matching: path)]
+    }
+    set {
+      if let newValue {
+        self[self.path(matching: path)] = newValue
+      } else {
+        self.removeValue(forKey: self.path(matching: path))
+      }
+    }
+  }
+
+  private func path(matching url: URL) -> URL {
+    self.keys.first { $0.path == url.path } ?? url
+  }
+
 }
 #endif

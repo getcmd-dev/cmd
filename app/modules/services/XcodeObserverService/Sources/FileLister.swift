@@ -1,14 +1,79 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
+import ConcurrencyFoundation
 import Foundation
+import FoundationInterfaces
 import LoggingServiceInterface
 import ShellServiceInterface
+import ThreadSafe
 import XcodeObserverServiceInterface
 import XcodeProj
 
-extension DefaultXcodeObserver {
-  func listFiles(in workspace: URL) async throws -> ListFilesResult {
+// MARK: - FileLister
+
+/// A helper class to list files in a workspace.
+@ThreadSafe
+final class FileLister: Sendable {
+  init(fileManager: FileManagerI, shellService: ShellService) {
+    self.fileManager = fileManager
+    self.shellService = shellService
+  }
+
+  func listFiles(in workspace: URL, debounce: TimeInterval?) async throws -> ListFilesResult {
+    let (promise, completion) = Future<ListFilesResult, Error>.make()
+    inLock {
+      $0.debouncedTasks[workspace] = $0.debouncedTasks[workspace, default: []]
+      $0.debouncedTasks[workspace, default: []].append(completion)
+    }
+    if let debounce {
+      Task { [weak self] in
+        try await Task.sleep(nanoseconds: UInt64(debounce * 1_000_000_000))
+        await self?.immediatelyListFilesAndResolveTasks(workspace: workspace)
+      }
+    } else {
+      await immediatelyListFilesAndResolveTasks(workspace: workspace)
+    }
+    return try await promise.value
+  }
+
+  private let fileManager: FileManagerI
+  private let shellService: ShellService
+
+  private var debouncedTasks = [URL: [@Sendable (Result<ListFilesResult, any Error>) -> Void]]()
+  private var isListingFilesForWorkspaces = Set<URL>()
+
+  private func immediatelyListFilesAndResolveTasks(workspace: URL) async {
+    let shouldRun = inLock { state in
+      // If we are already listing files for this workspace, we don't do it a second time concurrently.
+      let shouldRun = !state.isListingFilesForWorkspaces.contains(workspace) &&
+        // It is possible that all the scheduled tasks have already been completed by an earlier run. Nothing to do if nil.
+        state.debouncedTasks[workspace] != nil
+      state.isListingFilesForWorkspaces.insert(workspace)
+      return shouldRun
+    }
+    guard shouldRun else {
+      return
+    }
+    let result: Result<ListFilesResult, any Error>
+    do {
+      result = try await .success(immediatelyListFiles(in: workspace))
+    } catch {
+      result = .failure(error)
+    }
+    let completions = inLock { state in
+      state.isListingFilesForWorkspaces.remove(workspace)
+      let completions = state.debouncedTasks[workspace] ?? []
+      state.debouncedTasks[workspace] = nil
+      return completions
+    }
+    for completion in completions {
+      completion(result)
+    }
+  }
+
+  private func immediatelyListFiles(in workspace: URL) async throws -> ListFilesResult {
     let workspaceType: WorkspaceType
     let files: [URL]
     // When an .xcworkspace is opened, we look for the corresponding .xcodeproj which is where the project structure is defined.
@@ -30,7 +95,8 @@ extension DefaultXcodeObserver {
       }
     }
     let workspaceRoot = workspaceType == .xcodeProject ? workspace.deletingLastPathComponent() : workspace
-    let uniqueFiles = await Set(files.filterGitIgnoredFiles(root: workspaceRoot, shellService: shellService).map(\.standardized))
+    let filteredFiles = await files.filterOutIgnoredFiles(root: workspaceRoot, shellService: shellService)
+    let uniqueFiles = Set(filteredFiles.map(\.standardized))
     return ListFilesResult(
       files: Array(uniqueFiles),
       workspaceType: workspaceType,
@@ -164,31 +230,74 @@ struct SPMPackageDescription: Decodable {
 }
 
 extension [URL] {
+  /// Exclude files that are git ignored, or match common ignore patterns when not in a git repo.
   /// - Parameters:
   ///   - root: The root of the repo from where we should check for the existence of a git repo
-  ///   - Returns: The current array without files not tracked by git, or all files if not within a git repo
-  func filterGitIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
-    do {
-      let isGitRepo = await {
-        do {
-          try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
-          return true
-        } catch {
-          return false
-        }
-      }()
-      guard isGitRepo else {
+  ///   - Returns: The current array without files not tracked by git, or not part of usually ignored files when not in a git repo.
+  func filterOutIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
+    let isGitRepo = await {
+      do {
+        try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
+        return true
+      } catch {
+        return false
+      }
+    }()
+    guard isGitRepo else {
+      #if DEBUG
+      /// Skip common pattern filtering for test bundles to avoid filtering test resources
+      /// (tests run from DerivedData (xcode) or .build (spm))
+      let isTestBundle = root.path.contains(".xctest") || root.path.contains("-tool.bundle")
+      if isTestBundle {
         return self
       }
-      let untrackedFiles = try await Set(shellService.runAndThrows(
-        "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
-        cwd: root.path)?
-        .split(separator: "\n")
-        .map(String.init) ?? [])
-      return self.filter({ !untrackedFiles.contains($0.path) })
-    } catch {
-      defaultLogger.error("Failed to filter git ignored files", error)
-      return self
+      #endif
+      return self.filter({ !shouldLikelyIgnoreFile($0) })
     }
+    let untrackedFiles = try? await Set(shellService.runAndThrows(
+      "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
+      cwd: root.path)?
+      .split(separator: "\n")
+      .map(String.init) ?? [])
+    // git check-ignore exit with status 1 when no files are ignored. This is an expected error
+    return self.filter({ untrackedFiles?.contains($0.path) != true })
   }
+
+  /// Check if a file should be ignored based on common patterns
+  func shouldLikelyIgnoreFile(_ url: URL) -> Bool {
+    let path = url.path
+    let pathComponents = url.pathComponents
+
+    // Ignore hidden files and directories (starting with .)
+    if pathComponents.contains(where: { $0.hasPrefix(".") && $0 != "." }) {
+      return true
+    }
+    if url.pathExtension == "mlmodel" {
+      return true
+    }
+
+    // Ignore common build and dependency directories
+    let ignoredDirectories = [
+      ".build",
+      "build",
+      "DerivedData",
+      "xcuserdata",
+      "node_modules",
+      ".swiftpm",
+      "bower_components",
+      "Preview Content",
+      "tmp",
+    ]
+    if pathComponents.contains(where: { ignoredDirectories.contains($0) }) {
+      return true
+    }
+
+    // Ignore temporary and backup files
+    if path.hasSuffix("~") || path.hasSuffix(".swp") || path.hasSuffix(".tmp") {
+      return true
+    }
+
+    return false
+  }
+
 }

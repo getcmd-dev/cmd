@@ -205,6 +205,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var codeCompletionDebounceMs: Int {
+    get {
+      settings.codeCompletionDebounceMs
+    }
+    set {
+      settings.codeCompletionDebounceMs = newValue
+      settingsService.update(setting: \.codeCompletionDebounceMs, to: newValue)
+    }
+  }
+
   var chatModeConfigurations: [String: SettingsServiceInterface.Settings.ChatModeConfiguration] {
     get {
       settings.chatModeConfigurations

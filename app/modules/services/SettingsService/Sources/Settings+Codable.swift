@@ -51,7 +51,9 @@ extension Settings: Codable {
       userDefinedXcodeShortcuts: container
         .resilientlyDecodeIfPresent([UserDefinedXcodeShortcut].self, forKey: "userDefinedXcodeShortcuts") ?? [],
       mcpServers: container.resilientlyDecodeIfPresent(MCPServerConfigurations.self, forKey: "mcpServers")?.configurations ?? [:],
-      codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil)
+      codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil,
+      enableCodeCompletion: container.resilientlyDecodeIfPresent(Bool.self, forKey: "enableCodeCompletion") ?? false,
+      codeCompletionDebounceMs: container.resilientlyDecodeIfPresent(Int.self, forKey: "codeCompletionDebounceMs") ?? 250)
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -75,6 +77,8 @@ extension Settings: Codable {
     try container.encode(userDefinedXcodeShortcuts, forKey: "userDefinedXcodeShortcuts")
     try container.encode(MCPServerConfigurations(configurations: mcpServers), forKey: "mcpServers")
     try container.encode(codeCompletionProviderId, forKey: "codeCompletionProviderId")
+    try container.encode(enableCodeCompletion, forKey: "enableCodeCompletion")
+    try container.encode(codeCompletionDebounceMs, forKey: "codeCompletionDebounceMs")
   }
 }
 

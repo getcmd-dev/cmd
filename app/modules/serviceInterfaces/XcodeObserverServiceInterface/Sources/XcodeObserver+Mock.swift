@@ -16,6 +16,7 @@ public final class MockXcodeObserver: XcodeObserver {
     _ initialValue: AXState<XcodeState> = .unknown)
   {
     mutableStatePublisher = .init(initialValue)
+    onFilterIgnoredFiles = { files, _ in files }
   }
 
   public convenience init(
@@ -33,9 +34,12 @@ public final class MockXcodeObserver: XcodeObserver {
 
   public let mutableStatePublisher: CurrentValueSubject<AXState<XcodeState>, Never>
   public var onGetContent: @Sendable (URL) throws -> String = { _ in throw AppError("Could not read content of file") }
-  public var onListFiles: @Sendable (URL) async throws -> ListFilesResult = { _ in
+  public var onListFiles: @Sendable (URL, TimeInterval?) async throws -> ListFilesResult = { _, _ in
     throw AppError("Could not list files in workspace")
   }
+
+  public var onFilterIgnoredFiles: @Sendable ([URL], URL)
+    async -> [URL]
 
   public var axNotifications: AnyPublisher<AXNotification, Never> {
     Just(AXNotification.applicationActivated).eraseToAnyPublisher()
@@ -49,8 +53,12 @@ public final class MockXcodeObserver: XcodeObserver {
     try onGetContent(file)
   }
 
-  public func listFiles(in workspace: URL) async throws -> ListFilesResult {
-    try await onListFiles(workspace)
+  public func listFiles(in workspace: URL, debounce: TimeInterval?) async throws -> ListFilesResult {
+    try await onListFiles(workspace, debounce)
+  }
+
+  public func filterIgnoredFiles(from files: [URL], in workspace: URL) async -> [URL] {
+    await onFilterIgnoredFiles(files, workspace)
   }
 
 }

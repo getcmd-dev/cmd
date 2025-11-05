@@ -7,7 +7,9 @@ import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import ConcurrencyFoundation
 import Foundation
+import FoundationInterfaces
 import SettingsServiceInterface
+import ShellServiceInterface
 import SwiftTesting
 import Testing
 import ThreadSafe
@@ -46,7 +48,7 @@ struct WorkspaceInitializationTests {
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
     // Create a mock that signals when listFiles is called
-    mockXcodeObserver.onListFiles = { _ in
+    mockXcodeObserver.onListFiles = { _, _ in
       listFilesExpectation.fulfill()
       return ListFilesResult(
         files: [URL(fileURLWithPath: "/workspace1/file1.swift")],
@@ -56,7 +58,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -101,7 +102,7 @@ struct WorkspaceInitializationTests {
 
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       listFilesCallCount.mutate { $0 += 1 }
       return ListFilesResult(
         files: [workspace.appendingPathComponent("file1.swift")],
@@ -111,7 +112,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -154,7 +154,7 @@ struct WorkspaceInitializationTests {
 
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       listFilesCallCount.mutate { $0 += 1 }
       listFilesExpectation.fulfill()
       return ListFilesResult(
@@ -165,7 +165,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -263,7 +262,7 @@ struct WorkspaceInitializationTests {
     mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
 
     // First call fails, second succeeds
-    mockXcodeObserver.onListFiles = { workspace in
+    mockXcodeObserver.onListFiles = { workspace, _ in
       let callNumber = listFilesCallCount.value
       listFilesCallCount.mutate { $0 += 1 }
 
@@ -286,7 +285,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService)
 
@@ -356,4 +354,22 @@ private func createXcodeState(workspace: URL, file: String, content: String) -> 
             ]),
         ]),
     ]))
+}
+
+extension DefaultCodeCompletionService {
+  init(
+    xcodeObserver: MockXcodeObserver = MockXcodeObserver(),
+    codeCompletionProviders: [any CodeCompletionProvider],
+    settingsService: MockSettingsService = MockSettingsService(),
+    fileManager: MockFileManager = MockFileManager(),
+    shellService: MockShellService = MockShellService())
+  {
+    self.init(
+      xcodeObserver: xcodeObserver,
+      getPasteboardContent: { nil },
+      codeCompletionProviders: codeCompletionProviders,
+      settingsService: settingsService,
+      fileManager: fileManager,
+      shellService: shellService)
+  }
 }

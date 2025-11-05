@@ -47,6 +47,15 @@ public protocol FileManagerI: Sendable {
   func observeChangesToContent(of url: URL, onChange: @escaping @Sendable (String?) -> Void) throws
     -> AnyCancellable
 
+  /// Observe changes to files in a directory using FSEvents.
+  ///
+  /// - Parameters:
+  ///   - directory: The URL of the directory to observe.
+  ///   - onChange: A closure that will be called when any file in the directory changes.
+  ///     The closure receives an array of file system events.
+  func observeDirectory(at directory: URL, onChange: @escaping @Sendable ([FileSystemEvent]) -> Void)
+    throws -> AnyCancellable
+
   /// Returns a directory enumerator object that can be used to perform a deep enumeration of the directory at the specified URL.
   func enumerator(
     at url: URL,
@@ -153,6 +162,31 @@ extension FileManager: FileManagerI {
     return AnyCancellable {
       source.cancel()
     }
+  }
+
+  public func observeDirectory(
+    at directory: URL,
+    onChange: @escaping @Sendable ([FileSystemEvent]) -> Void)
+    throws -> AnyCancellable
+  {
+    #if canImport(CoreServices)
+    let watcher = FSEventsWatcher(
+      paths: [directory.path],
+      flags: FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents),
+      queue: .main,
+      eventHandler: onChange)
+
+    watcher.start()
+
+    return AnyCancellable {
+      watcher.stop()
+    }
+    #else
+    throw NSError(
+      domain: "FileManager",
+      code: -1,
+      userInfo: [NSLocalizedDescriptionKey: "FSEvents not available on this platform"])
+    #endif
   }
 
   public func read(contentsOf url: URL, encoding enc: String.Encoding) throws -> String {

@@ -25,6 +25,7 @@ struct InternalSettingsView: View {
   @Binding var useNewClaudeCodeApi: Bool
   @Binding var defaultLogLevel: LogLevel
   @Binding var enableCodeCompletion: Bool
+  @Binding var codeCompletionDebounceMs: Int
 
   var body: some View {
     ScrollView {
@@ -71,6 +72,30 @@ struct InternalSettingsView: View {
             "Enable code completion",
             caption: "Enable code completion feature",
             value: $enableCodeCompletion)
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Code completion debounce (ms)")
+            Text("Time to wait after typing before requesting completions (10ms - 1000ms)")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            HStack {
+              Text("10ms")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+              Slider(
+                value: Binding(
+                  get: { log10(Double(codeCompletionDebounceMs)) },
+                  set: { codeCompletionDebounceMs = Int(pow(10.0, $0).rounded()) }),
+                in: 1...3,
+                step: 0.1)
+              Text("1000ms")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+            }
+            Text("\(codeCompletionDebounceMs)ms")
+              .font(.caption)
+              .foregroundColor(.primary)
+          }
 
           VStack(alignment: .leading, spacing: 4) {
             Text("Default log level for file persistence")

@@ -17,7 +17,8 @@ import SwiftUI
     showToolInputCopyButtonInRelease: .constant(false),
     useNewClaudeCodeApi: .constant(false),
     defaultLogLevel: .constant(.info),
-    enableCodeCompletion: .constant(false))
+    enableCodeCompletion: .constant(false),
+    codeCompletionDebounceMs: .constant(250))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -34,7 +35,8 @@ import SwiftUI
     showToolInputCopyButtonInRelease: .constant(true),
     useNewClaudeCodeApi: .constant(true),
     defaultLogLevel: .constant(.debug),
-    enableCodeCompletion: .constant(true))
+    enableCodeCompletion: .constant(true),
+    codeCompletionDebounceMs: .constant(100))
     .frame(width: 600, height: 400)
     .padding()
 }
