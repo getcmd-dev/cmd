@@ -127,6 +127,9 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
   private var openFiles = [URL: [URL: FileState]]()
 
+  /// Track recent edits per workspace
+  internal let recentEditsTracker = RecentEditsTracker()
+
   private func add(cancellable: AnyCancellable) {
     cancellables.insert(cancellable)
   }
@@ -175,7 +178,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
   }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events
-  private func handleStateChange(_ newState: AXState<XcodeState>) {
+  func handleStateChange(_ newState: AXState<XcodeState>) {
     guard let state = newState.wrapped else { return }
 
     // Track all currently open files in all workspaces
