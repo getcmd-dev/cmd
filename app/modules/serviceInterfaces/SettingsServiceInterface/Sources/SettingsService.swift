@@ -65,7 +65,8 @@ public struct Settings: Sendable, Equatable {
     mcpServers: [String: MCPServerConfiguration] = [:],
     defaultLogLevel: LogLevel = .info,
     codeCompletionProviderId: String? = nil,
-    enableCodeCompletion: Bool = false)
+    enableCodeCompletion: Bool = false,
+    codeCompletionDebounceMs: Int = 250)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -85,6 +86,7 @@ public struct Settings: Sendable, Equatable {
     self.defaultLogLevel = defaultLogLevel
     self.codeCompletionProviderId = codeCompletionProviderId
     self.enableCodeCompletion = enableCodeCompletion
+    self.codeCompletionDebounceMs = codeCompletionDebounceMs
   }
 
   public struct AIProviderSettings: Sendable, Codable, Equatable {
@@ -186,6 +188,7 @@ public struct Settings: Sendable, Equatable {
   public var mcpServers: [String: MCPServerConfiguration]
   public var codeCompletionProviderId: String?
   public var enableCodeCompletion: Bool
+  public var codeCompletionDebounceMs: Int
 
   public var defaultLogLevel: LogLevel
 

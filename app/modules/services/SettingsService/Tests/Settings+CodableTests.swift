@@ -39,7 +39,11 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : false,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionDebounceMs" : 250,
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
         "enabledModels" : [],
@@ -91,7 +95,11 @@ struct SettingsCodableTests {
         "automaticallyCheckForUpdates" : true,
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
+        "codeCompletionDebounceMs" : 250,
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
+        "enableCodeCompletion" : false,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -145,6 +153,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -308,6 +318,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
         "enabledModels" : [],
@@ -350,6 +362,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -511,6 +525,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -555,6 +571,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {
@@ -697,6 +715,8 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "chatModeConfigurations" : {},
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {
           "addContextToCurrentChat" : {
             "key" : "",
@@ -782,6 +802,8 @@ struct SettingsCodableTests {
           "ask" : {}
         },
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -826,6 +848,8 @@ struct SettingsCodableTests {
           }
         },
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -864,6 +888,8 @@ struct SettingsCodableTests {
           }
         },
         "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "codeCompletionDebounceMs" : 250,
         "keyboardShortcuts" : {},
         "enabledModels" : [],
         "llmProviderSettings" : {},
@@ -974,5 +1000,95 @@ struct SettingsCodableTests {
 
     // populated array should have the tools
     #expect(json3.contains("\"tools\":[\"glob\",\"search\"]"))
+  }
+
+  // MARK: - Code Completion Settings Tests
+
+  @Test("Encode and decode code completion settings")
+  func testCodeCompletionSettingsEncodingDecoding() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      codeCompletionProviderId: "github-copilot",
+      enableCodeCompletion: true,
+      codeCompletionDebounceMs: 100)
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {},
+        "codeCompletionDebounceMs" : 100,
+        "codeCompletionProviderId" : "github-copilot",
+        "enableCodeCompletion" : true,
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode code completion settings with defaults")
+  func testCodeCompletionSettingsDefaults() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      codeCompletionProviderId: nil,
+      enableCodeCompletion: false,
+      codeCompletionDebounceMs: 250) // default value
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Round-trip code completion settings preserves data")
+  func testRoundTripCodeCompletionSettings() throws {
+    let originalSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      codeCompletionProviderId: "test-provider",
+      enableCodeCompletion: true,
+      codeCompletionDebounceMs: 500)
+
+    let jsonData = try JSONEncoder().encode(originalSettings)
+    let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
+
+    #expect(originalSettings == decodedSettings)
+    #expect(decodedSettings.codeCompletionProviderId == "test-provider")
+    #expect(decodedSettings.enableCodeCompletion == true)
+    #expect(decodedSettings.codeCompletionDebounceMs == 500)
+  }
+
+  @Test("Decode code completion settings with only debounce value")
+  func testCodeCompletionDebounceOnly() throws {
+    let json = """
+      {
+        "codeCompletionDebounceMs" : 75
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      codeCompletionProviderId: nil,
+      enableCodeCompletion: false,
+      codeCompletionDebounceMs: 75)
+
+    try testDecoding(expectedSettings, json)
   }
 }
