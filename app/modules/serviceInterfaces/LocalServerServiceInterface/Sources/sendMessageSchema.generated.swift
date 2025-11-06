@@ -15,8 +15,7 @@ extension Schema {
     public let enableReasoning: Bool
     public let provider: APIProvider
     public let threadId: String?
-    public let useNewClaudeCodeApi: Bool?
-  
+
     private enum CodingKeys: String, CodingKey {
       case messages = "messages"
       case system = "system"
@@ -26,9 +25,8 @@ extension Schema {
       case enableReasoning = "enableReasoning"
       case provider = "provider"
       case threadId = "threadId"
-      case useNewClaudeCodeApi = "useNewClaudeCodeApi"
     }
-  
+
     public init(
         messages: [Message],
         system: String? = nil,
@@ -37,8 +35,7 @@ extension Schema {
         model: String,
         enableReasoning: Bool,
         provider: APIProvider,
-        threadId: String? = nil,
-        useNewClaudeCodeApi: Bool? = nil
+        threadId: String? = nil
     ) {
       self.messages = messages
       self.system = system
@@ -48,9 +45,8 @@ extension Schema {
       self.enableReasoning = enableReasoning
       self.provider = provider
       self.threadId = threadId
-      self.useNewClaudeCodeApi = useNewClaudeCodeApi
     }
-  
+
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       messages = try container.decode([Message].self, forKey: .messages)
@@ -61,9 +57,8 @@ extension Schema {
       enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
       threadId = try container.decodeIfPresent(String?.self, forKey: .threadId)
-      useNewClaudeCodeApi = try container.decodeIfPresent(Bool?.self, forKey: .useNewClaudeCodeApi)
     }
-  
+
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(messages, forKey: .messages)
@@ -74,7 +69,6 @@ extension Schema {
       try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)
       try container.encodeIfPresent(threadId, forKey: .threadId)
-      try container.encodeIfPresent(useNewClaudeCodeApi, forKey: .useNewClaudeCodeApi)
     }
   }
   public struct Message: Codable, Sendable {

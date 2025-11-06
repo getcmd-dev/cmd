@@ -22,7 +22,6 @@ struct InternalSettingsView: View {
   @Binding var enableAnalyticsAndCrashReporting: Bool
   @Binding var enableNetworkProxy: Bool
   @Binding var showToolInputCopyButtonInRelease: Bool
-  @Binding var useNewClaudeCodeApi: Bool
   @Binding var defaultLogLevel: LogLevel
   @Binding var enableCodeCompletion: Bool
   @Binding var codeCompletionDebounceMs: Int
@@ -57,11 +56,6 @@ struct InternalSettingsView: View {
             "Enable network proxy",
             caption: "Proxy network requests through a local proxy server",
             value: $enableNetworkProxy)
-
-          InternalSettingsRow(
-            "Use new Claude Code API",
-            caption: "Route Claude Code requests through the experimental implementation",
-            value: $useNewClaudeCodeApi)
 
           InternalSettingsRow(
             "Show tool input copy button in Release",
