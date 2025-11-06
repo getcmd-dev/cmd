@@ -55,6 +55,14 @@ Build, archive, sign and publish the app for distribution
 
 Strip debug symbols from the binary and resign the app
 
+### mac build_artifact
+
+```sh
+[bundle exec] fastlane mac build_artifact
+```
+
+Build, archive, sign and upload symbols (for CI artifacts)
+
 ### mac upload_release_symbols
 
 ```sh

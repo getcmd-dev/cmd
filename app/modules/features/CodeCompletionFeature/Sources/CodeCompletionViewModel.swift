@@ -49,7 +49,7 @@ final class CodeCompletionViewModel {
 
   private(set) var isEnabled: Bool
 
-  private(set) var completion: CompletionSuggestion?
+  private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion?
 
   @ObservationIgnored private var appActivationState: AppsActivationState?
 
@@ -104,7 +104,9 @@ final class CodeCompletionViewModel {
         let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
         try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
         try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
-        guard let self, completionTask?.id == taskId else { return }
+        guard let self, completionTask?.id == taskId else {
+          return
+        }
         let completion = try await codeCompletionService.suggestCompletion(
           workspace: workspace.url,
           file: focussedFile,
@@ -115,6 +117,7 @@ final class CodeCompletionViewModel {
           timeout: 1)
         self.completion = completion
       }
+      completion = nil
       let cancellable = AnyCancellable { task.cancel() }
       completionTask = CompletionTask(task: task, id: taskId) { cancellable.cancel() }
     }
@@ -182,7 +185,7 @@ final class CodeCompletionViewModel {
     let previousContent = pasteboard.string(forType: .string)
 
     pasteboard.clearContents()
-    pasteboard.setString(completion.completion, forType: .string)
+    pasteboard.setString(completion.newContent, forType: .string)
 
     let vKey: CGKeyCode = 9
     let cmdFlag = CGEventFlags.maskCommand

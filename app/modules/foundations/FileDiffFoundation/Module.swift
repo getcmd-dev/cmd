@@ -1,6 +1,7 @@
 Target.module(
   name: "FileDiffFoundation",
   dependencies: [
+    .product(name: "Algorithms", package: "swift-algorithms"),
     .product(name: "HighlightSwift", package: "highlightswift"),
     "AppFoundation",
     "FileDiffTypesFoundation",

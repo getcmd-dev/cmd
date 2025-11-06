@@ -9,6 +9,7 @@
 //
 import AppUpdateServiceInterface
 import ChatCompletionServiceInterface
+import CodeCompletionFeature
 import CodeCompletionServiceInterface
 import Dependencies
 import LoggingServiceInterface
@@ -16,9 +17,9 @@ import XcodeObserverServiceInterface
 
 extension commandApp {
   func postLaunchActions() {
+    @Dependency(\.localServer) var server
     Task {
       // Initialize the local server on launch
-      @Dependency(\.localServer) var server
       _ = try? await server.getRequest(path: "launch")
     }
     // Initiate the service to start automatic updates
@@ -31,6 +32,8 @@ extension commandApp {
     // Initiate the code completion service that will listen to trigger events.
     @Dependency(\.codeCompletionService) var codeCompletionService
     _ = codeCompletionService
+
+    codeCompletion.set(to: CodeCompletionWindowsManager())
 
     // Setup login item for first time if not already enabled
     // Ensure the launch agent is up to date and enabled

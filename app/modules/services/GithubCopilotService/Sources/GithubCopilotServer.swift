@@ -60,15 +60,17 @@ public final class GithubCopilotServer: Sendable {
   let setInitializedTransport: @Sendable (Result<StdioConnection, Error>) -> Void
 
   func sendNotification(_ method: String, params: JSON?, initializingTransport: StdioConnection? = nil) async throws {
-    let transport = try await {
-      if let initializingTransport { return initializingTransport }
-      return try await initializedTransport.value
-    }()
+    try await run(loggingErrorWith: "Failed to sent JRPC notification to Github LSP Server: \(method)") {
+      let transport = try await {
+        if let initializingTransport { return initializingTransport }
+        return try await initializedTransport.value
+      }()
 
-    let notification = JRPCNotification(method: method, params: params)
-    let encoder = JSONEncoder()
-    let jsonData = try encoder.encode(notification)
-    try await transport.send(jsonData)
+      let notification = JRPCNotification(method: method, params: params)
+      let encoder = JSONEncoder()
+      let jsonData = try encoder.encode(notification)
+      try await transport.send(jsonData)
+    }
   }
 
   func sendRequest<Response: Decodable>(
@@ -77,9 +79,11 @@ public final class GithubCopilotServer: Sendable {
     initializingTransport: StdioConnection? = nil)
     async throws -> Response
   {
-    let result = try await sendRawRequest(method, params: params, initializingTransport: initializingTransport)
-    let resultData = try JSONEncoder().encode(result)
-    return try JSONDecoder().decode(Response.self, from: resultData)
+    try await run(loggingErrorWith: "Failed to sent JRPC request to Github LSP Server: \(method)") {
+      let result = try await sendRawRequest(method, params: params, initializingTransport: initializingTransport)
+      let resultData = try JSONEncoder().encode(result)
+      return try JSONDecoder().decode(Response.self, from: resultData)
+    }
   }
 
   func sendRawRequest(_ method: String, params: JSON?, initializingTransport: StdioConnection? = nil) async throws -> JSON.Value {
@@ -116,6 +120,7 @@ public final class GithubCopilotServer: Sendable {
         text: text))
 
     try await sendNotification("textDocument/didOpen", params: .init(encoding: params))
+    filesSharedWithServer.insert(uri)
   }
 
   func didChangeTextDocument(uri: String, version: Int, text: String) async throws {
@@ -125,6 +130,7 @@ public final class GithubCopilotServer: Sendable {
       contentChanges: [TextDocumentContentChangeEvent(text: text)])
 
     try await sendNotification("textDocument/didChange", params: .init(encoding: params))
+    filesSharedWithServer.insert(uri)
   }
 
   func didSaveTextDocument(uri: String, version: Int, text: String?) async throws {
@@ -134,6 +140,7 @@ public final class GithubCopilotServer: Sendable {
       text: text)
 
     try await sendNotification("textDocument/didSave", params: .init(encoding: params))
+    filesSharedWithServer.insert(uri)
   }
 
   func didCloseTextDocument(uri: String, version: Int) async throws {
@@ -154,8 +161,11 @@ public final class GithubCopilotServer: Sendable {
     insertSpaces: Bool)
     async throws -> InlineCompletionList
   {
-    defaultLogger.log("Requesting completions at \(uri) line:\(position.line) char:\(position.character) (version: \(version))")
-
+    if !filesSharedWithServer.contains(uri) {
+      // This can happen if we have not yet shared our files with the server and the completion request arrives early.
+      // Ignore the request.
+      return InlineCompletionList(items: [])
+    }
     let params = InlineCompletionParams(
       textDocument: TextDocumentIdentifier(uri: uri, version: version),
       position: position,
@@ -172,6 +182,8 @@ public final class GithubCopilotServer: Sendable {
 
     return result
   }
+
+  private var filesSharedWithServer = Set<String>()
 
   private var nextId = 1
   private var pendingRequests = [Int: CheckedContinuation<JSON.Value, Error>]()
@@ -197,8 +209,8 @@ public final class GithubCopilotServer: Sendable {
       configuration: .init(
         // LSP protocol requires Content-Length header
         delimitation: .contentLength,
-        logger: defaultLogger
-          .subLogger(subsystem: "github-copilot-lsp-server")))
+        logger: nil, // defaultLogger.subLogger(subsystem: "github-copilot-lsp-server")
+      ))
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
@@ -315,22 +327,23 @@ public final class GithubCopilotServer: Sendable {
       // Server is asking for watched files
       var files = workspace.files
       // Respond with the first 100 files, and send the rest with notifications.
+      var chunk = files.removeFirst(n: 100)
       let params = DidChangeWatchedFilesNotificationParameters(
         workspaceUri: workspace.url.absoluteString,
-        changes: files.prefix(100).map { .init(uri: $0.absoluteString, type: .created) })
+        changes: chunk.map { .init(uri: $0.absoluteString, type: .created) })
       response = try JRPCResponse(id: id, result: .init(encoding: params), error: nil)
+      filesSharedWithServer.formUnion(chunk.map(\.absoluteString))
       defaultLogger.log(" → Responding with \(files.count) files to watch")
 
-      files.removeFirst(min(100, files.count))
       while !files.isEmpty {
-        let chunk = files.prefix(100)
+        let chunk = files.removeFirst(n: 100)
         let params = DidChangeWatchedFilesNotificationParameters(
           workspaceUri: workspace.url.absoluteString,
           changes: chunk.map { .init(uri: $0.absoluteString, type: .created) })
         try await sendNotification(
           "workspace/didChangeWatchedFiles",
           params: .init(encoding: params))
-        files.removeFirst(min(100, files.count))
+        filesSharedWithServer.formUnion(chunk.map(\.absoluteString))
       }
 
     default:
@@ -392,4 +405,13 @@ enum CopilotError: Error {
   case notConnected
   case notInitialized
   case processNotRunning
+}
+
+extension Array {
+  /// Removes and returns the first `n` elements of the array as a subsequence.
+  mutating func removeFirst(n: Int) -> Array<Element>.SubSequence {
+    let prefix = prefix(n)
+    removeFirst(Swift.min(n, count))
+    return prefix
+  }
 }

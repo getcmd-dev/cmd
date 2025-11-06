@@ -161,9 +161,9 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     for ws in removedWorkspaces { stopTracking(ws) }
     for ws in newWorkspaces { startTracking(ws) }
 
-    if let focusedWorkspaceUrl = internalState.value.focusedWorkspaceURL {
-      workspaceInspectors[focusedWorkspaceUrl]?.refresh()
-    }
+//    if let focusedWorkspaceUrl = internalState.value.focusedWorkspaceURL {
+//      workspaceInspectors[focusedWorkspaceUrl]?.refresh()
+//    }
   }
 
   /// Returns the inspector for the corresponding workspace.

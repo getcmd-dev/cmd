@@ -65,7 +65,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
-    return nil
+    return codeCompletionProviders.first
+//    return nil
   }
 
   // TODO: support timeout
@@ -75,7 +76,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     content: String,
     selection: Range,
     timeout _: TimeInterval)
-    async throws -> CompletionSuggestion?
+    async throws -> CodeCompletionServiceInterface.CompletionSuggestion?
   {
     guard let provider = configuredProvider else {
       throw AppError("No code completion provider configured")
@@ -92,16 +93,19 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       }
     }
 
-    return try await provider.suggestCompletion(
+    let providerSuggestion = try await provider.suggestCompletion(
       workspace: workspace,
       file: file,
       content: content,
       version: openFiles[workspace]?[file]?.version ?? 0,
       selection: selection,
       pasteboardContent: getPasteboardContent())
+    return providerSuggestion?.applied(to: content, file: file, selection: selection)
   }
 
-  nonisolated func logCompletionAcceptance(suggestion _: CompletionSuggestion, accepted _: Bool) { }
+  nonisolated func logCompletionAcceptance(
+    suggestion _: CodeCompletionServiceInterface.CompletionSuggestion,
+    accepted _: Bool) { }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events
   func handleStateChange(_ newState: AXState<XcodeState>) {

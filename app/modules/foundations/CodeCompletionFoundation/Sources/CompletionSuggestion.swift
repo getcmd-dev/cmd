@@ -9,7 +9,7 @@ public struct CompletionSuggestion: Sendable {
   public let file: URL
   /// The position where the completion starts (inclusive) in the old content.
   public let startPosition: Position
-  /// The position where the completion ends (exclusive) in the old content.
+  /// The position where the completion ends (inclusive) in the old content.
   public let endPosition: Position
   public let completion: String
   public let id: UUID

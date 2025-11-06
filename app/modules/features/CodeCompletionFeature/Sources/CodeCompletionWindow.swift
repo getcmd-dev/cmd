@@ -43,9 +43,18 @@ final class CodeCompletionWindow: XcodeWindow {
       .background(.background)
 
     let hostingView = NSHostingView(rootView: root)
+    self.hostingView = hostingView
 
     hostingView.translatesAutoresizingMaskIntoConstraints = false
     contentView = hostingView
+
+    // Observe size changes and update window frame
+    setupSizeObserver()
+  }
+
+  @MainActor
+  deinit {
+    sizeObservationTimer?.invalidate()
   }
 
   override var canBecomeKey: Bool { false }
@@ -63,7 +72,35 @@ final class CodeCompletionWindow: XcodeWindow {
     return frame
   }
 
+  private var hostingView: NSView?
+  private var sizeObservationTimer: Timer?
+
   private var lastWindowFrame: CGRect?
+
+  private func setupSizeObserver() {
+    // Use a timer to periodically check and adjust the window size
+    sizeObservationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+      Task { @MainActor [weak self] in
+        self?.updateWindowSize()
+      }
+    }
+  }
+
+  @MainActor
+  private func updateWindowSize() {
+    guard let hostingView else { return }
+
+    let fittingSize = hostingView.fittingSize
+    let currentFrame = frame
+
+    // Only update if size changed significantly (avoid tiny adjustments)
+    if abs(fittingSize.width - currentFrame.width) > 1 || abs(fittingSize.height - currentFrame.height) > 1 {
+      let newFrame = CGRect(
+        origin: currentFrame.origin,
+        size: fittingSize)
+      setFrame(newFrame, display: true, animate: true)
+    }
+  }
 
   @MainActor
   private func frame(from _: AnyAXUIElement) -> CGRect? {
