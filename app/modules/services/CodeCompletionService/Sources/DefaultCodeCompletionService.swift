@@ -341,7 +341,8 @@ actor DefaultCodeCompletionService: CodeCompletionService {
             // File exists but can't be read (permission issues, newly created empty file, etc.)
             // Skip notification for this event - the file will be handled when it becomes readable
           } else {
-            // File was deleted
+            // File was deleted - clear from openFiles to reset lifecycle
+            openFiles[workspace]?.removeValue(forKey: eventURL)
             trackerUpdates.append((url: eventURL, content: nil))
             didDeleteEvents.append(eventURL)
           }
