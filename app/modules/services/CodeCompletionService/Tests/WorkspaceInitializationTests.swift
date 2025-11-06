@@ -371,7 +371,7 @@ private func createXcodeState(workspace: URL, file: String, content: String) -> 
 }
 
 extension DefaultCodeCompletionService {
-  init(
+  nonisolated convenience init(
     xcodeObserver: MockXcodeObserver = MockXcodeObserver(),
     codeCompletionProviders: [any CodeCompletionProvider],
     settingsService: MockSettingsService = MockSettingsService(),

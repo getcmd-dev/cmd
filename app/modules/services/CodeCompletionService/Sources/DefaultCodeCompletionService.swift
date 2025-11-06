@@ -17,14 +17,22 @@ import SettingsServiceInterface
 import ShellServiceInterface
 import XcodeObserverServiceInterface
 
+// MARK: - CodeCompletionIsolation
+
 // TODO: buffer updates for file change (don't do every char)
 // TODO: get tabSize etc, maybe from XcodeExtension?
 // TODO: check if URL is a stable key for dictionaries
 
+@globalActor
+actor CodeCompletionIsolation {
+  static let shared = CodeCompletionIsolation()
+}
+
 // MARK: - DefaultCodeCompletionService
 
-actor DefaultCodeCompletionService: CodeCompletionService {
-  init(
+@CodeCompletionIsolation
+final class DefaultCodeCompletionService: CodeCompletionService {
+  nonisolated init(
     xcodeObserver: XcodeObserver,
     getPasteboardContent: @escaping @Sendable () -> String?,
     codeCompletionProviders: [any CodeCompletionProvider],
@@ -78,7 +86,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
       openFiles[workspace] = openFiles[workspace] ?? [:]
       openFiles[workspace]?[file] = .init(content: content, version: 0)
       // Update tracker before notifying providers
-      await recentEditsTrackers[workspace]?.process(updates: [(url: file, content: content)])
+      recentEditsTrackers[workspace]?.process(updates: [(url: file, content: content)])
       notifyProviders { provider in
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
@@ -143,9 +151,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
 
         // Send batch update to tracker
         if !trackerUpdates.isEmpty {
-          Task { [weak self] in
-            await self?.recentEditsTrackers[workspace.url]?.process(updates: trackerUpdates)
-          }
+          recentEditsTrackers[workspace.url]?.process(updates: trackerUpdates)
         }
 
         // Send all updates to providers
@@ -232,10 +238,10 @@ actor DefaultCodeCompletionService: CodeCompletionService {
         let workspaceInfo = try await self?.xcodeObserver.listFiles(in: workspace)
         let files = workspaceInfo?.files
         let workspaceRoot = workspaceInfo?.workspaceRoot ?? workspace
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
+        self?.didInitialize(workspace: workspace, workspaceRoot: workspaceRoot, files: files, success: true)
       } catch {
         defaultLogger.error("Error setting up workspace", error)
-        await self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
+        self?.didInitialize(workspace: workspace, workspaceRoot: workspace, files: nil, success: false)
       }
     }
   }
@@ -352,9 +358,7 @@ actor DefaultCodeCompletionService: CodeCompletionService {
 
     // Send batch update to tracker
     if !trackerUpdates.isEmpty {
-      Task { [weak self] in
-        await self?.recentEditsTrackers[workspace]?.process(updates: trackerUpdates)
-      }
+      recentEditsTrackers[workspace]?.process(updates: trackerUpdates)
     }
 
     // Send all updates to providers

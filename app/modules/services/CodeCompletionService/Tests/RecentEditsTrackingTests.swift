@@ -33,7 +33,6 @@ struct RecentEditsTrackingTests {
       +++ b/workspace/file.swift
       @@ -0,0 +1 @@
       +let x = 1
-      \\ No newline at end of file
       """.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 

@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 //
-//  RecentsEditsTracker2.swift
+//  RecentsEditsTracker.swift
 //  CodeCompletionService
 //
 //  Created by Guigui on 11/5/25.
@@ -20,9 +20,9 @@ import LoggingServiceInterface
 // This allows us to only track changes that happen after the file was opened.
 
 // TODO: check behavior between open and created
-
-actor RecentEditsTracker: Sendable {
-  init(diffBudget: Int = 100, root: URL) {
+@CodeCompletionIsolation
+final class RecentEditsTracker: Sendable {
+  nonisolated init(diffBudget: Int = 100, root: URL) {
     self.diffBudget = diffBudget
     self.root = root
 
@@ -180,7 +180,7 @@ actor RecentEditsTracker: Sendable {
         }
       }
     }
-    editsHistory.removeFirst(idx)
+    editsHistory.removeFirst(min(idx, editsHistory.count))
   }
 
   private func writeToTmpDir(_ dir: URL, file: URL, content: String?) {
