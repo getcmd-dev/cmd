@@ -50,7 +50,6 @@ const repoCanonLower = repoCanon.toLowerCase();
 const Xcode = Application('Xcode');
 Xcode.includeStandardAdditions = true;
 
-let closed = 0;
 const wins = (() => {
 	try {
 		return Xcode.windows();
@@ -93,7 +92,6 @@ wins.forEach((w) => {
 	if (underRepo && isContainer) {
 		try {
 			w.close();
-			closed++;
 		} catch (e) {}
 	}
 });
