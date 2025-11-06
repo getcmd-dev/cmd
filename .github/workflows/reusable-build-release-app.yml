@@ -62,6 +62,9 @@ jobs:
           key: ${{ runner.os }}_release_build_${{ hashFiles('app/**') }}
           restore-keys: |
             ${{ runner.os }}_release_build_
+      # If more Xcode specific issues arise with caching, consider the less used 3rd party https://github.com/irgaly/xcode-cache
+      - name: Clean module cache to prevent timestamp mismatches
+        run: rm -rf app/build/derived_data/ModuleCache.noindex
       - name: Install fastlane dependencies
         run: |
           cd app/fastlane && gem install bundler && bundle install
