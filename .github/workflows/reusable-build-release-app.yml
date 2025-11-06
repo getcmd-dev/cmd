@@ -29,6 +29,7 @@ jobs:
         with:
           xcode-version: "26.0"
       - name: Restore npm cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: local-server/node_modules
@@ -44,6 +45,7 @@ jobs:
           username: oauth2
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Restore SPM packages cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -53,6 +55,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}_spm_packages_
       - name: Restore release build cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: app/build/derived_data

@@ -29,6 +29,7 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
       - name: Restore npm cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: local-server/node_modules
@@ -38,6 +39,7 @@ jobs:
       - name: Install dependencies
         run: cd local-server && yarn install && yarn build && yarn copy-to-app
       - name: Restore SPM cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Caches/org.swift.swiftpm
@@ -46,6 +48,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}_spm_packages_
       - name: Restore modules build cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: app/modules/.build
