@@ -4,7 +4,9 @@
 // MARK: - Position
 
 public struct Position: Codable, Equatable, Sendable {
+  /// The line offset (0-based index).
   public let line: Int
+  /// The character offset (0-based index).
   public let character: Int
 
   public init(line: Int, character: Int) {

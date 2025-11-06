@@ -97,3 +97,11 @@ struct JRPCError: Codable {
 struct JRPCResponseError: Error {
   let error: JRPCError
 }
+
+// MARK: LocalizedError
+
+extension JRPCResponseError: LocalizedError {
+  var errorDescription: String? {
+    "JRPCError \(error.code): \(error.message)"
+  }
+}

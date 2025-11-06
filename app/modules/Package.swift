@@ -626,6 +626,7 @@ targets.append(
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
       "DLS",
+      "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "LoggingServiceInterface",
       "RoutingFoundation",
@@ -686,6 +687,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "CodeCompletionFoundation",
+      "FileDiffTypesFoundation",
       "ThreadSafe",
       "XcodeObserverServiceInterface",
     ],
@@ -874,6 +876,7 @@ targets.append(
   contentsOf: Target.module(
     name: "FileDiffFoundation",
     dependencies: [
+      .product(name: "Algorithms", package: "swift-algorithms"),
       .product(name: "HighlightSwift", package: "highlightswift"),
       "AppFoundation",
       "FileDiffTypesFoundation",
@@ -1853,6 +1856,7 @@ let package = Package(
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
     .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.1"),
     .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.11.1"),
+    .package(url: "https://github.com/apple/swift-algorithms", from: "1.2.1"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.7"),

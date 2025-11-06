@@ -33,7 +33,7 @@ final class AppScope: Sendable, BaseProviding {
     sharedDependencies = AppScopeStorage(initial: initialDependencies)
 
     setupLogging()
-    defaultLogger.log("Launching app (version: \(Bundle.main.version)")
+    defaultLogger.log("Launching app (version: \(Bundle.main.version))")
   }
 
   func _shared<T: Sendable>(key: String, _ build: @Sendable () -> T) -> T {

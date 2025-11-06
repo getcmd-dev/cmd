@@ -110,12 +110,18 @@ actor DefaultStdioConnection: StdioConnection {
 
     Task {
       for await data in stderr.fileHandleForReading.dataStream {
+        let errorDesc = String(data: data, encoding: .utf8) ?? "nil"
+        if errorDesc.lowercased().contains("warning") {
+          // warnings (or possibly standard logs) are redirected to stderr when using JRPC as stdout is reserved for message passing.
+          // Ignore non error message.
+          return
+        }
         stderrData.mutate {
           $0.append(data)
           // only keep last 4KB
           $0 = $0.suffix(4096)
         }
-        logger?.error("Stdio stderr: \(String(data: data, encoding: .utf8) ?? "nil")")
+        (logger ?? defaultLogger).error("Stdio stderr: \(errorDesc)")
       }
     }
 
@@ -157,7 +163,7 @@ actor DefaultStdioConnection: StdioConnection {
           stdin.fileHandleForWriting.write(dataToSend)
         })))
     } catch {
-      logger?.error("Error while establishing Stdio connection", error)
+      (logger ?? defaultLogger).error("Error while establishing Stdio connection", error)
       continuation(.failure(error))
     }
     connection = try await promise.value

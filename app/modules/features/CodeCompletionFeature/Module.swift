@@ -7,6 +7,7 @@ Target.module(
     "CodeCompletionFoundation",
     "CodeCompletionServiceInterface",
     "DLS",
+    "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
     "RoutingFoundation",

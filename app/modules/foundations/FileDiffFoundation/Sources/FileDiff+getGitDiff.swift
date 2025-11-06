@@ -82,6 +82,39 @@ extension FileDiff {
     return diff.formatAppliedGitDiff
   }
 
+  /// Computes a character-by-character diff between two strings using git word-diff.
+  /// Uses `git diff --word-diff-regex=.` to get character-level changes.
+  public static func getCharacterDiff(oldContent: String, newContent: String) throws -> String {
+    let uuid = UUID().uuidString
+    let tmpFileV0Path = "/tmp/file-0-\(uuid).txt"
+    let tmpFileV1Path = "/tmp/file-1-\(uuid).txt"
+
+    FileManager.default.createFile(
+      atPath: tmpFileV0Path,
+      contents: oldContent.utf8Data,
+      attributes: nil)
+    FileManager.default.createFile(
+      atPath: tmpFileV1Path,
+      contents: newContent.utf8Data,
+      attributes: nil)
+
+    defer {
+      try? FileManager.default.removeItem(atPath: tmpFileV0Path)
+      try? FileManager.default.removeItem(atPath: tmpFileV1Path)
+    }
+
+    return try shell("git diff --no-index --no-color --word-diff-regex=. \(tmpFileV0Path) \(tmpFileV1Path)")
+      .split(separator: "\n", omittingEmptySubsequences: false)
+      // First 4 lines are formatted like:
+      //
+      // diff --git a/tmp/oldContent.txt b/tmp/newContent.txt
+      // index 41df449..84d2978 100644
+      // --- a/tmp/oldContent.txt
+      // +++ b/tmp/newContent.txt
+      .dropFirst(4)
+      .joined(separator: "\n")
+  }
+
   static func shell(_ command: String) throws -> String {
     let task = Process()
     let stdout = Pipe()

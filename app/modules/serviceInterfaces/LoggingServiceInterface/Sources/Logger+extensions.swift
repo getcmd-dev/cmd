@@ -3,17 +3,46 @@
 
 /// Run the given task, logging any error with the given message.
 @discardableResult
-public func Task(
+public func Task<Result>(
   loggingErrorWith message: String,
   logger: Logger? = nil,
-  task: @escaping @Sendable () async throws -> Void)
-  -> Task<Void, Never>
+  task: @escaping @Sendable () async throws -> Result)
+  -> Task<Result, Error>
 {
   Task {
     do {
-      try await task()
+      return try await task()
     } catch {
       (logger ?? defaultLogger).error(message, error)
+      throw error
     }
+  }
+}
+
+public func run<Result>(
+  loggingErrorWith message: String,
+  logger: Logger? = nil,
+  task: () throws -> Result)
+  throws -> Result
+{
+  do {
+    return try task()
+  } catch {
+    (logger ?? defaultLogger).error(message, error)
+    throw error
+  }
+}
+
+public func run<Result>(
+  loggingErrorWith message: String,
+  logger: Logger? = nil,
+  task: () async throws -> Result)
+  async throws -> Result
+{
+  do {
+    return try await task()
+  } catch {
+    (logger ?? defaultLogger).error(message, error)
+    throw error
   }
 }

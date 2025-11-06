@@ -1182,6 +1182,13 @@ struct GithubCopilotServerTests {
     // Wait for initialization to complete
     _ = try await server.initializedTransport.value
 
+    // Open the file before requesting completions
+    try await server.didOpenTextDocument(
+      uri: "file:///Users/test/workspace/test.swift",
+      languageId: "swift",
+      version: 1,
+      text: "")
+
     // when
     let result = try await server.getCompletions(
       uri: "file:///Users/test/workspace/test.swift",
