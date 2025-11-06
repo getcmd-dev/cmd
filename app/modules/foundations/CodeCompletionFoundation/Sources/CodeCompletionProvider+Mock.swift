@@ -19,6 +19,7 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
     onDidOpen = { _, _, _, _ in }
     onDidChange = { _, _, _, _ in }
     onDidClose = { _, _, _, _ in }
+    onDidDelete = { _, _ in }
   }
 
   public let id: String
@@ -30,6 +31,7 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
   public var onDidOpen: @Sendable (URL, URL, String, Int) -> Void
   public var onDidChange: @Sendable (URL, URL, String, Int) -> Void
   public var onDidClose: @Sendable (URL, URL, String, Int) -> Void
+  public var onDidDelete: @Sendable (URL, URL) -> Void
 
   public func setUp(workspace: Workspace) {
     onSetUp(workspace)
@@ -68,6 +70,10 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
 
   public func didClose(workspace: URL, file: URL, content: String, version: Int) {
     onDidClose(workspace, file, content, version)
+  }
+
+  public func didDelete(workspace: URL, file: URL) {
+    onDidDelete(workspace, file)
   }
 }
 #endif

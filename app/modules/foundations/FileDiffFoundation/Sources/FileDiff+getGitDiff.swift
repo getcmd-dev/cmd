@@ -7,6 +7,47 @@ import LoggingServiceInterface
 
 extension FileDiff {
 
+  public static func getGitDiff(oldContent: [String: String], newContent: [String: String]) throws -> String {
+    let uuid = UUID().uuidString
+    let tmpFolderV0Path = "/tmp/folder-0-\(uuid)"
+    let tmpFolderV1Path = "/tmp/folder-1-\(uuid)"
+
+    try FileManager.default.createDirectory(atPath: tmpFolderV0Path, withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(atPath: tmpFolderV1Path, withIntermediateDirectories: true)
+
+    for (filePath, content) in oldContent {
+      let fullPath = (tmpFolderV0Path as NSString).appendingPathComponent(filePath)
+      let directory = (fullPath as NSString).deletingLastPathComponent
+      try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+      FileManager.default.createFile(
+        atPath: fullPath,
+        contents: content.formattedToApplyGitDiff.utf8Data,
+        attributes: nil)
+    }
+
+    for (filePath, content) in newContent {
+      let fullPath = (tmpFolderV1Path as NSString).appendingPathComponent(filePath)
+      let directory = (fullPath as NSString).deletingLastPathComponent
+      try FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+      FileManager.default.createFile(
+        atPath: fullPath,
+        contents: content.formattedToApplyGitDiff.utf8Data,
+        attributes: nil)
+    }
+
+    defer {
+      try? FileManager.default.removeItem(atPath: tmpFolderV0Path)
+      try? FileManager.default.removeItem(atPath: tmpFolderV1Path)
+    }
+
+    let diff = try shell("git diff --no-index --no-color \(tmpFolderV0Path) \(tmpFolderV1Path)")
+      .split(separator: "\n", omittingEmptySubsequences: false)
+      .dropFirst(4)
+      .joined(separator: "\n")
+
+    return diff.formatAppliedGitDiff
+  }
+
   /// Computes the diff between two strings using git.
   public static func getGitDiff(oldContent: String, newContent: String) throws -> String {
     let uuid = UUID().uuidString

@@ -58,8 +58,11 @@ public protocol CodeCompletionProvider: Sendable {
   ///  - content: The content of the file when it was closed.
   ///  - version: An increasing number representing the version of the file.
   func didClose(workspace: URL, file: URL, content: String, version: Int)
-
-  // TODO: Add didDelete?
+  /// Handle a notification that a file has been deleted.
+  /// - Parameters:
+  ///  - workspace: The URL of the workspace within which the file resides.
+  ///  - file: The URL of the file that was deleted.
+  func didDelete(workspace: URL, file: URL)
 }
 
 // MARK: - CodeCompletionProvidersPluginProviding
