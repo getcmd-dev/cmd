@@ -49,6 +49,7 @@ actor RecentEditsTracker: Sendable {
   func process(updates: [(url: URL, content: String?)]) {
     for update in updates {
       var versions = filesEditsHistory[update.url, default: []]
+      let isFirstVersionOfFile = versions.isEmpty
       versions.append(.init(url: update.url, content: update.content))
       filesEditsHistory[update.url] = versions
 
@@ -56,6 +57,15 @@ actor RecentEditsTracker: Sendable {
 
       // Write to new content directory
       writeToTmpDir(newContentDir, file: update.url, content: update.content)
+
+      // Initialize oldContentDir for new files
+      if isFirstVersionOfFile {
+        // If first version has non-nil content, it's a file opened with existing content (baseline)
+        // If first version is nil, it's a file being created (no baseline)
+        if update.content != nil {
+          writeToTmpDir(oldContentDir, file: update.url, content: update.content)
+        }
+      }
     }
 
     var startIndex = 0
@@ -64,12 +74,11 @@ actor RecentEditsTracker: Sendable {
         break
       }
 
-      // Update old content directory to reflect state at startIndex
-      updateOldContentDir(from: startIndex)
-
       do {
         let diff = try computeDiff()
         if size(of: diff) > diffBudget {
+          // Move startIndex forward by one and update oldContentDir accordingly
+          updateOldContentDirByOneChange()
           startIndex += 1
         } else {
           self.diff = diff
@@ -91,27 +100,16 @@ actor RecentEditsTracker: Sendable {
   private let oldContentDir: URL
   private let newContentDir: URL
 
-  private func updateOldContentDir(from idx: Int) {
-    // Clear old content directory
-    clearTmpDir(oldContentDir)
+  /// Update oldContentDir by advancing one edit forward (the oldest edit becomes part of the baseline)
+  private func updateOldContentDirByOneChange() {
+    guard let oldestEdit = editsHistory.first else { return }
 
-    // Build the state before edits starting at idx
-    var beforeStateIdx = [URL: Int]()
-    for edit in editsHistory[idx...] {
-      beforeStateIdx[edit.url] = beforeStateIdx[edit.url, default: 0] + 1
-    }
+    let url = oldestEdit.url
+    let content = oldestEdit.content
 
-    // Write old state to tmp directory
-    for (url, count) in beforeStateIdx {
-      if let fileHistory = filesEditsHistory[url] {
-        let historyIndex = fileHistory.count - count - 1
-        if historyIndex >= 0 {
-          let oldContent = fileHistory[historyIndex].content
-          writeToTmpDir(oldContentDir, file: url, content: oldContent)
-        }
-        // If historyIndex < 0, file was created in this range, so no old content
-      }
-    }
+    // The oldest edit is now becoming part of the baseline (old state)
+    // Update the file in oldContentDir to reflect this
+    writeToTmpDir(oldContentDir, file: url, content: content)
   }
 
   private func computeDiff() throws -> String {
@@ -121,6 +119,8 @@ actor RecentEditsTracker: Sendable {
       "diff",
       "--no-index",
       "--no-color",
+      "-M",
+      "-C",
       oldContentDir.path,
       newContentDir.path,
     ]
@@ -147,7 +147,20 @@ actor RecentEditsTracker: Sendable {
     let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
     guard lines.count > 4 else { return output }
 
-    return lines.dropFirst(4).joined(separator: "\n")
+    var result = lines.dropFirst(4).joined(separator: "\n")
+
+    // Replace tmp paths with root paths in the diff output
+    result = result.replacingOccurrences(of: oldContentDir.path, with: root.path)
+    result = result.replacingOccurrences(of: newContentDir.path, with: root.path)
+    result = result.replacingOccurrences(of: "\n\\ No newline at end of file", with: "")
+    // Replace lines like index 3ee2407..403e371 100644 with a regex
+    let indexPattern = #"index [0-9a-f]+\.\.[0-9a-f]+ [0-9a-f]+\n"#
+    result = result.replacingOccurrences(
+      of: indexPattern,
+      with: "",
+      options: .regularExpression)
+
+    return result
   }
 
   private func size(of diff: String) -> Int {
@@ -190,16 +203,6 @@ actor RecentEditsTracker: Sendable {
         try? FileManager.default.removeItem(at: tmpFile)
       }
       // If file doesn't exist, it was created - do nothing (leave it absent from tmp dir)
-    }
-  }
-
-  private func clearTmpDir(_ dir: URL) {
-    guard let enumerator = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: nil) else {
-      return
-    }
-
-    for case let fileURL as URL in enumerator {
-      try? FileManager.default.removeItem(at: fileURL)
     }
   }
 }

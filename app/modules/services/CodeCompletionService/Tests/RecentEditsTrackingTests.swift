@@ -20,13 +20,36 @@ struct RecentEditsTrackingTests {
     let file = URL(fileURLWithPath: "/workspace/file.swift")
 
     // when
+    await tracker.trackEdit(file: file, content: nil)
     await tracker.trackEdit(file: file, content: "let x = 1")
 
     // then
     let history = await tracker.getEditHistory()
-    #expect(history.count == 1)
-    #expect(history.first?.url == file)
-    #expect(history.first?.content == "let x = 1")
+    #expect(history.count == 2)
+    #expect(history.last?.url == file)
+    #expect(history.last?.content == "let x = 1")
+    let diff = await tracker.getDiff()
+    #expect(diff.trimmingCharacters(in: .whitespacesAndNewlines) == """
+      +++ b/workspace/file.swift
+      @@ -0,0 +1 @@
+      +let x = 1
+      \\ No newline at end of file
+      """.trimmingCharacters(in: .whitespacesAndNewlines))
+  }
+
+  @Test("open file has no diff")
+  func openFileHasNoDiff() async throws {
+    // given
+    let root = URL(fileURLWithPath: "/workspace")
+    let tracker = RecentEditsTracker(root: root)
+    let file = URL(fileURLWithPath: "/workspace/file.swift")
+
+    // when
+    await tracker.trackEdit(file: file, content: "let x = 1")
+
+    // then
+    let diff = await tracker.getDiff()
+    #expect(diff.trimmingCharacters(in: .whitespacesAndNewlines) == "")
   }
 
   @Test("Tracks multiple edits to same file")
@@ -45,6 +68,46 @@ struct RecentEditsTrackingTests {
     let history = await tracker.getEditHistory()
     #expect(history.count == 3)
     #expect(history.last?.content == "let x = 1\nlet y = 2\nlet z = 3")
+  }
+
+  @Test("Tracks file moved")
+  func tracksFileMoved() async throws {
+    // given
+    let root = URL(fileURLWithPath: "/workspace")
+    let tracker = RecentEditsTracker(root: root)
+    let file1 = URL(fileURLWithPath: "/workspace/file1.swift")
+    let file2 = URL(fileURLWithPath: "/workspace/file2.swift")
+
+    // when
+    await tracker.trackEdit(file: file1, content: """
+      let x = 1
+      let y = 2
+      let z = 3
+      """)
+    await tracker.trackEdit(file: file1, content: nil)
+    await tracker.trackEdit(file: file2, content: nil)
+    await tracker.trackEdit(file: file2, content: """
+      let x = 1
+      let y = 2
+      let z = 3
+      """)
+    await tracker.trackEdit(file: file2, content: """
+      let x = 1
+      let y = 2
+      let z = 4
+      """)
+
+    // then
+    let diff = await tracker.getDiff()
+    #expect(diff.trimmingCharacters(in: .whitespacesAndNewlines) == """
+      --- a/workspace/file1.swift
+      +++ b/workspace/file2.swift
+      @@ -1,3 +1,3 @@
+       let x = 1
+       let y = 2
+      -let z = 3
+      +let z = 4
+      """.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 
   @Test("Handles nil content for file deletion")
@@ -172,5 +235,9 @@ extension RecentEditsTracker {
 
   func getEditHistory() -> [FileVersion] {
     editsHistory
+  }
+
+  func getDiff() -> String {
+    diff
   }
 }
