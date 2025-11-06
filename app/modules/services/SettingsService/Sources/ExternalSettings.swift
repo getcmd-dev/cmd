@@ -315,7 +315,8 @@ extension Settings {
       mcpServers: externalSettings.mcpServers,
       defaultLogLevel: internalSettings.defaultLogLevel,
       codeCompletionProviderId: externalSettings.codeCompletionProviderId,
-      enableCodeCompletion: externalSettings.enableCodeCompletion)
+      enableCodeCompletion: externalSettings.enableCodeCompletion,
+      queueMessagesWhileStreaming: internalSettings.queueMessagesWhileStreaming)
   }
 
   var externalSettings: ExternalSettings {
@@ -341,7 +342,8 @@ extension Settings {
     .init(
       pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
       knownToolReferenceIds: knownToolReferenceIds,
-      defaultLogLevel: defaultLogLevel)
+      defaultLogLevel: defaultLogLevel,
+      queueMessagesWhileStreaming: queueMessagesWhileStreaming)
   }
 }
 

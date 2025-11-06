@@ -1156,4 +1156,99 @@ struct SettingsCodableTests {
     #expect(originalSettings == decodedSettings)
     #expect(decodedSettings.queueMessagesWhileStreaming == false)
   }
+
+  @Test("Settings to ExternalSettings/InternalSettings conversion preserves all settings")
+  func testSettingsConversionPreservesAllSettings() throws {
+    // Create Settings with non-default values for all fields
+    // Note: userDefinedXcodeShortcuts is excluded from this test because it contains transient UUIDs
+    // that are not persisted and will be different after round-trip conversion
+    let originalSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      automaticallyCheckForUpdates: false,
+      automaticallyUpdateXcodeSettings: true,
+      fileEditMode: .xcodeExtension,
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic, .gpt: .openAI]),
+      llmProviderSettings: [
+        .anthropic: Settings.AIProviderSettings(
+          apiKey: "anthropic-test-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+        .openAI: Settings.AIProviderSettings(
+          apiKey: "openai-test-key",
+          baseUrl: "https://api.openai.com",
+          executable: "/usr/local/bin/openai",
+          createdOrder: 2),
+      ],
+      enabledModels: ["anthropic/claude-3.5-haiku", "openai/gpt-5"],
+      reasoningModels: [
+        "anthropic/claude-opus-4.1": .init(isEnabled: true),
+        "openai/gpt-5": .init(isEnabled: false),
+      ],
+      chatModeConfigurations: [
+        "agent": Settings.ChatModeConfiguration(
+          customInstructions: "Agent instructions",
+          availableToolIds: ["edit", "glob"]),
+        "ask": Settings.ChatModeConfiguration(
+          customInstructions: nil,
+          availableToolIds: nil),
+      ],
+      knownToolReferenceIds: ["edit", "glob", "search"],
+      toolPreferences: [
+        Settings.ToolPreference(toolReferenceId: "edit", alwaysApprove: true),
+        Settings.ToolPreference(toolReferenceId: "bash", alwaysApprove: false),
+      ],
+      keyboardShortcuts: [
+        .addContextToCurrentChat: .init(key: "k", modifiers: [.command]),
+        .dismissChat: .init(key: .escape, modifiers: [.control]),
+      ],
+      userDefinedXcodeShortcuts: [],
+      mcpServers: [
+        "test-server": .stdio(.init(
+          name: "test-server",
+          command: "test-command",
+          args: ["arg1", "arg2"],
+          env: ["KEY": "value"])),
+      ],
+      defaultLogLevel: .debug,
+      codeCompletionProviderId: "test-provider",
+      enableCodeCompletion: true,
+      codeCompletionDebounceMs: 250, // Note: this field is not currently persisted, so it will reset to default
+      queueMessagesWhileStreaming: false)
+
+    // Convert to ExternalSettings and InternalSettings
+    let externalSettings = originalSettings.externalSettings
+    let internalSettings = originalSettings.internalSettings()
+
+    // Convert back to Settings
+    let reconstructedSettings = Settings(
+      externalSettings: externalSettings,
+      internalSettings: internalSettings)
+
+    // Verify each field individually to get clearer error messages
+    #expect(reconstructedSettings.pointReleaseXcodeExtensionToDebugApp == originalSettings.pointReleaseXcodeExtensionToDebugApp)
+    #expect(reconstructedSettings.allowAnonymousAnalytics == originalSettings.allowAnonymousAnalytics)
+    #expect(reconstructedSettings.automaticallyCheckForUpdates == originalSettings.automaticallyCheckForUpdates)
+    #expect(reconstructedSettings.automaticallyUpdateXcodeSettings == originalSettings.automaticallyUpdateXcodeSettings)
+    #expect(reconstructedSettings.fileEditMode == originalSettings.fileEditMode)
+    #expect(reconstructedSettings.preferedProviders == originalSettings.preferedProviders)
+    #expect(reconstructedSettings.llmProviderSettings == originalSettings.llmProviderSettings)
+    #expect(reconstructedSettings.enabledModels == originalSettings.enabledModels)
+    #expect(reconstructedSettings.reasoningModels == originalSettings.reasoningModels)
+    #expect(reconstructedSettings.chatModeConfigurations == originalSettings.chatModeConfigurations)
+    #expect(reconstructedSettings.knownToolReferenceIds == originalSettings.knownToolReferenceIds)
+    #expect(reconstructedSettings.toolPreferences == originalSettings.toolPreferences)
+    #expect(reconstructedSettings.keyboardShortcuts == originalSettings.keyboardShortcuts)
+    #expect(reconstructedSettings.userDefinedXcodeShortcuts == originalSettings.userDefinedXcodeShortcuts)
+    #expect(reconstructedSettings.mcpServers == originalSettings.mcpServers)
+    #expect(reconstructedSettings.defaultLogLevel == originalSettings.defaultLogLevel)
+    #expect(reconstructedSettings.codeCompletionProviderId == originalSettings.codeCompletionProviderId)
+    #expect(reconstructedSettings.enableCodeCompletion == originalSettings.enableCodeCompletion)
+    #expect(reconstructedSettings.codeCompletionDebounceMs == originalSettings.codeCompletionDebounceMs)
+    #expect(reconstructedSettings.queueMessagesWhileStreaming == originalSettings.queueMessagesWhileStreaming)
+
+    // Use equality check to validate that no value is lost
+    #expect(reconstructedSettings == originalSettings)
+  }
 }
