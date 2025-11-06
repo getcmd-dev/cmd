@@ -74,7 +74,7 @@ platform :mac do
       skip_archive: true,
       scheme: "command",
       # silent: true,
-      xcodebuild_formatter: "xcbeautify --quiet",
+      xcodebuild_formatter: File.absolute_path("./xcodebuild_logger.sh"),
     )
   end
 
@@ -99,7 +99,7 @@ platform :mac do
       scheme: "command",
       skip_archive: true,
       skip_codesigning: true,
-      xcodebuild_formatter: "xcbeautify --quiet",
+      xcodebuild_formatter: File.absolute_path("./xcodebuild_logger.sh"),
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
@@ -163,7 +163,7 @@ platform :mac do
       scheme: "command",
       # silent: true,
       skip_archive: false,
-      xcodebuild_formatter: "xcbeautify --quiet",
+      xcodebuild_formatter: File.absolute_path("./xcodebuild_logger.sh"),
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 

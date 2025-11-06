@@ -29,6 +29,7 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
       - name: Load npm cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache@v4
         with:
           path: local-server/node_modules
@@ -48,6 +49,7 @@ jobs:
           brew install graphicsmagick imagemagick sentry-cli
           cd app/fastlane && gem install bundler && bundle install
       - name: Load SPM packages cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache@v4
         with:
           path: |
@@ -57,6 +59,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}_spm_packages_
       - name: Load release build cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache@v4
         with:
           path: app/build/derived_data
@@ -80,3 +83,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-logs-distribute
+          path: app/build/logs/
+          if-no-files-found: warn

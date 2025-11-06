@@ -29,6 +29,7 @@ jobs:
         with:
           xcode-version: "26.0"
       - name: Restore npm cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: local-server/node_modules
@@ -44,6 +45,7 @@ jobs:
           username: oauth2
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Restore SPM packages cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -53,12 +55,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}_spm_packages_
       - name: Restore release build cache
+        if: ${{ github.run_attempt == 1 }}
         uses: actions/cache/restore@v4
         with:
           path: app/build/derived_data
           key: ${{ runner.os }}_release_build_${{ hashFiles('app/**') }}
           restore-keys: |
             ${{ runner.os }}_release_build_
+      # If more Xcode specific issues arise with caching, consider the less used 3rd party https://github.com/irgaly/xcode-cache
+      - name: Clean module cache to prevent timestamp mismatches
+        run: rm -rf app/build/derived_data/ModuleCache.noindex
       - name: Install fastlane dependencies
         run: |
           cd app/fastlane && gem install bundler && bundle install
@@ -70,6 +76,13 @@ jobs:
           MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
           FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-logs-release
+          path: app/build/logs/
+          if-no-files-found: warn
       - name: Verify min deployment version
         run: |
           cd app
