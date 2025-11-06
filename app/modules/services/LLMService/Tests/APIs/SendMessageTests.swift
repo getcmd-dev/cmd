@@ -170,7 +170,6 @@ final class SendMessageTests {
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root",
             "threadId" : "mock-thread-id",
-            "useNewClaudeCodeApi" : false
           }
           """,
           ignoring: "system")
@@ -244,7 +243,6 @@ final class SendMessageTests {
             "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root",
             "threadId" : "mock-thread-id",
-            "useNewClaudeCodeApi" : false
           }
           """,
           ignoring: "system")
@@ -492,7 +490,6 @@ final class SendMessageTests {
           "tools":[],
           "projectRoot" : "/path/to/root",
           "threadId" : "mock-thread-id",
-          "useNewClaudeCodeApi" : false
         }
         """,
         ignoring: "system")

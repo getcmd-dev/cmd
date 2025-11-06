@@ -37,7 +37,6 @@ import {
 } from "ai"
 import { mapResponseError } from "./errorParsing"
 import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
-import { sendMessageToClaudeCode as sendMessageToClaudeCode2 } from "./claudeCode/sendMessageToClaudeCode2"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
 
@@ -81,16 +80,9 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getP
 				}
 
 				// Route to appropriate handler based on provider
-				let sendMessageImpl
-				if (body.provider.name == "codex") {
-					sendMessageImpl = sendMessageToCodex
-				} else {
-					const useNewClaudeCodeApi = body.useNewClaudeCodeApi === true
-					logInfo(`Using new Claude Code API: ${useNewClaudeCodeApi}`)
-					sendMessageImpl = useNewClaudeCodeApi ? sendMessageToClaudeCode2 : sendMessageToClaudeCode
-				}
+				const sendMessageImpl = body.provider.name == "codex" ? sendMessageToCodex : sendMessageToClaudeCode
 
-				await sendMessageImpl({ messages, localExecutable, port: getPort(), threadId, router, tools }, res)
+				await sendMessageImpl({ messages, localExecutable, threadId, tools }, res)
 				return
 			}
 

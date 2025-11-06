@@ -262,7 +262,6 @@ final class DefaultLLMService: LLMService {
     else {
       throw AppError("Unsupported model \(model.id)")
     }
-    let isUsingNewClaudeCodeApi = userDefaults.bool(forKey: .useNewClaudeCodeApi)
 
     let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
@@ -280,8 +279,7 @@ final class DefaultLLMService: LLMService {
         shellService: shellService,
         fileManager: fileManager,
         projectRoot: context?.projectRoot?.path),
-      threadId: context?.threadId,
-      useNewClaudeCodeApi: isUsingNewClaudeCodeApi)
+      threadId: context?.threadId)
 
     let encoder = JSONEncoder()
     // This is important, as in some cases if the LLM receives keys in a different order this will invalidate its cache and be expensive.
@@ -310,7 +308,6 @@ final class DefaultLLMService: LLMService {
         tools: tools,
         context: context,
         isExternalAgent: provider.isExternalAgent,
-        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server,
         repeatDebugHelper: supportDebugStreamRepeatInDebug ? repeatDebugHelper : nil)
@@ -327,7 +324,6 @@ final class DefaultLLMService: LLMService {
         tools: tools,
         context: context,
         isExternalAgent: provider.isExternalAgent,
-        isUsingNewClaudeCodeApi: isUsingNewClaudeCodeApi,
         isTaskCancelled: { isTaskCancelled.value },
         localServer: server)
       #endif

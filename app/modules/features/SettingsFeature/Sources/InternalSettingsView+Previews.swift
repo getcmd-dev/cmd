@@ -15,7 +15,6 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
-    useNewClaudeCodeApi: .constant(false),
     defaultLogLevel: .constant(.info),
     enableCodeCompletion: .constant(false),
     codeCompletionDebounceMs: .constant(250))
@@ -33,7 +32,6 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
-    useNewClaudeCodeApi: .constant(true),
     defaultLogLevel: .constant(.debug),
     enableCodeCompletion: .constant(true),
     codeCompletionDebounceMs: .constant(100))

@@ -83,7 +83,6 @@ public struct SettingsView: View {
           enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
-          useNewClaudeCodeApi: $viewModel.useNewClaudeCodeApi,
           defaultLogLevel: $viewModel.defaultLogLevel,
           enableCodeCompletion: $viewModel.enableCodeCompletion,
           codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs)

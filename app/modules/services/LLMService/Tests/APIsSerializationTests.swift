@@ -213,7 +213,6 @@ struct APIParamsEncodingTests {
           "tools" : [],
           "projectRoot" : "/test",
           "threadId" : "mock-thread-id",
-          "useNewClaudeCodeApi" : false
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -265,7 +264,6 @@ struct APIParamsEncodingTests {
           "tools" : [],
           "projectRoot" : "/test",
           "threadId" : "mock-thread-id",
-          "useNewClaudeCodeApi" : false
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -317,7 +315,6 @@ struct APIParamsEncodingTests {
           "tools" : [],
           "projectRoot" : "/test",
           "threadId" : "mock-thread-id",
-          "useNewClaudeCodeApi" : false
         }
         """, ignoring: "system")
       requestCompleted.fulfill()

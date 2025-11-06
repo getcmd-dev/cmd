@@ -33,7 +33,6 @@ actor RequestStreamingHelper: Sendable {
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
     isExternalAgent: Bool,
-    isUsingNewClaudeCodeApi: Bool = false,
     isTaskCancelled: @escaping @Sendable () -> Bool,
     localServer: LocalServer,
     repeatDebugHelper: RepeatDebugHelper?)
@@ -43,7 +42,6 @@ actor RequestStreamingHelper: Sendable {
     self.tools = tools
     self.context = context
     self.isExternalAgent = isExternalAgent
-    self.isUsingNewClaudeCodeApi = isUsingNewClaudeCodeApi
     self.isTaskCancelled = isTaskCancelled
     self.localServer = localServer
     self.repeatDebugHelper = repeatDebugHelper
@@ -63,7 +61,6 @@ actor RequestStreamingHelper: Sendable {
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
     isExternalAgent: Bool,
-    isUsingNewClaudeCodeApi: Bool,
     isTaskCancelled: @escaping @Sendable () -> Bool,
     localServer: LocalServer)
   {
@@ -72,14 +69,12 @@ actor RequestStreamingHelper: Sendable {
     self.tools = tools
     self.context = context
     self.isExternalAgent = isExternalAgent
-    self.isUsingNewClaudeCodeApi = isUsingNewClaudeCodeApi
     self.isTaskCancelled = isTaskCancelled
     self.localServer = localServer
   }
   #endif
 
   let isExternalAgent: Bool
-  let isUsingNewClaudeCodeApi: Bool
   let result: MutableCurrentValueStream<AssistantMessage>
   let stream: AsyncThrowingStream<Data, any Error>
   let tools: [any ToolFoundation.Tool]
