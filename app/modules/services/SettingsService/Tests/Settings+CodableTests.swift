@@ -1091,4 +1091,69 @@ struct SettingsCodableTests {
 
     try testDecoding(expectedSettings, json)
   }
+
+  // MARK: - Queue Messages While Streaming Tests
+
+  @Test("Encode and decode queueMessagesWhileStreaming setting")
+  func testQueueMessagesWhileStreamingEncodingDecoding() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      queueMessagesWhileStreaming: false)
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {},
+        "codeCompletionDebounceMs" : 250,
+        "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "queueMessagesWhileStreaming" : false,
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode queueMessagesWhileStreaming with default value")
+  func testQueueMessagesWhileStreamingDefaults() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      queueMessagesWhileStreaming: true) // default value
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Round-trip queueMessagesWhileStreaming preserves data")
+  func testRoundTripQueueMessagesWhileStreaming() throws {
+    let originalSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      queueMessagesWhileStreaming: false)
+
+    let jsonData = try JSONEncoder().encode(originalSettings)
+    let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
+
+    #expect(originalSettings == decodedSettings)
+    #expect(decodedSettings.queueMessagesWhileStreaming == false)
+  }
 }

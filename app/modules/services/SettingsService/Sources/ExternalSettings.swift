@@ -75,25 +75,29 @@ struct ExternalSettings: Sendable, Equatable {
 // MARK: - InternalSettings
 
 struct InternalSettings: Sendable, Equatable {
-  static let defaultSettings = InternalSettings(
-    pointReleaseXcodeExtensionToDebugApp: false,
-    knownToolReferenceIds: [],
-    defaultLogLevel: .info)
-
   init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
     knownToolReferenceIds: [String] = [],
-    defaultLogLevel: LogLevel = .info)
+    defaultLogLevel: LogLevel = .info,
+    queueMessagesWhileStreaming: Bool = true)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.knownToolReferenceIds = knownToolReferenceIds
     self.defaultLogLevel = defaultLogLevel
+    self.queueMessagesWhileStreaming = queueMessagesWhileStreaming
   }
+
+  static let defaultSettings = InternalSettings(
+    pointReleaseXcodeExtensionToDebugApp: false,
+    knownToolReferenceIds: [],
+    defaultLogLevel: .info,
+    queueMessagesWhileStreaming: true)
 
   var pointReleaseXcodeExtensionToDebugApp: Bool
   /// Array of known tool reference IDs. This is internal state not exposed to users.
   var knownToolReferenceIds: [String]
   var defaultLogLevel: LogLevel
+  var queueMessagesWhileStreaming: Bool
 }
 
 // MARK: - ExternalSettings + Codable
@@ -225,14 +229,22 @@ extension InternalSettings: Codable {
         forKey: "knownToolReferenceIds") ?? Self.defaultSettings.knownToolReferenceIds,
       defaultLogLevel: container.resilientlyDecodeIfPresent(
         LogLevel.self,
-        forKey: "defaultLogLevel") ?? Self.defaultSettings.defaultLogLevel)
+        forKey: "defaultLogLevel") ?? Self.defaultSettings.defaultLogLevel,
+      queueMessagesWhileStreaming: container.resilientlyDecodeIfPresent(
+        Bool.self,
+        forKey: "queueMessagesWhileStreaming") ?? Self.defaultSettings.queueMessagesWhileStreaming)
   }
 
   func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
+    // Always encode fields, except for queueMessagesWhileStreaming which we only encode if non-default
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
     try container.encode(knownToolReferenceIds, forKey: "knownToolReferenceIds")
     try container.encode(defaultLogLevel, forKey: "defaultLogLevel")
+    // Only encode queueMessagesWhileStreaming if it differs from the default
+    if queueMessagesWhileStreaming != Self.defaultSettings.queueMessagesWhileStreaming {
+      try container.encode(queueMessagesWhileStreaming, forKey: "queueMessagesWhileStreaming")
+    }
   }
 }
 

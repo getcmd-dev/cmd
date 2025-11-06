@@ -12,6 +12,7 @@ import LLMFoundation
 import LoggingServiceInterface
 import RoutingFoundation
 import SettingsFeatureInterface
+import SettingsServiceInterface
 import SwiftUI
 
 // MARK: - ChatInputView
@@ -57,6 +58,14 @@ struct ChatInputView: View {
       if let pendingToolApproval = inputViewModel.pendingToolApproval {
         approvalView(for: pendingToolApproval)
       }
+      // Queued messages view
+      QueuedMessagesView(
+        queuedMessages: $inputViewModel.queuedMessages,
+        isExpanded: $isQueueExpanded,
+        onSendNow: inputViewModel.sendQueuedMessageNow,
+        onDelete: inputViewModel.deleteQueuedMessage)
+        .padding(.horizontal, sidePadding)
+        .padding(.bottom, 8)
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 8) {
           AttachmentsView(
@@ -120,6 +129,8 @@ struct ChatInputView: View {
 
   @State private var isHoveringContextIndicator = false
 
+  @State private var isQueueExpanded = true
+
   @Environment(\.colorScheme) private var colorScheme
 
   /// Is a streaming chat response in progress
@@ -130,6 +141,8 @@ struct ChatInputView: View {
   @Bindable private var inputViewModel: ChatInputViewModel
 
   @Environment(Router.self) private var router
+
+  @Dependency(\.settingsService) private var settingsService
 
   private let threadViewModel: ChatThreadViewModel?
 
@@ -380,7 +393,13 @@ struct ChatInputView: View {
     guard isInputReady else {
       return
     }
-    inputViewModel.handleDidTapSend()
+
+    // If currently streaming and queuing is enabled, queue the message instead of sending
+    if isStreamingResponse, settingsService.values().queueMessagesWhileStreaming {
+      inputViewModel.queueCurrentMessage()
+    } else {
+      inputViewModel.handleDidTapSend()
+    }
   }
 
   private func onKeyDown(key: KeyEquivalent, modifiers: [KeyModifier]) -> Bool {

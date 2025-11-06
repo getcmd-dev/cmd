@@ -10,7 +10,8 @@ import SwiftUI
     allowAnonymousAnalytics: .constant(true),
     automaticallyCheckForUpdates: .constant(true),
     fileEditMode: .constant(.xcodeExtension),
-    launchHostAppWhenXcodeDidActivate: .constant(true))
+    launchHostAppWhenXcodeDidActivate: .constant(true),
+    queueMessagesWhileStreaming: .constant(true))
     .frame(width: 400, height: 600)
     .padding()
 }
@@ -20,7 +21,8 @@ import SwiftUI
     allowAnonymousAnalytics: .constant(false),
     automaticallyCheckForUpdates: .constant(false),
     fileEditMode: .constant(.directIO),
-    launchHostAppWhenXcodeDidActivate: .constant(false))
+    launchHostAppWhenXcodeDidActivate: .constant(false),
+    queueMessagesWhileStreaming: .constant(false))
     .frame(width: 400, height: 600)
     .padding()
 }

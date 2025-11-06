@@ -22,6 +22,7 @@ extension ChatThreadViewModel {
       events: persistentModel.events.map { .init(from: $0) },
       projectInfo: persistentModel.projectInfo,
       knownFilesContent: persistentModel.knownFilesContent,
+      inputModel: persistentModel.input,
       createdAt: persistentModel.createdAt)
   }
 
@@ -33,6 +34,7 @@ extension ChatThreadViewModel {
       events: events.map(\.persistentModel),
       projectInfo: projectInfo,
       knownFilesContent: context.knownFilesContent,
+      input: ChatInputModel(queuedMessages: input.queuedMessages),
       createdAt: createdAt)
   }
 

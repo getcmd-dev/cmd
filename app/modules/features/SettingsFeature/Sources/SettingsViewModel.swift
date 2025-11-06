@@ -215,6 +215,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var queueMessagesWhileStreaming: Bool {
+    get {
+      settings.queueMessagesWhileStreaming
+    }
+    set {
+      settings.queueMessagesWhileStreaming = newValue
+      settingsService.update(setting: \.queueMessagesWhileStreaming, to: newValue)
+    }
+  }
+
   var chatModeConfigurations: [String: SettingsServiceInterface.Settings.ChatModeConfiguration] {
     get {
       settings.chatModeConfigurations

@@ -367,6 +367,7 @@ struct MockChatHistoryServiceTests {
       events: [],
       projectInfo: nil,
       knownFilesContent: [:],
+      input: ChatInputModel(queuedMessages: []),
       createdAt: createdAt)
   }
 
