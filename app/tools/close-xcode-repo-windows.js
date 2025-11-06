@@ -78,7 +78,15 @@ wins.forEach((w) => {
 		}
 	})();
 
-	const path = fileA ? String(fileA) : null;
+	// Convert alias object to POSIX path
+	const path = (() => {
+		if (!fileA) return null;
+		try {
+			return ObjC.unwrap(fileA.url().path);
+		} catch (e) {
+			return null;
+		}
+	})();
 	const underRepo = isRepoWindowPath(path, repoCanonLower);
 	const isContainer = isPrimaryContainer(path);
 
