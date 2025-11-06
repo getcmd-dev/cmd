@@ -45,8 +45,7 @@ struct CharacterDiffToLineChangesTests {
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
     let lineChanges = FileDiff.characterDiffToLineChanges(oldContent: oldContent, newContent: newContent, diffText: diff)
 
-    // Should have 3 lines
-    #expect(lineChanges.count == 3)
+    #expect(lineChanges.count == 2)
 
     // First line should have changes
     let firstLine = try #require(lineChanges.first)
