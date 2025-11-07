@@ -48,6 +48,7 @@ struct InternalXcodeWorkspaceState: Sendable, Equatable {
 // MARK: - InternalXcodeEditorState
 
 struct InternalXcodeEditorState: Sendable, Equatable {
+  let axElement: AnyAXUIElement
   let fileName: String
   let id: String
   let content: String
@@ -100,6 +101,7 @@ extension InternalXcodeWorkspaceState.Tab {
 extension InternalXcodeEditorState {
   func normalized(focusedEditorId: String?) -> XcodeEditorState {
     XcodeEditorState(
+      axElement: axElement,
       fileName: fileName,
       isFocused: id == focusedEditorId,
       content: content,

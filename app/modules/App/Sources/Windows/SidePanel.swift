@@ -137,10 +137,10 @@ final class SidePanel: XcodeWindow {
     // Ensures Xcode has focus.
     if
       let xcodeApp = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last,
-      let trackedWindow = trackedWindow?.wrappedValue,
       isTrackedWindowOnScreen
     {
-      WindowActivation.activateAppAndMakeWindowFront(xcodeApp, window: trackedWindow)
+      trackedWindow?.raise()
+      WindowActivation.activateApp(xcodeApp.processIdentifier)
     }
 
     // Expand Xcode to re-take the space we might have used for the side panel when showing it.

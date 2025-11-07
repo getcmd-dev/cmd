@@ -60,7 +60,7 @@ public final class GithubCopilotServer: Sendable {
   let setInitializedTransport: @Sendable (Result<StdioConnection, Error>) -> Void
 
   func sendNotification(_ method: String, params: JSON?, initializingTransport: StdioConnection? = nil) async throws {
-    try await run(loggingErrorWith: "Failed to sent JRPC notification to Github LSP Server: \(method)") {
+    try await run(loggingErrorWith: "Failed to send JRPC notification to Github LSP Server: \(method)") {
       let transport = try await {
         if let initializingTransport { return initializingTransport }
         return try await initializedTransport.value
@@ -79,10 +79,20 @@ public final class GithubCopilotServer: Sendable {
     initializingTransport: StdioConnection? = nil)
     async throws -> Response
   {
-    try await run(loggingErrorWith: "Failed to sent JRPC request to Github LSP Server: \(method)") {
+    do {
       let result = try await sendRawRequest(method, params: params, initializingTransport: initializingTransport)
       let resultData = try JSONEncoder().encode(result)
       return try JSONDecoder().decode(Response.self, from: resultData)
+    } catch let error as JRPCResponseError {
+      if error.error.message == "Request was superseded by a new request" {
+        // ignore
+      } else {
+        defaultLogger.error("Failed to send JRPC request to Github LSP Server: \(method)", error)
+      }
+      throw error
+    } catch {
+      defaultLogger.error("Failed to send JRPC request to Github LSP Server: \(method)", error)
+      throw error
     }
   }
 
@@ -327,7 +337,7 @@ public final class GithubCopilotServer: Sendable {
       // Server is asking for watched files
       var files = workspace.files
       // Respond with the first 100 files, and send the rest with notifications.
-      var chunk = files.removeFirst(n: 100)
+      let chunk = files.removeFirst(n: 100)
       let params = DidChangeWatchedFilesNotificationParameters(
         workspaceUri: workspace.url.absoluteString,
         changes: chunk.map { .init(uri: $0.absoluteString, type: .created) })

@@ -223,8 +223,7 @@ public class ChatViewModel {
       if !handled {
         // Add log for debugging.
         if
-          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
-            .debugDescription
+          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.debugDescription
         {
           defaultLogger.log(axInfo as String)
         }

@@ -102,13 +102,22 @@ public struct XcodeWorkspaceState: Sendable, Equatable {
 // MARK: - XcodeEditorState
 
 public struct XcodeEditorState: Sendable, Equatable {
+  public let axElement: AnyAXUIElement
   public let fileName: String
   public let isFocused: Bool
   public let content: String
   public let selections: [CursorRange]
   public let compilerMessages: [String]
 
-  public init(fileName: String, isFocused: Bool, content: String, selections: [CursorRange], compilerMessages: [String]) {
+  public init(
+    axElement: AnyAXUIElement,
+    fileName: String,
+    isFocused: Bool,
+    content: String,
+    selections: [CursorRange],
+    compilerMessages: [String])
+  {
+    self.axElement = axElement
     self.fileName = fileName
     self.isFocused = isFocused
     self.content = content

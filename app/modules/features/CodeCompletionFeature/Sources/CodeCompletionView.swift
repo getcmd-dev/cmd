@@ -13,6 +13,8 @@ struct CodeCompletionView: View {
     Group {
       if let completion = viewModel.completion {
         CompletionDiffView(completion: completion)
+          .padding(.top, viewModel.verticalContentOffset)
+          .padding(.leading, viewModel.horizontalContentOffset)
       } else {
         // Empty state with minimal size
         Color.clear.frame(width: 1, height: 1)

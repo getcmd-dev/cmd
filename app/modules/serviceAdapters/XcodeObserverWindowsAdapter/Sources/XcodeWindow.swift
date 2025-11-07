@@ -67,6 +67,11 @@ open class XcodeWindow: NSWindow {
     super.deminiaturize(sender)
   }
 
+  // MARK: - Dependencies
+
+  @Dependency(\.xcodeObserver) public var xcodeObserver
+  @Dependency(\.appsActivationState) public var appsActivationStatePublisher
+
   /// Whether the window will automatically position itself in relationship to Xcode.
   /// If false, the window's position will be managed by the user who can drag it.
   public var isPositionAutomaticallyManaged = true {
@@ -128,11 +133,6 @@ open class XcodeWindow: NSWindow {
     /// Delay before reactivating window
     static let reactivationDelay: TimeInterval = 0.1
   }
-
-  // MARK: - Dependencies
-
-  @Dependency(\.xcodeObserver) private var xcodeObserver
-  @Dependency(\.appsActivationState) private var appsActivationStatePublisher
 
   // MARK: - Private Properties
 

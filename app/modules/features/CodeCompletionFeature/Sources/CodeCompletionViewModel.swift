@@ -49,7 +49,12 @@ final class CodeCompletionViewModel {
 
   private(set) var isEnabled: Bool
 
+  var verticalContentOffset: CGFloat = 0
+  var horizontalContentOffset: CGFloat = 0
+
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion?
+
+  private(set) var completionTask: CompletionTask?
 
   @ObservationIgnored private var appActivationState: AppsActivationState?
 
@@ -62,8 +67,6 @@ final class CodeCompletionViewModel {
   private var tabKeyMonitor: Any?
 
   private var editorState: EditorState?
-
-  private var completionTask: CompletionTask?
 
   private func enable() {
     isEnabled = true
@@ -119,7 +122,10 @@ final class CodeCompletionViewModel {
       }
       completion = nil
       let cancellable = AnyCancellable { task.cancel() }
-      completionTask = CompletionTask(task: task, id: taskId) { cancellable.cancel() }
+      completionTask = CompletionTask(
+        task: task,
+        id: taskId,
+        request: .init(content: content, selection: selection)) { cancellable.cancel() }
     }
   }
 
@@ -232,8 +238,14 @@ private struct EditorState: Sendable, Equatable {
 
 // MARK: - CompletionTask
 
-private struct CompletionTask {
+struct CompletionTask {
   let task: Task<Void, Error>
   let id: UUID
+  let request: CompletionRequest
   let cleanup: () -> Void
+
+  struct CompletionRequest {
+    let content: String
+    let selection: CursorRange
+  }
 }

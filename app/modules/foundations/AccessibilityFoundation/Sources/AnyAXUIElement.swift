@@ -16,6 +16,7 @@ public final class AnyAXUIElement: Equatable, Sendable {
     cgFrame: @Sendable @escaping () -> CGRect?,
     pid: @Sendable @escaping () -> pid_t,
     setAppKitframe: @Sendable @escaping (CGRect) -> Void,
+    debugDescription _: CFString?,
     id: String)
   {
     _raise = raise
@@ -61,6 +62,10 @@ public final class AnyAXUIElement: Equatable, Sendable {
 
   public var pid: pid_t? {
     _pid()
+  }
+
+  public var debugDescription: CFString? {
+    wrappedValue?.debugDescription
   }
 
   public static func ==(lhs: AnyAXUIElement, rhs: AnyAXUIElement) -> Bool {
