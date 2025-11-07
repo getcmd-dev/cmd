@@ -18,8 +18,24 @@ public final class MockXcodeController: XcodeController {
 
   public var onExecuteExtensionCommand: (@Sendable (String) async throws -> Void)?
 
+  public var onGetFormattingMetadata: (@Sendable () async throws -> FileFormattingMetadata)?
+
+  public var onReloadExtension: (@Sendable () async throws -> Void)?
+
   public func executeExtensionCommand(_ commandName: String) async throws {
     try await onExecuteExtensionCommand?(commandName)
+  }
+
+  public func getFormattingMetadata() async throws -> FileFormattingMetadata {
+    if let onGetFormattingMetadata {
+      try await onGetFormattingMetadata()
+    } else {
+      FileFormattingMetadata(tabSize: 2, indentSize: 2, usesTabsForIndentation: false, uti: nil)
+    }
+  }
+
+  public func reloadExtension() async throws {
+    try await onReloadExtension?()
   }
 
   public func apply(fileChange: FileChange) async throws {

@@ -6,6 +6,7 @@ import CodeCompletionFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import SharedValuesFoundation
 import ThreadSafe
 
 #if DEBUG
@@ -42,7 +43,8 @@ public final class MockGithubCopilotService: GithubCopilotService {
     content: String,
     version: Int,
     selection: Range,
-    pasteboardContent: String?)
+    pasteboardContent: String?,
+    formattingMetadata: FileFormattingMetadata?)
     async throws -> CompletionSuggestion?
   {
     try await codeCompletionProvider.suggestCompletion(
@@ -51,7 +53,8 @@ public final class MockGithubCopilotService: GithubCopilotService {
       content: content,
       version: version,
       selection: selection,
-      pasteboardContent: pasteboardContent)
+      pasteboardContent: pasteboardContent,
+      formattingMetadata: formattingMetadata)
   }
 
   public subscript<T>(dynamicMember keyPath: WritableKeyPath<MockCodeCompletionProvider, T>) -> T {

@@ -29,8 +29,10 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     if let appEvent = appEvent as? ExecuteExtensionRequestEvent {
       do {
         switch appEvent.command {
-        case ExtensionCommandKeys.executeUserDefinedXcodeShortcut:
-          let input = try JSONDecoder().decode(ExtensionRequest<UserDefinedXcodeShortcutExecutionInput>.self, from: appEvent.data)
+        case ExtensionCommandNames.executeUserDefinedShortcut:
+          let input = try JSONDecoder().decode(
+            UserDefinedShortcutRequest<UserDefinedXcodeShortcutExecutionInput>.self,
+            from: appEvent.data)
             .input
 
           defaultLogger.log("Executing user defined Xcode shortcut: \(input.shortcutId)")

@@ -11,6 +11,7 @@ Target.module(
     "JSONFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ShellServiceInterface",
     "ThreadSafe",
   ],

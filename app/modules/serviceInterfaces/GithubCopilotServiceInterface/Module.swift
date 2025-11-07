@@ -6,5 +6,6 @@ Target.module(
     "CodeCompletionFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "SharedValuesFoundation",
     "ThreadSafe",
   ])

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SharedValuesFoundation
 
 // MARK: - CodeCompletionProvider
 
@@ -14,13 +15,15 @@ public protocol CodeCompletionProvider: Sendable {
   /// - content: The full content of the file.
   /// - version: An increasing number representing the version of the file.
   /// - selection: The text selected by the user. Its start and end are equal when there is no selection but a simple cursor location.
+  /// - formattingMetadata: Optional formatting metadata (tab size, indent size, etc.) for the file.
   func suggestCompletion(
     workspace: URL,
     file: URL,
     content: String,
     version: Int,
     selection: Range,
-    pasteboardContent: String?)
+    pasteboardContent: String?,
+    formattingMetadata: FileFormattingMetadata?)
     async throws -> CompletionSuggestion?
   /// A unique identifier for the provider.
   /// It should remain stable across app updates.

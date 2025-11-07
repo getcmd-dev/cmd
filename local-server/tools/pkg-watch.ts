@@ -84,7 +84,7 @@ chokidar
 			}
 
 			// Catch most of ignored files
-			const ignoredPatterns = ["**/.build/**", "**/Package.swift", "**/Module.swift", "**/*.generated.*.swift"]
+			const ignoredPatterns = ["**/.build/**", "**/Package.swift", "**/Module.swift", "**/*.generated.swift"]
 			for (const pattern of ignoredPatterns) {
 				const regex = globRegex(pattern)
 				if (regex.test(filePath)) {

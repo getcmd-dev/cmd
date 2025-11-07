@@ -15,7 +15,7 @@ extension Schema {
     public let enableReasoning: Bool
     public let provider: APIProvider
     public let threadId: String?
-
+  
     private enum CodingKeys: String, CodingKey {
       case messages = "messages"
       case system = "system"
@@ -26,7 +26,7 @@ extension Schema {
       case provider = "provider"
       case threadId = "threadId"
     }
-
+  
     public init(
         messages: [Message],
         system: String? = nil,
@@ -46,7 +46,7 @@ extension Schema {
       self.provider = provider
       self.threadId = threadId
     }
-
+  
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       messages = try container.decode([Message].self, forKey: .messages)
@@ -58,7 +58,7 @@ extension Schema {
       provider = try container.decode(APIProvider.self, forKey: .provider)
       threadId = try container.decodeIfPresent(String?.self, forKey: .threadId)
     }
-
+  
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(messages, forKey: .messages)

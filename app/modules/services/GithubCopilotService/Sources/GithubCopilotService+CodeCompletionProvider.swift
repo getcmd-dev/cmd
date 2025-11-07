@@ -5,6 +5,7 @@ import AppFoundation
 import CodeCompletionFoundation
 import Foundation
 import LoggingServiceInterface
+import SharedValuesFoundation
 
 extension DefaultGithubCopilotService {
   var id: String {
@@ -17,17 +18,22 @@ extension DefaultGithubCopilotService {
     content _: String,
     version: Int,
     selection: CodeCompletionFoundation.Range,
-    pasteboardContent _: String?)
+    pasteboardContent _: String?,
+    formattingMetadata: FileFormattingMetadata?)
     async throws -> CompletionSuggestion?
   {
+    // Use formatting metadata from Xcode if available, otherwise use defaults
+    let tabSize = formattingMetadata?.tabSize ?? 2
+    let insertSpaces = formattingMetadata.map { !$0.usesTabsForIndentation } ?? true
+
     guard
       let completion = try await lspServer(for: workspace)?
         .getCompletions(
           uri: file.absoluteString,
           version: version,
           position: .init(line: selection.start.line, character: selection.start.character),
-          tabSize: 2, // TODO
-          insertSpaces: true).items.first
+          tabSize: tabSize,
+          insertSpaces: insertSpaces).items.first
     else {
       return nil
     }
@@ -51,9 +57,12 @@ extension DefaultGithubCopilotService {
 
   func didOpen(workspace: URL, file: URL, content: String, version: Int) {
     Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
+      // Determine language ID from file extension
+      let languageId = LanguageIdentifier.languageId(from: file)
+
       try await self.lspServer(for: workspace)?.didOpenTextDocument(
         uri: file.absoluteString,
-        languageId: "swift", // TODO
+        languageId: languageId,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
         version: version,
         text: content)

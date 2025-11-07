@@ -641,6 +641,7 @@ targets.append(
     name: "CodeCompletionFoundation",
     dependencies: [
       "AppFoundation",
+      "SharedValuesFoundation",
       "ThreadSafe",
     ],
     path: "./foundations/CodeCompletionFoundation"))
@@ -659,8 +660,11 @@ targets.append(
       "FileDiffFoundation",
       "FoundationInterfaces",
       "LoggingServiceInterface",
+      "PermissionsServiceInterface",
       "SettingsServiceInterface",
+      "SharedValuesFoundation",
       "ShellServiceInterface",
+      "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
     ],
     testsDependencies: [
@@ -672,10 +676,12 @@ targets.append(
       "ConcurrencyFoundation",
       "FileDiffFoundation",
       "FoundationInterfaces",
+      "PermissionsServiceInterface",
       "SettingsServiceInterface",
       "ShellServiceInterface",
       "SwiftTesting",
       "ThreadSafe",
+      "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
     ],
     path: "./services/CodeCompletionService"))
@@ -992,6 +998,7 @@ targets.append(
       "JSONFoundation",
       "LoggingServiceInterface",
       "SettingsServiceInterface",
+      "SharedValuesFoundation",
       "ShellServiceInterface",
       "ThreadSafe",
     ],
@@ -1022,6 +1029,7 @@ targets.append(
       "CodeCompletionFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
+      "SharedValuesFoundation",
       "ThreadSafe",
     ],
     path: "./serviceInterfaces/GithubCopilotServiceInterface"))
@@ -1559,6 +1567,7 @@ targets.append(
     name: "SharedValuesFoundation",
     dependencies: [
       "FileDiffFoundation",
+      "FileDiffTypesFoundation",
     ],
     path: "./foundations/SharedValuesFoundation"))
 
@@ -1737,6 +1746,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "SharedValuesFoundation",
       "ThreadSafe",
     ],
     path: "./serviceInterfaces/XcodeControllerServiceInterface"))

@@ -4,6 +4,7 @@
 import AppFoundation
 @preconcurrency import Combine
 import Foundation
+import SharedValuesFoundation
 import ThreadSafe
 
 #if DEBUG
@@ -26,7 +27,8 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
 
   public var onSetUp: @Sendable (Workspace) -> Void
   public var onClose: @Sendable (URL) -> Void
-  public var onSuggestCompletion: (@Sendable (URL, URL, String, Int, Range, String?) async throws -> CompletionSuggestion?)?
+  public var onSuggestCompletion: (@Sendable (URL, URL, String, Int, Range, String?, FileFormattingMetadata?) async throws
+    -> CompletionSuggestion?)?
   public var onDidSave: @Sendable (URL, URL, String, Int) -> Void
   public var onDidOpen: @Sendable (URL, URL, String, Int) -> Void
   public var onDidChange: @Sendable (URL, URL, String, Int) -> Void
@@ -47,13 +49,14 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
     content: String,
     version: Int,
     selection: Range,
-    pasteboardContent: String?)
+    pasteboardContent: String?,
+    formattingMetadata: FileFormattingMetadata?)
     async throws -> CompletionSuggestion?
   {
     guard let onSuggestCompletion else {
       throw AppError("No completion provided")
     }
-    return try await onSuggestCompletion(workspace, file, content, version, selection, pasteboardContent)
+    return try await onSuggestCompletion(workspace, file, content, version, selection, pasteboardContent, formattingMetadata)
   }
 
   public func didSave(workspace: URL, file: URL, content: String, version: Int) {

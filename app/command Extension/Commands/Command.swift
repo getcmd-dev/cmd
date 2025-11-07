@@ -17,7 +17,9 @@ class CommandType: NSObject, XCSourceEditorCommand, @unchecked Sendable {
   var name: String { fatalError(".name needs to be implemented in the subclass") }
 
   /// How long to wait before timing out the command.
-  var timeoutAfter: TimeInterval { 1 }
+  /// - Parameter invocation: The command invocation containing buffer and context
+  /// - Returns: The timeout interval in seconds
+  func timeout(_: XCSourceEditorCommandInvocation) -> TimeInterval { 1 }
 
   func handle(_: XCSourceEditorCommandInvocation) async throws {
     fatalError(".execute(with:)  needs to be implemented in the subclass")
@@ -31,6 +33,7 @@ extension CommandType {
   @objc
   func perform(with invocation: XCSourceEditorCommandInvocation, completionHandler: @escaping (Error?) -> Void) {
     let completionHandler = UncheckedSendable(completionHandler)
+    let timeout = timeout(invocation)
     let invocation = UncheckedSendable(invocation)
 
     let hasResponded = Atomic(false)
@@ -53,7 +56,7 @@ extension CommandType {
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + timeoutAfter) { [weak self] in
+    DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { [weak self] in
       guard self != nil else { return }
 
       let hasAlreadyResponded = hasResponded.mutate { value in
