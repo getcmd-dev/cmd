@@ -65,21 +65,21 @@ sync_dependencies_command() {
 		./tools/dependencies/sync.sh "$@"
 }
 
-close_repo_workspaces() {
-	if ! pgrep -x "Xcode" >/dev/null; then
-		return 0
+close_xcode() {
+	if pgrep -x "Xcode" >/dev/null; then
+		# Kill Xcode
+		pkill -x "Xcode"
+		# Wait for Xcode to close
+		while pgrep -x "Xcode" >/dev/null; do
+			sleep 0.01
+		done
 	fi
-
-	local repo_path="$(git rev-parse --show-toplevel)"
-	local script_path="$repo_path/app/tools/close-xcode-repo-windows.js"
-
-	REPO="$repo_path" "$script_path"
 }
 
 focus_dependency_command() {
 	cd "$(git rev-parse --show-toplevel)/app"
 	if [ "$SKIP_CLOSE_XCODE" != "true" ]; then
-		close_repo_workspaces
+		close_xcode
 	fi
 	# Reset xcode state
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
@@ -141,7 +141,7 @@ clean_command() {
 	# Signal to the file watcher that is should not regenerate files.
 	touch "$(git rev-parse --show-toplevel)/.build/disable-watcher"
 
-	close_repo_workspaces
+	close_xcode
 
 	cd "$(git rev-parse --show-toplevel)/app/modules"
 
@@ -239,13 +239,7 @@ open:app)
 		cd "$(git rev-parse --show-toplevel)/app" &&
 		xcode_path=$(xcode-select -p) &&
 		xcode_path="${xcode_path%%.app*}.app" &&
-		{
-			if ! open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES 2>&1; then
-				echo "⚠️  First attempt failed, retrying..."
-				sleep 1
-				open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES
-			fi
-		}
+		open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES
 	;;
 build:release)
 	# build the app for release.
