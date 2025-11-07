@@ -96,23 +96,29 @@ final class DefaultLocalServer: LocalServer {
     request.httpBody = data
     configure(&request)
 
+    defaultLogger.log("postRequest starting for path: \(path), streaming: \(onReceiveJSONData != nil)")
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
+    defaultLogger.log("postRequest completed successfully for path: \(path), received \(data.count) bytes total")
     return data
   }
 
   func handle(task: URLSessionTask, didCompleteWithError error: Error?) {
     guard let handler = inLock({ $0.inflightTasks.removeValue(forKey: task) }) else {
+      defaultLogger.log("Task \(task.taskIdentifier) completed but no handler found (already removed)")
       return
     }
     let response = task.response
     Task { @MainActor in
       if let error {
-        defaultLogger.error("Task completed with error", error)
+        defaultLogger.error("Task \(task.taskIdentifier) completed with error, resuming continuation with error", error)
         handler.continuation.resume(throwing: error)
       } else if let response {
+        defaultLogger
+          .log("Task \(task.taskIdentifier) completed successfully with \(handler.totalData.count) bytes, resuming continuation")
         handler.continuation.resume(returning: (handler.totalData, response))
       } else {
+        defaultLogger.error("Task \(task.taskIdentifier) completed without response, resuming with error")
         assertionFailure("Task completed without response")
         handler.continuation.resume(throwing: URLError(.badServerResponse))
       }
@@ -427,12 +433,15 @@ private final class LocalServerDelegate: NSObject, URLSessionDataDelegate, @unch
   weak var owner: DefaultLocalServer?
 
   func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    defaultLogger.trace("URLSession delegate didReceive \(data.count) bytes for task \(dataTask.taskIdentifier)")
     Task {
       owner?.handle(dataTask: dataTask, didReceive: data)
     }
   }
 
   func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    defaultLogger
+      .log("URLSession delegate didCompleteWithError called for task \(task.taskIdentifier), error: \(String(describing: error))")
     Task {
       owner?.handle(task: task, didCompleteWithError: error)
     }

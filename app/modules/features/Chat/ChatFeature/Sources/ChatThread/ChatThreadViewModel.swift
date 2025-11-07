@@ -376,7 +376,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       // Retain self while streaming to prevent deallocation when switching tabs
       chatService.keepAlive(self, for: id)
 
+      defaultLogger.log("ChatThreadViewModel awaiting streaming task completion")
       try await task.value
+      defaultLogger.log("ChatThreadViewModel streaming task completed, setting streamingTask to nil")
       streamingTask = nil
 
       // Save the conversation after successful completion
