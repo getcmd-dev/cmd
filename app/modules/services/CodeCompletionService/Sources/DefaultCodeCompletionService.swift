@@ -13,8 +13,11 @@ import DependencyFoundation
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
+import PermissionsServiceInterface
 import SettingsServiceInterface
+import SharedValuesFoundation
 import ShellServiceInterface
+import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 
 // MARK: - CodeCompletionIsolation
@@ -38,7 +41,9 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     codeCompletionProviders: [any CodeCompletionProvider],
     settingsService: SettingsService,
     fileManager: FileManagerI,
-    shellService: ShellService)
+    shellService: ShellService,
+    xcodeController: XcodeController,
+    permissionsService: PermissionsService)
   {
     self.xcodeObserver = xcodeObserver
     self.getPasteboardContent = getPasteboardContent
@@ -46,6 +51,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     self.settingsService = settingsService
     self.fileManager = fileManager
     self.shellService = shellService
+    self.xcodeController = xcodeController
+    self.permissionsService = permissionsService
 
     // Subscribe to state changes from XcodeObserver
     let cancellable = xcodeObserver.statePublisher.sink { @Sendable newState in
@@ -60,6 +67,13 @@ final class DefaultCodeCompletionService: CodeCompletionService {
 
   /// Track recent edits per workspace (workspace URL -> tracker)
   var recentEditsTrackers = [URL: RecentEditsTracker]()
+
+  /// Cache formatting metadata per workspace
+  var formattingMetadataCache = [URL: FileFormattingMetadata]()
+
+  nonisolated var isAvailable: Bool {
+    permissionsService.status(for: .xcodeExtension).currentValue == true
+  }
 
   var configuredProvider: (any CodeCompletionProvider)? {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
@@ -78,9 +92,13 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     timeout _: TimeInterval)
     async throws -> CodeCompletionServiceInterface.CompletionSuggestion?
   {
+    guard isAvailable else {
+      return nil
+    }
     guard let provider = configuredProvider else {
       throw AppError("No code completion provider configured")
     }
+
     if let fileState = openFiles[workspace]?[file], fileState.content == content {
       // Nothing
     } else {
@@ -93,13 +111,17 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       }
     }
 
+    // Get formatting metadata for the workspace
+    let formattingMetadata = await getFormattingMetadata(for: workspace)
+
     let providerSuggestion = try await provider.suggestCompletion(
       workspace: workspace,
       file: file,
       content: content,
       version: openFiles[workspace]?[file]?.version ?? 0,
       selection: selection,
-      pasteboardContent: getPasteboardContent())
+      pasteboardContent: getPasteboardContent(),
+      formattingMetadata: formattingMetadata)
     return providerSuggestion?.applied(to: content, file: file, selection: selection)
   }
 
@@ -215,6 +237,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   private let settingsService: SettingsService
   private let fileManager: FileManagerI
   private let shellService: ShellService
+  private let xcodeController: XcodeController
+  private let permissionsService: PermissionsService
   private var cancellables = Set<AnyCancellable>()
 
   /// Track file watchers for each workspace
@@ -378,6 +402,26 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     }
   }
 
+  /// Get or fetch formatting metadata for a workspace
+  /// Metadata is cached per workspace and fetched from the currently focused file in Xcode
+  private func getFormattingMetadata(for workspace: URL) async -> FileFormattingMetadata? {
+    // Check cache first (cached by workspace)
+    if let cached = formattingMetadataCache[workspace] {
+      return cached
+    }
+
+    // Fetch from Xcode extension for the currently focused file
+    do {
+      let metadata = try await xcodeController.getFormattingMetadata()
+      // Cache by workspace
+      formattingMetadataCache[workspace] = metadata
+      return metadata
+    } catch {
+      defaultLogger.error("Failed to get formatting metadata for workspace \(workspace.path)", error)
+      return nil
+    }
+  }
+
 }
 
 extension CursorRange {
@@ -393,7 +437,9 @@ extension BaseProviding where
   Self: CodeCompletionProvidersPluginProviding,
   Self: SettingsServiceProviding,
   Self: FileManagerProviding,
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: XcodeControllerProviding,
+  Self: PermissionsServiceProviding
 {
   public var codeCompletionService: CodeCompletionService {
     shared {
@@ -403,7 +449,9 @@ extension BaseProviding where
         codeCompletionProviders: codeCompletionProviders,
         settingsService: settingsService,
         fileManager: fileManager,
-        shellService: shellService)
+        shellService: shellService,
+        xcodeController: xcodeController,
+        permissionsService: permissionsService)
     }
   }
 }

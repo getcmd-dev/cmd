@@ -60,7 +60,9 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
     userDefinedShortcutName ?? defaultName
   }
 
-  override var timeoutAfter: TimeInterval { 10 }
+  override func timeout(_: XCSourceEditorCommandInvocation) -> TimeInterval {
+    10 // User-defined shortcuts can take longer
+  }
 
   override func handle(_: XCSourceEditorCommandInvocation) async throws {
     guard let command = shellCommand else {
@@ -68,8 +70,8 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
       return
     }
 
-    let response: EmptyResponse = try await LocalServer().send(
-      command: ExtensionCommandKeys.executeUserDefinedXcodeShortcut,
+    let response: EmptyResponse = try await LocalServer().sendUserDefinedShortcut(
+      command: ExtensionCommandNames.executeUserDefinedShortcut,
       input: UserDefinedXcodeShortcutExecutionInput(
         shortcutId: shortcutId,
         shellCommand: command))

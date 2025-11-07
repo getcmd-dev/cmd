@@ -12,8 +12,13 @@ public final class MockCodeCompletionService: CodeCompletionService {
 
   public init() { }
 
+  public var onIsAvailable: (@Sendable () -> Bool) = { true }
   public var onSuggestCompletion: (@Sendable (URL, URL, String, Range, TimeInterval) async throws -> CompletionSuggestion?)?
   public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
+
+  public var isAvailable: Bool {
+    onIsAvailable()
+  }
 
   public func suggestCompletion(
     workspace: URL,

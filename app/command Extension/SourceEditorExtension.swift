@@ -18,10 +18,9 @@ final class SourceEditorExtension: NSObject, XCSourceEditorExtension {
     // Configure and add user defined Xcode shortcut commands based on settings
     var commands = getUserDefinedXcodeShortcutCommands()
 
-    // Base commands
+    // Base commands - unified command handles all operations
     commands.append(contentsOf: [
-      ApplyEditCommand(),
-      ReloadSettingsCommand(),
+      CmdCommand(),
     ])
 
     return commands.map { $0.makeCommandDefinition(identifierPrefix: bundleIdentifier) }
