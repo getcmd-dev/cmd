@@ -52,6 +52,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     events: [ChatEvent]? = nil,
     projectInfo: SelectedProjectInfo? = nil,
     knownFilesContent: [String: String] = [:],
+    inputModel: ChatInputModel? = nil,
     createdAt: Date = Date())
   {
     @Dependency(\.toolsPlugin) var toolsPlugin
@@ -86,7 +87,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     @Dependency(\.chatHistoryService) var chatHistoryService
     self.chatHistoryService = chatHistoryService
 
-    input = ChatInputViewModel()
+    input = ChatInputViewModel(queuedMessages: inputModel?.queuedMessages ?? [])
     input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
@@ -384,6 +385,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       // Release the strong reference and buffer for reuse after streaming and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
 
+      // Process next queued message if available
+      input.processNextQueuedMessage()
+
       if let usageInfo = usageInfo.value {
         do {
           try await handle(usageInfo: usageInfo, model: selectedModel)
@@ -413,6 +417,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
+
+      // Process next queued message if available (even after error)
+      input.processNextQueuedMessage()
     }
   }
 

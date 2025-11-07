@@ -66,7 +66,8 @@ public struct Settings: Sendable, Equatable {
     defaultLogLevel: LogLevel = .info,
     codeCompletionProviderId: String? = nil,
     enableCodeCompletion: Bool = false,
-    codeCompletionDebounceMs: Int = 250)
+    codeCompletionDebounceMs: Int = 250,
+    queueMessagesWhileStreaming: Bool = true)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -87,6 +88,7 @@ public struct Settings: Sendable, Equatable {
     self.codeCompletionProviderId = codeCompletionProviderId
     self.enableCodeCompletion = enableCodeCompletion
     self.codeCompletionDebounceMs = codeCompletionDebounceMs
+    self.queueMessagesWhileStreaming = queueMessagesWhileStreaming
   }
 
   public struct AIProviderSettings: Sendable, Codable, Equatable {
@@ -189,6 +191,7 @@ public struct Settings: Sendable, Equatable {
   public var codeCompletionProviderId: String?
   public var enableCodeCompletion: Bool
   public var codeCompletionDebounceMs: Int
+  public var queueMessagesWhileStreaming: Bool
 
   public var defaultLogLevel: LogLevel
 

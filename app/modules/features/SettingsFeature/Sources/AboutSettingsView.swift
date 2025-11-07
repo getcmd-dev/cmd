@@ -16,6 +16,7 @@ struct AboutSettingsView: View {
   @Binding var automaticallyCheckForUpdates: Bool
   @Binding var fileEditMode: FileEditMode
   @Binding var launchHostAppWhenXcodeDidActivate: Bool
+  @Binding var queueMessagesWhileStreaming: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -154,6 +155,34 @@ struct AboutSettingsView: View {
                 fileEditMode = mode
               }
             }
+          }
+        }
+        .padding(16)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+      }
+
+      // Message Queue Section
+      VStack(alignment: .leading, spacing: 16) {
+        Text("Chat Behavior")
+          .font(.headline)
+
+        VStack(alignment: .leading, spacing: 12) {
+          HStack {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Queue messages while streaming")
+                .fontWeight(.medium)
+              Text(
+                "When enabled, new messages sent while the assistant is responding will be queued instead of cancelling the current response")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            Spacer()
+            Toggle("", isOn: $queueMessagesWhileStreaming)
+              .toggleStyle(.switch)
           }
         }
         .padding(16)

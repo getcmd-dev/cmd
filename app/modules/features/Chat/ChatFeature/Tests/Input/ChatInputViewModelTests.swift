@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatHistoryServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -17,6 +18,9 @@ import XcodeObserverServiceInterface
 
 // MARK: - ChatInputViewModelTests
 
+@Suite(.dependencies {
+  $0.settingsService = MockSettingsService.allConfigured
+})
 struct ChatInputViewModelTests {
 
   @MainActor
@@ -24,15 +28,10 @@ struct ChatInputViewModelTests {
   func test_initialization_withSelectedModelInAvailableModels() {
     let selectedModel = AIModel.gpt
     let activeModels: [AIModel] = [.claudeSonnet, .gpt]
-    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = withDependencies {
-      $0.settingsService = mockSettingsService
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: selectedModel,
-        activeModels: activeModels)
-    }
+    let viewModel = ChatInputViewModel(
+      selectedModel: selectedModel,
+      activeModels: activeModels)
 
     #expect(viewModel.selectedModel == selectedModel)
     #expect(viewModel.activeModels == activeModels)
@@ -43,15 +42,10 @@ struct ChatInputViewModelTests {
   func test_initialization_withSelectedModelNotInAvailableModels() {
     let selectedModel = AIModel.claudeOpus
     let activeModels: [AIModel] = [.claudeSonnet, .gpt]
-    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = withDependencies {
-      $0.settingsService = mockSettingsService
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: selectedModel,
-        activeModels: activeModels)
-    }
+    let viewModel = ChatInputViewModel(
+      selectedModel: selectedModel,
+      activeModels: activeModels)
 
     #expect(viewModel.selectedModel == activeModels.first)
     #expect(viewModel.activeModels == activeModels)
@@ -61,15 +55,10 @@ struct ChatInputViewModelTests {
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
     let activeModels: [AIModel] = [.claudeSonnet, .gpt]
-    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = withDependencies {
-      $0.settingsService = mockSettingsService
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: nil,
-        activeModels: activeModels)
-    }
+    let viewModel = ChatInputViewModel(
+      selectedModel: nil,
+      activeModels: activeModels)
 
     #expect(viewModel.selectedModel == activeModels.first)
     #expect(viewModel.activeModels == activeModels)
@@ -78,15 +67,9 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with empty available models results in nil selected model")
   func test_initialization_withEmptyAvailableModels() {
-    let mockSettingsService = MockSettingsService.allConfigured
-
-    let viewModel = withDependencies {
-      $0.settingsService = mockSettingsService
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: nil,
-        activeModels: [])
-    }
+    let viewModel = ChatInputViewModel(
+      selectedModel: nil,
+      activeModels: [])
 
     #expect(viewModel.selectedModel == nil)
   }
@@ -238,6 +221,223 @@ struct ChatInputViewModelTests {
     #expect(sut.activeModels.isEmpty)
     #expect(sut.selectedModel == nil)
     _ = cancellables
+  }
+
+  // MARK: - Queue Tests
+
+  @MainActor
+  @Test("queueCurrentMessage adds message to queue and clears input")
+  func test_queueCurrentMessage() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    // Set up input
+    viewModel.textInput = TextInput(NSAttributedString(string: "Test message"))
+
+    // Queue the message
+    viewModel.queueCurrentMessage()
+
+    // Verify message was queued
+    #expect(viewModel.queuedMessages.count == 1)
+    #expect(viewModel.queuedMessages.first?.text == "Test message")
+
+    // Verify input was cleared
+    #expect(viewModel.textInput.string.string.isEmpty)
+    #expect(viewModel.attachments.isEmpty)
+  }
+
+  @MainActor
+  @Test("sendQueuedMessageNow cancels current stream then sends message")
+  func test_sendQueuedMessageNow_cancelsThenSends() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    var callOrder = [String]()
+
+    // Set up callbacks to track order
+    viewModel.didCancelMessage = {
+      callOrder.append("cancel")
+    }
+    viewModel.didTapSendMessage = {
+      callOrder.append("send")
+    }
+
+    // Add a message to queue
+    let message = QueuedMessageModel(
+      id: UUID(),
+      text: "Queued message",
+      attachments: [],
+      createdAt: Date())
+    viewModel.queuedMessages = [message]
+
+    // Send the queued message now
+    viewModel.sendQueuedMessageNow(message)
+
+    // Verify cancel was called before send
+    #expect(callOrder == ["cancel", "send"])
+
+    // Verify message was removed from queue
+    #expect(viewModel.queuedMessages.isEmpty)
+
+    // Verify message was set as current input
+    #expect(viewModel.textInput.string.string == "Queued message")
+  }
+
+  @MainActor
+  @Test("deleteQueuedMessage removes message from queue")
+  func test_deleteQueuedMessage() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    // Add messages to queue
+    let message1 = QueuedMessageModel(id: UUID(), text: "First", attachments: [], createdAt: Date())
+    let message2 = QueuedMessageModel(id: UUID(), text: "Second", attachments: [], createdAt: Date())
+
+    viewModel.queuedMessages = [message1, message2]
+
+    // Delete first message
+    viewModel.deleteQueuedMessage(message1.id)
+
+    // Verify message was removed
+    #expect(viewModel.queuedMessages.count == 1)
+    #expect(viewModel.queuedMessages.first?.id == message2.id)
+  }
+
+  @MainActor
+  @Test("processNextQueuedMessage sends first message in queue")
+  func test_processNextQueuedMessage() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    var sendCalled = false
+    viewModel.didTapSendMessage = {
+      sendCalled = true
+    }
+
+    // Add a message to queue
+    let message = QueuedMessageModel(id: UUID(), text: "Queued message", attachments: [], createdAt: Date())
+    viewModel.queuedMessages = [message]
+
+    // Process next message
+    viewModel.processNextQueuedMessage()
+
+    // Verify send was called
+    #expect(sendCalled)
+
+    // Verify message was removed from queue
+    #expect(viewModel.queuedMessages.isEmpty)
+
+    // Verify message was set as current input
+    #expect(viewModel.textInput.string.string == "Queued message")
+  }
+
+  @MainActor
+  @Test("sendQueuedMessageNow only sends selected message and keeps other queued messages")
+  func test_sendQueuedMessageNow_onlySendsSelectedMessage() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    var sendCount = 0
+    viewModel.didTapSendMessage = {
+      sendCount += 1
+    }
+    viewModel.didCancelMessage = { }
+
+    // Add multiple messages to queue
+    let message1 = QueuedMessageModel(id: UUID(), text: "First", attachments: [], createdAt: Date())
+    let message2 = QueuedMessageModel(id: UUID(), text: "Second", attachments: [], createdAt: Date())
+    let message3 = QueuedMessageModel(id: UUID(), text: "Third", attachments: [], createdAt: Date())
+
+    viewModel.queuedMessages = [message1, message2, message3]
+
+    // Send the second message now
+    viewModel.sendQueuedMessageNow(message2)
+
+    // Verify only one send was called
+    #expect(sendCount == 1)
+
+    // Verify selected message was sent
+    #expect(viewModel.textInput.string.string == "Second")
+
+    // Verify other messages remain in queue
+    #expect(viewModel.queuedMessages.count == 2)
+    #expect(viewModel.queuedMessages.contains(where: { $0.id == message1.id }))
+    #expect(viewModel.queuedMessages.contains(where: { $0.id == message3.id }))
+    #expect(!viewModel.queuedMessages.contains(where: { $0.id == message2.id }))
+  }
+
+  @MainActor
+  @Test("mergeQueuedMessagesToInput combines current input with queued messages")
+  func test_mergeQueuedMessagesToInput() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    // Set current input
+    viewModel.textInput = TextInput(NSAttributedString(string: "Current input"))
+
+    // Add attachment to current input
+    let currentAttachment = AttachmentModel.file(.init(
+      id: UUID(),
+      path: URL(filePath: "/path/to/current"),
+      content: "current content"))
+    viewModel.attachments = [currentAttachment]
+
+    // Add queued messages with attachments
+    let attachment1 = AttachmentModel.file(.init(
+      id: UUID(),
+      path: URL(filePath: "/path/to/file1"),
+      content: "file1 content"))
+    let attachment2 = AttachmentModel.file(.init(
+      id: UUID(),
+      path: URL(filePath: "/path/to/file2"),
+      content: "file2 content"))
+
+    let message1 = QueuedMessageModel(
+      id: UUID(),
+      text: "First queued",
+      attachments: [attachment1],
+      createdAt: Date())
+    let message2 = QueuedMessageModel(
+      id: UUID(),
+      text: "Second queued",
+      attachments: [attachment2],
+      createdAt: Date())
+
+    viewModel.queuedMessages = [message1, message2]
+
+    // Merge queued messages to input
+    viewModel.mergeQueuedMessagesToInput()
+
+    // Verify text was combined with correct order: queued messages first, then current input
+    let expectedText = "First queued\n\nSecond queued\n\nCurrent input"
+    #expect(viewModel.textInput.string.string == expectedText)
+
+    // Verify attachments were merged with correct order: queued attachments first, then current
+    #expect(viewModel.attachments.count == 3)
+    if case .file(let fileModel) = viewModel.attachments[0] {
+      #expect(fileModel.path.path() == "/path/to/file1")
+    } else {
+      Issue.record("Expected first attachment to be from first queued message")
+    }
+    if case .file(let fileModel) = viewModel.attachments[1] {
+      #expect(fileModel.path.path() == "/path/to/file2")
+    } else {
+      Issue.record("Expected second attachment to be from second queued message")
+    }
+    if case .file(let fileModel) = viewModel.attachments[2] {
+      #expect(fileModel.path.path() == "/path/to/current")
+    } else {
+      Issue.record("Expected third attachment to be from current input")
+    }
+
+    // Verify queue was cleared
+    #expect(viewModel.queuedMessages.isEmpty)
   }
 }
 

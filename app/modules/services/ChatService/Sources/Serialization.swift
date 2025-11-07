@@ -13,6 +13,16 @@ import ToolFoundation
 extension ChatThreadModel: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
+    // For backward compatibility, try to decode old queuedMessages field first
+    let input: ChatInputModel =
+      if let decodedInput = try? container.decodeIfPresent(ChatInputModel.self, forKey: .input) {
+        decodedInput
+      } else if let queuedMessages = try? container.decodeIfPresent([QueuedMessageModel].self, forKey: .queuedMessages) {
+        ChatInputModel(queuedMessages: queuedMessages)
+      } else {
+        ChatInputModel(queuedMessages: [])
+      }
+
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
       name: container.decode(String.self, forKey: .name),
@@ -20,6 +30,7 @@ extension ChatThreadModel: Codable {
       events: container.decode([ChatEventModel].self, forKey: .events),
       projectInfo: container.decodeIfPresent(ChatThreadModel.SelectedProjectInfo.self, forKey: .projectInfo),
       knownFilesContent: container.decodeIfPresent([String: String].self, forKey: .knownFilesContent) ?? [:],
+      input: input,
       createdAt: container.decode(Date.self, forKey: .createdAt))
   }
 
@@ -31,11 +42,31 @@ extension ChatThreadModel: Codable {
     try container.encode(events, forKey: .events)
     try container.encodeIfPresent(projectInfo, forKey: .projectInfo)
     try container.encode(knownFilesContent, forKey: .knownFilesContent)
+    try container.encode(input, forKey: .input)
     try container.encode(createdAt, forKey: .createdAt)
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, name, messages, events, projectInfo, knownFilesContent, createdAt
+    case id, name, messages, events, projectInfo, knownFilesContent, input, queuedMessages, createdAt
+  }
+}
+
+// MARK: - ChatInputModel + Codable
+
+extension ChatInputModel: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      queuedMessages: container.decodeIfPresent([QueuedMessageModel].self, forKey: .queuedMessages) ?? [])
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(queuedMessages, forKey: .queuedMessages)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case queuedMessages
   }
 }
 
@@ -585,5 +616,30 @@ extension AttachmentModel.BuildErrorModel: Codable {
 
   enum CodingKeys: String, CodingKey {
     case id, message, filePath, line, column
+  }
+}
+
+// MARK: - QueuedMessageModel + Codable
+
+extension QueuedMessageModel: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      id: container.decode(UUID.self, forKey: .id),
+      text: container.decode(String.self, forKey: .text),
+      attachments: container.decode([AttachmentModel].self, forKey: .attachments),
+      createdAt: container.decode(Date.self, forKey: .createdAt))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(id, forKey: .id)
+    try container.encode(text, forKey: .text)
+    try container.encode(attachments, forKey: .attachments)
+    try container.encode(createdAt, forKey: .createdAt)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case id, text, attachments, createdAt
   }
 }

@@ -73,7 +73,7 @@ final class ChatInputViewModel {
   }
   #endif
 
-  convenience init() {
+  convenience init(queuedMessages: [QueuedMessageModel] = []) {
     @Dependency(\.userDefaults) var userDefaults
     @Dependency(\.llmService) var llmService
     let selectedModel: AIModel? =
@@ -95,7 +95,8 @@ final class ChatInputViewModel {
       selectedModel: selectedModel,
       activeModels: nil, // Pass nil here to signal that the value from settings should be observed.
       mode: chatMode,
-      attachments: [])
+      attachments: [],
+      queuedMessages: queuedMessages)
   }
 
   /// - Parameters:
@@ -105,12 +106,14 @@ final class ChatInputViewModel {
     selectedModel: AIModel? = nil,
     activeModels: [AIModel]?,
     mode: ChatMode = .agent,
-    attachments: [AttachmentModel])
+    attachments: [AttachmentModel],
+    queuedMessages: [QueuedMessageModel] = [])
   {
     self.textInput = textInput
     self.selectedModel = selectedModel ?? activeModels?.first
     self.mode = mode
     self.attachments = attachments
+    self.queuedMessages = queuedMessages
 
     if let activeModels {
       self.activeModels = activeModels
@@ -151,6 +154,9 @@ final class ChatInputViewModel {
   var didTapSendMessage: @MainActor () -> Void = { }
 
   var didCancelMessage: @MainActor () -> Void = { }
+
+  /// Messages that have been queued while the assistant is streaming a response.
+  var queuedMessages = [QueuedMessageModel]()
 
   /// The current tool approval request pending user response.
   var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
@@ -305,6 +311,7 @@ final class ChatInputViewModel {
     }
 
     if key == .escape {
+      mergeQueuedMessagesToInput()
       didCancelMessage()
       return true
     }
@@ -418,6 +425,116 @@ final class ChatInputViewModel {
     }
     let pendingToolApproval = toolCallsPendingApproval.remove(at: index)
     pendingToolApproval.continuation.resume(returning: approvalResult)
+  }
+
+  // MARK: - Queue Management
+
+  /// Queue the current message instead of sending it (used when streaming).
+  func queueCurrentMessage() {
+    let messageText = textInput.string.string
+    guard !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+
+    let queuedMessage = QueuedMessageModel(
+      id: UUID(),
+      text: messageText,
+      attachments: attachments,
+      createdAt: Date())
+
+    queuedMessages.append(queuedMessage)
+
+    // Clear input after queuing
+    textInput = TextInput()
+    attachments = []
+  }
+
+  /// Send a queued message immediately (move to front and send).
+  func sendQueuedMessageNow(_ message: QueuedMessageModel) {
+    // Remove from queue
+    queuedMessages.removeAll(where: { $0.id == message.id })
+
+    // Save remaining queued messages to restore after send
+    let remainingMessages = queuedMessages
+
+    // Clear the queue to prevent auto-processing of remaining messages.
+    // This is necessary because didTapSendMessage() will trigger processNextQueuedMessage()
+    // when the stream completes, and we want to restore the queue state first to ensure
+    // only the selected message is sent, not the entire queue.
+    queuedMessages = []
+
+    // Cancel current stream first
+    didCancelMessage()
+
+    // Set as current input
+    textInput = TextInput(NSAttributedString(string: message.text))
+    attachments = message.attachments
+
+    // Restore the remaining queued messages
+    queuedMessages = remainingMessages
+
+    // Send the queued message
+    didTapSendMessage()
+  }
+
+  /// Delete a message from the queue.
+  func deleteQueuedMessage(_ id: UUID) {
+    queuedMessages.removeAll(where: { $0.id == id })
+  }
+
+  /// Clear all queued messages.
+  func clearQueue() {
+    queuedMessages = []
+  }
+
+  /// Process the next queued message (called after current message completes).
+  func processNextQueuedMessage() {
+    guard !queuedMessages.isEmpty else { return }
+    let message = queuedMessages.removeFirst()
+
+    // Set as current input
+    textInput = TextInput(NSAttributedString(string: message.text))
+    attachments = message.attachments
+
+    // Send
+    didTapSendMessage()
+  }
+
+  /// Merge queued messages back to the input (called when user manually cancels stream).
+  func mergeQueuedMessagesToInput() {
+    guard !queuedMessages.isEmpty else { return }
+
+    // Start with queued messages, then add current input
+    var combinedText = ""
+
+    // Add each queued message first
+    for message in queuedMessages {
+      if !combinedText.isEmpty {
+        combinedText += "\n\n"
+      }
+      combinedText += message.text
+    }
+
+    // Add current input at the end
+    let currentText = textInput.string.string
+    if !currentText.isEmpty {
+      if !combinedText.isEmpty {
+        combinedText += "\n\n"
+      }
+      combinedText += currentText
+    }
+
+    // Update the text input with combined text
+    textInput = TextInput(NSAttributedString(string: combinedText))
+
+    // Merge attachments - queued attachments first, then current attachments
+    var combinedAttachments = [AttachmentModel]()
+    for message in queuedMessages {
+      combinedAttachments.append(contentsOf: message.attachments)
+    }
+    combinedAttachments.append(contentsOf: attachments)
+    attachments = combinedAttachments
+
+    // Clear the queue
+    queuedMessages = []
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
@@ -648,6 +765,7 @@ final class ChatInputViewModel {
     }
     selectedModel = activeModels.first
   }
+
 }
 
 // MARK: - TextInput

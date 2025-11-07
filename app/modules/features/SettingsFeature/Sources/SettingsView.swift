@@ -92,7 +92,8 @@ public struct SettingsView: View {
           allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics,
           automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
           fileEditMode: $viewModel.fileEditMode,
-          launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate)
+          launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate,
+          queueMessagesWhileStreaming: $viewModel.queueMessagesWhileStreaming)
       }
     }
     .padding(.horizontal, Constants.horizontalPadding)

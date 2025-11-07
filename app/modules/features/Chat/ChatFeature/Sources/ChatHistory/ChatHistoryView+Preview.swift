@@ -25,6 +25,7 @@ extension ChatThreadModel {
       events: events,
       projectInfo: projectInfo,
       knownFilesContent: [:],
+      input: .init(queuedMessages: []),
       createdAt: createdAt)
   }
 }
