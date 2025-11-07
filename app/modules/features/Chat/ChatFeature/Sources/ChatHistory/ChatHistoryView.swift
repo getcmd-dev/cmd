@@ -13,7 +13,8 @@ struct ChatHistoryView: View {
   @Bindable var viewModel: ChatHistoryViewModel
 
   let onBack: @MainActor () -> Void
-  let onSelectThread: @MainActor (UUID) -> Void
+  let onSelectThread: @MainActor (UUID)
+    async -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -89,7 +90,9 @@ struct ChatHistoryView: View {
   private func threadRow(_ thread: ChatHistoryViewModel.ThreadInfo) -> some View {
     HoveredButton(
       action: {
-        onSelectThread(thread.id)
+        Task {
+          await onSelectThread(thread.id)
+        }
       },
       onHoverColor: colorScheme.secondarySystemBackground)
     {
