@@ -9,10 +9,11 @@ enum LanguageIdentifier {
 
   /// Determine the language ID from a file URL based on file extension.
   /// This matches the approach used in the reference CopilotForXcode implementation.
+  /// Note: Extensions are matched case-sensitively (e.g., "C" for C++ header files)
   /// - Parameter fileURL: The file URL to determine the language ID for
   /// - Returns: The LSP language identifier string
   static func languageId(from fileURL: URL) -> String {
-    let ext = fileURL.pathExtension.lowercased()
+    let ext = fileURL.pathExtension
     switch ext {
     // Swift and Objective-C
     case "swift": return "swift"

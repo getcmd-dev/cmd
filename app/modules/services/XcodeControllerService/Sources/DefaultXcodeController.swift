@@ -197,6 +197,12 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       return request.continuation
     }
 
+    // Handle reloadSettingsResult separately as it has no continuation
+    if case .reloadSettingsResult = result {
+      // Nothing to do, extension will crash and reload
+      return
+    }
+
     guard let continuation else {
       defaultLogger.error("Received extension result but no pending request found")
       return
@@ -219,10 +225,6 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       case .failure(let error):
         cont.resume(throwing: AppError(message: error.message))
       }
-
-    case (_, .reloadSettingsResult):
-      // Nothing to do, extension will crash and reload
-      break
 
     default:
       defaultLogger.error("Mismatched continuation and result types")

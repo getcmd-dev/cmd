@@ -8,6 +8,15 @@ import LoggingServiceInterface
 import SharedUtilsFoundation
 import SharedValuesFoundation
 
+// MARK: - ExecuteCommandWrapper
+
+/// Envelope structure expected by the local server's /execute-command endpoint
+private struct ExecuteCommandWrapper<Input: Encodable>: Encodable {
+  let type: String
+  let command: String
+  let input: Input
+}
+
 // MARK: - LocalServer
 
 /// A class that communicates with the local server running in the host app.
@@ -23,7 +32,12 @@ final class LocalServer {
   ///   - request: The typed extension request to send to the local server.
   /// - Returns: The decoded response from the local server.
   func send<Response: Decodable>(_ request: ExtensionRequest) async throws -> Response {
-    try await sendRaw(request, retryCount: 0)
+    // Wrap the ExtensionRequest in the execute-command envelope expected by the server
+    let envelope = ExecuteCommandWrapper(
+      type: "execute-command",
+      command: ExtensionCommandNames.cmd,
+      input: request)
+    return try await sendRaw(envelope, retryCount: 0)
   }
 
   /// Sends a user-defined shortcut request to the local server.
