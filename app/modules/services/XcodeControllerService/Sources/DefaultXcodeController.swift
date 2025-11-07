@@ -100,16 +100,28 @@ public final class DefaultXcodeController: XcodeController, Sendable {
 
   public func reloadExtension() async throws {
     // Queue the reload settings input (no continuation needed since extension will crash)
+    let requestId = UUID()
     inLock { state in
       let request = QueuedRequest(
-        id: UUID(),
+        id: requestId,
         input: .reloadSettings,
         continuation: nil) // No continuation needed, extension will crash
       state.queuedRequests.append(request)
     }
 
     // Trigger the cmd extension command which will process the reload
-    try await executeExtensionCommand(ExtensionCommandNames.cmd)
+    do {
+      try await executeExtensionCommand(ExtensionCommandNames.cmd)
+    } catch {
+      // Clean up the queued request if the extension command fails
+      inLock { state in
+        if let index = state.queuedRequests.firstIndex(where: { $0.id == requestId }) {
+          state.queuedRequests.remove(at: index)
+        }
+      }
+      defaultLogger.error("Failed to reload extension", error)
+      throw error
+    }
   }
 
   let shellService: ShellService
