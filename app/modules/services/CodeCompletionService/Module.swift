@@ -11,8 +11,11 @@ Target.module(
     "FileDiffFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
+    "PermissionsServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ShellServiceInterface",
+    "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
   testsDependencies: [
@@ -24,9 +27,11 @@ Target.module(
     "ConcurrencyFoundation",
     "FileDiffFoundation",
     "FoundationInterfaces",
+    "PermissionsServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
     "ThreadSafe",
+    "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ])
