@@ -90,6 +90,7 @@ actor RequestStreamingHelper: Sendable {
   /// Handle all the streamed data, updating the `result` stream with the new content.
   ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
   func processStream() async throws -> Schema.ResponseUsage? {
+    defaultLogger.log("RequestStreamingHelper processStream starting")
     do {
       for try await chunk in stream {
         do {
@@ -99,6 +100,7 @@ actor RequestStreamingHelper: Sendable {
           guard !isTaskCancelled() else {
             // This should not be necessary. Cancelling the task should make the post request fail with an error.
             // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
+            defaultLogger.log("RequestStreamingHelper task cancelled, finishing stream")
             finish()
             break
           }
@@ -124,6 +126,7 @@ actor RequestStreamingHelper: Sendable {
           throw error
         }
       }
+      defaultLogger.log("RequestStreamingHelper stream exhausted naturally, finishing")
       try Task.checkCancellation()
       if let err {
         throw err
@@ -134,6 +137,7 @@ actor RequestStreamingHelper: Sendable {
       finish()
       throw err ?? error
     }
+    defaultLogger.log("RequestStreamingHelper processStream completed, returning usage")
     return usage
   }
 
