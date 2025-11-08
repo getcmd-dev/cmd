@@ -98,23 +98,19 @@ public class ChatViewModel {
   private(set) var tabs = [ChatThreadViewModel]()
 
   /// Index of the currently active tab
-  private(set) var currentTabIndex = 0 {
-    didSet {
-      if currentTabIndex >= 0, currentTabIndex < tabs.count {
-        saveTabState()
-      }
-    }
-  }
+  private(set) var currentTabIndex = 0
 
   /// The currently active tab
   var tab: ChatThreadViewModel {
     get {
       guard currentTabIndex >= 0, currentTabIndex < tabs.count else {
+        assertionFailure("currentTabIndex set to \(currentTabIndex) which is out of bound [0-\(tabs.count)[")
         // Fallback: create a default tab if none exists
         let defaultTab = ChatThreadViewModel()
         defaultTab.isFocused = true
         tabs = [defaultTab]
         currentTabIndex = 0
+        saveTabState()
         return defaultTab
       }
       return tabs[currentTabIndex]
@@ -160,7 +156,7 @@ public class ChatViewModel {
     currentTabIndex = tabs.count - 1
     newTab.isFocused = true
     chatService.buffer(newTab, for: newTab.id)
-    saveLastOpenThreadId(newTab.id)
+    saveTabState()
   }
 
   /// Switch to a specific tab by index
@@ -174,6 +170,7 @@ public class ChatViewModel {
     // Focus the newly selected tab (which will clear the badge via didSet)
     tabs[index].isFocused = true
     saveLastOpenThreadId(tab.id)
+    saveTabState()
   }
 
   /// Close a tab at the specified index
