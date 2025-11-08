@@ -57,7 +57,7 @@ public struct ChatView: View {
             viewModel.handleHideChatHistory()
           },
           onSelectThread: { threadId in
-            viewModel.handleSelectChatThread(id: threadId)
+            await viewModel.handleSelectChatThread(id: threadId)
           })
       }
     }

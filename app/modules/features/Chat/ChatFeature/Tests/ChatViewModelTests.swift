@@ -375,7 +375,7 @@ struct ChatViewModelTests {
     }
 
     // when
-    sut.handleSelectChatThread(id: threadId)
+    await sut.handleSelectChatThread(id: threadId)
 
     // then
     // Wait for async operation to complete
@@ -409,7 +409,7 @@ struct ChatViewModelTests {
     })
 
     // when
-    sut.handleSelectChatThread(id: UUID())
+    await sut.handleSelectChatThread(id: UUID())
 
     // then
     try await fulfillment(of: didChangeShowChatHistory)
@@ -449,7 +449,7 @@ struct ChatViewModelTests {
     }
 
     // when
-    sut.handleSelectChatThread(id: UUID())
+    await sut.handleSelectChatThread(id: UUID())
 
     // then
     // Wait for async operation to complete
@@ -533,8 +533,7 @@ struct ChatViewModelTests {
 
     // when
     // Switch to older thread
-    sut.handleSelectChatThread(id: thread1Id)
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: thread1Id)
 
     // then
     #expect(sut.tab.id == thread1Id)
@@ -542,8 +541,7 @@ struct ChatViewModelTests {
 
     // when
     // Switch back to newer thread
-    sut.handleSelectChatThread(id: thread2Id)
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: thread2Id)
 
     // then
     #expect(sut.tab.id == thread2Id)
@@ -593,8 +591,7 @@ struct ChatViewModelTests {
 
     // when
     // Test handleSelectChatThread
-    sut.handleSelectChatThread(id: threadId)
-    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: threadId)
 
     // then
     #expect(loadChatThreadCalled.value == true)
@@ -832,8 +829,7 @@ struct ChatViewModelTests {
 
     // when
     // Switch to thread1
-    sut1.handleSelectChatThread(id: thread1Id)
-    try? await Task.sleep(nanoseconds: 100_000_000) // Allow async operation to complete
+    await sut1.handleSelectChatThread(id: thread1Id)
 
     // then
     #expect(sut1.tab.id == thread1Id)
@@ -964,8 +960,7 @@ struct ChatViewModelTests {
     }
 
     // Load the thread for the first time
-    sut.handleSelectChatThread(id: threadId)
-    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: threadId)
 
     let firstInstance = sut.tab
     #expect(firstInstance.id == threadId)
@@ -975,8 +970,7 @@ struct ChatViewModelTests {
     #expect(sut.tab.id != threadId)
 
     // when - Switch back to the original thread
-    sut.handleSelectChatThread(id: threadId)
-    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: threadId)
 
     // then - Should get the same instance
     let secondInstance = sut.tab
@@ -1037,8 +1031,7 @@ struct ChatViewModelTests {
 
     // Switch away and back
     sut.addTab()
-    sut.handleSelectChatThread(id: threadId)
-    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: threadId)
 
     // then - Should reuse the buffered instance
     let secondInstance = sut.tab
@@ -1069,8 +1062,7 @@ struct ChatViewModelTests {
     }
 
     // when - Load a thread that's not in the ChatService
-    sut.handleSelectChatThread(id: threadId)
-    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+    await sut.handleSelectChatThread(id: threadId)
 
     // then - Should create a new instance and load from database
     #expect(sut.tab.id == threadId)
@@ -1139,17 +1131,17 @@ struct ChatViewModelTests {
     }
 
     // when - Load multiple threads
-    sut.handleSelectChatThread(id: thread1Id)
+    await sut.handleSelectChatThread(id: thread1Id)
     try await fulfillment(of: tab1Set)
 
-    sut.handleSelectChatThread(id: thread2Id)
+    await sut.handleSelectChatThread(id: thread2Id)
     try await fulfillment(of: tab2Set)
 
-    sut.handleSelectChatThread(id: thread3Id)
+    await sut.handleSelectChatThread(id: thread3Id)
     try await fulfillment(of: tab3Set)
 
     // Switch back to thread1
-    sut.handleSelectChatThread(id: thread1Id)
+    await sut.handleSelectChatThread(id: thread1Id)
     try await fulfillment(of: tab1SetAgain)
     // then - All instances should be reused
     #expect(sut.tab === instance1)

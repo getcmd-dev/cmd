@@ -132,10 +132,8 @@ public class ChatViewModel {
     showChatHistory = false
   }
 
-  func handleSelectChatThread(id: UUID) {
-    Task {
-      await selectChatThread(id: id)
-    }
+  func handleSelectChatThread(id: UUID) async {
+    await selectChatThread(id: id)
   }
 
   /// Create a new tab/thread.
