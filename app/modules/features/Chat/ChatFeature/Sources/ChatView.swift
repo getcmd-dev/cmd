@@ -40,6 +40,7 @@ public struct ChatView: View {
     ZStack(alignment: .top) {
       VStack(spacing: 0) {
         quickActionsRow
+        tabBar
         secondaryActionRow
         ChatMessageList(viewModel: viewModel.tab)
           .id("ChatMessageList-\(viewModel.tab.id)")
@@ -61,6 +62,16 @@ public struct ChatView: View {
       }
     }
     .background(colorScheme.primaryBackground)
+    .overlay {
+      // Invisible button to handle cmd+W
+      Button(action: {
+        viewModel.closeCurrentTab()
+      }) {
+        EmptyView()
+      }
+      .keyboardShortcut("w", modifiers: .command)
+      .hidden()
+    }
   }
 
   enum Constants {
@@ -102,16 +113,6 @@ public struct ChatView: View {
 
       IconButton(
         action: {
-          viewModel.addTab()
-        },
-        systemName: "plus",
-        onHoverColor: colorScheme.secondarySystemBackground,
-        padding: 4)
-        .frame(square: Constants.iconSize)
-        .padding(4)
-
-      IconButton(
-        action: {
           router.navigate(to: SettingsRoute())
         },
         systemName: "gearshape",
@@ -120,6 +121,22 @@ public struct ChatView: View {
         .frame(square: Constants.iconSize)
         .padding(4)
     }
+  }
+
+  @ViewBuilder
+  private var tabBar: some View {
+    TabBarView(
+      tabs: viewModel.tabs,
+      currentTabIndex: viewModel.currentTabIndex,
+      onSelectTab: { index in
+        viewModel.selectTab(at: index)
+      },
+      onCloseTab: { index in
+        viewModel.closeTab(at: index)
+      },
+      onAddTab: {
+        viewModel.addTab()
+      })
   }
 
   @ViewBuilder

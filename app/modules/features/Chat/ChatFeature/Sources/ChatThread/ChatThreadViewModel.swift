@@ -118,6 +118,19 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   /// Whether a conversation compaction is in progress
   private(set) var isCompactingConversation = false
 
+  /// Whether this tab has completed streaming while not being focused
+  var hasUnreadCompletion = false
+
+  /// Whether this tab is currently focused/selected
+  var isFocused = false {
+    didSet {
+      // Clear badge when tab becomes focused
+      if isFocused {
+        hasUnreadCompletion = false
+      }
+    }
+  }
+
   private(set) var name: String? {
     didSet {
       if name != oldValue {
@@ -477,7 +490,14 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   private var streamingTask: (task: Task<Void, any Error>, id: UUID)? = nil {
     didSet {
-      isStreamingResponse = streamingTask != nil
+      let wasStreaming = oldValue != nil
+      let isStreaming = streamingTask != nil
+      isStreamingResponse = isStreaming
+
+      // When streaming completes and tab is not focused, set the badge
+      if wasStreaming, !isStreaming, !isFocused {
+        hasUnreadCompletion = true
+      }
     }
   }
 
