@@ -1455,7 +1455,7 @@ struct ChatViewModelTests {
         }
       }
     }
-    sut.handleSelectChatThread(id: threadId)
+    await sut.handleSelectChatThread(id: threadId)
     try await fulfillment(of: exp1)
     _ = cancellable1
 
@@ -1469,7 +1469,7 @@ struct ChatViewModelTests {
 
     // when
     // Select the same thread again
-    sut.handleSelectChatThread(id: threadId)
+    await sut.handleSelectChatThread(id: threadId)
     try await Task.sleep(nanoseconds: 100_000_000)
 
     // then
