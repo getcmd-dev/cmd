@@ -29,6 +29,7 @@ final class CodeCompletionWindow: XcodeWindow {
     styleMask = [.borderless]
     hasShadow = false
     isOpaque = false
+    ignoresMouseEvents = true
 
     collectionBehavior = [
       .fullScreenAuxiliary,
@@ -75,24 +76,45 @@ final class CodeCompletionWindow: XcodeWindow {
   ///
   override var canBecomeKey: Bool { false }
 
-  override var acceptsFirstResponder: Bool { true }
+  override var acceptsFirstResponder: Bool { false }
 
   var defaultWidth: CGFloat { 400 }
 
   override func getFrame() -> CGRect? {
-    guard viewModel.completion != nil, let request = viewModel.completionTask?.request else {
+    guard viewModel.completion != nil, let completionTask = viewModel.completionTask else {
+      completionId = nil
+      completionRange = nil
       return nil
     }
     guard
-      let editor = xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused }),
+      let editor = xcodeObserver.state.focussedEditor,
       let editorFrame = editor.axElement.appKitFrame,
-      let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame,
-      let lineFrame = getCompletedTextFrame()
+      let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame
+    else {
+      if xcodeObserver.state.focussedEditor?.axElement.wrappedValue?.isValid == false {
+        defaultLogger.log("Skipping completion window frame update as focussed editor is invalid")
+      }
+      return nil
+    }
+    if completionTask.id != completionId || completionRange == nil {
+      completionId = completionTask.id
+      // Cache `completionRange` as this requires counting characters throughout the completed file
+      // which is somewhat resource intensive.
+      completionRange = completionTask.request.content.nsRange(of: .init(
+        start: .init(line: completionTask.request.selection.start.line, character: 0), // TODO: undo
+        end: .init(line: completionTask.request.selection.end.line, character: completionTask.request.selection.end.character)))
+    }
+    guard
+      let completionRange,
+      let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame
     else {
       return nil
     }
+    let request = completionTask.request
+    let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
+
     if
-      leadingMargingWidth == nil,
+      leadingMargingWidth == nil || viewModel.lineHeight != lineHeight,
       let range = request.content.nsRange(of:
         .init(
           start: .init(line: request.selection.start.line, character: 0),
@@ -105,95 +127,26 @@ final class CodeCompletionWindow: XcodeWindow {
         leadingMargingWidth = offset
       }
     }
-    let frame = editorFrame.intersection(scrollViewFrame)
+    if
+      viewModel.lineHeight != lineHeight,
+      let (content, size) = request.content.contentToInferFontSize(around: request.selection, in: editor.axElement)
+    {
+      viewModel.lineHeight = size.height
+      viewModel.updateFont(
+        toMatch: size.width,
+        for: content)
+    }
 
-    viewModel.verticalContentOffset = frame.maxY - lineFrame.maxY
+    // Measure line height from selection frame
+    let frame = editorFrame.intersection(scrollViewFrame)
+    viewModel.verticalContentOffset = frame.maxY - completedTextFrame.maxY
     return frame
   }
 
-  ///
-  func getCompletedTextFrame() -> CGRect? {
-    guard let completionTask = viewModel.completionTask, let completion = viewModel.completion else {
-      completionId = nil
-      completionRange = nil
-      return nil
-    }
-    if completionTask.id != completionId || completionRange == nil {
-      completionId = completionTask.id
-      completionRange = completionTask.request.content.nsRange(of: completionTask.request.selection)
-    }
-    guard
-      let completionRange,
-      let editor = xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused }),
-      let selectionFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame
-    else {
-      return nil
-    }
-
-    return selectionFrame
-  }
-
   private let viewModel: CodeCompletionViewModel
-  //
 
   private var hostingView: NSView?
-//  private var sizeObservationTimer: Timer?
-
-//  private var lastWindowFrame: CGRect?
-
-//  private func setupSizeObserver() {
-//    // Use a timer to periodically check and adjust the window size
-//    sizeObservationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-//      Task { @MainActor [weak self] in
-//        self?.updateWindowSize()
-//      }
-//    }
-//  }
-
-//  @MainActor
-//  private func updateWindowSize() {
-//    guard let hostingView else { return }
-//
-//    let fittingSize = hostingView.fittingSize
-//    let currentFrame = frame
-//
-//    // Only update if size changed significantly (avoid tiny adjustments)
-//    if abs(fittingSize.width - currentFrame.width) > 1 || abs(fittingSize.height - currentFrame.height) > 1 {
-//      let newFrame = CGRect(
-//        origin: currentFrame.origin,
-//        size: fittingSize)
-//      setFrame(newFrame, display: true, animate: true)
-//    }
-//  }
-
-//  @MainActor
-//  private func frame(from _: AnyAXUIElement) -> CGRect? {
-//    CGRect(origin: .zero, size: CGSize(width: 300, height: 100))
-//  }
-
 }
 
-///
-extension String {
-  func nsRange(of range: CursorRange) -> NSRange? {
-    var position = 0
-    var length = 0
-    for (idx, line) in split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-      if idx < range.start.line {
-        position += line.count + 1 // +1 for the newline character
-      }
-      if idx == range.start.line {
-        position += range.start.character
-        length -= range.start.character
-      }
-      if idx < range.end.line {
-        length += line.count + 1 // +1 for the newline character
-      }
-      if idx == range.end.line {
-        length += range.end.character
-        return NSRange(location: position, length: length)
-      }
-    }
-    return nil
-  }
-}
+// Repeat below: abcdefghijklmnopqrst
+// abcd

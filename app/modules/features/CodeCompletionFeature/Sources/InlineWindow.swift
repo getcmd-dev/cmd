@@ -24,7 +24,7 @@ final class InlineChatPanel: ExpandableXcodeWindow<ContentView> {
 
   static func selectedLineFrame(xcodeObserver: XcodeObserver) -> CGRect? {
     guard
-      let editor = xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused }),
+      let editor = xcodeObserver.state.focussedEditor,
       let editorFrame = editor.axElement.appKitFrame
     else {
       return nil

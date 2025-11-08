@@ -109,8 +109,23 @@ extension AXState<XcodeState> {
   }
 
   public var focusedWorkspace: XcodeWorkspaceState? {
-    focusedInstance?.workspaces
+    // Why is it not-reordered?
+    focusedInstance?.workspaces.filter(\.isFocused)
+      .first ??
+      focusedInstance?.workspaces
       .first
+  }
+
+  public var focussedEditor: XcodeEditorState? {
+    focusedWorkspace?.focussedEditor
+  }
+}
+
+extension XcodeWorkspaceState {
+
+  public var focussedEditor: XcodeEditorState? {
+    editors.filter(\.isFocused).first ??
+      editors.first
   }
 }
 

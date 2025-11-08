@@ -67,7 +67,7 @@ final class EditorFrameWindow: XcodeWindow {
 
   override func getFrame() -> CGRect? {
     guard
-      let editor = xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused }),
+      let editor = xcodeObserver.state.focussedEditor,
       let editorFrame = editor.axElement.appKitFrame,
       let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame
     else {
@@ -80,11 +80,11 @@ final class EditorFrameWindow: XcodeWindow {
   }
 
 //  override func getUpdatedContentFrame() -> (minX: CGFloat?, maxX: CGFloat?, minY: CGFloat?, maxY: CGFloat?)? {
-//      guard let editor = xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused }),
+//      guard let editor = xcodeObserver.state.focussedEditor,
 //      let frame = editor.axElement.appKitFrame else {
 //          return nil
 //      }
-//      print(xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused })?.axElement.debugDescription)
+//      print(xcodeObserver.state.focussedEditor?.axElement.debugDescription)
 //      return (minX: frame.minX,
 //              maxX: frame.maxX,
 //              minY: frame.minY,

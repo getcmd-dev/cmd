@@ -69,9 +69,9 @@ public final class DefaultXcodeController: XcodeController, Sendable {
 
   /// Apply the file change using the Xcode extension.
   /// If other changes are pending, this will wait for them to complete first.
-  public func apply(fileChange: FileChange) async throws {
+  public func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
     try await tasksQueue.queueAndAwait { [weak self] in
-      try await self?._apply(fileChange: fileChange)
+      try await self?._apply(fileChange: fileChange, editMode: editMode)
     }
   }
 
@@ -154,7 +154,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   }
 
   /// Apply the file change using the method specified in settings.
-  private func _apply(fileChange: FileChange) async throws {
+  private func _apply(fileChange: FileChange, editMode: FileEditMode?) async throws {
     guard fileManager.fileExists(atPath: fileChange.filePath.path) else {
       let data = fileChange.suggestedNewContent.utf8Data
       // TODO: look at making the required modification to the xcode project if necessary.
@@ -162,7 +162,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       return
     }
 
-    let fileEditMode = settingsService.value(for: \.fileEditMode)
+    let fileEditMode = editMode ?? settingsService.value(for: \.fileEditMode)
 
     switch fileEditMode {
     case .xcodeExtension:
@@ -172,7 +172,12 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       } catch {
         let err = error
         defaultLogger.error("Failed to apply code change with Xcode extension, falling back to direct I/O: \(err)")
-        try await applyDirectIO(fileChange: fileChange)
+        if editMode != nil {
+          // When a specific edit mode is set, we respect it.
+          throw error
+        } else {
+          try await applyDirectIO(fileChange: fileChange)
+        }
       }
 
     case .directIO:

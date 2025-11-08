@@ -9,9 +9,13 @@ Target.module(
     "DLS",
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
+    "KeyboardShortcutServiceInterface",
     "LoggingServiceInterface",
     "RoutingFoundation",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
+    "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
     "XcodeObserverWindowsAdapter",
+    "XcodeThemeFoundation",
   ])

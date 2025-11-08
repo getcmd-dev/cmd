@@ -6,9 +6,14 @@ import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import Combine
 import Dependencies
+import KeyboardShortcutServiceInterface
+import LoggingServiceInterface
 import Observation
 import SettingsServiceInterface
+import ShellServiceInterface
+import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
+import XcodeThemeFoundation
 
 // MARK: - CodeCompletionViewModel
 
@@ -19,13 +24,28 @@ final class CodeCompletionViewModel {
     self.settingsService = settingsService
     @Dependency(\.xcodeObserver) var xcodeObserver
     self.xcodeObserver = xcodeObserver
-    @Dependency(\.appsActivationState) var appsActivationState
+    @Dependency(\.xcodeController) var xcodeController
+    self.xcodeController = xcodeController
+//    @Dependency(\.appsActivationState) var appsActivationState
     @Dependency(\.codeCompletionService) var codeCompletionService
     self.codeCompletionService = codeCompletionService
+    @Dependency(\.keyboardShortcutService) var keyboardShortcutService
+    self.keyboardShortcutService = keyboardShortcutService
+    @Dependency(\.shellService) var shellService
+    self.shellService = shellService
+    themeController = XcodeThemeController {
+      try await shellService
+        .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
+    }
 
     isEnabled = settingsService.value(for: \.enableCodeCompletion)
     if isEnabled {
       enable()
+    }
+
+    // Load Xcode theme font name
+    Task {
+      await loadXcodeThemeFont()
     }
 
     settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
@@ -38,34 +58,81 @@ final class CodeCompletionViewModel {
       }
     }.store(in: &cancellables)
 
-    // Observe app activation state to start/stop modifier key monitoring
-    appsActivationState.sink { @Sendable [weak self] state in
-      Task { @MainActor in
-        self?.appActivationState = state
-        self?.handleAppActivationChange(state)
-      }
-    }.store(in: &cancellables)
+//    // Observe app activation state to start/stop modifier key monitoring
+//    appsActivationState.sink { @Sendable [weak self] state in
+//      Task { @MainActor in
+//        self?.appActivationState = state
+//        self?.handleAppActivationChange(state)
+//      }
+//    }.store(in: &cancellables)
   }
 
   private(set) var isEnabled: Bool
 
   var verticalContentOffset: CGFloat = 0
   var horizontalContentOffset: CGFloat = 0
-
-  private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion?
+  var lineHeight: CGFloat?
+  var escapeKeyPressObservation: AnyCancellable?
 
   private(set) var completionTask: CompletionTask?
 
-  @ObservationIgnored private var appActivationState: AppsActivationState?
+  /// Calculate font height from font metrics (ascender + descender)
+  var fontHeight: CGFloat = 12
+  var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+  var fontSize: CGFloat = 12
+
+  private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
+    didSet {
+      if completion == nil {
+//        print("clearing tab listnere")
+//        escapeKeyPressObservation = nil
+      } else {
+        print("adding tab listnere")
+        escapeKeyPressObservation = keyboardShortcutService.registerShortcut(
+          name: "Code completion",
+          .tab,
+          modifiers: [],
+          activationCondition: .xcodeActive)
+        {
+            
+          print("got tab callback")
+          Task { @MainActor [weak self] in
+            self?.handleTabKeyPressed()
+          }
+        }
+      }
+    }
+  }
+
+  /// Calculate line spacing to match Xcode's line height
+  var lineSpacing: CGFloat {
+    guard let lineHeight, lineHeight > 0 else { return 0 }
+    return lineHeight - fontHeight
+  }
+
+  /// Font for code completion (derived from line height)
+  /// Font for code completion (derived from line height)
+  func updateFont(toMatch lineWidth: CGFloat, for content: String) {
+    let fontName = xcodeThemeFontName ?? "SFMono-Regular"
+
+    // Derive font size from line height
+    fontSize = NSFont.size(matching: lineWidth, for: content, using: fontName)
+    font = NSFont.createFont(name: fontName, size: fontSize)
+    fontHeight = font.size(for: content).height
+  }
+
+  /// Font name from Xcode theme
+  private var xcodeThemeFontName: String?
 
   private var cancellables = Set<AnyCancellable>()
   private let settingsService: SettingsService
   private let xcodeObserver: XcodeObserver
+  private let xcodeController: XcodeController
   private let codeCompletionService: CodeCompletionService
+  private let shellService: ShellService
+  private let keyboardShortcutService: KeyboardShortcutService
+  private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
-  private var modifierEventMonitor: Any?
-  private var tabKeyMonitor: Any?
-
   private var editorState: EditorState?
 
   private func enable() {
@@ -81,7 +148,7 @@ final class CodeCompletionViewModel {
     guard
       let workspace = state.focusedWorkspace,
       let focussedFile = await xcodeObserver.focusedTabURL(in: workspace),
-      let editor = workspace.editors.first(where: { $0.isFocused }),
+      let editor = workspace.focussedEditor,
       let tab = workspace.tabs.first(where: { $0.isFocused && $0.fileName == focussedFile.lastPathComponent }),
       let content = tab.lastKnownContent
     else {
@@ -89,6 +156,7 @@ final class CodeCompletionViewModel {
       completion = nil
       return
     }
+
     let selections = editor.selections
     guard selections.count == 1, let selection = selections.first else {
       completionTask = nil
@@ -131,99 +199,66 @@ final class CodeCompletionViewModel {
 
   private func disable() {
     isEnabled = false
-    stopModifierMonitoring()
-  }
-
-  // MARK: - App Activation Monitoring
-
-  private func handleAppActivationChange(_ state: AppsActivationState) {
-    if state.isEitherXcodeOrHostAppActive {
-      startModifierMonitoring()
-    } else {
-      stopModifierMonitoring()
-    }
-  }
-
-  // MARK: - Modifier Key Monitoring
-
-  private func startModifierMonitoring() {
-    guard isEnabled else { return }
-    guard modifierEventMonitor == nil else { return }
-
-    modifierEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-      Task { @MainActor in
-        self?.handleModifierEvent(event)
-      }
-    }
-
-    tabKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-      Task { @MainActor in
-        guard event.keyCode == 48 else { return } // tab
-        guard self?.appActivationState?.isXcodeActive == true else { return }
-        self?.handleTabKeyPressed()
-      }
-    }
-  }
-
-  private func stopModifierMonitoring() {
-    if let monitor = modifierEventMonitor {
-      NSEvent.removeMonitor(monitor)
-      modifierEventMonitor = nil
-    }
-    if let monitor = tabKeyMonitor {
-      NSEvent.removeMonitor(monitor)
-      tabKeyMonitor = nil
-    }
-  }
-
-  private func handleModifierEvent(_ event: NSEvent) {
-    if event.modifierFlags.contains(.command) {
-      expandCodeCompletion()
-    } else {
-      collapseCodeCompletion()
-    }
+    completion = nil
+//    stopModifierMonitoring()
   }
 
   private func handleTabKeyPressed() {
-    guard let completion else { return }
+    guard let completion, let completionTask, let editorState else { return }
 
-    let pasteboard = NSPasteboard.general
-    let previousContent = pasteboard.string(forType: .string)
+    // Convert completion suggestion to FileChange and apply using XcodeController
+    Task {
+      do {
+        // Convert CompletionSuggestion.LineChange to FileChange.LineChange
+        let oldContent = completionTask.request.content
+        let replacementStart = completion.diffLineStart
+        var change = [LineChange]()
+        let oldLines = oldContent.split(separator: "\n", omittingEmptySubsequences: false)
+        let numberOfReplacedLines = completion.diff.filter { $0.changes.contains(where: { $0.type != .added }) }.count
+        guard replacementStart < oldLines.count else {
+          defaultLogger.error("The completion start line \(replacementStart) exceeds the file size (oldLines.count)")
+          self.completion = nil
+          return
+        }
 
-    pasteboard.clearContents()
-    pasteboard.setString(completion.newContent, forType: .string)
+        for i in 0..<replacementStart {
+          change.append(.init(i, 0..<1, oldLines[i] + "\n", .unchanged))
+        }
+        for i in 0..<numberOfReplacedLines {
+          change.append(.init(replacementStart + i, 0..<1, oldLines[replacementStart + i], .removed))
+        }
+        for (i, l) in completion.diff.filter({ $0.changes.contains(where: { $0.type != .removed }) }).enumerated() {
+          let line = l.changes.filter({ $0.type != .removed }).map(\.text).joined()
+          change.append(.init(replacementStart + i, 0..<1, line, .added))
+        }
+        for i in replacementStart + numberOfReplacedLines..<oldLines.count {
+          change.append(.init(i + numberOfReplacedLines - 1, 0..<1, oldLines[i] + "\n", .unchanged))
+        }
 
-    let vKey: CGKeyCode = 9
-    let cmdFlag = CGEventFlags.maskCommand
+        for (i, l) in change.enumerated() {
+          print("L\(i):\(l.type == .added ? "+" : (l.type == .removed ? "-" : " "))\(l.content)")
+        }
 
-    if let keyDownEvent = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: true) {
-      keyDownEvent.flags = cmdFlag
-      keyDownEvent.post(tap: .cghidEventTap)
-    }
+        let fileChange = FileChange(
+          filePath: completion.file,
+          oldContent: editorState.content,
+          suggestedNewContent: completion.newContent,
+          selectedChange: change)
 
-    if let keyUpEvent = CGEvent(keyboardEventSource: nil, virtualKey: vKey, keyDown: false) {
-      keyUpEvent.flags = cmdFlag
-      keyUpEvent.post(tap: .cghidEventTap)
-    }
-
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      if let previousContent {
-        pasteboard.clearContents()
-        pasteboard.setString(previousContent, forType: .string)
+        try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
+        self.completion = nil
+      } catch {
+        defaultLogger.error("Failed to apply code completion", error)
       }
     }
-
-    self.completion = nil
   }
 
-  // MARK: - Code Completion Actions
+  // MARK: - Theme Font Loading
 
-  private func expandCodeCompletion() {
-    // TODO: Implement expansion logic
-  }
-
-  private func collapseCodeCompletion() {
-    // TODO: Implement collapse logic
+  private func loadXcodeThemeFont() async {
+    let font = await themeController.getCurrentThemeFont()
+    xcodeThemeFontName = font.name
+    print("Loaded Xcode theme font: \(font.name) - \(font.size)")
   }
 
 }

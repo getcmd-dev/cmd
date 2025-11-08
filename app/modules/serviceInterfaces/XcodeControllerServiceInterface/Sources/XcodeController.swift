@@ -3,14 +3,16 @@
 
 @_exported import FileDiffTypesFoundation
 import Foundation
+import SettingsServiceInterface
 
 // MARK: - XcodeController
 
 public protocol XcodeController: Sendable {
   /// Apply file changes to a project using Xcode.
   /// - Parameter fileChange: The file change to apply containing the target file and new content
+  /// - Parameter editMode: Optional preferred edit mode that overrides the settings
   /// - Throws: An error if the file change cannot be applied
-  func apply(fileChange: FileChange) async throws
+  func apply(fileChange: FileChange, editMode: FileEditMode?) async throws
 
   /// Build a project in Xcode.
   /// - Parameters:
@@ -33,6 +35,16 @@ public protocol XcodeController: Sendable {
   /// - Parameter commandName: The name of the extension command to execute
   /// - Throws: An error if the command cannot be executed
   func executeExtensionCommand(_ commandName: String) async throws
+}
+
+extension XcodeController {
+
+  /// Apply file changes to a project using Xcode.
+  /// - Parameter fileChange: The file change to apply containing the target file and new content
+  /// - Throws: An error if the file change cannot be applied
+  public func apply(fileChange: FileChange) async throws {
+    try await apply(fileChange: fileChange, editMode: nil)
+  }
 }
 
 // MARK: - XcodeControllerProviding

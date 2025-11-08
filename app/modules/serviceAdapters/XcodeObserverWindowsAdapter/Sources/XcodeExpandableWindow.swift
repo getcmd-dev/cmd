@@ -54,7 +54,7 @@ open class ExpandableXcodeWindow<Content: View>: XcodeWindow {
   }
 
   static func currentEditor(xcodeObserver: XcodeObserver) -> XcodeEditorState? {
-    xcodeObserver.state.focusedWorkspace?.editors.first(where: { $0.isFocused })
+    xcodeObserver.state.focussedEditor
   }
 
   private var containerInfo = AbsolutePositionInfo()
