@@ -10,6 +10,7 @@ import FileDiffTypesFoundation
 import Foundation
 import FoundationInterfaces
 import LoggingServiceInterface
+import SettingsServiceInterface
 import SwiftTesting
 import Testing
 import XcodeControllerServiceInterface
@@ -82,7 +83,7 @@ struct FileDiffViewModelTests {
 
     let applyExpectation = expectation(description: "Changes applied")
     let mockXcodeController = MockXcodeController()
-    mockXcodeController.onApplyFileChange = { change in
+    mockXcodeController.onApplyFileChange = { (change: FileChange, _: FileEditMode?) in
       #expect(change.filePath.path == filePath.path)
       #expect(change.oldContent == "Hello\nWorld")
       #expect(change.suggestedNewContent == "Hi\nWorld")

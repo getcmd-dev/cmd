@@ -334,6 +334,7 @@ private func createXcodeState(workspace: URL, file: String, content: String) -> 
     cgFrame: { nil },
     pid: { 123 },
     setAppKitframe: { _ in },
+    debugDescription: nil,
     id: "mock-element")
 
   return .state(XcodeState(
@@ -349,6 +350,7 @@ private func createXcodeState(workspace: URL, file: String, content: String) -> 
             url: workspace,
             editors: [
               XcodeEditorState(
+                axElement: mockElement,
                 fileName: fileURL.lastPathComponent,
                 isFocused: true,
                 content: content,

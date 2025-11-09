@@ -227,6 +227,7 @@ struct ChatViewModelTests {
             axElement: dummyAXElement,
             url: URL(string: "file:///test/project.xcodeproj")!,
             editors: [XcodeEditorState(
+              axElement: dummyAXElement,
               fileName: filePath.lastPathComponent,
               isFocused: true,
               content: content,
