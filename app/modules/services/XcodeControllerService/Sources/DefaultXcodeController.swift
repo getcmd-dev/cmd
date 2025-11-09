@@ -1,9 +1,13 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// Not handled
+
 import AppEventServiceInterface
 import AppFoundation
 import AppKit
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import ExtensionEventsInterface
@@ -20,14 +24,15 @@ import XcodeObserverServiceInterface
 // MARK: - DefaultXcodeController
 
 @ThreadSafe
-public final class DefaultXcodeController: XcodeController, Sendable {
+final class DefaultXcodeController: XcodeController, Sendable {
 
-  public convenience init(
+  convenience init(
     appEventHandlerRegistry: AppEventHandlerRegistry,
     shellService: ShellService,
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>)
   {
     self.init(
       appEventHandlerRegistry: appEventHandlerRegistry,
@@ -35,22 +40,25 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       xcodeObserver: xcodeObserver,
       settingsService: settingsService,
       fileManager: fileManager,
+      appsActivationState: appsActivationState,
       timeout: ExtensionTimeout.applyFileChangeTimeout,
       canUseAppleScript: true,
       startApplyingFileChangeWithXcodeExtension: { Task { @MainActor in
         try await Self.triggerExtension(
           xcodeObserver: xcodeObserver,
           shellService: shellService,
-          settingsService: settingsService)
+          settingsService: settingsService,
+          appsActivationState: appsActivationState.currentValue)
       }})
   }
 
-  public init(
+  init(
     appEventHandlerRegistry: AppEventHandlerRegistry,
     shellService: ShellService,
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
     fileManager: FileManagerI,
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>,
     timeout: TimeInterval,
     canUseAppleScript: Bool = false,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void)
@@ -60,38 +68,12 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     self.xcodeObserver = xcodeObserver
     self.settingsService = settingsService
     self.fileManager = fileManager
+    self.appsActivationState = appsActivationState
     self.startApplyingFileChangeWithXcodeExtension = startApplyingFileChangeWithXcodeExtension
     self.timeout = timeout
     self.canUseAppleScript = canUseAppleScript
 
     registerAppEventHandler()
-  }
-
-  /// Apply the file change using the Xcode extension.
-  /// If other changes are pending, this will wait for them to complete first.
-  public func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
-    try await tasksQueue.queueAndAwait { [weak self] in
-      try await self?._apply(fileChange: fileChange, editMode: editMode)
-    }
-  }
-
-  /// Open a file in Xcode at the specified line and column.
-  public func open(file: URL, line _: Int?, column _: Int?) async throws {
-    Task {
-      do {
-        try await Self.openFileWithAppleScript(at: file)
-      } catch {
-        defaultLogger.error("Failed to open file with AppleScript", error)
-      }
-    }
-  }
-
-  public func executeExtensionCommand(_ commandName: String) async throws {
-    try await DefaultXcodeController.triggerExtensionCommand(
-      commandName: commandName,
-      xcodeObserver: xcodeObserver,
-      shellService: shellService,
-      settingsService: settingsService)
   }
 
   let shellService: ShellService
@@ -103,6 +85,34 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     fileChange?.id
   }
   #endif
+
+  func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
+    try await tasksQueue.queueAndAwait { [weak self] in
+      try await self?._apply(fileChange: fileChange, editMode: editMode)
+    }
+  }
+
+  /// Open a file in Xcode at the specified line and column.
+  func open(file: URL, line _: Int?, column _: Int?) async throws {
+    Task {
+      do {
+        try await Self.openFileWithAppleScript(at: file)
+      } catch {
+        defaultLogger.error("Failed to open file with AppleScript", error)
+      }
+    }
+  }
+
+  func executeExtensionCommand(_ commandName: String) async throws {
+    try await DefaultXcodeController.triggerExtensionCommand(
+      commandName: commandName,
+      xcodeObserver: xcodeObserver,
+      shellService: shellService,
+      settingsService: settingsService,
+      appsActivationState: appsActivationState.currentValue)
+  }
+
+  private var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>
 
   private let tasksQueue = TaskQueue<Void, any Error>()
   private var fileChange: FileChange?
@@ -267,14 +277,16 @@ extension DefaultXcodeController {
   static func triggerExtension(
     xcodeObserver: XcodeObserver,
     shellService: ShellService,
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    appsActivationState: AppsActivationState?)
     async throws
   {
     try await triggerExtensionCommand(
       commandName: ExtensionCommandNames.applyEdit,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
-      settingsService: settingsService)
+      settingsService: settingsService,
+      appsActivationState: appsActivationState)
   }
 
   @MainActor
@@ -282,17 +294,21 @@ extension DefaultXcodeController {
     commandName: String,
     xcodeObserver: XcodeObserver,
     shellService: ShellService,
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    appsActivationState: AppsActivationState?)
     async throws
   {
+    let needToActivateXcode = appsActivationState?.isXcodeActive != true
+    let isAppActive = NSApplication.shared.isActive
     guard let xcodeApp = await getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
       defaultLogger.error("Could not find running Xcode")
       throw AXError.cannotComplete
     }
-
-    if !xcodeApp.activate() {
-      defaultLogger.error("Xcode not activated.")
-      try? activateXcodeWithAppleScript()
+    if needToActivateXcode {
+      if !xcodeApp.activate() {
+        defaultLogger.error("Xcode not activated.")
+        try? activateXcodeWithAppleScript()
+      }
     }
 
     let appElement = AXUIElementCreateApplication(xcodeApp.processIdentifier)
@@ -329,7 +345,9 @@ extension DefaultXcodeController {
       throw AXError.cannotComplete
     }
 
-    NSApplication.shared.activate()
+    if isAppActive, needToActivateXcode {
+      NSApplication.shared.activate()
+    }
   }
 
   @MainActor
@@ -443,7 +461,8 @@ extension BaseProviding where
   Self: AppEventHandlerRegistryProviding,
   Self: ShellServiceProviding,
   Self: SettingsServiceProviding,
-  Self: FileManagerProviding
+  Self: FileManagerProviding,
+  Self: AppsActivationStateProviding
 {
   public var xcodeController: XcodeController {
     shared {
@@ -452,7 +471,8 @@ extension BaseProviding where
         shellService: shellService,
         xcodeObserver: xcodeObserver,
         settingsService: settingsService,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        appsActivationState: appsActivationState)
     }
   }
 }

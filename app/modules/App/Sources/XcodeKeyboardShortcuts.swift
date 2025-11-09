@@ -19,7 +19,7 @@ import XcodeObserverServiceInterface
 @ThreadSafe
 final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
 
-  init(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
+  init(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
     registerActions()
 
     observeXcodeState(appsActivationState: appsActivationState)
@@ -35,7 +35,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   @Dependency(\.settingsService) private var settingsService
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
-  private func observeXcodeState(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
+  private func observeXcodeState(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
     let cancellable = appsActivationState
       .sink { @Sendable [weak self] appsActivationState in
         guard let self else { return }

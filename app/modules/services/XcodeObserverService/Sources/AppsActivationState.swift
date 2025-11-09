@@ -6,9 +6,9 @@ import DependencyFoundation
 import XcodeObserverServiceInterface
 
 extension BaseProviding where Self: IsHostAppActiveProviding, Self: XcodeObserverProviding {
-  public var appsActivationState: AnyPublisher<AppsActivationState, Never> {
+  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
     shared {
-      xcodeObserver.statePublisher
+      let publisher: AnyPublisher<AppsActivationState, Never> = xcodeObserver.statePublisher
         .compactMap {
           $0.activeInstance != nil
         }
@@ -26,6 +26,8 @@ extension BaseProviding where Self: IsHostAppActiveProviding, Self: XcodeObserve
         }
         .removeDuplicates()
         .eraseToAnyPublisher()
+
+      return .init(.inactive, publisher: publisher)
     }
   }
 }

@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
-import Combine
+import ConcurrencyFoundation
 
 // MARK: - AppsActivationState
 
@@ -38,5 +38,5 @@ extension AppsActivationState {
 // MARK: - AppsActivationStateProviding
 
 public protocol AppsActivationStateProviding {
-  var appsActivationState: AnyPublisher<AppsActivationState, Never> { get }
+  var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> { get }
 }

@@ -57,7 +57,7 @@ extension AppEventHandlerRegistryDependencyKey: DependencyKey {
 // MARK: - AppsActivationStateDependencyKey + DependencyKey
 
 extension AppsActivationStateDependencyKey: DependencyKey {
-  public static var liveValue: AnyPublisher<AppsActivationState, Never> {
+  public static var liveValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
     AppScope.shared.appsActivationState
   }
 }

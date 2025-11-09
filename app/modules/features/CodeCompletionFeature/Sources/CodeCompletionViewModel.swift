@@ -19,14 +19,17 @@ import XcodeThemeFoundation
 
 @Observable @MainActor
 final class CodeCompletionViewModel {
-  init() {
+  init(
+    needsLayout: @escaping @MainActor () -> Void)
+  {
+    self.needsLayout = needsLayout
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
     @Dependency(\.xcodeObserver) var xcodeObserver
     self.xcodeObserver = xcodeObserver
     @Dependency(\.xcodeController) var xcodeController
     self.xcodeController = xcodeController
-//    @Dependency(\.appsActivationState) var appsActivationState
+    @Dependency(\.appsActivationState) var appsActivationState
     @Dependency(\.codeCompletionService) var codeCompletionService
     self.codeCompletionService = codeCompletionService
     @Dependency(\.keyboardShortcutService) var keyboardShortcutService
@@ -48,6 +51,20 @@ final class CodeCompletionViewModel {
       await loadXcodeThemeFont()
     }
 
+    // Initialize Tab key handler
+    tabKeyHandler = TabKeyHandler(
+      acceptSuggestion: { [weak self] in
+        Task { @MainActor in
+          self?.handleTabKeyPressed()
+        }
+      },
+      shouldAccept: { [weak self] in
+        guard let self else { return false }
+        // Check if we have an active completion and Xcode is focused
+        return completion != nil && self.xcodeObserver.state.focusedWorkspace != nil
+      })
+
+    //
     settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
       Task { @MainActor [weak self] in
         if value {
@@ -58,13 +75,17 @@ final class CodeCompletionViewModel {
       }
     }.store(in: &cancellables)
 
-//    // Observe app activation state to start/stop modifier key monitoring
-//    appsActivationState.sink { @Sendable [weak self] state in
-//      Task { @MainActor in
-//        self?.appActivationState = state
-//        self?.handleAppActivationChange(state)
-//      }
-//    }.store(in: &cancellables)
+    // Observe app activation state to start/stop modifier key monitoring
+    appsActivationState.sink { @Sendable state in
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        if state.isXcodeActive, completion != nil {
+          tabKeyHandler?.start()
+        } else {
+          tabKeyHandler?.stop()
+        }
+      }
+    }.store(in: &cancellables)
   }
 
   private(set) var isEnabled: Bool
@@ -72,7 +93,6 @@ final class CodeCompletionViewModel {
   var verticalContentOffset: CGFloat = 0
   var horizontalContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
-  var escapeKeyPressObservation: AnyCancellable?
 
   private(set) var completionTask: CompletionTask?
 
@@ -84,22 +104,10 @@ final class CodeCompletionViewModel {
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
       if completion == nil {
-//        print("clearing tab listnere")
-//        escapeKeyPressObservation = nil
+        tabKeyHandler?.stop()
       } else {
-        print("adding tab listnere")
-        escapeKeyPressObservation = keyboardShortcutService.registerShortcut(
-          name: "Code completion",
-          .tab,
-          modifiers: [],
-          activationCondition: .xcodeActive)
-        {
-            
-          print("got tab callback")
-          Task { @MainActor [weak self] in
-            self?.handleTabKeyPressed()
-          }
-        }
+        needsLayout()
+        tabKeyHandler?.start()
       }
     }
   }
@@ -110,8 +118,7 @@ final class CodeCompletionViewModel {
     return lineHeight - fontHeight
   }
 
-  /// Font for code completion (derived from line height)
-  /// Font for code completion (derived from line height)
+  /// Called when the font size needs to be updated.
   func updateFont(toMatch lineWidth: CGFloat, for content: String) {
     let fontName = xcodeThemeFontName ?? "SFMono-Regular"
 
@@ -121,6 +128,7 @@ final class CodeCompletionViewModel {
     fontHeight = font.size(for: content).height
   }
 
+  private let needsLayout: () -> Void
   /// Font name from Xcode theme
   private var xcodeThemeFontName: String?
 
@@ -134,6 +142,7 @@ final class CodeCompletionViewModel {
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
   private var editorState: EditorState?
+  private var tabKeyHandler: TabKeyHandler?
 
   private func enable() {
     isEnabled = true
@@ -200,7 +209,7 @@ final class CodeCompletionViewModel {
   private func disable() {
     isEnabled = false
     completion = nil
-//    stopModifierMonitoring()
+    tabKeyHandler?.stop()
   }
 
   private func handleTabKeyPressed() {
@@ -234,11 +243,6 @@ final class CodeCompletionViewModel {
         for i in replacementStart + numberOfReplacedLines..<oldLines.count {
           change.append(.init(i + numberOfReplacedLines - 1, 0..<1, oldLines[i] + "\n", .unchanged))
         }
-
-        for (i, l) in change.enumerated() {
-          print("L\(i):\(l.type == .added ? "+" : (l.type == .removed ? "-" : " "))\(l.content)")
-        }
-
         let fileChange = FileChange(
           filePath: completion.file,
           oldContent: editorState.content,
@@ -258,7 +262,6 @@ final class CodeCompletionViewModel {
   private func loadXcodeThemeFont() async {
     let font = await themeController.getCurrentThemeFont()
     xcodeThemeFontName = font.name
-    print("Loaded Xcode theme font: \(font.name) - \(font.size)")
   }
 
 }

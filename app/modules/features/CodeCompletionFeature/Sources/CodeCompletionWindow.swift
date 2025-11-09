@@ -2,11 +2,15 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// Allow the window to appear above Xcode's main window
+
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
+import ConcurrencyFoundation
 import Dependencies
 import DLS
 import FoundationInterfaces
@@ -23,14 +27,21 @@ import XcodeObserverWindowsAdapter
 final class CodeCompletionWindow: XcodeWindow {
 
   init() {
-    viewModel = CodeCompletionViewModel()
+    let needsLayout = Atomic<@Sendable @MainActor () -> Void>({ })
+    viewModel = CodeCompletionViewModel(needsLayout: { needsLayout.value() })
     super.init(contentRect: .zero)
+
+    needsLayout.set(to: { [weak self] in
+      guard let self else { return }
+      show()
+    })
 
     styleMask = [.borderless]
     hasShadow = false
     isOpaque = false
     ignoresMouseEvents = true
 
+    // All
     collectionBehavior = [
       .fullScreenAuxiliary,
       .fullScreenPrimary,

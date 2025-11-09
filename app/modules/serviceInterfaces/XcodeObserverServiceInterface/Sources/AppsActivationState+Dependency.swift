@@ -1,22 +1,25 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-@preconcurrency import Combine
+@_exported import ConcurrencyFoundation
 import Dependencies
 
 // MARK: - AppsActivationStateDependencyKey
 
 public final class AppsActivationStateDependencyKey: TestDependencyKey {
   #if DEBUG
-  public static let testValue: AnyPublisher<AppsActivationState, Never> = AppsActivationState.mockPublisher()
+  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> = AppsActivationState.mockPublisher()
   #else
   /// This is not read outside of DEBUG
-  public static let testValue: AnyPublisher<AppsActivationState, Never> = Just(AppsActivationState.inactive).eraseToAnyPublisher()
+  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> = () as! ReadonlyCurrentValueSubject<
+    AppsActivationState,
+    Never,
+  >
   #endif
 }
 
 extension DependencyValues {
-  public var appsActivationState: AnyPublisher<AppsActivationState, Never> {
+  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
     get { self[AppsActivationStateDependencyKey.self] }
     set { self[AppsActivationStateDependencyKey.self] = newValue }
   }

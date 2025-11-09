@@ -27,7 +27,7 @@ import XcodeObserverServiceInterface
 
 @ThreadSafe
 final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked Sendable {
-  init(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
+  init(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
     observeActivationState(appsActivationState: appsActivationState)
   }
 
@@ -44,7 +44,6 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
     shortcuts[id] = shortcut
 
     KeyboardShortcuts.onKeyUp(for: shortcut) { @Sendable [weak self] in
-        print("onKeyUp: \(shortcut.rawValue)")
       Task {
         guard let self else { return }
         if self.enabledShortcutNames.contains(shortcut.rawValue) {
@@ -115,7 +114,7 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
-  private func observeActivationState(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
+  private func observeActivationState(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
     let cancellable = appsActivationState
       .sink { @Sendable [weak self] appsActivationState in
         guard let self else { return }
@@ -147,7 +146,6 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
     inLock { state in
       for shortcut in shortcuts { state.enabledShortcutNames.insert(shortcut.rawValue) }
     }
-      print("enable \(shortcuts.map(\.rawValue).joined(separator: ", "))")
   }
 
   private func disable(_ shortcuts: [KeyboardShortcuts.Name]) {
@@ -155,7 +153,6 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
     inLock { state in
       for shortcut in shortcuts { state.enabledShortcutNames.remove(shortcut.rawValue) }
     }
-      print("enable \(shortcuts.map(\.rawValue).joined(separator: ", "))")
   }
 
 }

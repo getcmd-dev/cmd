@@ -149,9 +149,6 @@ enum UpdateLocationStrategy {
     firstLineRange.length = 0
     firstLineRange.location -= characterOffset
 
-    #warning(
-      "FIXME: When selection is too low and out of the screen, the selection range becomes something else.")
-
     if
       foundFirstLine,
       let firstLineSelectionRange = AXValueCreate(.cfRange, &firstLineRange),
