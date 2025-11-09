@@ -1,11 +1,13 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import AppKit
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import Combine
 import Dependencies
+import FileDiffFoundation
 import KeyboardShortcutServiceInterface
 import LoggingServiceInterface
 import Observation
@@ -91,7 +93,7 @@ final class CodeCompletionViewModel {
 
   /// The offset between the top of the view and the top of the text being completed.
   var verticalContentOffset: CGFloat = 0
-    /// The offset between the left of the view and the left of the text being completed.
+  /// The offset between the left of the view and the left of the text being completed.
   var horizontalContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
 
@@ -178,6 +180,7 @@ final class CodeCompletionViewModel {
       fileURL: focussedFile,
       content: content,
       selection: selection)
+
     if editorState != self.editorState {
       self.editorState = editorState
       let taskId = UUID()
@@ -203,7 +206,7 @@ final class CodeCompletionViewModel {
       completionTask = CompletionTask(
         task: task,
         id: taskId,
-        request: .init(content: content, selection: selection)) { cancellable.cancel() }
+        request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
     }
   }
 
@@ -220,41 +223,20 @@ final class CodeCompletionViewModel {
     Task {
       do {
         // Convert CompletionSuggestion.LineChange to FileChange.LineChange
-        let oldContent = completionTask.request.content
-        let replacementStart = completion.diffLineStart
-        var change = [LineChange]()
-        let oldLines = oldContent.split(separator: "\n", omittingEmptySubsequences: false)
-        let numberOfReplacedLines = completion.diff.filter { $0.changes.contains(where: { $0.type != .added }) }.count
-        guard replacementStart < oldLines.count else {
-          defaultLogger.error("The completion start line \(replacementStart) exceeds the file size (oldLines.count)")
-          self.completion = nil
-          return
-        }
-
-        for i in 0..<replacementStart {
-          change.append(.init(i, 0..<1, oldLines[i] + "\n", .unchanged))
-        }
-        for i in 0..<numberOfReplacedLines {
-            // Crash, likely when we add a lot of lines at the end of the file
-          change.append(.init(replacementStart + i, 0..<1, oldLines[replacementStart + i], .removed))
-        }
-        for (i, l) in completion.diff.filter({ $0.changes.contains(where: { $0.type != .removed }) }).enumerated() {
-          let line = l.changes.filter({ $0.type != .removed }).map(\.text).joined()
-          change.append(.init(replacementStart + i, 0..<1, line, .added))
-        }
-        for i in replacementStart + numberOfReplacedLines..<oldLines.count {
-          change.append(.init(i + numberOfReplacedLines - 1, 0..<1, oldLines[i] + "\n", .unchanged))
-        }
+        // TODO: look at precomputing to make this step faster.
+        let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
+          .diff
         let fileChange = FileChange(
           filePath: completion.file,
           oldContent: editorState.content,
           suggestedNewContent: completion.newContent,
-          selectedChange: change)
+          selectedChange: lineByLineChange)
 
         try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
         self.completion = nil
       } catch {
         defaultLogger.error("Failed to apply code completion", error)
+        self.completion = nil
       }
     }
   }
@@ -285,6 +267,7 @@ struct CompletionTask {
   let cleanup: () -> Void
 
   struct CompletionRequest {
+    let fileURL: URL
     let content: String
     let selection: CursorRange
   }

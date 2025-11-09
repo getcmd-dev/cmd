@@ -79,13 +79,25 @@ extension FileDiff {
       // Otherwise it's an unchanged character
       let char = content[position]
       if char == "\n" {
-        // Add newline to current group if it exists and is unchanged
-        if let lastChange = currentLineChanges.last, lastChange.type == .unchanged {
+        // If the line contains only added or removed content (no unchanged content),
+        // the newline should be part of that change type, not unchanged
+        let hasOnlyAddedOrRemoved = !currentLineChanges.isEmpty &&
+          currentLineChanges.allSatisfy { $0.type != .unchanged }
+
+        if hasOnlyAddedOrRemoved, let lastChange = currentLineChanges.last {
+          // Append newline to the last change (which is added or removed)
           currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
             text: lastChange.text + String(char),
-            type: .unchanged)
+            type: lastChange.type)
         } else {
-          currentLineChanges.append(CharacterLevelChange(text: String(char), type: .unchanged))
+          // Add newline as unchanged or to existing unchanged group
+          if let lastChange = currentLineChanges.last, lastChange.type == .unchanged {
+            currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
+              text: lastChange.text + String(char),
+              type: .unchanged)
+          } else {
+            currentLineChanges.append(CharacterLevelChange(text: String(char), type: .unchanged))
+          }
         }
         result.append(currentLineChanges)
         currentLineChanges = []
@@ -110,7 +122,6 @@ extension FileDiff {
     // Remove context lines that are unchanged.
     let trimmedResult = Array(result.trimming(while: { $0.allSatisfy({ $0.type == .unchanged }) }))
     firstChangedLine += result.prefix(while: { $0.allSatisfy({ $0.type == .unchanged }) }).count
-    print("firstChangedLine", firstChangedLine)
     return (lineChanges: trimmedResult, firstChangedLine: firstChangedLine)
   }
 

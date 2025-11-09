@@ -12,7 +12,7 @@ struct CodeCompletionView: View {
   @Bindable var viewModel: CodeCompletionViewModel
   var body: some View {
     Group {
-        if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
+      if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
         CompletionDiffView(
           completion: completion,
           font: viewModel.font,
