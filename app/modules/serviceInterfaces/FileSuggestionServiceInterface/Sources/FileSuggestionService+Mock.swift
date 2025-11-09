@@ -14,7 +14,7 @@ public final class MockFileSuggestionService: FileSuggestionService {
     }
   }
 
-  public var onSuggestFiles: @Sendable (String, URL, Int) -> [FileSuggestion] {
+  public var onSuggestFiles: @Sendable (String, URL, Int) async throws -> [FileSuggestion] {
     get { _onSuggestFiles }
     set { _onSuggestFiles = newValue }
   }
@@ -25,11 +25,11 @@ public final class MockFileSuggestionService: FileSuggestionService {
     top: Int = 5)
     async throws -> [FileSuggestion]
   {
-    _onSuggestFiles(query, root, top)
+    try await _onSuggestFiles(query, root, top)
   }
 
   private let suggestions: [FileSuggestion]
 
-  private var _onSuggestFiles: @Sendable (String, URL, Int) -> [FileSuggestion]
+  private var _onSuggestFiles: @Sendable (String, URL, Int) async throws -> [FileSuggestion]
 
 }

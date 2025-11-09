@@ -755,7 +755,26 @@ final class ChatInputViewModel {
     }
     let fileSuggestionService = fileSuggestionService
     searchTasks.queue {
-      try await fileSuggestionService.suggestFiles(for: searchQuery, in: workspaceUrl, top: 50)
+      try await withThrowingTaskGroup(of: [FileSuggestion].self) { group in
+        // Add the file suggestion task
+        group.addTask {
+          try await fileSuggestionService.suggestFiles(for: searchQuery, in: workspaceUrl, top: 50)
+        }
+
+        // Add the timeout task
+        group.addTask {
+          try await Task.sleep(nanoseconds: 500_000_000)
+          throw TimeoutError()
+        }
+
+        // Return the first result and cancel the other task
+        guard let result = try await group.next() else {
+          assertionFailure("Task group should never be empty")
+          throw AppError("File suggestion task group returned no results")
+        }
+        group.cancelAll()
+        return result
+      }
     }
   }
 

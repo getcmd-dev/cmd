@@ -143,5 +143,6 @@ extension RacedContinuation where E == Error {
 // MARK: - TimeoutError
 
 public struct TimeoutError: Error, LocalizedError {
+  public init() { }
   public var errorDescription: String? { "The operation has timed out." }
 }
