@@ -55,17 +55,17 @@ struct DefaultXcodeControllerTests {
     // Verify that the extension was triggered
     try await fulfillment(of: xcodeExtensionTriggered)
 
+    // Simulate the extension requesting queued input
     _ = await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandKeys.getFileChangeToApply,
+      command: ExtensionCommandNames.cmd,
       id: "123",
-      data: Data()) { _ in })
+      data: try! JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
 
+    // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandKeys.confirmFileChangeApplied,
+      command: ExtensionCommandNames.cmd,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest<FileChangeConfirmation>(
-        command: ExtensionCommandKeys.confirmFileChangeApplied,
-        input: .init(id: "123", error: nil)))) { _ in })
+      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 

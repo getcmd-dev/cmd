@@ -5,5 +5,6 @@ Target.module(
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ThreadSafe",
   ])

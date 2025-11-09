@@ -4,6 +4,7 @@
 @_exported import FileDiffTypesFoundation
 import Foundation
 import SettingsServiceInterface
+@_exported import SharedValuesFoundation
 
 // MARK: - XcodeController
 
@@ -35,6 +36,16 @@ public protocol XcodeController: Sendable {
   /// - Parameter commandName: The name of the extension command to execute
   /// - Throws: An error if the command cannot be executed
   func executeExtensionCommand(_ commandName: String) async throws
+
+  /// Get formatting metadata for the currently focused file in Xcode.
+  /// - Returns: The formatting metadata extracted from Xcode's buffer
+  /// - Throws: An error if the metadata cannot be retrieved
+  func getFormattingMetadata() async throws -> FileFormattingMetadata
+
+  /// Reload the Xcode extension to pick up new settings.
+  /// This will cause the extension to crash and restart, loading the updated configuration.
+  /// - Throws: An error if the reload cannot be triggered
+  func reloadExtension() async throws
 }
 
 extension XcodeController {

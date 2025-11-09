@@ -8,6 +8,15 @@ import LoggingServiceInterface
 import SharedUtilsFoundation
 import SharedValuesFoundation
 
+// MARK: - ExecuteCommandWrapper
+
+/// Envelope structure expected by the local server's /execute-command endpoint
+private struct ExecuteCommandWrapper<Input: Encodable>: Encodable {
+  let type: String
+  let command: String
+  let input: Input
+}
+
 // MARK: - LocalServer
 
 /// A class that communicates with the local server running in the host app.
@@ -18,25 +27,41 @@ import SharedValuesFoundation
 /// This is allows to iterate on the Debug app and still have a stable extension to communicate to and is a good workflow unless you are actively developping the extension itself.
 final class LocalServer {
 
-  /// Sends a command to the local server and returns the response.
+  /// Sends a request to the local server and returns the response.
   /// - Parameters:
-  ///   - command: The command to send to the local server.
-  ///   - input: The input to send to the local server.
-  ///   - Returns: The decoded response from the local server.
-  func send<Response: Decodable>(command: String, input: some Codable) async throws -> Response {
-    try await send(command: command, input: input, retryCount: 0)
+  ///   - request: The typed extension request to send to the local server.
+  /// - Returns: The decoded response from the local server.
+  func send<Response: Decodable>(_ request: ExtensionRequest) async throws -> Response {
+    // Wrap the ExtensionRequest in the execute-command envelope expected by the server
+    let envelope = ExecuteCommandWrapper(
+      type: "execute-command",
+      command: ExtensionCommandNames.cmd,
+      input: request)
+    return try await sendRaw(envelope, retryCount: 0)
   }
 
-  /// Sends a command to the local server and returns the response.
+  /// Sends a user-defined shortcut request to the local server.
   /// - Parameters:
-  ///   - command: The command to send to the local server.
-  ///   - input: The input to send to the local server.
+  ///   - command: The command name for the user-defined shortcut
+  ///   - input: The input data for the shortcut
+  /// - Returns: The decoded response from the local server.
+  func sendUserDefinedShortcut<Response: Decodable>(
+    command: String,
+    input: some Codable)
+    async throws -> Response
+  {
+    let request = UserDefinedShortcutRequest(command: command, input: input)
+    return try await sendRaw(request, retryCount: 0)
+  }
+
+  /// Sends a request to the local server and returns the response.
+  /// - Parameters:
+  ///   - request: The request to send to the local server (must be Encodable).
   ///   - retryCount: The number of times we already sent the request.
   ///   - ignoreDebugAppCheck: For Release, whether to communicate with the Release host's app's local server regardless of the setting.
   /// - Returns: The decoded response from the local server.
-  private func send<Response: Decodable>(
-    command: String,
-    input: some Codable,
+  private func sendRaw<Response: Decodable>(
+    _ request: some Encodable,
     retryCount: Int,
     ignoreDebugAppCheck: Bool = false)
     async throws -> Response
@@ -58,20 +83,20 @@ final class LocalServer {
       throw XcodeExtensionError(message: "Failed to run.")
     }
 
-    // Send command to host app.
+    // Send request to host app.
     guard let url = URL(string: "http://localhost:\(port)/execute-command") else {
       defaultLogger.error("Could not create a URL for the local server at port \(port)")
       throw XcodeExtensionError(message: "Failed to run.")
     }
-    defaultLogger.log("Sending command \(command) to local server.")
+    defaultLogger.log("Sending extension request to local server.")
 
     do {
-      let bodyData = try JSONEncoder().encode(ExtensionRequest(command: command, input: input))
-      var request = URLRequest(url: url)
-      request.httpMethod = "POST"
-      request.httpBody = bodyData
-      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      let (data, _) = try await URLSession.shared.data(for: request)
+      let bodyData = try JSONEncoder().encode(request)
+      var urlRequest = URLRequest(url: url)
+      urlRequest.httpMethod = "POST"
+      urlRequest.httpBody = bodyData
+      urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      let (data, _) = try await URLSession.shared.data(for: urlRequest)
       return try JSONDecoder().decode(Response.self, from: data)
     } catch {
       if
@@ -81,14 +106,14 @@ final class LocalServer {
         // We could not connect to the local server.
         if isReleaseExtensionCommunicatingWithDebugAppFromRelease {
           // Most likely the Debug app is not running and we can't reach its server. We don't try to open it and instead retry with the Release app.
-          return try await send(command: command, input: input, retryCount: retryCount, ignoreDebugAppCheck: true)
+          return try await sendRaw(request, retryCount: retryCount, ignoreDebugAppCheck: true)
         } else {
           // If we could not connect to the host app, try to open it and retry once.
           try OpenHostApp.openHostApp { XcodeExtensionError(message: $0) }
-          return try await send(command: command, input: input, retryCount: retryCount + 1)
+          return try await sendRaw(request, retryCount: retryCount + 1)
         }
       }
-      defaultLogger.error("Failed to send command to the local server: \(error)")
+      defaultLogger.error("Failed to send request to the local server: \(error)")
       throw XcodeExtensionError(message: "Failed to run.")
     }
   }

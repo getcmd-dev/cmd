@@ -44,7 +44,9 @@ public class ChatViewModel {
     tab: ChatThreadViewModel,
     currentModel: AIModel)
   {
-    self.tab = tab
+    tab.isFocused = true
+    tabs = [tab]
+    currentTabIndex = 0
     self.currentModel = currentModel
 
     @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
@@ -92,10 +94,33 @@ public class ChatViewModel {
 
   let chatHistory = ChatHistoryViewModel()
 
+  /// All open tabs
+  private(set) var tabs = [ChatThreadViewModel]()
+
+  /// Index of the currently active tab
+  private(set) var currentTabIndex = 0
+
+  /// The currently active tab
   var tab: ChatThreadViewModel {
-    didSet {
-      chatService.buffer(tab, for: tab.id)
-      saveLastOpenThreadId(tab.id)
+    get {
+      guard currentTabIndex >= 0, currentTabIndex < tabs.count else {
+        assertionFailure("currentTabIndex set to \(currentTabIndex) which is out of bound [0-\(tabs.count)[")
+        // Fallback: create a default tab if none exists
+        let defaultTab = ChatThreadViewModel()
+        defaultTab.isFocused = true
+        tabs = [defaultTab]
+        currentTabIndex = 0
+        saveTabState()
+        return defaultTab
+      }
+      return tabs[currentTabIndex]
+    }
+    set {
+      if currentTabIndex >= 0, currentTabIndex < tabs.count {
+        tabs[currentTabIndex] = newValue
+        chatService.buffer(newValue, for: newValue.id)
+        saveLastOpenThreadId(newValue.id)
+      }
     }
   }
 
@@ -107,10 +132,8 @@ public class ChatViewModel {
     showChatHistory = false
   }
 
-  func handleSelectChatThread(id: UUID) {
-    Task {
-      await selectChatThread(id: id)
-    }
+  func handleSelectChatThread(id: UUID) async {
+    await selectChatThread(id: id)
   }
 
   /// Create a new tab/thread.
@@ -118,35 +141,125 @@ public class ChatViewModel {
   func addTab(copyingCurrentInput: Bool = false, threadId: UUID? = nil) {
     let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     let currentTab = tab
-    tab = newTab
     if copyingCurrentInput {
       newTab.input = currentTab.input.copy(
         didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },
         didCancelMessage: { newTab.cancelCurrentMessage() })
     }
+    // Unfocus the previously selected tab
+    if currentTabIndex >= 0, currentTabIndex < tabs.count {
+      tabs[currentTabIndex].isFocused = false
+    }
+    tabs.append(newTab)
+    currentTabIndex = tabs.count - 1
+    newTab.isFocused = true
+    chatService.buffer(newTab, for: newTab.id)
+    saveTabState()
+  }
+
+  /// Switch to a specific tab by index
+  func selectTab(at index: Int) {
+    guard index >= 0, index < tabs.count else { return }
+    // Unfocus the previously selected tab
+    if currentTabIndex >= 0, currentTabIndex < tabs.count {
+      tabs[currentTabIndex].isFocused = false
+    }
+    currentTabIndex = index
+    // Focus the newly selected tab (which will clear the badge via didSet)
+    tabs[index].isFocused = true
+    saveLastOpenThreadId(tab.id)
+    saveTabState()
+  }
+
+  /// Close a tab at the specified index
+  func closeTab(at index: Int) {
+    guard index >= 0, index < tabs.count else { return }
+    guard tabs.count > 1 else {
+      // Don't close the last tab, just create a new one
+      let newTab = ChatThreadViewModel()
+      newTab.isFocused = true
+      tabs[0] = newTab
+      currentTabIndex = 0
+      saveTabState()
+      return
+    }
+
+    tabs.remove(at: index)
+
+    // Adjust currentTabIndex if needed
+    if currentTabIndex >= tabs.count {
+      currentTabIndex = tabs.count - 1
+    } else if currentTabIndex > index {
+      currentTabIndex -= 1
+    }
+
+    // Ensure the new current tab is focused
+    tabs[currentTabIndex].isFocused = true
+
+    saveTabState()
+  }
+
+  /// Close the currently active tab
+  func closeCurrentTab() {
+    closeTab(at: currentTabIndex)
   }
 
   // MARK: - Persistence Methods
 
   func loadPersistedChatThreads() async {
     do {
+      // Try to load all open tabs from UserDefaults
+      if let tabIdsData = userDefaults.array(forKey: Constants.openTabIdsKey) as? [String] {
+        let tabIds = tabIdsData.compactMap { UUID(uuidString: $0) }
+        var loadedTabs = [ChatThreadViewModel]()
+
+        for tabId in tabIds {
+          if let thread = try await chatHistoryService.loadChatThread(id: tabId) {
+            let viewModel = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+            chatService.buffer(viewModel, for: viewModel.id)
+            loadedTabs.append(viewModel)
+          }
+        }
+
+        if !loadedTabs.isEmpty {
+          tabs = loadedTabs
+          // Restore the current tab index
+          let savedIndex = userDefaults.integer(forKey: Constants.currentTabIndexKey)
+          currentTabIndex = min(max(0, savedIndex), tabs.count - 1)
+          // Set focus on the current tab
+          tabs[currentTabIndex].isFocused = true
+          return
+        }
+      }
+
+      // Fallback: load the last open thread (legacy behavior)
       if let id = userDefaults.string(forKey: Constants.lastOpenChatThreadIdKey) {
         if
           let threadId = UUID(uuidString: id),
           let thread = try await chatHistoryService.loadChatThread(id: threadId)
         {
-          tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+          let viewModel = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+          viewModel.isFocused = true
+          chatService.buffer(viewModel, for: viewModel.id)
+          tabs = [viewModel]
+          currentTabIndex = 0
           return
         }
         userDefaults.removeObject(forKey: Constants.lastOpenChatThreadIdKey)
       }
+
+      // Last resort: load the most recent thread
       guard
         let threadId = try await chatHistoryService.loadLastChatThreads(last: 1, offset: 0).first?.id,
         let thread = try await chatHistoryService.loadChatThread(id: threadId)
       else {
         return
       }
-      tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+      let viewModel = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+      viewModel.isFocused = true
+      chatService.buffer(viewModel, for: viewModel.id)
+      tabs = [viewModel]
+      currentTabIndex = 0
     } catch {
       defaultLogger.error("Failed to load chat tabs from database", error)
     }
@@ -154,6 +267,8 @@ public class ChatViewModel {
 
   private enum Constants {
     static let lastOpenChatThreadIdKey = "lastOpenChatThreadId"
+    static let openTabIdsKey = "openChatTabIds"
+    static let currentTabIndexKey = "currentChatTabIndex"
   }
 
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
@@ -162,19 +277,46 @@ public class ChatViewModel {
   private let xcodeObserver: XcodeObserver
   private let fileManager: FileManagerI
 
+  /// Save the current tab state to UserDefaults
+  private func saveTabState() {
+    let tabIds = tabs.map(\.id.uuidString)
+    userDefaults.set(tabIds, forKey: Constants.openTabIdsKey)
+    userDefaults.set(currentTabIndex, forKey: Constants.currentTabIndexKey)
+    if currentTabIndex >= 0, currentTabIndex < tabs.count {
+      saveLastOpenThreadId(tabs[currentTabIndex].id)
+    }
+  }
+
   private func saveLastOpenThreadId(_ threadId: UUID) {
     userDefaults.set(threadId.uuidString, forKey: Constants.lastOpenChatThreadIdKey)
   }
 
   private func selectChatThread(id: UUID) async {
     do {
+      // Check if the thread is already open in a tab
+      if let existingIndex = tabs.firstIndex(where: { $0.id == id }) {
+        selectTab(at: existingIndex)
+        showChatHistory = false
+        return
+      }
+
+      // Load the thread and open it in a new tab
       guard let thread = try await chatHistoryService.loadChatThread(id: id) else {
         defaultLogger.error("Could not find chat thread \(id)")
         showChatHistory = false
         return
       }
 
-      tab = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+      let viewModel = chatService.knownObject(for: thread.id) ?? ChatThreadViewModel(from: thread)
+      // Unfocus the previously selected tab
+      if currentTabIndex >= 0, currentTabIndex < tabs.count {
+        tabs[currentTabIndex].isFocused = false
+      }
+      tabs.append(viewModel)
+      currentTabIndex = tabs.count - 1
+      viewModel.isFocused = true
+      chatService.buffer(viewModel, for: viewModel.id)
+      saveTabState()
       showChatHistory = false
     } catch {
       showChatHistory = false

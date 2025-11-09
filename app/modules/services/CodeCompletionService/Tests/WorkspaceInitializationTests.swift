@@ -8,11 +8,13 @@ import CodeCompletionServiceInterface
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
+import PermissionsServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import SwiftTesting
 import Testing
 import ThreadSafe
+import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 @testable import CodeCompletionService
 
@@ -58,7 +60,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService,
       fileManager: MockFileManager(),
@@ -115,7 +116,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService,
       fileManager: MockFileManager(),
@@ -171,7 +171,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService,
       fileManager: MockFileManager(),
@@ -221,7 +220,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService,
       fileManager: MockFileManager(),
@@ -296,7 +294,6 @@ struct WorkspaceInitializationTests {
 
     let sut = DefaultCodeCompletionService(
       xcodeObserver: mockXcodeObserver,
-      getPasteboardContent: { nil },
       codeCompletionProviders: [mockCodeCompletionProvider],
       settingsService: mockSettingsService,
       fileManager: MockFileManager(),
@@ -386,6 +383,8 @@ extension DefaultCodeCompletionService {
       codeCompletionProviders: codeCompletionProviders,
       settingsService: settingsService,
       fileManager: fileManager,
-      shellService: shellService)
+      shellService: shellService,
+      xcodeController: MockXcodeController(),
+      permissionsService: MockPermissionsService())
   }
 }

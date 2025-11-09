@@ -249,7 +249,7 @@ public final class SettingsViewModel {
       if oldValue != newValue {
         Task {
           do {
-            try await xcodeController.executeExtensionCommand(ExtensionCommandNames.reloadSettings)
+            try await xcodeController.reloadExtension()
             defaultLogger.log("Successfully triggered extension reload after user defined shortcuts change")
           } catch {
             defaultLogger.error("Failed to trigger extension reload: \(error)")

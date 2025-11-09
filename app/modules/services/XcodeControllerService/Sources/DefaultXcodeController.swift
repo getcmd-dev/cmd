@@ -82,10 +82,12 @@ final class DefaultXcodeController: XcodeController, Sendable {
 
   #if DEBUG
   var currentExecutionId: String? {
-    fileChange?.id
+    queuedRequests.first?.id.uuidString
   }
   #endif
 
+  /// Apply the file change using the Xcode extension.
+  /// If other changes are pending, this will wait for them to complete first.
   func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
     try await tasksQueue.queueAndAwait { [weak self] in
       try await self?._apply(fileChange: fileChange, editMode: editMode)
@@ -108,15 +110,56 @@ final class DefaultXcodeController: XcodeController, Sendable {
       commandName: commandName,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
-      settingsService: settingsService,
-      appsActivationState: appsActivationState.currentValue)
+      settingsService: settingsService)
   }
 
-  private var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>
+  func getFormattingMetadata() async throws -> FileFormattingMetadata {
+    try await _getFormattingMetadata()
+  }
+
+  func reloadExtension() async throws {
+    // Queue the reload settings input (no continuation needed since extension will crash)
+    let requestId = UUID()
+    inLock { state in
+      let request = QueuedRequest(
+        id: requestId,
+        input: .reloadSettings,
+        continuation: nil) // No continuation needed, extension will crash
+      state.queuedRequests.append(request)
+    }
+
+    // Trigger the cmd extension command which will process the reload
+    do {
+      try await executeExtensionCommand(ExtensionCommandNames.cmd)
+    } catch {
+      // Clean up the queued request if the extension command fails
+      inLock { state in
+        if let index = state.queuedRequests.firstIndex(where: { $0.id == requestId }) {
+          state.queuedRequests.remove(at: index)
+        }
+      }
+      defaultLogger.error("Failed to reload extension", error)
+      throw error
+    }
+  }
+
+  /// Unified continuation type for all extension operations
+  private enum PendingContinuation {
+    case applyEdit(CheckedContinuation<Void, Error>)
+    case formattingMetadata(CheckedContinuation<FileFormattingMetadata, Error>)
+  }
+
+  /// Unified request structure containing input, continuation, and ID
+  private struct QueuedRequest {
+    let id: UUID
+    let input: ExtensionInput
+    let continuation: PendingContinuation?
+  }
 
   private let tasksQueue = TaskQueue<Void, any Error>()
-  private var fileChange: FileChange?
-  private var currentContinuation: CheckedContinuation<Void, Error>?
+
+  /// Single unified queue for all extension requests
+  private var queuedRequests = [QueuedRequest]()
 
   // Configuration variable that can be changed for testing.
   private let timeout: TimeInterval
@@ -135,31 +178,77 @@ final class DefaultXcodeController: XcodeController, Sendable {
       }
       switch event {
       case let event as ExecuteExtensionRequestEvent:
-        if
-          event.command == ExtensionCommandKeys.getFileChangeToApply || event.command == ExtensionCommandKeys
-            .confirmFileChangeApplied
-        {
-          do {
-            if event.command == ExtensionCommandKeys.getFileChangeToApply {
-              let fileChange = try getFileChangeToApply()
-              event.completion(.success(fileChange))
-            } else {
-              let result = try JSONDecoder().decode(ExtensionRequest<FileChangeConfirmation>.self, from: event.data)
-              fileChangeApplied(withError: result.input.error)
-              event.completion(.success(EmptyResponse()))
+        do {
+          let extensionRequest = try JSONDecoder().decode(ExtensionRequest.self, from: event.data)
+
+          switch extensionRequest {
+          case .getQueuedInput:
+            // Extension is asking for the first queued input
+            guard let request = queuedRequests.first else {
+              throw AppError(message: "No queued input available")
             }
-          } catch {
-            defaultLogger.error("Failed to handle extension request '\(event.command)': \(error)")
-            fileChangeApplied(withError: error.localizedDescription)
-            event.completion(.failure(error))
+            event.completion(.success(request.input))
+            return true
+
+          case .sendResult(let result):
+            // Extension is sending back the result
+            handleExtensionResult(result)
+            event.completion(.success(EmptyResponse()))
+            return true
           }
+        } catch {
+          defaultLogger.error("Failed to handle extension request: \(error)")
+          event.completion(.failure(error))
           return true
         }
-        return false
 
       default:
         return false
       }
+    }
+  }
+
+  private func handleExtensionResult(_ result: ExtensionResult) {
+    let continuation = inLock { state -> PendingContinuation? in
+      // Pop the first request from the queue
+      guard !state.queuedRequests.isEmpty else {
+        return nil
+      }
+      let request = state.queuedRequests.removeFirst()
+      return request.continuation
+    }
+
+    // Handle reloadSettingsResult separately as it has no continuation
+    if case .reloadSettingsResult = result {
+      // Nothing to do, extension will crash and reload
+      return
+    }
+
+    guard let continuation else {
+      defaultLogger.error("Received extension result but no pending request found")
+      return
+    }
+
+    // Resume the continuation based on result type
+    switch (continuation, result) {
+    case (.applyEdit(let cont), .applyEditResult(let applyResult)):
+      switch applyResult {
+      case .success:
+        cont.resume()
+      case .failure(let error):
+        cont.resume(throwing: AppError(message: error.message))
+      }
+
+    case (.formattingMetadata(let cont), .formattingMetadataResult(let metadataResult)):
+      switch metadataResult {
+      case .success(let metadata):
+        cont.resume(returning: metadata)
+      case .failure(let error):
+        cont.resume(throwing: AppError(message: error.message))
+      }
+
+    default:
+      defaultLogger.error("Mismatched continuation and result types")
     }
   }
 
@@ -208,10 +297,15 @@ final class DefaultXcodeController: XcodeController, Sendable {
     let timeout = timeout
 
     return try await withCheckedThrowingContinuation { continuation in
+      let requestId = UUID()
+
       Task {
         inLock { state in
-          state.fileChange = fileChange
-          state.currentContinuation = continuation
+          let request = QueuedRequest(
+            id: requestId,
+            input: .applyEdit(fileChange),
+            continuation: .applyEdit(continuation))
+          state.queuedRequests.append(request)
         }
 
         do {
@@ -227,43 +321,100 @@ final class DefaultXcodeController: XcodeController, Sendable {
           defaultLogger.log("Time to trigger extension: \(duration)")
         } catch {
           defaultLogger.error("triggerExtension failed: \(error)")
-          let currentContinuation = inLock { state in
-            let currentContinuation = state.currentContinuation
-            state.currentContinuation = nil
-            state.fileChange = nil
-            return currentContinuation
+          let continuation = inLock { state -> CheckedContinuation<Void, Error>? in
+            // Remove the request we just added
+            if let index = state.queuedRequests.lastIndex(where: { $0.id == requestId }) {
+              let request = state.queuedRequests.remove(at: index)
+              if case .applyEdit(let cont) = request.continuation {
+                return cont
+              }
+            }
+            return nil
           }
-          currentContinuation?.resume(throwing: error)
+          continuation?.resume(throwing: error)
         }
       }
 
       Task { [weak self] in
         try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-        self?.timeOut(fileChange: fileChange)
+        self?.handleTimeout(requestId: requestId)
       }
     }
   }
 
-  private func getFileChangeToApply() throws -> FileChange {
-    guard let fileChange else {
-      throw AppError(message: "No code change to apply")
+  // MARK: - Formatting Metadata Helpers
+
+  private func _getFormattingMetadata() async throws -> FileFormattingMetadata {
+    let timeout: TimeInterval = 2.0
+
+    return try await withCheckedThrowingContinuation { continuation in
+      let requestId = UUID()
+
+      Task {
+        inLock { state in
+          let request = QueuedRequest(
+            id: requestId,
+            input: .getFormattingMetadata,
+            continuation: .formattingMetadata(continuation))
+          state.queuedRequests.append(request)
+        }
+
+        do {
+          // Trigger the extension command to get metadata for the currently focused file
+          try await DefaultXcodeController.triggerExtensionCommand(
+            commandName: ExtensionCommandNames.cmd,
+            xcodeObserver: xcodeObserver,
+            shellService: shellService,
+            settingsService: settingsService)
+        } catch {
+          defaultLogger.error("Failed to trigger formatting metadata extension: \(error)")
+          let continuation = inLock { state -> CheckedContinuation<FileFormattingMetadata, Error>? in
+            // Remove the request we just added
+            if let index = state.queuedRequests.lastIndex(where: { $0.id == requestId }) {
+              let request = state.queuedRequests.remove(at: index)
+              if case .formattingMetadata(let cont) = request.continuation {
+                return cont
+              }
+            }
+            return nil
+          }
+          continuation?.resume(throwing: error)
+        }
+      }
+
+      Task { [weak self] in
+        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+        self?.handleTimeout(requestId: requestId)
+      }
     }
-    return fileChange
   }
 
-  private func timeOut(fileChange: FileChange) {
-    let currentContinuation: CheckedContinuation<Void, Error>? = inLock { state in
-      guard state.fileChange?.id == fileChange.id, let currentContinuation = state.currentContinuation else {
+  // MARK: - Timeout Handler
+
+  /// Generic timeout handler that works for any request type
+  private func handleTimeout(requestId: UUID) {
+    let pendingContinuation = inLock { state -> PendingContinuation? in
+      // Find and remove the request with the given ID
+      guard let index = state.queuedRequests.firstIndex(where: { $0.id == requestId }) else {
         return nil
       }
-      state.currentContinuation = nil
-      state.fileChange = nil
-      return currentContinuation
+      let request = state.queuedRequests.remove(at: index)
+      return request.continuation
     }
 
-    if let currentContinuation {
-      currentContinuation.resume(throwing: AppError(message: "Apply suggestion timed out"))
+    // Resume the continuation with a timeout error based on its type
+    switch pendingContinuation {
+    case .applyEdit(let continuation):
+      continuation.resume(throwing: AppError(message: "Apply edit timed out"))
       defaultLogger.error("Extension timed-out while applying the edit.")
+
+    case .formattingMetadata(let continuation):
+      continuation.resume(throwing: AppError(message: "Get formatting metadata timed out"))
+      defaultLogger.error("Extension timed-out while getting formatting metadata.")
+
+    case .none:
+      // Request was already completed or cancelled
+      break
     }
   }
 
@@ -282,7 +433,7 @@ extension DefaultXcodeController {
     async throws
   {
     try await triggerExtensionCommand(
-      commandName: ExtensionCommandNames.applyEdit,
+      commandName: ExtensionCommandNames.cmd,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
       settingsService: settingsService,
@@ -391,39 +542,6 @@ extension DefaultXcodeController {
     return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
   }
   #endif
-
-  ///  Called when the extension has applied the edit.
-  func fileChangeApplied(withError error: String?) {
-    if let error {
-      defaultLogger.log("Extension has failed to apply the edit.")
-      // TODO: make this parsing more type safe.
-      let errorData = error.utf8Data
-      if
-        let errorObject = try? JSONSerialization.jsonObject(with: errorData) as? [String: Any],
-        let bufferContent = errorObject["bufferContent"] as? String,
-        let expectedContent = errorObject["expectedContent"] as? String
-      {
-        let diff = try? FileDiff.getGitDiff(oldContent: bufferContent, newContent: expectedContent)
-        defaultLogger.error("Edit failed due to mismatched content: \(diff ?? "could not compare")")
-      } else {
-        defaultLogger.error("Edit failed: \(error)")
-      }
-    } else {
-      defaultLogger.log("Extension has successfully applied the edit.")
-    }
-
-    let currentContinuation = inLock { state in
-      let currentContinuation = state.currentContinuation
-      state.currentContinuation = nil
-      state.fileChange = nil
-      return currentContinuation
-    }
-    if let error {
-      currentContinuation?.resume(throwing: AppError(message: error))
-    } else {
-      currentContinuation?.resume(returning: ())
-    }
-  }
 
 }
 

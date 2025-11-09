@@ -10,6 +10,9 @@ import XcodeObserverServiceInterface
 
 public protocol CodeCompletionService: Sendable {
 
+  /// Whether the code completion service is available for use.
+  var isAvailable: Bool { get }
+
   func suggestCompletion(
     workspace: URL,
     file: URL,

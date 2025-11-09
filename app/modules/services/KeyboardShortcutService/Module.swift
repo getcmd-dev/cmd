@@ -11,13 +11,4 @@ Target.module(
     "LoggingServiceInterface",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
-  ],
-  testsDependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
-    "ConcurrencyFoundation",
-    "KeyboardShortcutService",
-    "KeyboardShortcutServiceInterface",
-    "ThreadSafe",
-    "XcodeObserverServiceInterface",
   ])
