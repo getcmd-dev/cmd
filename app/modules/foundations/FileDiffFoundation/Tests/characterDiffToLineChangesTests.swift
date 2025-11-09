@@ -182,4 +182,47 @@ struct CharacterDiffToLineChangesTests {
     #expect(firstChangedLine == 2)
     #expect(lineChanges.count == 1)
   }
+    
+    @Test("Multiline change with only new lines")
+    func multilineChangeWithOnlyNewLines() throws {
+        let diff = """
+            diff @@ -307,6 +307,10 @@ extension DefaultXcodeController {
+                }
+                  #else
+                guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
+            {+      defaultLogger.error("Could not find running Xcode")+}
+            {+      throw AXError.cannotComplete+}
+            {+    }+}
+            {+      #endif+}
+                    
+                if needToActivateXcode {
+                  if !xcodeApp.activate() {
+            firstChangedLine 309
+            """
+        let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+
+        #expect(firstChangedLine == 310)
+        #expect(lineChanges.count == 4)
+    }
+    
+    @Test("Parse content with + sign")
+    func parseContentWithPlusSign() {
+        let diff = """
+            diff @@ -93,5 +93,7 @@ struct CompletionDiffView: View {
+                }
+              }
+                private func add(a: Int, b: Int) -> Int {
+            {+        return a + b+}
+            {+    }+}
+            }
+            """
+        let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+        
+        print("?")
+
+        #expect(firstChangedLine == 95)
+        #expect(lineChanges.first?.count == 1)
+        #expect(lineChanges.first?.first?.type == .added)
+        #expect(lineChanges.first?.first?.text == "        return a + b\n")
+    }
 }

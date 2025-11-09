@@ -64,7 +64,6 @@ final class CodeCompletionViewModel {
         return completion != nil && self.xcodeObserver.state.focusedWorkspace != nil
       })
 
-    //
     settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
       Task { @MainActor [weak self] in
         if value {
@@ -90,7 +89,9 @@ final class CodeCompletionViewModel {
 
   private(set) var isEnabled: Bool
 
+  /// The offset between the top of the view and the top of the text being completed.
   var verticalContentOffset: CGFloat = 0
+    /// The offset between the left of the view and the left of the text being completed.
   var horizontalContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
 
@@ -234,6 +235,7 @@ final class CodeCompletionViewModel {
           change.append(.init(i, 0..<1, oldLines[i] + "\n", .unchanged))
         }
         for i in 0..<numberOfReplacedLines {
+            // Crash, likely when we add a lot of lines at the end of the file
           change.append(.init(replacementStart + i, 0..<1, oldLines[replacementStart + i], .removed))
         }
         for (i, l) in completion.diff.filter({ $0.changes.contains(where: { $0.type != .removed }) }).enumerated() {

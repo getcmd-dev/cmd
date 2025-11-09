@@ -300,10 +300,18 @@ extension DefaultXcodeController {
   {
     let needToActivateXcode = appsActivationState?.isXcodeActive != true
     let isAppActive = NSApplication.shared.isActive
+    #if DEBUG
     guard let xcodeApp = await getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
       defaultLogger.error("Could not find running Xcode")
       throw AXError.cannotComplete
     }
+    #else
+    guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
+      defaultLogger.error("Could not find running Xcode")
+      throw AXError.cannotComplete
+    }
+    #endif
+
     if needToActivateXcode {
       if !xcodeApp.activate() {
         defaultLogger.error("Xcode not activated.")
@@ -350,9 +358,9 @@ extension DefaultXcodeController {
     }
   }
 
+  #if DEBUG
   @MainActor
   static func getXcode(xcodeObserver: XcodeObserver, shellService: ShellService) async -> NSRunningApplication? {
-    #if DEBUG
     // When in DEBUG mode, we first check if there is an instance of Xcode that has been launched by attaching to the extension.
     for pid in xcodeObserver.state.wrapped?.xcodesState.map(\.processIdentifier) ?? [] {
       if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
@@ -361,7 +369,6 @@ extension DefaultXcodeController {
         }
       }
     }
-    #endif
     if
       let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
       let app = NSRunningApplication(processIdentifier: processId)
@@ -371,6 +378,19 @@ extension DefaultXcodeController {
     defaultLogger.error("Could not find Xcode process id")
     return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
   }
+  #else
+  @MainActor
+  static func getXcode(xcodeObserver: XcodeObserver, shellService _: ShellService) -> NSRunningApplication? {
+    if
+      let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
+      let app = NSRunningApplication(processIdentifier: processId)
+    {
+      return app
+    }
+    defaultLogger.error("Could not find Xcode process id")
+    return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
+  }
+  #endif
 
   ///  Called when the extension has applied the edit.
   func fileChangeApplied(withError error: String?) {

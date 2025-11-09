@@ -6,6 +6,7 @@ Target.module(
     "AccessibilityObjCFoundation",
     "CodeCompletionFoundation",
     "CodeCompletionServiceInterface",
+    "ConcurrencyFoundation",
     "DLS",
     "FileDiffTypesFoundation",
     "FoundationInterfaces",

@@ -627,6 +627,7 @@ targets.append(
       "AccessibilityObjCFoundation",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
+      "ConcurrencyFoundation",
       "DLS",
       "FileDiffTypesFoundation",
       "FoundationInterfaces",

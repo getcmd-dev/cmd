@@ -53,8 +53,9 @@ extension FileDiff {
     let content = contentLines.joined(separator: "\n")
 
     // Use regex to match the different change types
-    let additionPattern = /\{\+(?<added>[^\+]*?)\+\}/
-    let removalPattern = /\[-(?<removed>[^\-]*?)-\]/
+    // Note: We use lazy matching (.*?) to match content up to the closing sequence
+    let additionPattern = /\{\+(?<added>.*?)\+\}/
+    let removalPattern = /\[-(?<removed>.*?)-\]/
 
     var position = content.startIndex
 
