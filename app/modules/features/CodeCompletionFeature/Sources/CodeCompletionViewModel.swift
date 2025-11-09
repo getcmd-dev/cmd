@@ -43,7 +43,7 @@ final class CodeCompletionViewModel {
         .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
     }
 
-    isEnabled = settingsService.value(for: \.enableCodeCompletion)
+    isEnabled = codeCompletionService.isAvailable
     if isEnabled {
       enable()
     }

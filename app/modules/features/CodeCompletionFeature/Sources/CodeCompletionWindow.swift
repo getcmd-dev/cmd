@@ -41,50 +41,32 @@ final class CodeCompletionWindow: XcodeWindow {
     isOpaque = false
     ignoresMouseEvents = true
 
-    // All
     collectionBehavior = [
       .fullScreenAuxiliary,
       .fullScreenPrimary,
       .fullScreenAllowsTiling,
     ]
-
-//      let idealFrame = trackedWindow.map { self.frame(from: $0) } ?? nil
-//      let defaultFrame = CGRect(origin: .zero, size: CGSize(width: 300, height: 100))
-
-//      let frame = idealFrame ?? defaultFrame
-//      setFrame(frame, display: isVisible)
     makeKeyAndOrderFront(nil)
-//      lastWindowFrame = frame
 
     backgroundColor = .clear
 
     let root = AnyView(CodeCompletionView(viewModel: viewModel))
       .background(.clear)
+      .clipped()
 
     let hostingView = NSHostingView(rootView: root)
     self.hostingView = hostingView
 
     hostingView.translatesAutoresizingMaskIntoConstraints = false
+    hostingView.wantsLayer = true
+    hostingView.layer?.masksToBounds = true
     contentView = hostingView
-
-    // Observe size changes and update window frame
-//    setupSizeObserver()
   }
 
   var completionId: UUID?
   var completionRange: NSRange?
   var leadingMargingWidth: CGFloat?
 
-//    func addTwoNumbers(_ a: Int, _ b: Int) -> Int {
-//        return a + b
-//    }
-
-//  @MainActor
-//  deinit {
-//    sizeObservationTimer?.invalidate()
-//  }
-
-  ///
   override var canBecomeKey: Bool { false }
 
   override var acceptsFirstResponder: Bool { false }
@@ -158,6 +140,3 @@ final class CodeCompletionWindow: XcodeWindow {
 
   private var hostingView: NSView?
 }
-
-// Repeat below: abcdefghijklmnopqrst
-// abcd

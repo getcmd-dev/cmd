@@ -79,6 +79,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
   let shellService: ShellService
   let xcodeObserver: XcodeObserver
   let fileManager: FileManagerI
+  let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>
 
   #if DEBUG
   var currentExecutionId: String? {
@@ -110,7 +111,8 @@ final class DefaultXcodeController: XcodeController, Sendable {
       commandName: commandName,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
-      settingsService: settingsService)
+      settingsService: settingsService,
+      appsActivationState: appsActivationState.currentValue)
   }
 
   func getFormattingMetadata() async throws -> FileFormattingMetadata {
@@ -365,7 +367,8 @@ final class DefaultXcodeController: XcodeController, Sendable {
             commandName: ExtensionCommandNames.cmd,
             xcodeObserver: xcodeObserver,
             shellService: shellService,
-            settingsService: settingsService)
+            settingsService: settingsService,
+            appsActivationState: appsActivationState.currentValue)
         } catch {
           defaultLogger.error("Failed to trigger formatting metadata extension: \(error)")
           let continuation = inLock { state -> CheckedContinuation<FileFormattingMetadata, Error>? in

@@ -72,7 +72,14 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   var formattingMetadataCache = [URL: FileFormattingMetadata]()
 
   nonisolated var isAvailable: Bool {
+    #if DEBUG
+    // Debug builds don't work well with Xcode extension.
+    // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
+    permissionsService.status(for: .xcodeExtension).currentValue == true ||
+      settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
+    #else
     permissionsService.status(for: .xcodeExtension).currentValue == true
+    #endif
   }
 
   var configuredProvider: (any CodeCompletionProvider)? {

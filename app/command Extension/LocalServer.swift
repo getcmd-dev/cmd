@@ -32,12 +32,7 @@ final class LocalServer {
   ///   - request: The typed extension request to send to the local server.
   /// - Returns: The decoded response from the local server.
   func send<Response: Decodable>(_ request: ExtensionRequest) async throws -> Response {
-    // Wrap the ExtensionRequest in the execute-command envelope expected by the server
-    let envelope = ExecuteCommandWrapper(
-      type: "execute-command",
-      command: ExtensionCommandNames.cmd,
-      input: request)
-    return try await sendRaw(envelope, retryCount: 0)
+    return try await sendRaw(request, retryCount: 0)
   }
 
   /// Sends a user-defined shortcut request to the local server.
