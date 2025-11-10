@@ -5,6 +5,12 @@
 # Fail on errors
 set -euo pipefail
 
+# Unset git environment variables that might interfere with git commands
+# Git sets GIT_DIR when running hooks, which can cause git rev-parse to return
+# incorrect paths when called from subdirectories (especially in worktrees)
+unset GIT_DIR
+unset GIT_WORK_TREE
+
 repo_root=$(git rev-parse --show-toplevel)
 current_dir=$(pwd)
 
@@ -13,22 +19,32 @@ if [ -z "$repo_root" ]; then
     exit 1
 fi
 
-# Get current diff
-current_diff=$(git diff HEAD)
-
+# Change to repo root to ensure git commands work correctly
 cd "$repo_root"
+
+# Count stashes before
+stash_count_before=$(git stash list | wc -l)
+
+# Stash unstaged changes, keeping the index (staged changes) intact
+# This allows lint/sync to run on the full working tree
+git stash push --keep-index --quiet --message "pre-commit-hook-temp" || true
+
 ./cmd.sh lint
 ./cmd.sh sync:dependencies
 
-# Check for created changes
-new_diff=$(git diff HEAD)
+# Stage any changes created by lint/sync
+git add -u
+
+# Count stashes after
+stash_count_after=$(git stash list | wc -l)
+
+# Restore unstaged changes only if we created a new stash
+if [ "$stash_count_after" -gt "$stash_count_before" ]; then
+    git stash pop --quiet --index 2>/dev/null || {
+        echo "⚠️  Warning: Could not restore unstaged changes. Check 'git stash list'"
+    }
+fi
 
 cd "$current_dir"
 
-# If there are new changes, ask to re-commit
-if [ "$new_diff" != "$current_diff" ]; then
-    echo "Changes detected after running pre-commit hooks. Please review the changes."
-    exit 1
-else
-    echo "No changes detected after running pre-commit hooks."
-fi
+echo "✓ Pre-commit hooks completed."
