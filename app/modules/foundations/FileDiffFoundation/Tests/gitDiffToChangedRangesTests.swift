@@ -61,6 +61,14 @@ struct GitDiffToChangedRangesTests {
     let ranges = FileDiff.gitDiffToChangedRanges(oldContent: old, newContent: new, diffText: diff)
     #expect(ranges[1].type == .added)
     #expect(new.substring(ranges[1].characterRange) == "  // Say something\n")
+
+    // Validate line offsets
+    #expect(ranges[0].lineOffset.oldLineNumber == 0) // "func greet() {\n" is in both
+    #expect(ranges[0].lineOffset.newLineNumber == 0)
+    #expect(ranges[1].lineOffset.oldLineNumber == nil) // "  // Say something\n" is added
+    #expect(ranges[1].lineOffset.newLineNumber == 1)
+    #expect(ranges[2].lineOffset.oldLineNumber == 1) // "  print("Hello")\n" is in both
+    #expect(ranges[2].lineOffset.newLineNumber == 2)
   }
 
   @Test
@@ -74,7 +82,16 @@ struct GitDiffToChangedRangesTests {
       let foo = 10
       print("Done")
       """
-    try validateDiffRanges(from: old, to: new, expectedRangeCount: 3)
+    let ranges = try validateDiffRanges(from: old, to: new, expectedRangeCount: 3)
+
+    // Validate line offsets
+    #expect(ranges[0].lineOffset.oldLineNumber == 0) // "let foo = 10\n" is in both
+    #expect(ranges[0].lineOffset.newLineNumber == 0)
+    #expect(ranges[1].lineOffset.oldLineNumber == 1) // "let bar = 20\n" is removed
+    #expect(ranges[1].lineOffset.newLineNumber == nil)
+    #expect(ranges[1].type == .removed)
+    #expect(ranges[2].lineOffset.oldLineNumber == 2) // "print("Done")\n" is in both
+    #expect(ranges[2].lineOffset.newLineNumber == 1)
   }
 
   @Test
@@ -87,7 +104,18 @@ struct GitDiffToChangedRangesTests {
       print("Hello Earth")
       print("Line Two")
       """
-    try validateDiffRanges(from: old, to: new, expectedRangeCount: 3)
+    let ranges = try validateDiffRanges(from: old, to: new, expectedRangeCount: 3)
+
+    // Validate line offsets for replacement
+    #expect(ranges[0].type == .removed)
+    #expect(ranges[0].lineOffset.oldLineNumber == 0) // Old line is removed
+    #expect(ranges[0].lineOffset.newLineNumber == nil)
+    #expect(ranges[1].type == .added)
+    #expect(ranges[1].lineOffset.oldLineNumber == nil) // New line is added
+    #expect(ranges[1].lineOffset.newLineNumber == 0)
+    #expect(ranges[2].type == .unchanged)
+    #expect(ranges[2].lineOffset.oldLineNumber == 1) // "print("Line Two")\n" is in both
+    #expect(ranges[2].lineOffset.newLineNumber == 1)
   }
 
   @Test
@@ -641,6 +669,54 @@ struct GitDiffToChangedRangesTests {
       """
     let newContent = try FileDiff.apply(searchReplacePattern: diff, to: fileContent)
     #expect(newContent.contains("A view that displays text with highlighted diffs (changed content)."))
+  }
+
+  @Test("LineOffset validation - comprehensive test")
+  func testLineOffsetValidation() throws {
+    let old = """
+      line 1
+      line 2 - to remove
+      line 3
+      line 4 - to replace
+      line 5
+      """
+    let new = """
+      line 1
+      line 3
+      line 4 - replaced
+      line 5
+      line 6 - added
+      """
+
+    let diff = try FileDiff.getGitDiff(oldContent: old, newContent: new)
+    let ranges = FileDiff.gitDiffToChangedRanges(oldContent: old, newContent: new, diffText: diff)
+
+    // Find each type of change and validate line offsets
+    var oldLineCounter = 0
+    var newLineCounter = 0
+
+    for range in ranges {
+      switch range.type {
+      case .unchanged:
+        // Unchanged lines should have both old and new line numbers
+        #expect(range.lineOffset.oldLineNumber == oldLineCounter)
+        #expect(range.lineOffset.newLineNumber == newLineCounter)
+        oldLineCounter += 1
+        newLineCounter += 1
+
+      case .removed:
+        // Removed lines should only have old line number
+        #expect(range.lineOffset.oldLineNumber == oldLineCounter)
+        #expect(range.lineOffset.newLineNumber == nil)
+        oldLineCounter += 1
+
+      case .added:
+        // Added lines should only have new line number
+        #expect(range.lineOffset.oldLineNumber == nil)
+        #expect(range.lineOffset.newLineNumber == newLineCounter)
+        newLineCounter += 1
+      }
+    }
   }
 
   @discardableResult

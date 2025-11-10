@@ -36,34 +36,37 @@ extension FileDiff {
       if result.count - removedLines < addedLineOffset - 1 {
         for i in (result.count - removedLines)..<addedLineOffset - 1 {
           let range = newLinesOffset[i]..<newLinesOffset[i + 1]
-          result.append(LineChange(i, range, newLines[i], .unchanged))
+          let oldLineNumber = result.count - addedLines
+          result.append(LineChange(.both(old: oldLineNumber, new: i), range, newLines[i], .unchanged))
         }
       }
 
       for l in diffContent.splitLines() {
         if l.starts(with: "+") {
-          let i = result.count - removedLines
-          let range = newLinesOffset[i]..<newLinesOffset[i + 1]
-          result.append(LineChange(i, range, newLines[i], .added))
+          let newLineNumber = result.count - removedLines
+          let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
+          result.append(LineChange(.newLineOffset(newLineNumber), range, newLines[newLineNumber], .added))
           addedLines += 1
         } else if l.starts(with: "-") {
-          let i = result.count - addedLines
-          let range = oldLinesOffset[i]..<oldLinesOffset[i + 1]
-          result.append(LineChange(i, range, oldLines[i], .removed))
+          let oldLineNumber = result.count - addedLines
+          let range = oldLinesOffset[oldLineNumber]..<oldLinesOffset[oldLineNumber + 1]
+          result.append(LineChange(.oldLineOffset(oldLineNumber), range, oldLines[oldLineNumber], .removed))
           removedLines += 1
         } else if l.starts(with: " ") {
-          let i = result.count - removedLines
-          let range = newLinesOffset[i]..<newLinesOffset[i + 1]
-          result.append(LineChange(i, range, newLines[i], .unchanged))
+          let newLineNumber = result.count - removedLines
+          let oldLineNumber = result.count - addedLines
+          let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
+          result.append(LineChange(.both(old: oldLineNumber, new: newLineNumber), range, newLines[newLineNumber], .unchanged))
         }
       }
     }
 
     // Add the content after the last diff as unchanged
     while result.count - removedLines < newLines.count {
-      let i = result.count - removedLines
-      let range = newLinesOffset[i]..<newLinesOffset[i + 1]
-      result.append(LineChange(i, range, newLines[i], .unchanged))
+      let newLineNumber = result.count - removedLines
+      let oldLineNumber = result.count - addedLines
+      let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
+      result.append(LineChange(.both(old: oldLineNumber, new: newLineNumber), range, newLines[newLineNumber], .unchanged))
 
       addedLines += 1
     }

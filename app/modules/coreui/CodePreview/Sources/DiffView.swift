@@ -3,10 +3,13 @@
 
 import AppFoundation
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import FileDiffFoundation
+import FileDiffTypesFoundation
 import LoggingServiceInterface
 import SwiftUI
+import XcodeControllerServiceInterface
 
 // MARK: - DiffView
 
@@ -98,19 +101,23 @@ struct PartialDiffView: View {
 
   var body: some View {
     HoverReader { hoveringPosition in
-      ZStack(alignment: .topLeading) {
-        background
-        Text(content)
-          .font(Font.custom("Menlo", fixedSize: Constants.fontSize))
-          .fixedSize()
-          .textSelection(.enabled)
-          .padding(.horizontal, 5)
-          .readingSize { newValue in
-            if changedLines.count > 0 {
-              lineHeight = newValue.height / CGFloat(changedLines.count > 0 ? partialRange.count : 1)
+      HStack(alignment: .top, spacing: 0) {
+        view(for: partialRange.map { changedLines[$0].change.lineOffset.oldLineNumber })
+        view(for: partialRange.map { changedLines[$0].change.lineOffset.newLineNumber })
+        ZStack(alignment: .topLeading) {
+          background
+          Text(content)
+            .font(Font.custom("Menlo", fixedSize: Constants.fontSize))
+            .fixedSize()
+            .textSelection(.enabled)
+            .padding(.horizontal, 5)
+            .readingSize { newValue in
+              if changedLines.count > 0 {
+                lineHeight = newValue.height / CGFloat(changedLines.count > 0 ? partialRange.count : 1)
+              }
             }
-          }
-        partialApply(hoveringPosition: hoveringPosition)
+          partialApply(hoveringPosition: hoveringPosition)
+        }
       }
     }
   }
@@ -121,8 +128,9 @@ struct PartialDiffView: View {
 
   @State private var lineHeight: CGFloat = 0
   @Environment(\.colorScheme) private var colorScheme
-
   @Bindable private var change: FileDiffViewModel
+
+  @Dependency(\.xcodeController) private var xcodeController
 
   private let partialRange: Range<Int>
   private let continousChanges: [Range<Int>]
@@ -160,6 +168,52 @@ struct PartialDiffView: View {
       }
     }
     return result
+  }
+
+  @ViewBuilder
+  private func view(for lineNumbers: [Int?]) -> some View {
+    VStack(alignment: .trailing, spacing: 0) {
+      ForEach(lineNumbers.indices, id: \.self) { i in
+        HStack {
+          lineNumberButton(lineNumber: lineNumbers[i])
+        }
+      }
+    }
+    .fixedSize()
+    .padding(.horizontal, 5)
+    .background(colorScheme.xcodeEditorBackground.opacity(0.5))
+  }
+
+  @ViewBuilder
+  private func lineNumberButton(lineNumber: Int?) -> some View {
+    if let lineNumber {
+      Button(action: {
+        Task {
+          try await xcodeController.open(
+            file: change.filePath,
+            line: lineNumber + 1, // Convert from 0-indexed to 1-indexed
+            column: nil)
+        }
+      }) {
+        Text("\(lineNumber + 1)")
+          .font(Font.custom("Menlo", fixedSize: Constants.fontSize))
+          .foregroundColor(.gray.opacity(0.7))
+          .frame(height: lineHeight, alignment: .trailing)
+          .buttonStyle(PlainButtonStyle())
+          .onHover { isHovering in
+            if isHovering {
+              NSCursor.pointingHand.push()
+            } else {
+              NSCursor.pop()
+            }
+          }
+      }
+      .buttonStyle(.plain)
+    } else {
+      Rectangle()
+        .foregroundColor(.clear)
+        .frame(height: lineHeight, alignment: .trailing)
+    }
   }
 
   /// A zone that will show an option to do a partial apply when hovered
