@@ -31,6 +31,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     super.init(element: workspace)
 
     refresh()
+    observeChangesToFocussedEditor()
   }
 
   let workspaceURL: URL
@@ -130,9 +131,47 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       focusedTabName: focusedTabName)
   }
 
+  private var axSubscription: AnyCancellable?
+
   private let runningApplication: NSRunningApplication
 
   private let internalState: CurrentValueSubject<InternalXcodeWorkspaceState, Never>
+
+  @MainActor
+  private func observeChangesToFocussedEditor() {
+    guard
+      let axNotificationPublisher = try? AXNotificationPublisher(
+        app: runningApplication,
+        // Note: setting `workspace` belows leads to receiving no notifications.
+        // So we listen to app wide notifications, and might will receive notifications from other windows as well.
+        // This should not be a problem given how we handle the notification.
+        element: nil,
+        notificationNames:
+        kAXFocusedUIElementChangedNotification)
+    else {
+      logger.error("Failed to create AXNotificationPublisher")
+      return
+    }
+
+    axSubscription = axNotificationPublisher.sink { [weak self] notification in
+      // Note: the notification might come from another window / workspace.
+      guard let self else { return }
+
+      guard let event = AXNotification(rawValue: notification.name) else {
+        return
+      }
+
+      switch event {
+      case .focusedUIElementChanged:
+        let focusedEditorId: String?? = editorInspectors.first(where: { $0.editorElement == notification.element })?.id ?? nil
+
+        updateStateWith(
+          focusedEditorId: focusedEditorId)
+
+      default: break
+      }
+    }
+  }
 
   /// Returns the inspector for the corresponding editor.
   /// If the inspector is already created, it returns the existing inspector.
