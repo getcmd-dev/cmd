@@ -35,22 +35,22 @@ protocol AIModelsManagerProtocol: Sendable {
   // - Return a higher level object that could be queried for each value of interest.
   // No solution worked well with targetted invalidation when only one model / one provider changes.
 
-  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?>
 
-  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]>
 
-  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never>
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?>
 
-  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never>
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?>
 
-  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel]> { get }
 
   func refetchModelsAvailable(
     for provider: AIProvider,
     newSettings: Settings.AIProviderSettings)
     async throws -> [AIProviderModel]
 
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel]> { get }
 }
 
 // MARK: - AIModelsManager
@@ -99,23 +99,23 @@ final class AIModelsManager: AIModelsManagerProtocol {
     observerChangesToSettings()
   }
 
-  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel]> {
     _availableModels.readonly()
   }
 
-  var models: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var models: ReadonlyCurrentValueSubject<[AIModel]> {
     mutableModels.readonly()
   }
 
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel]> {
     _activeModels.readonly()
   }
 
-  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?> {
     let preferredProvider = settingsService.liveValue(for: \.preferedProviders)
     let providersAvailableForModel = providerModelsByModelId.subscribeToValue(for: model.id)
 
-    return ReadonlyCurrentValueSubject<AIProvider?, Never>(
+    return ReadonlyCurrentValueSubject<AIProvider?>(
       preferredProvider.currentValue[model.id] ?? providersAvailableForModel.currentValue?.first?.provider,
       publisher: preferredProvider
         .map { $0[model.id] }
@@ -127,7 +127,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
         .eraseToAnyPublisher())
   }
 
-  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]> {
     let publisher = llmModelByProvider.subscribeToValue(for: provider)
     return .init(publisher.currentValue ?? [], publisher: publisher.map { $0 ?? [] }.eraseToAnyPublisher())
   }
@@ -140,11 +140,11 @@ final class AIModelsManager: AIModelsManagerProtocol {
     try await fetchAndSaveModelsAvailable(for: provider, settings: newSettings)
   }
 
-  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?> {
     modelsByProviderId.subscribeToValue(for: providerModelId)
   }
 
-  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?> {
     modelByModelId.subscribeToValue(for: modelId)
   }
 
@@ -445,15 +445,15 @@ extension PublishedDictionary<AIModelID, AIModel> {
 
 extension DefaultLLMService {
 
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel]> {
     llmModelsManager.activeModels
   }
 
-  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel]> {
     llmModelsManager.availableModels
   }
 
-  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]> {
     llmModelsManager.modelsAvailable(for: provider)
   }
 
@@ -465,15 +465,15 @@ extension DefaultLLMService {
     try await llmModelsManager.refetchModelsAvailable(for: provider, newSettings: newSettings)
   }
 
-  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?> {
     llmModelsManager.getModel(by: providerModelId)
   }
 
-  func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+  func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?> {
     llmModelsManager.getModelInfo(by: modelInfoId)
   }
 
-  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?> {
     llmModelsManager.provider(for: model)
   }
 
@@ -551,7 +551,7 @@ private final class PublishedDictionary<Key: Hashable & Sendable, Value: Equatab
   var subscribers = [Key: [UUID: @Sendable (Value?) -> Void]]()
   var wrappedValue: [Key: Value]
 
-  func subscribeToValue(for key: Key) -> ReadonlyCurrentValueSubject<Value?, Never> {
+  func subscribeToValue(for key: Key) -> ReadonlyCurrentValueSubject<Value?> {
     let subscriptionId = UUID()
     let publisher = CurrentValueSubject<Value?, Never>(wrappedValue[key])
     let cancellable = AnyCancellable { [weak self] in

@@ -26,7 +26,7 @@ final class DefaultAppUpdateService: AppUpdateService {
     monitorSettingChanges()
   }
 
-  var hasUpdateAvailable: ConcurrencyFoundation.ReadonlyCurrentValueSubject<AppUpdateResult, Never> {
+  var hasUpdateAvailable: ConcurrencyFoundation.ReadonlyCurrentValueSubject<AppUpdateResult> {
     _hasUpdateAvailable.readonly()
   }
 

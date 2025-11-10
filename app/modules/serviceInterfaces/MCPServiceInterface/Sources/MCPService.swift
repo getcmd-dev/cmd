@@ -28,7 +28,7 @@ public protocol MCPService: Sendable {
   /// - `.loading`: Server connection is being established
   /// - `.success`: Server is connected and operational
   /// - `.failure`: Server connection failed with an error
-  var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> { get }
+  var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus]> { get }
 
   /// Establishes a connection to the specified MCP server.
   ///
@@ -107,7 +107,7 @@ public protocol MCPServerConnection: Sendable {
     /// Emits `.connected` when the server is operational and `.disconnected` when the connection is lost.
     async
 
-  var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus, Never> { get }
+  var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus> { get }
 }
 
 // MARK: - ServerInfo

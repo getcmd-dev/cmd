@@ -16,44 +16,44 @@ final class MockAIModelsManager: AIModelsManagerProtocol {
     setDefaultValues()
   }
 
-  var onModelsAvailableForProvider: @Sendable (AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> = { _ in
+  var onModelsAvailableForProvider: @Sendable (AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]> = { _ in
     .just([])
   }
 
   var onRefetchModelsAvailableForProvider: @Sendable (AIProvider, Settings.AIProviderSettings) async throws
     -> [AIProviderModel] = { _, _ in [] }
 
-  var onGetModelByProviderModelId: @Sendable (String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> = { _ in
+  var onGetModelByProviderModelId: @Sendable (String) -> ReadonlyCurrentValueSubject<AIProviderModel?> = { _ in
     .just(nil)
   }
 
-  var onGetModelInfoById: @Sendable (AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> = { _ in .just(nil) }
-  var onProviderForModel: @Sendable (AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> = { _ in .just(nil) }
+  var onGetModelInfoById: @Sendable (AIModelID) -> ReadonlyCurrentValueSubject<AIModel?> = { _ in .just(nil) }
+  var onProviderForModel: @Sendable (AIModel) -> ReadonlyCurrentValueSubject<AIProvider?> = { _ in .just(nil) }
 
   let _activeModels: CurrentValueSubject<[AIModel], Never>
   let _availableModels: CurrentValueSubject<[AIModel], Never>
 
-  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel]> {
     _availableModels.readonly()
   }
 
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel]> {
     _activeModels.readonly()
   }
 
-  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?> {
     onProviderForModel(model)
   }
 
-  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never> {
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]> {
     onModelsAvailableForProvider(provider)
   }
 
-  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?> {
     onGetModelByProviderModelId(providerModelId)
   }
 
-  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+  func getModelInfo(by modelId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?> {
     onGetModelInfoById(modelId)
   }
 

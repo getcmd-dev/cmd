@@ -24,7 +24,7 @@ public final class MockMCPService: MCPService {
     MockMCPServerConnection()
   }
 
-  public var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
+  public var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus]> {
     _servers.readonly()
   }
 
@@ -42,7 +42,7 @@ public final class MockMCPService: MCPService {
 }
 
 public struct MockMCPServerConnection: MCPServerConnection {
-  public var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus, Never> {
+  public var connectionStatus: ReadonlyCurrentValueSubject<MCPConnectionStatus> {
     connectionStatusPublisher.readonly()
   }
 

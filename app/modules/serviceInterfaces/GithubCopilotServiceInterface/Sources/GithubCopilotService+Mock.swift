@@ -29,11 +29,11 @@ public final class MockGithubCopilotService: GithubCopilotService {
   public var onConfirmSignIn: (@Sendable (String) async throws -> Void)?
   public var onSignOut: (@Sendable () async throws -> Void)?
 
-  public var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> {
+  public var loginStatus: ReadonlyCurrentValueSubject<LoginStatus> {
     _loginStatus.readonly()
   }
 
-  public var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> {
+  public var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool> {
     _isLSPServerInstalled.readonly()
   }
 

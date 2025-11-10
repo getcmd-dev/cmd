@@ -219,7 +219,7 @@ extension DefaultXcodeController {
     xcodeObserver: MockXcodeObserver = MockXcodeObserver(.unknown),
     settingsService: MockSettingsService = MockSettingsService(Settings(pointReleaseXcodeExtensionToDebugApp: false)),
     fileManager: MockFileManager = MockFileManager(),
-    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> = .just(.inactive),
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> = .just(.inactive),
     timeout: TimeInterval = 10,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void = { })
   {

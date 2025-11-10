@@ -55,7 +55,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   let authServer: Future<GithubCopilotServer, Error>
   let setAuthServer: @Sendable (Result<GithubCopilotServer, Error>) -> Void
 
-  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> {
+  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool> {
     _isLSPServerInstalled.readonly()
   }
 

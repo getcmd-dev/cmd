@@ -38,5 +38,5 @@ extension AppsActivationState {
 // MARK: - AppsActivationStateProviding
 
 public protocol AppsActivationStateProviding {
-  var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> { get }
+  var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> { get }
 }

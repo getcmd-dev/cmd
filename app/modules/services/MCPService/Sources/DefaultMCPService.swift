@@ -41,8 +41,8 @@ actor DefaultMCPService: MCPService {
 
   // MARK: - MCPService
 
-  nonisolated var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never> {
-    ReadonlyCurrentValueSubject<[MCPServerConnectionStatus], Never>(
+  nonisolated var servers: ReadonlyCurrentValueSubject<[MCPServerConnectionStatus]> {
+    ReadonlyCurrentValueSubject<[MCPServerConnectionStatus]>(
       Array(_servers.value.values),
       publisher: _servers.map {
         Array($0.values)

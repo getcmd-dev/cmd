@@ -53,7 +53,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     axNotificationPublisher.eraseToAnyPublisher()
   }
 
-  var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> {
+  var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>> {
     .init(internalState.value.normalized, publisher: internalState.map(\.normalized).eraseToAnyPublisher())
   }
 

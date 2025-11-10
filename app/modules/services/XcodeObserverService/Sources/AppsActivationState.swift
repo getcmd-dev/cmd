@@ -6,7 +6,7 @@ import DependencyFoundation
 import XcodeObserverServiceInterface
 
 extension BaseProviding where Self: IsHostAppActiveProviding, Self: XcodeObserverProviding {
-  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
+  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> {
     shared {
       let publisher: AnyPublisher<AppsActivationState, Never> = xcodeObserver.statePublisher
         .compactMap {

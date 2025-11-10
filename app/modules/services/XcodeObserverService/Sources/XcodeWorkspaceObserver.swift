@@ -39,7 +39,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
   let workspace: AXUIElement
 
-  var state: ReadonlyCurrentValueSubject<InternalXcodeWorkspaceState, Never> {
+  var state: ReadonlyCurrentValueSubject<InternalXcodeWorkspaceState> {
     .init(internalState.value, publisher: internalState.eraseToAnyPublisher())
   }
 

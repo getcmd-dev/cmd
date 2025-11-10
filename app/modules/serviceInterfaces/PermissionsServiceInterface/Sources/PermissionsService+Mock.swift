@@ -32,7 +32,7 @@ public final class MockPermissionsService: PermissionsService {
     }
   }
 
-  public func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never> {
+  public func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?> {
     switch permission {
     case .accessibility:
       isAccessibilityPermissionGranted.readonly(removingDuplicate: true)

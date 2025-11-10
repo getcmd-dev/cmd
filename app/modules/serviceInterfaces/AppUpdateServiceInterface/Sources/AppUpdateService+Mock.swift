@@ -21,7 +21,7 @@ public final class MockAppUpdateService: AppUpdateService {
   public var onIgnoreUpdate: (@Sendable (AppUpdateInfo?) -> Void)?
   public var onIsUpdateIgnored: (@Sendable (AppUpdateInfo?) -> Bool)?
 
-  public var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> {
+  public var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult> {
     _hasUpdateAvailable.readonly()
   }
 

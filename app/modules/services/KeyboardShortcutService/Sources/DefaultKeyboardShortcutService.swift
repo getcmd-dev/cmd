@@ -16,7 +16,7 @@ import XcodeObserverServiceInterface
 
 @ThreadSafe
 final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked Sendable {
-  init(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
+  init(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>) {
     observeActivationState(appsActivationState: appsActivationState)
   }
 
@@ -101,7 +101,7 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
   private var enabledShortcutNames = Set<String>()
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
-  private func observeActivationState(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {
+  private func observeActivationState(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>) {
     let cancellable = appsActivationState
       .sink { @Sendable [weak self] appsActivationState in
         guard let self else { return }
