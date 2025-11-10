@@ -25,8 +25,6 @@ brew install shfmt
 # Enable Corepack for Yarn (uses version from package.json)
 corepack enable
 
-cp -R ./tools/githooks/. .git/hooks
-
 # Ruby version management
 brew install chruby ruby-install
 ruby-install ruby

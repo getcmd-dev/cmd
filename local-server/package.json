@@ -10,6 +10,7 @@
 		"my-cli-tool": "./dist/tsc/src/main.js"
 	},
 	"scripts": {
+		"postinstall": "../tools/githooks/setup.sh",
 		"run": "yarn tsx ./src/main.js",
 		"lint": "eslint",
 		"lint:fix": "eslint --fix",
