@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AccessibilityFoundation
 import AppFoundation
 import Dependencies
 import DLS
@@ -10,6 +11,7 @@ import LocalServerServiceInterface
 import LoggingServiceInterface
 import RoutingFoundation
 import SwiftUI
+import XcodeObserverServiceInterface
 
 // MARK: - InternalSettingsView
 
@@ -158,6 +160,16 @@ struct InternalSettingsView: View {
             padding: 6,
             cornerRadius: 8,
             content: { Text("Create server error") })
+
+          HoveredButton(
+            action: {
+              copyAXState()
+            },
+            onHoverColor: colorScheme.tertiarySystemBackground,
+            backgroundColor: colorScheme.secondarySystemBackground,
+            padding: 6,
+            cornerRadius: 8,
+            content: { Text("Copy AX state") })
         }
         .padding(16)
         .background(Color(NSColor.controlBackgroundColor))
@@ -180,6 +192,40 @@ struct InternalSettingsView: View {
   @Dependency(\.userDefaults) private var userDefaults
 
   @Dependency(\.localServer) private var server
+
+  @Dependency(\.xcodeObserver) private var xcodeObserver
+
+  private func copyAXState() {
+    let state = xcodeObserver.statePublisher.currentValue
+
+    Task {
+      do {
+        var workspaceData = [String: String]()
+
+        switch state {
+        case .unknown:
+          workspaceData["state"] = "unknown"
+        case .missingAXPermission:
+          workspaceData["state"] = "missingAXPermission"
+        case .state(let xcodeState):
+          for appState in xcodeState.xcodesState {
+            for workspace in appState.workspaces {
+              workspaceData[workspace.url.path] = workspace.axElement.debugDescription as? String ?? "No AX Description"
+            }
+          }
+        }
+
+        // Create JSON data
+        let jsonData = try JSONSerialization.data(withJSONObject: workspaceData, options: .prettyPrinted)
+        let jsonStr = String(data: jsonData, encoding: .utf8) ?? "{}"
+
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(jsonStr, forType: .string)
+      } catch {
+        defaultLogger.error("Failed to write or open workspace AX state: \(error)")
+      }
+    }
+  }
 }
 
 // MARK: - InternalSettingsRow
