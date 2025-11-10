@@ -7,9 +7,11 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import FileDiffFoundation
+import FileDiffTypesFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import SettingsServiceInterface
 import SwiftTesting
 import Testing
 import ToolFoundation
@@ -180,7 +182,7 @@ struct ToolUseViewModelTests {
     let mockXcodeController = MockXcodeController()
 
     let applyExpectation = expectation(description: "File change applied")
-    mockXcodeController.onApplyFileChange = { fileChange in
+    mockXcodeController.onApplyFileChange = { (fileChange: FileDiffTypesFoundation.FileChange, _: FileEditMode?) in
       #expect(fileChange.filePath.path == testFile.path)
       #expect(fileChange.oldContent == "Hello World")
       #expect(fileChange.suggestedNewContent == "Hi World")
@@ -245,7 +247,7 @@ struct ToolUseViewModelTests {
     let file1ApplyExpectation = expectation(description: "File1 change applied")
     let file2ApplyExpectation = expectation(description: "File2 change applied")
 
-    mockXcodeController.onApplyFileChange = { fileChange in
+    mockXcodeController.onApplyFileChange = { (fileChange: FileDiffTypesFoundation.FileChange, _: FileEditMode?) in
       if fileChange.filePath.path == file1Path.path {
         #expect(fileChange.suggestedNewContent == "Hi World")
         file1ApplyExpectation.fulfill()
@@ -299,7 +301,7 @@ struct ToolUseViewModelTests {
     let mockXcodeController = MockXcodeController()
 
     let undoExpectation = expectation(description: "Changes undone")
-    mockXcodeController.onApplyFileChange = { fileChange in
+    mockXcodeController.onApplyFileChange = { (fileChange: FileDiffTypesFoundation.FileChange, _: FileEditMode?) in
       // First call should be applying changes, second should be undoing
       if fileChange.suggestedNewContent == "Hello World" {
         undoExpectation.fulfill()

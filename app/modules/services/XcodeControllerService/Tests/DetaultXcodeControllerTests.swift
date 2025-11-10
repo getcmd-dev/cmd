@@ -56,10 +56,10 @@ struct DefaultXcodeControllerTests {
     try await fulfillment(of: xcodeExtensionTriggered)
 
     // Simulate the extension requesting queued input
-    _ = await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
+    _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
       command: ExtensionCommandNames.cmd,
       id: "123",
-      data: try! JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
@@ -107,6 +107,109 @@ struct DefaultXcodeControllerTests {
     assert(newFileContent == newContent)
   }
 
+  @Test("Preferred edit mode overrides settings - Xcode Extension preferred")
+  func testeditModeXcodeExtension() async throws {
+    let testFile = URL(filePath: "test_file.swift")
+    let fileContent = "let x = 1"
+    let newContent = "let x = 2"
+
+    let xcodeExtensionTriggered = expectation(description: "Xcode extension has been triggered")
+
+    let mockFileManager = MockFileManager(files: [testFile: fileContent], directories: [])
+
+    let appEventHandlerRegistry = MockAppEventHandlerRegistry()
+
+    // Settings say directIO, but we'll prefer xcodeExtension
+    let controller = DefaultXcodeController(
+      appEventHandlerRegistry: appEventHandlerRegistry,
+      settingsService: MockSettingsService(Settings(
+        pointReleaseXcodeExtensionToDebugApp: false,
+        fileEditMode: .directIO)),
+      fileManager: mockFileManager,
+      startApplyingFileChangeWithXcodeExtension: {
+        xcodeExtensionTriggered.fulfill()
+      })
+
+    let fileChange = FileChange(
+      filePath: testFile,
+      oldContent: fileContent,
+      suggestedNewContent: newContent,
+      selectedChange: [],
+      id: "test")
+
+    async let hasApplied: () = controller.apply(fileChange: fileChange, editMode: .xcodeExtension)
+
+    // Verify that the extension was triggered
+    try await fulfillment(of: xcodeExtensionTriggered)
+
+    // Simulate the extension requesting queued input
+    _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
+      command: ExtensionCommandNames.cmd,
+      id: "123",
+      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+
+    // Simulate the extension sending back the result
+    _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
+      command: ExtensionCommandNames.cmd,
+      id: "123",
+      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
+
+    try await hasApplied
+
+    // Verify that the file system was not otherwise modified
+    let newFileContent = try mockFileManager.read(contentsOf: testFile)
+    assert(newFileContent == fileContent)
+  }
+
+  @Test("Preferred edit mode overrides settings - Direct I/O preferred")
+  func testeditModeDirectIO() async throws {
+    let testFile = URL(filePath: "test_file.swift")
+    let fileContent = "let x = 1"
+    let newContent = "let x = 2"
+
+    let mockFileManager = MockFileManager(files: [
+      testFile.path: fileContent,
+    ])
+
+    // Settings say xcodeExtension, but we'll prefer directIO
+    let controller = DefaultXcodeController(
+      settingsService: MockSettingsService(Settings(
+        pointReleaseXcodeExtensionToDebugApp: false,
+        fileEditMode: .xcodeExtension)),
+      fileManager: mockFileManager,
+      startApplyingFileChangeWithXcodeExtension: {
+        Issue.record("Xcode extension should not have been triggered")
+      })
+
+    let fileChange = FileChange(
+      filePath: testFile,
+      oldContent: fileContent,
+      suggestedNewContent: newContent,
+      selectedChange: [],
+      id: "test")
+
+    try await controller.apply(fileChange: fileChange, editMode: .directIO)
+
+    // Verify that the file system has been modified on disk
+    let newFileContent = try mockFileManager.read(contentsOf: testFile)
+    assert(newFileContent == newContent)
+  }
+
+  @Test("getFormattingMetadata fails when Xcode is not active")
+  func testGetFormattingMetadataFailsWhenXcodeNotActive() async throws {
+    // given
+    let controller = DefaultXcodeController(
+      appsActivationState: .just(.inactive),
+      startApplyingFileChangeWithXcodeExtension: {
+        Issue.record("Xcode extension should not have been triggered")
+      })
+
+    // when/then
+    await #expect(throws: (any Error).self) {
+      try await controller.getFormattingMetadata()
+    }
+  }
+
 }
 
 extension DefaultXcodeController {
@@ -116,6 +219,7 @@ extension DefaultXcodeController {
     xcodeObserver: MockXcodeObserver = MockXcodeObserver(.unknown),
     settingsService: MockSettingsService = MockSettingsService(Settings(pointReleaseXcodeExtensionToDebugApp: false)),
     fileManager: MockFileManager = MockFileManager(),
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> = .just(.inactive),
     timeout: TimeInterval = 10,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void = { })
   {
@@ -125,6 +229,7 @@ extension DefaultXcodeController {
       xcodeObserver: xcodeObserver,
       settingsService: settingsService,
       fileManager: fileManager,
+      appsActivationState: appsActivationState,
       timeout: timeout,
       canUseAppleScript: false,
       startApplyingFileChangeWithXcodeExtension: startApplyingFileChangeWithXcodeExtension)

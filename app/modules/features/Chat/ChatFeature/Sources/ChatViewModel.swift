@@ -365,8 +365,7 @@ public class ChatViewModel {
       if !handled {
         // Add log for debugging.
         if
-          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
-            .debugDescription
+          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.debugDescription
         {
           defaultLogger.log(axInfo as String)
         }
@@ -378,7 +377,7 @@ public class ChatViewModel {
 
   private func addCodeSelection(from workspace: XcodeWorkspaceState) async -> Bool {
     let inputModel = tab.input
-    let editor = workspace.editors.first(where: { $0.isFocused })
+    let editor = workspace.focussedEditor
     if editor?.fileName != workspace.document?.lastPathComponent {
       if let document = workspace.document, let content = try? fileManager.read(contentsOf: document) {
         inputModel.add(attachment: .file(.init(path: document, content: content)))

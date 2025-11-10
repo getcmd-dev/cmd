@@ -30,6 +30,7 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
     }
     self.fileName = fileName
     internalState = .init(InternalXcodeEditorState(
+      axElement: AnyAXUIElement(editorElement),
       fileName: fileName,
       id: id,
       content: "",
@@ -122,6 +123,7 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
   {
     let currentState = internalState.value
     let newState = InternalXcodeEditorState(
+      axElement: AnyAXUIElement(editorElement),
       fileName: fileName,
       id: id,
       content: content ?? currentState.content,

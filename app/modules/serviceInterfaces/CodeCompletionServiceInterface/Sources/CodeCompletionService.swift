@@ -59,7 +59,7 @@ public struct CompletionSuggestion: Sendable {
   public let newContent: String
   /// The cursor selection range in the new content
   public let newCursorSelection: Range
-  /// The first line (1-based index) of the diff in the old/new content
+  /// The first line (0-based index) of the diff in the old/new content
   public let diffLineStart: Int
   /// The diff between the old and new content, character by character.
   public let diff: [LineChange]

@@ -43,6 +43,8 @@ Target.module(
     "HighlighterServiceInterface",
     "JRPCService",
     "JRPCServiceInterface",
+    "KeyboardShortcutService",
+    "KeyboardShortcutServiceInterface",
     "LLMService",
     "LLMServiceInterface",
     "LocalServerService",

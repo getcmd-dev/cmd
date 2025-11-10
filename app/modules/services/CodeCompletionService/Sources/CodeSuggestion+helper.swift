@@ -50,14 +50,10 @@ extension CodeCompletionFoundation.CompletionSuggestion {
     let newCursorSelection = Range(start: newCursorPosition, end: newCursorPosition)
 
     // Generate character-level diff
-    guard let characterDiff = try? FileDiff.getCharacterDiff(oldContent: content, newContent: newContent) else {
+    guard let diffText = try? FileDiff.getCharacterDiff(oldContent: content, newContent: newContent) else {
       return nil
     }
-    let lineChanges = FileDiff.characterDiffToLineChanges(oldContent: content, newContent: newContent, diffText: characterDiff)
-
-    // Find the first line with changes
-    let diffLineStart = findFirstChangedLine(lineChanges: lineChanges)
-
+    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diffText)
     // Convert to CompletionSuggestion format
     let diff = lineChanges.map { lineChanges in
       CodeCompletionServiceInterface.CompletionSuggestion.LineChange(
@@ -72,7 +68,7 @@ extension CodeCompletionFoundation.CompletionSuggestion {
       file: file,
       newContent: newContent,
       newCursorSelection: newCursorSelection,
-      diffLineStart: diffLineStart,
+      diffLineStart: firstChangedLine,
       diff: diff)
   }
 
@@ -105,14 +101,5 @@ extension CodeCompletionFoundation.CompletionSuggestion {
     let lastLineIndex = max(0, lines.count - 1)
     let lastLineLength = lines.last?.count ?? 0
     return Position(line: lastLineIndex, character: lastLineLength)
-  }
-
-  private func findFirstChangedLine(lineChanges: [[CharacterLevelChange]]) -> Int {
-    for (index, line) in lineChanges.enumerated() {
-      if line.contains(where: { $0.type != .unchanged }) {
-        return index + 1 // 1-based index
-      }
-    }
-    return 1
   }
 }

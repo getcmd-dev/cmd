@@ -15,6 +15,7 @@ extension MockXcodeObserver {
       cgFrame: { .zero },
       pid: { 0 },
       setAppKitframe: { _ in },
+      debugDescription: nil,
       id: "1")
     var tabs = [XcodeWorkspaceState.Tab]()
     if let focussedTabURL {

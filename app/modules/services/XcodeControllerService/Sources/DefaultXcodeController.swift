@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import AppFoundation
 import AppKit
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import ExtensionEventsInterface
@@ -20,14 +21,15 @@ import XcodeObserverServiceInterface
 // MARK: - DefaultXcodeController
 
 @ThreadSafe
-public final class DefaultXcodeController: XcodeController, Sendable {
+final class DefaultXcodeController: XcodeController, Sendable {
 
-  public convenience init(
+  convenience init(
     appEventHandlerRegistry: AppEventHandlerRegistry,
     shellService: ShellService,
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>)
   {
     self.init(
       appEventHandlerRegistry: appEventHandlerRegistry,
@@ -35,22 +37,25 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       xcodeObserver: xcodeObserver,
       settingsService: settingsService,
       fileManager: fileManager,
+      appsActivationState: appsActivationState,
       timeout: ExtensionTimeout.applyFileChangeTimeout,
       canUseAppleScript: true,
       startApplyingFileChangeWithXcodeExtension: { Task { @MainActor in
         try await Self.triggerExtension(
           xcodeObserver: xcodeObserver,
           shellService: shellService,
-          settingsService: settingsService)
+          settingsService: settingsService,
+          appsActivationState: appsActivationState.currentValue)
       }})
   }
 
-  public init(
+  init(
     appEventHandlerRegistry: AppEventHandlerRegistry,
     shellService: ShellService,
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
     fileManager: FileManagerI,
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>,
     timeout: TimeInterval,
     canUseAppleScript: Bool = false,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void)
@@ -60,6 +65,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     self.xcodeObserver = xcodeObserver
     self.settingsService = settingsService
     self.fileManager = fileManager
+    self.appsActivationState = appsActivationState
     self.startApplyingFileChangeWithXcodeExtension = startApplyingFileChangeWithXcodeExtension
     self.timeout = timeout
     self.canUseAppleScript = canUseAppleScript
@@ -67,16 +73,27 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     registerAppEventHandler()
   }
 
+  let shellService: ShellService
+  let xcodeObserver: XcodeObserver
+  let fileManager: FileManagerI
+  let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>
+
+  #if DEBUG
+  var currentExecutionId: String? {
+    queuedRequests.first?.id.uuidString
+  }
+  #endif
+
   /// Apply the file change using the Xcode extension.
   /// If other changes are pending, this will wait for them to complete first.
-  public func apply(fileChange: FileChange) async throws {
+  func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
     try await tasksQueue.queueAndAwait { [weak self] in
-      try await self?._apply(fileChange: fileChange)
+      try await self?._apply(fileChange: fileChange, editMode: editMode)
     }
   }
 
   /// Open a file in Xcode at the specified line and column.
-  public func open(file: URL, line: Int?, column _: Int?) async throws {
+  func open(file: URL, line: Int?, column _: Int?) async throws {
     Task {
       do {
         try await Self.openFileWithAppleScript(at: file)
@@ -89,19 +106,20 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
-  public func executeExtensionCommand(_ commandName: String) async throws {
+  func executeExtensionCommand(_ commandName: String) async throws {
     try await DefaultXcodeController.triggerExtensionCommand(
       commandName: commandName,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
-      settingsService: settingsService)
+      settingsService: settingsService,
+      appsActivationState: appsActivationState.currentValue)
   }
 
-  public func getFormattingMetadata() async throws -> FileFormattingMetadata {
+  func getFormattingMetadata() async throws -> FileFormattingMetadata {
     try await _getFormattingMetadata()
   }
 
-  public func reloadExtension() async throws {
+  func reloadExtension() async throws {
     // Queue the reload settings input (no continuation needed since extension will crash)
     let requestId = UUID()
     inLock { state in
@@ -126,16 +144,6 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       throw error
     }
   }
-
-  let shellService: ShellService
-  let xcodeObserver: XcodeObserver
-  let fileManager: FileManagerI
-
-  #if DEBUG
-  var currentExecutionId: String? {
-    queuedRequests.first?.id.uuidString
-  }
-  #endif
 
   /// Unified continuation type for all extension operations
   private enum PendingContinuation {
@@ -247,7 +255,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   }
 
   /// Apply the file change using the method specified in settings.
-  private func _apply(fileChange: FileChange) async throws {
+  private func _apply(fileChange: FileChange, editMode: FileEditMode?) async throws {
     guard fileManager.fileExists(atPath: fileChange.filePath.path) else {
       let data = fileChange.suggestedNewContent.utf8Data
       // TODO: look at making the required modification to the xcode project if necessary.
@@ -255,7 +263,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       return
     }
 
-    let fileEditMode = settingsService.value(for: \.fileEditMode)
+    let fileEditMode = editMode ?? settingsService.value(for: \.fileEditMode)
 
     switch fileEditMode {
     case .xcodeExtension:
@@ -265,7 +273,12 @@ public final class DefaultXcodeController: XcodeController, Sendable {
       } catch {
         let err = error
         defaultLogger.error("Failed to apply code change with Xcode extension, falling back to direct I/O: \(err)")
-        try await applyDirectIO(fileChange: fileChange)
+        if editMode != nil {
+          // When a specific edit mode is set, we respect it.
+          throw error
+        } else {
+          try await applyDirectIO(fileChange: fileChange)
+        }
       }
 
     case .directIO:
@@ -334,6 +347,12 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   // MARK: - Formatting Metadata Helpers
 
   private func _getFormattingMetadata() async throws -> FileFormattingMetadata {
+    guard appsActivationState.currentValue.isXcodeActive else {
+      // If Xcode is not active, we do not want to trigger the extension as this would have the side effect of activating Xcode.
+      // Failing here has no user visibl effect. It just means that the metadata will have to be fetched at a later time.
+      throw AppError(message: "Xcode must be active to get formatting metadata")
+    }
+
     let timeout: TimeInterval = 2.0
 
     return try await withCheckedThrowingContinuation { continuation in
@@ -354,7 +373,8 @@ public final class DefaultXcodeController: XcodeController, Sendable {
             commandName: ExtensionCommandNames.cmd,
             xcodeObserver: xcodeObserver,
             shellService: shellService,
-            settingsService: settingsService)
+            settingsService: settingsService,
+            appsActivationState: appsActivationState.currentValue)
         } catch {
           defaultLogger.error("Failed to trigger formatting metadata extension: \(error)")
           let continuation = inLock { state -> CheckedContinuation<FileFormattingMetadata, Error>? in
@@ -417,14 +437,16 @@ extension DefaultXcodeController {
   static func triggerExtension(
     xcodeObserver: XcodeObserver,
     shellService: ShellService,
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    appsActivationState: AppsActivationState?)
     async throws
   {
     try await triggerExtensionCommand(
       commandName: ExtensionCommandNames.cmd,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
-      settingsService: settingsService)
+      settingsService: settingsService,
+      appsActivationState: appsActivationState)
   }
 
   @MainActor
@@ -432,17 +454,29 @@ extension DefaultXcodeController {
     commandName: String,
     xcodeObserver: XcodeObserver,
     shellService: ShellService,
-    settingsService: SettingsService)
+    settingsService: SettingsService,
+    appsActivationState: AppsActivationState?)
     async throws
   {
+    let needToActivateXcode = appsActivationState?.isXcodeActive != true
+    let isAppActive = NSApplication.shared.isActive
+    #if DEBUG
     guard let xcodeApp = await getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
       defaultLogger.error("Could not find running Xcode")
       throw AXError.cannotComplete
     }
+    #else
+    guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
+      defaultLogger.error("Could not find running Xcode")
+      throw AXError.cannotComplete
+    }
+    #endif
 
-    if !xcodeApp.activate() {
-      defaultLogger.error("Xcode not activated.")
-      try? activateXcodeWithAppleScript()
+    if needToActivateXcode {
+      if !xcodeApp.activate() {
+        defaultLogger.error("Xcode not activated.")
+        try? activateXcodeWithAppleScript()
+      }
     }
 
     let appElement = AXUIElementCreateApplication(xcodeApp.processIdentifier)
@@ -479,12 +513,14 @@ extension DefaultXcodeController {
       throw AXError.cannotComplete
     }
 
-    NSApplication.shared.activate()
+    if isAppActive, needToActivateXcode {
+      NSApplication.shared.activate()
+    }
   }
 
+  #if DEBUG
   @MainActor
   static func getXcode(xcodeObserver: XcodeObserver, shellService: ShellService) async -> NSRunningApplication? {
-    #if DEBUG
     // When in DEBUG mode, we first check if there is an instance of Xcode that has been launched by attaching to the extension.
     for pid in xcodeObserver.state.wrapped?.xcodesState.map(\.processIdentifier) ?? [] {
       if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
@@ -493,7 +529,6 @@ extension DefaultXcodeController {
         }
       }
     }
-    #endif
     if
       let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
       let app = NSRunningApplication(processIdentifier: processId)
@@ -503,6 +538,19 @@ extension DefaultXcodeController {
     defaultLogger.error("Could not find Xcode process id")
     return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
   }
+  #else
+  @MainActor
+  static func getXcode(xcodeObserver: XcodeObserver, shellService _: ShellService) -> NSRunningApplication? {
+    if
+      let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
+      let app = NSRunningApplication(processIdentifier: processId)
+    {
+      return app
+    }
+    defaultLogger.error("Could not find Xcode process id")
+    return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
+  }
+  #endif
 
 }
 
@@ -560,7 +608,8 @@ extension BaseProviding where
   Self: AppEventHandlerRegistryProviding,
   Self: ShellServiceProviding,
   Self: SettingsServiceProviding,
-  Self: FileManagerProviding
+  Self: FileManagerProviding,
+  Self: AppsActivationStateProviding
 {
   public var xcodeController: XcodeController {
     shared {
@@ -569,7 +618,8 @@ extension BaseProviding where
         shellService: shellService,
         xcodeObserver: xcodeObserver,
         settingsService: settingsService,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        appsActivationState: appsActivationState)
     }
   }
 }

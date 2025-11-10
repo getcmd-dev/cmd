@@ -3,6 +3,7 @@
 
 import FileDiffFoundation
 import Foundation
+import SettingsServiceInterface
 import ThreadSafe
 
 #if DEBUG
@@ -10,7 +11,7 @@ import ThreadSafe
 public final class MockXcodeController: XcodeController {
   public init() { }
 
-  public var onApplyFileChange: (@Sendable (FileChange) -> Void)?
+  public var onApplyFileChange: (@Sendable (FileChange, FileEditMode?) -> Void)?
 
   public var onBuild: (@Sendable (URL, BuildType) async throws -> BuildSection)?
 
@@ -26,6 +27,10 @@ public final class MockXcodeController: XcodeController {
     try await onExecuteExtensionCommand?(commandName)
   }
 
+  public func apply(fileChange: FileChange, editMode: FileEditMode? = nil) async throws {
+    onApplyFileChange?(fileChange, editMode)
+  }
+
   public func getFormattingMetadata() async throws -> FileFormattingMetadata {
     if let onGetFormattingMetadata {
       try await onGetFormattingMetadata()
@@ -36,10 +41,6 @@ public final class MockXcodeController: XcodeController {
 
   public func reloadExtension() async throws {
     try await onReloadExtension?()
-  }
-
-  public func apply(fileChange: FileChange) async throws {
-    onApplyFileChange?(fileChange)
   }
 
   public func build(project: URL, buildType: BuildType) async throws -> BuildSection {

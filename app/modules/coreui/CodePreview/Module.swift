@@ -23,6 +23,7 @@ Target.module(
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
+    "SettingsServiceInterface",
     "SwiftTesting",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",

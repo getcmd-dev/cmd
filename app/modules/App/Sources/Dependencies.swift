@@ -27,6 +27,8 @@ import GithubCopilotServiceInterface
 import HighlighterServiceInterface
 import JRPCService
 import JRPCServiceInterface
+import KeyboardShortcutService
+import KeyboardShortcutServiceInterface
 import LLMService
 import LLMServiceInterface
 import LocalServerService
@@ -55,7 +57,7 @@ extension AppEventHandlerRegistryDependencyKey: DependencyKey {
 // MARK: - AppsActivationStateDependencyKey + DependencyKey
 
 extension AppsActivationStateDependencyKey: DependencyKey {
-  public static var liveValue: AnyPublisher<AppsActivationState, Never> {
+  public static var liveValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
     AppScope.shared.appsActivationState
   }
 }
@@ -128,6 +130,12 @@ extension GithubCopilotServiceDependencyKey: DependencyKey {
 
 extension HighlighterServiceDependencyKey: DependencyKey {
   public static var liveValue: Highlight { AppScope.shared.highlighter }
+}
+
+// MARK: - KeyboardShortcutServiceDependencyKey + DependencyKey
+
+extension KeyboardShortcutServiceDependencyKey: DependencyKey {
+  public static var liveValue: KeyboardShortcutService { AppScope.shared.keyboardShortcutService }
 }
 
 // MARK: - LLMServiceDependencyKey + DependencyKey
@@ -257,6 +265,10 @@ extension AppScope: IsHostAppActiveProviding {
     sharedDependencies!.isAppActive
   }
 }
+
+// MARK: - AppScope + KeyboardShortcutServiceProviding
+
+extension AppScope: KeyboardShortcutServiceProviding { }
 
 // MARK: - AppScope + LLMServiceProviding
 

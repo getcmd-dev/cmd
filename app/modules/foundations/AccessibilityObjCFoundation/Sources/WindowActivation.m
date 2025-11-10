@@ -2,20 +2,19 @@
 
 @implementation WindowActivation
 
-+ (OSStatus)activateAppAndMakeWindowFront:(NSRunningApplication *)application window:(AXUIElementRef)window
++ (OSStatus)activateApp:(pid_t)pid
 {
-    if(!application || application.processIdentifier == -1) {
-        return procNotFound; // Previous front most application is nil or does not have a process identifier.
+    if(pid == -1) {
+        return procNotFound; // Process identifier is invalid.
     }
-    AXUIElementPerformAction(window, kAXRaiseAction);
 
     ProcessSerialNumber process;
-    OSStatus error = GetProcessForPID(application.processIdentifier, &process); // Deprecated, but replacement (NSRunningApplication:activateWithOptions:] does not work properly on Big Sur.
+    OSStatus error = GetProcessForPID(pid, &process); // Deprecated, but replacement (NSRunningApplication:activateWithOptions:] does not work properly on Big Sur.
     if(error) {
         return error; // Process could not be obtained. Evaluate error (e.g. using osstatus.com) to understand why.
     }
-    
-    return SetFrontProcessWithOptions(&process, kSetFrontProcessFrontWindowOnly); // Deprecated, but replacement (NSRunningApplication:activateWithOptions:] does not work properly on Big Sur.
+
+    return SetFrontProcess(&process); // Deprecated, but replacement (NSRunningApplication:activateWithOptions:] does not work properly on Big Sur.
 }
 
 @end

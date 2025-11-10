@@ -30,7 +30,7 @@ struct CodeSuggestionHelperTests {
     #expect(result.newContent == "Hello Swift")
     #expect(result.newCursorSelection.start.line == 0)
     #expect(result.newCursorSelection.start.character == 11)
-    #expect(result.diffLineStart == 1)
+    #expect(result.diffLineStart == 0)
     #expect(result.diff.debugDescription == "Hello {-World-}{+Swift+}")
   }
 
@@ -59,7 +59,7 @@ struct CodeSuggestionHelperTests {
     #expect(result.file == file)
     #expect(result.newContent.hasPrefix("func hello(name: String)"))
     #expect(result.newCursorSelection.start.line == 0)
-    #expect(result.diffLineStart == 1)
+    #expect(result.diffLineStart == 0)
     #expect(result.diff.debugDescription == "func hello({+name: String+}) {\n")
   }
 

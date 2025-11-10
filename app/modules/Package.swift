@@ -181,6 +181,8 @@ targets.append(
       "HighlighterServiceInterface",
       "JRPCService",
       "JRPCServiceInterface",
+      "KeyboardShortcutService",
+      "KeyboardShortcutServiceInterface",
       "LLMService",
       "LLMServiceInterface",
       "LocalServerService",
@@ -623,16 +625,23 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AccessibilityFoundation",
       "AccessibilityObjCFoundation",
+      "AppFoundation",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
+      "ConcurrencyFoundation",
       "DLS",
+      "FileDiffFoundation",
       "FileDiffTypesFoundation",
       "FoundationInterfaces",
+      "KeyboardShortcutServiceInterface",
       "LoggingServiceInterface",
       "RoutingFoundation",
       "SettingsServiceInterface",
+      "ShellServiceInterface",
+      "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
       "XcodeObserverWindowsAdapter",
+      "XcodeThemeFoundation",
     ],
     path: "./features/CodeCompletionFeature"))
 
@@ -725,6 +734,7 @@ targets.append(
       "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "LoggingServiceInterface",
+      "SettingsServiceInterface",
       "SwiftTesting",
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
@@ -814,8 +824,10 @@ targets.append(
       "ConcurrencyFoundation",
       "EditFilesTool",
       "FileDiffFoundation",
+      "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "JSONFoundation",
+      "SettingsServiceInterface",
       "SwiftTesting",
       "ToolFoundation",
       "XcodeControllerServiceInterface",
@@ -1078,6 +1090,29 @@ targets.append(
     dependencies: [],
     testsDependencies: [],
     path: "./foundations/JSONFoundation"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "KeyboardShortcutService",
+    dependencies: [
+      .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+      "DependencyFoundation",
+      "KeyboardShortcutServiceInterface",
+      "LoggingServiceInterface",
+      "ThreadSafe",
+      "XcodeObserverServiceInterface",
+    ],
+    path: "./services/KeyboardShortcutService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "KeyboardShortcutServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+      "ThreadSafe",
+    ],
+    path: "./serviceInterfaces/KeyboardShortcutServiceInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -1746,6 +1781,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
+      "SettingsServiceInterface",
       "SharedValuesFoundation",
       "ThreadSafe",
     ],
@@ -1794,6 +1830,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
+      "LoggingServiceInterface",
       "ThreadSafe",
     ],
     testsDependencies: [
@@ -1811,6 +1848,12 @@ targets.append(
       "XcodeObserverServiceInterface",
     ],
     path: "./serviceAdapters/XcodeObserverWindowsAdapter"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "XcodeThemeFoundation",
+    dependencies: [],
+    path: "./foundations/XcodeThemeFoundation"))
 
 targets.append(
   contentsOf: Target.module(

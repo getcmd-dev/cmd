@@ -37,5 +37,8 @@ import SwiftUI
         ]),
     ])
 
-  CompletionDiffView(completion: mockCompletion)
+  CompletionDiffView(
+    completion: mockCompletion,
+    font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+    lineSpacing: 0)
 }
