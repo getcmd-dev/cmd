@@ -199,31 +199,25 @@ struct InternalSettingsView: View {
     let state = xcodeObserver.statePublisher.currentValue
 
     Task {
-      do {
-        var workspaceData = [String: String]()
+      var stateRepresentation = ""
 
-        switch state {
-        case .unknown:
-          workspaceData["state"] = "unknown"
-        case .missingAXPermission:
-          workspaceData["state"] = "missingAXPermission"
-        case .state(let xcodeState):
-          for appState in xcodeState.xcodesState {
-            for workspace in appState.workspaces {
-              workspaceData[workspace.url.path] = workspace.axElement.debugDescription as? String ?? "No AX Description"
-            }
+      switch state {
+      case .unknown:
+        stateRepresentation = "unknown"
+      case .missingAXPermission:
+        stateRepresentation = "missingAXPermission"
+      case .state(let xcodeState):
+        for appState in xcodeState.xcodesState {
+          for workspace in appState.workspaces {
+            stateRepresentation
+              .append(
+                ">>>> Workspace: \(workspace.url.path)\n\(workspace.axElement.debugDescription as? String ?? "No AX Description")\n<<<<\n")
           }
         }
-
-        // Create JSON data
-        let jsonData = try JSONSerialization.data(withJSONObject: workspaceData, options: .prettyPrinted)
-        let jsonStr = String(data: jsonData, encoding: .utf8) ?? "{}"
-
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(jsonStr, forType: .string)
-      } catch {
-        defaultLogger.error("Failed to write or open workspace AX state: \(error)")
       }
+
+      NSPasteboard.general.clearContents()
+      NSPasteboard.general.setString(stateRepresentation, forType: .string)
     }
   }
 }
