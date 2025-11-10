@@ -47,10 +47,16 @@ struct MockLocalServerTests {
   @Test
   func testGetRequestCancellation() async throws {
     let server = MockLocalServer()
+    let requestStarted = expectation(description: "Request started")
     let expectation = expectation(description: "Request should be cancelled")
 
     server.onGetRequest = { _, _ in
-      try await Task.sleep(for: .seconds(1))
+      requestStarted.fulfill()
+      // Check for cancellation in a loop
+      while !Task.isCancelled {
+        try await Task.yield()
+      }
+      try Task.checkCancellation()
       return Data()
     }
 
@@ -63,7 +69,8 @@ struct MockLocalServerTests {
       }
     }
 
-    // Cancel the task immediately
+    // Wait for request to start, then cancel
+    try await fulfillment(of: requestStarted)
     task.cancel()
     try await fulfillment(of: expectation)
   }
@@ -114,10 +121,16 @@ struct MockLocalServerTests {
   func testPostRequestCancellation() async throws {
     let server = MockLocalServer()
     let testData = "Test".utf8Data
+    let requestStarted = expectation(description: "Request started")
     let expectation = expectation(description: "Request should be cancelled")
 
     server.onPostRequest = { _, _, _ in
-      try await Task.sleep(for: .seconds(1))
+      requestStarted.fulfill()
+      // Check for cancellation in a loop
+      while !Task.isCancelled {
+        try await Task.yield()
+      }
+      try Task.checkCancellation()
       return Data()
     }
 
@@ -135,7 +148,8 @@ struct MockLocalServerTests {
       }
     }
 
-    // Cancel the task immediately
+    // Wait for request to start, then cancel
+    try await fulfillment(of: requestStarted)
     task.cancel()
     try await fulfillment(of: expectation)
   }
@@ -144,12 +158,15 @@ struct MockLocalServerTests {
   func testStreamingDataAfterCompletion() async throws {
     let server = MockLocalServer()
     let dataReceived = Atomic<Bool>(false)
+    let requestCompleted = expectation(description: "The request completed")
+    let lateDataAttempted = expectation(description: "Late data send attempted")
 
     server.onGetRequest = { _, onReceiveJSONData in
       // Try to send data after returning response
       Task {
-        try await Task.sleep(for: .milliseconds(100))
+        try await fulfillment(of: requestCompleted)
         onReceiveJSONData?("Late data".utf8Data)
+        lateDataAttempted.fulfill()
       }
       return Data()
     }
@@ -157,9 +174,10 @@ struct MockLocalServerTests {
     _ = try await server.getRequest(path: "/test", configure: { _ in }, onReceiveJSONData: { _ in
       dataReceived.mutate { $0 = true }
     }, idleTimeout: 60)
+    requestCompleted.fulfill()
 
-    // Wait a bit to ensure the delayed data sending attempt happened
-    try await Task.sleep(for: .milliseconds(200))
+    // Wait for the delayed data sending attempt to happen
+    try await fulfillment(of: lateDataAttempted)
     #expect(dataReceived.value == false, "Should not receive data after request completion")
   }
 }

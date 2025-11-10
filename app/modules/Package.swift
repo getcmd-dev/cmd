@@ -1830,6 +1830,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
+      "LoggingServiceInterface",
       "ThreadSafe",
     ],
     testsDependencies: [

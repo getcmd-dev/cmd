@@ -226,14 +226,3 @@ private final class ObservableValue: Sendable {
   var observableValues = [ObservableValue]()
 
 }
-
-/// Helpers
-private func nextTick() async {
-  _ = await withCheckedContinuation { continuation in
-    Task {
-      await MainActor.run {
-        continuation.resume(returning: ())
-      }
-    }
-  }
-}

@@ -713,8 +713,15 @@ struct GithubCopilotServerTests {
     // then
     try await fulfillment(of: expectWatchedFilesResponse)
 
-    // Wait a bit for notifications to be sent
-    try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    // Wait for the expected number of notifications to be sent by polling
+    let expectNotifications = expectation(description: "All notifications sent")
+    Task {
+      while notifications.value.count < 2 {
+        await Task.yield()
+      }
+      expectNotifications.fulfill()
+    }
+    try await fulfillment(of: expectNotifications)
 
     // Verify the response contains the first 100 files
     let response = try #require(responseData.value)

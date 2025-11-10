@@ -13,8 +13,8 @@ struct DefaultShellServiceTests {
   func testEnvMergingWithInteractiveShell() async throws {
     let shellService = DefaultShellService()
 
-    // Wait for the shell environment to load
-    try await Task.sleep(for: .seconds(2))
+    // Wait for the shell environment to load by accessing the env property
+    _ = await shellService.env
 
     let customEnv = [
       "TEST_VAR1": "value1",
@@ -72,8 +72,8 @@ struct DefaultShellServiceTests {
   func testInteractiveShellEnvironmentPreserved() async throws {
     let shellService = DefaultShellService()
 
-    // Wait for the shell environment to load
-    try await Task.sleep(for: .seconds(2))
+    // Wait for the shell environment to load by accessing the env property
+    _ = await shellService.env
 
     let result = try await shellService.run(
       "echo \"PATH=$PATH\"",

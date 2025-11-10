@@ -6,6 +6,7 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
+    "LoggingServiceInterface",
     "ThreadSafe",
   ],
   testsDependencies: [
