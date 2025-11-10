@@ -1,12 +1,6 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
-// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
-// Allow the window to appear above Xcode's main window
-
-// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
-// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
@@ -52,12 +46,10 @@ final class CodeCompletionWindow: XcodeWindow {
 
     let root = AnyView(CodeCompletionView(viewModel: viewModel))
       .background(.clear)
-      .clipped()
 
     let hostingView = NSHostingView(rootView: root)
     self.hostingView = hostingView
 
-    hostingView.translatesAutoresizingMaskIntoConstraints = false
     hostingView.wantsLayer = true
     hostingView.layer?.masksToBounds = true
     contentView = hostingView

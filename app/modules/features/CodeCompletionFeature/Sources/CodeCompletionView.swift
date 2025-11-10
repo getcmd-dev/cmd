@@ -10,22 +10,29 @@ import SwiftUI
 
 struct CodeCompletionView: View {
   @Bindable var viewModel: CodeCompletionViewModel
+
   var body: some View {
-    Group {
-      if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
-        CompletionDiffView(
-          completion: completion,
-          font: viewModel.font,
-          lineSpacing: viewModel.lineSpacing)
-          .padding(.top, viewModel.verticalContentOffset)
-          .padding(.top, (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
-          .padding(.leading, viewModel.horizontalContentOffset)
-      } else {
-        // Empty state with minimal size
-        Color.clear.frame(width: 1, height: 1)
+    GeometryReader { geometry in
+      Group {
+        if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
+          CompletionDiffView(
+            completion: completion,
+            font: viewModel.font,
+            lineSpacing: viewModel.lineSpacing)
+            .padding(.top, viewModel.verticalContentOffset)
+            .padding(
+              .top,
+              (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
+            .padding(.leading, viewModel.horizontalContentOffset)
+            .fixedSize()
+        } else {
+          // Empty state with minimal size
+          Color.clear.frame(width: 1, height: 1)
+        }
       }
+      .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+      .clipped()
     }
-    .fixedSize()
   }
 }
 
