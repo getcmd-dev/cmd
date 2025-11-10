@@ -27,14 +27,17 @@ git config core.hooksPath tools/githooks
 
 ## Available Hooks
 
-### pre-push
+### pre-commit
 
-Runs before each push to ensure code quality:
+Runs before each commit to ensure code quality:
 - `cmd lint` - Runs linting checks (Swift, TypeScript, shell, Ruby, YAML)
 - `cmd sync:dependencies` - Syncs Swift package dependencies
 
-If these commands create changes:
-1. All uncommitted changes are temporarily stashed
-2. A fixup commit is automatically created with the lint/sync changes
-3. Your stashed changes are restored
-4. The push proceeds with the new fixup commit included
+How it works:
+1. Unstaged changes are temporarily stashed (using `--keep-index` to preserve what you staged)
+2. Lint and sync run on the full working tree
+3. Any changes from lint/sync are automatically staged
+4. Your original unstaged changes are restored to remain unstaged
+5. The commit proceeds with your originally staged changes plus the lint/sync fixes
+
+This preserves your staging intent - files you left unstaged remain unstaged.

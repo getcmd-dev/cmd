@@ -1,0 +1,50 @@
+#! /bin/bash
+
+# Run a few quick pre-commit hooks to ensure the code is in a good state before committing.
+
+# Fail on errors
+set -euo pipefail
+
+# Unset git environment variables that might interfere with git commands
+# Git sets GIT_DIR when running hooks, which can cause git rev-parse to return
+# incorrect paths when called from subdirectories (especially in worktrees)
+unset GIT_DIR
+unset GIT_WORK_TREE
+
+repo_root=$(git rev-parse --show-toplevel)
+current_dir=$(pwd)
+
+if [ -z "$repo_root" ]; then
+    echo "Not a git repository"
+    exit 1
+fi
+
+# Change to repo root to ensure git commands work correctly
+cd "$repo_root"
+
+# Count stashes before
+stash_count_before=$(git stash list | wc -l)
+
+# Stash unstaged changes, keeping the index (staged changes) intact
+# This allows lint/sync to run on the full working tree
+git stash push --keep-index --quiet --message "pre-commit-hook-temp" || true
+
+./cmd.sh lint
+./cmd.sh sync:dependencies
+
+# Stage any changes created by lint/sync
+git add -u
+
+# Count stashes after
+stash_count_after=$(git stash list | wc -l)
+
+# Restore unstaged changes only if we created a new stash
+if [ "$stash_count_after" -gt "$stash_count_before" ]; then
+    git stash pop --quiet --index 2>/dev/null || {
+        echo "⚠️  Warning: Could not restore unstaged changes. Check 'git stash list'"
+    }
+fi
+
+cd "$current_dir"
+
+echo "✓ Pre-commit hooks completed."

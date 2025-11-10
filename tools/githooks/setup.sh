@@ -10,8 +10,8 @@ echo "Setting up git hooks..."
 # Navigate to repo root
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
 if [ -z "$repo_root" ]; then
-    echo "❌ Not a git repository"
-    exit 1
+	echo "❌ Not a git repository"
+	exit 1
 fi
 
 cd "$repo_root"
@@ -20,9 +20,9 @@ cd "$repo_root"
 git config core.hooksPath "$HOOKS_DIR"
 
 if [ $? -eq 0 ]; then
-    echo "✓ Git hooks configured successfully"
-    echo "  Hooks directory: $HOOKS_DIR"
+	echo "✓ Git hooks configured successfully"
+	echo "  Hooks directory: $HOOKS_DIR"
 else
-    echo "❌ Failed to configure git hooks"
-    exit 1
+	echo "❌ Failed to configure git hooks"
+	exit 1
 fi
