@@ -90,6 +90,9 @@ public protocol ShellService: Sendable {
   /// The loaded interactive shell environment variables (from zsh -il).
   /// This is populated asynchronously during service initialization.
   var env: [String: String] { get async }
+
+  @discardableResult
+  func run(appleScript: String) throws -> String?
 }
 
 extension ShellService {

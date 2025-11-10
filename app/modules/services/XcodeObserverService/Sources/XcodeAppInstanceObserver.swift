@@ -2,9 +2,12 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AccessibilityFoundation
+import AppFoundation
 @preconcurrency import AppKit
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import LoggingServiceInterface
+import ShellServiceInterface
 import ThreadSafe
 import XcodeObserverServiceInterface
 
@@ -13,20 +16,30 @@ import XcodeObserverServiceInterface
 @ThreadSafe
 final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
   @MainActor
-  init(runningApplication: NSRunningApplication, axNotificationPublisher: PassthroughSubject<AXNotification, Never>) {
+  init(
+    runningApplication: NSRunningApplication,
+    axNotificationPublisher: PassthroughSubject<AXNotification, Never>,
+    shellService: ShellService)
+  {
     self.runningApplication = runningApplication
     self.axNotificationPublisher = axNotificationPublisher
+    self.shellService = shellService
     processIdentifier = runningApplication.processIdentifier
     let appElement = AXUIElementCreateApplication(runningApplication.processIdentifier)
     self.appElement = appElement
 
+    let focusedWindow = appElement.focusedWindow
+    let focusedWorkspaceURL = focusedWindow.map { Self.parseWorkspaceUrl(for: $0, shellService: shellService) } ??? nil
     let state = InternalXcodeAppState(
       processIdentifier: runningApplication.processIdentifier,
       workspaces: [],
-      focusedWorkspaceURL: appElement.focusedWindow?.workspaceURL)
+      focusedWorkspaceURL: focusedWorkspaceURL)
     internalState = .init(state)
     super.init(element: appElement)
 
+    if let focusedWindow, let focusedWorkspaceURL {
+      windowInfoWorkspaceUrlCache[focusedWindow] = focusedWorkspaceURL
+    }
     updateVisibleWorkspaceInfo()
     observeAXNotifications()
   }
@@ -61,6 +74,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
   private typealias WorkspaceIdentifier = URL
 
   private let axNotificationPublisher: PassthroughSubject<AXNotification, Never>
+  private let shellService: ShellService
 
   private var axSubscription: AnyCancellable?
   private var updateWorkspaceInfoTask: Task<Void, Error>?
@@ -72,6 +86,45 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
   private var workspaceSubscriptions = [URL: AnyCancellable]()
 
   private var _onDidReceiveAppActivationNotification: (@MainActor @Sendable (XcodeAppInstanceObserver, Bool) -> Void)?
+
+  private var windowInfoWorkspaceUrlCache = [AXUIElement: URL]()
+
+  private static func parseWorkspaceUrl(for window: AXUIElement, shellService: ShellService) -> URL? {
+    for child in window.children {
+      if
+        let description = child.description,
+        description.starts(with: "/"), description.count > 1
+      {
+        let path = description
+        let trimmedNewLine = path.trimmingCharacters(in: .newlines)
+        return URL(fileURLWithPath: trimmedNewLine)
+      }
+    }
+    if
+      window.identifier == "Xcode.WorkspaceWindow",
+      let document = window.documentURL,
+      let openedWorkspaces = try? shellService.run(appleScript: """
+        tell application "Xcode"
+            set wsPaths to {}
+            repeat with w in workspace documents
+                copy (path of w) to end of wsPaths
+            end repeat
+            return wsPaths
+        end tell
+        """)?.split(separator: "\n"),
+      !openedWorkspaces.isEmpty
+    {
+      for wsPath in openedWorkspaces {
+        let wsUrl = URL(fileURLWithPath: String(wsPath))
+        if wsUrl.pathExtension == "xcworkspace" || wsUrl.pathExtension == "xcodeproj" {
+          if document.isWithin(root: wsUrl.deletingPathExtension()) {
+            return wsUrl
+          }
+        }
+      }
+    }
+    return nil
+  }
 
   @MainActor
   private func observeAXNotifications() {
@@ -133,6 +186,17 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     }
   }
 
+  private func workspaceUrl(for window: AXUIElement) -> URL? {
+    if let cached = windowInfoWorkspaceUrlCache[window] {
+      return cached
+    }
+    if let url = Self.parseWorkspaceUrl(for: window, shellService: shellService) {
+      windowInfoWorkspaceUrlCache[window] = url
+      return url
+    }
+    return nil
+  }
+
   /// With Accessibility API, we can ONLY get the information of visible windows.
   @MainActor
   private func updateVisibleWorkspaceInfo() {
@@ -143,7 +207,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     let existingWorkspaces = workspaceInspectors
 
     for window in windows {
-      guard let workspaceURL = window.workspaceURL else { continue }
+      guard let workspaceURL = workspaceUrl(for: window) else { continue }
       let workspace = existingWorkspaces[workspaceURL] ?? XcodeWorkspaceObserver(
         runningApplication: runningApplication,
         workspace: window,
@@ -172,7 +236,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
   /// If the inspector is not created, it creates a new inspector and subscribes to it.
   @MainActor
   private func workspaceInspector(for window: AXUIElement) -> XcodeWorkspaceObserver? {
-    guard let workspaceURL = window.workspaceURL else {
+    guard let workspaceURL = workspaceUrl(for: window) else {
       // Likely the window is not a workspace.
       return nil
     }
@@ -263,6 +327,10 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
 
     if newState != currentState {
       internalState.send(newState)
+    }
+
+    windowInfoWorkspaceUrlCache = windowInfoWorkspaceUrlCache.filter { cacheEntry in
+      newState.workspaces.contains(where: { $0.axElement.wrappedValue == cacheEntry.key })
     }
   }
 

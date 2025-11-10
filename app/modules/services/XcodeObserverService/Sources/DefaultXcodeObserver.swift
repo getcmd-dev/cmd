@@ -136,6 +136,13 @@ final class DefaultXcodeObserver: XcodeObserver {
     }
   }
 
+  @objc @MainActor
+  private func handle(didLaunchApplicationNotification notification: NSNotification) {
+    if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication {
+      handleLaunch(of: app)
+    }
+  }
+
   private func observeDidActivateApplicationNotification() {
     NSWorkspace.shared.notificationCenter.addObserver(
       self,
@@ -157,6 +164,14 @@ final class DefaultXcodeObserver: XcodeObserver {
       self,
       selector: #selector(handle(didTerminateApplicationNotification:)),
       name: NSWorkspace.didTerminateApplicationNotification,
+      object: nil)
+  }
+
+  private func observeDidLaunchApplicationNotification() {
+    NSWorkspace.shared.notificationCenter.addObserver(
+      self,
+      selector: #selector(handle(didLaunchApplicationNotification:)),
+      name: NSWorkspace.didLaunchApplicationNotification,
       object: nil)
   }
 
@@ -199,7 +214,10 @@ final class DefaultXcodeObserver: XcodeObserver {
     let runningApplications = NSWorkspace.shared.runningApplications
     let xcodes = runningApplications
       .filter(\.isXcode)
-      .map { XcodeAppInstanceObserver(runningApplication: $0, axNotificationPublisher: axNotificationPublisher) }
+      .map { XcodeAppInstanceObserver(
+        runningApplication: $0,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService) }
 
     let activeApplicationPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
 
@@ -219,6 +237,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     observeDidActivateApplicationNotification()
     observeDidDeactivateApplicationNotification()
     observeDidTerminateApplicationNotification()
+    observeDidLaunchApplicationNotification()
     let activeInstanceCancellable = pollActiveInstance()
     let deadProcessesCancellable = pollDeadProcesses()
 
@@ -256,7 +275,10 @@ final class DefaultXcodeObserver: XcodeObserver {
     if
       app.isXcode, xcodeObservers[app.processIdentifier] == nil
     {
-      let newXcodeApp = XcodeAppInstanceObserver(runningApplication: app, axNotificationPublisher: axNotificationPublisher)
+      let newXcodeApp = XcodeAppInstanceObserver(
+        runningApplication: app,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService)
       startTracking(newXcodeApp: newXcodeApp)
     }
     handleActivation(of: app.processIdentifier)
@@ -284,6 +306,18 @@ final class DefaultXcodeObserver: XcodeObserver {
       state.xcodeObservers.values.first { $0.runningApplication == app }
     }
     observerToStop.map(stopTracking(xcodeApp:))
+  }
+
+  /// Modify the state when a new application is launched.
+  @MainActor
+  private func handleLaunch(of app: NSRunningApplication) {
+    if app.isXcode, xcodeObservers[app.processIdentifier] == nil {
+      let newXcodeApp = XcodeAppInstanceObserver(
+        runningApplication: app,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService)
+      startTracking(newXcodeApp: newXcodeApp)
+    }
   }
 
   /// Start tracking a new instance of Xcode, and update the state.

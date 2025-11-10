@@ -22,12 +22,17 @@ fi
 # Change to repo root to ensure git commands work correctly
 cd "$repo_root"
 
-# Count stashes before
-stash_count_before=$(git stash list | wc -l)
+# Check if there are unstaged changes (excluding untracked files)
+has_unstaged_changes=false
+if ! git diff-files --quiet; then
+    has_unstaged_changes=true
+fi
 
-# Stash unstaged changes, keeping the index (staged changes) intact
+# Stash unstaged changes only if they exist, keeping the index (staged changes) intact
 # This allows lint/sync to run on the full working tree
-git stash push --keep-index --quiet --message "pre-commit-hook-temp" || true
+if [ "$has_unstaged_changes" = true ]; then
+    git stash push --keep-index --quiet --message "pre-commit-hook-temp"
+fi
 
 ./cmd.sh lint
 ./cmd.sh sync:dependencies
@@ -35,11 +40,8 @@ git stash push --keep-index --quiet --message "pre-commit-hook-temp" || true
 # Stage any changes created by lint/sync
 git add -u
 
-# Count stashes after
-stash_count_after=$(git stash list | wc -l)
-
-# Restore unstaged changes only if we created a new stash
-if [ "$stash_count_after" -gt "$stash_count_before" ]; then
+# Restore unstaged changes only if we stashed them
+if [ "$has_unstaged_changes" = true ]; then
     git stash pop --quiet --index 2>/dev/null || {
         echo "⚠️  Warning: Could not restore unstaged changes. Check 'git stash list'"
     }
