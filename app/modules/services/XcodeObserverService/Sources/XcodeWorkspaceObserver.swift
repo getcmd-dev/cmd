@@ -163,8 +163,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
       switch event {
       case .focusedUIElementChanged:
-        let focusedEditorId: String?? = editorInspectors.first(where: { $0.editorElement == notification.element })?.id ?? nil
-
+        let focusedEditorId: String? = editorInspectors.first(where: { $0.editorElement == notification.element })?.id ?? nil
         updateStateWith(
           focusedEditorId: focusedEditorId)
 
