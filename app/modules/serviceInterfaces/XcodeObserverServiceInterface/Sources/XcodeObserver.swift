@@ -5,6 +5,7 @@ import AccessibilityFoundation
 import Combine
 import ConcurrencyFoundation
 import Foundation
+import LoggingServiceInterface
 
 // MARK: - XcodeObserver
 
@@ -123,8 +124,15 @@ extension AXState<XcodeState> {
 extension XcodeWorkspaceState {
 
   public var focussedEditor: XcodeEditorState? {
-    editors.filter(\.isFocused).first ??
-      editors.first
+    if let editor = editors.filter(\.isFocused).first {
+      return editor
+    }
+    if let editor = editors.first {
+      defaultLogger
+        .trace("No focused editor found, returning first one. AX State: \(axElement.debugDescription as? String ?? "nil")")
+      return editor
+    }
+    return nil
   }
 }
 

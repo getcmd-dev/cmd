@@ -195,6 +195,21 @@ struct DefaultXcodeControllerTests {
     assert(newFileContent == newContent)
   }
 
+  @Test("getFormattingMetadata fails when Xcode is not active")
+  func testGetFormattingMetadataFailsWhenXcodeNotActive() async throws {
+    // given
+    let controller = DefaultXcodeController(
+      appsActivationState: .just(.inactive),
+      startApplyingFileChangeWithXcodeExtension: {
+        Issue.record("Xcode extension should not have been triggered")
+      })
+
+    // when/then
+    await #expect(throws: (any Error).self) {
+      try await controller.getFormattingMetadata()
+    }
+  }
+
 }
 
 extension DefaultXcodeController {

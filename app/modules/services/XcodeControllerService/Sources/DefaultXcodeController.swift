@@ -347,6 +347,12 @@ final class DefaultXcodeController: XcodeController, Sendable {
   // MARK: - Formatting Metadata Helpers
 
   private func _getFormattingMetadata() async throws -> FileFormattingMetadata {
+    guard appsActivationState.currentValue.isXcodeActive else {
+      // If Xcode is not active, we do not want to trigger the extension as this would have the side effect of activating Xcode.
+      // Failing here has no user visibl effect. It just means that the metadata will have to be fetched at a later time.
+      throw AppError(message: "Xcode must be active to get formatting metadata")
+    }
+
     let timeout: TimeInterval = 2.0
 
     return try await withCheckedThrowingContinuation { continuation in
