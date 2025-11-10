@@ -28,9 +28,18 @@ final class DefaultSettingsService: SettingsService {
     releaseSharedUserDefaults: UserDefaultsI?,
     bundle: Bundle = .main)
   {
+    // Sandboxed processes (like the Xcode extension) cannot access the home directory.
+    // They read settings from UserDefaults instead, so settingsFileLocation is nil.
+    let settingsFileLocation: URL? =
+      if bundle.isHostApp {
+        fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
+      } else {
+        nil
+      }
+
     self.init(
       fileManager: fileManager,
-      settingsFileLocation: fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json"),
+      settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: releaseSharedUserDefaults,
       bundle: bundle)
@@ -38,7 +47,7 @@ final class DefaultSettingsService: SettingsService {
 
   init(
     fileManager: FileManagerI,
-    settingsFileLocation: URL,
+    settingsFileLocation: URL?,
     sharedUserDefaults: UserDefaultsI,
     releaseSharedUserDefaults: UserDefaultsI?,
     bundle: Bundle = .main)
@@ -119,7 +128,7 @@ final class DefaultSettingsService: SettingsService {
   private var notificationObserver: AnyCancellable?
 
   private let fileManager: FileManagerI
-  private let settingsFileLocation: URL
+  private let settingsFileLocation: URL?
   private let sharedUserDefaults: UserDefaultsI
   private let releaseSharedUserDefaults: UserDefaultsI?
   /// Whether the notification for updates from user defaults should be skipped.
@@ -148,7 +157,7 @@ final class DefaultSettingsService: SettingsService {
       .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
     let data: Data? =
-      if bundle.isHostApp {
+      if bundle.isHostApp, let settingsFileLocation {
         try? fileManager.read(dataFrom: settingsFileLocation)
       } else {
         // The Xcode extension is sandboxed and cannot read the settings from disk. It reads a copy written to user defaults.
@@ -169,7 +178,7 @@ final class DefaultSettingsService: SettingsService {
         }
       } ??? .defaultSettings
 
-    if let data {
+    if bundle.isHostApp, let data {
       saveSettingsForSandboxedProcesses(data)
     }
 
@@ -279,9 +288,10 @@ final class DefaultSettingsService: SettingsService {
     let internalSettings = try JSONEncoder.sortingKeys.encode(publicSettings.internalSettings())
     sharedUserDefaults.set(internalSettings, forKey: Keys.internalSettings)
 
-    // External settings are written to json files at known locations, that can easily be edited by users.
     let externalSettings = publicSettings.externalSettings
-    try externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
+    if let settingsFileLocation {
+      try externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
+    }
     saveSettingsForSandboxedProcesses(externalSettings)
 
     // Store this value separately in user defaults, as it can also be accessed by the release version.
