@@ -73,7 +73,7 @@ struct WorkspaceInitializationTests {
     mockXcodeObserver.mutableStatePublisher.send(state2)
 
     // Wait for initialization to complete
-    try await fulfillment(of: [listFilesExpectation, setupExpectation], timeout: 2)
+    try await fulfillment(of: [listFilesExpectation, setupExpectation])
 
     // then - setUp should be called exactly once
     #expect(setupCalls.value.count == 1)
@@ -129,7 +129,7 @@ struct WorkspaceInitializationTests {
     mockXcodeObserver.mutableStatePublisher.send(state2)
 
     // Wait for both initializations to complete
-    try await fulfillment(of: [setup1Expectation, setup2Expectation], timeout: 2)
+    try await fulfillment(of: [setup1Expectation, setup2Expectation])
 
     // then - both workspaces should be initialized exactly once
     #expect(listFilesCallCount.value == 2)
@@ -185,7 +185,7 @@ struct WorkspaceInitializationTests {
     }
 
     // Wait for initialization to complete
-    try await fulfillment(of: [setupExpectation, listFilesExpectation], timeout: 2)
+    try await fulfillment(of: [setupExpectation, listFilesExpectation])
 
     // then - initialization should only happen once
     #expect(listFilesCallCount.value == 1)
@@ -230,14 +230,31 @@ struct WorkspaceInitializationTests {
     mockXcodeObserver.mutableStatePublisher.send(state1)
 
     // Wait for initialization
-    try await fulfillment(of: [listFilesExpectation, setupExpectation], timeout: 2)
+    try await fulfillment(of: [listFilesExpectation, setupExpectation])
 
-    // Send a content change
+    // Send a content change - didOpen handler will process this edit
+    let didOpenExpectation = expectation(description: "didOpen called")
+    let didChangeExpectation = expectation(description: "didChange called")
+
+    mockCodeCompletionProvider.onDidOpen = { _, file, content, version in
+      #expect(file.path == "/workspace1/file1.swift")
+      #expect(content == "let x = 1")
+      #expect(version == 0)
+      didOpenExpectation.fulfill()
+    }
+
+    mockCodeCompletionProvider.onDidChange = { _, file, content, version in
+      #expect(didOpenExpectation.isFulfilled)
+      #expect(file.path == "/workspace1/file1.swift")
+      #expect(content == "let x = 2")
+      #expect(version == 1)
+      didChangeExpectation.fulfill()
+    }
+
     let state2 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 2")
     mockXcodeObserver.mutableStatePublisher.send(state2)
 
-    // Give time for async processing
-    try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    try await fulfillment(of: [didOpenExpectation, didChangeExpectation])
 
     // then - verify tracker has edits
     let tracker = await sut.recentEditsTrackers[workspace1]
@@ -250,7 +267,7 @@ struct WorkspaceInitializationTests {
   @Test("Retries failed workspace initialization")
   func retriesFailedWorkspaceInitialization() async throws {
     // given
-    let workspace1 = URL(fileURLWithPath: "/workspace1")
+    let workspace = URL(fileURLWithPath: "/workspace")
     let mockCodeCompletionProvider = MockCodeCompletionProvider(id: "test-provider")
     let mockXcodeObserver = MockXcodeObserver()
     let mockSettingsService = MockSettingsService()
@@ -261,7 +278,6 @@ struct WorkspaceInitializationTests {
 
     let listFilesCallCount = Atomic<Int>(0)
     let setupCallCount = Atomic<Int>(0)
-    let failureProcessed = Atomic<Bool>(false)
 
     mockCodeCompletionProvider.onSetUp = { _ in
       setupCallCount.mutate { $0 += 1 }
@@ -273,15 +289,11 @@ struct WorkspaceInitializationTests {
     // First call fails, second succeeds
     mockXcodeObserver.onListFiles = { workspace, _ in
       let callNumber = listFilesCallCount.value
-      listFilesCallCount.mutate { $0 += 1 }
+      listFilesCallCount.increment()
 
       if callNumber == 0 {
-        // Fulfill expectation after a delay to ensure state is set
-        Task {
-          try? await Task.sleep(nanoseconds: 50_000_000) // 50ms for async didInitialize to complete
-          failureProcessed.set(to: true)
-          firstAttemptFailedExpectation.fulfill()
-        }
+        // Fulfill expectation immediately - the error handling is synchronous
+        firstAttemptFailedExpectation.fulfill()
         throw AppError("Simulated failure")
       } else {
         secondAttemptExpectation.fulfill()
@@ -300,18 +312,19 @@ struct WorkspaceInitializationTests {
       shellService: MockShellService())
 
     // when - trigger initialization, which will fail
-    let state1 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 1")
+    let state1 = createXcodeState(workspace: workspace, file: "/workspace/file1.swift", content: "let x = 1")
     mockXcodeObserver.mutableStatePublisher.send(state1)
 
     // Wait for first attempt to fail AND state to be set
-    try await fulfillment(of: firstAttemptFailedExpectation, timeout: 2)
+    try await fulfillment(of: firstAttemptFailedExpectation)
+    await nextTick()
 
     // then - try again with a new state change (simulating user action)
-    let state2 = createXcodeState(workspace: workspace1, file: "/workspace1/file2.swift", content: "let y = 2")
+    let state2 = createXcodeState(workspace: workspace, file: "/workspace/file2.swift", content: "let y = 2")
     mockXcodeObserver.mutableStatePublisher.send(state2)
 
     // Wait for retry to succeed
-    try await fulfillment(of: [secondAttemptExpectation, setupExpectation], timeout: 2)
+    try await fulfillment(of: [secondAttemptExpectation, setupExpectation])
 
     // Verify retry worked
     #expect(listFilesCallCount.value == 2)

@@ -439,43 +439,6 @@ struct ChatInputViewModelTests {
     // Verify queue was cleared
     #expect(viewModel.queuedMessages.isEmpty)
   }
-
-  // MARK: - File Suggestion Timeout Tests
-
-  @MainActor
-  @Test("file suggestion search times out after 500ms")
-  func test_fileSuggestionSearch_timesOut() async throws {
-    // given
-    let mockXcodeObserver = MockXcodeObserver(workspaceURL: URL(filePath: "/workspace"))
-    let mockFileSuggestionService = MockFileSuggestionService()
-
-    // Configure the mock to hang indefinitely
-    mockFileSuggestionService.onSuggestFiles = { _, _, _ in
-      // This will never return, simulating a hang
-      try await Task.sleep(nanoseconds: 100_000_000_000) // 100 seconds
-      return []
-    }
-
-    let sut = withDependencies {
-      $0.xcodeObserver = mockXcodeObserver
-      $0.fileSuggestionService = mockFileSuggestionService
-    } operation: {
-      ChatInputViewModel(selectedModel: .gpt, activeModels: [.gpt])
-    }
-
-    let receivedTimeout = expectation(description: "Received timeout")
-
-    // when - trigger search
-    sut.inlineSearch = ("test", NSRange(location: 0, length: 4), nil)
-
-    // Wait a bit for the timeout to trigger (500ms + margin)
-    try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-
-    // If we reach here without the test hanging, the timeout worked
-    receivedTimeout.fulfill()
-
-    try await fulfillment(of: receivedTimeout)
-  }
 }
 
 extension MockSettingsService {

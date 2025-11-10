@@ -286,7 +286,7 @@ struct ReplaceableTaskQueueTests {
     taskReady.fulfill()
 
     // Now waitForIdle should complete
-    try await fulfillment(of: [taskCompletedExpectation, waitCompletedExpectation], timeout: 1.0)
+    try await fulfillment(of: [taskCompletedExpectation, waitCompletedExpectation])
   }
 
   @Test("waitForIdle works with multiple sequential tasks")

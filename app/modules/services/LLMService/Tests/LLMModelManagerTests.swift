@@ -607,7 +607,7 @@ class AIModelsManagerTests {
       to: [.anthropic: Settings.AIProviderSettings(apiKey: "new-key", baseUrl: nil, executable: nil, createdOrder: 1)])
 
     // then
-    try await fulfillment(of: [secondRequestReceived], timeout: 2)
+    try await fulfillment(of: [secondRequestReceived])
     #expect(requestCount.value == 2)
     _ = sut
   }
