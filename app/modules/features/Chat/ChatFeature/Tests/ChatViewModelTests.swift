@@ -1469,8 +1469,17 @@ struct ChatViewModelTests {
 
     // when
     // Select the same thread again
+    let exp2 = expectation(description: "switched to existing tab")
+    let cancellable2 = sut.didSet(\.currentTabIndex) { index in
+      Task { @MainActor in
+        if index == tabIndex {
+          exp2.fulfillAtMostOnce()
+        }
+      }
+    }
     await sut.handleSelectChatThread(id: threadId)
-    try await Task.sleep(nanoseconds: 100_000_000)
+    try await fulfillment(of: exp2)
+    _ = cancellable2
 
     // then
     // Should switch to existing tab, not create a new one
@@ -1638,8 +1647,22 @@ struct ChatViewModelTests {
       return SendMessageResponse(newMessages: [], usageInfo: nil)
     }
 
+    let streamingStarted = expectation(description: "streaming started")
+    let messageCompleted = expectation(description: "message completed")
+    let cancellable = sut.tab.observeChanges(to: \.isStreamingResponse) { isStreamingResponse in
+      Task { @MainActor in
+        // Wait for the assistant message to be added
+        if isStreamingResponse {
+          streamingStarted.fulfillAtMostOnce()
+        } else {
+          messageCompleted.fulfillAtMostOnce()
+        }
+      }
+    }
+
     await sut.tab.sendMessage()
-    try await Task.sleep(nanoseconds: 100_000_000)
+    try await fulfillment(of: [messageCompleted, streamingStarted])
+    _ = cancellable
 
     // then
     #expect(sut.tab.hasUnreadCompletion == false)

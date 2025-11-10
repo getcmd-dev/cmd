@@ -740,16 +740,6 @@ class LLMSettingsViewModelTests {
 
 // MARK: - Helpers
 
-private func nextTick() async {
-  _ = await withCheckedContinuation { continuation in
-    Task {
-      await MainActor.run {
-        continuation.resume(returning: ())
-      }
-    }
-  }
-}
-
 extension DependencyValues {
   fileprivate mutating func setDefaulfMockValues() {
     llmService = MockLLMService()
