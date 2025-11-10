@@ -48,7 +48,7 @@ final class DefaultPermissionsService: PermissionsService {
     }
   }
 
-  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never> {
+  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?> {
     switch permission {
     case .accessibility:
       let isPolling: Bool = inLock { state in

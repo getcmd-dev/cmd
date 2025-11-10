@@ -71,7 +71,7 @@ final class DefaultSettingsService: SettingsService {
     settings.value[keyPath: keypath]
   }
 
-  func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T, Never> {
+  func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T> {
     ReadonlyCurrentValueSubject(
       settings.value[keyPath: keypath],
       publisher: settings.map { $0[keyPath: keypath] }.removeDuplicates().eraseToAnyPublisher())
@@ -81,7 +81,7 @@ final class DefaultSettingsService: SettingsService {
     settings.value
   }
 
-  func liveValues() -> ReadonlyCurrentValueSubject<Settings, Never> {
+  func liveValues() -> ReadonlyCurrentValueSubject<Settings> {
     settings.readonly(removingDuplicate: true)
   }
 

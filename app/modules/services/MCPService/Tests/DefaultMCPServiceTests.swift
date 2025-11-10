@@ -262,7 +262,7 @@ final class MockMCPServerConnection: MCPServerConnection {
 
   var onDeinit: (@Sendable () -> Void)?
 
-  var connectionStatus: ReadonlyCurrentValueSubject<MCPServiceInterface.MCPConnectionStatus, Never> {
+  var connectionStatus: ReadonlyCurrentValueSubject<MCPServiceInterface.MCPConnectionStatus> {
     mutableConnectionStatus.readonly()
   }
 

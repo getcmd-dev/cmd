@@ -18,7 +18,7 @@ public protocol PermissionsService: Sendable {
   func request(permission: Permission)
 
   /// Check if the permission is granted. The publisher will be updated as the permissions status changes.
-  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never>
+  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?>
 }
 
 // MARK: - PermissionsServiceProviding

@@ -45,7 +45,7 @@ public final class MockXcodeObserver: XcodeObserver {
     Just(AXNotification.applicationActivated).eraseToAnyPublisher()
   }
 
-  public var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> {
+  public var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>> {
     mutableStatePublisher.readonly()
   }
 

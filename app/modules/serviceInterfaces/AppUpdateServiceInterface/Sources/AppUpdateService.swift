@@ -37,7 +37,7 @@ public protocol AppUpdateService: Sendable {
   /// Trigger a manual check for updates.
   func checkForUpdates() /// Whether there an app update has been installed.
     async
-  var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> { get }
+  var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult> { get }
   /// Ignore the current update and don't show info about it again (the update might still be installed at the next launch)
   func ignore(update: AppUpdateInfo?)
   /// Return whether a given update is ignored.

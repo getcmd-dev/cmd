@@ -328,13 +328,13 @@ public protocol SettingsService: Sendable {
   /// Get the current value of a setting.
   func value<T: Equatable>(for keypath: KeyPath<Settings, T>) -> T
   /// Get the current value of a setting as a live value.
-  func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T, Never>
+  func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T>
 
   /// Get all settings.
   func values() -> Settings
 
   /// Get all settings as a live value.
-  func liveValues() -> ReadonlyCurrentValueSubject<Settings, Never>
+  func liveValues() -> ReadonlyCurrentValueSubject<Settings>
 
   /// Update the value of a setting
   func update<T: Equatable>(setting: WritableKeyPath<Settings, T>, to value: T)

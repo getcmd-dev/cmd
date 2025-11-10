@@ -11,7 +11,7 @@ import LoggingServiceInterface
 
 extension DefaultGithubCopilotService {
 
-  var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> {
+  var loginStatus: ReadonlyCurrentValueSubject<LoginStatus> {
     _loginStatus.readonly()
   }
 

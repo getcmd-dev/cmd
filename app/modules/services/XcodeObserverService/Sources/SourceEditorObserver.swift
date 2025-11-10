@@ -47,7 +47,7 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
 
   let editorElement: AXUIElement
 
-  var state: ReadonlyCurrentValueSubject<InternalXcodeEditorState, Never> {
+  var state: ReadonlyCurrentValueSubject<InternalXcodeEditorState> {
     .init(internalState.value, publisher: internalState.eraseToAnyPublisher())
   }
 

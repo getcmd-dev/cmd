@@ -10,7 +10,7 @@ import LoggingServiceInterface
 // MARK: - XcodeObserver
 
 public protocol XcodeObserver: Sendable {
-  var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>, Never> { get }
+  var statePublisher: ReadonlyCurrentValueSubject<AXState<XcodeState>> { get }
   var axNotifications: AnyPublisher<AXNotification, Never> { get }
   /// Return the content of the file.
   /// The read strategy (IDE version / from disk) should match the write strategy defined in `fileEditMode`.

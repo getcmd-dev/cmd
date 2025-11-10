@@ -8,10 +8,10 @@ import Dependencies
 
 public final class AppsActivationStateDependencyKey: TestDependencyKey {
   #if DEBUG
-  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> = AppsActivationState.mockPublisher()
+  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState> = AppsActivationState.mockPublisher()
   #else
   /// This is not read outside of DEBUG
-  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState, Never> = () as! ReadonlyCurrentValueSubject<
+  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState> = () as! ReadonlyCurrentValueSubject<
     AppsActivationState,
     Never,
   >
@@ -19,7 +19,7 @@ public final class AppsActivationStateDependencyKey: TestDependencyKey {
 }
 
 extension DependencyValues {
-  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never> {
+  public var appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> {
     get { self[AppsActivationStateDependencyKey.self] }
     set { self[AppsActivationStateDependencyKey.self] = newValue }
   }

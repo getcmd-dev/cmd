@@ -29,7 +29,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
     fileManager: FileManagerI,
-    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>)
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>)
   {
     self.init(
       appEventHandlerRegistry: appEventHandlerRegistry,
@@ -55,7 +55,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
     xcodeObserver: XcodeObserver,
     settingsService: SettingsService,
     fileManager: FileManagerI,
-    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>,
+    appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>,
     timeout: TimeInterval,
     canUseAppleScript: Bool = false,
     startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void)
@@ -76,7 +76,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
   let shellService: ShellService
   let xcodeObserver: XcodeObserver
   let fileManager: FileManagerI
-  let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>
+  let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
 
   #if DEBUG
   var currentExecutionId: String? {
@@ -349,7 +349,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
   private func _getFormattingMetadata() async throws -> FileFormattingMetadata {
     guard appsActivationState.currentValue.isXcodeActive else {
       // If Xcode is not active, we do not want to trigger the extension as this would have the side effect of activating Xcode.
-      // Failing here has no user visibl effect. It just means that the metadata will have to be fetched at a later time.
+      // Failing here has no user visible effect. It just means that the metadata will have to be fetched at a later time.
       throw AppError(message: "Xcode must be active to get formatting metadata")
     }
 

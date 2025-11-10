@@ -9,16 +9,21 @@ import os
 
 /// `ReadonlyCurrentValueSubject` is a readonly version of `CurrentValueSubject`.
 /// It can be used to represent a value that can be observed but not modified directly.
-public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>: Publisher, Sendable {
-
-  public init(_ value: Output, publisher: AnyPublisher<Output, Failure>) {
+public final class ReadonlyCurrentValueSubject<Output: Sendable>: Publisher, Sendable {
+  public init(_ value: Output, publisher: AnyPublisher<Output, Never>) {
     self.value = Atomic(value)
     self.publisher = publisher
+    let cancellable = publisher.sink { [weak self] newValue in
+      self?.value.set(to: newValue)
+    }
+    subscription.set(to: cancellable)
   }
 
-  public convenience init(_ value: CurrentValueSubject<Output, Failure>) {
+  public convenience init(_ value: CurrentValueSubject<Output, Never>) {
     self.init(value.value, publisher: value.eraseToAnyPublisher())
   }
+
+  public typealias Failure = Never
 
   public var currentValue: Output {
     value.value
@@ -28,23 +33,24 @@ public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>
     .init(value, publisher: CurrentValueSubject(value).eraseToAnyPublisher())
   }
 
-  public func receive<S>(subscriber: S) where S: Subscriber, S.Failure == Failure, S.Input == Output {
+  public func receive<S>(subscriber: S) where S: Subscriber, S.Failure == Never, S.Input == Output {
     publisher.receive(subscriber: subscriber)
   }
 
   private let value: Atomic<Output>
-  private let publisher: AnyPublisher<Output, Failure>
+  private let subscription = Atomic(nil as AnyCancellable?)
+  private let publisher: AnyPublisher<Output, Never>
 
 }
 
-extension CurrentValueSubject where Output: Sendable {
-  public func readonly() -> ReadonlyCurrentValueSubject<Output, Failure> {
+extension CurrentValueSubject where Output: Sendable, Failure == Never {
+  public func readonly() -> ReadonlyCurrentValueSubject<Output> {
     ReadonlyCurrentValueSubject(value, publisher: eraseToAnyPublisher())
   }
 }
 
-extension CurrentValueSubject where Output: Sendable & Equatable {
-  public func readonly(removingDuplicate: Bool) -> ReadonlyCurrentValueSubject<Output, Failure> {
+extension CurrentValueSubject where Output: Sendable & Equatable, Failure == Never {
+  public func readonly(removingDuplicate: Bool) -> ReadonlyCurrentValueSubject<Output> {
     if removingDuplicate {
       ReadonlyCurrentValueSubject(value, publisher: removeDuplicates().eraseToAnyPublisher())
     } else {

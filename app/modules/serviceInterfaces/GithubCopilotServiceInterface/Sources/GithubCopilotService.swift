@@ -17,9 +17,9 @@ public protocol GithubCopilotService: CodeCompletionProvider {
   /// Sign out the current user
   func signOut() async throws
   /// Whether the LSP server is installed
-  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool, Never> { get }
+  var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool> { get }
   /// The current login status
-  var loginStatus: ReadonlyCurrentValueSubject<LoginStatus, Never> { get }
+  var loginStatus: ReadonlyCurrentValueSubject<LoginStatus> { get }
 }
 
 // MARK: - LoginStatus

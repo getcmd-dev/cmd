@@ -58,32 +58,32 @@ public protocol LLMService: Sendable {
 
   /// All the models available.
   /// Note: those models might not have been enabled by the user.
-  var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+  var availableModels: ReadonlyCurrentValueSubject<[AIModel]> { get }
 
   /// Returns the list of available models from the specified provider.
   /// Note: those models might not have been enabled by the user.
   ///
   /// - Parameter provider: The LLM provider to get models for.
   /// - Returns: An array of available models for the provider. The value will be updated when the value changes.
-  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
+  func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]>
 
   /// Retrieves a model by its provider-specific model identifier.
   ///
   /// - Parameter providerModelId: The provider-specific identifier for the model.
   /// - Returns: The model if found, otherwise nil. The value will be updated when the value changes.
-  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never>
+  func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?>
 
   /// Retrieves model information by its model info identifier.
   ///
   /// - Parameter modelInfoId: The unique identifier for the model info.
   /// - Returns: The model information if found, otherwise nil. The value will be updated when the value changes.
-  func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never>
+  func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?>
 
   /// Determines which provider is associated with the given model.
   ///
   /// - Parameter model: The model information to find the provider for.
   /// - Returns: The provider that owns the model, or nil if not found. The value will be updated when the value changes.
-  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never>
+  func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?>
 
   /// Refetches and returns the list of available models for the specified provider with new settings.
   ///
@@ -98,7 +98,7 @@ public protocol LLMService: Sendable {
     async throws -> [AIProviderModel]
 
   /// The models that have a provider configured and are enabled (ie the models that the user is able to use given their current configuration).
-  var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> { get }
+  var activeModels: ReadonlyCurrentValueSubject<[AIModel]> { get }
 
   /// Returns the low tier model from configured providers with the cheapest input cost.
   /// Low tier models are suitable for simple queries that favor speed & low cost over accuracy.

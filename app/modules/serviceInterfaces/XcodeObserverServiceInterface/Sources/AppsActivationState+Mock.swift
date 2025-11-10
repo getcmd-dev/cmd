@@ -5,7 +5,7 @@ import Combine
 import ConcurrencyFoundation
 
 extension AppsActivationState {
-  public static func mockPublisher() -> ReadonlyCurrentValueSubject<AppsActivationState, Never> {
+  public static func mockPublisher() -> ReadonlyCurrentValueSubject<AppsActivationState> {
     .init(.inactive, publisher: Just(.inactive).eraseToAnyPublisher())
   }
 }

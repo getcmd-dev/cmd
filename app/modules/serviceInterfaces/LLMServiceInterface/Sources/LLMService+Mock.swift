@@ -46,26 +46,26 @@ public final class MockLLMService: LLMService {
 
   public var onLowTierModel: (@Sendable () -> AIProviderModel?)?
 
-  public var availableModels: ReadonlyCurrentValueSubject<[AIModel], Never> { _availableModels.readonly() }
+  public var availableModels: ReadonlyCurrentValueSubject<[AIModel]> { _availableModels.readonly() }
 
-  public var activeModels: ReadonlyCurrentValueSubject<[AIModel], Never> {
+  public var activeModels: ReadonlyCurrentValueSubject<[AIModel]> {
     _activeModels.readonly()
   }
 
-  public func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?, Never> {
+  public func provider(for model: AIModel) -> ReadonlyCurrentValueSubject<AIProvider?> {
     .just(onProviderForModel?(model))
   }
 
-  public func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?, Never> {
+  public func getModelInfo(by modelInfoId: AIModelID) -> ReadonlyCurrentValueSubject<AIModel?> {
     .just(onGetModelInfo?(modelInfoId))
   }
 
-  public func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?, Never> {
+  public func getModel(by providerModelId: String) -> ReadonlyCurrentValueSubject<AIProviderModel?> {
     .just(onGetModel?(providerModelId))
   }
 
   public func modelsAvailable(for provider: AIProvider)
-    -> ReadonlyCurrentValueSubject<[AIProviderModel], Never>
+    -> ReadonlyCurrentValueSubject<[AIProviderModel]>
   {
     .just(onListModelsAvailable?(provider) ?? [])
   }

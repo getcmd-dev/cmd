@@ -48,7 +48,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
 
   let runningApplication: NSRunningApplication
 
-  var state: ReadonlyCurrentValueSubject<InternalXcodeAppState, Never> {
+  var state: ReadonlyCurrentValueSubject<InternalXcodeAppState> {
     .init(internalState.value, publisher: internalState.eraseToAnyPublisher())
   }
 

@@ -73,7 +73,7 @@ final class DefaultMCPServerConnection: MCPServerConnection {
   let serverInfo: ServerInfo
   let configuration: MCPServerConfiguration
 
-  var connectionStatus: ReadonlyCurrentValueSubject<MCPServiceInterface.MCPConnectionStatus, Never> {
+  var connectionStatus: ReadonlyCurrentValueSubject<MCPServiceInterface.MCPConnectionStatus> {
     mutableConnectionStatus.readonly()
   }
 

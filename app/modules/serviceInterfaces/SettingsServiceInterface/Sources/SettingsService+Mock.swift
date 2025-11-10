@@ -22,7 +22,7 @@ public final class MockSettingsService: SettingsService {
     settings.value[keyPath: keypath]
   }
 
-  public func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T, Never> {
+  public func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T> {
     ReadonlyCurrentValueSubject(
       settings.value[keyPath: keypath],
       publisher: settings.map { $0[keyPath: keypath] }.removeDuplicates().eraseToAnyPublisher())
@@ -32,7 +32,7 @@ public final class MockSettingsService: SettingsService {
     settings.value
   }
 
-  public func liveValues() -> ReadonlyCurrentValueSubject<Settings, Never> {
+  public func liveValues() -> ReadonlyCurrentValueSubject<Settings> {
     ReadonlyCurrentValueSubject(settings)
   }
 

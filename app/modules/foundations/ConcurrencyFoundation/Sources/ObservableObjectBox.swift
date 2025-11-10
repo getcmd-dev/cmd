@@ -11,7 +11,7 @@ import os
 /// Updates are done in the main thread, asynchronously from the upstream source if this one is not running on the main thread, synchronously otherwise.
 public final class ObservableObjectBox<Value: Sendable>: ObservableObject, @unchecked Sendable {
   @MainActor
-  public init(from value: ReadonlyCurrentValueSubject<Value, Never>) {
+  public init(from value: ReadonlyCurrentValueSubject<Value>) {
     wrappedValue = value.currentValue
 
     cancellable = value.sink { @Sendable [weak self] newValue in
