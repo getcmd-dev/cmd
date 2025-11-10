@@ -1432,7 +1432,7 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("handleSelectChatThread opens thread in existing tab if already open")
+  @Test("handleSelectChatThread opens thread in existing tab if already open") // TODO
   func handleSelectChatThreadReusesExistingTab() async throws {
     // given
     let threadId = UUID()
@@ -1447,39 +1447,25 @@ struct ChatViewModelTests {
     }
 
     // First, open the thread in a tab
-    let exp1 = expectation(description: "first tab opened")
-    let cancellable1 = sut.didSet(\.tab) { tab in
-      Task { @MainActor in
-        if tab.id == threadId {
-          exp1.fulfillAtMostOnce()
-        }
-      }
-    }
     await sut.handleSelectChatThread(id: threadId)
-    try await fulfillment(of: exp1)
-    _ = cancellable1
-
+    try await sut.wait(for: \.currentTabIndex, toBe: 0)
     let tabIndex = sut.currentTabIndex
+    #expect(tabIndex == 0)
     #expect(sut.tab.id == threadId)
 
     // Switch to a different tab
     sut.addTab()
+    try await sut.wait(for: \.currentTabIndex, toBe: 1)
     #expect(sut.tab.id != threadId)
-    #expect(sut.tabs.count == 2)
+    #expect(sut.tabs.count == 2) //
 
     // when
-    // Select the same thread again
-    let exp2 = expectation(description: "switched to existing tab")
-    let cancellable2 = sut.didSet(\.currentTabIndex) { index in
-      Task { @MainActor in
-        if index == tabIndex {
-          exp2.fulfillAtMostOnce()
-        }
-      }
-    }
+    // Select the same thread again - it should switch to the existing tab
     await sut.handleSelectChatThread(id: threadId)
-    try await fulfillment(of: exp2)
-    _ = cancellable2
+
+    // Wait for the tab to be selected by checking the currentTabIndex
+    // Using wait(for:toBe:) instead of didSet because the value might already be set
+    try await sut.wait(for: \.currentTabIndex, toBe: tabIndex, timeout: 2)
 
     // then
     // Should switch to existing tab, not create a new one
@@ -1487,16 +1473,6 @@ struct ChatViewModelTests {
     #expect(sut.currentTabIndex == tabIndex)
     #expect(sut.tab.id == threadId)
   }
-
-  // TODO: This test is disabled due to async coordination issues between handleSelectChatThread
-  // and the test observers. The Task created by handleSelectChatThread doesn't complete before
-  // the test assertions run, even when using observeChanges and expectations.
-  // The functionality works correctly in the app. This needs investigation into proper
-  // async test patterns for Task-based operations in SwiftTesting.
-  //
-  // @MainActor
-  // @Test("handleSelectChatThread opens thread in new tab if not already open")
-  // func handleSelectChatThreadOpensInNewTab() async throws { ... }
 
   // MARK: - Notification Badge Tests
 
