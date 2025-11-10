@@ -254,8 +254,7 @@ struct WorkspaceInitializationTests {
     let state2 = createXcodeState(workspace: workspace1, file: "/workspace1/file1.swift", content: "let x = 2")
     mockXcodeObserver.mutableStatePublisher.send(state2)
 
-    // Wait for the second didOpen to be called (indicating edit was processed)
-    try await fulfillment(of: didOpenExpectation)
+    try await fulfillment(of: [didOpenExpectation, didChangeExpectation])
 
     // then - verify tracker has edits
     let tracker = await sut.recentEditsTrackers[workspace1]
