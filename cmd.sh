@@ -31,6 +31,7 @@ lint_swift_command() {
 # Ensures node_modules are installed in local-server
 setup_local_server() {
 	local server_dir="$(git rev-parse --show-toplevel)/local-server"
+	echo "server_dir: $server_dir"
 	if [ ! -d "$server_dir/node_modules" ]; then
 		echo "Installing local-server dependencies..."
 		cd "$server_dir" && yarn install && yarn build && yarn copy-to-app
