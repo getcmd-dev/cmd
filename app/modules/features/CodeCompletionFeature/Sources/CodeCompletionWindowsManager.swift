@@ -7,7 +7,6 @@ import XcodeObserverWindowsAdapter
 public final class CodeCompletionWindowsManager: Sendable {
   public init() {
     windows.append(CodeCompletionWindow())
-//      windows.append(EditorFrameWindow())
 
     for window in windows {
       window.show()

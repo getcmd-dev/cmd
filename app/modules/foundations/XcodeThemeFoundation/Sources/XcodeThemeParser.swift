@@ -76,16 +76,6 @@ public struct XcodeTheme: Codable {
     public var debuggerConsoleInputColor: ThemeColor
     public var executableConsoleOutputColor: ThemeColor
     public var executableConsoleInputColor: ThemeColor
-
-//    public func asHighlightJSTheme() -> String {
-//        buildHighlightJSTheme(self)
-//            .replacingOccurrences(of: "\n", with: "")
-//            .replacingOccurrences(of: ": ", with: ":")
-//            .replacingOccurrences(of: "} ", with: "}")
-//            .replacingOccurrences(of: " {", with: "{")
-//            .replacingOccurrences(of: ";}", with: "}")
-//            .replacingOccurrences(of: "  ", with: "")
-//    }
 }
 
 public extension XcodeTheme {

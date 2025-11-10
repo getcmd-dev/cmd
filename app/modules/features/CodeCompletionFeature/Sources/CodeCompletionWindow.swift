@@ -93,9 +93,7 @@ final class CodeCompletionWindow: XcodeWindow {
       completionId = completionTask.id
       // Cache `completionRange` as this requires counting characters throughout the completed file
       // which is somewhat resource intensive.
-      completionRange = completionTask.request.content.nsRange(of: .init(
-        start: .init(line: completionTask.request.selection.start.line, character: 0), // TODO: undo
-        end: .init(line: completionTask.request.selection.end.line, character: completionTask.request.selection.end.character)))
+      completionRange = completionTask.request.content.nsRange(of: completionTask.request.selection)
     }
     guard
       let completionRange,

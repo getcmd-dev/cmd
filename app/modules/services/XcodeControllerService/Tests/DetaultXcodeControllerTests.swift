@@ -56,10 +56,10 @@ struct DefaultXcodeControllerTests {
     try await fulfillment(of: xcodeExtensionTriggered)
 
     // Simulate the extension requesting queued input
-    _ = await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
+    _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
       command: ExtensionCommandNames.cmd,
       id: "123",
-      data: try! JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
@@ -142,17 +142,17 @@ struct DefaultXcodeControllerTests {
     // Verify that the extension was triggered
     try await fulfillment(of: xcodeExtensionTriggered)
 
-    _ = await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandKeys.getFileChangeToApply,
-      id: "123",
-      data: Data()) { _ in })
-
+    // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandKeys.confirmFileChangeApplied,
+      command: ExtensionCommandNames.cmd,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest<FileChangeConfirmation>(
-        command: ExtensionCommandKeys.confirmFileChangeApplied,
-        input: .init(id: "123", error: nil)))) { _ in })
+      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+
+    // Simulate the extension sending back the result
+    _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
+      command: ExtensionCommandNames.cmd,
+      id: "123",
+      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 

@@ -3,22 +3,11 @@
 
 import AppKit
 @preconcurrency import Combine
-import Dependencies
 import DependencyFoundation
 import Foundation
 import KeyboardShortcuts
 import KeyboardShortcutServiceInterface
 import LoggingServiceInterface
-import ThreadSafe
-import XcodeObserverServiceInterface
-
-import AppEventServiceInterface
-import AppFoundation
-import AppKit
-import ChatAppEvents
-@preconcurrency import Combine
-import Dependencies
-import KeyboardShortcuts
 import SwiftUI
 import ThreadSafe
 import XcodeObserverServiceInterface
@@ -110,8 +99,6 @@ final class DefaultKeyboardShortcutService: KeyboardShortcutService, @unchecked 
   private var cancellables = Set<AnyCancellable>()
 
   private var enabledShortcutNames = Set<String>()
-
-  @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func observeActivationState(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState, Never>) {

@@ -32,7 +32,6 @@ extension FileDiff {
     diff: String)
     -> (lineChanges: [[CharacterLevelChange]], firstChangedLine: Int)
   {
-    print("diff", diff)
     var result = [[CharacterLevelChange]]()
     var currentLineChanges = [CharacterLevelChange]()
     var firstChangedLine = 0
