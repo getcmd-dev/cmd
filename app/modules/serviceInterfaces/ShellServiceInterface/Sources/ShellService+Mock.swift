@@ -21,6 +21,8 @@ public final class MockShellService: ShellService {
 
   public var env = [String: String]()
 
+  public var onRunAppleScript: (@Sendable (String) throws -> String?) = { _ in nil }
+
   public func run(
     _ command: String,
     cwd: String?,
@@ -30,6 +32,10 @@ public final class MockShellService: ShellService {
     async throws -> CommandExecutionResult
   {
     try await onRun(command, cwd, useInteractiveShell, env, body)
+  }
+
+  public func run(appleScript: String) throws -> String? {
+    try onRunAppleScript(appleScript)
   }
 
 }

@@ -214,7 +214,10 @@ final class DefaultXcodeObserver: XcodeObserver {
     let runningApplications = NSWorkspace.shared.runningApplications
     let xcodes = runningApplications
       .filter(\.isXcode)
-      .map { XcodeAppInstanceObserver(runningApplication: $0, axNotificationPublisher: axNotificationPublisher) }
+      .map { XcodeAppInstanceObserver(
+        runningApplication: $0,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService) }
 
     let activeApplicationPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
 
@@ -272,7 +275,10 @@ final class DefaultXcodeObserver: XcodeObserver {
     if
       app.isXcode, xcodeObservers[app.processIdentifier] == nil
     {
-      let newXcodeApp = XcodeAppInstanceObserver(runningApplication: app, axNotificationPublisher: axNotificationPublisher)
+      let newXcodeApp = XcodeAppInstanceObserver(
+        runningApplication: app,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService)
       startTracking(newXcodeApp: newXcodeApp)
     }
     handleActivation(of: app.processIdentifier)
@@ -306,7 +312,10 @@ final class DefaultXcodeObserver: XcodeObserver {
   @MainActor
   private func handleLaunch(of app: NSRunningApplication) {
     if app.isXcode, xcodeObservers[app.processIdentifier] == nil {
-      let newXcodeApp = XcodeAppInstanceObserver(runningApplication: app, axNotificationPublisher: axNotificationPublisher)
+      let newXcodeApp = XcodeAppInstanceObserver(
+        runningApplication: app,
+        axNotificationPublisher: axNotificationPublisher,
+        shellService: shellService)
       startTracking(newXcodeApp: newXcodeApp)
     }
   }

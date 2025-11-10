@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
@@ -92,6 +93,22 @@ final class DefaultShellService: ShellService {
       mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 
+  func run(appleScript: String) throws -> String? {
+    guard let script = NSAppleScript(source: appleScript) else {
+      assertionFailure("Could not create NSAppleScript object.")
+      throw AppError(message: "Could not create NSAppleScript object.")
+    }
+
+    var errorDict: NSDictionary?
+    let result = script.executeAndReturnError(&errorDict)
+
+    if let error = errorDict {
+      defaultLogger.error("AppleScript Error: \(error)")
+      throw AppError(message: "AppleScript Error: \(error)")
+    }
+    return string(from: result)
+  }
+
   private let _env: Future<[String: String], Never>
   private let setEnv: @Sendable (Result<[String: String], Never>) -> Void
 
@@ -129,6 +146,39 @@ final class DefaultShellService: ShellService {
         self?.setEnv(.success([:]))
       }
     }
+  }
+
+  private func string(from desc: NSAppleEventDescriptor) -> String {
+    let count = desc.numberOfItems
+    if count > 0 {
+      var items = [String]()
+      for i in 1...count {
+        if let item = desc.atIndex(i) {
+          items.append(string(from: item))
+        }
+      }
+      return items.joined(separator: "\n")
+    }
+
+    if let s = desc.stringValue, s.isEmpty == false {
+      return s
+    }
+
+    if let coercedBool = desc.coerce(toDescriptorType: typeBoolean) {
+      return coercedBool.booleanValue ? "true" : "false"
+    }
+
+    if let coercedDouble = desc.coerce(toDescriptorType: typeIEEE64BitFloatingPoint) {
+      return String(coercedDouble.doubleValue)
+    }
+    if let coercedInt = desc.coerce(toDescriptorType: typeSInt32) {
+      return String(coercedInt.int32Value)
+    }
+
+    if let s = desc.stringValue {
+      return s
+    }
+    return desc.description
   }
 
 }
