@@ -34,6 +34,41 @@ public struct FileChange: Codable, Sendable {
 
 }
 
+// MARK: - LineOffset
+
+public enum LineOffset: Sendable, Codable, Equatable {
+  /// Line is only present in the old version (removed).
+  case oldLineOffset(Int)
+  /// Line is only present in the new version (added).
+  case newLineOffset(Int)
+  /// Line is present in both versions.
+  case both(old: Int, new: Int)
+
+  /// Returns the old line number if available, or nil if this is a new line only.
+  public var oldLineNumber: Int? {
+    switch self {
+    case .oldLineOffset(let line):
+      line
+    case .both(old: let line, new: _):
+      line
+    case .newLineOffset:
+      nil
+    }
+  }
+
+  /// Returns the new line number if available, or nil if this is a removed line only.
+  public var newLineNumber: Int? {
+    switch self {
+    case .newLineOffset(let line):
+      line
+    case .both(old: _, new: let line):
+      line
+    case .oldLineOffset:
+      nil
+    }
+  }
+}
+
 // MARK: - DiffContentType
 
 public enum DiffContentType: String, Sendable, Codable {
@@ -49,19 +84,19 @@ public enum DiffContentType: String, Sendable, Codable {
 
 public struct LineChange: Sendable, Codable {
   public let characterRange: Range<Int>
-  /// The line number where the change starts (0-indexed).
-  public let lineOffset: Int
+  /// The line number where the change is located.
+  public let lineOffset: LineOffset
   public let content: String
   public let type: DiffContentType
 
-  public init(_ lineOffset: Int, _ characterRange: Range<Int>, _ content: String, _ type: DiffContentType) {
+  public init(_ lineOffset: LineOffset, _ characterRange: Range<Int>, _ content: String, _ type: DiffContentType) {
     self.lineOffset = lineOffset
     self.characterRange = characterRange
     self.content = content
     self.type = type
   }
 
-  public init(_ lineOffset: Int, _ characterRange: Range<Int>, _ content: String.SubSequence, _ type: DiffContentType) {
+  public init(_ lineOffset: LineOffset, _ characterRange: Range<Int>, _ content: String.SubSequence, _ type: DiffContentType) {
     self.lineOffset = lineOffset
     self.characterRange = characterRange
     self.content = String(content)
