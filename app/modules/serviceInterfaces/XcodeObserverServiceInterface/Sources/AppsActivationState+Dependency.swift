@@ -11,10 +11,8 @@ public final class AppsActivationStateDependencyKey: TestDependencyKey {
   public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState> = AppsActivationState.mockPublisher()
   #else
   /// This is not read outside of DEBUG
-  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState> = () as! ReadonlyCurrentValueSubject<
-    AppsActivationState,
-    Never,
-  >
+  public static let testValue: ReadonlyCurrentValueSubject<AppsActivationState> =
+    () as! ReadonlyCurrentValueSubject<AppsActivationState>
   #endif
 }
 
