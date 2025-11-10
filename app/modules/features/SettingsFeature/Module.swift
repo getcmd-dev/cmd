@@ -2,6 +2,7 @@ Target.module(
   name: "SettingsFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
+    "AccessibilityFoundation",
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatFoundation",
