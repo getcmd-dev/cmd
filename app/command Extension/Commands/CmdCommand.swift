@@ -37,6 +37,9 @@ final class CmdCommand: CommandType, @unchecked Sendable {
 
       case .getFormattingMetadata:
         handleGetFormattingMetadata(buffer: invocation.buffer)
+
+      case .error(let errorMessage):
+        throw XcodeExtensionError(message: errorMessage)
       }
 
     // Step 3: Send the result back to the host app
