@@ -153,15 +153,23 @@ export const registerEndpoint = (router: Router) => {
 
 			// Validate the request
 			if (!body.command) {
-				res.status(400).json("Missing parameter 'command' in request body")
+				res.status(400).json({
+					type: "error",
+					error: "Missing parameter 'command' in request body",
+					data: undefined,
+				})
 				return
 			}
 			if (!body.input) {
-				res.status(400).json("Missing parameter 'input' in request body")
+				res.status(400).json({
+					type: "error",
+					error: "Missing parameter 'input' in request body",
+					data: undefined,
+				})
 				return
 			}
 			if (!connectionToHostApp) {
-				res.status(404).json("No connection to host app")
+				res.status(404).json({ type: "error", error: "No connection to host app", data: undefined })
 				return
 			}
 
@@ -189,7 +197,11 @@ export const registerEndpoint = (router: Router) => {
 			res.json(response)
 		} catch (error) {
 			logError(error)
-			res.status(500).json(error instanceof Error ? error.message : "Internal server error")
+			res.status(500).json({
+				type: "error",
+				error: error instanceof Error ? error.message : "Internal server error",
+				data: undefined,
+			})
 		}
 	})
 }
