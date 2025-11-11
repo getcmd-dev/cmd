@@ -17,6 +17,15 @@ private struct ExecuteCommandWrapper<Input: Encodable>: Encodable {
   let input: Input
 }
 
+// MARK: - ServerResponse
+
+/// Response structure from the local server
+private struct ServerResponse<T: Decodable>: Decodable {
+  let type: String
+  let data: T?
+  let error: String?
+}
+
 // MARK: - LocalServer
 
 /// A class that communicates with the local server running in the host app.
@@ -32,7 +41,26 @@ final class LocalServer {
   ///   - request: The typed extension request to send to the local server.
   /// - Returns: The decoded response from the local server.
   func send<Response: Decodable>(_ request: ExtensionRequest) async throws -> Response {
-    try await sendRaw(request, retryCount: 0)
+    // Wrap the ExtensionRequest in the ExecuteCommandWrapper format expected by the server
+    let commandName: String
+    let input: ExtensionRequest
+
+    switch request {
+    case .getQueuedInput:
+      commandName = "getQueuedInput"
+      input = request
+
+    case .sendResult:
+      commandName = "sendResult"
+      input = request
+    }
+
+    let wrapper = ExecuteCommandWrapper(
+      type: "execute-command",
+      command: commandName,
+      input: input)
+
+    return try await sendRaw(wrapper, retryCount: 0)
   }
 
   /// Sends a user-defined shortcut request to the local server.
@@ -91,8 +119,46 @@ final class LocalServer {
       urlRequest.httpMethod = "POST"
       urlRequest.httpBody = bodyData
       urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      let (data, _) = try await URLSession.shared.data(for: urlRequest)
+      let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+      // TODO: Remove debug logging after debugging is complete
+      if let dataString = String(data: data, encoding: .utf8) {
+        defaultLogger.log("Received response data: \(dataString)")
+      }
+
+      // Check HTTP status code
+      if let httpResponse = response as? HTTPURLResponse {
+        if httpResponse.statusCode >= 400 {
+          // Try to decode as ServerResponse to get error message
+          if
+            let serverResponse = try? JSONDecoder().decode(ServerResponse<Response>.self, from: data),
+            let errorMessage = serverResponse.error
+          {
+            defaultLogger.error("Server returned error (status \(httpResponse.statusCode)): \(errorMessage)")
+            throw XcodeExtensionError(message: errorMessage)
+          } else {
+            defaultLogger.error("Server returned error status \(httpResponse.statusCode)")
+            throw XcodeExtensionError(message: "Server error (status \(httpResponse.statusCode))")
+          }
+        }
+      }
+
+      // Try to decode as ServerResponse first to check for errors
+      if let serverResponse = try? JSONDecoder().decode(ServerResponse<Response>.self, from: data) {
+        if let errorMessage = serverResponse.error {
+          defaultLogger.error("Server returned error in response body: \(errorMessage)")
+          throw XcodeExtensionError(message: errorMessage)
+        }
+        if let responseData = serverResponse.data {
+          return responseData
+        }
+      }
+
+      // Fallback to direct decoding for backward compatibility
       return try JSONDecoder().decode(Response.self, from: data)
+    } catch let error as XcodeExtensionError {
+      // Re-throw XcodeExtensionError as-is
+      throw error
     } catch {
       if
         (error as? URLError)?.code == .cannotConnectToHost,
