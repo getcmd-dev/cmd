@@ -132,7 +132,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
 
     // Trigger the cmd extension command which will process the reload
     do {
-      try await executeExtensionCommand(ExtensionCommandNames.cmd)
+      try await executeExtensionCommand(ExtensionActionName.cmd.rawValue)
     } catch {
       // Clean up the queued request if the extension command fails
       inLock { state in
@@ -181,10 +181,8 @@ final class DefaultXcodeController: XcodeController, Sendable {
       switch event {
       case let event as ExecuteExtensionRequestEvent:
         do {
-          let extensionRequest = try JSONDecoder().decode(ExtensionRequest.self, from: event.data)
-
-          switch extensionRequest {
-          case .getQueuedInput:
+          switch event.command {
+          case ExtensionCommandName.getQueuedInput.rawValue:
             // Extension is asking for the first queued input
             guard let request = queuedRequests.first else {
               throw AppError(message: "No queued input available")
@@ -192,11 +190,15 @@ final class DefaultXcodeController: XcodeController, Sendable {
             event.completion(.success(request.input))
             return true
 
-          case .sendResult(let result):
+          case ExtensionCommandName.sendResult.rawValue:
             // Extension is sending back the result
-            handleExtensionResult(result)
+            let extensionRequest = try JSONDecoder().decode(RequestFromXcodeExtension<ExtensionResult>.self, from: event.data)
+            handleExtensionResult(extensionRequest.input)
             event.completion(.success(EmptyResponse()))
             return true
+
+          default:
+            return false
           }
         } catch {
           defaultLogger.error("Failed to handle extension request: \(error)")
@@ -370,7 +372,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
         do {
           // Trigger the extension command to get metadata for the currently focused file
           try await DefaultXcodeController.triggerExtensionCommand(
-            commandName: ExtensionCommandNames.cmd,
+            commandName: ExtensionActionName.cmd.rawValue,
             xcodeObserver: xcodeObserver,
             shellService: shellService,
             settingsService: settingsService,
@@ -442,7 +444,7 @@ extension DefaultXcodeController {
     async throws
   {
     try await triggerExtensionCommand(
-      commandName: ExtensionCommandNames.cmd,
+      commandName: ExtensionActionName.cmd.rawValue,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
       settingsService: settingsService,

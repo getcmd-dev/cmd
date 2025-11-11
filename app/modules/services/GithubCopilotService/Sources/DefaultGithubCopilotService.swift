@@ -23,6 +23,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     self.shellService = shellService
     self.fileManager = fileManager
     self.jrpcService = jrpcService
+    logger = defaultLogger.subLogger(subsystem: "githubCopilotService")
     let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
       .appendingPathComponent(Bundle.main.hostAppBundleId)
       .appendingPathComponent("copilot-language-server-\(executableVersion)")
@@ -46,6 +47,8 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       }
     }
   }
+
+  let logger: Logger
 
   var _loginStatus = CurrentValueSubject<LoginStatus, Never>(.loggedOut)
   var _isLSPServerInstalled: CurrentValueSubject<Bool, Never>
@@ -90,7 +93,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     } catch {
       setExecutablePath(.failure(error))
       setAuthServer(.failure(error))
-      defaultLogger.error("Failed to initialize Github Copilot: \(error)", error)
+      logger.error("Failed to initialize Github Copilot: \(error)", error)
     }
     _isLSPServerInstalled.send(true)
 
@@ -145,7 +148,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
             _ = try await checkStatus()
           }
         } catch {
-          defaultLogger.error("Failed to handle auth server didChangeStatus notification", error)
+          logger.error("Failed to handle auth server didChangeStatus notification", error)
         }
       }
     }

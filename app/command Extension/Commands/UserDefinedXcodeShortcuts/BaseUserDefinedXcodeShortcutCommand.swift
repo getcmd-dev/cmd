@@ -71,7 +71,7 @@ class BaseUserDefinedXcodeShortcutCommand: CommandType, @unchecked Sendable {
     }
 
     let response: EmptyResponse = try await LocalServer().sendUserDefinedShortcut(
-      command: ExtensionCommandNames.executeUserDefinedShortcut,
+      command: .executeUserDefinedShortcut,
       input: UserDefinedXcodeShortcutExecutionInput(
         shortcutId: shortcutId,
         shellCommand: command))
