@@ -39,7 +39,7 @@ describe("InterProcessesBridge", () => {
 			input: {},
 		})
 		expect(response.status).toBe(404)
-		expect(response.body).toEqual("No connection to host app")
+		expect(response.body).toEqual({ type: "error", error: "No connection to host app", data: undefined })
 	})
 
 	describe("when the host app is connected", () => {
@@ -93,7 +93,11 @@ describe("InterProcessesBridge", () => {
 				input: {},
 			})
 			expect(response.status).toBe(400)
-			expect(response.body).toEqual("Missing parameter 'command' in request body")
+			expect(response.body).toEqual({
+				type: "error",
+				error: "Missing parameter 'command' in request body",
+				data: undefined,
+			})
 		})
 
 		it("returns 400 if the input is not valid", async () => {
@@ -103,7 +107,11 @@ describe("InterProcessesBridge", () => {
 				input: undefined,
 			})
 			expect(response.status).toBe(400)
-			expect(response.body).toEqual("Missing parameter 'input' in request body")
+			expect(response.body).toEqual({
+				type: "error",
+				error: "Missing parameter 'input' in request body",
+				data: undefined,
+			})
 		})
 
 		it("returns 500 if the command fails", async () => {
@@ -114,7 +122,7 @@ describe("InterProcessesBridge", () => {
 				input: {},
 			})
 			expect(response.status).toBe(500)
-			expect(response.body).toEqual("command failed")
+			expect(response.body).toEqual({ type: "error", error: "command failed", data: undefined })
 		})
 
 		it("disconnects the host app if a new connection is made", async () => {
