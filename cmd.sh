@@ -53,7 +53,7 @@ lint_ruby_command() {
 
 	"$SHELL_BIN" -lc '
 		cd "$(git rev-parse --show-toplevel)" &&
-			git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
+			git ls-files -z -- "*.rb" "*.rake" "**/Gemfile" "**/Rakefile" "**/Fastfile" | xargs -0 rubocop --autocorrect
 		'
 }
 
