@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 current_dir=$(pwd)
 
