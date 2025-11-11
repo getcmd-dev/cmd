@@ -49,8 +49,12 @@ lint_shell_command() {
 }
 
 lint_ruby_command() {
-	cd "$(git rev-parse --show-toplevel)" &&
-		git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
+	SHELL_BIN="${SHELL:-/bin/zsh}"
+
+	"$SHELL_BIN" -lc '
+		cd "$(git rev-parse --show-toplevel)" &&
+			git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
+		'
 }
 
 lint_yaml_command() {
