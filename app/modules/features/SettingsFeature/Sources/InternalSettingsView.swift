@@ -208,6 +208,7 @@ struct InternalSettingsView: View {
         stateRepresentation = "missingAXPermission"
       case .state(let xcodeState):
         for appState in xcodeState.xcodesState {
+          stateRepresentation.append("== Xcode: \(appState.processIdentifier) ==\n")
           for workspace in appState.workspaces {
             stateRepresentation
               .append(
