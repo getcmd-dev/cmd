@@ -1,5 +1,5 @@
 {
-  "originHash" : "6752b22e933d0838666437d15adf693ba0ab8ad2be63e2e6eb1c5703e20b488d",
+  "originHash" : "cca7b045ddd0bc98779573c12a8a3f640ef3a03631529d8df3af5ee0e7f05bd4",
   "pins" : [
     {
       "identity" : "aexml",
@@ -338,8 +338,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types.git",
       "state" : {
-        "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
-        "version" : "1.4.0"
+        "revision" : "45eb0224913ea070ec4fba17291b9e7ecf4749ca",
+        "version" : "1.5.1"
       }
     },
     {
@@ -419,8 +419,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-numerics.git",
       "state" : {
-        "revision" : "e0ec0f5f3af6f3e4d5e7a19d2af26b481acb6ba8",
-        "version" : "1.0.3"
+        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+        "version" : "1.1.1"
       }
     },
     {
