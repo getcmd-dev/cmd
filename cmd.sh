@@ -14,12 +14,12 @@ lint_swift_command() {
 	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	if [ -z "$1" ]; then
+	if [ -z "${1-}" ]; then
 		files="."
 	else
 		# make path absolute
 		if [[ "$1" != /* ]]; then
-			files="$($current_dir)/$1"
+			files="$current_dir/$1"
 		else
 			files="$1"
 		fi
@@ -107,7 +107,7 @@ build_release_command() {
 install_swiftformat() {
 	local version="0.58.0"
 	local force=false
-	if [ "$1" = "--force" ]; then
+	if [ "${1-}" = "--force" ]; then
 		force=true
 	fi
 
