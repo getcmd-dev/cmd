@@ -56,6 +56,7 @@ public enum ExtensionInput: Codable, Sendable {
   case applyEdit(FileChange)
   case reloadSettings
   case getFormattingMetadata
+  case error(String)
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -72,6 +73,10 @@ public enum ExtensionInput: Codable, Sendable {
     case "getFormattingMetadata":
       self = .getFormattingMetadata
 
+    case "error":
+      let errorMessage = try container.decode(String.self, forKey: .error)
+      self = .error(errorMessage)
+
     default:
       throw DecodingError.dataCorruptedError(
         forKey: .type,
@@ -83,6 +88,7 @@ public enum ExtensionInput: Codable, Sendable {
   public enum CodingKeys: String, CodingKey {
     case type
     case fileChange
+    case error
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -97,6 +103,10 @@ public enum ExtensionInput: Codable, Sendable {
 
     case .getFormattingMetadata:
       try container.encode("getFormattingMetadata", forKey: .type)
+
+    case .error(let errorMessage):
+      try container.encode("error", forKey: .type)
+      try container.encode(errorMessage, forKey: .error)
     }
   }
 }
