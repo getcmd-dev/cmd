@@ -221,7 +221,7 @@ lint:yaml)
 	;;
 lint)
 	# Check if --diff flag is provided
-	if [ "$1" = "--diff" ]; then
+	if [ "${1-}" = "--diff" ]; then
 		echo "Running lint on changed files only..."
 		changed_files=$(get_changed_files)
 
