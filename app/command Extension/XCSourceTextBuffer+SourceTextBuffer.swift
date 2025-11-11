@@ -14,4 +14,11 @@ extension XCSourceTextBuffer: @retroactive XCSourceTextBufferI {
   public func removeLine(at index: Int) {
     lines.removeObject(at: index)
   }
+
+  public func line(at index: Int) throws -> String {
+    guard index >= 0, index < lines.count, let line = lines[index] as? String else {
+      throw NSError(domain: "XCSourceTextBuffer", code: 0, userInfo: nil)
+    }
+    return line
+  }
 }

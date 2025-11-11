@@ -9,6 +9,7 @@ Target.module(
   ],
   testsDependencies: [
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+    "AppFoundation",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
   ],

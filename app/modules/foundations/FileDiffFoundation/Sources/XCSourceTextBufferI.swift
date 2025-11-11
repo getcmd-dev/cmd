@@ -11,4 +11,6 @@ public protocol XCSourceTextBufferI {
   func insert(line: String, at index: Int)
 
   func removeLine(at index: Int)
+
+  func line(at index: Int) throws -> String
 }
