@@ -102,8 +102,8 @@ struct PartialDiffView: View {
   var body: some View {
     HoverReader { hoveringPosition in
       HStack(alignment: .top, spacing: 0) {
-        view(for: partialRange.map { changedLines[$0].change.lineOffset.oldLineNumber })
-        view(for: partialRange.map { changedLines[$0].change.lineOffset.newLineNumber })
+        view(for: partialRange.map { changedLines[$0].change.oldLineNumber })
+        view(for: partialRange.map { changedLines[$0].change.newLineNumber })
         ZStack(alignment: .topLeading) {
           background
           Text(content)

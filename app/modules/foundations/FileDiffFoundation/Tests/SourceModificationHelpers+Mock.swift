@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @testable import FileDiffFoundation
 
 // MARK: - MockSourceTextBuffer
@@ -25,6 +26,13 @@ final class MockXCSourceTextBufferI: XCSourceTextBufferI {
 
   func removeLine(at index: Int) {
     lines.remove(at: index)
+  }
+
+  func line(at index: Int) throws -> String {
+    guard index >= 0, index < lines.count else {
+      throw AppError("Index \(index) out of bounds for lines count \(lines.count)")
+    }
+    return lines[index]
   }
 
 }

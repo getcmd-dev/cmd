@@ -22,7 +22,10 @@ extension [LineChange] {
         }
       } else {
         let nextSelectedChange = selectedChanges[nextSelectedChangeIdx]
-        if line.type == nextSelectedChange.type, line.lineOffset == nextSelectedChange.lineOffset {
+        if
+          line.type == nextSelectedChange.type, line.oldLineNumber == nextSelectedChange.oldLineNumber,
+          line.newLineNumber == nextSelectedChange.newLineNumber
+        {
           // Apply the selected change. ie keep all but removed lines.
           if line.type != .removed {
             result += line.content
@@ -56,14 +59,26 @@ extension [FormattedLineChange] {
         }
       } else {
         let nextRejectedChange = rejectedChanges[nextRejectedChangeIdx]
-        if line.change.type == nextRejectedChange.change.type, line.change.lineOffset == nextRejectedChange.change.lineOffset {
+        if
+          line.change.type == nextRejectedChange.change.type,
+          line.change.oldLineNumber == nextRejectedChange.change.oldLineNumber,
+          line.change.newLineNumber == nextRejectedChange.change.newLineNumber
+        {
           // Keep the original content. ie keep all but added lines.
-          if line.change.type != .added {
-            result.append(.init(formattedContent: line.formattedContent, change: .init(
-              line.change.lineOffset,
-              line.change.characterRange,
-              line.change.content,
-              .unchanged)))
+          if let oldLine = line.change.oldLineNumber {
+            if let newLine = line.change.newLineNumber {
+              result.append(.init(formattedContent: line.formattedContent, change: .unchanged(
+                oldLine: oldLine,
+                newLine: newLine,
+                characterRange: line.change.characterRange,
+                content: line.change.content)))
+            } else {
+              result.append(.init(formattedContent: line.formattedContent, change: .unchanged(
+                oldLine: oldLine,
+                newLine: oldLine,
+                characterRange: line.change.characterRange,
+                content: line.change.content)))
+            }
           }
           nextRejectedChangeIdx += 1
         } else {

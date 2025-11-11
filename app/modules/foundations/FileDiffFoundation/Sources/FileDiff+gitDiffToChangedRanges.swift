@@ -37,7 +37,7 @@ extension FileDiff {
         for i in (result.count - removedLines)..<addedLineOffset - 1 {
           let range = newLinesOffset[i]..<newLinesOffset[i + 1]
           let oldLineNumber = result.count - addedLines
-          result.append(LineChange(.both(old: oldLineNumber, new: i), range, newLines[i], .unchanged))
+          result.append(.unchanged(oldLine: oldLineNumber, newLine: i, characterRange: range, content: String(newLines[i])))
         }
       }
 
@@ -45,18 +45,22 @@ extension FileDiff {
         if l.starts(with: "+") {
           let newLineNumber = result.count - removedLines
           let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
-          result.append(LineChange(.newLineOffset(newLineNumber), range, newLines[newLineNumber], .added))
+          result.append(.added(newLine: newLineNumber, characterRange: range, content: String(newLines[newLineNumber])))
           addedLines += 1
         } else if l.starts(with: "-") {
           let oldLineNumber = result.count - addedLines
           let range = oldLinesOffset[oldLineNumber]..<oldLinesOffset[oldLineNumber + 1]
-          result.append(LineChange(.oldLineOffset(oldLineNumber), range, oldLines[oldLineNumber], .removed))
+          result.append(.removed(oldLine: oldLineNumber, characterRange: range, content: String(oldLines[oldLineNumber])))
           removedLines += 1
         } else if l.starts(with: " ") {
           let newLineNumber = result.count - removedLines
           let oldLineNumber = result.count - addedLines
           let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
-          result.append(LineChange(.both(old: oldLineNumber, new: newLineNumber), range, newLines[newLineNumber], .unchanged))
+          result.append(.unchanged(
+            oldLine: oldLineNumber,
+            newLine: newLineNumber,
+            characterRange: range,
+            content: String(newLines[newLineNumber])))
         }
       }
     }
@@ -66,9 +70,11 @@ extension FileDiff {
       let newLineNumber = result.count - removedLines
       let oldLineNumber = result.count - addedLines
       let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber + 1]
-      result.append(LineChange(.both(old: oldLineNumber, new: newLineNumber), range, newLines[newLineNumber], .unchanged))
-
-      addedLines += 1
+      result.append(.unchanged(
+        oldLine: oldLineNumber,
+        newLine: newLineNumber,
+        characterRange: range,
+        content: String(newLines[newLineNumber])))
     }
 
     return result

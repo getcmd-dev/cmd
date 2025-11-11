@@ -63,12 +63,12 @@ struct GitDiffToChangedRangesTests {
     #expect(new.substring(ranges[1].characterRange) == "  // Say something\n")
 
     // Validate line offsets
-    #expect(ranges[0].lineOffset.oldLineNumber == 0) // "func greet() {\n" is in both
-    #expect(ranges[0].lineOffset.newLineNumber == 0)
-    #expect(ranges[1].lineOffset.oldLineNumber == nil) // "  // Say something\n" is added
-    #expect(ranges[1].lineOffset.newLineNumber == 1)
-    #expect(ranges[2].lineOffset.oldLineNumber == 1) // "  print("Hello")\n" is in both
-    #expect(ranges[2].lineOffset.newLineNumber == 2)
+    #expect(ranges[0].oldLineNumber == 0) // "func greet() {\n" is in both
+    #expect(ranges[0].newLineNumber == 0)
+    #expect(ranges[1].oldLineNumber == nil) // "  // Say something\n" is added
+    #expect(ranges[1].newLineNumber == 1)
+    #expect(ranges[2].oldLineNumber == 1) // "  print("Hello")\n" is in both
+    #expect(ranges[2].newLineNumber == 2)
   }
 
   @Test
@@ -85,13 +85,13 @@ struct GitDiffToChangedRangesTests {
     let ranges = try validateDiffRanges(from: old, to: new, expectedRangeCount: 3)
 
     // Validate line offsets
-    #expect(ranges[0].lineOffset.oldLineNumber == 0) // "let foo = 10\n" is in both
-    #expect(ranges[0].lineOffset.newLineNumber == 0)
-    #expect(ranges[1].lineOffset.oldLineNumber == 1) // "let bar = 20\n" is removed
-    #expect(ranges[1].lineOffset.newLineNumber == nil)
+    #expect(ranges[0].oldLineNumber == 0) // "let foo = 10\n" is in both
+    #expect(ranges[0].newLineNumber == 0)
+    #expect(ranges[1].oldLineNumber == 1) // "let bar = 20\n" is removed
+    #expect(ranges[1].newLineNumber == nil)
     #expect(ranges[1].type == .removed)
-    #expect(ranges[2].lineOffset.oldLineNumber == 2) // "print("Done")\n" is in both
-    #expect(ranges[2].lineOffset.newLineNumber == 1)
+    #expect(ranges[2].oldLineNumber == 2) // "print("Done")\n" is in both
+    #expect(ranges[2].newLineNumber == 1)
   }
 
   @Test
@@ -108,14 +108,14 @@ struct GitDiffToChangedRangesTests {
 
     // Validate line offsets for replacement
     #expect(ranges[0].type == .removed)
-    #expect(ranges[0].lineOffset.oldLineNumber == 0) // Old line is removed
-    #expect(ranges[0].lineOffset.newLineNumber == nil)
+    #expect(ranges[0].oldLineNumber == 0) // Old line is removed
+    #expect(ranges[0].newLineNumber == nil)
     #expect(ranges[1].type == .added)
-    #expect(ranges[1].lineOffset.oldLineNumber == nil) // New line is added
-    #expect(ranges[1].lineOffset.newLineNumber == 0)
+    #expect(ranges[1].oldLineNumber == nil) // New line is added
+    #expect(ranges[1].newLineNumber == 0)
     #expect(ranges[2].type == .unchanged)
-    #expect(ranges[2].lineOffset.oldLineNumber == 1) // "print("Line Two")\n" is in both
-    #expect(ranges[2].lineOffset.newLineNumber == 1)
+    #expect(ranges[2].oldLineNumber == 1) // "print("Line Two")\n" is in both
+    #expect(ranges[2].newLineNumber == 1)
   }
 
   @Test
@@ -699,21 +699,21 @@ struct GitDiffToChangedRangesTests {
       switch range.type {
       case .unchanged:
         // Unchanged lines should have both old and new line numbers
-        #expect(range.lineOffset.oldLineNumber == oldLineCounter)
-        #expect(range.lineOffset.newLineNumber == newLineCounter)
+        #expect(range.oldLineNumber == oldLineCounter)
+        #expect(range.newLineNumber == newLineCounter)
         oldLineCounter += 1
         newLineCounter += 1
 
       case .removed:
         // Removed lines should only have old line number
-        #expect(range.lineOffset.oldLineNumber == oldLineCounter)
-        #expect(range.lineOffset.newLineNumber == nil)
+        #expect(range.oldLineNumber == oldLineCounter)
+        #expect(range.newLineNumber == nil)
         oldLineCounter += 1
 
       case .added:
         // Added lines should only have new line number
-        #expect(range.lineOffset.oldLineNumber == nil)
-        #expect(range.lineOffset.newLineNumber == newLineCounter)
+        #expect(range.oldLineNumber == nil)
+        #expect(range.newLineNumber == newLineCounter)
         newLineCounter += 1
       }
     }
