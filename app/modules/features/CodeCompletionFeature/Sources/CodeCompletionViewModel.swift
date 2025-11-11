@@ -43,7 +43,7 @@ final class CodeCompletionViewModel {
         .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
     }
 
-    isEnabled = codeCompletionService.isAvailable
+    isEnabled = codeCompletionService.isAvailable.currentValue
     if isEnabled {
       enable()
     }
@@ -66,16 +66,6 @@ final class CodeCompletionViewModel {
         return completion != nil && self.xcodeObserver.state.focusedWorkspace != nil
       })
 
-    settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
-      Task { @MainActor [weak self] in
-        if value {
-          self?.enable()
-        } else {
-          self?.disable()
-        }
-      }
-    }.store(in: &cancellables)
-
     // Observe app activation state to start/stop modifier key monitoring
     appsActivationState.sink { @Sendable state in
       Task { @MainActor [weak self] in
@@ -84,6 +74,17 @@ final class CodeCompletionViewModel {
           tabKeyHandler?.start()
         } else {
           tabKeyHandler?.stop()
+        }
+      }
+    }.store(in: &cancellables)
+
+    codeCompletionService.isAvailable.sink { @Sendable isAvailable in
+      Task { @MainActor [weak self] in
+        self?.isEnabled = isAvailable
+        if isAvailable {
+          self?.enable()
+        } else {
+          self?.disable()
         }
       }
     }.store(in: &cancellables)

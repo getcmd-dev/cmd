@@ -3,6 +3,8 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+@preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import ThreadSafe
 
@@ -10,14 +12,17 @@ import ThreadSafe
 @ThreadSafe
 public final class MockCodeCompletionService: CodeCompletionService {
 
-  public init() { }
+  public init(isAvailable: Bool = false) {
+    _isAvailable = .init(isAvailable)
+  }
 
-  public var onIsAvailable: (@Sendable () -> Bool) = { true }
   public var onSuggestCompletion: (@Sendable (URL, URL, String, Range, TimeInterval) async throws -> CompletionSuggestion?)?
   public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
 
-  public var isAvailable: Bool {
-    onIsAvailable()
+  public var _isAvailable: CurrentValueSubject<Bool, Never>
+
+  public var isAvailable: ReadonlyCurrentValueSubject<Bool> {
+    _isAvailable.readonly()
   }
 
   public func suggestCompletion(
