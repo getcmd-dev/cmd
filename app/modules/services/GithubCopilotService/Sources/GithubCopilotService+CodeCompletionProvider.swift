@@ -22,12 +22,16 @@ extension DefaultGithubCopilotService {
     formattingMetadata: FileFormattingMetadata?)
     async throws -> CompletionSuggestion?
   {
+    logger.trace("Requesting completion suggestion from LSP server")
     // Use formatting metadata from Xcode if available, otherwise use defaults
     let tabSize = formattingMetadata?.tabSize ?? 2
     let insertSpaces = formattingMetadata.map { !$0.usesTabsForIndentation } ?? true
-
+    guard let server = lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.path) for suggestCompletion")
+      return nil
+    }
     guard
-      let completion = try await lspServer(for: workspace)?
+      let completion = try await server
         .getCompletions(
           uri: file.absoluteString,
           version: version,
@@ -35,6 +39,7 @@ extension DefaultGithubCopilotService {
           tabSize: tabSize,
           insertSpaces: insertSpaces).items.first
     else {
+      logger.trace("Received no completion items from LSP server")
       return nil
     }
 
@@ -56,11 +61,15 @@ extension DefaultGithubCopilotService {
   }
 
   func didOpen(workspace: URL, file: URL, content: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didOpen notification to LSP server") {
+    guard let server = lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.path) for didOpen")
+      return
+    }
+    Task(loggingErrorWith: "Failed to send didOpen notification to LSP server", logger: logger) {
       // Determine language ID from file extension
       let languageId = LanguageIdentifier.languageId(from: file)
 
-      try await self.lspServer(for: workspace)?.didOpenTextDocument(
+      try await server.didOpenTextDocument(
         uri: file.absoluteString,
         languageId: languageId,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
@@ -70,8 +79,12 @@ extension DefaultGithubCopilotService {
   }
 
   func didChange(workspace: URL, file: URL, content: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didChange notification to LSP server") {
-      try await self.lspServer(for: workspace)?.didChangeTextDocument(
+    guard let server = lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.path) for didChange")
+      return
+    }
+    Task(loggingErrorWith: "Failed to send didChange notification to LSP server", logger: logger) {
+      try await server.didChangeTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
         version: version,
@@ -80,8 +93,12 @@ extension DefaultGithubCopilotService {
   }
 
   func didSave(workspace: URL, file: URL, content: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didSave notification to LSP server") {
-      try await self.lspServer(for: workspace)?.didSaveTextDocument(
+    guard let server = lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.path) for didSave")
+      return
+    }
+    Task(loggingErrorWith: "Failed to send didSave notification to LSP server", logger: logger) {
+      try await server.didSaveTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
         version: version,
@@ -90,8 +107,12 @@ extension DefaultGithubCopilotService {
   }
 
   func didClose(workspace: URL, file: URL, content _: String, version: Int) {
-    Task(loggingErrorWith: "Failed to send didClose notification to LSP server") {
-      try await self.lspServer(for: workspace)?.didCloseTextDocument(
+    guard let server = lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.path) for didClose")
+      return
+    }
+    Task(loggingErrorWith: "Failed to send didClose notification to LSP server", logger: logger) {
+      try await server.didCloseTextDocument(
         uri: file.absoluteString,
         // See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocumentItem
         version: version)
