@@ -34,7 +34,7 @@ if [ "$has_unstaged_changes" = true ]; then
     git stash push --keep-index --quiet --message "pre-commit-hook-temp"
 fi
 
-./cmd.sh lint
+./cmd.sh lint --diff
 ./cmd.sh sync:dependencies
 
 # Stage any changes created by lint/sync

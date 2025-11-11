@@ -28,6 +28,11 @@ lint_swift_command() {
 		$SWIFTFORMAT_PATH --config rules.swiftformat "$files" --cache .build/caches/swiftformat
 }
 
+# Get list of changed files based on git diff
+get_changed_files() {
+	git diff --name-only --diff-filter=ACMR HEAD
+}
+
 # Ensures node_modules are installed in local-server
 setup_local_server() {
 	local server_dir="$(git rev-parse --show-toplevel)/local-server"
@@ -213,11 +218,38 @@ lint:yaml)
 	lint_yaml_command "$@"
 	;;
 lint)
-	lint_swift_command &&
-		lint_ts_command &&
-		lint_shell_command &&
-		lint_ruby_command &&
-		lint_yaml_command
+	# Check if --diff flag is provided
+	if [ "$1" = "--diff" ]; then
+		echo "Running lint on changed files only..."
+		changed_files=$(get_changed_files)
+
+		if [ -z "$changed_files" ]; then
+			echo "No changed files found."
+			exit 0
+		fi
+
+		# Group files by type
+		swift_files=$(echo "$changed_files" | grep '\.swift$' || true)
+		ts_files=$(echo "$changed_files" | grep -E 'local-server/.*\.(ts|tsx)$' || true)
+		shell_files=$(echo "$changed_files" | grep '\.sh$' || true)
+		ruby_files=$(echo "$changed_files" | grep -E '\.(rb|rake)$|Gemfile$|Rakefile$|Fastfile$' || true)
+		yaml_files=$(echo "$changed_files" | grep -E '\.(yml|yaml)$' || true)
+
+		# Run linters for changed file types
+		[ -n "$swift_files" ] && echo "Linting Swift files..." && lint_swift_command
+		[ -n "$ts_files" ] && echo "Linting TypeScript files..." && lint_ts_command
+		[ -n "$shell_files" ] && echo "Linting shell files..." && lint_shell_command
+		[ -n "$ruby_files" ] && echo "Linting Ruby files..." && lint_ruby_command
+		[ -n "$yaml_files" ] && echo "Linting YAML files..." && lint_yaml_command
+
+		echo "✓ Lint complete for changed files"
+	else
+		lint_swift_command &&
+			lint_ts_command &&
+			lint_shell_command &&
+			lint_ruby_command &&
+			lint_yaml_command
+	fi
 	;;
 test:swift)
 	test_swift_command "$@"
