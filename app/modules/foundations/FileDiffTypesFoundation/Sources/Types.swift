@@ -34,41 +34,6 @@ public struct FileChange: Codable, Sendable {
 
 }
 
-// MARK: - LineOffset
-
-public enum LineOffset: Sendable, Codable, Equatable {
-  /// Line is only present in the old version (removed).
-  case oldLineOffset(Int)
-  /// Line is only present in the new version (added).
-  case newLineOffset(Int)
-  /// Line is present in both versions.
-  case both(old: Int, new: Int)
-
-  /// Returns the old line number if available, or nil if this is a new line only.
-  public var oldLineNumber: Int? {
-    switch self {
-    case .oldLineOffset(let line):
-      line
-    case .both(old: let line, new: _):
-      line
-    case .newLineOffset:
-      nil
-    }
-  }
-
-  /// Returns the new line number if available, or nil if this is a removed line only.
-  public var newLineNumber: Int? {
-    switch self {
-    case .newLineOffset(let line):
-      line
-    case .both(old: _, new: let line):
-      line
-    case .oldLineOffset:
-      nil
-    }
-  }
-}
-
 // MARK: - DiffContentType
 
 public enum DiffContentType: String, Sendable, Codable {
@@ -76,30 +41,96 @@ public enum DiffContentType: String, Sendable, Codable {
   case removed
   /// Content that is only present in the new version.
   case added
-  /// Content that is present in both versions. The range points to its location in the new version.
+  /// Content that is present in both versions.
   case unchanged
 }
 
 // MARK: - LineChange
 
-public struct LineChange: Sendable, Codable {
-  public let characterRange: Range<Int>
-  /// The line number where the change is located.
-  public let lineOffset: LineOffset
-  public let content: String
-  public let type: DiffContentType
+public enum LineChange: Sendable, Codable, Equatable {
+  /// Line removed from the old version at the given line number.
+  case removed(oldLine: Int, characterRange: Range<Int>, content: String)
+  /// Line added in the new version at the given line number.
+  case added(newLine: Int, characterRange: Range<Int>, content: String)
+  /// Line present in both versions (unchanged context).
+  case unchanged(oldLine: Int, newLine: Int, characterRange: Range<Int>, content: String)
 
-  public init(_ lineOffset: LineOffset, _ characterRange: Range<Int>, _ content: String, _ type: DiffContentType) {
-    self.lineOffset = lineOffset
-    self.characterRange = characterRange
-    self.content = content
-    self.type = type
+  /// The content of the line
+  public var content: String {
+    switch self {
+    case .removed(_, _, let content), .added(_, _, let content), .unchanged(_, _, _, let content):
+      content
+    }
   }
 
-  public init(_ lineOffset: LineOffset, _ characterRange: Range<Int>, _ content: String.SubSequence, _ type: DiffContentType) {
-    self.lineOffset = lineOffset
-    self.characterRange = characterRange
-    self.content = String(content)
-    self.type = type
+  /// The character range
+  public var characterRange: Range<Int> {
+    switch self {
+    case .removed(_, let range, _), .added(_, let range, _), .unchanged(_, _, let range, _):
+      range
+    }
   }
+
+  /// The old line number if this line exists in the old version
+  public var oldLineNumber: Int? {
+    switch self {
+    case .removed(let oldLine, _, _), .unchanged(let oldLine, _, _, _):
+      oldLine
+    case .added:
+      nil
+    }
+  }
+
+  /// The new line number if this line exists in the new version
+  public var newLineNumber: Int? {
+    switch self {
+    case .added(let newLine, _, _), .unchanged(_, let newLine, _, _):
+      newLine
+    case .removed:
+      nil
+    }
+  }
+
+  /// The type of change
+  public var type: DiffContentType {
+    switch self {
+    case .added:
+      .added
+    case .removed:
+      .removed
+    case .unchanged:
+      .unchanged
+    }
+  }
+
+  /// Whether this line is an addition
+  public var isAdded: Bool {
+    switch self {
+    case .added:
+      true
+    default:
+      false
+    }
+  }
+
+  /// Whether this line is a removal
+  public var isRemoved: Bool {
+    switch self {
+    case .removed:
+      true
+    default:
+      false
+    }
+  }
+
+  /// Whether this line is unchanged
+  public var isUnchanged: Bool {
+    switch self {
+    case .unchanged:
+      true
+    default:
+      false
+    }
+  }
+
 }
