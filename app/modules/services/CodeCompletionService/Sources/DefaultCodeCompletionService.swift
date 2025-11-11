@@ -60,6 +60,12 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       }
     }.store(in: &cancellables)
 
+    settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
+      Task { [weak self] in
+        await self?.handle(enableCodeCompletionSettingChanged: value)
+      }
+    }.store(in: &cancellables)
+
     // Subscribe to state changes from XcodeObserver
     xcodeObserver.statePublisher.sink { @Sendable newState in
       Task { [weak self] in
@@ -88,6 +94,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
+    // Don
     return codeCompletionProviders.first
 //    return nil
   }
@@ -260,7 +267,15 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   private var openFiles = [URL: [URL: FileState]]()
 
   private func handle(xcodeExtensionPermissionIsGranted _: Bool?) {
-    let isAvailable = {
+    updateIsAvailable()
+  }
+
+  private func handle(enableCodeCompletionSettingChanged _: Bool) {
+    updateIsAvailable()
+  }
+
+  private func updateIsAvailable() {
+    let hasPermission = {
       #if DEBUG
       // Debug builds don't work well with Xcode extension.
       // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
@@ -270,6 +285,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       permissionsService.status(for: .xcodeExtension).currentValue == true
       #endif
     }()
+    let isEnabledInSettings = settingsService.value(for: \.enableCodeCompletion)
+    let isAvailable = hasPermission && isEnabledInSettings
     _isAvailable.send(isAvailable)
   }
 

@@ -39,6 +39,7 @@ final class CmdCommand: CommandType, @unchecked Sendable {
         handleGetFormattingMetadata(buffer: invocation.buffer)
 
       case .error(let errorMessage):
+        defaultLogger.error("Extension received error from host app: \(errorMessage)")
         throw XcodeExtensionError(message: errorMessage)
       }
 
