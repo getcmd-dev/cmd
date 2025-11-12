@@ -77,18 +77,25 @@ if [ ${#partially_staged_files[@]} -gt 0 ]; then
     done
 
     # Compare checksums to find modified files
+    # Since we iterate over the same files in the same order, we can compare line by line
     modified_partially_staged_files=()
-    while IFS= read -r line_before; do
-        checksum_before=$(echo "$line_before" | cut -d' ' -f1)
-        file_before=$(echo "$line_before" | cut -d' ' -f2-)
 
-        # Find corresponding line in after file
-        checksum_after=$(grep -F "$file_before" "$checksum_file_after" 2>/dev/null | cut -d' ' -f1)
+    # Read both files simultaneously
+    line_num=0
+    while IFS= read -r line_before <&3 && IFS= read -r line_after <&4; do
+        line_num=$((line_num + 1))
 
-        if [ -n "$checksum_after" ] && [ "$checksum_before" != "$checksum_after" ]; then
-            modified_partially_staged_files+=("$file_before")
+        if [ -z "$line_before" ]; then
+            continue
         fi
-    done < "$checksum_file_before"
+
+        # If the lines differ, the file was modified
+        if [ "$line_before" != "$line_after" ]; then
+            # Extract filename from the before line (everything after the first two spaces)
+            file_name=$(echo "$line_before" | sed 's/^[^ ]*  //')
+            modified_partially_staged_files+=("$file_name")
+        fi
+    done 3< "$checksum_file_before" 4< "$checksum_file_after"
 
     rm -f "$checksum_file_after"
 
