@@ -22,27 +22,74 @@ fi
 # Change to repo root to ensure git commands work correctly
 cd "$repo_root"
 
-# Count stashes before
-stash_count_before=$(git stash list | wc -l)
+# Check if any files are partially staged (some changes staged, some not)
+# We'll compare the diff between working tree and index vs HEAD and index
+partially_staged_files=()
+while IFS= read -r file; do
+    if [ -n "$file" ]; then
+        # Check if file has both staged and unstaged changes
+        if git diff --quiet HEAD -- "$file" 2>/dev/null; then
+            # File is the same as HEAD, skip
+            continue
+        fi
+        if git diff --quiet -- "$file" 2>/dev/null; then
+            # No unstaged changes, file is fully staged
+            continue
+        fi
+        if git diff --cached --quiet -- "$file" 2>/dev/null; then
+            # No staged changes, file is fully unstaged
+            continue
+        fi
+        # File has both staged and unstaged changes
+        partially_staged_files+=("$file")
+    fi
+done < <(git diff --name-only HEAD)
 
-# Stash unstaged changes, keeping the index (staged changes) intact
-# This allows lint/sync to run on the full working tree
-git stash push --keep-index --quiet --message "pre-commit-hook-temp" || true
+# Get list of files that are staged
+staged_files=()
+while IFS= read -r file; do
+    if [ -n "$file" ]; then
+        staged_files+=("$file")
+    fi
+done < <(git diff --cached --name-only)
 
+# Run lint and sync
 ./cmd.sh lint
 ./cmd.sh sync:dependencies
 
-# Stage any changes created by lint/sync
-git add -u
+# Check if lint/sync made any changes
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    # Changes were made by lint/sync
 
-# Count stashes after
-stash_count_after=$(git stash list | wc -l)
+    # If there are partially staged files, check if any were modified
+    if [ ${#partially_staged_files[@]} -gt 0 ]; then
+        modified_partially_staged=false
+        for file in "${partially_staged_files[@]}"; do
+            if ! git diff --quiet HEAD -- "$file" 2>/dev/null || ! git diff --quiet -- "$file" 2>/dev/null; then
+                modified_partially_staged=true
+                break
+            fi
+        done
 
-# Restore unstaged changes only if we created a new stash
-if [ "$stash_count_after" -gt "$stash_count_before" ]; then
-    git stash pop --quiet --index 2>/dev/null || {
-        echo "⚠️  Warning: Could not restore unstaged changes. Check 'git stash list'"
-    }
+        if [ "$modified_partially_staged" = true ]; then
+            echo "❌ Error: Linting modified partially staged files. This is not supported."
+            echo "Partially staged files that were modified:"
+            for file in "${partially_staged_files[@]}"; do
+                echo "  - $file"
+            done
+            echo ""
+            echo "Please either:"
+            echo "  1. Stage all changes: git add <files>"
+            echo "  2. Unstage all changes: git restore --staged <files>"
+            echo "  3. Commit without partially staged files"
+            exit 1
+        fi
+    fi
+
+    # Stage only the files that were already staged
+    for file in "${staged_files[@]}"; do
+        git add -- "$file" 2>/dev/null || true
+    done
 fi
 
 cd "$current_dir"
