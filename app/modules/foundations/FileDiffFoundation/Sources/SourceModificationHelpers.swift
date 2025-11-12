@@ -15,6 +15,9 @@ public enum SourceModificationHelpers {
 
   /// Applies an edit to the buffer (handles both full file edits and partial edits)
   private static func applyEdit(buffer: XCSourceTextBufferI, fileChange: FileDiffTypesFoundation.FileChange) throws {
+    let selections = buffer.getSelections()
+    buffer.removeSelections()
+
     // Collect lines to remove and lines to add
     // Using ContiguousArray for better performance with value types (small arrays <100 elements)
     var linesToRemove = ContiguousArray<Int>()
@@ -88,6 +91,13 @@ public enum SourceModificationHelpers {
     for (lineNum, content) in linesToAdd {
       buffer.insert(line: content, at: lineNum)
     }
+
+    guard let newSelections = fileChange.newSelections else {
+      // Restore original selections if no new selections provided
+      buffer.set(selections: selections)
+      return
+    }
+    buffer.set(selections: newSelections)
   }
 
 }

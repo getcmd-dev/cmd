@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import FileDiffFoundation
+import FileDiffTypesFoundation
 import XcodeKit
 
 // MARK: - XCSourceTextBuffer + XCSourceTextBufferI
@@ -46,5 +47,27 @@ extension XCSourceTextBuffer: @retroactive XCSourceTextBufferI {
     }
 
     return line
+  }
+
+  public func getSelections() -> [FileDiffTypesFoundation.TextRange] {
+    let selectionsRanges = selections
+      .compactMap { $0 as? XCSourceTextRange }
+    return selectionsRanges.map { range in
+      TextRange(
+        start: .init(line: range.start.line, column: range.start.column),
+        end: .init(line: range.end.line, column: range.end.column))
+    }
+  }
+
+  public func removeSelections() {
+    selections.removeAllObjects()
+  }
+
+  public func set(selections: [FileDiffTypesFoundation.TextRange]) {
+    for range in selections {
+      self.selections.add(XCSourceTextRange(
+        start: .init(line: range.start.line, column: range.start.column),
+        end: .init(line: range.end.line, column: range.end.column)))
+    }
   }
 }

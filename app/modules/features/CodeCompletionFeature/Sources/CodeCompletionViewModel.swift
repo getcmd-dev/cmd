@@ -90,6 +90,7 @@ final class CodeCompletionViewModel {
     }.store(in: &cancellables)
   }
 
+  /// Indicates if code completion is enabled (i.e. service is available)
   private(set) var isEnabled: Bool
 
   /// The offset between the top of the view and the top of the text being completed.
@@ -224,14 +225,17 @@ final class CodeCompletionViewModel {
     Task {
       do {
         // Convert CompletionSuggestion.LineChange to FileChange.LineChange
-        // TODO: look at precomputing to make this step faster.
         let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
           .diff
+
         let fileChange = FileChange(
           filePath: completion.file,
           oldContent: editorState.content,
           suggestedNewContent: completion.newContent,
-          selectedChange: lineByLineChange)
+          selectedChange: lineByLineChange,
+          newSelections: [.init(
+            start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
+            end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
 
         try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
         self.completion = nil
