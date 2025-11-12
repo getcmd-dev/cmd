@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 current_dir=$(pwd)
 
@@ -12,12 +14,12 @@ lint_swift_command() {
 	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	if [ -z "$1" ]; then
+	if [ -z "${1-}" ]; then
 		files="."
 	else
 		# make path absolute
 		if [[ "$1" != /* ]]; then
-			files="$($current_dir)/$1"
+			files="$current_dir/$1"
 		else
 			files="$1"
 		fi
@@ -26,6 +28,11 @@ lint_swift_command() {
 		mkdir -p .build/caches/swiftformat &&
 		$SWIFTFORMAT_PATH --config rules-header.swiftformat "$files" &&
 		$SWIFTFORMAT_PATH --config rules.swiftformat "$files" --cache .build/caches/swiftformat
+}
+
+# Get list of changed files based on git diff
+get_changed_files() {
+	git diff --name-only --diff-filter=ACMR HEAD
 }
 
 # Ensures node_modules are installed in local-server
@@ -49,8 +56,12 @@ lint_shell_command() {
 }
 
 lint_ruby_command() {
-	cd "$(git rev-parse --show-toplevel)" &&
-		git ls-files -z -- '*.rb' '*.rake' '**/Gemfile' '**/Rakefile' '**/Fastfile' | xargs -0 rubocop --autocorrect
+	SHELL_BIN="${SHELL:-/bin/zsh}"
+
+	"$SHELL_BIN" -lc '
+		cd "$(git rev-parse --show-toplevel)" &&
+			git ls-files -z -- "*.rb" "*.rake" "**/Gemfile" "**/Rakefile" "**/Fastfile" | xargs -0 rubocop --autocorrect
+		'
 }
 
 lint_yaml_command() {
@@ -65,21 +76,21 @@ sync_dependencies_command() {
 		./tools/dependencies/sync.sh "$@"
 }
 
-close_repo_workspaces() {
-	if ! pgrep -x "Xcode" >/dev/null; then
-		return 0
+close_xcode() {
+	if pgrep -x "Xcode" >/dev/null; then
+		# Kill Xcode
+		pkill -x "Xcode"
+		# Wait for Xcode to close
+		while pgrep -x "Xcode" >/dev/null; do
+			sleep 0.01
+		done
 	fi
-
-	local repo_path="$(git rev-parse --show-toplevel)"
-	local script_path="$repo_path/app/tools/close-xcode-repo-windows.js"
-
-	REPO="$repo_path" "$script_path"
 }
 
 focus_dependency_command() {
 	cd "$(git rev-parse --show-toplevel)/app"
 	if [ "$SKIP_CLOSE_XCODE" != "true" ]; then
-		close_repo_workspaces
+		close_xcode
 	fi
 	# Reset xcode state
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
@@ -96,7 +107,7 @@ build_release_command() {
 install_swiftformat() {
 	local version="0.58.0"
 	local force=false
-	if [ "$1" = "--force" ]; then
+	if [ "${1-}" = "--force" ]; then
 		force=true
 	fi
 
@@ -141,7 +152,7 @@ clean_command() {
 	# Signal to the file watcher that is should not regenerate files.
 	touch "$(git rev-parse --show-toplevel)/.build/disable-watcher"
 
-	close_repo_workspaces
+	close_xcode
 
 	cd "$(git rev-parse --show-toplevel)/app/modules"
 
@@ -209,11 +220,38 @@ lint:yaml)
 	lint_yaml_command "$@"
 	;;
 lint)
-	lint_swift_command &&
-		lint_ts_command &&
-		lint_shell_command &&
-		lint_ruby_command &&
-		lint_yaml_command
+	# Check if --diff flag is provided
+	if [ "${1-}" = "--diff" ]; then
+		echo "Running lint on changed files only..."
+		changed_files=$(get_changed_files)
+
+		if [ -z "$changed_files" ]; then
+			echo "No changed files found."
+			exit 0
+		fi
+
+		# Group files by type
+		swift_files=$(echo "$changed_files" | grep '\.swift$' || true)
+		ts_files=$(echo "$changed_files" | grep -E 'local-server/.*\.(ts|tsx)$' || true)
+		shell_files=$(echo "$changed_files" | grep '\.sh$' || true)
+		ruby_files=$(echo "$changed_files" | grep -E '\.(rb|rake)$|Gemfile$|Rakefile$|Fastfile$' || true)
+		yaml_files=$(echo "$changed_files" | grep -E '\.(yml|yaml)$' || true)
+
+		# Run linters for changed file types
+		[ -n "$swift_files" ] && echo "Linting Swift files..." && lint_swift_command
+		[ -n "$ts_files" ] && echo "Linting TypeScript files..." && lint_ts_command
+		[ -n "$shell_files" ] && echo "Linting shell files..." && lint_shell_command
+		[ -n "$ruby_files" ] && echo "Linting Ruby files..." && lint_ruby_command
+		[ -n "$yaml_files" ] && echo "Linting YAML files..." && lint_yaml_command
+
+		echo "✓ Lint complete for changed files"
+	else
+		lint_swift_command &&
+			lint_ts_command &&
+			lint_shell_command &&
+			lint_ruby_command &&
+			lint_yaml_command
+	fi
 	;;
 test:swift)
 	test_swift_command "$@"
@@ -239,13 +277,7 @@ open:app)
 		cd "$(git rev-parse --show-toplevel)/app" &&
 		xcode_path=$(xcode-select -p) &&
 		xcode_path="${xcode_path%%.app*}.app" &&
-		{
-			if ! open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES 2>&1; then
-				echo "⚠️  First attempt failed, retrying..."
-				sleep 1
-				open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES
-			fi
-		}
+		open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES
 	;;
 build:release)
 	# build the app for release.

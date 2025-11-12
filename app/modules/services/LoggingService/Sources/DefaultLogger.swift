@@ -285,6 +285,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
 
   /// Sets up local file logging with automatic file creation and timestamped naming.
   /// Creates log files in the application support directory under command/logs/.
+  /// Note: File logging is disabled in sandboxed environments (like Xcode extensions).
   /// - Parameters:
   ///   - writeToFile: Optional custom file writing function
   ///   - fileManager: File manager for handling file operations
@@ -292,6 +293,12 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
     if let writeToFile {
       self.writeToFile = writeToFile
     } else {
+      // Skip file logging in sandboxed environments (like Xcode extensions)
+      // Sandboxed processes can still log to the console via os.Logger, but cannot write log files
+      guard Bundle.main.isHostApp else {
+        return
+      }
+
       let dateFormatter = DateFormatter()
       dateFormatter.dateFormat = "yyyy-MM-dd__HH-mm-ss.SSS"
       dateFormatter.timeZone = TimeZone(abbreviation: "UTC")

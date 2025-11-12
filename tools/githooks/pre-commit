@@ -54,7 +54,7 @@ while IFS= read -r file; do
 done < <(git diff --cached --name-only)
 
 # Run lint and sync
-./cmd.sh lint
+./cmd.sh lint --diff
 ./cmd.sh sync:dependencies
 
 # Check if lint/sync made any changes

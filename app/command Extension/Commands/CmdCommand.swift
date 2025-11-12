@@ -13,7 +13,7 @@ import XcodeKit
 /// Unified command that handles all extension operations based on queued input from the host app.
 final class CmdCommand: CommandType, @unchecked Sendable {
 
-  override var name: String { ExtensionCommandNames.cmd }
+  override var name: String { ExtensionActionName.cmd.rawValue }
 
   override func timeout(_: XCSourceEditorCommandInvocation) -> TimeInterval {
     // We can't determine the exact operation type without async call to getQueuedInput,
@@ -37,6 +37,10 @@ final class CmdCommand: CommandType, @unchecked Sendable {
 
       case .getFormattingMetadata:
         handleGetFormattingMetadata(buffer: invocation.buffer)
+
+      case .error(let errorMessage):
+        defaultLogger.error("Extension received error from host app: \(errorMessage)")
+        throw XcodeExtensionError(message: errorMessage)
       }
 
     // Step 3: Send the result back to the host app
@@ -50,6 +54,7 @@ final class CmdCommand: CommandType, @unchecked Sendable {
       try SourceModificationHelpers.update(buffer: buffer, with: fileChange)
       return .applyEditResult(.success(()))
     } catch {
+      defaultLogger.error("Failed to apply edit: \(error.localizedDescription)")
       let extensionError = ExtensionError(message: error.localizedDescription)
       return .applyEditResult(.failure(extensionError))
     }

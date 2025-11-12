@@ -57,13 +57,13 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionActionName.cmd.rawValue,
       id: "123",
       data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionActionName.cmd.rawValue,
       id: "123",
       data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
 
@@ -144,13 +144,13 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionActionName.cmd.rawValue,
       id: "123",
       data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionActionName.cmd.rawValue,
       id: "123",
       data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
 

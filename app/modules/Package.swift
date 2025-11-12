@@ -702,6 +702,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "CodeCompletionFoundation",
+      "ConcurrencyFoundation",
       "FileDiffTypesFoundation",
       "ThreadSafe",
       "XcodeObserverServiceInterface",
@@ -902,6 +903,7 @@ targets.append(
     ],
     testsDependencies: [
       .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+      "AppFoundation",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
     ],
@@ -1612,6 +1614,7 @@ targets.append(
     name: "ShellService",
     dependencies: [
       .product(name: "Subprocess", package: "swift-subprocess"),
+      "AppFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "LoggingServiceInterface",

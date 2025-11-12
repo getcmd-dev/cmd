@@ -72,6 +72,8 @@ open class XcodeWindow: NSWindow {
   @Dependency(\.xcodeObserver) public var xcodeObserver
   @Dependency(\.appsActivationState) public var appsActivationStatePublisher
 
+  public private(set) var trackedWindowNumber: CGWindowID?
+
   /// Whether the window will automatically position itself in relationship to Xcode.
   /// If false, the window's position will be managed by the user who can drag it.
   public var isPositionAutomaticallyManaged = true {
@@ -139,7 +141,6 @@ open class XcodeWindow: NSWindow {
   private var axNotificationPublisher: AnyPublisher<AXNotification, Never>
   private var cancellables = Set<AnyCancellable>()
   private var _frame: CGRect?
-  private var trackedWindowNumber: CGWindowID?
   private var positionTimer: Timer?
 
   /// Whether the window should behave like an active window (ie be frontmost etc)

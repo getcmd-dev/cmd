@@ -8,45 +8,9 @@ import Foundation
 // MARK: - ExtensionRequest
 
 /// Represents a request from the extension to the host app
-public enum ExtensionRequest: Codable, Sendable {
+public enum ExtensionRequest: Sendable {
   case getQueuedInput
   case sendResult(ExtensionResult)
-
-  public init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    let type = try container.decode(String.self, forKey: .type)
-
-    switch type {
-    case "getQueuedInput":
-      self = .getQueuedInput
-
-    case "sendResult":
-      let result = try container.decode(ExtensionResult.self, forKey: .result)
-      self = .sendResult(result)
-
-    default:
-      throw DecodingError.dataCorruptedError(
-        forKey: .type,
-        in: container,
-        debugDescription: "Unknown extension request type: \(type)")
-    }
-  }
-
-  public enum CodingKeys: String, CodingKey {
-    case type
-    case result
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    switch self {
-    case .getQueuedInput:
-      try container.encode("getQueuedInput", forKey: .type)
-    case .sendResult(let result):
-      try container.encode("sendResult", forKey: .type)
-      try container.encode(result, forKey: .result)
-    }
-  }
 }
 
 // MARK: - ExtensionInput
@@ -56,6 +20,7 @@ public enum ExtensionInput: Codable, Sendable {
   case applyEdit(FileChange)
   case reloadSettings
   case getFormattingMetadata
+  case error(String)
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -72,6 +37,10 @@ public enum ExtensionInput: Codable, Sendable {
     case "getFormattingMetadata":
       self = .getFormattingMetadata
 
+    case "error":
+      let errorMessage = try container.decode(String.self, forKey: .error)
+      self = .error(errorMessage)
+
     default:
       throw DecodingError.dataCorruptedError(
         forKey: .type,
@@ -83,6 +52,7 @@ public enum ExtensionInput: Codable, Sendable {
   public enum CodingKeys: String, CodingKey {
     case type
     case fileChange
+    case error
   }
 
   public func encode(to encoder: Encoder) throws {
@@ -97,6 +67,10 @@ public enum ExtensionInput: Codable, Sendable {
 
     case .getFormattingMetadata:
       try container.encode("getFormattingMetadata", forKey: .type)
+
+    case .error(let errorMessage):
+      try container.encode("error", forKey: .type)
+      try container.encode(errorMessage, forKey: .error)
     }
   }
 }
@@ -190,11 +164,20 @@ public enum ExtensionTimeout {
   public static let applyFileChangeTimeout: TimeInterval = 2
 }
 
-// MARK: - ExtensionCommandNames
+// MARK: - ExtensionCommandName
 
-public enum ExtensionCommandNames {
-  public static let cmd = "Cmd"
-  public static let executeUserDefinedShortcut = "executeUserDefinedXcodeShortcut"
+/// The name that identifies the command sends from the Xcode extension to the app.
+public enum ExtensionCommandName: String, Codable, Sendable {
+  case executeUserDefinedShortcut
+  case getQueuedInput
+  case sendResult
+}
+
+// MARK: - ExtensionActionName
+
+/// The name that identifies the action in Xcode's menu (Editor > cmd > name).
+public enum ExtensionActionName: String {
+  case cmd = "Cmd"
 }
 
 // MARK: - FileChangeConfirmation
@@ -241,25 +224,23 @@ public struct UserDefinedXcodeShortcutExecutionInput: Codable {
   }
 }
 
-// MARK: - UserDefinedShortcutRequest
+// MARK: - RequestFromXcodeExtension
 
-/// Extension request structure for user-defined shortcuts
-/// Uses a command string pattern to allow users to define custom commands
-public struct UserDefinedShortcutRequest<Input: Codable>: Codable {
-  public let type = "execute-command"
-  public let command: String
+/// A generic structure that contains a request sent from the Xcode extension to the app.
+public struct RequestFromXcodeExtension<Input: Codable>: Codable {
+  public let command: ExtensionCommandName
   public let input: Input
 
-  public init(command: String, input: Input) {
+  public init(command: ExtensionCommandName, input: Input) {
     self.command = command
     self.input = input
   }
 
   public init(from decoder: any Decoder) throws {
-    let container: KeyedDecodingContainer<UserDefinedShortcutRequest<Input>.CodingKeys> = try decoder
-      .container(keyedBy: UserDefinedShortcutRequest<Input>.CodingKeys.self)
-    command = try container.decode(String.self, forKey: UserDefinedShortcutRequest<Input>.CodingKeys.command)
-    input = try container.decode(Input.self, forKey: UserDefinedShortcutRequest<Input>.CodingKeys.input)
+    let container: KeyedDecodingContainer<RequestFromXcodeExtension<Input>.CodingKeys> = try decoder
+      .container(keyedBy: RequestFromXcodeExtension<Input>.CodingKeys.self)
+    command = try container.decode(ExtensionCommandName.self, forKey: RequestFromXcodeExtension<Input>.CodingKeys.command)
+    input = try container.decode(Input.self, forKey: RequestFromXcodeExtension<Input>.CodingKeys.input)
   }
 }
 

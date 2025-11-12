@@ -15,7 +15,7 @@ public final class AppExtensionScope: Sendable, BaseProviding {
 
   init() {
     setupLogging()
-    defaultLogger.log("Launching Xcode extension (version: \(Bundle.main.version)")
+    defaultLogger.log("Launching Xcode extension (version: \(Bundle.main.version))")
   }
 
   public static let shared = AppExtensionScope()

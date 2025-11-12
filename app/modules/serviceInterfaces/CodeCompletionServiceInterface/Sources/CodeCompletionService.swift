@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import CodeCompletionFoundation
+import ConcurrencyFoundation
 import FileDiffTypesFoundation
 import Foundation
 import XcodeObserverServiceInterface
@@ -11,7 +12,7 @@ import XcodeObserverServiceInterface
 public protocol CodeCompletionService: Sendable {
 
   /// Whether the code completion service is available for use.
-  var isAvailable: Bool { get }
+  var isAvailable: ReadonlyCurrentValueSubject<Bool> { get }
 
   func suggestCompletion(
     workspace: URL,

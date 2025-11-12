@@ -132,7 +132,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
 
     // Trigger the cmd extension command which will process the reload
     do {
-      try await executeExtensionCommand(ExtensionCommandNames.cmd)
+      try await executeExtensionCommand(ExtensionActionName.cmd.rawValue)
     } catch {
       // Clean up the queued request if the extension command fails
       inLock { state in
@@ -181,10 +181,8 @@ final class DefaultXcodeController: XcodeController, Sendable {
       switch event {
       case let event as ExecuteExtensionRequestEvent:
         do {
-          let extensionRequest = try JSONDecoder().decode(ExtensionRequest.self, from: event.data)
-
-          switch extensionRequest {
-          case .getQueuedInput:
+          switch event.command {
+          case ExtensionCommandName.getQueuedInput.rawValue:
             // Extension is asking for the first queued input
             guard let request = queuedRequests.first else {
               throw AppError(message: "No queued input available")
@@ -192,11 +190,15 @@ final class DefaultXcodeController: XcodeController, Sendable {
             event.completion(.success(request.input))
             return true
 
-          case .sendResult(let result):
+          case ExtensionCommandName.sendResult.rawValue:
             // Extension is sending back the result
-            handleExtensionResult(result)
+            let extensionRequest = try JSONDecoder().decode(RequestFromXcodeExtension<ExtensionResult>.self, from: event.data)
+            handleExtensionResult(extensionRequest.input)
             event.completion(.success(EmptyResponse()))
             return true
+
+          default:
+            return false
           }
         } catch {
           defaultLogger.error("Failed to handle extension request: \(error)")
@@ -311,10 +313,11 @@ final class DefaultXcodeController: XcodeController, Sendable {
         }
 
         do {
-          if xcodeObserver.state.focusedWorkspace?.url != fileChange.filePath, canUseAppleScript {
+          let openedFilePath = xcodeObserver.state.focusedWorkspace?.tabs.first(where: { $0.isFocused })?.knownPath?.path
+          if openedFilePath != fileChange.filePath.path, canUseAppleScript {
             defaultLogger
               .log(
-                "Opening file '\(fileChange.filePath)' in Xcode. Current file: \(xcodeObserver.state.focusedWorkspace?.url.path() ?? "nil")")
+                "Opening file '\(fileChange.filePath)' in Xcode. Current file: \(openedFilePath ?? "nil")")
             try? await Self.openFileWithAppleScript(at: fileChange.filePath)
           }
 
@@ -370,7 +373,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
         do {
           // Trigger the extension command to get metadata for the currently focused file
           try await DefaultXcodeController.triggerExtensionCommand(
-            commandName: ExtensionCommandNames.cmd,
+            commandName: ExtensionActionName.cmd.rawValue,
             xcodeObserver: xcodeObserver,
             shellService: shellService,
             settingsService: settingsService,
@@ -442,7 +445,7 @@ extension DefaultXcodeController {
     async throws
   {
     try await triggerExtensionCommand(
-      commandName: ExtensionCommandNames.cmd,
+      commandName: ExtensionActionName.cmd.rawValue,
       xcodeObserver: xcodeObserver,
       shellService: shellService,
       settingsService: settingsService,
@@ -512,7 +515,6 @@ extension DefaultXcodeController {
       defaultLogger.error("Failed to click \(commandName) menu item.")
       throw AXError.cannotComplete
     }
-
     if isAppActive, needToActivateXcode {
       NSApplication.shared.activate()
     }
@@ -522,15 +524,18 @@ extension DefaultXcodeController {
   @MainActor
   static func getXcode(xcodeObserver: XcodeObserver, shellService: ShellService) async -> NSRunningApplication? {
     // When in DEBUG mode, we first check if there is an instance of Xcode that has been launched by attaching to the extension.
-    for pid in xcodeObserver.state.wrapped?.xcodesState.map(\.processIdentifier) ?? [] {
-      if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
-        if let app = NSRunningApplication(processIdentifier: pid) {
-          return app
+    let xcodesState = xcodeObserver.state.wrapped?.xcodesState
+    if xcodesState?.count ?? 0 > 1 {
+      for pid in xcodesState?.map(\.processIdentifier) ?? [] {
+        if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
+          if let app = NSRunningApplication(processIdentifier: pid) {
+            return app
+          }
         }
       }
     }
     if
-      let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
+      let processId = xcodesState?.first?.processIdentifier,
       let app = NSRunningApplication(processIdentifier: processId)
     {
       return app

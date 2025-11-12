@@ -10,29 +10,94 @@ import LoggingServiceInterface
 
 public enum SourceModificationHelpers {
   public static func update(buffer: XCSourceTextBufferI, with fileChange: FileDiffTypesFoundation.FileChange) throws {
-    guard buffer.completeBuffer == fileChange.oldContent else {
-      let debugMessageData = try? JSONSerialization.data(withJSONObject: [
-        "bufferContent": buffer.completeBuffer,
-        "expectedContent": fileChange.oldContent,
-      ])
-      let debugDescription = debugMessageData.flatMap { String(data: $0, encoding: .utf8) }
-      throw AppError(message: "Editor's content does not match the code to modify.", debugDescription: debugDescription)
-    }
-    var lineOffset = 0
+    try applyEdit(buffer: buffer, fileChange: fileChange)
+  }
+
+  /// Applies an edit to the buffer (handles both full file edits and partial edits)
+  private static func applyEdit(buffer: XCSourceTextBufferI, fileChange: FileDiffTypesFoundation.FileChange) throws {
+    let selections = buffer.getSelections()
+    buffer.removeSelections()
+
+    // Collect lines to remove and lines to add
+    // Using ContiguousArray for better performance with value types (small arrays <100 elements)
+    var linesToRemove = ContiguousArray<Int>()
+    var linesToAdd = ContiguousArray<(lineNumber: Int, content: String)>()
+
+    // Reserve capacity upfront since we know the maximum size
+    linesToRemove.reserveCapacity(fileChange.selectedChange.count)
+    linesToAdd.reserveCapacity(fileChange.selectedChange.count)
+
+    // Validate and collect changes
     for lineChange in fileChange.selectedChange {
-      switch lineChange.type {
-      case .added:
-        buffer.insert(line: lineChange.content, at: lineOffset)
-        lineOffset += 1
+      switch lineChange {
+      case .removed(let oldLine, _, let content):
+        // Validate that the line to be removed matches what we expect
+        let actualLine: String
+        do {
+          actualLine = try buffer.line(at: oldLine)
+        } catch {
+          defaultLogger.error("Failed to read line \(oldLine) from buffer for removal validation: \(error.localizedDescription)")
+          throw AppError(message: "Failed to read line \(oldLine) from buffer: \(error.localizedDescription)")
+        }
 
-      case .removed:
-        buffer.removeLine(at: lineOffset)
+        // Cache trimmed values to avoid redundant trimming
+        let trimmedActualLine = actualLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedExpectedLine = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
-      case .unchanged:
-        lineOffset += 1
-        break
+        if trimmedActualLine != trimmedExpectedLine {
+          defaultLogger
+            .error("Line \(oldLine) content mismatch. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+          throw AppError(
+            message: "Line \(oldLine) content does not match expected content for removal. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+        }
+        linesToRemove.append(oldLine)
+
+      case .added(let newLine, _, let content):
+        linesToAdd.append((newLine, content))
+
+      case .unchanged(let oldLine, _, _, let content):
+        // For unchanged lines, verify they match
+        let actualLine: String
+        do {
+          actualLine = try buffer.line(at: oldLine)
+        } catch {
+          defaultLogger
+            .error("Failed to read line \(oldLine) from buffer for unchanged validation: \(error.localizedDescription)")
+          throw AppError(message: "Failed to read line \(oldLine) from buffer: \(error.localizedDescription)")
+        }
+
+        // Cache trimmed values to avoid redundant trimming
+        let trimmedActualLine = actualLine.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedExpectedLine = content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmedActualLine != trimmedExpectedLine {
+          defaultLogger
+            .error(
+              "Unchanged line \(oldLine) content mismatch. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+          throw AppError(
+            message: "Unchanged line \(oldLine) content does not match buffer content. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+        }
       }
     }
+
+    // First, remove all lines in reverse order (from bottom to top) to avoid index shifting
+    // Sort in-place for better performance
+    linesToRemove.sort(by: >)
+    for lineNum in linesToRemove {
+      buffer.removeLine(at: lineNum)
+    }
+
+    linesToAdd.sort(by: { $0.lineNumber < $1.lineNumber })
+    for (lineNum, content) in linesToAdd {
+      buffer.insert(line: content, at: lineNum)
+    }
+
+    guard let newSelections = fileChange.newSelections else {
+      // Restore original selections if no new selections provided
+      buffer.set(selections: selections)
+      return
+    }
+    buffer.set(selections: newSelections)
   }
 
 }
@@ -48,7 +113,7 @@ extension Array {
 
 extension String.SubSequence {
   /// Splits the collection into substrings that each represent a line of text.
-  func splitLines()
+  public func splitLines()
     -> [String.SubSequence]
   {
     var result = [String.SubSequence]()
@@ -63,15 +128,13 @@ extension String.SubSequence {
     }
     if lineStart != endIndex {
       result.append(self[lineStart...])
-    } else if !isEmpty {
-      result.append(self[lineStart..<lineStart])
     }
     return result
   }
 }
 
 extension String {
-  func splitLines() -> [String.SubSequence] {
+  public func splitLines() -> [String.SubSequence] {
     self[...].splitLines()
   }
 }

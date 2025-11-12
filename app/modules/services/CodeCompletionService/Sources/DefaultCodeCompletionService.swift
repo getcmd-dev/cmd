@@ -23,7 +23,6 @@ import XcodeObserverServiceInterface
 // MARK: - CodeCompletionIsolation
 
 // TODO: buffer updates for file change (don't do every char)
-// TODO: get tabSize etc, maybe from XcodeExtension?
 // TODO: check if URL is a stable key for dictionaries
 
 @globalActor
@@ -54,14 +53,30 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     self.xcodeController = xcodeController
     self.permissionsService = permissionsService
 
+    var cancellables = Set<AnyCancellable>()
+    permissionsService.status(for: .xcodeExtension).sink { @Sendable value in
+      Task { [weak self] in
+        await self?.handle(xcodeExtensionPermissionIsGranted: value)
+      }
+    }.store(in: &cancellables)
+
+    settingsService.liveValue(for: \.enableCodeCompletion).sink { @Sendable value in
+      Task { [weak self] in
+        await self?.handle(enableCodeCompletionSettingChanged: value)
+      }
+    }.store(in: &cancellables)
+
     // Subscribe to state changes from XcodeObserver
-    let cancellable = xcodeObserver.statePublisher.sink { @Sendable newState in
+    xcodeObserver.statePublisher.sink { @Sendable newState in
       Task { [weak self] in
         await self?.handleStateChange(newState)
       }
-    }
+    }.store(in: &cancellables)
+    let _cancellables = cancellables
     Task {
-      await add(cancellable: cancellable)
+      for cancellable in _cancellables {
+        await add(cancellable: cancellable)
+      }
     }
   }
 
@@ -71,21 +86,15 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   /// Cache formatting metadata per workspace
   var formattingMetadataCache = [URL: FileFormattingMetadata]()
 
-  nonisolated var isAvailable: Bool {
-    #if DEBUG
-    // Debug builds don't work well with Xcode extension.
-    // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
-    permissionsService.status(for: .xcodeExtension).currentValue == true ||
-      settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
-    #else
-    permissionsService.status(for: .xcodeExtension).currentValue == true
-    #endif
+  nonisolated var isAvailable: ReadonlyCurrentValueSubject<Bool> {
+    _isAvailable.readonly()
   }
 
   var configuredProvider: (any CodeCompletionProvider)? {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
+    // Don
     return codeCompletionProviders.first
 //    return nil
   }
@@ -99,7 +108,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     timeout _: TimeInterval)
     async throws -> CodeCompletionServiceInterface.CompletionSuggestion?
   {
-    guard isAvailable else {
+    guard isAvailable.currentValue else {
       return nil
     }
     guard let provider = configuredProvider else {
@@ -236,6 +245,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     case failed
   }
 
+  nonisolated private let _isAvailable = CurrentValueSubject<Bool, Never>(false)
+
   /// Track workspace initialization state to prevent race conditions
   private var workspaceStates = [URL: WorkspaceState]()
   private let xcodeObserver: XcodeObserver
@@ -254,6 +265,30 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   /// Track which files are currently open within each workspace
   nonisolated private let filesPerWorkspace = Atomic([URL: Set<URL>]())
   private var openFiles = [URL: [URL: FileState]]()
+
+  private func handle(xcodeExtensionPermissionIsGranted _: Bool?) {
+    updateIsAvailable()
+  }
+
+  private func handle(enableCodeCompletionSettingChanged _: Bool) {
+    updateIsAvailable()
+  }
+
+  private func updateIsAvailable() {
+    let hasPermission = {
+      #if DEBUG
+      // Debug builds don't work well with Xcode extension.
+      // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
+      permissionsService.status(for: .xcodeExtension).currentValue == true ||
+        settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
+      #else
+      permissionsService.status(for: .xcodeExtension).currentValue == true
+      #endif
+    }()
+    let isEnabledInSettings = settingsService.value(for: \.enableCodeCompletion)
+    let isAvailable = hasPermission && isEnabledInSettings
+    _isAvailable.send(isAvailable)
+  }
 
   private func add(cancellable: AnyCancellable) {
     cancellables.insert(cancellable)

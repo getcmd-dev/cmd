@@ -26,7 +26,7 @@ struct SourceModificationHelpersTests {
     @Test("multiple lines")
     func test_multipleLines() {
       let lines = "Hello, world!\nWhat a wonderful world!\nSo lucky to be here!\n".splitLines()
-      #expect(lines == ["Hello, world!\n", "What a wonderful world!\n", "So lucky to be here!\n", ""])
+      #expect(lines == ["Hello, world!\n", "What a wonderful world!\n", "So lucky to be here!\n"])
     }
 
     @Test("multiple lines with no trailing newline")
@@ -38,7 +38,184 @@ struct SourceModificationHelpersTests {
     @Test("multiple lines empty lines")
     func test_multipleLinesWithEmptyline() {
       let lines = "Hello, world!\n\nWhat a wonderful world!\nSo lucky to be here!\n\n\n".splitLines()
-      #expect(lines == ["Hello, world!\n", "\n", "What a wonderful world!\n", "So lucky to be here!\n", "\n", "\n", ""])
+      #expect(lines == ["Hello, world!\n", "\n", "What a wonderful world!\n", "So lucky to be here!\n", "\n", "\n"])
+    }
+  }
+
+  // MARK: - Partial Edit Tests
+
+  struct PartialEditTests {
+    @Test("partial edit - add single line")
+    func test_partialEdit_addSingleLine() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        Line 3
+        Line 4
+        """
+
+      // Create a partial edit that only specifies adding a line after line 2
+      let lineChanges: [LineChange] = [
+        .unchanged(1, 1, 0..<0, "Line 2\n"),
+        .added(2, 0..<0, "New Line\n"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+        filePath: URL(filePath: ""),
+        oldContent: "", // Partial edit doesn't have full old content
+        suggestedNewContent: "",
+        selectedChange: lineChanges))
+
+      #expect(buffer.completeBuffer.contains("New Line"))
+    }
+
+    @Test("partial edit - remove single line")
+    func test_partialEdit_removeSingleLine() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        Line 3
+        Line 4
+        """
+
+      // Create a partial edit that only specifies removing line 2
+      let lineChanges: [LineChange] = [
+        .removed(1, 0..<0, "Line 2\n"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+        filePath: URL(filePath: ""),
+        oldContent: "", // Partial edit doesn't have full old content
+        suggestedNewContent: "",
+        selectedChange: lineChanges))
+
+      #expect(!buffer.completeBuffer.contains("Line 2"))
+      #expect(buffer.completeBuffer.contains("Line 1"))
+      #expect(buffer.completeBuffer.contains("Line 3"))
+    }
+
+    @Test("partial edit - multiple changes")
+    func test_partialEdit_multipleChanges() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        Line 3
+        Line 4
+        Line 5
+        """
+
+      // Remove line 2, add a new line after line 3
+      let lineChanges: [LineChange] = [
+        .removed(1, 0..<0, "Line 2\n"),
+        .unchanged(2, 2, 0..<0, "Line 3\n"),
+        .added(3, 0..<0, "Inserted Line\n"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+        filePath: URL(filePath: ""),
+        oldContent: "",
+        suggestedNewContent: "",
+        selectedChange: lineChanges))
+
+      #expect(!buffer.completeBuffer.contains("Line 2"))
+      #expect(buffer.completeBuffer.contains("Inserted Line"))
+    }
+
+    @Test("partial edit - validation fails on mismatched content")
+    func test_partialEdit_validationFailsOnMismatchedContent() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        Line 3
+        """
+
+      // Try to remove a line with wrong content
+      let lineChanges: [LineChange] = [
+        .removed(1, 0..<0, "Wrong Content\n"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      #expect(throws: Error.self) {
+        try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+          filePath: URL(filePath: ""),
+          oldContent: "",
+          suggestedNewContent: "",
+          selectedChange: lineChanges))
+      }
+    }
+
+    @Test("partial edit - validation fails on out of bounds line number")
+    func test_partialEdit_validationFailsOnOutOfBoundsLineNumber() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        """
+
+      // Try to remove a line that doesn't exist
+      let lineChanges: [LineChange] = [
+        .removed(10, 0..<0, "Line 11\n"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      #expect(throws: Error.self) {
+        try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+          filePath: URL(filePath: ""),
+          oldContent: "",
+          suggestedNewContent: "",
+          selectedChange: lineChanges))
+      }
+    }
+
+    @Test("partial edit - with whitespace differences")
+    func test_partialEdit_withWhitespaceDifferences() throws {
+      let fileContent = """
+        Line 1
+          Line 2
+        Line 3
+        """
+
+      // Remove line with extra whitespace (should trim and match)
+      let lineChanges: [LineChange] = [
+        .removed(1, 0..<0, "Line 2\n"), // No leading spaces in lineChange
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+        filePath: URL(filePath: ""),
+        oldContent: "",
+        suggestedNewContent: "",
+        selectedChange: lineChanges))
+
+      #expect(!buffer.completeBuffer.contains("Line 2"))
+    }
+
+    @Test("full edit detection - matches buffer exactly")
+    func test_fullEditDetection_matchesBufferExactly() throws {
+      let fileContent = """
+        Line 1
+        Line 2
+        Line 3
+        """
+
+      let lineChanges: [LineChange] = [
+        .unchanged(0, 0, 0..<0, "Line 1\n"),
+        .removed(1, 0..<0, "Line 2\n"),
+        .added(1, 0..<0, "Modified Line\n"),
+        .unchanged(2, 2, 0..<0, "Line 3"),
+      ]
+
+      let buffer = MockXCSourceTextBufferI(text: fileContent)
+      try SourceModificationHelpers.update(buffer: buffer, with: FileChange(
+        filePath: URL(filePath: ""),
+        oldContent: fileContent, // Full old content matches
+        suggestedNewContent: "",
+        selectedChange: lineChanges))
+
+      #expect(buffer.completeBuffer.contains("Modified Line"))
+      #expect(!buffer.completeBuffer.contains("Line 2\n"))
     }
   }
 
@@ -537,4 +714,18 @@ struct SourceModificationHelpersTests {
     return buffer.completeBuffer
   }
 
+}
+
+extension LineChange {
+  static func unchanged(_ oldLine: Int, _ newLine: Int, _ characterRange: Range<Int>, _ content: String) -> LineChange {
+    .unchanged(oldLine: oldLine, newLine: newLine, characterRange: characterRange, content: content)
+  }
+
+  static func added(_ newLine: Int, _ characterRange: Range<Int>, _ content: String) -> LineChange {
+    .added(newLine: newLine, characterRange: characterRange, content: content)
+  }
+
+  static func removed(_ oldLine: Int, _ characterRange: Range<Int>, _ content: String) -> LineChange {
+    .removed(oldLine: oldLine, characterRange: characterRange, content: content)
+  }
 }

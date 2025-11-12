@@ -29,9 +29,9 @@ public final class ExtensionCommandHandler: @unchecked Sendable {
     if let appEvent = appEvent as? ExecuteExtensionRequestEvent {
       do {
         switch appEvent.command {
-        case ExtensionCommandNames.executeUserDefinedShortcut:
+        case ExtensionCommandName.executeUserDefinedShortcut.rawValue:
           let input = try JSONDecoder().decode(
-            UserDefinedShortcutRequest<UserDefinedXcodeShortcutExecutionInput>.self,
+            RequestFromXcodeExtension<UserDefinedXcodeShortcutExecutionInput>.self,
             from: appEvent.data)
             .input
 
