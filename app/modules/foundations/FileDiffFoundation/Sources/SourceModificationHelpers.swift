@@ -29,14 +29,23 @@ public enum SourceModificationHelpers {
       switch lineChange {
       case .removed(let oldLine, _, let content):
         // Validate that the line to be removed matches what we expect
-        let actualLine = try buffer.line(at: oldLine)
+        let actualLine: String
+        do {
+          actualLine = try buffer.line(at: oldLine)
+        } catch {
+          defaultLogger.error("Failed to read line \(oldLine) from buffer for removal validation: \(error.localizedDescription)")
+          throw AppError(message: "Failed to read line \(oldLine) from buffer: \(error.localizedDescription)")
+        }
 
         // Cache trimmed values to avoid redundant trimming
         let trimmedActualLine = actualLine.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedExpectedLine = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmedActualLine != trimmedExpectedLine {
-          throw AppError(message: "Line \(oldLine) content does not match expected content for removal")
+          defaultLogger
+            .error("Line \(oldLine) content mismatch. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+          throw AppError(
+            message: "Line \(oldLine) content does not match expected content for removal. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
         }
         linesToRemove.append(oldLine)
 
@@ -45,14 +54,25 @@ public enum SourceModificationHelpers {
 
       case .unchanged(let oldLine, _, _, let content):
         // For unchanged lines, verify they match
-        let actualLine = try buffer.line(at: oldLine)
+        let actualLine: String
+        do {
+          actualLine = try buffer.line(at: oldLine)
+        } catch {
+          defaultLogger
+            .error("Failed to read line \(oldLine) from buffer for unchanged validation: \(error.localizedDescription)")
+          throw AppError(message: "Failed to read line \(oldLine) from buffer: \(error.localizedDescription)")
+        }
 
         // Cache trimmed values to avoid redundant trimming
         let trimmedActualLine = actualLine.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedExpectedLine = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmedActualLine != trimmedExpectedLine {
-          throw AppError(message: "Unchanged line \(oldLine) content does not match buffer content")
+          defaultLogger
+            .error(
+              "Unchanged line \(oldLine) content mismatch. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
+          throw AppError(
+            message: "Unchanged line \(oldLine) content does not match buffer content. Expected: '\(trimmedExpectedLine)', Actual: '\(trimmedActualLine)'")
         }
       }
     }
@@ -98,8 +118,6 @@ extension String.SubSequence {
     }
     if lineStart != endIndex {
       result.append(self[lineStart...])
-    } else if !isEmpty {
-      result.append(self[lineStart..<lineStart])
     }
     return result
   }

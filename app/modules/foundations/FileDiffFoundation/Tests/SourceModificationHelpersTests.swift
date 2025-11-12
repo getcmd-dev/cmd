@@ -26,7 +26,7 @@ struct SourceModificationHelpersTests {
     @Test("multiple lines")
     func test_multipleLines() {
       let lines = "Hello, world!\nWhat a wonderful world!\nSo lucky to be here!\n".splitLines()
-      #expect(lines == ["Hello, world!\n", "What a wonderful world!\n", "So lucky to be here!\n", ""])
+      #expect(lines == ["Hello, world!\n", "What a wonderful world!\n", "So lucky to be here!\n"])
     }
 
     @Test("multiple lines with no trailing newline")
@@ -38,7 +38,7 @@ struct SourceModificationHelpersTests {
     @Test("multiple lines empty lines")
     func test_multipleLinesWithEmptyline() {
       let lines = "Hello, world!\n\nWhat a wonderful world!\nSo lucky to be here!\n\n\n".splitLines()
-      #expect(lines == ["Hello, world!\n", "\n", "What a wonderful world!\n", "So lucky to be here!\n", "\n", "\n", ""])
+      #expect(lines == ["Hello, world!\n", "\n", "What a wonderful world!\n", "So lucky to be here!\n", "\n", "\n"])
     }
   }
 
