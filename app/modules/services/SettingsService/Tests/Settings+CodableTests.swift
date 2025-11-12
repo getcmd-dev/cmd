@@ -1011,7 +1011,8 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: true,
       codeCompletionProviderId: "github-copilot",
       enableCodeCompletion: true,
-      codeCompletionDebounceMs: 100)
+      codeCompletionDebounceMs: 100,
+      multiLineCodeCompletionDisplayMode: .expandCompletionOverExistingCode)
 
     let json = """
       {
@@ -1026,6 +1027,7 @@ struct SettingsCodableTests {
         "enabledModels" : [],
         "llmProviderSettings" : {},
         "mcpServers" : {},
+        "multiLineCodeCompletionDisplayMode" : "expandCompletionOverExistingCode",
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {},
         "reasoningModels": {},
@@ -1051,7 +1053,8 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: true,
       codeCompletionProviderId: nil,
       enableCodeCompletion: false,
-      codeCompletionDebounceMs: 250) // default value
+      codeCompletionDebounceMs: 250, // default value
+      multiLineCodeCompletionDisplayMode: .expandCompletionOverExistingCodeWhenTriggered) // default value
 
     try testDecoding(expectedSettings, json)
   }
@@ -1063,7 +1066,8 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: false,
       codeCompletionProviderId: "test-provider",
       enableCodeCompletion: true,
-      codeCompletionDebounceMs: 500)
+      codeCompletionDebounceMs: 500,
+      multiLineCodeCompletionDisplayMode: .expandCompletionAddingSpaceInExistingCode)
 
     let jsonData = try JSONEncoder().encode(originalSettings)
     let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
@@ -1072,6 +1076,7 @@ struct SettingsCodableTests {
     #expect(decodedSettings.codeCompletionProviderId == "test-provider")
     #expect(decodedSettings.enableCodeCompletion == true)
     #expect(decodedSettings.codeCompletionDebounceMs == 500)
+    #expect(decodedSettings.multiLineCodeCompletionDisplayMode == .expandCompletionAddingSpaceInExistingCode)
   }
 
   @Test("Decode code completion settings with only debounce value")
@@ -1090,6 +1095,55 @@ struct SettingsCodableTests {
       codeCompletionDebounceMs: 75)
 
     try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Encode and decode multi-line code completion display mode")
+  func testMultiLineCodeCompletionDisplayModeEncodingDecoding() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      multiLineCodeCompletionDisplayMode: .expandCompletionOverExistingCode)
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
+        "automaticallyUpdateXcodeSettings" : false,
+        "chatModeConfigurations" : {},
+        "codeCompletionDebounceMs" : 250,
+        "codeCompletionProviderId" : null,
+        "enableCodeCompletion" : false,
+        "keyboardShortcuts" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {},
+        "mcpServers" : {},
+        "multiLineCodeCompletionDisplayMode" : "expandCompletionOverExistingCode",
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {},
+        "reasoningModels": {},
+        "toolPreferences" : [],
+        "userDefinedXcodeShortcuts" : [],
+        "fileEditMode": "direct I/O"
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode multi-line code completion display mode with all options")
+  func testMultiLineCodeCompletionDisplayModeAllOptions() throws {
+    // Test all enum cases
+    for mode in MultiLineCodeCompletionDisplayMode.allCases {
+      let settings = Settings(
+        pointReleaseXcodeExtensionToDebugApp: false,
+        allowAnonymousAnalytics: true,
+        multiLineCodeCompletionDisplayMode: mode)
+
+      let jsonData = try JSONEncoder().encode(settings)
+      let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
+
+      #expect(decodedSettings.multiLineCodeCompletionDisplayMode == mode)
+    }
   }
 
   // MARK: - Queue Messages While Streaming Tests
@@ -1215,6 +1269,7 @@ struct SettingsCodableTests {
       codeCompletionProviderId: "test-provider",
       enableCodeCompletion: true,
       codeCompletionDebounceMs: 250, // Note: this field is not currently persisted, so it will reset to default
+      multiLineCodeCompletionDisplayMode: .expandCompletionOverExistingCode,
       queueMessagesWhileStreaming: false)
 
     // Convert to ExternalSettings and InternalSettings
@@ -1246,6 +1301,7 @@ struct SettingsCodableTests {
     #expect(reconstructedSettings.codeCompletionProviderId == originalSettings.codeCompletionProviderId)
     #expect(reconstructedSettings.enableCodeCompletion == originalSettings.enableCodeCompletion)
     #expect(reconstructedSettings.codeCompletionDebounceMs == originalSettings.codeCompletionDebounceMs)
+    #expect(reconstructedSettings.multiLineCodeCompletionDisplayMode == originalSettings.multiLineCodeCompletionDisplayMode)
     #expect(reconstructedSettings.queueMessagesWhileStreaming == originalSettings.queueMessagesWhileStreaming)
 
     // Use equality check to validate that no value is lost

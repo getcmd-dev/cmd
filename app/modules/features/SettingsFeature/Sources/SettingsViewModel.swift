@@ -208,6 +208,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode {
+    get {
+      settings.multiLineCodeCompletionDisplayMode
+    }
+    set {
+      settings.multiLineCodeCompletionDisplayMode = newValue
+      settingsService.update(setting: \.multiLineCodeCompletionDisplayMode, to: newValue)
+    }
+  }
+
   var queueMessagesWhileStreaming: Bool {
     get {
       settings.queueMessagesWhileStreaming

@@ -93,12 +93,11 @@ final class CodeCompletionViewModel {
   /// Indicates if code completion is enabled (i.e. service is available)
   private(set) var isEnabled: Bool
 
-  /// The offset between the top of the view and the top of the text being completed.
-  var verticalContentOffset: CGFloat = 0
   /// The offset between the left of the view and the left of the text being completed.
   var horizontalContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
   private(set) var xcodeBackgroundColor: NSColor?
+  private(set) var xcodeCurrentLineColor: NSColor?
   /// The color space used by the window where the view is rendered.
   var colorSpace = NSColorSpace.sRGB
 
@@ -111,20 +110,27 @@ final class CodeCompletionViewModel {
 
   private(set) var screenshot: CGImage?
 
+  /// The offset between the top of the view and the top of the text being completed.
+  var verticalContentOffset: CGFloat = 0 {
+    didSet {
+      // If we have a screenshot and scrolled up (offset became smaller), request a new screenshot
+      if
+        screenshot != nil,
+        let screenshotOffset = screenshotVerticalOffset,
+        verticalContentOffset < screenshotOffset
+      {
+        screenShotEditorIfNeeded()
+      }
+    }
+  }
+
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
       if completion == nil {
         tabKeyHandler?.stop()
       } else {
         needsLayout()
-        if completion?.diff.count ?? 0 > 1, let completionId = completionTask?.id {
-          Task {
-            let screenshot = try await screenshotEditor()
-            if completionTask?.id == completionId {
-              self.screenshot = screenshot
-            }
-          }
-        }
+        screenShotEditorIfNeeded()
         tabKeyHandler?.start()
       }
     }
@@ -145,6 +151,9 @@ final class CodeCompletionViewModel {
     font = NSFont.createFont(name: fontName, size: fontSize)
     fontHeight = font.size(for: content).height
   }
+
+  /// The vertical offset at which the screenshot was taken
+  private var screenshotVerticalOffset: CGFloat?
 
   private let needsLayout: () -> Void
   private let screenshotEditor: () async throws -> CGImage?
@@ -183,6 +192,7 @@ final class CodeCompletionViewModel {
       completionTask = nil
       completion = nil
       screenshot = nil
+      screenshotVerticalOffset = nil
       defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
@@ -192,6 +202,7 @@ final class CodeCompletionViewModel {
       completionTask = nil
       completion = nil
       screenshot = nil
+      screenshotVerticalOffset = nil
       defaultLogger.log("Not requesting completion due to missing selection")
       return
     }
@@ -230,6 +241,7 @@ final class CodeCompletionViewModel {
     }
     completion = nil
     screenshot = nil
+    screenshotVerticalOffset = nil
     let cancellable = AnyCancellable { task.cancel() }
     completionTask = CompletionTask(
       task: task,
@@ -271,6 +283,31 @@ final class CodeCompletionViewModel {
     }
   }
 
+  // MARK: - Screenshot Management
+
+  /// When screenshoting is enabled to display multiline diff, screenshot the editor if we need a screenshot
+  private func screenShotEditorIfNeeded() {
+    let multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = settingsService
+      .value(for: \.multiLineCodeCompletionDisplayMode)
+    guard
+      multiLineCodeCompletionDisplayMode == .expandCompletionAddingSpaceInExistingCode || multiLineCodeCompletionDisplayMode ==
+      .expandCompletionAddingSpaceInExistingCodeWhenTriggered
+    else {
+      return
+    }
+    guard completion?.diff.count ?? 0 > 1, let completionId = completionTask?.id else {
+      return
+    }
+
+    Task {
+      let screenshot = try await screenshotEditor()
+      if completionTask?.id == completionId {
+        self.screenshot = screenshot
+        self.screenshotVerticalOffset = self.verticalContentOffset
+      }
+    }
+  }
+
   // MARK: - Theme Font Loading
 
   private func loadXcodeTheme() async {
@@ -281,6 +318,7 @@ final class CodeCompletionViewModel {
     }
     xcodeThemeFontName = theme.plainTextFont.name
     xcodeBackgroundColor = theme.backgroundColor?.nsColor(windowColorSpace: colorSpace)
+    xcodeCurrentLineColor = theme.currentLineColor?.nsColor(windowColorSpace: colorSpace)
   }
 
 }

@@ -32,6 +32,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
     refresh()
     observeChangesToFocussedEditor()
+    pullFocussedEditorState()
   }
 
   let workspaceURL: URL
@@ -136,6 +137,16 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   private let runningApplication: NSRunningApplication
 
   private let internalState: CurrentValueSubject<InternalXcodeWorkspaceState, Never>
+
+  private func pullFocussedEditorState() {
+    Task { @MainActor [weak self] in
+      while let self, !Task.isCancelled {
+        try? await Task.sleep(for: .seconds(1))
+        let focusedEditorId: String?? = editorInspectors.first(where: { $0.editorElement.isFocused })?.id ?? nil
+        updateStateWith(focusedEditorId: focusedEditorId)
+      }
+    }
+  }
 
   @MainActor
   private func observeChangesToFocussedEditor() {

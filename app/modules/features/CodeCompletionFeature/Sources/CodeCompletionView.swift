@@ -26,21 +26,23 @@ struct CodeCompletionView: View {
 
                 Image(screenshot, scale: 2, label: Text("foo"))
               }
-              .padding(.top, viewModel.verticalContentOffset)
               .padding(.top, viewModel.lineHeight ?? 0)
             }
 
             CompletionDiffView(
               completion: completion,
               font: viewModel.font,
-              lineSpacing: viewModel.lineSpacing)
-              .padding(.top, viewModel.verticalContentOffset)
+              lineSpacing: viewModel.lineSpacing,
+              backgroundColor: viewModel.xcodeBackgroundColor,
+              currentLineBackgroundColor: viewModel.xcodeCurrentLineColor)
               .padding(
                 .top,
                 (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
-              .padding(.leading, viewModel.horizontalContentOffset)
+              .padding(.top, viewModel.lineSpacing)
+              .padding(.leading, viewModel.horizontalContentOffset + 1) // 1 to leave space for the cursor
               .fixedSize()
           }
+          .padding(.top, viewModel.verticalContentOffset)
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)
@@ -55,9 +57,25 @@ struct CodeCompletionView: View {
 // MARK: - CompletionDiffView
 
 struct CompletionDiffView: View {
+  init(
+    completion: CompletionSuggestion,
+    font: NSFont,
+    lineSpacing: CGFloat,
+    backgroundColor: NSColor? = nil,
+    currentLineBackgroundColor: NSColor? = nil)
+  {
+    self.completion = completion
+    self.font = font
+    self.lineSpacing = lineSpacing
+    self.backgroundColor = backgroundColor ?? .clear
+    self.currentLineBackgroundColor = currentLineBackgroundColor ?? .clear
+  }
+
   let completion: CompletionSuggestion
   let font: NSFont
   let lineSpacing: CGFloat
+  let backgroundColor: NSColor
+  let currentLineBackgroundColor: NSColor
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -76,12 +94,16 @@ struct CompletionDiffView: View {
         Text(change.text.trimmingCharacters(in: .newlines))
           .lineSpacing(lineSpacing)
           .foregroundColor(color(for: change.type))
-          .background(backgroundColor(for: change.type))
+          .background(backgroundColor(for: change.type, lineIdx: lineIdx))
           .isHidden(isTextBeforeSuggestion(lineIdx: lineIdx, chunkIdx: index))
       }
+      Spacer(minLength: 0)
+        .background(backgroundColor(for: .unchanged, lineIdx: lineIdx))
     }
     .frame(maxWidth: .infinity, alignment: .leading)
   }
+
+  @Environment(\.colorScheme) private var colorScheme
 
   /// Whether a given chunk of change, at a given line in the suggestion is before and suggested content.
   private func isTextBeforeSuggestion(lineIdx: Int, chunkIdx: Int) -> Bool {
@@ -102,17 +124,17 @@ struct CompletionDiffView: View {
 
   private func color(for type: FileDiffTypesFoundation.DiffContentType) -> Color {
     switch type {
-    case .added: .green
-    case .removed: .red
-    case .unchanged: .primary
+    case .added: colorScheme.suggestedText
+    case .removed: colorScheme.removedLineDiffText
+    case .unchanged: colorScheme.suggestedText
     }
   }
 
-  private func backgroundColor(for type: FileDiffTypesFoundation.DiffContentType) -> Color {
+  private func backgroundColor(for type: FileDiffTypesFoundation.DiffContentType, lineIdx: Int) -> Color {
     switch type {
-    case .added: Color.green.opacity(0.2)
-    case .removed: Color.red.opacity(0.2)
-    case .unchanged: .clear
+    case .added: Color(nsColor: lineIdx == 0 ? currentLineBackgroundColor : backgroundColor)
+    case .removed: colorScheme.removedLineDiffBackground
+    case .unchanged: Color(nsColor: lineIdx == 0 ? currentLineBackgroundColor : backgroundColor)
     }
   }
 }

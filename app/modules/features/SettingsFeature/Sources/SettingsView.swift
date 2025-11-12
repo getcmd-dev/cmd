@@ -85,7 +85,8 @@ public struct SettingsView: View {
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
           defaultLogLevel: $viewModel.defaultLogLevel,
           enableCodeCompletion: $viewModel.enableCodeCompletion,
-          codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs)
+          codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs,
+          multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode)
 
       case .about:
         AboutSettingsView(
