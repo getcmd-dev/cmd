@@ -53,39 +53,65 @@ while IFS= read -r file; do
     fi
 done < <(git diff --cached --name-only)
 
+# Capture checksums of partially staged files before linting
+checksum_file_before=$(mktemp)
+if [ ${#partially_staged_files[@]} -gt 0 ]; then
+    for file in "${partially_staged_files[@]}"; do
+        if [ -f "$file" ]; then
+            shasum "$file" 2>/dev/null >> "$checksum_file_before"
+        fi
+    done
+fi
+
 # Run lint and sync
 ./cmd.sh lint --diff
 ./cmd.sh sync:dependencies
 
+# Check if lint/sync modified any partially staged files
+if [ ${#partially_staged_files[@]} -gt 0 ]; then
+    checksum_file_after=$(mktemp)
+    for file in "${partially_staged_files[@]}"; do
+        if [ -f "$file" ]; then
+            shasum "$file" 2>/dev/null >> "$checksum_file_after"
+        fi
+    done
+
+    # Compare checksums to find modified files
+    modified_partially_staged_files=()
+    while IFS= read -r line_before; do
+        checksum_before=$(echo "$line_before" | cut -d' ' -f1)
+        file_before=$(echo "$line_before" | cut -d' ' -f2-)
+
+        # Find corresponding line in after file
+        checksum_after=$(grep -F "$file_before" "$checksum_file_after" 2>/dev/null | cut -d' ' -f1)
+
+        if [ -n "$checksum_after" ] && [ "$checksum_before" != "$checksum_after" ]; then
+            modified_partially_staged_files+=("$file_before")
+        fi
+    done < "$checksum_file_before"
+
+    rm -f "$checksum_file_after"
+
+    if [ ${#modified_partially_staged_files[@]} -gt 0 ]; then
+        echo "❌ Error: Linting modified partially staged files. This is not supported."
+        echo "Partially staged files that were modified:"
+        for file in "${modified_partially_staged_files[@]}"; do
+            echo "  - $file"
+        done
+        echo ""
+        echo "Please either:"
+        echo "  1. Stage all changes: git add <files>"
+        echo "  2. Unstage all changes: git restore --staged <files>"
+        echo "  3. Commit without partially staged files"
+        rm -f "$checksum_file_before"
+        exit 1
+    fi
+fi
+
+rm -f "$checksum_file_before"
+
 # Check if lint/sync made any changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
-    # Changes were made by lint/sync
-
-    # If there are partially staged files, check if any were modified
-    if [ ${#partially_staged_files[@]} -gt 0 ]; then
-        modified_partially_staged=false
-        for file in "${partially_staged_files[@]}"; do
-            if ! git diff --quiet HEAD -- "$file" 2>/dev/null || ! git diff --quiet -- "$file" 2>/dev/null; then
-                modified_partially_staged=true
-                break
-            fi
-        done
-
-        if [ "$modified_partially_staged" = true ]; then
-            echo "❌ Error: Linting modified partially staged files. This is not supported."
-            echo "Partially staged files that were modified:"
-            for file in "${partially_staged_files[@]}"; do
-                echo "  - $file"
-            done
-            echo ""
-            echo "Please either:"
-            echo "  1. Stage all changes: git add <files>"
-            echo "  2. Unstage all changes: git restore --staged <files>"
-            echo "  3. Commit without partially staged files"
-            exit 1
-        fi
-    fi
-
     # Stage only the files that were already staged
     for file in "${staged_files[@]}"; do
         git add -- "$file" 2>/dev/null || true
