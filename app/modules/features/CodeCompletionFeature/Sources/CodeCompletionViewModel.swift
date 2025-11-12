@@ -50,20 +50,18 @@ final class CodeCompletionViewModel {
 
     // Load Xcode theme font name
     Task {
-      await loadXcodeThemeFont()
+      await loadXcodeTheme()
     }
 
     // Initialize Tab key handler
     tabKeyHandler = TabKeyHandler(
       acceptSuggestion: { [weak self] in
-        Task { @MainActor in
-          self?.handleTabKeyPressed()
-        }
+        self?.handleTabKeyPressed()
       },
       shouldAccept: { [weak self] in
         guard let self else { return false }
         // Check if we have an active completion and Xcode is focused
-        return completion != nil && self.xcodeObserver.state.focusedWorkspace != nil
+        return completion != nil
       })
 
     // Observe app activation state to start/stop modifier key monitoring
@@ -168,6 +166,7 @@ final class CodeCompletionViewModel {
     else {
       completionTask = nil
       completion = nil
+      defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
 
@@ -175,6 +174,7 @@ final class CodeCompletionViewModel {
     guard selections.count == 1, let selection = selections.first else {
       completionTask = nil
       completion = nil
+      defaultLogger.log("Not requesting completion due to missing selection")
       return
     }
 
@@ -183,33 +183,37 @@ final class CodeCompletionViewModel {
       content: content,
       selection: selection)
 
-    if editorState != self.editorState {
-      self.editorState = editorState
-      let taskId = UUID()
-      let task = Task { [weak self] in
-        let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
-        try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
-        try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
-        guard let self, completionTask?.id == taskId else {
-          return
-        }
-        let completion = try await codeCompletionService.suggestCompletion(
-          workspace: workspace.url,
-          file: focussedFile,
-          content: content,
-          selection: .init(
-            start: .init(line: selection.start.line, character: selection.start.character),
-            end: .init(line: selection.end.line, character: selection.end.character)),
-          timeout: 1)
-        self.completion = completion
-      }
-      completion = nil
-      let cancellable = AnyCancellable { task.cancel() }
-      completionTask = CompletionTask(
-        task: task,
-        id: taskId,
-        request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
+    if editorState == self.editorState {
+      // No changes, skip
+      defaultLogger.log("Not requesting completion unchanged editor state")
+      return
     }
+
+    self.editorState = editorState
+    let taskId = UUID()
+    let task = Task { [weak self] in
+      let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+      try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
+      try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
+      guard let self, completionTask?.id == taskId else {
+        return
+      }
+      let completion = try await codeCompletionService.suggestCompletion(
+        workspace: workspace.url,
+        file: focussedFile,
+        content: content,
+        selection: .init(
+          start: .init(line: selection.start.line, character: selection.start.character),
+          end: .init(line: selection.end.line, character: selection.end.character)),
+        timeout: 1)
+      self.completion = completion
+    }
+    completion = nil
+    let cancellable = AnyCancellable { task.cancel() }
+    completionTask = CompletionTask(
+      task: task,
+      id: taskId,
+      request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
   }
 
   private func disable() {
@@ -248,9 +252,13 @@ final class CodeCompletionViewModel {
 
   // MARK: - Theme Font Loading
 
-  private func loadXcodeThemeFont() async {
-    let font = await themeController.getCurrentThemeFont()
-    xcodeThemeFontName = font.name
+  private func loadXcodeTheme() async {
+    let isDarkMode = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    guard let theme = await themeController.getCurrentTheme(isDarkMode: isDarkMode) else {
+      xcodeThemeFontName = "SFMono-Medium"
+      return
+    }
+    xcodeThemeFontName = theme.plainTextFont.name
   }
 
 }

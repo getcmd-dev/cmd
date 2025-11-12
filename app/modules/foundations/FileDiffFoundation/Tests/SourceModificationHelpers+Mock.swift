@@ -15,6 +15,7 @@ final class MockXCSourceTextBufferI: XCSourceTextBufferI {
   }
 
   var lines: [String]
+  var selections = [FileDiffTypesFoundation.TextRange]()
 
   var completeBuffer: String {
     lines.joined()
@@ -33,6 +34,18 @@ final class MockXCSourceTextBufferI: XCSourceTextBufferI {
       throw AppError("Index \(index) out of bounds for lines count \(lines.count)")
     }
     return lines[index]
+  }
+
+  func getSelections() -> [FileDiffTypesFoundation.TextRange] {
+    selections
+  }
+
+  func removeSelections() {
+    selections.removeAll()
+  }
+
+  func set(selections: [FileDiffTypesFoundation.TextRange]) {
+    self.selections = selections
   }
 
 }

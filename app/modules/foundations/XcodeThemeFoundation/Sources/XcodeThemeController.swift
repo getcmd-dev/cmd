@@ -10,61 +10,57 @@ public actor XcodeThemeController {
     self.getXcodePath = getXcodePath
   }
 
-  /// Get the current Xcode theme font
-  /// - Returns: The font from Xcode's active theme, or a default if unavailable
-  public func getCurrentThemeFont() async -> XcodeTheme.ThemeFont {
+  public func getCurrentTheme(isDarkMode: Bool) async -> XcodeTheme? {
     // Return cached value if available
-    if let cached = cachedFont {
+    if let cached = cachedTheme {
       return cached
     }
 
     // Try to get the current theme name from Xcode preferences
-    let themeName = getCurrentXcodeThemeName()
+    let themeName = getCurrentXcodeThemeName(isDarkMode: isDarkMode)
 
     // Locate the theme file
     if let themeURL = await locateXcodeTheme(named: themeName) {
       do {
-        let font = try parser.parse(fileURL: themeURL).plainTextFont
-
-        cachedFont = font
-        return font
+        let theme = try parser.parse(fileURL: themeURL)
+        cachedTheme = theme
+        return theme
       } catch {
         // Fall through to default
       }
     }
-
-    // Default fallback
-    let defaultFont = XcodeTheme.ThemeFont(name: "SFMono-Medium", size: 12.0)
-    cachedFont = defaultFont
-    return defaultFont
+    return nil
   }
 
   /// Invalidate the cached font (call when theme changes)
   public func invalidateCache() {
-    cachedFont = nil
+    cachedTheme = nil
   }
 
   private let getXcodePath: @Sendable () async throws -> String
 
   private let parser = XcodeThemeParser()
-  private var cachedFont: XcodeTheme.ThemeFont?
+  private var cachedTheme: XcodeTheme?
 
   // MARK: - Private Helpers
 
   /// Get the current Xcode theme name from preferences
-  private func getCurrentXcodeThemeName() -> String {
+  private func getCurrentXcodeThemeName(isDarkMode: Bool) -> String {
     // Try to read Xcode's preferences
     // The theme name is stored in ~/Library/Preferences/com.apple.dt.Xcode.plist
     let prefsURL = FileManager.default.homeDirectoryForCurrentUser
       .appendingPathComponent("Library/Preferences/com.apple.dt.Xcode.plist")
 
     if let prefs = NSDictionary(contentsOf: prefsURL) as? [String: Any] {
-      // Check for both light and dark theme (we'll use the first one we find)
-      if let theme = prefs["XCFontAndColorCurrentTheme"] as? String {
-        return theme
-      }
-      if let theme = prefs["XCFontAndColorCurrentDarkTheme"] as? String {
-        return theme
+      // Check for both light and dark theme
+      if isDarkMode {
+        if let theme = prefs["XCFontAndColorCurrentDarkTheme"] as? String {
+          return theme
+        }
+      } else {
+        if let theme = prefs["XCFontAndColorCurrentTheme"] as? String {
+          return theme
+        }
       }
     }
 

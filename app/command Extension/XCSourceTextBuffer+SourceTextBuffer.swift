@@ -32,7 +32,7 @@ extension XCSourceTextBuffer: @retroactive XCSourceTextBufferI {
         domain: "XCSourceTextBuffer",
         code: 0,
         userInfo: [
-          NSLocalizedDescriptionKey: "Index \(index) out of bounds. Buffer has \(lines.count) lines (valid range: 0..\(lines.count - 1)). Last line: \(lines[lines.count - 1])",
+          NSLocalizedDescriptionKey: "Index \(index) out of bounds. Buffer has \(lines.count) lines (valid range: 0..\(lines.count - 1)).",
         ])
     }
 

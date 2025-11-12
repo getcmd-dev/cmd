@@ -113,7 +113,7 @@ extension Array {
 
 extension String.SubSequence {
   /// Splits the collection into substrings that each represent a line of text.
-  func splitLines()
+  public func splitLines()
     -> [String.SubSequence]
   {
     var result = [String.SubSequence]()
@@ -134,7 +134,7 @@ extension String.SubSequence {
 }
 
 extension String {
-  func splitLines() -> [String.SubSequence] {
+  public func splitLines() -> [String.SubSequence] {
     self[...].splitLines()
   }
 }
