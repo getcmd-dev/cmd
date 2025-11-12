@@ -15,16 +15,32 @@ struct CodeCompletionView: View {
     GeometryReader { geometry in
       Group {
         if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
-          CompletionDiffView(
-            completion: completion,
-            font: viewModel.font,
-            lineSpacing: viewModel.lineSpacing)
-            .padding(.top, viewModel.verticalContentOffset)
-            .padding(
-              .top,
-              (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
-            .padding(.leading, viewModel.horizontalContentOffset)
-            .fixedSize()
+          ZStack(alignment: .topLeading) {
+            if let screenshot = viewModel.screenshot {
+              VStack(spacing: 0) {
+                Rectangle().frame(height: max(
+                  0,
+                  (viewModel.lineHeight ?? 0) *
+                    CGFloat(completion.diffLineStart + completion.diff.count - completionRequest.selection.start.line - 1)))
+                  .foregroundColor(viewModel.xcodeBackgroundColor.map({ Color(nsColor: $0) }))
+
+                Image(screenshot, scale: 2, label: Text("foo"))
+              }
+              .padding(.top, viewModel.verticalContentOffset)
+              .padding(.top, viewModel.lineHeight ?? 0)
+            }
+
+            CompletionDiffView(
+              completion: completion,
+              font: viewModel.font,
+              lineSpacing: viewModel.lineSpacing)
+              .padding(.top, viewModel.verticalContentOffset)
+              .padding(
+                .top,
+                (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
+              .padding(.leading, viewModel.horizontalContentOffset)
+              .fixedSize()
+          }
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)

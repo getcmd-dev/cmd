@@ -22,13 +22,20 @@ final class CodeCompletionWindow: XcodeWindow {
 
   init() {
     let needsLayout = Atomic<@Sendable @MainActor () -> Void>({ })
-    viewModel = CodeCompletionViewModel(needsLayout: { needsLayout.value() })
+    let screenshotEditor = Atomic<@Sendable @MainActor () async throws -> CGImage?>({ nil })
+    viewModel = CodeCompletionViewModel(
+      needsLayout: { needsLayout.value() },
+      screenshotEditor: { try await screenshotEditor.value() })
     super.init(contentRect: .zero)
 
     needsLayout.set(to: { [weak self] in
-      guard let self else { return }
-      show()
+      self?.show()
     })
+    screenshotEditor.set(to: { [weak self] in
+      try await self?.screenshotEditor()
+    })
+    let colorSpace = screen?.colorSpace ?? .sRGB
+    viewModel.colorSpace = colorSpace
 
     styleMask = [.borderless]
     hasShadow = false
@@ -60,7 +67,6 @@ final class CodeCompletionWindow: XcodeWindow {
   var leadingMargingWidth: CGFloat?
 
   override var canBecomeKey: Bool { false }
-
   override var acceptsFirstResponder: Bool { false }
 
   var defaultWidth: CGFloat { 400 }
@@ -129,4 +135,26 @@ final class CodeCompletionWindow: XcodeWindow {
   private let viewModel: CodeCompletionViewModel
 
   private var hostingView: NSView?
+
+  private func screenshotEditor() async throws -> CGImage? {
+    guard
+      let completionRange,
+      let editor = xcodeObserver.state.focussedEditor,
+      let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame,
+      let editorFrame = editor.axElement.appKitFrame,
+      let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame,
+      let windowId = trackedWindowNumber
+    else {
+      return nil
+    }
+    var frame = editorFrame.intersection(scrollViewFrame)
+    frame = CGRect(origin: frame.origin, size: .init(width: frame.width, height: abs(frame.minY - completedTextFrame.minY)))
+    guard let frame = frame.invertedFrame else {
+      return nil
+    }
+    return try await XcodeScreenshoter.screenshot(
+      windowId: windowId,
+      frame: frame)
+  }
+
 }

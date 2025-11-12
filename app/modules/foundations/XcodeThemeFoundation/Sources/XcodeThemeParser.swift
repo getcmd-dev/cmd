@@ -235,10 +235,8 @@ struct XcodeThemeParser {
                 at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.macro.system"]),
             headingColor: getThemeValue(
                 at: ["DVTMarkupTextPrimaryHeadingColor"]),
-//            backgroundColor: getThemeValue(
-//                at: ["DVTSourceTextBackground"]),
             backgroundColor: getThemeValue(
-                at: ["DVTMarkupTextBackgroundColor"]),
+                at: ["DVTSourceTextBackground"]),
             selectionColor: getThemeValue(
                 at: ["DVTSourceTextSelectionColor"]),
             cursorColor: getThemeValue(
@@ -263,3 +261,9 @@ struct XcodeThemeParser {
     }
 }
 
+extension XcodeTheme.ThemeColor {
+    public func nsColor(windowColorSpace: NSColorSpace) -> NSColor {
+        let generic = NSColor(colorSpace: .genericRGB, components: [red, green, blue, alpha], count: 4)
+        return generic.usingColorSpace(windowColorSpace) ?? generic
+    }
+}

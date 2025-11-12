@@ -22,9 +22,11 @@ import XcodeThemeFoundation
 @Observable @MainActor
 final class CodeCompletionViewModel {
   init(
-    needsLayout: @escaping @MainActor () -> Void)
+    needsLayout: @escaping @MainActor () -> Void,
+    screenshotEditor: @escaping @MainActor () async throws -> CGImage?)
   {
     self.needsLayout = needsLayout
+    self.screenshotEditor = screenshotEditor
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
     @Dependency(\.xcodeObserver) var xcodeObserver
@@ -96,6 +98,9 @@ final class CodeCompletionViewModel {
   /// The offset between the left of the view and the left of the text being completed.
   var horizontalContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
+  private(set) var xcodeBackgroundColor: NSColor?
+  /// The color space used by the window where the view is rendered.
+  var colorSpace = NSColorSpace.sRGB
 
   private(set) var completionTask: CompletionTask?
 
@@ -104,12 +109,22 @@ final class CodeCompletionViewModel {
   var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
   var fontSize: CGFloat = 12
 
+  private(set) var screenshot: CGImage?
+
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
       if completion == nil {
         tabKeyHandler?.stop()
       } else {
         needsLayout()
+        if completion?.diff.count ?? 0 > 1, let completionId = completionTask?.id {
+          Task {
+            let screenshot = try await screenshotEditor()
+            if completionTask?.id == completionId {
+              self.screenshot = screenshot
+            }
+          }
+        }
         tabKeyHandler?.start()
       }
     }
@@ -132,6 +147,7 @@ final class CodeCompletionViewModel {
   }
 
   private let needsLayout: () -> Void
+  private let screenshotEditor: () async throws -> CGImage?
   /// Font name from Xcode theme
   private var xcodeThemeFontName: String?
 
@@ -166,6 +182,7 @@ final class CodeCompletionViewModel {
     else {
       completionTask = nil
       completion = nil
+      screenshot = nil
       defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
@@ -174,6 +191,7 @@ final class CodeCompletionViewModel {
     guard selections.count == 1, let selection = selections.first else {
       completionTask = nil
       completion = nil
+      screenshot = nil
       defaultLogger.log("Not requesting completion due to missing selection")
       return
     }
@@ -198,6 +216,7 @@ final class CodeCompletionViewModel {
       guard let self, completionTask?.id == taskId else {
         return
       }
+      defaultLogger.log("Requesting completion")
       let completion = try await codeCompletionService.suggestCompletion(
         workspace: workspace.url,
         file: focussedFile,
@@ -206,9 +225,11 @@ final class CodeCompletionViewModel {
           start: .init(line: selection.start.line, character: selection.start.character),
           end: .init(line: selection.end.line, character: selection.end.character)),
         timeout: 1)
+      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
       self.completion = completion
     }
     completion = nil
+    screenshot = nil
     let cancellable = AnyCancellable { task.cancel() }
     completionTask = CompletionTask(
       task: task,
@@ -259,6 +280,7 @@ final class CodeCompletionViewModel {
       return
     }
     xcodeThemeFontName = theme.plainTextFont.name
+    xcodeBackgroundColor = theme.backgroundColor?.nsColor(windowColorSpace: colorSpace)
   }
 
 }

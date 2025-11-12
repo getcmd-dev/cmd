@@ -44,18 +44,22 @@ extension FileDiff {
       for l in diffContent.splitLines() {
         if l.starts(with: "+") {
           let newLineNumber = result.count - removedLines
-          let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber] + l.count - 1
-          result.append(.added(newLine: newLineNumber, characterRange: range, content: String(newLines[newLineNumber])))
-          addedLines += 1
+          if newLineNumber >= 0, newLineNumber < newLinesOffset.count, newLineNumber < newLines.count {
+            let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber] + l.count - 1
+            result.append(.added(newLine: newLineNumber, characterRange: range, content: String(newLines[newLineNumber])))
+            addedLines += 1
+          }
         } else if l.starts(with: "-") {
           let oldLineNumber = result.count - addedLines
-          let range = oldLinesOffset[oldLineNumber]..<oldLinesOffset[oldLineNumber] + l.count - 1
-          result.append(.removed(oldLine: oldLineNumber, characterRange: range, content: String(oldLines[oldLineNumber])))
-          removedLines += 1
+          if oldLineNumber >= 0, oldLineNumber < oldLinesOffset.count, oldLineNumber < oldLines.count {
+            let range = oldLinesOffset[oldLineNumber]..<oldLinesOffset[oldLineNumber] + l.count - 1
+            result.append(.removed(oldLine: oldLineNumber, characterRange: range, content: String(oldLines[oldLineNumber])))
+            removedLines += 1
+          }
         } else if l.starts(with: " ") {
           let newLineNumber = result.count - removedLines
           let oldLineNumber = result.count - addedLines
-          if newLineNumber < newLines.count {
+          if newLineNumber >= 0, newLineNumber < newLinesOffset.count, newLineNumber < newLines.count {
             let range = newLinesOffset[newLineNumber]..<newLinesOffset[newLineNumber] + l.count - 1
             result.append(.unchanged(
               oldLine: oldLineNumber,
