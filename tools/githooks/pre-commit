@@ -112,9 +112,24 @@ rm -f "$checksum_file_before"
 
 # Check if lint/sync made any changes
 if ! git diff --quiet || ! git diff --cached --quiet; then
-    # Stage only the files that were already staged
+    # Stage only the files that were already staged, but skip partially staged files
+    # to avoid pulling in their unstaged changes
     for file in "${staged_files[@]}"; do
-        git add -- "$file" 2>/dev/null || true
+        # Check if this file is in the partially_staged_files array
+        is_partially_staged=false
+        if [ ${#partially_staged_files[@]} -gt 0 ]; then
+            for partial_file in "${partially_staged_files[@]}"; do
+                if [ "$file" = "$partial_file" ]; then
+                    is_partially_staged=true
+                    break
+                fi
+            done
+        fi
+
+        # Only restage if it's not partially staged
+        if [ "$is_partially_staged" = false ]; then
+            git add -- "$file" 2>/dev/null || true
+        fi
     done
 fi
 
