@@ -23,28 +23,32 @@ final class CmdCommand: CommandType, @unchecked Sendable {
   }
 
   override func handle(_ invocation: XCSourceEditorCommandInvocation) async throws {
-    // Step 1: Ask the host app for queued input
-    let input: ExtensionInput = try await LocalServer().send(.getQueuedInput)
+    do {
+      // Step 1: Ask the host app for queued input
+      let input: ExtensionInput = try await LocalServer().send(.getQueuedInput)
 
-    // Step 2: Execute the appropriate action based on input type
-    let result: ExtensionResult =
-      switch input {
-      case .applyEdit(let fileChange):
-        handleApplyEdit(fileChange: fileChange, buffer: invocation.buffer)
+      // Step 2: Execute the appropriate action based on input type
+      let result: ExtensionResult =
+        switch input {
+        case .applyEdit(let fileChange):
+          handleApplyEdit(fileChange: fileChange, buffer: invocation.buffer)
 
-      case .reloadSettings:
-        handleReloadSettings()
+        case .reloadSettings:
+          handleReloadSettings()
 
-      case .getFormattingMetadata:
-        handleGetFormattingMetadata(buffer: invocation.buffer)
+        case .getFormattingMetadata:
+          handleGetFormattingMetadata(buffer: invocation.buffer)
 
-      case .error(let errorMessage):
-        defaultLogger.error("Extension received error from host app: \(errorMessage)")
-        throw XcodeExtensionError(message: errorMessage)
-      }
+        case .error(let errorMessage):
+          defaultLogger.error("Extension received error from host app: \(errorMessage)")
+          throw XcodeExtensionError(message: errorMessage)
+        }
 
-    // Step 3: Send the result back to the host app
-    let _: EmptyResponse = try await LocalServer().send(.sendResult(result))
+      // Step 3: Send the result back to the host app
+      let _: EmptyResponse = try await LocalServer().send(.sendResult(result))
+    } catch {
+      defaultLogger.error("Internal action failed: \(error.localizedDescription)")
+    }
   }
 
   // MARK: - Action Handlers
