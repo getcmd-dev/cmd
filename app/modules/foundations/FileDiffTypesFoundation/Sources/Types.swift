@@ -12,6 +12,7 @@ public struct FileChange: Codable, Sendable {
     oldContent: String,
     suggestedNewContent: String,
     selectedChange: [LineChange],
+    newSelections: [TextRange]? = nil,
     id: String = UUID().uuidString)
   {
     self.filePath = filePath
@@ -19,6 +20,7 @@ public struct FileChange: Codable, Sendable {
     self.suggestedNewContent = suggestedNewContent
     self.selectedChange = selectedChange
     self.id = id
+    self.newSelections = newSelections
   }
 
   /// The file path of the file to change.
@@ -31,7 +33,8 @@ public struct FileChange: Codable, Sendable {
   /// Its references (line offset, character range) are relative to the old/new/new content.
   public let selectedChange: [LineChange]
   public let id: String
-
+  /// The new position of the selections after applying the change. If nil, the selections remain unchanged.
+  public let newSelections: [TextRange]?
 }
 
 // MARK: - DiffContentType
@@ -133,4 +136,26 @@ public enum LineChange: Sendable, Codable, Equatable {
     }
   }
 
+}
+
+// MARK: - TextRange
+
+public struct TextRange: Codable, Sendable {
+  public let start: TextPosition
+  public let end: TextPosition
+
+  public init(start: TextPosition, end: TextPosition) {
+    self.start = start
+    self.end = end
+  }
+
+  public struct TextPosition: Codable, Sendable {
+    public let line: Int
+    public let column: Int
+
+    public init(line: Int, column: Int) {
+      self.line = line
+      self.column = column
+    }
+  }
 }

@@ -54,6 +54,7 @@ final class CmdCommand: CommandType, @unchecked Sendable {
       try SourceModificationHelpers.update(buffer: buffer, with: fileChange)
       return .applyEditResult(.success(()))
     } catch {
+      defaultLogger.error("Failed to apply edit: \(error.localizedDescription)")
       let extensionError = ExtensionError(message: error.localizedDescription)
       return .applyEditResult(.failure(extensionError))
     }
