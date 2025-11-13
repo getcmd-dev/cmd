@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import SettingsServiceInterface
 import SwiftUI
 
 #if DEBUG
@@ -17,7 +18,8 @@ import SwiftUI
     showToolInputCopyButtonInRelease: .constant(false),
     defaultLogLevel: .constant(.info),
     enableCodeCompletion: .constant(false),
-    codeCompletionDebounceMs: .constant(250))
+    codeCompletionDebounceMs: .constant(250),
+    multiLineCodeCompletionDisplayMode: .constant(.expandCompletionOverExistingCodeWhenTriggered))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -34,7 +36,8 @@ import SwiftUI
     showToolInputCopyButtonInRelease: .constant(true),
     defaultLogLevel: .constant(.debug),
     enableCodeCompletion: .constant(true),
-    codeCompletionDebounceMs: .constant(100))
+    codeCompletionDebounceMs: .constant(100),
+    multiLineCodeCompletionDisplayMode: .constant(.expandCompletionOverExistingCode))
     .frame(width: 600, height: 400)
     .padding()
 }

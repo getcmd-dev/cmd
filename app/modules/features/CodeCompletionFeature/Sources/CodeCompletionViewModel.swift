@@ -22,9 +22,11 @@ import XcodeThemeFoundation
 @Observable @MainActor
 final class CodeCompletionViewModel {
   init(
-    needsLayout: @escaping @MainActor () -> Void)
+    needsLayout: @escaping @MainActor () -> Void,
+    screenshotEditor: @escaping @MainActor () async throws -> CGImage?)
   {
     self.needsLayout = needsLayout
+    self.screenshotEditor = screenshotEditor
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
     @Dependency(\.xcodeObserver) var xcodeObserver
@@ -53,25 +55,97 @@ final class CodeCompletionViewModel {
       await loadXcodeTheme()
     }
 
-    // Initialize Tab key handler
-    tabKeyHandler = TabKeyHandler(
-      acceptSuggestion: { [weak self] in
-        self?.handleTabKeyPressed()
-      },
-      shouldAccept: { [weak self] in
-        guard let self else { return false }
-        // Check if we have an active completion and Xcode is focused
-        return completion != nil
-      })
+    // Initialize Tab key handler (triggered on key down, allows Command modifier)
+    completionKeyHandlers.append(KeyEventHandler(
+      configuration: .tab(allowModifiers: true),
+      callbacks: .init(
+        onKeyDown: { [weak self] _, modifiers in
+          guard let self, editorState != nil, completion != nil else { return false }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard
+            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+          else {
+            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
+            return false
+          }
+          return true
+        },
+        onKeyUp: { [weak self] (_: Bool, modifiers: CGEventFlags) in
+          guard let self, editorState != nil, completion != nil else { return false }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard
+            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+          else {
+            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
+            return false
+          }
+          handleTabKeyPressed()
+          return true
+        })))
 
-    // Observe app activation state to start/stop modifier key monitoring
+    // Initialize Escape key handler (triggered on key up - when press is completed)
+    escapeKeyHandler = KeyEventHandler(
+      configuration: .escape(),
+      callbacks: .init(
+        onKeyDown: { [weak self] _, _ in
+          guard let self, editorState != nil else { return false }
+          return true
+        },
+        onKeyUp: { [weak self] (isDoubleTap: Bool, _: CGEventFlags) in
+          guard let self, editorState != nil else { return false }
+          if isDoubleTap {
+            handleEscapeDoubleTap()
+            return true
+          }
+          guard !isAutomaticCompletionEnabled || completion != nil else {
+            return false
+          }
+          handleEscape()
+          return true
+        }))
+    escapeKeyHandler?.start()
+
+    // Initialize Command key handlers (triggered on both key down and key up)
+    // Left Command key code is 55, Right Command key code is 54
+    for code in [54, 55] {
+      completionKeyHandlers.append(KeyEventHandler(
+        configuration: .key(code),
+        callbacks: .init(
+          onKeyDown: { [weak self] _, _ in
+            guard
+              let self,
+              editorState != nil,
+              isCompletionExpandable,
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+            else { return false }
+            handleCommandKeyDown()
+            return true
+          },
+          onKeyUp: { [weak self] (_: Bool, _: CGEventFlags) in
+            guard
+              let self,
+              editorState != nil,
+              isCompletionExpandable,
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+            else { return false }
+            handleCommandKeyUp()
+            return true
+          })))
+    }
+
+    // Observe app activation state to start/stop key monitoring
     appsActivationState.sink { @Sendable state in
       Task { @MainActor [weak self] in
         guard let self else { return }
+        if !state.isXcodeActive {
+          editorState = nil
+        }
         if state.isXcodeActive, completion != nil {
-          tabKeyHandler?.start()
+          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
         } else {
-          tabKeyHandler?.stop()
+          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
         }
       }
     }.store(in: &cancellables)
@@ -91,11 +165,15 @@ final class CodeCompletionViewModel {
   /// Indicates if code completion is enabled (i.e. service is available)
   private(set) var isEnabled: Bool
 
-  /// The offset between the top of the view and the top of the text being completed.
-  var verticalContentOffset: CGFloat = 0
-  /// The offset between the left of the view and the left of the text being completed.
-  var horizontalContentOffset: CGFloat = 0
+  /// The leading offset between the editor and the text area frames.
+  var leadingContentOffset: CGFloat = 0
+  /// The trailing offset between the editor and the text area frames.
+  var trailingContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
+  private(set) var xcodeBackgroundColor: NSColor?
+  private(set) var xcodeCurrentLineColor: NSColor?
+  /// The color space used by the window where the view is rendered.
+  var colorSpace = NSColorSpace.sRGB
 
   private(set) var completionTask: CompletionTask?
 
@@ -104,15 +182,37 @@ final class CodeCompletionViewModel {
   var font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
   var fontSize: CGFloat = 12
 
+  private(set) var screenshot: CGImage?
+
+  private(set) var isCompletionExpanded = false
+  private(set) var showAutomaticCompletionStatusMessage = false
+
+  private(set) var isAutomaticCompletionEnabled = true
+
+  /// The offset between the top of the view and the top of the text being completed.
+  var verticalContentOffset: CGFloat = 0 {
+    didSet {
+      if verticalContentOffset != oldValue {
+        screenShotEditorIfNeeded()
+      }
+    }
+  }
+
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
       if completion == nil {
-        tabKeyHandler?.stop()
+        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
       } else {
         needsLayout()
-        tabKeyHandler?.start()
+        screenShotEditorIfNeeded()
+        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
       }
     }
+  }
+
+  /// Determines if the completion should be expandable (i.e., requires Command key to show fully).
+  var isCompletionExpandable: Bool {
+    completion?.diff.count ?? 0 > 1
   }
 
   /// Calculate line spacing to match Xcode's line height
@@ -132,6 +232,7 @@ final class CodeCompletionViewModel {
   }
 
   private let needsLayout: () -> Void
+  private let screenshotEditor: () async throws -> CGImage?
   /// Font name from Xcode theme
   private var xcodeThemeFontName: String?
 
@@ -145,7 +246,10 @@ final class CodeCompletionViewModel {
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
   private var editorState: EditorState?
-  private var tabKeyHandler: TabKeyHandler?
+  private var completionKeyHandlers = [KeyEventHandler]()
+  private var escapeKeyHandler: KeyEventHandler?
+
+  private var statusMessageTask: Task<Void, Never>?
 
   private func enable() {
     isEnabled = true
@@ -166,6 +270,8 @@ final class CodeCompletionViewModel {
     else {
       completionTask = nil
       completion = nil
+      screenshot = nil
+      editorState = nil
       defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
@@ -174,11 +280,13 @@ final class CodeCompletionViewModel {
     guard selections.count == 1, let selection = selections.first else {
       completionTask = nil
       completion = nil
+      screenshot = nil
       defaultLogger.log("Not requesting completion due to missing selection")
       return
     }
 
     let editorState = EditorState(
+      workspaceURL: workspace.url,
       fileURL: focussedFile,
       content: content,
       selection: selection)
@@ -190,6 +298,11 @@ final class CodeCompletionViewModel {
     }
 
     self.editorState = editorState
+    completion = nil
+    screenshot = nil
+    completionTask = nil
+    guard isAutomaticCompletionEnabled else { return }
+
     let taskId = UUID()
     let task = Task { [weak self] in
       let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
@@ -198,6 +311,7 @@ final class CodeCompletionViewModel {
       guard let self, completionTask?.id == taskId else {
         return
       }
+      defaultLogger.log("Requesting completion")
       let completion = try await codeCompletionService.suggestCompletion(
         workspace: workspace.url,
         file: focussedFile,
@@ -206,9 +320,10 @@ final class CodeCompletionViewModel {
           start: .init(line: selection.start.line, character: selection.start.character),
           end: .init(line: selection.end.line, character: selection.end.character)),
         timeout: 1)
+      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
       self.completion = completion
+      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
     }
-    completion = nil
     let cancellable = AnyCancellable { task.cancel() }
     completionTask = CompletionTask(
       task: task,
@@ -216,10 +331,42 @@ final class CodeCompletionViewModel {
       request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
   }
 
+  private func fetchCompletion() {
+    guard let editorState else { return }
+    let selection = editorState.selection
+
+    let taskId = UUID()
+    let task = Task { [weak self] in
+      let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+      try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
+      try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
+      guard let self, completionTask?.id == taskId else {
+        return
+      }
+      defaultLogger.log("Requesting completion")
+      let completion = try await codeCompletionService.suggestCompletion(
+        workspace: editorState.workspaceURL,
+        file: editorState.fileURL,
+        content: editorState.content,
+        selection: .init(
+          start: .init(line: selection.start.line, character: selection.start.character),
+          end: .init(line: selection.end.line, character: selection.end.character)),
+        timeout: 1)
+      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
+      self.completion = completion
+      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+    }
+    let cancellable = AnyCancellable { task.cancel() }
+    completionTask = CompletionTask(
+      task: task,
+      id: taskId,
+      request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection)) { cancellable.cancel() }
+  }
+
   private func disable() {
     isEnabled = false
     completion = nil
-    tabKeyHandler?.stop()
+    for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 
   private func handleTabKeyPressed() {
@@ -250,6 +397,53 @@ final class CodeCompletionViewModel {
     }
   }
 
+  private func handleEscape() {
+    if isAutomaticCompletionEnabled {
+      completion = nil
+    } else {
+      fetchCompletion()
+    }
+  }
+
+  private func handleEscapeDoubleTap() {
+    isAutomaticCompletionEnabled.toggle()
+    // Show a message that the status was changed.
+    statusMessageTask?.cancel()
+    showAutomaticCompletionStatusMessage = true
+    statusMessageTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.showAutomaticCompletionStatusMessage = false
+    }
+  }
+
+  private func handleCommandKeyDown() {
+    isCompletionExpanded = true
+  }
+
+  private func handleCommandKeyUp() {
+    isCompletionExpanded = false
+  }
+
+  // MARK: - Screenshot Management
+
+  /// When screenshoting is enabled to display multiline diff, screenshot the editor if we need a screenshot
+  private func screenShotEditorIfNeeded() {
+    guard settingsService.value(for: \.multiLineCodeCompletionDisplayMode).usesScreenshotToAddSpace else {
+      return
+    }
+    guard isCompletionExpandable, let completionId = completionTask?.id else {
+      return
+    }
+
+    Task {
+      let screenshot = try await screenshotEditor()
+      if completionTask?.id == completionId {
+        self.screenshot = screenshot
+      }
+    }
+  }
+
   // MARK: - Theme Font Loading
 
   private func loadXcodeTheme() async {
@@ -259,6 +453,8 @@ final class CodeCompletionViewModel {
       return
     }
     xcodeThemeFontName = theme.plainTextFont.name
+    xcodeBackgroundColor = theme.backgroundColor?.nsColor(windowColorSpace: colorSpace)
+    xcodeCurrentLineColor = theme.currentLineColor?.nsColor(windowColorSpace: colorSpace)
   }
 
 }
@@ -266,6 +462,7 @@ final class CodeCompletionViewModel {
 // MARK: - EditorState
 
 private struct EditorState: Sendable, Equatable {
+  let workspaceURL: URL
   let fileURL: URL
   let content: String
   let selection: CursorRange
@@ -283,5 +480,15 @@ struct CompletionTask {
     let fileURL: URL
     let content: String
     let selection: CursorRange
+  }
+}
+
+extension MultiLineCodeCompletionDisplayMode {
+  var isAlwaysShown: Bool {
+    self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionOverExistingCode
+  }
+
+  var usesScreenshotToAddSpace: Bool {
+    self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionAddingSpaceInExistingCodeWhenTriggered
   }
 }

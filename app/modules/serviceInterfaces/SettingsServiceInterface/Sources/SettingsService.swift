@@ -35,6 +35,59 @@ public enum FileEditMode: String, Sendable, Codable, Equatable, CaseIterable {
   }
 }
 
+// MARK: - MultiLineCodeCompletionDisplayMode
+
+public enum MultiLineCodeCompletionDisplayMode: String, Sendable, Codable, Equatable, CaseIterable {
+  /// Expand the completion, without requiring the user triggering the expansion, over the existing code.
+  case expandCompletionOverExistingCode
+  /// When triggered by the user (using ⌘), expand the completion over the existing code.
+  case expandCompletionOverExistingCodeWhenTriggered
+  /// Expand the completion, without requiring the user triggering the expansion, and move the code that is pushed by the new lines down (requires using screenshoting Xcode).
+  case expandCompletionAddingSpaceInExistingCode
+  /// When triggered by the user (using ⌘), expand the completion and move the code that is pushed by the new lines down (requires using screenshoting Xcode).
+  case expandCompletionAddingSpaceInExistingCodeWhenTriggered
+
+  public var displayName: String {
+    switch self {
+    case .expandCompletionOverExistingCode:
+      "Always show expanded over editor"
+
+    case .expandCompletionAddingSpaceInExistingCode:
+      "Always show expanded with screenshot"
+
+    case .expandCompletionOverExistingCodeWhenTriggered:
+      "Show expanded over editor"
+
+    case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
+      "Show expanded with screenshot"
+    }
+  }
+
+  public var description: String {
+    switch self {
+    case .expandCompletionOverExistingCode:
+      """
+      Always show expanded over editor - Multi-line completions always display directly over the editor.
+      """
+
+    case .expandCompletionAddingSpaceInExistingCode:
+      """
+      Always show expanded with screenshot - Multi-line completions always show with a screenshot of the editor.
+      """
+
+    case .expandCompletionOverExistingCodeWhenTriggered:
+      """
+      Show expanded over editor - Multi-line completions display over the editor (default behavior).
+      """
+
+    case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
+      """
+      Show expanded with screenshot - Multi-line completions show with a screenshot of the editor (default behavior).
+      """
+    }
+  }
+}
+
 // MARK: - LLMReasoningSetting
 
 public struct LLMReasoningSetting: Sendable, Equatable {
@@ -67,6 +120,7 @@ public struct Settings: Sendable, Equatable {
     codeCompletionProviderId: String? = nil,
     enableCodeCompletion: Bool = false,
     codeCompletionDebounceMs: Int = 250,
+    multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = .expandCompletionOverExistingCodeWhenTriggered,
     queueMessagesWhileStreaming: Bool = true)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
@@ -88,6 +142,7 @@ public struct Settings: Sendable, Equatable {
     self.codeCompletionProviderId = codeCompletionProviderId
     self.enableCodeCompletion = enableCodeCompletion
     self.codeCompletionDebounceMs = codeCompletionDebounceMs
+    self.multiLineCodeCompletionDisplayMode = multiLineCodeCompletionDisplayMode
     self.queueMessagesWhileStreaming = queueMessagesWhileStreaming
   }
 
@@ -191,6 +246,8 @@ public struct Settings: Sendable, Equatable {
   public var codeCompletionProviderId: String?
   public var enableCodeCompletion: Bool
   public var codeCompletionDebounceMs: Int
+  /// How multiline code completion should be displayed.
+  public var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
   public var queueMessagesWhileStreaming: Bool
 
   public var defaultLogLevel: LogLevel

@@ -122,6 +122,10 @@ extension ColorScheme {
       : Color(red: 179 / 255, green: 29 / 255, blue: 40 / 255)
   }
 
+  public var suggestedText: Color {
+    .primary.opacity(0.5)
+  }
+
   public var redError: Color {
     .red
   }

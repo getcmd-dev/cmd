@@ -10,6 +10,7 @@ import GithubCopilotFeatureInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
 import RoutingFoundation
+import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -27,6 +28,7 @@ struct InternalSettingsView: View {
   @Binding var defaultLogLevel: LogLevel
   @Binding var enableCodeCompletion: Bool
   @Binding var codeCompletionDebounceMs: Int
+  @Binding var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
 
   var body: some View {
     ScrollView {
@@ -91,6 +93,21 @@ struct InternalSettingsView: View {
             Text("\(codeCompletionDebounceMs)ms")
               .font(.caption)
               .foregroundColor(.primary)
+          }
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Multi-line code completion display mode")
+            Text("How multi-line code suggestions should be shown in the editor")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Picker("Display Mode", selection: $multiLineCodeCompletionDisplayMode) {
+              ForEach(MultiLineCodeCompletionDisplayMode.allCases, id: \.self) { mode in
+                Text(mode.displayName).tag(mode)
+              }
+            }
+            .pickerStyle(.menu)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
           }
 
           VStack(alignment: .leading, spacing: 4) {

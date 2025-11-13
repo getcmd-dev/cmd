@@ -22,13 +22,20 @@ final class CodeCompletionWindow: XcodeWindow {
 
   init() {
     let needsLayout = Atomic<@Sendable @MainActor () -> Void>({ })
-    viewModel = CodeCompletionViewModel(needsLayout: { needsLayout.value() })
+    let screenshotEditor = Atomic<@Sendable @MainActor () async throws -> CGImage?>({ nil })
+    viewModel = CodeCompletionViewModel(
+      needsLayout: { needsLayout.value() },
+      screenshotEditor: { try await screenshotEditor.value() })
     super.init(contentRect: .zero)
 
     needsLayout.set(to: { [weak self] in
-      guard let self else { return }
-      show()
+      self?.show()
     })
+    screenshotEditor.set(to: { [weak self] in
+      try await self?.screenshotEditor()
+    })
+    let colorSpace = screen?.colorSpace ?? .sRGB
+    viewModel.colorSpace = colorSpace
 
     styleMask = [.borderless]
     hasShadow = false
@@ -55,22 +62,12 @@ final class CodeCompletionWindow: XcodeWindow {
     contentView = hostingView
   }
 
-  var completionId: UUID?
-  var completionRange: NSRange?
-  var leadingMargingWidth: CGFloat?
-
   override var canBecomeKey: Bool { false }
-
   override var acceptsFirstResponder: Bool { false }
 
   var defaultWidth: CGFloat { 400 }
 
   override func getFrame() -> CGRect? {
-    guard viewModel.completion != nil, let completionTask = viewModel.completionTask else {
-      completionId = nil
-      completionRange = nil
-      return nil
-    }
     guard
       let editor = xcodeObserver.state.focussedEditor,
       let editorFrame = editor.axElement.appKitFrame,
@@ -81,6 +78,33 @@ final class CodeCompletionWindow: XcodeWindow {
       }
       return nil
     }
+    if viewModel.completion != nil, let completionTask = viewModel.completionTask {
+      updateViewModel(editor: editor, editorFrame: editorFrame, scrollViewFrame: scrollViewFrame, completionTask: completionTask)
+    } else {
+      completionId = nil
+      completionRange = nil
+    }
+
+    // Measure line height from selection frame
+    return editorFrame.intersection(scrollViewFrame)
+  }
+
+  private var completionId: UUID?
+  private var completionRange: NSRange?
+  /// The offset be
+  private var leadingEditorOffset: CGFloat?
+  private var trailingEditorOffset: CGFloat?
+
+  private let viewModel: CodeCompletionViewModel
+
+  private var hostingView: NSView?
+
+  private func updateViewModel(
+    editor: XcodeEditorState,
+    editorFrame: CGRect,
+    scrollViewFrame _: CGRect,
+    completionTask: CompletionTask)
+  {
     if completionTask.id != completionId || completionRange == nil {
       completionId = completionTask.id
       // Cache `completionRange` as this requires counting characters throughout the completed file
@@ -91,25 +115,42 @@ final class CodeCompletionWindow: XcodeWindow {
       let completionRange,
       let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame
     else {
-      return nil
+      return
     }
     let request = completionTask.request
     let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
 
+    // Leading offset between editor frame and text area frame
     if
-      leadingMargingWidth == nil || viewModel.lineHeight != lineHeight,
+      leadingEditorOffset == nil || viewModel.lineHeight != lineHeight,
       let range = request.content.nsRange(of:
         .init(
           start: .init(line: request.selection.start.line, character: 0),
           end: .init(line: request.selection.start.line, character: 0))),
       let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
     {
-      let offset = baseline.minX - editorFrame.minX
-      if offset != 0 {
-        viewModel.horizontalContentOffset = offset
-        leadingMargingWidth = offset
+      let leadingOffset = baseline.minX - editorFrame.minX
+      if leadingOffset != 0 {
+        viewModel.leadingContentOffset = leadingOffset
+        leadingEditorOffset = leadingOffset
       }
     }
+    // Trailing offset between editor frame and text area frame
+    if
+      trailingEditorOffset == nil || viewModel.lineHeight != lineHeight,
+      let range = request.content.nsRange(of:
+        .init(
+          start: .init(line: request.selection.start.line, character: 0),
+          end: .init(line: request.selection.start.line + 1, character: 0))),
+      let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
+    {
+      let trailingOffset = editorFrame.maxX - baseline.maxX
+      if trailingOffset != 0, trailingOffset < 100 {
+        viewModel.trailingContentOffset = trailingOffset
+        trailingEditorOffset = trailingOffset
+      }
+    }
+
     if
       viewModel.lineHeight != lineHeight,
       let (content, size) = request.content.contentToInferFontSize(around: request.selection, in: editor.axElement)
@@ -119,14 +160,38 @@ final class CodeCompletionWindow: XcodeWindow {
         toMatch: size.width,
         for: content)
     }
-
-    // Measure line height from selection frame
-    let frame = editorFrame.intersection(scrollViewFrame)
     viewModel.verticalContentOffset = frame.maxY - completedTextFrame.maxY
-    return frame
   }
 
-  private let viewModel: CodeCompletionViewModel
+  private func screenshotEditor() async throws -> CGImage? {
+    guard
+      let completionRange,
+      let editor = xcodeObserver.state.focussedEditor,
+      let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame,
+      let editorFrame = editor.axElement.appKitFrame,
+      let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame,
+      let windowId = trackedWindowNumber
+    else {
+      return nil
+    }
+    if completedTextFrame.minY - scrollViewFrame.maxY > -10 || completedTextFrame.maxY - scrollViewFrame.minY < 10 {
+      // Completed text is out of view
+      return nil
+    }
 
-  private var hostingView: NSView?
+    var frame = editorFrame.intersection(scrollViewFrame)
+    frame = CGRect(
+      origin: frame.origin,
+      size: .init(
+        width: frame.width - (trailingEditorOffset ?? 0) - 2,
+        height: abs(frame.minY - completedTextFrame.minY))) // -2 to not overlap with scroll position
+      .intersection(scrollViewFrame)
+    guard let frame = frame.invertedFrame else {
+      return nil
+    }
+    return try await XcodeScreenshoter.screenshot(
+      windowId: windowId,
+      frame: frame)
+  }
+
 }
