@@ -19,7 +19,7 @@ export interface ModelPricing {
 	input_cache_write: number | undefined
 }
 
-export type ModelModality = "text" | "image" | "file" | "audio"
+export type ModelModality = "text" | "image" | "file" | "audio" | "video"
 
 export type Model = {
 	providerId: string

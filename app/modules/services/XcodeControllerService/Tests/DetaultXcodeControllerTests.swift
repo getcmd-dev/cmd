@@ -57,15 +57,17 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionActionName.cmd.rawValue,
+      command: ExtensionCommandName.getQueuedInput.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(command: .getQueuedInput, input: EmptyInput()))) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionActionName.cmd.rawValue,
+      command: ExtensionCommandName.sendResult.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(
+        command: .sendResult,
+        input: ExtensionResult.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 
@@ -144,15 +146,17 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionActionName.cmd.rawValue,
+      command: ExtensionCommandName.getQueuedInput.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(command: .getQueuedInput, input: EmptyInput()))) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionActionName.cmd.rawValue,
+      command: ExtensionCommandName.sendResult.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(
+        command: .sendResult,
+        input: ExtensionResult.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 
