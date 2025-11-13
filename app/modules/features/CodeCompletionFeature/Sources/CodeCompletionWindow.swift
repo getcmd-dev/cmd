@@ -62,10 +62,6 @@ final class CodeCompletionWindow: XcodeWindow {
     contentView = hostingView
   }
 
-  var completionId: UUID?
-  var completionRange: NSRange?
-  var leadingMargingWidth: CGFloat?
-
   override var canBecomeKey: Bool { false }
   override var acceptsFirstResponder: Bool { false }
 
@@ -102,20 +98,37 @@ final class CodeCompletionWindow: XcodeWindow {
     let request = completionTask.request
     let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
 
+    // Leading offset between editor frame and text area frame
     if
-      leadingMargingWidth == nil || viewModel.lineHeight != lineHeight,
+      leadingEditorOffset == nil || viewModel.lineHeight != lineHeight,
       let range = request.content.nsRange(of:
         .init(
           start: .init(line: request.selection.start.line, character: 0),
           end: .init(line: request.selection.start.line, character: 0))),
       let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
     {
-      let offset = baseline.minX - editorFrame.minX
-      if offset != 0 {
-        viewModel.horizontalContentOffset = offset
-        leadingMargingWidth = offset
+      let leadingOffset = baseline.minX - editorFrame.minX
+      if leadingOffset != 0 {
+        viewModel.leadingContentOffset = leadingOffset
+        leadingEditorOffset = leadingOffset
       }
     }
+    // Trailing offset between editor frame and text area frame
+    if
+      trailingEditorOffset == nil || viewModel.lineHeight != lineHeight,
+      let range = request.content.nsRange(of:
+        .init(
+          start: .init(line: request.selection.start.line, character: 0),
+          end: .init(line: request.selection.start.line + 1, character: 0))),
+      let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
+    {
+      let trailingOffset = editorFrame.maxX - baseline.maxX
+      if trailingOffset != 0, trailingOffset < 100 {
+        viewModel.trailingContentOffset = trailingOffset
+        trailingEditorOffset = trailingOffset
+      }
+    }
+
     if
       viewModel.lineHeight != lineHeight,
       let (content, size) = request.content.contentToInferFontSize(around: request.selection, in: editor.axElement)
@@ -132,6 +145,12 @@ final class CodeCompletionWindow: XcodeWindow {
     return frame
   }
 
+  private var completionId: UUID?
+  private var completionRange: NSRange?
+  /// The offset be
+  private var leadingEditorOffset: CGFloat?
+  private var trailingEditorOffset: CGFloat?
+
   private let viewModel: CodeCompletionViewModel
 
   private var hostingView: NSView?
@@ -147,8 +166,18 @@ final class CodeCompletionWindow: XcodeWindow {
     else {
       return nil
     }
+    if completedTextFrame.minY - scrollViewFrame.maxY > -10 || completedTextFrame.maxY - scrollViewFrame.minY < 10 {
+      // Completed text is out of view
+      return nil
+    }
+
     var frame = editorFrame.intersection(scrollViewFrame)
-    frame = CGRect(origin: frame.origin, size: .init(width: frame.width, height: abs(frame.minY - completedTextFrame.minY)))
+    frame = CGRect(
+      origin: frame.origin,
+      size: .init(
+        width: frame.width - (trailingEditorOffset ?? 0) - 2,
+        height: abs(frame.minY - completedTextFrame.minY))) // -2 to not overlap with scroll position
+      .intersection(scrollViewFrame)
     guard let frame = frame.invertedFrame else {
       return nil
     }

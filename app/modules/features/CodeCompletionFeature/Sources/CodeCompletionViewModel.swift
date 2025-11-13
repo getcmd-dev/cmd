@@ -93,8 +93,10 @@ final class CodeCompletionViewModel {
   /// Indicates if code completion is enabled (i.e. service is available)
   private(set) var isEnabled: Bool
 
-  /// The offset between the left of the view and the left of the text being completed.
-  var horizontalContentOffset: CGFloat = 0
+  /// The leading offset between the editor and the text area frames.
+  var leadingContentOffset: CGFloat = 0
+  /// The trailing offset between the editor and the text area frames.
+  var trailingContentOffset: CGFloat = 0
   var lineHeight: CGFloat?
   private(set) var xcodeBackgroundColor: NSColor?
   private(set) var xcodeCurrentLineColor: NSColor?
@@ -113,12 +115,7 @@ final class CodeCompletionViewModel {
   /// The offset between the top of the view and the top of the text being completed.
   var verticalContentOffset: CGFloat = 0 {
     didSet {
-      // If we have a screenshot and scrolled up (offset became smaller), request a new screenshot
-      if
-        screenshot != nil,
-        let screenshotOffset = screenshotVerticalOffset,
-        verticalContentOffset < screenshotOffset
-      {
+      if verticalContentOffset != oldValue {
         screenShotEditorIfNeeded()
       }
     }
@@ -151,9 +148,6 @@ final class CodeCompletionViewModel {
     font = NSFont.createFont(name: fontName, size: fontSize)
     fontHeight = font.size(for: content).height
   }
-
-  /// The vertical offset at which the screenshot was taken
-  private var screenshotVerticalOffset: CGFloat?
 
   private let needsLayout: () -> Void
   private let screenshotEditor: () async throws -> CGImage?
@@ -192,7 +186,6 @@ final class CodeCompletionViewModel {
       completionTask = nil
       completion = nil
       screenshot = nil
-      screenshotVerticalOffset = nil
       defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
@@ -202,7 +195,6 @@ final class CodeCompletionViewModel {
       completionTask = nil
       completion = nil
       screenshot = nil
-      screenshotVerticalOffset = nil
       defaultLogger.log("Not requesting completion due to missing selection")
       return
     }
@@ -241,7 +233,6 @@ final class CodeCompletionViewModel {
     }
     completion = nil
     screenshot = nil
-    screenshotVerticalOffset = nil
     let cancellable = AnyCancellable { task.cancel() }
     completionTask = CompletionTask(
       task: task,
@@ -287,6 +278,7 @@ final class CodeCompletionViewModel {
 
   /// When screenshoting is enabled to display multiline diff, screenshot the editor if we need a screenshot
   private func screenShotEditorIfNeeded() {
+    print("request screenshot")
     let multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = settingsService
       .value(for: \.multiLineCodeCompletionDisplayMode)
     guard
@@ -303,7 +295,6 @@ final class CodeCompletionViewModel {
       let screenshot = try await screenshotEditor()
       if completionTask?.id == completionId {
         self.screenshot = screenshot
-        self.screenshotVerticalOffset = self.verticalContentOffset
       }
     }
   }

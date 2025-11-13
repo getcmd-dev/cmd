@@ -5,6 +5,8 @@ import AppKit
 import ScreenCaptureKit
 
 enum XcodeScreenshoter {
+  static let retinaScale: CGFloat = NSScreen.main?.backingScaleFactor ?? 3.0
+
   static func screenshot(windowId: CGWindowID, frame: CGRect) async throws -> CGImage? {
     let availableContent = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
     guard let window = availableContent.windows.first(where: { $0.windowID == windowId }) else {
@@ -18,8 +20,8 @@ enum XcodeScreenshoter {
     configuration.capturesAudio = false
     configuration.captureMicrophone = false
     configuration.sourceRect = frame
-    configuration.width = Int(frame.width) * 2 // * 2 for retina display
-    configuration.height = Int(frame.height) * 2
+    configuration.width = Int(frame.width * retinaScale)
+    configuration.height = Int(frame.height * retinaScale)
     configuration.showsCursor = false
     configuration.captureResolution = .best
 
