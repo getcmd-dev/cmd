@@ -12,7 +12,7 @@ extension KeyEventHandler {
   /// Configuration for key event monitoring
   struct Configuration {
     /// The key code to monitor (e.g., 48 for Tab, 36 for Return)
-    let keyCode: Int64
+    let keyCode: Int
 
     /// Whether to allow modifier keys (Shift, Control, Command, Option)
     /// When false, events with any modifiers will be ignored
@@ -30,7 +30,7 @@ extension KeyEventHandler {
     }
 
     /// Creates a configuration for a specific key code
-    static func key(_ keyCode: Int64, allowModifiers: Bool = false) -> Configuration {
+    static func key(_ keyCode: Int, allowModifiers: Bool = false) -> Configuration {
       Configuration(keyCode: keyCode, allowModifiers: allowModifiers)
     }
 
@@ -76,37 +76,28 @@ final class KeyEventHandler {
   /// Callbacks for key events
   struct Callbacks {
     init(
-      onKeyDown: (() -> Void)? = nil,
-      onKeyUp: ((_ isDoubleTap: Bool) -> Void)? = nil,
-      onDoubleTap: (() -> Void)? = nil,
-      doubleTapInterval: TimeInterval = 0.3,
-      shouldHandle: @escaping () -> Bool)
+      onKeyDown: ((_ isDoubleTap: Bool) -> Bool)? = nil,
+      onKeyUp: ((_ isDoubleTap: Bool) -> Bool)? = nil,
+      doubleTapInterval: TimeInterval = 0.3)
     {
       self.onKeyDown = onKeyDown
       self.onKeyUp = onKeyUp
-      self.onDoubleTap = onDoubleTap
       self.doubleTapInterval = doubleTapInterval
-      self.shouldHandle = shouldHandle
     }
 
     /// Called when a key down event occurs (if monitored)
-    let onKeyDown: (() -> Void)?
+    /// Parameter indicates whether this is part of a double-tap sequence
+    /// Return true to consume the event, false to pass it through
+    let onKeyDown: ((_ isDoubleTap: Bool) -> Bool)?
 
     /// Called when a key up event occurs (if monitored)
     /// Parameter indicates whether this is part of a double-tap sequence
-    let onKeyUp: ((_ isDoubleTap: Bool) -> Void)?
-
-    /// Called when a double-tap is detected (two rapid key presses)
-    /// Only works when onKeyUp is monitored
-    let onDoubleTap: (() -> Void)?
+    /// Return true to consume the event, false to pass it through
+    let onKeyUp: ((_ isDoubleTap: Bool) -> Bool)?
 
     /// Maximum time interval (in seconds) between taps to be considered a double-tap
     /// Default is 0.3 seconds
     let doubleTapInterval: TimeInterval
-
-    /// Called before processing event to determine if it should be handled
-    /// Return true to handle the event, false to pass it through
-    let shouldHandle: () -> Bool
 
   }
 
@@ -218,45 +209,50 @@ final class KeyEventHandler {
       }
     }
 
-    // Check if we should handle this event
-    guard callbacks.shouldHandle() else {
-      return Unmanaged.passUnretained(event)
-    }
-
     // Determine which callback to invoke based on event type
     let shouldConsume: Bool
     switch type {
     case .keyDown:
       if let onKeyDown = callbacks.onKeyDown {
-        onKeyDown()
-        shouldConsume = true
+        shouldConsume = onKeyDown(false)
       } else {
         shouldConsume = false
       }
 
     case .keyUp:
-      // Check for double-tap before calling onKeyUp
+      // Check for double-tap
       let now = Date()
-      if
-        let lastTime = lastKeyUpTime,
-        let onDoubleTap = callbacks.onDoubleTap,
-        now.timeIntervalSince(lastTime) <= callbacks.doubleTapInterval
-      {
+      let isDoubleTap =
+        if
+          let lastTime = lastKeyUpTime,
+          now.timeIntervalSince(lastTime) <= callbacks.doubleTapInterval
+        {
+          true
+        } else {
+          false
+        }
+
+      if isDoubleTap {
         // This is a double-tap
-        onDoubleTap()
+        print("KeyEventHandler: Double-tap detected for keyCode \(configuration.keyCode)")
         // Reset timer to prevent triple-tap from triggering another double-tap
         lastKeyUpTime = nil
-        shouldConsume = true
-      } else {
-        // Not a double-tap - call onKeyUp if it exists
-        lastKeyUpTime = now
-
+        // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
-          onKeyUp(false)
-          shouldConsume = true
+          shouldConsume = onKeyUp(true)
         } else {
           shouldConsume = false
         }
+      } else {
+        // Not a double-tap - call onKeyUp if it exists
+        if let onKeyUp = callbacks.onKeyUp {
+          print("KeyEventHandler: Single keyUp for keyCode \(configuration.keyCode)")
+          shouldConsume = onKeyUp(false)
+        } else {
+          shouldConsume = false
+        }
+        // Always update lastKeyUpTime for non-double-tap to track future double-taps
+        lastKeyUpTime = now
       }
 
     default:
@@ -264,6 +260,7 @@ final class KeyEventHandler {
     }
 
     // Return nil to consume the event, or pass it through
+    print("KeyEventHandler: Returning shouldConsume=\(shouldConsume) for keyCode \(configuration.keyCode)")
     return shouldConsume ? nil : Unmanaged.passUnretained(event)
   }
 
@@ -290,19 +287,13 @@ final class KeyEventHandler {
       return Unmanaged.passUnretained(event)
     }
 
-    // Check if we should handle this event
-    guard callbacks.shouldHandle() else {
-      return Unmanaged.passUnretained(event)
-    }
-
     // Detect transition (pressed -> released or released -> pressed)
     let shouldConsume: Bool
     if isPressed, !modifierKeyPressed {
       // Key was just pressed
       modifierKeyPressed = true
       if let onKeyDown = callbacks.onKeyDown {
-        onKeyDown()
-        shouldConsume = true
+        shouldConsume = onKeyDown(false)
       } else {
         shouldConsume = false
       }
@@ -311,25 +302,34 @@ final class KeyEventHandler {
       modifierKeyPressed = false
 
       let now = Date()
-      if
-        let lastTime = lastKeyUpTime,
-        let onDoubleTap = callbacks.onDoubleTap,
-        now.timeIntervalSince(lastTime) <= callbacks.doubleTapInterval
-      {
-        // This is a double-tap
-        onDoubleTap()
-        lastKeyUpTime = nil
-        shouldConsume = true
-      } else {
-        // Not a double-tap - call onKeyUp if it exists
-        lastKeyUpTime = now
+      let isDoubleTap =
+        if
+          let lastTime = lastKeyUpTime,
+          now.timeIntervalSince(lastTime) <= callbacks.doubleTapInterval
+        {
+          true
+        } else {
+          false
+        }
 
+      if isDoubleTap {
+        // This is a double-tap
+        lastKeyUpTime = nil
+        // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
-          onKeyUp(false)
-          shouldConsume = true
+          shouldConsume = onKeyUp(true)
         } else {
           shouldConsume = false
         }
+      } else {
+        // Not a double-tap - call onKeyUp if it exists
+        if let onKeyUp = callbacks.onKeyUp {
+          shouldConsume = onKeyUp(false)
+        } else {
+          shouldConsume = false
+        }
+        // Always update lastKeyUpTime for non-double-tap to track future double-taps
+        lastKeyUpTime = now
       }
     } else {
       // No transition, ignore

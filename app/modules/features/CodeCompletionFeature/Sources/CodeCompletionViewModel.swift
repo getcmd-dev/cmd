@@ -59,27 +59,33 @@ final class CodeCompletionViewModel {
     completionKeyHandlers.append(KeyEventHandler(
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
-        onKeyDown: { [weak self] in
-          self?.handleTabKeyPressed()
+        onKeyDown: { [weak self] _ in
+          guard let self, editorState != nil, completion != nil else { return false }
+          return true
         },
-        onKeyUp: nil,
-        shouldHandle: { [weak self] in
-          self?.editorState != nil && self?.completion != nil
+        onKeyUp: { [weak self] _ in
+          guard let self, editorState != nil, completion != nil else { return false }
+          handleTabKeyPressed()
+          return true
         })))
 
     // Initialize Escape key handler (triggered on key up - when press is completed)
     escapeKeyHandler = KeyEventHandler(
       configuration: .escape(),
       callbacks: .init(
-        onKeyDown: nil,
+        onKeyDown: { [weak self] _ in
+          guard let self, editorState != nil else { return false }
+          return true
+        },
         onKeyUp: { [weak self] isDoubleTap in
-          self?.handleEscape(isDoubleTap: isDoubleTap)
-        },
-        onDoubleTap: { [weak self] in
-          self?.handleEscapeDoubleTap()
-        },
-        shouldHandle: { [weak self] in
-          self?.editorState != nil
+          guard let self, editorState != nil else { return false }
+          if isDoubleTap {
+            handleEscapeDoubleTap()
+            return true
+          }
+          guard !isAutomaticCompletionEnabled || completion != nil else { return false }
+          handleEscape()
+          return true
         }))
     escapeKeyHandler?.start()
 
@@ -89,15 +95,25 @@ final class CodeCompletionViewModel {
       completionKeyHandlers.append(KeyEventHandler(
         configuration: .key(code),
         callbacks: .init(
-          onKeyDown: { [weak self] in
-            self?.handleCommandKeyDown()
+          onKeyDown: { [weak self] _ in
+            guard
+              let self,
+              editorState != nil,
+              completion?.diff.count ?? 0 > 1,
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+            else { return false }
+            handleCommandKeyDown()
+            return true
           },
-          onKeyUp: { [weak self] isDoubleTap in
-            self?.handleCommandKeyUp(isDoubleTap: isDoubleTap)
-          },
-          shouldHandle: { [weak self] in
-            self?.editorState != nil && self?.completion?.diff.count ?? 0 > 1 && self?.settingsService
-              .value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown == false
+          onKeyUp: { [weak self] _ in
+            guard
+              let self,
+              editorState != nil,
+              completion?.diff.count ?? 0 > 1,
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+            else { return false }
+            handleCommandKeyUp()
+            return true
           })))
     }
 
@@ -105,6 +121,9 @@ final class CodeCompletionViewModel {
     appsActivationState.sink { @Sendable state in
       Task { @MainActor [weak self] in
         guard let self else { return }
+        if !state.isXcodeActive {
+          editorState = nil
+        }
         if state.isXcodeActive, completion != nil {
           for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
         } else {
@@ -355,7 +374,7 @@ final class CodeCompletionViewModel {
     }
   }
 
-  private func handleEscape(isDoubleTap _: Bool) {
+  private func handleEscape() {
     if isAutomaticCompletionEnabled {
       completion = nil
     } else {
@@ -379,7 +398,7 @@ final class CodeCompletionViewModel {
     isCompletionExpanded = true
   }
 
-  private func handleCommandKeyUp(isDoubleTap _: Bool) {
+  private func handleCommandKeyUp() {
     isCompletionExpanded = false
   }
 
