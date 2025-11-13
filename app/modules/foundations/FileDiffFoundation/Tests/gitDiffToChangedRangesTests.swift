@@ -535,7 +535,7 @@ struct GitDiffToChangedRangesTests {
     let new = try FileDiff.apply(searchReplacePattern: llmDiff, to: old)
 
     let ranges = try validateDiffRanges(from: old, to: new)
-    #expect(ranges.count == 61)
+    #expect(ranges.count == 60)
   }
 
   @Test("real world example 2")

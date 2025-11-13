@@ -111,7 +111,7 @@ export type ProviderModelFullInfo = {
 /**
  * Types of data modalities that models can accept or produce.
  */
-export type ModelModality = "text" | "image" | "file" | "audio"
+export type ModelModality = "text" | "image" | "file" | "audio" | "video"
 
 /**
  * Information about a model from one specific AI provider.
