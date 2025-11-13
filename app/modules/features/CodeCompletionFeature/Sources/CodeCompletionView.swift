@@ -38,7 +38,7 @@ struct CodeCompletionView: View {
             lineSpacing: viewModel.lineSpacing,
             backgroundColor: viewModel.xcodeBackgroundColor,
             currentLineBackgroundColor: viewModel.xcodeCurrentLineColor,
-            showCompletionExpansionInfo: !viewModel.isCompletionExpanded && completion.diff.count > 1)
+            showCompletionExpansionInfo: !viewModel.isCompletionExpanded && viewModel.isCompletionExpandable)
             .padding(
               .top,
               (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
@@ -140,20 +140,14 @@ struct CompletionDiffView: View {
               .fixedSize(horizontal: true, vertical: true)
               .padding(.top, lineSpacing / 2)
           }
-        }
-        .overlay(alignment: .trailing) {
-          Group {
-            if lineIdx == 0, showCompletionExpansionInfo {
-              Text("⌘ to expand")
-                .padding(6)
-                .with(cornerRadius: 8, backgroundColor: colorScheme.tertiarySystemBackground)
-                .padding(.leading, 16)
-            }
-          }
-          .alignmentGuide(.trailing) { d in
-            d[.leading]
+          if lineIdx == 0, showCompletionExpansionInfo {
+            Text("⌘ to expand")
+              .padding(6)
+              .with(cornerRadius: 8, backgroundColor: colorScheme.tertiarySystemBackground)
+              .padding(.leading, 16)
           }
         }
+        .frame(height: lineHeight)
       }
     }
     .frame(maxWidth: .infinity, alignment: .leading)

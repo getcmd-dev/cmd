@@ -14,9 +14,9 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello Swift"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -44,9 +44,9 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 2)
 
     // First line should have changes
@@ -73,9 +73,9 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello World"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -94,9 +94,9 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -115,9 +115,9 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -131,9 +131,9 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -155,9 +155,9 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 1)
+    #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)
   }
 
@@ -177,10 +177,37 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 2)
+    #expect(firstDiffLine == 2)
     #expect(lineChanges.count == 1)
+  }
+
+  @Test("Diff starts at previous unchanged line when first change is on a new line")
+  func diffStartsAtPreviousUnchangedLineWhenFirstChangeIsOnANewLine() throws {
+    let oldContent = """
+      func hello() {
+
+        print("Hello")
+      }
+      """
+    let newContent = """
+      func hello() {
+
+        print("Hello")
+        print("World")
+      }
+      """
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+
+    #expect(firstDiffLine == 2)
+    #expect(lineChanges.count == 2)
+    #expect(lineChanges.first?.first?.type == .unchanged)
+    #expect(lineChanges.first?.first?.text == "  print(\"Hello\")\n")
+    #expect(lineChanges.last?.first?.type == .added)
+    #expect(lineChanges.last?.first?.text == "  print(\"World\")\n")
   }
 
   @Test("Multiline change with only new lines")
@@ -197,12 +224,12 @@ struct CharacterDiffToLineChangesTests {
 
           if needToActivateXcode {
             if !xcodeApp.activate() {
-      firstChangedLine 309
+      firstDiffLine 309
       """
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 310)
-    #expect(lineChanges.count == 4)
+    #expect(firstDiffLine == 309)
+    #expect(lineChanges.count == 5)
   }
 
   @Test("Parse content with + sign")
@@ -216,11 +243,11 @@ struct CharacterDiffToLineChangesTests {
       {+    }+}
       }
       """
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diff)
 
-    #expect(firstChangedLine == 96)
+    #expect(firstDiffLine == 95)
     #expect(lineChanges.first?.count == 1)
-    #expect(lineChanges.first?.first?.type == .added)
-    #expect(lineChanges.first?.first?.text == "        return a + b\n")
+    #expect(lineChanges[1].first?.type == .added)
+    #expect(lineChanges[1].first?.text == "        return a + b\n")
   }
 }

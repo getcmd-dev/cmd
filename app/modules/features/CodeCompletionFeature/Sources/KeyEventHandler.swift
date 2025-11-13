@@ -76,8 +76,8 @@ final class KeyEventHandler {
   /// Callbacks for key events
   struct Callbacks {
     init(
-      onKeyDown: ((_ isDoubleTap: Bool) -> Bool)? = nil,
-      onKeyUp: ((_ isDoubleTap: Bool) -> Bool)? = nil,
+      onKeyDown: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      onKeyUp: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
       doubleTapInterval: TimeInterval = 0.3)
     {
       self.onKeyDown = onKeyDown
@@ -86,14 +86,18 @@ final class KeyEventHandler {
     }
 
     /// Called when a key down event occurs (if monitored)
-    /// Parameter indicates whether this is part of a double-tap sequence
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
     /// Return true to consume the event, false to pass it through
-    let onKeyDown: ((_ isDoubleTap: Bool) -> Bool)?
+    let onKeyDown: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
 
     /// Called when a key up event occurs (if monitored)
-    /// Parameter indicates whether this is part of a double-tap sequence
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
     /// Return true to consume the event, false to pass it through
-    let onKeyUp: ((_ isDoubleTap: Bool) -> Bool)?
+    let onKeyUp: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
 
     /// Maximum time interval (in seconds) between taps to be considered a double-tap
     /// Default is 0.3 seconds
@@ -211,10 +215,11 @@ final class KeyEventHandler {
 
     // Determine which callback to invoke based on event type
     let shouldConsume: Bool
+    let flags = event.flags
     switch type {
     case .keyDown:
       if let onKeyDown = callbacks.onKeyDown {
-        shouldConsume = onKeyDown(false)
+        shouldConsume = onKeyDown(false, flags)
       } else {
         shouldConsume = false
       }
@@ -239,7 +244,7 @@ final class KeyEventHandler {
         lastKeyUpTime = nil
         // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
-          shouldConsume = onKeyUp(true)
+          shouldConsume = onKeyUp(true, flags)
         } else {
           shouldConsume = false
         }
@@ -247,7 +252,7 @@ final class KeyEventHandler {
         // Not a double-tap - call onKeyUp if it exists
         if let onKeyUp = callbacks.onKeyUp {
           print("KeyEventHandler: Single keyUp for keyCode \(configuration.keyCode)")
-          shouldConsume = onKeyUp(false)
+          shouldConsume = onKeyUp(false, flags)
         } else {
           shouldConsume = false
         }
@@ -293,7 +298,7 @@ final class KeyEventHandler {
       // Key was just pressed
       modifierKeyPressed = true
       if let onKeyDown = callbacks.onKeyDown {
-        shouldConsume = onKeyDown(false)
+        shouldConsume = onKeyDown(false, flags)
       } else {
         shouldConsume = false
       }
@@ -317,14 +322,14 @@ final class KeyEventHandler {
         lastKeyUpTime = nil
         // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
-          shouldConsume = onKeyUp(true)
+          shouldConsume = onKeyUp(true, flags)
         } else {
           shouldConsume = false
         }
       } else {
         // Not a double-tap - call onKeyUp if it exists
         if let onKeyUp = callbacks.onKeyUp {
-          shouldConsume = onKeyUp(false)
+          shouldConsume = onKeyUp(false, flags)
         } else {
           shouldConsume = false
         }

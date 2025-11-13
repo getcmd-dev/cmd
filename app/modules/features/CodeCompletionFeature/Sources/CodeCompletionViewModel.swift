@@ -59,12 +59,28 @@ final class CodeCompletionViewModel {
     completionKeyHandlers.append(KeyEventHandler(
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
-        onKeyDown: { [weak self] _ in
+        onKeyDown: { [weak self] _, modifiers in
           guard let self, editorState != nil, completion != nil else { return false }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard
+            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+          else {
+            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
+            return false
+          }
           return true
         },
-        onKeyUp: { [weak self] _ in
+        onKeyUp: { [weak self] (_: Bool, modifiers: CGEventFlags) in
           guard let self, editorState != nil, completion != nil else { return false }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard
+            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
+              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+          else {
+            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
+            return false
+          }
           handleTabKeyPressed()
           return true
         })))
@@ -73,17 +89,19 @@ final class CodeCompletionViewModel {
     escapeKeyHandler = KeyEventHandler(
       configuration: .escape(),
       callbacks: .init(
-        onKeyDown: { [weak self] _ in
+        onKeyDown: { [weak self] _, _ in
           guard let self, editorState != nil else { return false }
           return true
         },
-        onKeyUp: { [weak self] isDoubleTap in
+        onKeyUp: { [weak self] (isDoubleTap: Bool, _: CGEventFlags) in
           guard let self, editorState != nil else { return false }
           if isDoubleTap {
             handleEscapeDoubleTap()
             return true
           }
-          guard !isAutomaticCompletionEnabled || completion != nil else { return false }
+          guard !isAutomaticCompletionEnabled || completion != nil else {
+            return false
+          }
           handleEscape()
           return true
         }))
@@ -95,21 +113,21 @@ final class CodeCompletionViewModel {
       completionKeyHandlers.append(KeyEventHandler(
         configuration: .key(code),
         callbacks: .init(
-          onKeyDown: { [weak self] _ in
+          onKeyDown: { [weak self] _, _ in
             guard
               let self,
               editorState != nil,
-              completion?.diff.count ?? 0 > 1,
+              isCompletionExpandable,
               !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
             else { return false }
             handleCommandKeyDown()
             return true
           },
-          onKeyUp: { [weak self] _ in
+          onKeyUp: { [weak self] (_: Bool, _: CGEventFlags) in
             guard
               let self,
               editorState != nil,
-              completion?.diff.count ?? 0 > 1,
+              isCompletionExpandable,
               !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
             else { return false }
             handleCommandKeyUp()
@@ -190,6 +208,11 @@ final class CodeCompletionViewModel {
         for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
       }
     }
+  }
+
+  /// Determines if the completion should be expandable (i.e., requires Command key to show fully).
+  var isCompletionExpandable: Bool {
+    completion?.diff.count ?? 0 > 1
   }
 
   /// Calculate line spacing to match Xcode's line height
@@ -409,7 +432,7 @@ final class CodeCompletionViewModel {
     guard settingsService.value(for: \.multiLineCodeCompletionDisplayMode).usesScreenshotToAddSpace else {
       return
     }
-    guard completion?.diff.count ?? 0 > 1, let completionId = completionTask?.id else {
+    guard isCompletionExpandable, let completionId = completionTask?.id else {
       return
     }
 
