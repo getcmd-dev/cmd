@@ -93,7 +93,7 @@ focus_dependency_command() {
 		close_xcode
 	fi
 	# Reset xcode state
-	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {} || true
 
 	./tools/dependencies/focus.sh "$@"
 }

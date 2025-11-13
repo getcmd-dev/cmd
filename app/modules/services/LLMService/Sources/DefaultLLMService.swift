@@ -286,7 +286,14 @@ final class DefaultLLMService: LLMService {
     encoder.outputFormatting = [.sortedKeys]
     let data = try encoder.encode(params)
 
-    let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []), replayStrategy: .replayAll)
+    let streamDebugLogger = defaultLogger.subLogger(subsystem: "llmService-debugStream")
+    let streamDebugLog: @Sendable (String) -> Void = { message in
+      streamDebugLogger.log(message)
+    }
+    let result = MutableCurrentValueStream<AssistantMessage>(
+      AssistantMessage(content: []),
+      replayStrategy: .replayAll,
+      debugLog: streamDebugLog)
     handleUpdateStream(result)
 
     let isTaskCancelled = Atomic(false)
@@ -334,7 +341,10 @@ final class DefaultLLMService: LLMService {
         handleUsageInfo(usage)
       }
 
-      return await result.lastValue
+      streamDebugLogger.log("About to await result.lastValue")
+      let finalResult = await result.lastValue
+      streamDebugLogger.log("result.lastValue returned")
+      return finalResult
     }, onCancel: {
       isTaskCancelled.mutate { $0 = true }
     })
