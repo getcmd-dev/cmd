@@ -55,25 +55,60 @@ final class CodeCompletionViewModel {
       await loadXcodeTheme()
     }
 
-    // Initialize Tab key handler
-    tabKeyHandler = TabKeyHandler(
-      acceptSuggestion: { [weak self] in
-        self?.handleTabKeyPressed()
-      },
-      shouldAccept: { [weak self] in
-        guard let self else { return false }
-        // Check if we have an active completion and Xcode is focused
-        return completion != nil
-      })
+    // Initialize Tab key handler (triggered on key down, allows Command modifier)
+    completionKeyHandlers.append(KeyEventHandler(
+      configuration: .tab(allowModifiers: true),
+      callbacks: .init(
+        onKeyDown: { [weak self] in
+          self?.handleTabKeyPressed()
+        },
+        onKeyUp: nil,
+        shouldHandle: { [weak self] in
+          self?.editorState != nil && self?.completion != nil
+        })))
 
-    // Observe app activation state to start/stop modifier key monitoring
+    // Initialize Escape key handler (triggered on key up - when press is completed)
+    escapeKeyHandler = KeyEventHandler(
+      configuration: .escape(),
+      callbacks: .init(
+        onKeyDown: nil,
+        onKeyUp: { [weak self] isDoubleTap in
+          self?.handleEscape(isDoubleTap: isDoubleTap)
+        },
+        onDoubleTap: { [weak self] in
+          self?.handleEscapeDoubleTap()
+        },
+        shouldHandle: { [weak self] in
+          self?.editorState != nil
+        }))
+    escapeKeyHandler?.start()
+
+    // Initialize Command key handlers (triggered on both key down and key up)
+    // Left Command key code is 55, Right Command key code is 54
+    for code in [54, 55] {
+      completionKeyHandlers.append(KeyEventHandler(
+        configuration: .key(code),
+        callbacks: .init(
+          onKeyDown: { [weak self] in
+            self?.handleCommandKeyDown()
+          },
+          onKeyUp: { [weak self] isDoubleTap in
+            self?.handleCommandKeyUp(isDoubleTap: isDoubleTap)
+          },
+          shouldHandle: { [weak self] in
+            self?.editorState != nil && self?.completion?.diff.count ?? 0 > 1 && self?.settingsService
+              .value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown == false
+          })))
+    }
+
+    // Observe app activation state to start/stop key monitoring
     appsActivationState.sink { @Sendable state in
       Task { @MainActor [weak self] in
         guard let self else { return }
         if state.isXcodeActive, completion != nil {
-          tabKeyHandler?.start()
+          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
         } else {
-          tabKeyHandler?.stop()
+          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
         }
       }
     }.store(in: &cancellables)
@@ -112,6 +147,11 @@ final class CodeCompletionViewModel {
 
   private(set) var screenshot: CGImage?
 
+  private(set) var isCompletionExpanded = false
+  private(set) var showAutomaticCompletionStatusMessage = false
+
+  private(set) var isAutomaticCompletionEnabled = true
+
   /// The offset between the top of the view and the top of the text being completed.
   var verticalContentOffset: CGFloat = 0 {
     didSet {
@@ -124,11 +164,11 @@ final class CodeCompletionViewModel {
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
       if completion == nil {
-        tabKeyHandler?.stop()
+        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
       } else {
         needsLayout()
         screenShotEditorIfNeeded()
-        tabKeyHandler?.start()
+        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
       }
     }
   }
@@ -164,7 +204,10 @@ final class CodeCompletionViewModel {
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
   private var editorState: EditorState?
-  private var tabKeyHandler: TabKeyHandler?
+  private var completionKeyHandlers = [KeyEventHandler]()
+  private var escapeKeyHandler: KeyEventHandler?
+
+  private var statusMessageTask: Task<Void, Never>?
 
   private func enable() {
     isEnabled = true
@@ -186,6 +229,7 @@ final class CodeCompletionViewModel {
       completionTask = nil
       completion = nil
       screenshot = nil
+      editorState = nil
       defaultLogger.log("Not requesting completion due to missing content/tab etc")
       return
     }
@@ -200,6 +244,7 @@ final class CodeCompletionViewModel {
     }
 
     let editorState = EditorState(
+      workspaceURL: workspace.url,
       fileURL: focussedFile,
       content: content,
       selection: selection)
@@ -211,6 +256,11 @@ final class CodeCompletionViewModel {
     }
 
     self.editorState = editorState
+    completion = nil
+    screenshot = nil
+    completionTask = nil
+    guard isAutomaticCompletionEnabled else { return }
+
     let taskId = UUID()
     let task = Task { [weak self] in
       let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
@@ -230,9 +280,8 @@ final class CodeCompletionViewModel {
         timeout: 1)
       defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
       self.completion = completion
+      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
     }
-    completion = nil
-    screenshot = nil
     let cancellable = AnyCancellable { task.cancel() }
     completionTask = CompletionTask(
       task: task,
@@ -240,10 +289,42 @@ final class CodeCompletionViewModel {
       request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
   }
 
+  private func fetchCompletion() {
+    guard let editorState else { return }
+    let selection = editorState.selection
+
+    let taskId = UUID()
+    let task = Task { [weak self] in
+      let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+      try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
+      try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
+      guard let self, completionTask?.id == taskId else {
+        return
+      }
+      defaultLogger.log("Requesting completion")
+      let completion = try await codeCompletionService.suggestCompletion(
+        workspace: editorState.workspaceURL,
+        file: editorState.fileURL,
+        content: editorState.content,
+        selection: .init(
+          start: .init(line: selection.start.line, character: selection.start.character),
+          end: .init(line: selection.end.line, character: selection.end.character)),
+        timeout: 1)
+      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
+      self.completion = completion
+      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+    }
+    let cancellable = AnyCancellable { task.cancel() }
+    completionTask = CompletionTask(
+      task: task,
+      id: taskId,
+      request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection)) { cancellable.cancel() }
+  }
+
   private func disable() {
     isEnabled = false
     completion = nil
-    tabKeyHandler?.stop()
+    for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 
   private func handleTabKeyPressed() {
@@ -274,17 +355,39 @@ final class CodeCompletionViewModel {
     }
   }
 
+  private func handleEscape(isDoubleTap _: Bool) {
+    if isAutomaticCompletionEnabled {
+      completion = nil
+    } else {
+      fetchCompletion()
+    }
+  }
+
+  private func handleEscapeDoubleTap() {
+    isAutomaticCompletionEnabled.toggle()
+    // Show a message that the status was changed.
+    statusMessageTask?.cancel()
+    showAutomaticCompletionStatusMessage = true
+    statusMessageTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.showAutomaticCompletionStatusMessage = false
+    }
+  }
+
+  private func handleCommandKeyDown() {
+    isCompletionExpanded = true
+  }
+
+  private func handleCommandKeyUp(isDoubleTap _: Bool) {
+    isCompletionExpanded = false
+  }
+
   // MARK: - Screenshot Management
 
   /// When screenshoting is enabled to display multiline diff, screenshot the editor if we need a screenshot
   private func screenShotEditorIfNeeded() {
-    print("request screenshot")
-    let multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = settingsService
-      .value(for: \.multiLineCodeCompletionDisplayMode)
-    guard
-      multiLineCodeCompletionDisplayMode == .expandCompletionAddingSpaceInExistingCode || multiLineCodeCompletionDisplayMode ==
-      .expandCompletionAddingSpaceInExistingCodeWhenTriggered
-    else {
+    guard settingsService.value(for: \.multiLineCodeCompletionDisplayMode).usesScreenshotToAddSpace else {
       return
     }
     guard completion?.diff.count ?? 0 > 1, let completionId = completionTask?.id else {
@@ -317,6 +420,7 @@ final class CodeCompletionViewModel {
 // MARK: - EditorState
 
 private struct EditorState: Sendable, Equatable {
+  let workspaceURL: URL
   let fileURL: URL
   let content: String
   let selection: CursorRange
@@ -334,5 +438,15 @@ struct CompletionTask {
     let fileURL: URL
     let content: String
     let selection: CursorRange
+  }
+}
+
+extension MultiLineCodeCompletionDisplayMode {
+  var isAlwaysShown: Bool {
+    self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionOverExistingCode
+  }
+
+  var usesScreenshotToAddSpace: Bool {
+    self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionAddingSpaceInExistingCodeWhenTriggered
   }
 }

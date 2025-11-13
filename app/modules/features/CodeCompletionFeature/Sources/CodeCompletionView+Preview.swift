@@ -40,6 +40,9 @@ import SwiftUI
   CompletionDiffView(
     completion: mockCompletion,
     font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+    lineHeight: nil,
     lineSpacing: 0,
-    currentLineBackgroundColor: nil)
+    backgroundColor: nil,
+    currentLineBackgroundColor: nil,
+    showCompletionExpansionInfo: true)
 }

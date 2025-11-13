@@ -13,43 +13,54 @@ struct CodeCompletionView: View {
 
   var body: some View {
     GeometryReader { geometry in
-      Group {
+      ZStack(alignment: .topLeading) {
         if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
-          ZStack(alignment: .topLeading) {
-            if let screenshot = viewModel.screenshot {
-              VStack(alignment: .leading, spacing: 0) {
-                Rectangle().frame(height: max(
-                  0,
-                  (viewModel.lineHeight ?? 0) *
-                    CGFloat(completion.diffLineStart + completion.diff.count - completionRequest.selection.start.line - 1)))
-                  .foregroundColor(viewModel.xcodeBackgroundColor.map({ Color(nsColor: $0) }))
-                  .padding(.trailing, viewModel.trailingContentOffset)
-                  .padding(.leading, 10)
+          if let screenshot = viewModel.screenshot, viewModel.isCompletionExpanded {
+            VStack(alignment: .leading, spacing: 0) {
+              Rectangle().frame(height: max(
+                0,
+                (viewModel.lineHeight ?? 0) *
+                  CGFloat(completion.diffLineStart + completion.diff.count - completionRequest.selection.start.line - 1)))
+                .foregroundColor(viewModel.xcodeBackgroundColor.map({ Color(nsColor: $0) }))
+                .padding(.trailing, viewModel.trailingContentOffset)
+                .padding(.leading, 10)
 
-                Image(screenshot, scale: XcodeScreenshoter.retinaScale, label: Text(""))
-              }
-              .padding(.top, viewModel.lineHeight ?? 0)
+              Image(screenshot, scale: XcodeScreenshoter.retinaScale, label: Text(""))
             }
-
-            CompletionDiffView(
-              completion: completion,
-              font: viewModel.font,
-              lineHeight: viewModel.lineHeight,
-              lineSpacing: viewModel.lineSpacing,
-              backgroundColor: viewModel.xcodeBackgroundColor,
-              currentLineBackgroundColor: viewModel.xcodeCurrentLineColor)
-              .padding(
-                .top,
-                (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
-              .padding(.leading, viewModel.leadingContentOffset + 1) // 1 to leave space for the cursor
-              .padding(.trailing, viewModel.trailingContentOffset + 2) // 2 to not overlap with the scrollbar
-              .frame(width: geometry.size.width)
-              .fixedSize()
+            .padding(.top, viewModel.lineHeight ?? 0)
+            .padding(.top, viewModel.verticalContentOffset)
           }
-          .padding(.top, viewModel.verticalContentOffset)
+
+          CompletionDiffView(
+            completion: completion,
+            font: viewModel.font,
+            lineHeight: viewModel.lineHeight,
+            lineSpacing: viewModel.lineSpacing,
+            backgroundColor: viewModel.xcodeBackgroundColor,
+            currentLineBackgroundColor: viewModel.xcodeCurrentLineColor,
+            showCompletionExpansionInfo: !viewModel.isCompletionExpanded && completion.diff.count > 1)
+            .padding(
+              .top,
+              (viewModel.lineHeight ?? 0) * CGFloat(completion.diffLineStart - completionRequest.selection.start.line))
+            .padding(.leading, viewModel.leadingContentOffset + 1) // 1 to leave space for the cursor
+            .padding(.trailing, viewModel.trailingContentOffset + 2) // 2 to not overlap with the scrollbar
+            .frame(width: geometry.size.width)
+            .fixedSize()
+            .padding(.top, viewModel.verticalContentOffset)
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)
+        }
+
+        if viewModel.showAutomaticCompletionStatusMessage {
+          HStack(alignment: .bottom) {
+            Spacer()
+            VStack(alignment: .trailing) {
+              Spacer()
+              AutomaticCompletionStatusView(
+                isEnabled: viewModel.isAutomaticCompletionEnabled)
+            }
+          }
         }
       }
       .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
@@ -64,10 +75,11 @@ struct CompletionDiffView: View {
   init(
     completion: CompletionSuggestion,
     font: NSFont,
-    lineHeight: CGFloat? = nil,
+    lineHeight: CGFloat?,
     lineSpacing: CGFloat,
-    backgroundColor: NSColor? = nil,
-    currentLineBackgroundColor: NSColor? = nil)
+    backgroundColor: NSColor?,
+    currentLineBackgroundColor: NSColor?,
+    showCompletionExpansionInfo: Bool)
   {
     self.completion = completion
     self.font = font
@@ -75,6 +87,7 @@ struct CompletionDiffView: View {
     self.lineSpacing = lineSpacing
     self.backgroundColor = backgroundColor ?? .clear
     self.currentLineBackgroundColor = currentLineBackgroundColor ?? .clear
+    self.showCompletionExpansionInfo = showCompletionExpansionInfo
   }
 
   let completion: CompletionSuggestion
@@ -83,11 +96,15 @@ struct CompletionDiffView: View {
   let lineSpacing: CGFloat
   let backgroundColor: NSColor
   let currentLineBackgroundColor: NSColor
+  let showCompletionExpansionInfo: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      ForEach(completion.diff.indices, id: \.self) { index in
-        view(for: completion.diff[index], lineIdx: index)
+      ForEach(
+        completion.diff.enumerated().filter { !showCompletionExpansionInfo || $0.offset == 0 },
+        id: \.offset)
+      { idx, lineCompletion in
+        view(for: lineCompletion, lineIdx: idx)
           .frame(height: lineHeight)
       }
     }
@@ -112,14 +129,30 @@ struct CompletionDiffView: View {
         backgroundColor(for: .unchanged, lineIdx: lineIdx)
           .frame(maxWidth: .infinity)
 
-        ForEach(line.changes.indices.filter({ !isTextBeforeSuggestion(lineIdx: lineIdx, chunkIdx: $0) }), id: \.self) { index in
-          let change = line.changes[index]
-          Text(change.text.trimmingCharacters(in: .newlines))
-            .lineSpacing(lineSpacing)
-            .foregroundColor(color(for: change.type))
-            .background(backgroundColor(for: change.type, lineIdx: lineIdx))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: true)
+        HStack(spacing: 0) {
+          ForEach(line.changes.indices.filter({ !isTextBeforeSuggestion(lineIdx: lineIdx, chunkIdx: $0) }), id: \.self) { index in
+            let change = line.changes[index]
+            Text(change.text.trimmingCharacters(in: .newlines))
+              .lineSpacing(lineSpacing)
+              .foregroundColor(color(for: change.type))
+              .background(backgroundColor(for: change.type, lineIdx: lineIdx))
+              .lineLimit(1)
+              .fixedSize(horizontal: true, vertical: true)
+              .padding(.top, lineSpacing / 2)
+          }
+        }
+        .overlay(alignment: .trailing) {
+          Group {
+            if lineIdx == 0, showCompletionExpansionInfo {
+              Text("⌘ to expand")
+                .padding(6)
+                .with(cornerRadius: 8, backgroundColor: colorScheme.tertiarySystemBackground)
+                .padding(.leading, 16)
+            }
+          }
+          .alignmentGuide(.trailing) { d in
+            d[.leading]
+          }
         }
       }
     }
@@ -159,5 +192,24 @@ struct CompletionDiffView: View {
     case .removed: colorScheme.removedLineDiffBackground
     case .unchanged: Color(nsColor: lineIdx == 0 ? currentLineBackgroundColor : backgroundColor)
     }
+  }
+}
+
+// MARK: - AutomaticCompletionStatusView
+
+struct AutomaticCompletionStatusView: View {
+  let isEnabled: Bool
+
+  var body: some View {
+    HStack {
+      Image(systemName: isEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
+        .foregroundColor(isEnabled ? .green : .red)
+      Text(isEnabled ? "Automatic Completion Enabled" : "Automatic Completion Disabled.\nTap ESC to trigger completion.")
+        .foregroundColor(.primary)
+    }
+    .padding(8)
+    .background(Color(.windowBackgroundColor).opacity(0.9))
+    .cornerRadius(8)
+    .padding()
   }
 }

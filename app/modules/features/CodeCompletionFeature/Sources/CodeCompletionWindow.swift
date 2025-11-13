@@ -68,11 +68,6 @@ final class CodeCompletionWindow: XcodeWindow {
   var defaultWidth: CGFloat { 400 }
 
   override func getFrame() -> CGRect? {
-    guard viewModel.completion != nil, let completionTask = viewModel.completionTask else {
-      completionId = nil
-      completionRange = nil
-      return nil
-    }
     guard
       let editor = xcodeObserver.state.focussedEditor,
       let editorFrame = editor.axElement.appKitFrame,
@@ -83,6 +78,33 @@ final class CodeCompletionWindow: XcodeWindow {
       }
       return nil
     }
+    if viewModel.completion != nil, let completionTask = viewModel.completionTask {
+      updateViewModel(editor: editor, editorFrame: editorFrame, scrollViewFrame: scrollViewFrame, completionTask: completionTask)
+    } else {
+      completionId = nil
+      completionRange = nil
+    }
+
+    // Measure line height from selection frame
+    return editorFrame.intersection(scrollViewFrame)
+  }
+
+  private var completionId: UUID?
+  private var completionRange: NSRange?
+  /// The offset be
+  private var leadingEditorOffset: CGFloat?
+  private var trailingEditorOffset: CGFloat?
+
+  private let viewModel: CodeCompletionViewModel
+
+  private var hostingView: NSView?
+
+  private func updateViewModel(
+    editor: XcodeEditorState,
+    editorFrame: CGRect,
+    scrollViewFrame _: CGRect,
+    completionTask: CompletionTask)
+  {
     if completionTask.id != completionId || completionRange == nil {
       completionId = completionTask.id
       // Cache `completionRange` as this requires counting characters throughout the completed file
@@ -93,7 +115,7 @@ final class CodeCompletionWindow: XcodeWindow {
       let completionRange,
       let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame
     else {
-      return nil
+      return
     }
     let request = completionTask.request
     let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
@@ -138,22 +160,8 @@ final class CodeCompletionWindow: XcodeWindow {
         toMatch: size.width,
         for: content)
     }
-
-    // Measure line height from selection frame
-    let frame = editorFrame.intersection(scrollViewFrame)
     viewModel.verticalContentOffset = frame.maxY - completedTextFrame.maxY
-    return frame
   }
-
-  private var completionId: UUID?
-  private var completionRange: NSRange?
-  /// The offset be
-  private var leadingEditorOffset: CGFloat?
-  private var trailingEditorOffset: CGFloat?
-
-  private let viewModel: CodeCompletionViewModel
-
-  private var hostingView: NSView?
 
   private func screenshotEditor() async throws -> CGImage? {
     guard
