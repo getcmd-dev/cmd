@@ -140,6 +140,7 @@ extension Schema {
     case image = "image"
     case file = "file"
     case audio = "audio"
+    case video = "video"
   }    
   public struct ModelPricing: Codable, Sendable {
     public let prompt: Double
