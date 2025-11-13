@@ -11,6 +11,7 @@ import FoundationInterfaces
 import LocalServerServiceInterface
 import LoggingServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 
 // MARK: - DefaultLocalServer
 
@@ -25,11 +26,13 @@ final class DefaultLocalServer: LocalServer {
   init(
     sharedUserDefaults: UserDefaultsI,
     appEventHandlerRegistry: AppEventHandlerRegistry,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    shellService: ShellService)
   {
     self.sharedUserDefaults = sharedUserDefaults
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.fileManager = fileManager
+    self.shellService = shellService
     logger = defaultLogger.subLogger(subsystem: "local-server")
     hasCopiedFiles = false
     applicationSupportPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -189,6 +192,7 @@ final class DefaultLocalServer: LocalServer {
   private let pendingHandleDataTasks = TaskQueue<Void, Never>()
 
   private let fileManager: FileManagerI
+  private let shellService: ShellService
 
   private let applicationSupportPath: String
 
@@ -245,6 +249,17 @@ final class DefaultLocalServer: LocalServer {
         process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
       }
       #endif
+
+      // Pass enableDiskLogging to the node server via environment variable
+      // In DEBUG builds, always enable disk logging regardless of the setting
+      #if DEBUG
+      let enableDiskLogging = true
+      #else
+      let enableDiskLogging = sharedUserDefaults.bool(forKey: .enableDiskLogging)
+      #endif
+      var environment = await shellService.env
+      environment["ENABLE_DISK_LOGGING"] = enableDiskLogging ? "true" : "false"
+      process.environment = environment
 
       let stdout = Pipe()
       let stderr = Pipe()
@@ -458,14 +473,16 @@ private struct ConnectionResponse: Decodable, Sendable {
 extension BaseProviding where
   Self: UserDefaultsProviding,
   Self: AppEventHandlerRegistryProviding,
-  Self: FileManagerProviding
+  Self: FileManagerProviding,
+  Self: ShellServiceProviding
 {
   public var localServer: LocalServer {
     shared {
       DefaultLocalServer(
         sharedUserDefaults: sharedUserDefaults,
         appEventHandlerRegistry: appEventHandlerRegistry,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        shellService: shellService)
     }
   }
 }

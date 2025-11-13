@@ -117,6 +117,7 @@ public struct Settings: Sendable, Equatable {
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
     mcpServers: [String: MCPServerConfiguration] = [:],
     defaultLogLevel: LogLevel = .info,
+    enableDiskLogging: Bool = false,
     codeCompletionProviderId: String? = nil,
     enableCodeCompletion: Bool = false,
     codeCompletionDebounceMs: Int = 250,
@@ -139,6 +140,7 @@ public struct Settings: Sendable, Equatable {
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
     self.defaultLogLevel = defaultLogLevel
+    self.enableDiskLogging = enableDiskLogging
     self.codeCompletionProviderId = codeCompletionProviderId
     self.enableCodeCompletion = enableCodeCompletion
     self.codeCompletionDebounceMs = codeCompletionDebounceMs
@@ -251,6 +253,10 @@ public struct Settings: Sendable, Equatable {
   public var queueMessagesWhileStreaming: Bool
 
   public var defaultLogLevel: LogLevel
+  /// Whether to enable disk logging. When false, logs are only written to the console.
+  /// Defaults to false. Can be enabled via internal settings for debugging purposes.
+  /// In DEBUG builds, logs are always written to disk regardless of this setting.
+  public var enableDiskLogging: Bool
 
   public var llmProviderSettings: [AIProvider: AIProviderSettings] {
     didSet {
@@ -423,6 +429,7 @@ extension UserDefaultsKey {
   public static let enableNetworkProxy = "enableNetworkProxy"
   public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
   public static let defaultLogLevel = "defaultLogLevel"
+  public static let enableDiskLogging = "enableDiskLogging"
 }
 
 // MARK: - KeyEquivalent + Codable

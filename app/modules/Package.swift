@@ -1196,6 +1196,7 @@ targets.append(
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
       "SettingsServiceInterface",
+      "ShellServiceInterface",
       "ThreadSafe",
     ],
     resources: [

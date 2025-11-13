@@ -303,6 +303,11 @@ final class DefaultSettingsService: SettingsService {
     sharedUserDefaults.set(
       settings.defaultLogLevel.rawValue,
       forKey: .defaultLogLevel)
+
+    // Store enableDiskLogging in user defaults for logger access
+    sharedUserDefaults.set(
+      settings.enableDiskLogging,
+      forKey: .enableDiskLogging)
     #if DEBUG
     /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
 
