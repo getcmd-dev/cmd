@@ -14,7 +14,7 @@ import ShellServiceInterface
 
 /// A representation of the files in a workspace.
 /// The list of files is kept up to date.
-final class WorkspaceIndex: Workspace {
+final class WorkspaceIndex: Workspace, Hashable {
   init(url: URL, root: URL, files: @escaping @Sendable () -> [URL]) {
     self.url = url
     self.root = root
@@ -25,6 +25,14 @@ final class WorkspaceIndex: Workspace {
   let url: URL
 
   var files: [URL] { _files() }
+
+  static func ==(lhs: WorkspaceIndex, rhs: WorkspaceIndex) -> Bool {
+    lhs.url == rhs.url
+  }
+
+  func hash(into hasher: inout Hasher) {
+    url.hash(into: &hasher)
+  }
 
   private let _files: @Sendable () -> [URL]
 

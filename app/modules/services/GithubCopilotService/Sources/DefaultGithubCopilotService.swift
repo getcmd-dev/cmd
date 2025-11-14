@@ -64,11 +64,13 @@ final class DefaultGithubCopilotService: GithubCopilotService {
 
   func setUp(workspace: Workspace) {
     do {
-      _ = try createLSPServer(for: workspace)
+      // Start the server and cache the connection
+      _ = try lspServer(for: workspace)
     } catch { }
   }
 
   func close(workspace: URL) {
+    // TODO: test that this closes the stdio connection.
     servers.removeValue(forKey: workspace)
   }
 
@@ -101,7 +103,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   }
 
   /// Returns the LSP server for the given workspace.
-  func createLSPServer(for workspace: Workspace) throws -> GithubCopilotServer {
+  func lspServer(for workspace: Workspace) throws -> GithubCopilotServer {
     guard let expectedExecutablePath else {
       throw AppError("Path for Copilot language server executable not found")
     }
@@ -119,10 +121,6 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       jrpcService: jrpcService)
     servers[workspace.url] = server
     return server
-  }
-
-  func lspServer(for workspace: URL) -> GithubCopilotServer? {
-    servers[workspace]
   }
 
   private var cancellables = Set<AnyCancellable>()
