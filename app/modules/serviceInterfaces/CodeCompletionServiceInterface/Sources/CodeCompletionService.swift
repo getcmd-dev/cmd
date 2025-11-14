@@ -70,7 +70,13 @@ public struct CompletionSuggestion: Sendable {
 #if DEBUG
 extension [CompletionSuggestion.LineChange] {
   public var debugDescription: String {
-    self.map { $0.changes.map { change in
+    map(\.debugDescription).joined(separator: "")
+  }
+}
+
+extension CompletionSuggestion.LineChange {
+  public var debugDescription: String {
+    changes.map { change in
       switch change.type {
       case .added:
         "{+\(change.text)+}"
@@ -79,7 +85,6 @@ extension [CompletionSuggestion.LineChange] {
       case .unchanged:
         "\(change.text)"
       }
-    }.joined(separator: "")
     }.joined(separator: "")
   }
 }
