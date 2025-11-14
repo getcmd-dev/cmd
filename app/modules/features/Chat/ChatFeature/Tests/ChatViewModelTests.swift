@@ -1097,53 +1097,26 @@ struct ChatViewModelTests {
     } operation: {
       ChatViewModel()
     }
-    let tab1Set = expectation(description: "First tab set")
-    let tab2Set = expectation(description: "Second tab set")
-    let tab3Set = expectation(description: "Third tab set")
-    let tab1SetAgain = expectation(description: "First tab set again")
 
-    var instance1: ChatThreadViewModel!
-    var instance2: ChatThreadViewModel!
-    var instance3: ChatThreadViewModel!
-
-    let cancellable = sut.observeChanges(to: \.tab) { newTab in
-      MainActor.assumeIsolated {
-        switch newTab.id {
-        case thread1Id:
-          instance1 = newTab
-          if !tab1Set.isFulfilled {
-            tab1Set.fulfill()
-          } else {
-            tab1SetAgain.fulfillAtMostOnce()
-          }
-
-        case thread2Id:
-          instance2 = newTab
-          tab2Set.fulfillAtMostOnce()
-
-        case thread3Id:
-          instance3 = newTab
-          tab3Set.fulfillAtMostOnce()
-
-        default:
-          break
-        }
-      }
-    }
-
-    // when - Load multiple threads
+    // when - Load thread 1 and capture instance
     await sut.handleSelectChatThread(id: thread1Id)
-    try await fulfillment(of: tab1Set)
+    #expect(sut.tab.id == thread1Id)
+    let instance1 = sut.tab
 
+    // when - Load thread 2 and capture instance
     await sut.handleSelectChatThread(id: thread2Id)
-    try await fulfillment(of: tab2Set)
+    #expect(sut.tab.id == thread2Id)
+    let instance2 = sut.tab
 
+    // when - Load thread 3 and capture instance
     await sut.handleSelectChatThread(id: thread3Id)
-    try await fulfillment(of: tab3Set)
+    #expect(sut.tab.id == thread3Id)
+    let instance3 = sut.tab
 
-    // Switch back to thread1
+    // when - Switch back to thread1
     await sut.handleSelectChatThread(id: thread1Id)
-    try await fulfillment(of: tab1SetAgain)
+    #expect(sut.tab.id == thread1Id)
+
     // then - All instances should be reused
     #expect(sut.tab === instance1)
 
@@ -1152,12 +1125,9 @@ struct ChatViewModelTests {
     let buffered2: ChatThreadViewModel? = chatService.knownObject(for: thread2Id)
     let buffered3: ChatThreadViewModel? = chatService.knownObject(for: thread3Id)
 
-    print("")
-
     #expect(buffered1 === instance1)
     #expect(buffered2 === instance2)
     #expect(buffered3 === instance3)
-    _ = cancellable
   }
 
   // MARK: - Tab Management Tests
