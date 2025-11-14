@@ -24,6 +24,8 @@ enum XcodeScreenshoter {
     configuration.height = Int(frame.height * retinaScale)
     configuration.showsCursor = false
     configuration.captureResolution = .best
+    configuration.ignoreShadowsDisplay = true
+    configuration.ignoreShadowsSingleWindow = true
 
     return try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
   }

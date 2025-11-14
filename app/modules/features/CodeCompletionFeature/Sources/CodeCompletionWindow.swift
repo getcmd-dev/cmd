@@ -170,7 +170,8 @@ final class CodeCompletionWindow: XcodeWindow {
       let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame,
       let editorFrame = editor.axElement.appKitFrame,
       let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame,
-      let windowId = trackedWindowNumber
+      let windowId = trackedWindowNumber,
+      let windowTop = trackedWindow?.cgFrame?.minY
     else {
       return nil
     }
@@ -186,9 +187,10 @@ final class CodeCompletionWindow: XcodeWindow {
         width: frame.width - (trailingEditorOffset ?? 0) - 2,
         height: abs(frame.minY - completedTextFrame.minY))) // -2 to not overlap with scroll position
       .intersection(scrollViewFrame)
-    guard let frame = frame.invertedFrame else {
+    guard var frame = frame.invertedFrame else {
       return nil
     }
+    frame = frame.insetBy(dx: 0, dy: -windowTop)
     return try await XcodeScreenshoter.screenshot(
       windowId: windowId,
       frame: frame)
