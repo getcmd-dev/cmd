@@ -314,64 +314,47 @@ final class CodeCompletionViewModel {
     completionTask = nil
     guard isAutomaticCompletionEnabled else { return }
 
-    let taskId = UUID()
-    let task = Task { [weak self] in
-      let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
-      try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
-      try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
-      guard let self, completionTask?.id == taskId else {
-        return
-      }
-      defaultLogger.log("Requesting completion")
-      let completion = try await codeCompletionService.suggestCompletion(
-        workspace: workspace.url,
-        file: focussedFile,
-        content: content,
-        selection: .init(
-          start: .init(line: selection.start.line, character: selection.start.character),
-          end: .init(line: selection.end.line, character: selection.end.character)),
-        timeout: 1)
-      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
-      self.completion = completion
-      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
-    }
-    let cancellable = AnyCancellable { task.cancel() }
-    completionTask = CompletionTask(
-      task: task,
-      id: taskId,
-      request: .init(fileURL: focussedFile, content: content, selection: selection)) { cancellable.cancel() }
+    fetchCompletion()
   }
 
   private func fetchCompletion() {
     guard let editorState else { return }
     let selection = editorState.selection
-
+    let completionRequest = CompletionRequest(
+      workspace: editorState.workspaceURL,
+      file: editorState.fileURL,
+      content: editorState.content,
+      selection: .init(
+        start: .init(line: selection.start.line, character: selection.start.character),
+        end: .init(line: selection.end.line, character: selection.end.character)),
+      timeout: 1)
     let taskId = UUID()
-    let task = Task { [weak self] in
-      let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
-      try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
-      try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
-      guard let self, completionTask?.id == taskId else {
-        return
+
+    if let cachedCompletion = try? codeCompletionService.cachedCompletion(completionRequest) {
+      completion = cachedCompletion
+      completionTask = CompletionTask(
+        id: taskId,
+        request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection))
+    } else {
+      let task = Task { [weak self] in
+        let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+        try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
+        try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
+        guard let self, completionTask?.id == taskId else {
+          return
+        }
+        defaultLogger.log("Requesting completion")
+        let completion = try await codeCompletionService.suggestCompletion(completionRequest)
+        defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
+        self.completion = completion
+        isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
       }
-      defaultLogger.log("Requesting completion")
-      let completion = try await codeCompletionService.suggestCompletion(
-        workspace: editorState.workspaceURL,
-        file: editorState.fileURL,
-        content: editorState.content,
-        selection: .init(
-          start: .init(line: selection.start.line, character: selection.start.character),
-          end: .init(line: selection.end.line, character: selection.end.character)),
-        timeout: 1)
-      defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
-      self.completion = completion
-      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+      let cancellable = AnyCancellable { task.cancel() }
+      completionTask = CompletionTask(
+        task: task,
+        id: taskId,
+        request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection)) { cancellable.cancel() }
     }
-    let cancellable = AnyCancellable { task.cancel() }
-    completionTask = CompletionTask(
-      task: task,
-      id: taskId,
-      request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection)) { cancellable.cancel() }
   }
 
   private func disable() {
@@ -482,10 +465,17 @@ private struct EditorState: Sendable, Equatable {
 // MARK: - CompletionTask
 
 struct CompletionTask {
-  let task: Task<Void, Error>
+  let task: Task<Void, Error>?
   let id: UUID
   let request: CompletionRequest
-  let cleanup: () -> Void
+  let cleanup: (() -> Void)?
+
+  init(task: Task<Void, Error>? = nil, id: UUID, request: CompletionRequest, cleanup: (() -> Void)? = nil) {
+    self.task = task
+    self.id = id
+    self.request = request
+    self.cleanup = cleanup
+  }
 
   struct CompletionRequest {
     let fileURL: URL

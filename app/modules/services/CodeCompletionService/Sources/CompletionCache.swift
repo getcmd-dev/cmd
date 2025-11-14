@@ -4,6 +4,7 @@
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import Foundation
+import ThreadSafe
 
 // MARK: - CompletionCacheRequest
 
@@ -27,8 +28,8 @@ struct CompletionCacheRequest: Sendable, Hashable {
 /// If content is "print hello" with cursor at the end, and a cached completion suggests
 /// "hello world", then when the user types "w" to get "print hellow" (with cursor after 'w'),
 /// the cache recognizes this as a partial match and returns the same cached completion.
-@CodeCompletionIsolation
-final class CompletionCache {
+@ThreadSafe
+final class CompletionCache: Sendable {
   nonisolated init(maxEntries: Int = 100) {
     self.maxEntries = maxEntries
   }

@@ -16,7 +16,8 @@ public final class MockCodeCompletionService: CodeCompletionService {
     _isAvailable = .init(isAvailable)
   }
 
-  public var onSuggestCompletion: (@Sendable (URL, URL, String, Range, TimeInterval) async throws -> CompletionSuggestion?)?
+  public var onSuggestCompletion: (@Sendable (CompletionRequest) async throws -> CompletionSuggestion?)?
+  public var onCachedCompletion: (@Sendable (CompletionRequest) throws -> CompletionSuggestion?)?
   public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
 
   public var _isAvailable: CurrentValueSubject<Bool, Never>
@@ -25,18 +26,22 @@ public final class MockCodeCompletionService: CodeCompletionService {
     _isAvailable.readonly()
   }
 
-  public func suggestCompletion(
-    workspace: URL,
-    file: URL,
-    content: String,
-    selection: Range,
-    timeout: TimeInterval)
+  public func suggestCompletion(_ request: CompletionRequest)
     async throws -> CompletionSuggestion?
   {
     guard let onSuggestCompletion else {
       throw AppError("No completion provided")
     }
-    return try await onSuggestCompletion(workspace, file, content, selection, timeout)
+    return try await onSuggestCompletion(request)
+  }
+
+  public func cachedCompletion(_ request: CompletionRequest)
+    throws -> CompletionSuggestion?
+  {
+    guard let onCachedCompletion else {
+      throw AppError("No completion provided")
+    }
+    return try onCachedCompletion(request)
   }
 
   public func logCompletionAcceptance(suggestion: CompletionSuggestion, accepted: Bool) {

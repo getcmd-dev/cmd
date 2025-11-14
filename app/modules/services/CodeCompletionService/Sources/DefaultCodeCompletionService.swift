@@ -105,14 +105,11 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   }
 
   // TODO: support timeout
-  func suggestCompletion(
-    workspace: URL,
-    file: URL,
-    content: String,
-    selection: Range,
-    timeout _: TimeInterval)
-    async throws -> AppliedCompletionSuggestion?
-  {
+  func suggestCompletion(_ request: CompletionRequest) async throws -> AppliedCompletionSuggestion? {
+    let file = request.file
+    let workspace = request.workspace
+    let content = request.content
+    let selection = request.selection
     guard isAvailable.currentValue else {
       return nil
     }
@@ -134,15 +131,15 @@ final class DefaultCodeCompletionService: CodeCompletionService {
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
     }
-
-    // Get formatting metadata for the workspace
-    let formattingMetadata = await getFormattingMetadata(for: workspace)
     let request = CompletionCacheRequest(file: file, content: content, selection: selection)
 
     if let cachedCompletion = cachedCompletions.get(for: request) {
       defaultLogger.log("Returning cached completion")
       return cachedCompletion
     }
+
+    // Get formatting metadata for the workspace
+    let formattingMetadata = await getFormattingMetadata(for: workspace)
 
     let suggestion = try await provider.suggestCompletion(
       workspace: workspace,
@@ -158,6 +155,23 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       cachedCompletions.store(suggestion: suggestion, for: request)
     }
     return suggestion
+  }
+
+  nonisolated func cachedCompletion(_ request: CompletionRequest) throws -> AppliedCompletionSuggestion? {
+    let file = request.file
+    let workspace = request.workspace
+    let content = request.content
+    let selection = request.selection
+    guard isAvailable.currentValue else {
+      return nil
+    }
+    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
+
+    if let cachedCompletion = cachedCompletions.get(for: request) {
+      defaultLogger.log("Returning cached completion")
+      return cachedCompletion
+    }
+    return nil
   }
 
   nonisolated func logCompletionAcceptance(
@@ -265,7 +279,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     case failed
   }
 
-  private let cachedCompletions = CompletionCache()
+  private nonisolated let cachedCompletions = CompletionCache()
 
   nonisolated private let _isAvailable = CurrentValueSubject<Bool, Never>(false)
 
