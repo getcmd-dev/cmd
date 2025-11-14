@@ -127,7 +127,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
     case .tools:
       "Tools"
     case .mcp:
-      "MCP (Preview)"
+      "MCP"
     case .chatModes:
       "Chat Modes"
     case .keyboardShortcuts:

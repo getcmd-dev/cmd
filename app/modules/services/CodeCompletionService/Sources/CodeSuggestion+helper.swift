@@ -53,7 +53,10 @@ extension CodeCompletionFoundation.CompletionSuggestion {
     guard let diffText = try? FileDiff.getCharacterDiff(oldContent: content, newContent: newContent) else {
       return nil
     }
-    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(diff: diffText)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diffText,
+      oldContent: content,
+      newContent: newContent)
     // Convert to CompletionSuggestion format
     let diff = lineChanges.map { lineChanges in
       CodeCompletionServiceInterface.CompletionSuggestion.LineChange(

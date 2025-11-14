@@ -34,6 +34,7 @@ final class CodeCompletionViewModel {
     @Dependency(\.xcodeController) var xcodeController
     self.xcodeController = xcodeController
     @Dependency(\.appsActivationState) var appsActivationState
+    self.appsActivationState = appsActivationState
     @Dependency(\.codeCompletionService) var codeCompletionService
     self.codeCompletionService = codeCompletionService
     @Dependency(\.keyboardShortcutService) var keyboardShortcutService
@@ -72,7 +73,7 @@ final class CodeCompletionViewModel {
           return true
         },
         onKeyUp: { [weak self] (_: Bool, modifiers: CGEventFlags) in
-          guard let self, editorState != nil, completion != nil else { return false }
+          guard let self, isXcodeActive, editorState != nil, completion != nil else { return false }
           guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
           guard
             !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
@@ -90,11 +91,11 @@ final class CodeCompletionViewModel {
       configuration: .escape(),
       callbacks: .init(
         onKeyDown: { [weak self] _, _ in
-          guard let self, editorState != nil else { return false }
+          guard let self, isXcodeActive, editorState != nil else { return false }
           return true
         },
         onKeyUp: { [weak self] (isDoubleTap: Bool, _: CGEventFlags) in
-          guard let self, editorState != nil else { return false }
+          guard let self, isXcodeActive, editorState != nil else { return false }
           if isDoubleTap {
             handleEscapeDoubleTap()
             return true
@@ -116,6 +117,7 @@ final class CodeCompletionViewModel {
           onKeyDown: { [weak self] _, _ in
             guard
               let self,
+              isXcodeActive,
               editorState != nil,
               isCompletionExpandable,
               !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
@@ -126,6 +128,7 @@ final class CodeCompletionViewModel {
           onKeyUp: { [weak self] (_: Bool, _: CGEventFlags) in
             guard
               let self,
+              isXcodeActive,
               editorState != nil,
               isCompletionExpandable,
               !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
@@ -141,6 +144,8 @@ final class CodeCompletionViewModel {
         guard let self else { return }
         if !state.isXcodeActive {
           editorState = nil
+          completionTask = nil
+          completion = nil
         }
         if state.isXcodeActive, completion != nil {
           for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
@@ -241,6 +246,7 @@ final class CodeCompletionViewModel {
   private let xcodeObserver: XcodeObserver
   private let xcodeController: XcodeController
   private let codeCompletionService: CodeCompletionService
+  private let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
   private let shellService: ShellService
   private let keyboardShortcutService: KeyboardShortcutService
   private let themeController: XcodeThemeController
@@ -250,6 +256,10 @@ final class CodeCompletionViewModel {
   private var escapeKeyHandler: KeyEventHandler?
 
   private var statusMessageTask: Task<Void, Never>?
+
+  private var isXcodeActive: Bool {
+    appsActivationState.currentValue.isXcodeActive
+  }
 
   private func enable() {
     isEnabled = true
@@ -262,6 +272,7 @@ final class CodeCompletionViewModel {
 
   private func handleXcodeStateChange(_ state: AXState<XcodeState>) async {
     guard
+      isXcodeActive,
       let workspace = state.focusedWorkspace,
       let focussedFile = await xcodeObserver.focusedTabURL(in: workspace),
       let editor = workspace.focussedEditor,
