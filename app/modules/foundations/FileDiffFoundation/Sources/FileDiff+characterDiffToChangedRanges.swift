@@ -39,9 +39,9 @@ extension FileDiff {
     var currentLineChanges = [CharacterLevelChange]()
     var firstDiffLine = 0
     let oldLines = oldContent.splitLines()
-    let oldLinesOffsets = oldLines.reduce(into: [Int]()) { acc, l in acc.append(acc.last ?? 0 + l.count) }
+    let oldLinesOffsets = oldLines.reduce(into: [Int]()) { acc, l in acc.append((acc.last ?? 0) + l.count) }
     let newLines = newContent.splitLines()
-    let newLinesOffsets = newLines.reduce(into: [Int]()) { acc, l in acc.append(acc.last ?? 0 + l.count) }
+    let newLinesOffsets = newLines.reduce(into: [Int]()) { acc, l in acc.append((acc.last ?? 0) + l.count) }
 
     // Parse hunk headers to find the first changed line
     let hunkHeaderPattern = /@@ -(?<oldStart>\d+)/
