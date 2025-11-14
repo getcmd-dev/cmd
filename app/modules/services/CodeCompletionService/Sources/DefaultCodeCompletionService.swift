@@ -25,6 +25,11 @@ import XcodeObserverServiceInterface
 // TODO: buffer updates for file change (don't do every char)
 // TODO: check if URL is a stable key for dictionaries
 
+typealias RawCompletionSuggestion = CodeCompletionFoundation.CompletionSuggestion
+typealias AppliedCompletionSuggestion = CodeCompletionServiceInterface.CompletionSuggestion
+
+// MARK: - CodeCompletionIsolation
+
 @globalActor
 actor CodeCompletionIsolation {
   static let shared = CodeCompletionIsolation()
@@ -81,7 +86,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   }
 
   /// Track recent edits per workspace (workspace URL -> tracker)
-  var recentEditsTrackers = [WorkspaceIndex: RecentEditsTracker]()
+  private(set) var recentEditsTrackers = [WorkspaceIndex: RecentEditsTracker]()
 
   /// Cache formatting metadata per workspace
   var formattingMetadataCache = [WorkspaceIndex: FileFormattingMetadata]()
@@ -106,7 +111,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     content: String,
     selection: Range,
     timeout _: TimeInterval)
-    async throws -> CodeCompletionServiceInterface.CompletionSuggestion?
+    async throws -> AppliedCompletionSuggestion?
   {
     guard isAvailable.currentValue else {
       return nil
@@ -145,7 +150,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   }
 
   nonisolated func logCompletionAcceptance(
-    suggestion _: CodeCompletionServiceInterface.CompletionSuggestion,
+    suggestion _: AppliedCompletionSuggestion,
     accepted _: Bool) { }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events

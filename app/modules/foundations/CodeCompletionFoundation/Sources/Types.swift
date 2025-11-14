@@ -3,7 +3,7 @@
 
 // MARK: - Position
 
-public struct Position: Codable, Equatable, Sendable {
+public struct Position: Codable, Equatable, Sendable, Hashable {
   /// The line offset (0-based index).
   public let line: Int
   /// The character offset (0-based index).
@@ -17,7 +17,7 @@ public struct Position: Codable, Equatable, Sendable {
 
 // MARK: - Range
 
-public struct Range: Codable, Equatable, Sendable {
+public struct Range: Codable, Equatable, Sendable, Hashable {
   public let start: Position
   public let end: Position
 

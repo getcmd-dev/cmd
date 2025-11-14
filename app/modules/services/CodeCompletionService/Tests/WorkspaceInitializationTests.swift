@@ -35,7 +35,7 @@ struct WorkspaceInitializationTests {
     let listFilesExpectation = expectation(description: "listFiles called")
 
     let setupCalls = Atomic<[URL]>([])
-    let didOpenCalls = Atomic<[URL]>([])
+    let didOpenCalls = Atomic<[any Workspace]>([])
 
     mockCodeCompletionProvider.onSetUp = { workspace in
       setupCalls.mutate { $0.append(workspace.url) }
@@ -257,7 +257,7 @@ struct WorkspaceInitializationTests {
     try await fulfillment(of: [didOpenExpectation, didChangeExpectation])
 
     // then - verify tracker has edits
-    let tracker = await sut.recentEditsTrackers[workspace1]
+    let tracker = await sut.recentEditsTrackers.first(where: { $0.key.url == workspace1 })?.value
     #expect(tracker != nil)
     let history = await tracker?.editsHistory
     #expect(history?.count ?? 0 > 0)

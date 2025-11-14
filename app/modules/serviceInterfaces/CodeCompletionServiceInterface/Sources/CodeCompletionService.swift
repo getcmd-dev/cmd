@@ -88,4 +88,17 @@ extension CompletionSuggestion.LineChange {
     }.joined(separator: "")
   }
 }
+
+extension CompletionSuggestion.LineChange.WordChange {
+  public var debugDescription: String {
+    switch type {
+    case .added:
+      "{+\(text)+}"
+    case .removed:
+      "{-\(text)-}"
+    case .unchanged:
+      "\(text)"
+    }
+  }
+}
 #endif
