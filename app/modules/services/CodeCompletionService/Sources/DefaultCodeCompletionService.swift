@@ -137,16 +137,27 @@ final class DefaultCodeCompletionService: CodeCompletionService {
 
     // Get formatting metadata for the workspace
     let formattingMetadata = await getFormattingMetadata(for: workspace)
+    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
 
-    let providerSuggestion = try await provider.suggestCompletion(
+    if let cachedCompletion = cachedCompletions.get(for: request) {
+      defaultLogger.log("Returning cached completion")
+      return cachedCompletion
+    }
+
+    let suggestion = try await provider.suggestCompletion(
       workspace: workspace,
       file: file,
       content: content,
       version: openFiles[workspace]?[file]?.version ?? 0,
       selection: selection,
       pasteboardContent: getPasteboardContent(),
-      formattingMetadata: formattingMetadata)
-    return providerSuggestion?.applied(to: content, file: file, selection: selection)
+      formattingMetadata: formattingMetadata)?
+      .applied(to: content, file: file, selection: selection)
+
+    if let suggestion {
+      cachedCompletions.store(suggestion: suggestion, for: request)
+    }
+    return suggestion
   }
 
   nonisolated func logCompletionAcceptance(
@@ -253,6 +264,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     case ready
     case failed
   }
+
+  private let cachedCompletions = CompletionCache()
 
   nonisolated private let _isAvailable = CurrentValueSubject<Bool, Never>(false)
 

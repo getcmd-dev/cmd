@@ -29,7 +29,7 @@ struct CompletionCacheRequest: Sendable, Hashable {
 /// the cache recognizes this as a partial match and returns the same cached completion.
 @CodeCompletionIsolation
 final class CompletionCache {
-  init(maxEntries: Int = 100) {
+  nonisolated init(maxEntries: Int = 100) {
     self.maxEntries = maxEntries
   }
 
@@ -53,11 +53,12 @@ final class CompletionCache {
     for (k, cached) in cachedSuggestions {
       if cached.fileURL != request.file { continue }
       if !content.hasPrefix(cached.prefix) || !content.hasSuffix(cached.suffix) { continue }
-      // TODO: check that the selection is in the completion range
+      let changedRange = changedRange(content: request.content, prefix: cached.prefix, suffix: cached.suffix)
+      if !changedRange.contains(request.selection) { continue }
       let middleContent = String(content.dropFirst(cached.prefix.count).dropLast(cached.suffix.count))
       if middleContent.matches(cached.completion.diff) {
         cachedSuggestions.use(k)
-        return cached.completion.applied(to: request, prefix: cached.prefix, suffix: cached.suffix)
+        return cached.completion.applied(to: request, changedRange: changedRange)
       }
     }
     return nil
@@ -67,6 +68,22 @@ final class CompletionCache {
   private var cachedSuggestions = LRUQueue<CachedSuggestion>()
 
   private let maxEntries: Int
+
+  private func changedRange(content: String, prefix: String, suffix: String) -> Range {
+    let oldContent = content
+    let oldLines = oldContent.splitLines()
+
+    let prefixLines = prefix.splitLines()
+    let suffixLines = suffix.splitLines()
+
+    let startPosition = Position(line: prefixLines.count - 1, character: prefixLines.last?.count ?? 0)
+    let endPosition = Position(
+      line: oldLines.count - suffixLines.count,
+      character: (oldLines[safe: oldLines.count - suffixLines.count]?.count ?? 0) -
+        (suffixLines.first?.count ?? 0))
+
+    return Range(start: startPosition, end: endPosition)
+  }
 
 }
 
@@ -260,32 +277,30 @@ extension StringProtocol {
   }
 }
 
-extension CodeCompletionServiceInterface.CompletionSuggestion {
-  func applied(to request: CompletionCacheRequest, prefix: String, suffix: String) -> AppliedCompletionSuggestion? {
+extension AppliedCompletionSuggestion {
+  func applied(to request: CompletionCacheRequest, changedRange: Range) -> AppliedCompletionSuggestion? {
     let completion = diff.inline
       .trimming(while: { $0.type == .unchanged })
       .filter { $0.type != .removed }
       .map(\.text)
       .joined()
-    let oldContent = request.content
-    let oldLines = oldContent.splitLines()
-    let oldLineOffsets = oldLines.reduce(into: [Int](), { acc, l in acc.append((acc.last ?? 0) + l.count) })
-
-    let prefixLines = prefix.splitLines()
-    let suffixLines = suffix.splitLines()
-
-    let startPosition = Position(line: prefixLines.count - 1, character: prefixLines.last?.count ?? 0)
-    let endPosition = Position(
-      line: startPosition.line + oldLines.count - suffixLines.count,
-      character: (oldLines[safe: startPosition.line + oldLines.count - suffixLines.count]?.count ?? 0) -
-        (suffixLines.first?.count ?? 0))
 
     return RawCompletionSuggestion(
       file: request.file,
-      startPosition: startPosition,
-      endPosition: endPosition,
+      startPosition: changedRange.start,
+      endPosition: changedRange.end,
       completion: completion,
       id: UUID())
       .applied(to: request.content, file: request.file, selection: request.selection)
+  }
+}
+
+extension Range {
+  func contains(_ other: Range) -> Bool {
+    let startsAfter = other.start.line > start.line ||
+      (other.start.line == start.line && other.start.character >= start.character)
+    let endsBefore = other.end.line < end.line ||
+      (other.end.line == end.line && other.end.character <= end.character)
+    return startsAfter && endsBefore
   }
 }

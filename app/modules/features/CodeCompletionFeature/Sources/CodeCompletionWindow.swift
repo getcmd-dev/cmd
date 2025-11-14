@@ -91,7 +91,6 @@ final class CodeCompletionWindow: XcodeWindow {
 
   private var completionId: UUID?
   private var completionRange: NSRange?
-  /// The offset be
   private var leadingEditorOffset: CGFloat?
   private var trailingEditorOffset: CGFloat?
 
@@ -171,7 +170,7 @@ final class CodeCompletionWindow: XcodeWindow {
       let editorFrame = editor.axElement.appKitFrame,
       let scrollViewFrame = editor.axElement.wrappedValue?.parent?.appKitFrame,
       let windowId = trackedWindowNumber,
-      let windowTop = trackedWindow?.cgFrame?.minY
+      let windowFrame = trackedWindow?.cgFrame
     else {
       return nil
     }
@@ -190,7 +189,7 @@ final class CodeCompletionWindow: XcodeWindow {
     guard var frame = frame.invertedFrame else {
       return nil
     }
-    frame = frame.insetBy(dx: 0, dy: -windowTop)
+    frame = frame.insetBy(dx: -windowFrame.minX, dy: -windowFrame.minY)
     return try await XcodeScreenshoter.screenshot(
       windowId: windowId,
       frame: frame)

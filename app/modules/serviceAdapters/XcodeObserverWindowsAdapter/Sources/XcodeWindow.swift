@@ -26,6 +26,11 @@ open class XcodeWindow: NSWindow {
     updatePositionContinuously()
   }
 
+  /// The level that the window should have when it is active.
+  open var activatedLevel: NSWindow.Level {
+    .floating
+  }
+
   // MARK: - Public API
 
   /// Update the window's level (floating / normal) to match whether Xcode is the frontmost application.
@@ -122,11 +127,6 @@ open class XcodeWindow: NSWindow {
     return !windowInfos.isEmpty
   }
 
-  /// The level that the window should have when it is active.
-  var activatedLevel: NSWindow.Level {
-    .floating
-  }
-
   // MARK: - Constants
 
   private enum Constants {
@@ -166,7 +166,6 @@ open class XcodeWindow: NSWindow {
   /// Sets up initial window properties including level, visibility and release behavior
   private func initWindowProperties() {
     level = activatedLevel
-    orderFrontRegardless()
     setIsVisible(true)
     isReleasedWhenClosed = false
   }
@@ -217,8 +216,6 @@ open class XcodeWindow: NSWindow {
     _frame = frame
 
     setFrame(frame, display: true)
-    setIsVisible(true)
-    orderFrontRegardless()
   }
 
   /// Hides the window if position is automatically managed, otherwise marks it as not visible for when it will be.
@@ -250,7 +247,7 @@ open class XcodeWindow: NSWindow {
     guard isShown else { return }
 
     isActive = true
-    orderFrontRegardless()
+//    orderFrontRegardless()
     updateLevel()
     updatePosition(skippingIfUnchanged: false)
   }

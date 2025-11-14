@@ -10,7 +10,6 @@ public final class CodeCompletionWindowsManager: Sendable {
 
     for window in windows {
       window.show()
-      window.orderFrontRegardless()
     }
   }
 

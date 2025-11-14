@@ -16,50 +16,48 @@ struct CompletionCacheTests {
 
   struct DiffMatchesTests {
 
-    // MARK: - abc[-def-]gh{+ij+}  (old: "abcdefgh", new: "abcghij")
+    // MARK: - test {-some -}function{+ foo+}
 
     @Test
-    func abcDefGhIj_acceptsExpectedVariants() throws {
-      let diff = try getInlineChanges(from: "abcdefgh", to: "abcghij")
+    func basic_acceptsExpectedVariants() throws {
+      let diff = try getInlineChanges(from: "test some function", to: "test function foo")
 
-      #expect("abcdefgh".matches(diff)) // original
-      #expect("abcghij".matches(diff)) // new
-      #expect("abcdefghij".matches(diff)) // original + added
-      #expect("abcgh".matches(diff)) // original with deletion
-      #expect("abcdgh".matches(diff)) // subset of removed chars
+      #expect("test some function".matches(diff)) // original
+      #expect("test function foo".matches(diff)) // new
+      #expect("test some function foo".matches(diff)) // original + added
+      #expect("test function".matches(diff)) // original with deletion
+      #expect("test function fo".matches(diff)) // subset of added chars
     }
 
     @Test
-    func abcDefGhIj_rejectsInvalidVariants() throws {
-      let diff = try getInlineChanges(from: "abcdefgh", to: "abcghij")
+    func basic_rejectsInvalidVariants() throws {
+      let diff = try getInlineChanges(from: "test some function", to: "test function foo")
 
-      #expect("abxdgh".matches(diff) == false) // 'x' not in diff
-      #expect("abgcdh".matches(diff) == false) // wrong order
-      #expect("abch".matches(diff) == false) // missing required 'g'
-      #expect("".matches(diff) == false) // must contain unchanged abc + gh
-      #expect("ij".matches(diff) == false) // only added, missing unchanged
+      #expect("test some funcxtion".matches(diff) == false) // 'x' not in diff
+      #expect("test foo function".matches(diff) == false) // wrong order
+      #expect("est some function".matches(diff) == false) // missing required 't'
+      #expect("".matches(diff) == false) // must contain unchanged test + function
+      #expect("foo".matches(diff) == false) // only added, missing unchanged
     }
 
-    // MARK: - aaa[-bbb-][+aaa+]  (old: "aaabbb", new: "aaaaaa")
+    // MARK: - test test {-foo-}{+test+} {-foo-}{+test+}
 
     @Test
-    func aaaBbbAaa_acceptsExpectedVariants() throws {
-      let diff = try getInlineChanges(from: "aaabbb", to: "aaaaaa")
-
-      #expect("aaabbb".matches(diff)) // original
-      #expect("aaaaaa".matches(diff)) // new
-      #expect("aaa".matches(diff)) // original with deletion
-      #expect("aaabbbaaa".matches(diff)) // original + added
+    func chunkOrders_acceptsExpectedVariants() throws {
+      let diff = try getInlineChanges(from: "test test foo foo", to: "test test test test")
+      #expect("test test foo foo".matches(diff)) // original
+      #expect("test test test test".matches(diff)) // new
+      #expect("test test  ".matches(diff)) // original with deletion
+      #expect("test test footest footest".matches(diff)) // original + added
     }
 
     @Test
-    func aaaBbbAaa_rejectsInvalidVariants() throws {
-      let diff = try getInlineChanges(from: "aaabbb", to: "aaaaaa")
+    func chunkOrders_rejectsInvalidVariants() throws {
+      let diff = try getInlineChanges(from: "test test foo foo", to: "test test test test")
 
-      #expect("aabbaa".matches(diff) == false) // breaks unchanged "aaa"
-      #expect("a".matches(diff) == false) // missing required "aaa"
-      #expect("bbbbbb".matches(diff) == false) // only removed chars
-      #expect("aaab".matches(diff)) // remove all but one "b", adds none of the extra "a"
+      #expect("test ".matches(diff) == false) // breaks unchanged "test test "
+      #expect("foo foo".matches(diff) == false) // only removed chars
+      #expect("test test test foo".matches(diff)) // remove all but one "foo", adds none of the extra "test"
     }
 
     // MARK: - Unchanged suffix case (unchanged at the end)
@@ -146,13 +144,10 @@ struct CompletionCacheTests {
     }
   }
 
-  ///
-  ///  // MARK: - Basic Cache Operations
-  ///
   @Test("Cache stores and retrieves exact match")
   func cacheStoresAndRetrievesExactMatch() async throws {
     // given
-    let sut = await CompletionCache()
+    let sut = CompletionCache()
     let content = """
       func test() {
         // TODO: implement
@@ -178,8 +173,130 @@ struct CompletionCacheTests {
 
     // then
     let retrievedSuggestion = try #require(result)
-    #expect(retrievedSuggestion.diff.debugDescription == "  {-// TODO: im-}p{-leme-}{+ri+}nt{+(0)+}}")
+    #expect(retrievedSuggestion.diff.debugDescription == "  {-// TODO: implement-}{+print(0)+}\n")
     #expect(retrievedSuggestion.file == file)
+  }
+
+  @Test("Returns converted suggestion")
+  func returnsConvertedSuggestion() async throws {
+    // given
+    let sut = CompletionCache()
+    let content = """
+      func test() {
+        // TODO: implement
+      }
+      """
+    let cursorPosition = Position(line: 1, character: 2)
+    let file = URL(fileURLWithPath: "/test.swift")
+
+    let request = CompletionCacheRequest(
+      file: file,
+      content: content,
+      selection: .init(start: cursorPosition, end: cursorPosition))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: "  print(0)",
+      cursor: .init(line: 1, character: 2),
+      changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 20))))
+
+    // when
+    await sut.store(suggestion: suggestion, for: request)
+    let newCursorPosition = Position(line: 1, character: 4)
+    let newRequest = CompletionCacheRequest(
+      file: file,
+      content: """
+        func test() {
+          pr
+        }
+        """,
+      selection: .init(start: newCursorPosition, end: newCursorPosition))
+    let result = await sut.get(for: newRequest)
+
+    // then
+    let retrievedSuggestion = try #require(result)
+    #expect(retrievedSuggestion.diff.debugDescription == "  pr{+int(0)+}\n")
+    #expect(retrievedSuggestion.file == file)
+  }
+
+  @Test("Cache rejects lookups outside of changed range")
+  func cacheRejectsSelectionOutsideChangedRange() async throws {
+    let sut = CompletionCache()
+    let file = URL(fileURLWithPath: "/range.swift")
+    let content = "hello"
+    let cursor = Position(line: 0, character: content.count)
+    let request = CompletionCacheRequest(
+      file: file,
+      content: content,
+      selection: .init(start: cursor, end: cursor))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: " world",
+      file: file,
+      cursor: cursor))
+    await sut.store(suggestion: suggestion, for: request)
+
+    let outsideSelection = Position(line: 0, character: 0)
+    let lookup = CompletionCacheRequest(
+      file: file,
+      content: content,
+      selection: .init(start: outsideSelection, end: outsideSelection))
+
+    let result = await sut.get(for: lookup)
+    #expect(result == nil)
+  }
+
+  @Test("Cache keeps entries scoped per file URL")
+  func cacheDoesNotMixFiles() async throws {
+    let sut = CompletionCache()
+    let content = "hello"
+    let cursor = Position(line: 0, character: content.count)
+    let selection = Range(start: cursor, end: cursor)
+
+    let fileA = URL(fileURLWithPath: "/a.swift")
+    let requestA = CompletionCacheRequest(file: fileA, content: content, selection: selection)
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: " world",
+      file: fileA,
+      cursor: cursor))
+    await sut.store(suggestion: suggestion, for: requestA)
+
+    let fileB = URL(fileURLWithPath: "/b.swift")
+    let requestB = CompletionCacheRequest(file: fileB, content: content, selection: selection)
+
+    let result = await sut.get(for: requestB)
+    #expect(result == nil)
+  }
+
+  @Test("Cache requires prefix match for lookup")
+  func cacheRequiresMatchingPrefix() async throws {
+    let sut = CompletionCache()
+    let file = URL(fileURLWithPath: "/prefix.swift")
+    let content = "hello"
+    let cursor = Position(line: 0, character: content.count)
+    let request = CompletionCacheRequest(
+      file: file,
+      content: content,
+      selection: .init(start: cursor, end: cursor))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: " world",
+      file: file,
+      cursor: cursor))
+    await sut.store(suggestion: suggestion, for: request)
+
+    let mismatchedContent = "HELLO world"
+    let mismatchCursor = Position(line: 0, character: mismatchedContent.count)
+    let mismatchedRequest = CompletionCacheRequest(
+      file: file,
+      content: mismatchedContent,
+      selection: .init(start: mismatchCursor, end: mismatchCursor))
+
+    let result = await sut.get(for: mismatchedRequest)
+    #expect(result == nil)
   }
 
   @Test("commonSuffix")
