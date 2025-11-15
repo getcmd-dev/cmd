@@ -13,7 +13,7 @@ extension DefaultGithubCopilotService {
   }
 
   func suggestCompletion(
-    workspace: URL,
+    workspace: Workspace,
     file: URL,
     content _: String,
     version: Int,
@@ -26,8 +26,8 @@ extension DefaultGithubCopilotService {
     // Use formatting metadata from Xcode if available, otherwise use defaults
     let tabSize = formattingMetadata?.tabSize ?? 2
     let insertSpaces = formattingMetadata.map { !$0.usesTabsForIndentation } ?? true
-    guard let server = lspServer(for: workspace) else {
-      logger.error("No LSP server available for workspace at \(workspace.path) for suggestCompletion")
+    guard let server = try? lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.url.path) for suggestCompletion")
       return nil
     }
     guard
@@ -60,9 +60,9 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  func didOpen(workspace: URL, file: URL, content: String, version: Int) {
-    guard let server = lspServer(for: workspace) else {
-      logger.error("No LSP server available for workspace at \(workspace.path) for didOpen")
+  func didOpen(workspace: Workspace, file: URL, content: String, version: Int) {
+    guard let server = try? lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.url.path) for didOpen")
       return
     }
     Task(loggingErrorWith: "Failed to send didOpen notification to LSP server", logger: logger) {
@@ -78,9 +78,9 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  func didChange(workspace: URL, file: URL, content: String, version: Int) {
-    guard let server = lspServer(for: workspace) else {
-      logger.error("No LSP server available for workspace at \(workspace.path) for didChange")
+  func didChange(workspace: Workspace, file: URL, content: String, version: Int) {
+    guard let server = try? lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.url.path) for didChange")
       return
     }
     Task(loggingErrorWith: "Failed to send didChange notification to LSP server", logger: logger) {
@@ -92,9 +92,9 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  func didSave(workspace: URL, file: URL, content: String, version: Int) {
-    guard let server = lspServer(for: workspace) else {
-      logger.error("No LSP server available for workspace at \(workspace.path) for didSave")
+  func didSave(workspace: Workspace, file: URL, content: String, version: Int) {
+    guard let server = try? lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.url.path) for didSave")
       return
     }
     Task(loggingErrorWith: "Failed to send didSave notification to LSP server", logger: logger) {
@@ -106,9 +106,9 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  func didClose(workspace: URL, file: URL, content _: String, version: Int) {
-    guard let server = lspServer(for: workspace) else {
-      logger.error("No LSP server available for workspace at \(workspace.path) for didClose")
+  func didClose(workspace: Workspace, file: URL, content _: String, version: Int) {
+    guard let server = try? lspServer(for: workspace) else {
+      logger.error("No LSP server available for workspace at \(workspace.url.path) for didClose")
       return
     }
     Task(loggingErrorWith: "Failed to send didClose notification to LSP server", logger: logger) {
@@ -119,7 +119,7 @@ extension DefaultGithubCopilotService {
     }
   }
 
-  func didDelete(workspace _: URL, file _: URL) {
+  func didDelete(workspace _: Workspace, file _: URL) {
     // Empty implementation - LSP server doesn't have a didDelete notification
   }
 

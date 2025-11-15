@@ -141,6 +141,9 @@ extension FileDiff {
       result.append(currentLineChanges)
     }
 
+    // Prevent added/removed changes in the same words, and merge consecutives changes of the same type
+    result = result.map(Self.reformatWords(in:))
+
     // Merge consecutives changes of the same type
     result = result.map { lineChanges in lineChanges.reduce(into: [], { acc, change in
       if let last = acc.last, last.type == change.type {
@@ -151,17 +154,103 @@ extension FileDiff {
     }) }
 
     // Remove context lines that are unchanged.
-    let trimmedResult = Array(result.enumerated().trimming(while: { idx, lineChanges in
-      lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
-    }).map(\.element))
     firstDiffLine += result.enumerated().prefix(while: { idx, lineChanges in
       lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
     }).count
-    return (lineChanges: trimmedResult, firstDiffLine: firstDiffLine)
+    result = Array(result.enumerated().trimming(while: { idx, lineChanges in
+      lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
+    }).map(\.element))
+
+    return (lineChanges: result, firstDiffLine: firstDiffLine)
+  }
+
+  /// Converts the changes to not break up words, ie `{+prin+}t[-est-]` -> `{+print+}[-test-]`
+  static func reformatWords(in line: [CharacterLevelChange]) -> [CharacterLevelChange] {
+    var res = [CharacterLevelChange]()
+    let wordChanges = line.flatMap { change in change.text.splitWords().map { CharacterLevelChange(
+      text: String($0),
+      type: change.type) }}
+
+    var currentWordChanges = [CharacterLevelChange]()
+    var wasWordy = false
+    func flushCurrentWordChanges() {
+      if currentWordChanges.allSatisfy({ $0.type != .added }) || currentWordChanges.allSatisfy({ $0.type != .removed }) {
+        res.append(contentsOf: currentWordChanges)
+      } else {
+        if currentWordChanges.first(where: { $0.type != .unchanged })?.type == .added {
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .removed }).map(\.text).joined(), type: .added))
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .added }).map(\.text).joined(), type: .removed))
+        } else {
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .added }).map(\.text).joined(), type: .removed))
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .removed }).map(\.text).joined(), type: .added))
+        }
+      }
+    }
+    for change in wordChanges {
+      let isWordy = change.text.allSatisfy({ !$0.isWordDelimiter })
+      if isWordy {
+        if !wasWordy {
+          res.append(contentsOf: currentWordChanges)
+          currentWordChanges = []
+        }
+        currentWordChanges.append(change)
+      } else {
+        // end of word
+        flushCurrentWordChanges()
+        currentWordChanges = [change]
+      }
+      wasWordy = isWordy
+    }
+    flushCurrentWordChanges()
+
+    // Merge consecutives chunks of the same type
+    res = res.reduce(into: [], { acc, change in
+      if let last = acc.last, last.type == change.type {
+        acc[acc.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
+      } else {
+        acc.append(change)
+      }
+    })
+
+    #if DEBUG
+    assert(
+      res.filter({ $0.type != .added }).map(\.text).joined() == line.filter({ $0.type != .added }).map(\.text).joined(),
+      "reformating diff `\(line.debugDescription)` altered it")
+    assert(
+      res.filter({ $0.type != .removed }).map(\.text).joined() == line.filter({ $0.type != .removed }).map(\.text).joined(),
+      "reformating diff `\(line.debugDescription)` altered it")
+    #endif
+
+    return res
   }
 }
 
-#if DEBUG
+extension String {
+  func splitWords() -> [String.SubSequence] {
+    var result = [String.SubSequence]()
+    var index = startIndex
+    var last = startIndex
+    var wasWordy = true
+    while index < endIndex {
+      let isWordy = !self[index].isWordDelimiter
+      if wasWordy != isWordy || !isWordy {
+        result.append(self[last..<index])
+        last = index
+      }
+      wasWordy = isWordy
+      index = self.index(after: index)
+    }
+    result.append(self[last..<index])
+    return result.filter { !$0.isEmpty }
+  }
+}
+
+extension Character {
+  var isWordDelimiter: Bool {
+    !isLetter && !isNumber
+  }
+}
+
 extension [CharacterLevelChange] {
   public var debugDescription: String {
     map { change in
@@ -176,4 +265,3 @@ extension [CharacterLevelChange] {
     }.joined(separator: "")
   }
 }
-#endif

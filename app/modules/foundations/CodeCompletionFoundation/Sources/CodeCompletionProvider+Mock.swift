@@ -27,13 +27,13 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
 
   public var onSetUp: @Sendable (Workspace) -> Void
   public var onClose: @Sendable (URL) -> Void
-  public var onSuggestCompletion: (@Sendable (URL, URL, String, Int, Range, String?, FileFormattingMetadata?) async throws
+  public var onSuggestCompletion: (@Sendable (Workspace, URL, String, Int, Range, String?, FileFormattingMetadata?) async throws
     -> CompletionSuggestion?)?
-  public var onDidSave: @Sendable (URL, URL, String, Int) -> Void
-  public var onDidOpen: @Sendable (URL, URL, String, Int) -> Void
-  public var onDidChange: @Sendable (URL, URL, String, Int) -> Void
-  public var onDidClose: @Sendable (URL, URL, String, Int) -> Void
-  public var onDidDelete: @Sendable (URL, URL) -> Void
+  public var onDidSave: @Sendable (Workspace, URL, String, Int) -> Void
+  public var onDidOpen: @Sendable (Workspace, URL, String, Int) -> Void
+  public var onDidChange: @Sendable (Workspace, URL, String, Int) -> Void
+  public var onDidClose: @Sendable (Workspace, URL, String, Int) -> Void
+  public var onDidDelete: @Sendable (Workspace, URL) -> Void
 
   public func setUp(workspace: Workspace) {
     onSetUp(workspace)
@@ -44,7 +44,7 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
   }
 
   public func suggestCompletion(
-    workspace: URL,
+    workspace: Workspace,
     file: URL,
     content: String,
     version: Int,
@@ -59,23 +59,23 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
     return try await onSuggestCompletion(workspace, file, content, version, selection, pasteboardContent, formattingMetadata)
   }
 
-  public func didSave(workspace: URL, file: URL, content: String, version: Int) {
+  public func didSave(workspace: Workspace, file: URL, content: String, version: Int) {
     onDidSave(workspace, file, content, version)
   }
 
-  public func didOpen(workspace: URL, file: URL, content: String, version: Int) {
+  public func didOpen(workspace: Workspace, file: URL, content: String, version: Int) {
     onDidOpen(workspace, file, content, version)
   }
 
-  public func didChange(workspace: URL, file: URL, content: String, version: Int) {
+  public func didChange(workspace: Workspace, file: URL, content: String, version: Int) {
     onDidChange(workspace, file, content, version)
   }
 
-  public func didClose(workspace: URL, file: URL, content: String, version: Int) {
+  public func didClose(workspace: Workspace, file: URL, content: String, version: Int) {
     onDidClose(workspace, file, content, version)
   }
 
-  public func didDelete(workspace: URL, file: URL) {
+  public func didDelete(workspace: Workspace, file: URL) {
     onDidDelete(workspace, file)
   }
 }

@@ -8,6 +8,95 @@ import Testing
 
 @Suite("Character-level diff parsing")
 struct CharacterDiffToLineChangesTests {
+  struct ReformatWordsTests {
+    @Test("reformatWords merges partial replacements inside a word")
+    func reformatWordsMergesPartialReplacements() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "colo", type: .unchanged),
+        .init(text: "r", type: .removed),
+        .init(text: "ur", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{-color-}{+colour+}")
+    }
+
+    @Test("reformatWords keeps trailing punctuation with additions")
+    func reformatWordsKeepsPunctuationWithAddedWord() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "pri", type: .added),
+        .init(text: "nt", type: .added),
+        .init(text: "(", type: .added),
+        .init(text: "0", type: .added),
+        .init(text: ")", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{+print(0)+}")
+    }
+
+    @Test("reformatWords promotes shared prefix instead of mixing add/remove")
+    func reformatWordsPromotesSharedPrefix() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "pr", type: .unchanged),
+        .init(text: "int(0)", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "pr{+int(0)+}")
+    }
+
+    @Test("reformatWords replaces whole word when change spans it")
+    func reformatWordsReplacesWholeWordWhenChangeSpansIt() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "impleme", type: .removed),
+        .init(text: "pri", type: .added),
+        .init(text: "nt", type: .unchanged),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{-implement-}{+print+}")
+    }
+
+    @Test("reformatWords keeps unchanged prefix when appending digits")
+    func reformatWordsKeepsUnchangedPrefixWhenAppendingDigits() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "line 2", type: .unchanged),
+        .init(text: "0", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "line 2{+0+}")
+    }
+
+    @Test("reformatWords treats underscores as separators")
+    func reformatWordsTreatsUnderscoreAsSeparator() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "foo", type: .unchanged),
+        .init(text: "_", type: .unchanged),
+        .init(text: "bar", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "foo_{+bar+}")
+    }
+
+    @Test("reformatWords keeps newline separators intact")
+    func reformatWordsKeepsNewlinesSeparate() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "line ", type: .unchanged),
+        .init(text: "1", type: .unchanged),
+        .init(text: "\n", type: .unchanged),
+        .init(text: "line ", type: .unchanged),
+        .init(text: "2", type: .added),
+        .init(text: "\n", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "line 1\nline {+2\n+}")
+    }
+  }
+
   @Test("Simple change")
   func simpleChange() throws {
     let oldContent = "Hello World"
@@ -228,8 +317,37 @@ struct CharacterDiffToLineChangesTests {
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
-    let addedChars = firstLine.filter { $0.type == .added }
-    #expect(addedChars.map(\.text).joined() == "l")
+    #expect(firstLine.debugDescription == "Hel{+l+}o")
+  }
+
+  @Test("Word replacements are emitted as whole-word changes")
+  func wordReplacementProducesWholeWordChanges() throws {
+    let oldContent = "// TODO: implement"
+    let newContent = "print(0)"
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(lineChanges.count == 1)
+    #expect(lineChanges.map(\.debugDescription) == ["{-// TODO: implement-}{+print(0)+}"])
+  }
+
+  @Test("Insertions inside a word collapse to a word-level change")
+  func insertionInsideWordProducesWholeWordDiff() throws {
+    let oldContent = "color"
+    let newContent = "colour"
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(lineChanges.count == 1)
+    #expect(lineChanges.map(\.debugDescription) == ["colo{+u+}r"])
   }
 
   @Test("Change in the middle of unchanged lines")
@@ -250,6 +368,8 @@ struct CharacterDiffToLineChangesTests {
       diff: diff,
       oldContent: oldContent,
       newContent: newContent)
+
+    print("?")
 
     #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)

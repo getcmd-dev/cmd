@@ -36,7 +36,7 @@ struct FileWatcherTests {
     let setupExpectation = expectation(description: "setUp called")
     let didSaveExpectation = expectation(description: "didSave called")
 
-    let didSaveCalls = Atomic<[(workspace: URL, file: URL, content: String, version: Int)]>([])
+    let didSaveCalls = Atomic<[(workspace: any Workspace, file: URL, content: String, version: Int)]>([])
 
     mockCodeCompletionProvider.onSetUp = { _ in
       setupExpectation.fulfill()
@@ -83,7 +83,7 @@ struct FileWatcherTests {
     // then - didSave should be called with updated content
     #expect(didSaveCalls.value.count == 1)
     let saveCall = try #require(didSaveCalls.value.first)
-    #expect(saveCall.workspace == workspace1)
+    #expect(saveCall.workspace.url == workspace1)
     #expect(saveCall.file == file1)
     #expect(saveCall.content == "let x = 2")
     #expect(saveCall.version == 1) // version should increment
