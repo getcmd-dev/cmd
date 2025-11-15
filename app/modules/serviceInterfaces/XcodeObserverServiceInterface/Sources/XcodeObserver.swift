@@ -77,7 +77,6 @@ extension XcodeObserver {
       // only gives the absolute path for the file focussed on the first editor tab.
       // So in split screen mode, if the user focuses on the second tab, this value is missing.
       // We therefore perform a more expensive operation to list all files in the workspace to find a match.
-
       let editor = workspace.editors.first(where: { $0.isFocused }),
       let matchingFiles = try? await listFiles(in: workspace.url).files
         .filter({ $0.lastPathComponent == editor.fileName }),
@@ -86,6 +85,7 @@ extension XcodeObserver {
     {
       return path
     }
+      defaultLogger.log("Could not find url for \(workspace.editors.first(where: { $0.isFocused })?.fileName ?? "nil") editor is nil? \(workspace.editors.first(where: { $0.isFocused }) == nil)")
     return nil
   }
 

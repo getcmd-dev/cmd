@@ -5,6 +5,7 @@ import AccessibilityFoundation
 import AppKit
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import AppFoundation
 import Foundation
 import ThreadSafe
 import LoggingServiceInterface
@@ -141,9 +142,10 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
   private func pullFocussedEditorState() {
     Task { @MainActor [weak self] in
-      while let self, !Task.isCancelled {
+      while let self {
         try? await Task.sleep(for: .seconds(1))
         let focusedEditorId: String?? = editorObservers.first(where: { $0.editorElement.isFocused })?.id ?? nil
+          print("pullFocussedEditorState focusedEditorId \(focusedEditorId ??? "nil") Task.isCancelled? \(Task.isCancelled)")
         updateStateWith(focusedEditorId: focusedEditorId)
       }
     }
