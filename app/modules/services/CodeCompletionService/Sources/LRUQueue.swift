@@ -93,9 +93,9 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
   }
 
   private func removeTail(_ state: inout _InternalState) {
-    if let node = tail {
+    if let node = state.tail {
       remove(node, &state)
-      dict.removeValue(forKey: node.key)
+      state.dict.removeValue(forKey: node.key)
     }
   }
 }
