@@ -7,6 +7,7 @@ import AppKit
 import ConcurrencyFoundation
 import Foundation
 import ThreadSafe
+import LoggingServiceInterface
 import XcodeObserverServiceInterface
 
 // MARK: - XcodeWorkspaceObserver
@@ -36,7 +37,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   }
 
   let workspaceURL: URL
-  var editorInspectors = [SourceEditorObserver]()
+  var editorObservers = [SourceEditorObserver]()
 
   let workspace: AXUIElement
 
@@ -75,18 +76,18 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
     // Update editor inspectors.
     guard
-      let editorInspectors = editorsContainer?.caching({ $0.children }, cacheKey: "editor-containers")
+      let editorObservers = editorsContainer?.caching({ $0.children }, cacheKey: "editor-containers")
         .compactMap({ editorContainer in
-          editorInspector(for: editorContainer)
+            editorObserver(for: editorContainer)
         })
     else {
       return
     }
-    let removedInspectors = editorInspectors.filter { inspector in
-      !self.editorInspectors.contains(where: { $0 === inspector })
+    let removedEditorObservers = editorObservers.filter { inspector in
+      !self.editorObservers.contains(where: { $0 === inspector })
     }
-    removedInspectors.forEach(stopTracking(_:))
-    self.editorInspectors = editorInspectors
+    removedEditorObservers.forEach(stopTracking(_:))
+    self.editorObservers = editorObservers
 
     // Update tabs
     let tabEls = editorsContainer?.caching({
@@ -106,7 +107,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     let focusedTabName = tabEls.first(where: { $0.doubleValue == 1 })?.title ?? fallbackFocusTabName
     let documentURL = workspace.documentURL
 
-    let focusEditorState = editorInspectors.lazy.compactMap { editor in
+    let focusEditorState = editorObservers.lazy.compactMap { editor in
       let state = editor.state.currentValue
       return state.fileName == focusedTabName ? state : nil
     }.first
@@ -122,11 +123,11 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       return existingTab ?? .init(fileName: tabName, knownPath: nil, lastKnownContent: nil)
     }
 
-    let focusedEditorId: String?? = editorInspectors.first(where: { $0.editorElement.isFocused })?.id ?? nil
+    let focusedEditorId: String?? = editorObservers.first(where: { $0.editorElement.isFocused })?.id ?? nil
 
     updateStateWith(
       tabs: tabs,
-      editors: editorInspectors.map(\.state.currentValue).sorted(by: { $1.id == focusedEditorId }),
+      editors: editorObservers.map(\.state.currentValue).sorted(by: { $1.id == focusedEditorId }),
       documentURL: workspace.documentURL,
       focusedEditorId: focusedEditorId,
       focusedTabName: focusedTabName)
@@ -142,7 +143,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     Task { @MainActor [weak self] in
       while let self, !Task.isCancelled {
         try? await Task.sleep(for: .seconds(1))
-        let focusedEditorId: String?? = editorInspectors.first(where: { $0.editorElement.isFocused })?.id ?? nil
+        let focusedEditorId: String?? = editorObservers.first(where: { $0.editorElement.isFocused })?.id ?? nil
         updateStateWith(focusedEditorId: focusedEditorId)
       }
     }
@@ -174,7 +175,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
       switch event {
       case .focusedUIElementChanged:
-        let focusedEditorId: String? = editorInspectors.first(where: { $0.editorElement == notification.element })?.id ?? nil
+        let focusedEditorId: String? = editorObservers.first(where: { $0.editorElement == notification.element })?.id ?? nil
         updateStateWith(
           focusedEditorId: focusedEditorId)
 
@@ -187,9 +188,9 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   /// If the inspector is already created, it returns the existing inspector.
   /// If the inspector is not created, it creates a new inspector and subscribes to it.
   @MainActor
-  private func editorInspector(for editorContainer: AXUIElement) -> SourceEditorObserver? {
+  private func editorObserver(for editorContainer: AXUIElement) -> SourceEditorObserver? {
     if
-      let inspector = editorInspectors
+      let inspector = editorObservers
         .filter(\.isElementValid)
         .first(where: { $0.element == editorContainer })
     {
@@ -197,37 +198,37 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     }
     guard
       let editorElement = editorContainer.firstChild(where: { el, _ in el.isSourceEditor ? .stopSearching : .continueSearching }),
-      let inspector = SourceEditorObserver(runningApplication: runningApplication, editorElement: editorElement)
+      let observer = SourceEditorObserver(runningApplication: runningApplication, editorElement: editorElement)
     else {
       return nil
     }
 
-    startTracking(inspector)
-    return inspector
+    startTracking(observer)
+    return observer
   }
 
   @MainActor
-  private func startTracking(_ inspector: SourceEditorObserver) {
+  private func startTracking(_ observer: SourceEditorObserver) {
     let editors = internalState.value.editors
-    updateStateWith(editors: editors + [inspector.state.currentValue])
+    updateStateWith(editors: editors + [observer.state.currentValue])
 
-    let cancellable = inspector
+    let cancellable = observer
       .state
       .sink { [weak self] newValue in
         guard let self else { return }
         let editors = internalState.value.editors
         updateStateWith(editors: editors.map { oldValue in oldValue.id == newValue.id ? newValue : oldValue })
       }
-    inspector.set(cleanupTask: cancellable)
-    inspector.onElementInvalidated = { [weak self] inspector in
-      self?.handleElementBecameInvalid(for: inspector)
+      observer.set(cleanupTask: cancellable)
+      observer.onElementInvalidated = { [weak self] observer in
+      self?.handleElementBecameInvalid(for: observer)
     }
-    editorInspectors.append(inspector)
+    editorObservers.append(observer)
   }
 
   private func stopTracking(_ inspector: SourceEditorObserver) {
     inLock { state in
-      state.editorInspectors = state.editorInspectors.filter { $0 !== inspector }
+      state.editorObservers = state.editorObservers.filter { $0 !== inspector }
     }
   }
 
@@ -250,6 +251,12 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
         return tab
       }
     }
+      if let focusedEditorId {
+          defaultLogger.log("Workspace observer: updating focussed editor to: \(focusedEditorId ?? "nil")")
+      }
+      if let focusedTabName {
+          defaultLogger.log("Workspace observer: updating focussed tab to: \(focusedTabName ?? "nil")")
+      }
     let newState = InternalXcodeWorkspaceState(
       axElement: state.axElement,
       url: state.url,

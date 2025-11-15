@@ -139,8 +139,19 @@ public class ChatViewModel {
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
   func addTab(copyingCurrentInput: Bool = false, threadId: UUID? = nil) {
-    let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     let currentTab = tab
+
+    // If the current tab is empty and we're creating a new tab (not opening an existing thread),
+    // don't create a new tab - just reuse the current empty tab
+    if threadId == nil && currentTab.isEmpty {
+      if copyingCurrentInput {
+        // Input is already in the current tab, nothing to do
+      }
+      // The current tab is already focused, no need to change focus or create a new tab
+      return
+    }
+
+    let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     if copyingCurrentInput {
       newTab.input = currentTab.input.copy(
         didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },

@@ -219,7 +219,7 @@ public final class GithubCopilotServer: Sendable {
       configuration: .init(
         // LSP protocol requires Content-Length header
         delimitation: .contentLength,
-        logger: defaultLogger.subLogger(subsystem: "github-copilot-lsp-server")))
+        logger: nil))//defaultLogger.subLogger(subsystem: "github-copilot-lsp-server")))
     defaultLogger.trace("Transport created, about to connect...")
 
     // Set up disconnection handler before connecting
