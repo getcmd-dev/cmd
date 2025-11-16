@@ -17,6 +17,7 @@ import XcodeObserverServiceInterface
 final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   @MainActor
   init(runningApplication: NSRunningApplication, workspace: AXUIElement, url: URL) {
+      defaultLogger.log("XcodeWorkspaceObserver init")
     self.runningApplication = runningApplication
     self.workspace = workspace
     workspaceURL = url
@@ -176,6 +177,11 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       guard let event = AXNotification(rawValue: notification.name) else {
         return
       }
+        if notification.element.isSourceEditor, !editorObservers.contains(where: { $0.editorElement == notification.element })  {
+            // Track the editor
+            refresh()
+        }
+        // AXTextArea -  / description: Source Editor
 
       switch event {
       case .focusedUIElementChanged:
@@ -278,4 +284,10 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   private func handleElementBecameInvalid(for _: AXElementObserver) {
     refresh()
   }
+}
+
+extension AXUIElement {
+    var isSourceEditor: Bool {
+        role == kAXTextAreaRole && description == "Source Editor"
+    }
 }
