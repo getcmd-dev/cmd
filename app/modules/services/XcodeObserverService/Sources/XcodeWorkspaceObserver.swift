@@ -261,12 +261,6 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
         return tab
       }
     }
-      if let focusedEditorId {
-          defaultLogger.log("Workspace observer: updating focussed editor to: \(focusedEditorId ?? "nil")")
-      }
-      if let focusedTabName {
-          defaultLogger.log("Workspace observer: updating focussed tab to: \(focusedTabName ?? "nil")")
-      }
     let newState = InternalXcodeWorkspaceState(
       axElement: state.axElement,
       url: state.url,
@@ -276,6 +270,12 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       focusedTabName: focusedTabName ?? state.focusedTabName,
       focusedEditorId: focusedEditorId ?? state.focusedEditorId)
     if state != newState {
+        if let focusedEditorId {
+            defaultLogger.log("Workspace observer: updating focussed editor to: \(focusedEditorId ?? "nil")")
+        }
+        if let focusedTabName {
+            defaultLogger.log("Workspace observer: updating focussed tab to: \(focusedTabName ?? "nil")")
+        }
       internalState.send(newState)
     }
   }

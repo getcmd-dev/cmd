@@ -312,7 +312,7 @@ final class CodeCompletionViewModel {
       completion = nil
       screenshot = nil
       editorState = nil
-      defaultLogger.log("Not requesting completion: no matching tab")
+        defaultLogger.log("Not requesting completion: no matching tab. Focussed file: \(focussedFile.lastPathComponent). Tabs: \(workspace.tabs.map { "\($0.fileName) is focused: \($0.isFocused)" }.joined(separator: "|"))" )
       return
     }
 
