@@ -17,7 +17,7 @@ import XcodeObserverServiceInterface
 final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   @MainActor
   init(runningApplication: NSRunningApplication, workspace: AXUIElement, url: URL) {
-      defaultLogger.log("XcodeWorkspaceObserver init")
+      defaultLogger.log("XcodeWorkspaceObserver init \(id)")
     self.runningApplication = runningApplication
     self.workspace = workspace
     workspaceURL = url
@@ -37,6 +37,11 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     observeChangesToFocussedEditor()
     pullFocussedEditorState()
   }
+    
+    deinit {
+        defaultLogger.log("XcodeWorkspaceObserver deinit \(id)")
+    }
+    let id = UUID().uuidString
 
   let workspaceURL: URL
   var editorObservers = [SourceEditorObserver]()
