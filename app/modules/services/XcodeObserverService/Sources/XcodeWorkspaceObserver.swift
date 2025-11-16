@@ -147,15 +147,15 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   private let internalState: CurrentValueSubject<InternalXcodeWorkspaceState, Never>
 
   private func pullFocussedEditorState() {
-      print("start pullFocussedEditorState")
+      defaultLogger.log("start pullFocussedEditorState")
     Task { @MainActor [weak self] in
       while let self {
         try? await Task.sleep(for: .seconds(1))
         let focusedEditorId: String?? = editorObservers.first(where: { $0.editorElement.isFocused })?.id ?? nil
-          print("pullFocussedEditorState focusedEditorId \(focusedEditorId ??? "nil") Task.isCancelled? \(Task.isCancelled)")
+          defaultLogger.log("pullFocussedEditorState focusedEditorId \(focusedEditorId ??? "nil") Task.isCancelled? \(Task.isCancelled)")
         updateStateWith(focusedEditorId: focusedEditorId)
       }
-      print("pullFocussedEditorState stopping as deallocated")
+        defaultLogger.log("pullFocussedEditorState stopping as deallocated")
     }
   }
 
