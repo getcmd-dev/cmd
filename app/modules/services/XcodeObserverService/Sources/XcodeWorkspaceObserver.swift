@@ -150,9 +150,6 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
       while let self {
         try? await Task.sleep(for: .seconds(1))
         let focusedEditorId: String?? = editorObservers.first(where: { $0.editorElement.isFocused })?.id ?? nil
-        if focusedEditorId != state.currentValue.focusedEditorId {
-          logger.log("Workspace observer: pullFocussedEditorState updating focussed editor to: \(focusedEditorId ??? "nil")")
-        }
         updateStateWith(focusedEditorId: focusedEditorId)
       }
     }

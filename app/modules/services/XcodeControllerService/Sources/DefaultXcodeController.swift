@@ -201,7 +201,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
             return false
           }
         } catch {
-          defaultLogger.error("Failed to handle extension request: \(error)")
+          defaultLogger.error("Failed to handle extension request", error)
           event.completion(.failure(error))
           return true
         }
@@ -479,6 +479,8 @@ extension DefaultXcodeController {
       if !xcodeApp.activate() {
         defaultLogger.error("Xcode not activated.")
         try? activateXcodeWithAppleScript()
+      } else {
+        defaultLogger.trace("Activated Xcode.")
       }
 
       // Give Xcode's run loop time to process the activation and initialize extension infrastructure
@@ -518,6 +520,7 @@ extension DefaultXcodeController {
       throw AXError.cannotComplete
     }
 
+    defaultLogger.log("Will clicked the \(commandName) menu item")
     if AXUIElementPerformAction(menuItem, kAXPressAction as CFString) == .success {
       defaultLogger.log("Clicked the \(commandName) menu item")
     } else {
