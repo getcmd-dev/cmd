@@ -480,6 +480,9 @@ extension DefaultXcodeController {
         defaultLogger.error("Xcode not activated.")
         try? activateXcodeWithAppleScript()
       }
+
+      // Give Xcode's run loop time to process the activation and initialize extension infrastructure
+      await Task.yield()
     }
 
     let appElement = AXUIElementCreateApplication(xcodeApp.processIdentifier)
@@ -506,6 +509,12 @@ extension DefaultXcodeController {
         })
     else {
       defaultLogger.error("Could not find '\(appBundleId):\(commandName)' menu")
+      throw AXError.cannotComplete
+    }
+
+    // Verify the menu item is enabled before triggering
+    if !menuItem.isEnabled {
+      defaultLogger.error("Extension menu item '\(commandName)' is disabled")
       throw AXError.cannotComplete
     }
 
