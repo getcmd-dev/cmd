@@ -51,6 +51,9 @@ struct ChatViewModelTests {
     // given
     let sut = ChatViewModel()
     let firstTab = sut.tab
+    // Make the first tab non-empty by sending a message
+    firstTab.input.textInput = TextInput([.text("Test")])
+    await firstTab.sendMessage()
     #expect(sut.tabs.count == 1)
     #expect(sut.currentTabIndex == 0)
 
@@ -66,10 +69,14 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("adding a new tab with copyingCurrentInput copies the input")
-  func addingNewTabWithCopyingCurrentInput() {
+  func addingNewTabWithCopyingCurrentInput() async {
     // given
     let sut = ChatViewModel()
     let initialTab = sut.tab
+    // Make the initial tab non-empty
+    initialTab.input.textInput = TextInput([.text("Initial message")])
+    await initialTab.sendMessage()
+    // Now set the input for copying
     initialTab.input.textInput = TextInput([.text("Test input")])
 
     // when
@@ -624,7 +631,7 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("addTab saves new thread ID to UserDefaults")
-  func addTabSavesNewThreadIdToUserDefaults() {
+  func addTabSavesNewThreadIdToUserDefaults() async {
     // given
     let mockUserDefaults = MockUserDefaults()
 
@@ -635,6 +642,9 @@ struct ChatViewModelTests {
     }
 
     let originalTabId = sut.tab.id
+    // Make the current tab non-empty so addTab creates a new one
+    sut.tab.input.textInput = TextInput([.text("Test")])
+    await sut.tab.sendMessage()
 
     // when
     sut.addTab()
@@ -900,13 +910,16 @@ struct ChatViewModelTests {
 
   @MainActor
   @Test("addTab with existing threadId reuses instance from ChatService")
-  func addTabReusesExistingInstance() {
+  func addTabReusesExistingInstance() async {
     // given
     @Dependency(\.chatService) var chatService
 
     let sut = ChatViewModel()
     let originalTab = sut.tab
     let originalId = originalTab.id
+    // Make the original tab non-empty
+    originalTab.input.textInput = TextInput([.text("Test")])
+    await originalTab.sendMessage()
 
     // Switch to a new tab
     sut.addTab()
@@ -967,7 +980,7 @@ struct ChatViewModelTests {
     #expect(firstInstance.id == threadId)
 
     // Switch to a different thread
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     #expect(sut.tab.id != threadId)
 
     // when - Switch back to the original thread
@@ -1031,7 +1044,7 @@ struct ChatViewModelTests {
     #expect(buffered === firstInstance)
 
     // Switch away and back
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     await sut.handleSelectChatThread(id: threadId)
 
     // then - Should reuse the buffered instance
@@ -1137,8 +1150,8 @@ struct ChatViewModelTests {
   func selectTabChangesCurrentTabIndex() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.tabs.count == 3)
     #expect(sut.currentTabIndex == 2)
 
@@ -1155,7 +1168,7 @@ struct ChatViewModelTests {
   func selectTabIgnoresInvalidIndices() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     #expect(sut.tabs.count == 2)
     #expect(sut.currentTabIndex == 1)
 
@@ -1171,8 +1184,8 @@ struct ChatViewModelTests {
   func closeTabRemovesTabAndAdjustsIndex() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.tabs.count == 3)
     sut.selectTab(at: 1)
 
@@ -1206,8 +1219,8 @@ struct ChatViewModelTests {
   func closeCurrentTabClosesActiveTab() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.tabs.count == 3)
     sut.selectTab(at: 1)
     let tabToRemove = sut.tab
@@ -1225,8 +1238,8 @@ struct ChatViewModelTests {
   func closeTabAdjustsIndexWhenClosingBeforeCurrent() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     sut.selectTab(at: 2)
     let currentTab = sut.tab
 
@@ -1244,8 +1257,8 @@ struct ChatViewModelTests {
   func closeTabAdjustsIndexWhenClosingLastTab() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.tabs.count == 3)
     sut.selectTab(at: 2)
 
@@ -1255,6 +1268,82 @@ struct ChatViewModelTests {
     // then
     #expect(sut.tabs.count == 2)
     #expect(sut.currentTabIndex == 1) // Adjusted to last valid index
+  }
+
+  @MainActor
+  @Test("addTab does not create new tab when current tab is empty")
+  func addTabDoesNotCreateNewTabWhenCurrentTabIsEmpty() {
+    // given
+    let sut = ChatViewModel()
+    let initialTab = sut.tab
+    #expect(sut.tabs.count == 1)
+    #expect(initialTab.isEmpty == true)
+
+    // when
+    sut.addTab()
+
+    // then
+    #expect(sut.tabs.count == 1) // Should not create a new tab
+    #expect(sut.tab === initialTab) // Should still be the same tab
+    #expect(sut.currentTabIndex == 0)
+  }
+
+  @MainActor
+  @Test("addTab creates new tab when current tab is not empty")
+  func addTabCreatesNewTabWhenCurrentTabIsNotEmpty() async {
+    // given
+    let sut = ChatViewModel()
+    let initialTab = sut.tab
+    initialTab.input.textInput = TextInput([.text("Test input")])
+    await initialTab.sendMessage()
+    #expect(initialTab.isEmpty == false)
+    #expect(sut.tabs.count == 1)
+
+    // when
+    sut.addTab()
+
+    // then
+    #expect(sut.tabs.count == 2) // Should create a new tab
+    #expect(sut.tab !== initialTab) // Should be a different tab
+    #expect(sut.currentTabIndex == 1)
+  }
+
+  @MainActor
+  @Test("addTab with threadId creates new tab even when current tab is empty")
+  func addTabWithThreadIdCreatesNewTabEvenWhenCurrentTabIsEmpty() {
+    // given
+    let sut = ChatViewModel()
+    let initialTab = sut.tab
+    let newThreadId = UUID()
+    #expect(sut.tabs.count == 1)
+    #expect(initialTab.isEmpty == true)
+
+    // when
+    sut.addTab(threadId: newThreadId)
+
+    // then
+    #expect(sut.tabs.count == 2) // Should create a new tab when opening an existing thread
+    #expect(sut.tab.id == newThreadId)
+    #expect(sut.currentTabIndex == 1)
+  }
+
+  @MainActor
+  @Test("addTab with copyingCurrentInput does not create new tab when current tab is empty")
+  func addTabWithCopyingCurrentInputDoesNotCreateNewTabWhenEmpty() {
+    // given
+    let sut = ChatViewModel()
+    let initialTab = sut.tab
+    initialTab.input.textInput = TextInput([.text("Test input")])
+    #expect(sut.tabs.count == 1)
+    #expect(initialTab.isEmpty == true) // Still empty because no message was sent
+
+    // when
+    sut.addTab(copyingCurrentInput: true)
+
+    // then
+    #expect(sut.tabs.count == 1) // Should not create a new tab
+    #expect(sut.tab === initialTab) // Should still be the same tab
+    #expect(sut.tab.input.textInput.string.string == "Test input") // Input is already there
   }
 
   // MARK: - Tab Persistence Tests
@@ -1270,8 +1359,8 @@ struct ChatViewModelTests {
 
     let sut = ChatViewModel()
 
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     let tab0Id = sut.tabs[0].id
     let tab1Id = sut.tabs[1].id
     let tab2Id = sut.tabs[2].id
@@ -1425,7 +1514,7 @@ struct ChatViewModelTests {
     #expect(sut.tab.id == threadId)
 
     // Switch to a different tab
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     try await sut.wait(for: \.currentTabIndex, toBe: 1)
     #expect(sut.tab.id != threadId)
     #expect(sut.tabs.count == 2) //
@@ -1466,7 +1555,7 @@ struct ChatViewModelTests {
     let firstTab = sut.tab
 
     // when
-    sut.addTab()
+    sut.addTab(threadId: UUID())
 
     // then
     #expect(firstTab.isFocused == false)
@@ -1480,8 +1569,8 @@ struct ChatViewModelTests {
   func switchingTabsManagesFocus() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.currentTabIndex == 2)
 
     // when
@@ -1498,8 +1587,8 @@ struct ChatViewModelTests {
   func switchingToTabClearsBadge() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
 
     // Manually set the badge on the first tab (simulating completed streaming)
     sut.tabs[0].hasUnreadCompletion = true
@@ -1518,8 +1607,8 @@ struct ChatViewModelTests {
   func closingTabEnsuresNewCurrentTabIsFocused() {
     // given
     let sut = ChatViewModel()
-    sut.addTab()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
+    sut.addTab(threadId: UUID())
     #expect(sut.currentTabIndex == 2)
     #expect(sut.tabs[2].isFocused == true)
 
@@ -1553,7 +1642,7 @@ struct ChatViewModelTests {
   func manuallySettingBadgeOnUnfocusedTab() {
     // given - two tabs, second one focused
     let sut = ChatViewModel()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     let firstTab = sut.tabs[0]
     #expect(firstTab.isFocused == false)
 
@@ -1620,7 +1709,7 @@ struct ChatViewModelTests {
   func badgeIsClearedWhenSwitchingToTabWithUnreadCompletion() {
     // given - two tabs with first tab having a badge
     let sut = ChatViewModel()
-    sut.addTab()
+    sut.addTab(threadId: UUID())
     let firstTab = sut.tabs[0]
     firstTab.hasUnreadCompletion = true
     #expect(firstTab.hasUnreadCompletion == true)

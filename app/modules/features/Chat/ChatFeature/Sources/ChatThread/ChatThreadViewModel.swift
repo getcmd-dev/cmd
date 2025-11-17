@@ -131,6 +131,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
   }
 
+  /// Whether this chat thread is empty (has no events)
+  var isEmpty: Bool {
+    events.isEmpty
+  }
+
   private(set) var name: String? {
     didSet {
       if name != oldValue {
