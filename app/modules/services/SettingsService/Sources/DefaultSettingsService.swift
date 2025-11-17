@@ -32,7 +32,11 @@ final class DefaultSettingsService: SettingsService {
     // They read settings from UserDefaults instead, so settingsFileLocation is nil.
     let settingsFileLocation: URL? =
       if bundle.isHostApp {
+        #if DEBUG
+        fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.debug.json")
+        #else
         fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
+        #endif
       } else {
         nil
       }
