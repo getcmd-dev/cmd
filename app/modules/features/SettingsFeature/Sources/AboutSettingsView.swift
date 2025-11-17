@@ -250,30 +250,6 @@ struct AboutSettingsView: View {
 
 }
 
-// MARK: - RadioButton
-
-private struct RadioButton: View {
-  let isSelected: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      ZStack {
-        Circle()
-          .stroke(Color.secondary, lineWidth: 2)
-          .frame(width: 16, height: 16)
-
-        if isSelected {
-          Circle()
-            .fill(Color.accentColor)
-            .frame(width: 8, height: 8)
-        }
-      }
-    }
-    .buttonStyle(PlainButtonStyle())
-  }
-}
-
 // MARK: - InfoRow
 
 private struct InfoRow: View {
