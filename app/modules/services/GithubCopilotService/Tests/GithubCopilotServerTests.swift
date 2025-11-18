@@ -1391,10 +1391,10 @@ struct GithubCopilotServerTests {
     }
 
     // when
-    // Create the service with current version installed
+    // Create the service with only the old version installed
     // The service init checks: if currentVersionInstalled || (!currentVersionInstalled && hasAnyVersionInstalled)
-    // In our case: currentVersionInstalled = true
-    // So it should start the auth server
+    // In our case: currentVersionInstalled = false, hasAnyVersionInstalled = true
+    // So it should run the installer to install the current version and clean up the old version
     let service = DefaultGithubCopilotService(
       shellService: shellService,
       fileManager: fileManager,
