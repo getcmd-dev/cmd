@@ -6,10 +6,8 @@ import AppFoundation
 import Dependencies
 import DLS
 import FoundationInterfaces
-import GithubCopilotFeatureInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
-import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
@@ -26,9 +24,6 @@ struct InternalSettingsView: View {
   @Binding var enableNetworkProxy: Bool
   @Binding var showToolInputCopyButtonInRelease: Bool
   @Binding var defaultLogLevel: LogLevel
-  @Binding var enableCodeCompletion: Bool
-  @Binding var codeCompletionDebounceMs: Int
-  @Binding var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
 
   var body: some View {
     ScrollView {
@@ -65,50 +60,6 @@ struct InternalSettingsView: View {
             "Show tool input copy button in Release",
             caption: "Display the copy button for tool inputs in Release builds",
             value: $showToolInputCopyButtonInRelease)
-
-          InternalSettingsRow(
-            "Enable code completion",
-            caption: "Enable code completion feature",
-            value: $enableCodeCompletion)
-
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Code completion debounce (ms)")
-            Text("Time to wait after typing before requesting completions (10ms - 1000ms)")
-              .font(.caption)
-              .foregroundColor(.secondary)
-            HStack {
-              Text("10ms")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-              Slider(
-                value: Binding(
-                  get: { log10(Double(codeCompletionDebounceMs)) },
-                  set: { codeCompletionDebounceMs = Int(pow(10.0, $0).rounded()) }),
-                in: 1...3,
-                step: 0.1)
-              Text("1000ms")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-            }
-            Text("\(codeCompletionDebounceMs)ms")
-              .font(.caption)
-              .foregroundColor(.primary)
-          }
-
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Multi-line code completion display mode")
-            Text("How multi-line code suggestions should be shown in the editor")
-              .font(.caption)
-              .foregroundColor(.secondary)
-            Picker("Display Mode", selection: $multiLineCodeCompletionDisplayMode) {
-              ForEach(MultiLineCodeCompletionDisplayMode.allCases, id: \.self) { mode in
-                Text(mode.displayName).tag(mode)
-              }
-            }
-            .pickerStyle(.menu)
-            .padding(.top, 14)
-            .padding(.bottom, 4)
-          }
 
           VStack(alignment: .leading, spacing: 4) {
             Text("Default log level for file persistence")
@@ -196,13 +147,9 @@ struct InternalSettingsView: View {
             .stroke(Color.gray.opacity(0.2), lineWidth: 1))
       }
 
-      AnyView(router.embed(route: GithubCopilotRoute()))
-
       Spacer()
     }
   }
-
-  @Environment(Router.self) private var router
 
   @Environment(\.colorScheme) private var colorScheme
 
@@ -236,37 +183,6 @@ struct InternalSettingsView: View {
 
       NSPasteboard.general.clearContents()
       NSPasteboard.general.setString(stateRepresentation, forType: .string)
-    }
-  }
-}
-
-// MARK: - InternalSettingsRow
-
-struct InternalSettingsRow: View {
-  init(_ text: String, caption: String? = nil, value: Binding<Bool>) {
-    self.text = text
-    self.caption = caption
-    _value = value
-  }
-
-  @Binding var value: Bool
-
-  let text: String
-  let caption: String?
-
-  var body: some View {
-    HStack {
-      VStack(alignment: .leading, spacing: 4) {
-        Text(text)
-        if let caption {
-          Text(caption)
-            .font(.caption)
-            .foregroundColor(.secondary)
-        }
-      }
-      Spacer()
-      Toggle("", isOn: $value)
-        .toggleStyle(.switch)
     }
   }
 }

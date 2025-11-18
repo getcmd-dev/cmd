@@ -234,7 +234,12 @@ final class DefaultXcodeController: XcodeController, Sendable {
       if !xcodeApp.activate() {
         defaultLogger.error("Xcode not activated.")
         try? activateXcodeWithAppleScript()
+      } else {
+        defaultLogger.trace("Activated Xcode.")
       }
+
+      // Give Xcode's run loop time to process the activation and initialize extension infrastructure
+      await Task.yield()
     }
 
     let appElement = AXUIElementCreateApplication(xcodeApp.processIdentifier)
@@ -264,6 +269,13 @@ final class DefaultXcodeController: XcodeController, Sendable {
       throw AXError.cannotComplete
     }
 
+    // Verify the menu item is enabled before triggering
+    if !menuItem.isEnabled {
+      defaultLogger.error("Extension menu item '\(commandName)' is disabled")
+      throw AXError.cannotComplete
+    }
+
+    defaultLogger.log("Will clicked the \(commandName) menu item")
     if AXUIElementPerformAction(menuItem, kAXPressAction as CFString) == .success {
       defaultLogger.log("Clicked the \(commandName) menu item")
     } else {

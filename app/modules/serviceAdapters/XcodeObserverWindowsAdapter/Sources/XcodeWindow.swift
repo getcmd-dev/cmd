@@ -215,6 +215,7 @@ open class XcodeWindow: NSWindow {
     guard frame != _frame || !skippingIfUnchanged || !isOnScreen else { return }
     _frame = frame
 
+    setIsVisible(true)
     setFrame(frame, display: true)
   }
 
@@ -247,7 +248,6 @@ open class XcodeWindow: NSWindow {
     guard isShown else { return }
 
     isActive = true
-//    orderFrontRegardless()
     updateLevel()
     updatePosition(skippingIfUnchanged: false)
   }

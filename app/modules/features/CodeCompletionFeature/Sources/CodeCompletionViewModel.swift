@@ -271,19 +271,59 @@ final class CodeCompletionViewModel {
   }
 
   private func handleXcodeStateChange(_ state: AXState<XcodeState>) async {
-    guard
-      isXcodeActive,
-      let workspace = state.focusedWorkspace,
-      let focussedFile = await xcodeObserver.focusedTabURL(in: workspace),
-      let editor = workspace.focussedEditor,
-      let tab = workspace.tabs.first(where: { $0.isFocused && $0.fileName == focussedFile.lastPathComponent }),
-      let content = tab.lastKnownContent
-    else {
+    guard isXcodeActive else {
       completionTask = nil
       completion = nil
       screenshot = nil
       editorState = nil
-      defaultLogger.log("Not requesting completion due to missing content/tab etc")
+      defaultLogger.log("Not requesting completion: Xcode is not active")
+      return
+    }
+
+    guard let workspace = state.focusedWorkspace else {
+      completionTask = nil
+      completion = nil
+      screenshot = nil
+      editorState = nil
+      defaultLogger.log("Not requesting completion: no focused workspace")
+      return
+    }
+
+    guard let focussedFile = await xcodeObserver.focusedTabURL(in: workspace) else {
+      completionTask = nil
+      completion = nil
+      screenshot = nil
+      editorState = nil
+      defaultLogger.log("Not requesting completion: no focused file")
+      return
+    }
+
+    guard let editor = workspace.focussedEditor else {
+      completionTask = nil
+      completion = nil
+      screenshot = nil
+      editorState = nil
+      defaultLogger.log("Not requesting completion: no focused editor")
+      return
+    }
+
+    guard let tab = workspace.tabs.first(where: { $0.isFocused && $0.fileName == focussedFile.lastPathComponent }) else {
+      completionTask = nil
+      completion = nil
+      screenshot = nil
+      editorState = nil
+      defaultLogger
+        .log(
+          "Not requesting completion: no matching tab. Focussed file: \(focussedFile.lastPathComponent). Tabs: \(workspace.tabs.map { "\($0.fileName) is focused: \($0.isFocused)" }.joined(separator: "|"))")
+      return
+    }
+
+    guard let content = tab.lastKnownContent else {
+      completionTask = nil
+      completion = nil
+      screenshot = nil
+      editorState = nil
+      defaultLogger.log("Not requesting completion: no tab content")
       return
     }
 

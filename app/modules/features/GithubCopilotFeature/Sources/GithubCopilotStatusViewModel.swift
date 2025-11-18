@@ -20,7 +20,12 @@ final class GithubCopilotStatusViewModel: Sendable {
 
     loginStatus.sink { @Sendable status in
       Task { @MainActor [weak self] in
-        self?.authStatus = status
+        guard let self else { return }
+        if authStatus != status {
+          error = nil
+          signInInfo = nil
+          authStatus = status
+        }
       }
     }.store(in: &cancellables)
 
@@ -30,6 +35,24 @@ final class GithubCopilotStatusViewModel: Sendable {
       }
     }.store(in: &cancellables)
   }
+
+  #if DEBUG
+  init(
+    isLSPServerInstalled: Bool,
+    authStatus: LoginStatus,
+    error: String? = nil,
+    signInInfo: SignInInitiationResult? = nil,
+    isInstallingLSPServer: Bool = false)
+  {
+    @Dependency(\.githubCopilotService) var githubCopilotService
+    self.githubCopilotService = githubCopilotService
+    self.isLSPServerInstalled = isLSPServerInstalled
+    self.authStatus = authStatus
+    self.error = error
+    self.signInInfo = signInInfo
+    self.isInstallingLSPServer = isInstallingLSPServer
+  }
+  #endif
 
   private(set) var isLSPServerInstalled: Bool
   private(set) var error: String?
