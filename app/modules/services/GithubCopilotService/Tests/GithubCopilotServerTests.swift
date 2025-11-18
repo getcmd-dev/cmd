@@ -1212,6 +1212,207 @@ struct GithubCopilotServerTests {
     _ = server
   }
 
+  // MARK: - Installation Tests
+
+  @Test("Service with current version installed starts successfully")
+  func test_serviceWithCurrentVersionInstalled() async throws {
+    // given
+
+    // Create file manager with current version already installed
+    // Note: MockFileManager returns "/mock/applicationSupport" for application support directory
+    // and Bundle.main.hostAppBundleId returns "dev.getcmd.command" in tests
+    let appSupportDir = "/mock/applicationSupport/dev.getcmd.command"
+    let currentVersionPath = "\(appSupportDir)/copilot-language-server-1.396.0"
+
+    let fileManager = MockFileManager(
+      files: [
+        currentVersionPath: "current executable",
+      ] as [String: String],
+      directories: ["/mock/applicationSupport", appSupportDir])
+
+    let mockStdioConnection = MockStdioConnection()
+    let stdioConnectionStarted = expectation(description: "Stdio connection started")
+    let mockJRPCService = MockJRPCService(onCreateConnection: { command, _, _, _ in
+      #expect(command == "\"\(currentVersionPath)\" --stdio")
+      stdioConnectionStarted.fulfill()
+      return mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+
+    // Track shell commands
+    let shellCommands = Atomic<[String]>([])
+    shellService.onRun = { command, _, _, _, _ in
+      shellCommands.mutate { $0.append(command) }
+      return CommandExecutionResult(exitCode: 0)
+    }
+
+    // Mock JRPC responses for server initialization
+    let hasSentInitializationRequest = expectation(description: "Has sent initialization request")
+    let hasCheckedForStatus = expectation(description: "Has checked for status")
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+            hasSentInitializationRequest.fulfillAtMostOnce()
+          } else if request.method == "checkStatus" {
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "status": "OK",
+                  "user": "testuser"
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+            hasCheckedForStatus.fulfillAtMostOnce()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    // when
+    // Create the service with current version installed
+    // The service init checks: if currentVersionInstalled || (!currentVersionInstalled && hasAnyVersionInstalled)
+    // In our case: currentVersionInstalled = true
+    // So it should start the auth server
+    let service = DefaultGithubCopilotService(
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for the async installation/auth server setup to complete
+    try await fulfillment(of: [stdioConnectionStarted, hasSentInitializationRequest, hasCheckedForStatus])
+
+    // Verify isLSPServerInstalled is true
+    #expect(service.isLSPServerInstalled.currentValue == true)
+    // Verify no shell commands were run (no installation needed)
+    #expect(shellCommands.value.isEmpty)
+
+    #expect(fileManager.files.map { $0.key.path() }.sorted() == [
+      currentVersionPath,
+    ])
+
+    _ = service
+  }
+
+  @Test("Service detects old versions and validates cleanup logic")
+  func test_serviceDetectsOldVersionsAndValidatesCleanup() async throws {
+    // given
+
+    // Create file manager with current version already installed
+    // Note: MockFileManager returns "/mock/applicationSupport" for application support directory
+    // and Bundle.main.hostAppBundleId returns "dev.getcmd.command" in tests
+    let appSupportDir = "/mock/applicationSupport/dev.getcmd.command"
+    let oldVersionPath = "\(appSupportDir)/copilot-language-server-1.0.0"
+    let currentVersionPath = "\(appSupportDir)/copilot-language-server-1.396.0"
+
+    let fileManager = MockFileManager(
+      files: [
+        oldVersionPath: "current executable",
+      ] as [String: String],
+      directories: ["/mock/applicationSupport", appSupportDir])
+
+    let mockStdioConnection = MockStdioConnection()
+    let stdioConnectionStarted = expectation(description: "Stdio connection started")
+    let mockJRPCService = MockJRPCService(onCreateConnection: { command, _, _, _ in
+      #expect(command == "\"\(currentVersionPath)\" --stdio")
+      stdioConnectionStarted.fulfill()
+      return mockStdioConnection
+    })
+
+    let shellService = MockShellService()
+
+    // Track shell commands
+    let hasCalledInstaller = expectation(description: "Installer script called")
+    shellService.onRun = { command, _, _, _, _ in
+      #expect(command == "/bin/bash \"/mock/applicationSupport/dev.getcmd.command/install-copilot-language-server.sh\"")
+      try fileManager.write(string: "", to: URL(string: currentVersionPath)!, options: .atomic)
+      hasCalledInstaller.fulfill()
+      return CommandExecutionResult(exitCode: 0)
+    }
+
+    // Mock JRPC responses for server initialization
+    let hasSentInitializationRequest = expectation(description: "Has sent initialization request")
+    let hasCheckedForStatus = expectation(description: "Has checked for status")
+
+    mockStdioConnection.onSend = { data in
+      if let message = try? Self.parseJRPCMessage(data) {
+        switch message {
+        case .request(let request):
+          if request.method == "initialize" {
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "capabilities": {}
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+            hasSentInitializationRequest.fulfillAtMostOnce()
+          } else if request.method == "checkStatus" {
+            let response = """
+              {
+                "jsonrpc": "2.0",
+                "id": \(request.id),
+                "result": {
+                  "status": "OK",
+                  "user": "testuser"
+                }
+              }
+              """
+            mockStdioConnection.streamContinuation.yield(response.utf8Data)
+            hasCheckedForStatus.fulfillAtMostOnce()
+          }
+
+        default:
+          break
+        }
+      }
+    }
+
+    // when
+    // Create the service with current version installed
+    // The service init checks: if currentVersionInstalled || (!currentVersionInstalled && hasAnyVersionInstalled)
+    // In our case: currentVersionInstalled = true
+    // So it should start the auth server
+    let service = DefaultGithubCopilotService(
+      shellService: shellService,
+      fileManager: fileManager,
+      jrpcService: mockJRPCService)
+
+    // Wait for the async installation/auth server setup to complete
+    try await fulfillment(of: [hasCalledInstaller, stdioConnectionStarted, hasSentInitializationRequest, hasCheckedForStatus])
+
+    // Verify isLSPServerInstalled is true
+    #expect(service.isLSPServerInstalled.currentValue == true)
+    // Verify that the old version file has been removed and the new one added.
+    #expect(fileManager.files.map { $0.key.path() }.sorted() == [
+      currentVersionPath,
+    ])
+
+    _ = service
+  }
+
   // MARK: - Helper Methods
 
   private static func parseJRPCMessage(_ data: Data) throws -> JRPCMessage? {
