@@ -10,6 +10,7 @@ Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ThreadSafe",
   ],
   resources: [

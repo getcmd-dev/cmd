@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express"
 import { UserFacingError } from "../errors"
 import { ListModelsInput, ListModelsOutput } from "../schemas/listModelsSchema"
-import { AIProvider, ProviderModelFullInfo } from "../providers/provider"
+import { AIProvider, ModelModality, ProviderModelFullInfo } from "../providers/provider"
 import { deduplicate, listReferenceModels } from "../providers/provider-utils"
 
 let cachedRequest:
@@ -55,8 +55,8 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				description: model.description,
 				contextLength: model.context_length,
 				maxCompletionTokens: model.max_completion_tokens || 16384,
-				inputModalities: model.architecture.input_modalities,
-				outputModalities: model.architecture.output_modalities,
+				inputModalities: model.architecture.input_modalities.filter(isValidModelModality),
+				outputModalities: model.architecture.output_modalities.filter(isValidModelModality),
 				pricing: {
 					prompt: parseTokenCost(model.pricing.prompt),
 					completion: parseTokenCost(model.pricing.completion),
@@ -80,4 +80,8 @@ function parseTokenCost(cost: undefined): undefined
 function parseTokenCost(cost: string | undefined): number | undefined
 function parseTokenCost(cost: string | undefined): number | undefined {
 	return cost ? parseFloat(cost) * 1000000 : undefined
+}
+
+const isValidModelModality = (modality: string): modality is ModelModality => {
+	return ["text", "image", "file", "audio", "video"].includes(modality)
 }

@@ -41,6 +41,11 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
     updateContent()
 
     observeAXNotifications()
+    logger.trace("SourceEditorObserver #\(id) init")
+  }
+
+  deinit {
+    logger.trace("SourceEditorObserver #\(id) deinit")
   }
 
   let id = UUID().uuidString
@@ -105,9 +110,7 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
       return []
     }()
 
-    let lineAnnotationElements = editorElement.caching({
-      $0.children.filter { $0.identifier == "Line Annotation" }
-    }, cacheKey: "line-annotations")
+    let lineAnnotationElements = editorElement.children.filter { $0.identifier == "Line Annotation" }
     let lineAnnotations = lineAnnotationElements.compactMap(\.description)
 
     updateStateWith(

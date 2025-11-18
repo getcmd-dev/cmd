@@ -24,7 +24,7 @@ public protocol GithubCopilotService: CodeCompletionProvider {
 
 // MARK: - LoginStatus
 
-public enum LoginStatus: Sendable {
+public enum LoginStatus: Sendable, Equatable {
   case loggedOut
   case loggingIn
   case loggedIn(user: String)

@@ -32,7 +32,11 @@ final class DefaultSettingsService: SettingsService {
     // They read settings from UserDefaults instead, so settingsFileLocation is nil.
     let settingsFileLocation: URL? =
       if bundle.isHostApp {
+        #if DEBUG
+        fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.debug.json")
+        #else
         fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
+        #endif
       } else {
         nil
       }
@@ -303,6 +307,11 @@ final class DefaultSettingsService: SettingsService {
     sharedUserDefaults.set(
       settings.defaultLogLevel.rawValue,
       forKey: .defaultLogLevel)
+
+    // Store enableDiskLogging in user defaults for logger access
+    sharedUserDefaults.set(
+      settings.enableDiskLogging,
+      forKey: .enableDiskLogging)
     #if DEBUG
     /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
 

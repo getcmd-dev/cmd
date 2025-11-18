@@ -14,12 +14,12 @@ lint_swift_command() {
 	install_swiftformat
 	# files: if an arg is provided use it, otherwise .
 	# convert arg to a relative path from app/
-	if [ -z "$1" ]; then
+	if [ -z "${1-}" ]; then
 		files="."
 	else
 		# make path absolute
 		if [[ "$1" != /* ]]; then
-			files="$($current_dir)/$1"
+			files="$current_dir/$1"
 		else
 			files="$1"
 		fi
@@ -89,11 +89,11 @@ close_xcode() {
 
 focus_dependency_command() {
 	cd "$(git rev-parse --show-toplevel)/app"
-	if [ "$SKIP_CLOSE_XCODE" != "true" ]; then
+	if [ "${SKIP_CLOSE_XCODE:-}" != "true" ]; then
 		close_xcode
 	fi
 	# Reset xcode state
-	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {} || true
 
 	./tools/dependencies/focus.sh "$@"
 }
@@ -107,7 +107,7 @@ build_release_command() {
 install_swiftformat() {
 	local version="0.58.0"
 	local force=false
-	if [ "$1" = "--force" ]; then
+	if [ "${1-}" = "--force" ]; then
 		force=true
 	fi
 
@@ -187,10 +187,18 @@ test_swift_command() {
 	done
 	if [ -n "$focussed_module" ]; then
 		SKIP_CLOSE_XCODE=true package_swift=$(focus_dependency_command --module "$focussed_module")
-		cd "$(dirname $package_swift)" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+		if [ "${#parsed_args[@]}" -gt 0 ]; then
+			cd "$(dirname $package_swift)" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+		else
+			cd "$(dirname $package_swift)" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel
+		fi
 	else
 		# run all tests
-		cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+		if [ "${#parsed_args[@]}" -gt 0 ]; then
+			cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel "${parsed_args[@]}"
+		else
+			cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet --no-parallel
+		fi
 	fi
 }
 
@@ -221,7 +229,7 @@ lint:yaml)
 	;;
 lint)
 	# Check if --diff flag is provided
-	if [ "$1" = "--diff" ]; then
+	if [ "${1-}" = "--diff" ]; then
 		echo "Running lint on changed files only..."
 		changed_files=$(get_changed_files)
 

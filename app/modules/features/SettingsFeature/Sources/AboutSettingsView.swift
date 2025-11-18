@@ -19,181 +19,183 @@ struct AboutSettingsView: View {
   @Binding var queueMessagesWhileStreaming: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 24) {
-      // App Info Section
-      VStack(alignment: .leading, spacing: 16) {
-        Text("App Information")
-          .font(.headline)
-
-        VStack(alignment: .leading, spacing: 12) {
-          if case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.currentValue {
-            AppUpdateRow(
-              appUpdateInfo: appUpdateInfo,
-              onRelaunchTapped: { appUpdateService.relaunch() })
-            Divider()
-          }
-          InfoRow(label: "Version", value: Bundle.main.shortVersion)
-          HoveredButton(
-            action: { handleCheckForUpdatesTapped() },
-            onHoverColor: colorScheme.tertiarySystemBackground,
-            backgroundColor: colorScheme.secondarySystemBackground,
-            padding: 6,
-            isEnable: !isCheckingForUpdates,
-            content: {
-              HStack(spacing: 6) {
-                if isCheckingForUpdates {
-                  ProgressView()
-                    .controlSize(.small)
-                }
-                Text(isCheckingForUpdates ? "Checking..." : "Check for Updates")
-              }
-            })
-            .frame(maxWidth: .infinity, alignment: .leading)
-          if let status = manualUpdateStatus {
-            Text(status.message)
-              .font(.caption)
-              .foregroundColor(status.kind == .error ? .red : .secondary)
-              .frame(maxWidth: .infinity, alignment: .leading)
-          }
-          InfoRow(label: "Build", value: Bundle.main.version)
-          InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
-          Divider()
-          PermissionStatusRow(permission: .accessibility, permissionsService: permissionsService)
-          Divider()
-          PermissionStatusRow(permission: .xcodeExtension, permissionsService: permissionsService)
-        }
-        .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
-      }
-
-      // Privacy Section
-      VStack(alignment: .leading, spacing: 16) {
-        Text("Privacy")
-          .font(.headline)
-
-        VStack(spacing: 16) {
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Allow anonymous error and usage reporting")
-              Text(
-                "Help improve command by sending anonymous usage data and error reports. No code, prompts, or personal information is ever sent.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-            Spacer()
-            Toggle("", isOn: $allowAnonymousAnalytics)
-              .toggleStyle(.switch)
-          }
-
-          Divider()
-
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Automatically check for updates")
-              Text("Automatically download and install updates in the background when available.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-            Spacer()
-            Toggle("", isOn: $automaticallyCheckForUpdates)
-              .toggleStyle(.switch)
-          }
-
-          Divider()
-
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Launch `cmd` when Xcode becomes active")
-              Text(
-                "Ensure that `cmd` is running when you use Xcode.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-            Spacer()
-            Toggle("", isOn: $launchHostAppWhenXcodeDidActivate)
-              .toggleStyle(.switch)
-          }
-        }
-        .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
-      }
-
-      // File Edit Mode Section
-      VStack(alignment: .leading, spacing: 16) {
-        Text("File Editing")
-          .font(.headline)
-
+    ScrollView {
+      VStack(alignment: .leading, spacing: 24) {
+        // App Info Section
         VStack(alignment: .leading, spacing: 16) {
-          Text("File Edit Mode")
-            .fontWeight(.medium)
+          Text("App Information")
+            .font(.headline)
 
-          VStack(spacing: 12) {
-            ForEach(FileEditMode.allCases, id: \.self) { mode in
-              HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                  Text(mode.rawValue)
-                    .fontWeight(.medium)
-                  Text(mode.description)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+          VStack(alignment: .leading, spacing: 12) {
+            if case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.currentValue {
+              AppUpdateRow(
+                appUpdateInfo: appUpdateInfo,
+                onRelaunchTapped: { appUpdateService.relaunch() })
+              Divider()
+            }
+            InfoRow(label: "Version", value: Bundle.main.shortVersion)
+            HoveredButton(
+              action: { handleCheckForUpdatesTapped() },
+              onHoverColor: colorScheme.tertiarySystemBackground,
+              backgroundColor: colorScheme.secondarySystemBackground,
+              padding: 6,
+              isEnable: !isCheckingForUpdates,
+              content: {
+                HStack(spacing: 6) {
+                  if isCheckingForUpdates {
+                    ProgressView()
+                      .controlSize(.small)
+                  }
+                  Text(isCheckingForUpdates ? "Checking..." : "Check for Updates")
                 }
-                Spacer()
-                RadioButton(isSelected: fileEditMode == mode) {
+              })
+              .frame(maxWidth: .infinity, alignment: .leading)
+            if let status = manualUpdateStatus {
+              Text(status.message)
+                .font(.caption)
+                .foregroundColor(status.kind == .error ? .red : .secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            InfoRow(label: "Build", value: Bundle.main.version)
+            InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
+            Divider()
+            PermissionStatusRow(permission: .accessibility, permissionsService: permissionsService)
+            Divider()
+            PermissionStatusRow(permission: .xcodeExtension, permissionsService: permissionsService)
+          }
+          .padding(16)
+          .background(Color(NSColor.controlBackgroundColor))
+          .cornerRadius(8)
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+        }
+
+        // Privacy Section
+        VStack(alignment: .leading, spacing: 16) {
+          Text("Privacy")
+            .font(.headline)
+
+          VStack(spacing: 16) {
+            HStack {
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Allow anonymous error and usage reporting")
+                Text(
+                  "Help improve command by sending anonymous usage data and error reports. No code, prompts, or personal information is ever sent.")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              Spacer()
+              Toggle("", isOn: $allowAnonymousAnalytics)
+                .toggleStyle(.switch)
+            }
+
+            Divider()
+
+            HStack {
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Automatically check for updates")
+                Text("Automatically download and install updates in the background when available.")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              Spacer()
+              Toggle("", isOn: $automaticallyCheckForUpdates)
+                .toggleStyle(.switch)
+            }
+
+            Divider()
+
+            HStack {
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Launch `cmd` when Xcode becomes active")
+                Text(
+                  "Ensure that `cmd` is running when you use Xcode.")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              Spacer()
+              Toggle("", isOn: $launchHostAppWhenXcodeDidActivate)
+                .toggleStyle(.switch)
+            }
+          }
+          .padding(16)
+          .background(Color(NSColor.controlBackgroundColor))
+          .cornerRadius(8)
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+        }
+
+        // File Edit Mode Section
+        VStack(alignment: .leading, spacing: 16) {
+          Text("File Editing")
+            .font(.headline)
+
+          VStack(alignment: .leading, spacing: 16) {
+            Text("File Edit Mode")
+              .fontWeight(.medium)
+
+            VStack(spacing: 12) {
+              ForEach(FileEditMode.allCases, id: \.self) { mode in
+                HStack {
+                  VStack(alignment: .leading, spacing: 4) {
+                    Text(mode.rawValue)
+                      .fontWeight(.medium)
+                    Text(mode.description)
+                      .font(.caption)
+                      .foregroundColor(.secondary)
+                  }
+                  Spacer()
+                  RadioButton(isSelected: fileEditMode == mode) {
+                    fileEditMode = mode
+                  }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
                   fileEditMode = mode
                 }
               }
-              .contentShape(Rectangle())
-              .onTapGesture {
-                fileEditMode = mode
+            }
+          }
+          .padding(16)
+          .background(Color(NSColor.controlBackgroundColor))
+          .cornerRadius(8)
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+        }
+
+        // Message Queue Section
+        VStack(alignment: .leading, spacing: 16) {
+          Text("Chat Behavior")
+            .font(.headline)
+
+          VStack(alignment: .leading, spacing: 12) {
+            HStack {
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Queue messages while streaming")
+                  .fontWeight(.medium)
+                Text(
+                  "When enabled, new messages sent while the assistant is responding will be queued instead of cancelling the current response")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
               }
+              Spacer()
+              Toggle("", isOn: $queueMessagesWhileStreaming)
+                .toggleStyle(.switch)
             }
           }
+          .padding(16)
+          .background(Color(NSColor.controlBackgroundColor))
+          .cornerRadius(8)
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.gray.opacity(0.2), lineWidth: 1))
         }
-        .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+
+        Spacer()
       }
-
-      // Message Queue Section
-      VStack(alignment: .leading, spacing: 16) {
-        Text("Chat Behavior")
-          .font(.headline)
-
-        VStack(alignment: .leading, spacing: 12) {
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Queue messages while streaming")
-                .fontWeight(.medium)
-              Text(
-                "When enabled, new messages sent while the assistant is responding will be queued instead of cancelling the current response")
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-            Spacer()
-            Toggle("", isOn: $queueMessagesWhileStreaming)
-              .toggleStyle(.switch)
-          }
-        }
-        .padding(16)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color.gray.opacity(0.2), lineWidth: 1))
-      }
-
-      Spacer()
     }
   }
 
@@ -246,30 +248,6 @@ struct AboutSettingsView: View {
     }
   }
 
-}
-
-// MARK: - RadioButton
-
-private struct RadioButton: View {
-  let isSelected: Bool
-  let action: () -> Void
-
-  var body: some View {
-    Button(action: action) {
-      ZStack {
-        Circle()
-          .stroke(Color.secondary, lineWidth: 2)
-          .frame(width: 16, height: 16)
-
-        if isSelected {
-          Circle()
-            .fill(Color.accentColor)
-            .frame(width: 8, height: 8)
-        }
-      }
-    }
-    .buttonStyle(PlainButtonStyle())
-  }
 }
 
 // MARK: - InfoRow

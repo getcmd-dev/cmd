@@ -4,7 +4,7 @@
 import Foundation
 import AppKit
 
-public struct XcodeTheme: Codable {
+public struct XcodeTheme: Codable, Sendable {
     public struct ThemeColor: Codable, Sendable {
         public var red: Double
         public var green: Double
@@ -33,49 +33,49 @@ public struct XcodeTheme: Codable {
         }
     }
 
-    public var plainTextColor: ThemeColor
+    public var plainTextColor: ThemeColor?
     public var plainTextFont: ThemeFont
-    public var commentColor: ThemeColor
-    public var documentationMarkupColor: ThemeColor
-    public var documentationMarkupKeywordColor: ThemeColor
-    public var marksColor: ThemeColor
-    public var stringsColor: ThemeColor
-    public var charactersColor: ThemeColor
-    public var numbersColor: ThemeColor
-    public var regexLiteralsColor: ThemeColor
-    public var regexLiteralNumbersColor: ThemeColor
-    public var regexLiteralCaptureNamesColor: ThemeColor
-    public var regexLiteralCharacterClassNamesColor: ThemeColor
-    public var regexLiteralOperatorsColor: ThemeColor
-    public var keywordsColor: ThemeColor
-    public var preprocessorStatementsColor: ThemeColor
-    public var urlsColor: ThemeColor
-    public var attributesColor: ThemeColor
-    public var typeDeclarationsColor: ThemeColor
-    public var otherDeclarationsColor: ThemeColor
-    public var projectClassNamesColor: ThemeColor
-    public var projectFunctionAndMethodNamesColor: ThemeColor
-    public var projectConstantsColor: ThemeColor
-    public var projectTypeNamesColor: ThemeColor
-    public var projectPropertiesAndGlobalsColor: ThemeColor
-    public var projectPreprocessorMacrosColor: ThemeColor
-    public var otherClassNamesColor: ThemeColor
-    public var otherFunctionAndMethodNamesColor: ThemeColor
-    public var otherConstantsColor: ThemeColor
-    public var otherTypeNamesColor: ThemeColor
-    public var otherPropertiesAndGlobalsColor: ThemeColor
-    public var otherPreprocessorMacrosColor: ThemeColor
-    public var headingColor: ThemeColor
-    public var backgroundColor: ThemeColor
-    public var selectionColor: ThemeColor
-    public var cursorColor: ThemeColor
-    public var currentLineColor: ThemeColor
-    public var invisibleCharactersColor: ThemeColor
-    public var debuggerConsolePromptColor: ThemeColor
-    public var debuggerConsoleOutputColor: ThemeColor
-    public var debuggerConsoleInputColor: ThemeColor
-    public var executableConsoleOutputColor: ThemeColor
-    public var executableConsoleInputColor: ThemeColor
+    public var commentColor: ThemeColor?
+    public var documentationMarkupColor: ThemeColor?
+    public var documentationMarkupKeywordColor: ThemeColor?
+    public var marksColor: ThemeColor?
+    public var stringsColor: ThemeColor?
+    public var charactersColor: ThemeColor?
+    public var numbersColor: ThemeColor?
+    public var regexLiteralsColor: ThemeColor?
+    public var regexLiteralNumbersColor: ThemeColor?
+    public var regexLiteralCaptureNamesColor: ThemeColor?
+    public var regexLiteralCharacterClassNamesColor: ThemeColor?
+    public var regexLiteralOperatorsColor: ThemeColor?
+    public var keywordsColor: ThemeColor?
+    public var preprocessorStatementsColor: ThemeColor?
+    public var urlsColor: ThemeColor?
+    public var attributesColor: ThemeColor?
+    public var typeDeclarationsColor: ThemeColor?
+    public var otherDeclarationsColor: ThemeColor?
+    public var projectClassNamesColor: ThemeColor?
+    public var projectFunctionAndMethodNamesColor: ThemeColor?
+    public var projectConstantsColor: ThemeColor?
+    public var projectTypeNamesColor: ThemeColor?
+    public var projectPropertiesAndGlobalsColor: ThemeColor?
+    public var projectPreprocessorMacrosColor: ThemeColor?
+    public var otherClassNamesColor: ThemeColor?
+    public var otherFunctionAndMethodNamesColor: ThemeColor?
+    public var otherConstantsColor: ThemeColor?
+    public var otherTypeNamesColor: ThemeColor?
+    public var otherPropertiesAndGlobalsColor: ThemeColor?
+    public var otherPreprocessorMacrosColor: ThemeColor?
+    public var headingColor: ThemeColor?
+    public var backgroundColor: ThemeColor?
+    public var selectionColor: ThemeColor?
+    public var cursorColor: ThemeColor?
+    public var currentLineColor: ThemeColor?
+    public var invisibleCharactersColor: ThemeColor?
+    public var debuggerConsolePromptColor: ThemeColor?
+    public var debuggerConsoleOutputColor: ThemeColor?
+    public var debuggerConsoleInputColor: ThemeColor?
+    public var executableConsoleOutputColor: ThemeColor?
+    public var executableConsoleInputColor: ThemeColor?
 }
 
 public extension XcodeTheme {
@@ -139,13 +139,12 @@ struct XcodeThemeParser {
         }
 
         func getThemeValue(
-            at path: [String],
-            defaultValue: XcodeTheme.ThemeColor = .init(red: 0, green: 0, blue: 0, alpha: 1)
-        ) -> XcodeTheme.ThemeColor {
+            at path: [String]
+        ) -> XcodeTheme.ThemeColor? {
             if let value = getRawThemeValue(at: path) {
                 return convertColor(source: value)
             }
-            return defaultValue
+            return nil
         }
 
         /// The source value is an `FontName - size` string, for example: `SFMono-Medium - 12.0`
@@ -168,184 +167,103 @@ struct XcodeThemeParser {
             return defaultValue
         }
 
-        let black = XcodeTheme.ThemeColor(red: 0, green: 0, blue: 0, alpha: 1)
-        let white = XcodeTheme.ThemeColor(red: 1, green: 1, blue: 1, alpha: 1)
-
         let xcodeTheme = XcodeTheme(
             plainTextColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"]),
             plainTextFont: getThemeFont(
                 at: ["DVTSourceTextSyntaxFonts", "xcode.syntax.plain"]
             ),
             commentColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment"]),
             documentationMarkupColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment.doc"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment.doc"]),
             documentationMarkupKeywordColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment.doc.keyword"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.comment.doc.keyword"]),
             marksColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.mark"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.mark"]),
             stringsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.string"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.string"]),
             charactersColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.character"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.character"]),
             numbersColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.number"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.number"]),
             regexLiteralsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"]),
             regexLiteralNumbersColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.number"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.number"]),
             regexLiteralCaptureNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"]),
             regexLiteralCharacterClassNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"]),
             regexLiteralOperatorsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.plain"]),
             keywordsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.keyword"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.keyword"]),
             preprocessorStatementsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.preprocessor"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.preprocessor"]),
             urlsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.url"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.url"]),
             attributesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.attribute"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.attribute"]),
             typeDeclarationsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.declaration.type"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.declaration.type"]),
             otherDeclarationsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.declaration.other"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.declaration.other"]),
             projectClassNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.class"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.class"]),
             projectFunctionAndMethodNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.function"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.function"]),
             projectConstantsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.constant"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.constant"]),
             projectTypeNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.type"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.type"]),
             projectPropertiesAndGlobalsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.variable"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.variable"]),
             projectPreprocessorMacrosColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.macro"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.macro"]),
             otherClassNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.class.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.class.system"]),
             otherFunctionAndMethodNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.function.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.function.system"]),
             otherConstantsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.constant.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.constant.system"]),
             otherTypeNamesColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.type.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.type.system"]),
             otherPropertiesAndGlobalsColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.variable.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.variable.system"]),
             otherPreprocessorMacrosColor: getThemeValue(
-                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.macro.system"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSyntaxColors", "xcode.syntax.identifier.macro.system"]),
             headingColor: getThemeValue(
-                at: ["DVTMarkupTextPrimaryHeadingColor"],
-                defaultValue: black
-            ),
+                at: ["DVTMarkupTextPrimaryHeadingColor"]),
             backgroundColor: getThemeValue(
-                at: ["DVTSourceTextBackground"],
-                defaultValue: white
-            ),
+                at: ["DVTSourceTextBackground"]),
             selectionColor: getThemeValue(
-                at: ["DVTSourceTextSelectionColor"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextSelectionColor"]),
             cursorColor: getThemeValue(
-                at: ["DVTSourceTextInsertionPointColor"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextInsertionPointColor"]),
             currentLineColor: getThemeValue(
-                at: ["DVTSourceTextCurrentLineHighlightColor"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextCurrentLineHighlightColor"]),
             invisibleCharactersColor: getThemeValue(
-                at: ["DVTSourceTextInvisiblesColor"],
-                defaultValue: black
-            ),
+                at: ["DVTSourceTextInvisiblesColor"]),
             debuggerConsolePromptColor: getThemeValue(
-                at: ["DVTConsoleDebuggerPromptTextColor"],
-                defaultValue: black
-            ),
+                at: ["DVTConsoleDebuggerPromptTextColor"]),
             debuggerConsoleOutputColor: getThemeValue(
-                at: ["DVTConsoleDebuggerOutputTextColor"],
-                defaultValue: black
-            ),
+                at: ["DVTConsoleDebuggerOutputTextColor"]),
             debuggerConsoleInputColor: getThemeValue(
-                at: ["DVTConsoleDebuggerInputTextColor"],
-                defaultValue: black
-            ),
+                at: ["DVTConsoleDebuggerInputTextColor"]),
             executableConsoleOutputColor: getThemeValue(
-                at: ["DVTConsoleExectuableOutputTextColor"],
-                defaultValue: black
-            ),
+                at: ["DVTConsoleExectuableOutputTextColor"]),
             executableConsoleInputColor: getThemeValue(
-                at: ["DVTConsoleExectuableInputTextColor"],
-                defaultValue: black
-            )
+                at: ["DVTConsoleExectuableInputTextColor"])
         )
 
         return xcodeTheme
     }
 }
 
+extension XcodeTheme.ThemeColor {
+    public func nsColor(windowColorSpace: NSColorSpace) -> NSColor {
+        let generic = NSColor(colorSpace: .genericRGB, components: [red, green, blue, alpha], count: 4)
+        return generic.usingColorSpace(windowColorSpace) ?? generic
+    }
+}

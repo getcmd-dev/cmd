@@ -13,5 +13,9 @@ public struct GithubCopilotRoute: Route {
   public static var id: String { name }
   public var name: String { Self.name }
 
-  public init() { }
+  public let isExpanded: Bool
+
+  public init(isExpanded: Bool = true) {
+    self.isExpanded = isExpanded
+  }
 }

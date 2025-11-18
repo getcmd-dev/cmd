@@ -35,6 +35,61 @@ public enum FileEditMode: String, Sendable, Codable, Equatable, CaseIterable {
   }
 }
 
+// MARK: - MultiLineCodeCompletionDisplayMode
+
+public enum MultiLineCodeCompletionDisplayMode: String, Sendable, Codable, Equatable, CaseIterable {
+  /// Expand the completion, without requiring the user triggering the expansion, over the existing code.
+  case expandCompletionOverExistingCode
+  /// When triggered by the user (using ⌘), expand the completion over the existing code.
+  case expandCompletionOverExistingCodeWhenTriggered
+  /// Expand the completion, without requiring the user triggering the expansion, and move the code that is pushed by the new lines down (requires using screenshoting Xcode).
+  case expandCompletionAddingSpaceInExistingCode
+  /// When triggered by the user (using ⌘), expand the completion and move the code that is pushed by the new lines down (requires using screenshoting Xcode).
+  case expandCompletionAddingSpaceInExistingCodeWhenTriggered
+
+  public var displayName: String {
+    switch self {
+    case .expandCompletionOverExistingCode:
+      "Overlay"
+
+    case .expandCompletionAddingSpaceInExistingCode:
+      "Expand"
+
+    case .expandCompletionOverExistingCodeWhenTriggered:
+      "Overlay on trigger"
+
+    case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
+      "Expand on trigger"
+    }
+  }
+
+  public var description: String {
+    switch self {
+    case .expandCompletionOverExistingCode:
+      """
+      Display the multi-line completion over existing code.
+      """
+
+    case .expandCompletionAddingSpaceInExistingCode:
+      """
+      Expand the code to make room for the multi-line completion.
+      Requires Screen Recording permission.
+      """
+
+    case .expandCompletionOverExistingCodeWhenTriggered:
+      """
+      Display the first completion line when ready, and the multiple line over existing code when triggered.
+      """
+
+    case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
+      """
+      Display the first completion line when ready, and expand the code to make room for the multi-line completion.
+      Requires Screen Recording permission.
+      """
+    }
+  }
+}
+
 // MARK: - LLMReasoningSetting
 
 public struct LLMReasoningSetting: Sendable, Equatable {
@@ -64,9 +119,11 @@ public struct Settings: Sendable, Equatable {
     userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [],
     mcpServers: [String: MCPServerConfiguration] = [:],
     defaultLogLevel: LogLevel = .info,
+    enableDiskLogging: Bool = false,
     codeCompletionProviderId: String? = nil,
     enableCodeCompletion: Bool = false,
     codeCompletionDebounceMs: Int = 250,
+    multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = .expandCompletionOverExistingCodeWhenTriggered,
     queueMessagesWhileStreaming: Bool = true)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
@@ -85,9 +142,11 @@ public struct Settings: Sendable, Equatable {
     self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
     self.mcpServers = mcpServers
     self.defaultLogLevel = defaultLogLevel
+    self.enableDiskLogging = enableDiskLogging
     self.codeCompletionProviderId = codeCompletionProviderId
     self.enableCodeCompletion = enableCodeCompletion
     self.codeCompletionDebounceMs = codeCompletionDebounceMs
+    self.multiLineCodeCompletionDisplayMode = multiLineCodeCompletionDisplayMode
     self.queueMessagesWhileStreaming = queueMessagesWhileStreaming
   }
 
@@ -191,9 +250,15 @@ public struct Settings: Sendable, Equatable {
   public var codeCompletionProviderId: String?
   public var enableCodeCompletion: Bool
   public var codeCompletionDebounceMs: Int
+  /// How multiline code completion should be displayed.
+  public var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
   public var queueMessagesWhileStreaming: Bool
 
   public var defaultLogLevel: LogLevel
+  /// Whether to enable disk logging. When false, logs are only written to the console.
+  /// Defaults to false. Can be enabled via internal settings for debugging purposes.
+  /// In DEBUG builds, logs are always written to disk regardless of this setting.
+  public var enableDiskLogging: Bool
 
   public var llmProviderSettings: [AIProvider: AIProviderSettings] {
     didSet {
@@ -366,6 +431,7 @@ extension UserDefaultsKey {
   public static let enableNetworkProxy = "enableNetworkProxy"
   public static let showToolInputCopyButtonInRelease = "showToolInputCopyButtonInRelease"
   public static let defaultLogLevel = "defaultLogLevel"
+  public static let enableDiskLogging = "enableDiskLogging"
 }
 
 // MARK: - KeyEquivalent + Codable

@@ -3,6 +3,8 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+@preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import ThreadSafe
 
@@ -10,28 +12,36 @@ import ThreadSafe
 @ThreadSafe
 public final class MockCodeCompletionService: CodeCompletionService {
 
-  public init() { }
-
-  public var onIsAvailable: (@Sendable () -> Bool) = { true }
-  public var onSuggestCompletion: (@Sendable (URL, URL, String, Range, TimeInterval) async throws -> CompletionSuggestion?)?
-  public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
-
-  public var isAvailable: Bool {
-    onIsAvailable()
+  public init(isAvailable: Bool = false) {
+    _isAvailable = .init(isAvailable)
   }
 
-  public func suggestCompletion(
-    workspace: URL,
-    file: URL,
-    content: String,
-    selection: Range,
-    timeout: TimeInterval)
+  public var onSuggestCompletion: (@Sendable (CompletionRequest) async throws -> CompletionSuggestion?)?
+  public var onCachedCompletion: (@Sendable (CompletionRequest) throws -> CompletionSuggestion?)?
+  public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
+
+  public var _isAvailable: CurrentValueSubject<Bool, Never>
+
+  public var isAvailable: ReadonlyCurrentValueSubject<Bool> {
+    _isAvailable.readonly()
+  }
+
+  public func suggestCompletion(_ request: CompletionRequest)
     async throws -> CompletionSuggestion?
   {
     guard let onSuggestCompletion else {
       throw AppError("No completion provided")
     }
-    return try await onSuggestCompletion(workspace, file, content, selection, timeout)
+    return try await onSuggestCompletion(request)
+  }
+
+  public func cachedCompletion(_ request: CompletionRequest)
+    throws -> CompletionSuggestion?
+  {
+    guard let onCachedCompletion else {
+      throw AppError("No completion provided")
+    }
+    return try onCachedCompletion(request)
   }
 
   public func logCompletionAcceptance(suggestion: CompletionSuggestion, accepted: Bool) {

@@ -8,15 +8,107 @@ import Testing
 
 @Suite("Character-level diff parsing")
 struct CharacterDiffToLineChangesTests {
+  struct ReformatWordsTests {
+    @Test("reformatWords merges partial replacements inside a word")
+    func reformatWordsMergesPartialReplacements() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "colo", type: .unchanged),
+        .init(text: "r", type: .removed),
+        .init(text: "ur", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{-color-}{+colour+}")
+    }
+
+    @Test("reformatWords keeps trailing punctuation with additions")
+    func reformatWordsKeepsPunctuationWithAddedWord() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "pri", type: .added),
+        .init(text: "nt", type: .added),
+        .init(text: "(", type: .added),
+        .init(text: "0", type: .added),
+        .init(text: ")", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{+print(0)+}")
+    }
+
+    @Test("reformatWords promotes shared prefix instead of mixing add/remove")
+    func reformatWordsPromotesSharedPrefix() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "pr", type: .unchanged),
+        .init(text: "int(0)", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "pr{+int(0)+}")
+    }
+
+    @Test("reformatWords replaces whole word when change spans it")
+    func reformatWordsReplacesWholeWordWhenChangeSpansIt() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "impleme", type: .removed),
+        .init(text: "pri", type: .added),
+        .init(text: "nt", type: .unchanged),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "{-implement-}{+print+}")
+    }
+
+    @Test("reformatWords keeps unchanged prefix when appending digits")
+    func reformatWordsKeepsUnchangedPrefixWhenAppendingDigits() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "line 2", type: .unchanged),
+        .init(text: "0", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "line 2{+0+}")
+    }
+
+    @Test("reformatWords treats underscores as separators")
+    func reformatWordsTreatsUnderscoreAsSeparator() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "foo", type: .unchanged),
+        .init(text: "_", type: .unchanged),
+        .init(text: "bar", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "foo_{+bar+}")
+    }
+
+    @Test("reformatWords keeps newline separators intact")
+    func reformatWordsKeepsNewlinesSeparate() {
+      let segments: [CharacterLevelChange] = [
+        .init(text: "line ", type: .unchanged),
+        .init(text: "1", type: .unchanged),
+        .init(text: "\n", type: .unchanged),
+        .init(text: "line ", type: .unchanged),
+        .init(text: "2", type: .added),
+        .init(text: "\n", type: .added),
+      ]
+
+      let aligned = FileDiff.reformatWords(in: segments)
+      #expect(aligned.debugDescription == "line 1\nline {+2\n+}")
+    }
+  }
+
   @Test("Simple change")
   func simpleChange() throws {
     let oldContent = "Hello World"
     let newContent = "Hello Swift"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -44,9 +136,12 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 2)
 
     // First line should have changes
@@ -60,7 +155,7 @@ struct CharacterDiffToLineChangesTests {
     let content = "Hello World"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: content, newContent: content)
-    let lineChanges = FileDiff.characterDiffToLineChanges(diff: diff).lineChanges
+    let lineChanges = FileDiff.characterDiffToLineChanges(diff: diff, oldContent: content, newContent: content).lineChanges
 
     // When there's no diff, git returns empty string
     // So we should get an empty or single line result
@@ -73,9 +168,12 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello World"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -94,9 +192,12 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
@@ -115,14 +216,90 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
     let addedChars = firstLine.filter { $0.type == .added }
     #expect(addedChars.map(\.text).joined() == "Hello")
+  }
+
+  @Test("No new line at end of old content")
+  func noNewLineAtEndOfOldContent() throws {
+    let oldContent = "Hello World"
+    let newContent = "Hello World\nThis is a new line."
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 0)
+    #expect(lineChanges.count == 2)
+    let firstLine = try #require(lineChanges.first)
+    let secondLine = try #require(lineChanges.last)
+    #expect(firstLine.debugDescription == "Hello World{+\n+}")
+    #expect(secondLine.debugDescription == "{+This is a new line.+}")
+  }
+
+  @Test("No new line at end of new content")
+  func noNewLineAtEndOfNewContent() throws {
+    let oldContent = "Hello World\n"
+    let newContent = "Hello World\nThis is a new line."
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 0)
+    #expect(lineChanges.count == 2)
+    let firstLine = try #require(lineChanges.first)
+    let secondLine = try #require(lineChanges.last)
+    #expect(firstLine.debugDescription == "Hello World\n")
+    #expect(secondLine.debugDescription == "{+This is a new line.+}")
+  }
+
+  @Test("No new line at end of either content")
+  func noNewLineAtEndOfEitherContent() throws {
+    let oldContent = "Hello World"
+    let newContent = "Hello World. This is a new sentence."
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 0)
+    #expect(lineChanges.count == 1)
+    let firstLine = try #require(lineChanges.first)
+    #expect(firstLine.debugDescription == "Hello World{+. This is a new sentence.+}")
+  }
+
+  @Test("New line at end of both content")
+  func newLineAtEndOfBothContent() throws {
+    let oldContent = "Hello World.\n"
+    let newContent = "Hello World.\nThis is a new sentence.\n"
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 0)
+    #expect(lineChanges.map(\.debugDescription) == [
+      "Hello World.\n",
+      "{+This is a new sentence.\n+}",
+    ])
   }
 
   @Test("Change in the middle of a word")
@@ -131,14 +308,46 @@ struct CharacterDiffToLineChangesTests {
     let newContent = "Hello"
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 0)
+    #expect(firstDiffLine == 0)
     #expect(lineChanges.count == 1)
     let firstLine = try #require(lineChanges.first)
 
-    let addedChars = firstLine.filter { $0.type == .added }
-    #expect(addedChars.map(\.text).joined() == "l")
+    #expect(firstLine.debugDescription == "Hel{+l+}o")
+  }
+
+  @Test("Word replacements are emitted as whole-word changes")
+  func wordReplacementProducesWholeWordChanges() throws {
+    let oldContent = "// TODO: implement"
+    let newContent = "print(0)"
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(lineChanges.count == 1)
+    #expect(lineChanges.map(\.debugDescription) == ["{-// TODO: implement-}{+print(0)+}"])
+  }
+
+  @Test("Insertions inside a word collapse to a word-level change")
+  func insertionInsideWordProducesWholeWordDiff() throws {
+    let oldContent = "color"
+    let newContent = "colour"
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(lineChanges.count == 1)
+    #expect(lineChanges.map(\.debugDescription) == ["colo{+u+}r"])
   }
 
   @Test("Change in the middle of unchanged lines")
@@ -155,9 +364,14 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 1)
+    print("?")
+
+    #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)
   }
 
@@ -177,50 +391,108 @@ struct CharacterDiffToLineChangesTests {
       """
 
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 2)
+    #expect(firstDiffLine == 2)
     #expect(lineChanges.count == 1)
+  }
+
+  @Test("Diff starts at previous unchanged line when first change is on a new line")
+  func diffStartsAtPreviousUnchangedLineWhenFirstChangeIsOnANewLine() throws {
+    let oldContent = """
+      func hello() {
+
+        print("Hello")
+      }
+      """
+    let newContent = """
+      func hello() {
+
+        print("Hello")
+        print("World")
+      }
+      """
+
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 2)
+    #expect(lineChanges.count == 2)
+    #expect(lineChanges.first?.first?.type == .unchanged)
+    #expect(lineChanges.first?.first?.text == "  print(\"Hello\")\n")
+    #expect(lineChanges.last?.first?.type == .added)
+    #expect(lineChanges.last?.first?.text == "  print(\"World\")\n")
   }
 
   @Test("Multiline change with only new lines")
   func multilineChangeWithOnlyNewLines() throws {
-    let diff = """
-      diff @@ -307,6 +307,10 @@ extension DefaultXcodeController {
+    let oldContent = """
           }
             #else
           guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
-      {+      defaultLogger.error("Could not find running Xcode")+}
-      {+      throw AXError.cannotComplete+}
-      {+    }+}
-      {+      #endif+}
 
           if needToActivateXcode {
-            if !xcodeApp.activate() {
-      firstChangedLine 309
       """
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let newContent = """
+          }
+            #else
+          guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {
+              defaultLogger.error("Could not find running Xcode")
+              throw AXError.cannotComplete
+            }
+              #endif
 
-    #expect(firstChangedLine == 310)
-    #expect(lineChanges.count == 4)
+          if needToActivateXcode {
+      """
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    #expect(firstDiffLine == 2)
+    #expect(lineChanges.map(\.debugDescription) == [
+      "    guard let xcodeApp = getXcode(xcodeObserver: xcodeObserver, shellService: shellService) else {\n",
+      "{+        defaultLogger.error(\"Could not find running Xcode\")+}\n",
+      "{+        throw AXError.cannotComplete\n+}",
+      "{+      }\n+}",
+      "{+        #endif\n+}", "{+\n+}",
+    ])
   }
 
   @Test("Parse content with + sign")
-  func parseContentWithPlusSign() {
-    let diff = """
-      diff @@ -93,5 +93,7 @@ struct CompletionDiffView: View {
+  func parseContentWithPlusSign() throws {
+    let oldContent = """
           }
         }
           private func add(a: Int, b: Int) -> Int {
-      {+        return a + b+}
-      {+    }+}
       }
       """
-    let (lineChanges, firstChangedLine) = FileDiff.characterDiffToLineChanges(diff: diff)
+    let newContent = """
+          }
+        }
+          private func add(a: Int, b: Int) -> Int {
+            return a + b
+        }
+      }
+      """
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
 
-    #expect(firstChangedLine == 96)
-    #expect(lineChanges.first?.count == 1)
-    #expect(lineChanges.first?.first?.type == .added)
-    #expect(lineChanges.first?.first?.text == "        return a + b\n")
+    #expect(firstDiffLine == 2)
+    #expect(lineChanges.map(\.debugDescription) == [
+      "    private func add(a: Int, b: Int) -> Int {\n",
+      "{+      return a + b\n+}",
+      "{+  }\n+}",
+    ])
   }
 }

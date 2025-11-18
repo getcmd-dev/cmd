@@ -79,25 +79,40 @@ struct InternalSettings: Sendable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     knownToolReferenceIds: [String] = [],
     defaultLogLevel: LogLevel = .info,
-    queueMessagesWhileStreaming: Bool = true)
+    codeCompletionDebounceMs: Int = 250,
+    multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode = .expandCompletionOverExistingCodeWhenTriggered,
+    queueMessagesWhileStreaming: Bool = true,
+    enableDiskLogging: Bool = false)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.knownToolReferenceIds = knownToolReferenceIds
     self.defaultLogLevel = defaultLogLevel
+    self.codeCompletionDebounceMs = codeCompletionDebounceMs
+    self.multiLineCodeCompletionDisplayMode = multiLineCodeCompletionDisplayMode
     self.queueMessagesWhileStreaming = queueMessagesWhileStreaming
+    self.enableDiskLogging = enableDiskLogging
   }
 
   static let defaultSettings = InternalSettings(
     pointReleaseXcodeExtensionToDebugApp: false,
     knownToolReferenceIds: [],
     defaultLogLevel: .info,
-    queueMessagesWhileStreaming: true)
+    codeCompletionDebounceMs: 250,
+    multiLineCodeCompletionDisplayMode: .expandCompletionOverExistingCodeWhenTriggered,
+    queueMessagesWhileStreaming: true,
+    enableDiskLogging: false)
 
   var pointReleaseXcodeExtensionToDebugApp: Bool
   /// Array of known tool reference IDs. This is internal state not exposed to users.
   var knownToolReferenceIds: [String]
   var defaultLogLevel: LogLevel
+  var codeCompletionDebounceMs: Int
+  var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
   var queueMessagesWhileStreaming: Bool
+  /// Whether to enable disk logging. When false, logs are only written to the console.
+  /// Defaults to false. Can be enabled via internal settings for debugging purposes.
+  /// In DEBUG builds, logs are always written to disk regardless of this setting.
+  var enableDiskLogging: Bool
 }
 
 // MARK: - ExternalSettings + Codable
@@ -230,17 +245,35 @@ extension InternalSettings: Codable {
       defaultLogLevel: container.resilientlyDecodeIfPresent(
         LogLevel.self,
         forKey: "defaultLogLevel") ?? Self.defaultSettings.defaultLogLevel,
+      codeCompletionDebounceMs: container.resilientlyDecodeIfPresent(
+        Int.self,
+        forKey: "codeCompletionDebounceMs") ?? Self.defaultSettings.codeCompletionDebounceMs,
+      multiLineCodeCompletionDisplayMode: container.resilientlyDecodeIfPresent(
+        MultiLineCodeCompletionDisplayMode.self,
+        forKey: "multiLineCodeCompletionDisplayMode") ?? Self.defaultSettings.multiLineCodeCompletionDisplayMode,
       queueMessagesWhileStreaming: container.resilientlyDecodeIfPresent(
         Bool.self,
-        forKey: "queueMessagesWhileStreaming") ?? Self.defaultSettings.queueMessagesWhileStreaming)
+        forKey: "queueMessagesWhileStreaming") ?? Self.defaultSettings.queueMessagesWhileStreaming,
+      enableDiskLogging: container.resilientlyDecodeIfPresent(
+        Bool.self,
+        forKey: "enableDiskLogging") ?? Self.defaultSettings.enableDiskLogging)
   }
 
   func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: String.self)
-    // Always encode fields, except for queueMessagesWhileStreaming which we only encode if non-default
+    // Always encode fields, except for some which we only encode if non-default
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
     try container.encode(knownToolReferenceIds, forKey: "knownToolReferenceIds")
     try container.encode(defaultLogLevel, forKey: "defaultLogLevel")
+    try container.encode(enableDiskLogging, forKey: "enableDiskLogging")
+    // Only encode codeCompletionDebounceMs if it differs from the default
+    if codeCompletionDebounceMs != Self.defaultSettings.codeCompletionDebounceMs {
+      try container.encode(codeCompletionDebounceMs, forKey: "codeCompletionDebounceMs")
+    }
+    // Only encode multiLineCodeCompletionDisplayMode if it differs from the default
+    if multiLineCodeCompletionDisplayMode != Self.defaultSettings.multiLineCodeCompletionDisplayMode {
+      try container.encode(multiLineCodeCompletionDisplayMode, forKey: "multiLineCodeCompletionDisplayMode")
+    }
     // Only encode queueMessagesWhileStreaming if it differs from the default
     if queueMessagesWhileStreaming != Self.defaultSettings.queueMessagesWhileStreaming {
       try container.encode(queueMessagesWhileStreaming, forKey: "queueMessagesWhileStreaming")
@@ -314,8 +347,11 @@ extension Settings {
       userDefinedXcodeShortcuts: externalSettings.userDefinedXcodeShortcuts,
       mcpServers: externalSettings.mcpServers,
       defaultLogLevel: internalSettings.defaultLogLevel,
+      enableDiskLogging: internalSettings.enableDiskLogging,
       codeCompletionProviderId: externalSettings.codeCompletionProviderId,
       enableCodeCompletion: externalSettings.enableCodeCompletion,
+      codeCompletionDebounceMs: internalSettings.codeCompletionDebounceMs,
+      multiLineCodeCompletionDisplayMode: internalSettings.multiLineCodeCompletionDisplayMode,
       queueMessagesWhileStreaming: internalSettings.queueMessagesWhileStreaming)
   }
 
@@ -343,7 +379,10 @@ extension Settings {
       pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
       knownToolReferenceIds: knownToolReferenceIds,
       defaultLogLevel: defaultLogLevel,
-      queueMessagesWhileStreaming: queueMessagesWhileStreaming)
+      codeCompletionDebounceMs: codeCompletionDebounceMs,
+      multiLineCodeCompletionDisplayMode: multiLineCodeCompletionDisplayMode,
+      queueMessagesWhileStreaming: queueMessagesWhileStreaming,
+      enableDiskLogging: enableDiskLogging)
   }
 }
 

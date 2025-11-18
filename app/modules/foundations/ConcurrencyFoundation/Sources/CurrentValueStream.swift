@@ -31,18 +31,32 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
     self.init(initial: value.value, publisher: value.eraseToAnyPublisher(), replayStrategy: replayStrategy) { _ in }
   }
 
-  init(_ initial: Element, stream: BroadcastedStream<Element>, replayStrategy: ReplayStrategy = .replayLast) {
-    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
+  init(
+    _ initial: Element,
+    stream: BroadcastedStream<Element>,
+    replayStrategy: ReplayStrategy = .replayLast,
+    debugLog: (@Sendable (String) -> Void)? = nil)
+  {
+    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy, debugLog: debugLog)
     self.internalStream = internalStream
     lock = .init(initialState: InternalState(value: initial))
+    self.debugLog = debugLog
 
+    let streamId = UUID()
     var iterator = stream.makeAsyncIterator()
     Task { [weak self] in
+      debugLog?("CurrentValueStream[\(streamId)] forwarding Task starting")
       while let value = await iterator.next() {
         self?.updateFrom(streamedValue: value)
         continuation.yield(value)
       }
+      if self != nil {
+        debugLog?("CurrentValueStream[\(streamId)] Task loop exited, self alive, calling continuation.finish()")
+      } else {
+        debugLog?("CurrentValueStream[\(streamId)] Task loop exited, self deallocated, calling continuation.finish()")
+      }
       continuation.finish()
+      debugLog?("CurrentValueStream[\(streamId)] forwarding Task completed")
     }
   }
 
@@ -93,6 +107,7 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
   }
 
   let internalStream: BroadcastedStream<Element>
+  let debugLog: (@Sendable (String) -> Void)?
 
   /// Set the current value.
   func set(currentValue: Element) {
@@ -113,11 +128,20 @@ public class CurrentValueStream<Element: Sendable>: @unchecked Sendable, Identif
 }
 
 extension CurrentValueStream {
-  public static func makeStream(initial: Element, replayStrategy: ReplayStrategy = .replayLast)
+  public static func makeStream(
+    initial: Element,
+    replayStrategy: ReplayStrategy = .replayLast,
+    debugLog: (@Sendable (String) -> Void)? = nil)
     -> (stream: CurrentValueStream<Element>, continuation: AsyncStream<Element>.Continuation)
   {
-    let (broadcastedStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
-    let currentValueStream = CurrentValueStream<Element>(initial, stream: broadcastedStream, replayStrategy: replayStrategy)
+    let (broadcastedStream, continuation) = BroadcastedStream<Element>.makeStream(
+      replayStrategy: replayStrategy,
+      debugLog: debugLog)
+    let currentValueStream = CurrentValueStream<Element>(
+      initial,
+      stream: broadcastedStream,
+      replayStrategy: replayStrategy,
+      debugLog: debugLog)
     return (currentValueStream, continuation)
   }
 }
@@ -126,11 +150,10 @@ extension CurrentValueStream {
 
 /// A value that can be observed for changes. The owner of this value can modify it. It can be shared in a read-only mode through its super class `CurrentValueStream`.
 public final class MutableCurrentValueStream<Element: Sendable>: CurrentValueStream<Element>, @unchecked Sendable {
-
-  public init(_ initial: Element, replayStrategy: ReplayStrategy = .replayLast) {
-    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy)
+  public init(_ initial: Element, replayStrategy: ReplayStrategy = .replayLast, debugLog: (@Sendable (String) -> Void)? = nil) {
+    let (internalStream, continuation) = BroadcastedStream<Element>.makeStream(replayStrategy: replayStrategy, debugLog: debugLog)
     self.continuation = continuation
-    super.init(initial, stream: internalStream, replayStrategy: replayStrategy)
+    super.init(initial, stream: internalStream, replayStrategy: replayStrategy, debugLog: debugLog)
   }
 
   public func update(with value: Element) {
@@ -141,7 +164,9 @@ public final class MutableCurrentValueStream<Element: Sendable>: CurrentValueStr
   }
 
   public func finish() {
+    debugLog?("MutableCurrentValueStream.finish() called, finishing continuation")
     continuation.finish()
+    debugLog?("MutableCurrentValueStream.finish() completed")
   }
 
   override func updateFrom(streamedValue _: Element) {

@@ -39,7 +39,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .xcodeExtension)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         xcodeExtensionTriggered.fulfill()
       })
 
@@ -57,15 +57,17 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionCommandName.getQueuedInput.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(command: .getQueuedInput, input: EmptyInput()))) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionCommandName.sendResult.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(
+        command: .sendResult,
+        input: ExtensionResult.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 
@@ -89,7 +91,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .directIO)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -126,7 +128,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .directIO)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         xcodeExtensionTriggered.fulfill()
       })
 
@@ -144,15 +146,17 @@ struct DefaultXcodeControllerTests {
 
     // Simulate the extension requesting queued input
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionCommandName.getQueuedInput.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.getQueuedInput)) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(command: .getQueuedInput, input: EmptyInput()))) { _ in })
 
     // Simulate the extension sending back the result
     _ = try await appEventHandlerRegistry.handle(event: ExecuteExtensionRequestEvent(
-      command: ExtensionCommandNames.cmd,
+      command: ExtensionCommandName.sendResult.rawValue,
       id: "123",
-      data: JSONEncoder().encode(ExtensionRequest.sendResult(.applyEditResult(.success(()))))) { _ in })
+      data: JSONEncoder().encode(RequestFromXcodeExtension(
+        command: .sendResult,
+        input: ExtensionResult.applyEditResult(.success(()))))) { _ in })
 
     try await hasApplied
 
@@ -177,7 +181,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .xcodeExtension)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -200,7 +204,7 @@ struct DefaultXcodeControllerTests {
     // given
     let controller = DefaultXcodeController(
       appsActivationState: .just(.inactive),
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -221,7 +225,7 @@ extension DefaultXcodeController {
     fileManager: MockFileManager = MockFileManager(),
     appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> = .just(.inactive),
     timeout: TimeInterval = 10,
-    startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void = { })
+    triggerExtensionCommand: @escaping @Sendable () async throws -> Void = { })
   {
     self.init(
       appEventHandlerRegistry: appEventHandlerRegistry,
@@ -232,6 +236,6 @@ extension DefaultXcodeController {
       appsActivationState: appsActivationState,
       timeout: timeout,
       canUseAppleScript: false,
-      startApplyingFileChangeWithXcodeExtension: startApplyingFileChangeWithXcodeExtension)
+      triggerExtensionCommand: triggerExtensionCommand)
   }
 }

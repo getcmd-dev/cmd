@@ -28,143 +28,240 @@ extension FileDiff {
   /// Adjacent characters of the same type are grouped together into a single `CharacterLevelChange`.
   ///
   /// - Returns: A tuple containing the line changes array and the index (0-based) of the first changed line in the old content.
+  /// When the first change is on a new line, the previous unchanged line is returned, and the `firstDiffLine` is that of the unchanged line.
   public static func characterDiffToLineChanges(
-    diff: String)
-    -> (lineChanges: [[CharacterLevelChange]], firstChangedLine: Int)
+    diff: String,
+    oldContent: String,
+    newContent: String)
+    -> (lineChanges: [[CharacterLevelChange]], firstDiffLine: Int)
   {
     var result = [[CharacterLevelChange]]()
     var currentLineChanges = [CharacterLevelChange]()
-    var firstChangedLine = 0
+    var firstDiffLine = 0
+    let oldLines = oldContent.splitLines()
+    let oldLinesOffsets = oldLines.reduce(into: [Int]()) { acc, l in acc.append((acc.last ?? 0) + l.count) }
+    let newLines = newContent.splitLines()
+    let newLinesOffsets = newLines.reduce(into: [Int]()) { acc, l in acc.append((acc.last ?? 0) + l.count) }
 
     // Parse hunk headers to find the first changed line
     let hunkHeaderPattern = /@@ -(?<oldStart>\d+)/
     if let match = diff.firstMatch(of: hunkHeaderPattern) {
-      firstChangedLine = Int(match.output.oldStart) ?? 1
+      firstDiffLine = Int(match.output.oldStart) ?? 1
     }
-    if firstChangedLine > 0 {
-      firstChangedLine -= 1 // 1 to 0 based index
+    if firstDiffLine > 0 {
+      firstDiffLine -= 1 // 1 to 0 based index
     } else {
       // initial content is empty
     }
 
     // Skip hunk headers (lines starting with @@)
-    let contentLines = diff.split(separator: "\n", omittingEmptySubsequences: false).filter { !$0.hasPrefix("@@") }
-    let content = contentLines.joined(separator: "\n")
+    let diff = diff
+      .split(separator: "\n", omittingEmptySubsequences: false)
+      .trimming(while: { $0.hasPrefix("@@") })
+      .joined(separator: "\n")
 
     // Use regex to match the different change types
     // Note: We use lazy matching (.*?) to match content up to the closing sequence
     let additionPattern = /\{\+(?<added>.*?)\+\}/
     let removalPattern = /\[-(?<removed>.*?)-\]/
 
-    var position = content.startIndex
+    var diffPosition = diff.startIndex
+    var oldContentPosition = oldContent.safeIndex(oldContent.startIndex, offsetBy: oldLinesOffsets[safe: firstDiffLine - 1] ?? 0)
+    var newContentPosition = newContent.safeIndex(newContent.startIndex, offsetBy: newLinesOffsets[safe: firstDiffLine - 1] ?? 0)
 
-    while position < content.endIndex {
+    while diffPosition < diff.endIndex {
       // Try to match addition
-      if let addMatch = content[position...].prefixMatch(of: additionPattern) {
+      if let addMatch = diff[diffPosition...].prefixMatch(of: additionPattern) {
         let addedText = String(addMatch.output.added)
-        appendGroupedChanges(text: addedText, type: .added, to: &currentLineChanges, resultLines: &result)
-        position = addMatch.range.upperBound
+        currentLineChanges.append(.init(text: addedText, type: .added))
+        diffPosition = addMatch.range.upperBound
+        newContentPosition = newContent.safeIndex(newContentPosition, offsetBy: addedText.count)
         continue
       }
 
       // Try to match removal
-      if let remMatch = content[position...].prefixMatch(of: removalPattern) {
+      if let remMatch = diff[diffPosition...].prefixMatch(of: removalPattern) {
         let removedText = String(remMatch.output.removed)
-        appendGroupedChanges(text: removedText, type: .removed, to: &currentLineChanges, resultLines: &result)
-        position = remMatch.range.upperBound
+        currentLineChanges.append(.init(text: removedText, type: .removed))
+        diffPosition = remMatch.range.upperBound
+        oldContentPosition = oldContent.safeIndex(oldContentPosition, offsetBy: removedText.count)
         continue
       }
 
-      // Otherwise it's an unchanged character
-      let char = content[position]
+      let char = diff[diffPosition]
       if char == "\n" {
-        // If the line contains only added or removed content (no unchanged content),
-        // the newline should be part of that change type, not unchanged
-        let hasOnlyAddedOrRemoved = !currentLineChanges.isEmpty &&
-          currentLineChanges.allSatisfy { $0.type != .unchanged }
-
-        if hasOnlyAddedOrRemoved, let lastChange = currentLineChanges.last {
-          // Append newline to the last change (which is added or removed)
-          currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
-            text: lastChange.text + String(char),
-            type: lastChange.type)
-        } else {
-          // Add newline as unchanged or to existing unchanged group
-          if let lastChange = currentLineChanges.last, lastChange.type == .unchanged {
-            currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
-              text: lastChange.text + String(char),
-              type: .unchanged)
-          } else {
-            currentLineChanges.append(CharacterLevelChange(text: String(char), type: .unchanged))
-          }
+        // New lines are not clearly attributed by the git diff.
+        // We lookup in the compared content to know what type of change we are facing.
+        let changeType: DiffContentType
+        switch (oldContent[safe: oldContentPosition] == "\n", newContent[safe: newContentPosition] == "\n") {
+        case (true, true):
+          changeType = .unchanged
+        case (false, true):
+          changeType = .added
+        case (true, false):
+          changeType = .removed
+        case (false, false):
+          assertionFailure("Encountered a newline character that wasn't preceded or followed by a newline in either file")
+          continue
         }
+        currentLineChanges.append(.init(text: String(char), type: changeType))
+        if changeType != .added {
+          oldContentPosition = oldContent.safeIndex(after: oldContentPosition)
+        }
+        if changeType != .removed {
+          newContentPosition = newContent.safeIndex(after: newContentPosition)
+        }
+        diffPosition = diff.index(after: diffPosition)
         result.append(currentLineChanges)
         currentLineChanges = []
       } else {
-        // Group consecutive unchanged characters together
-        if let lastChange = currentLineChanges.last, lastChange.type == .unchanged {
-          currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
-            text: lastChange.text + String(char),
-            type: .unchanged)
-        } else {
-          currentLineChanges.append(CharacterLevelChange(text: String(char), type: .unchanged))
-        }
+        currentLineChanges.append(CharacterLevelChange(text: String(char), type: .unchanged))
+        diffPosition = diff.index(after: diffPosition)
+        oldContentPosition = oldContent.safeIndex(after: oldContentPosition)
+        newContentPosition = newContent.safeIndex(after: newContentPosition)
       }
-      position = content.index(after: position)
+    }
+    // Because new lines are not clearly represented in git diff, we need to check whether we're missing a trailing new line.
+    switch (
+      oldContent[safe: oldContentPosition] == "\n",
+      newContent[safe: newContentPosition] == "\n")
+    {
+    case (true, true):
+      break
+    case (false, false):
+      break
+    case (true, false):
+      currentLineChanges.append(.init(text: "\n", type: .removed))
+    case (false, true):
+      currentLineChanges.append(.init(text: "\n", type: .added))
     }
 
-    // Append any remaining changes
+    // Add the last line to the result
     if !currentLineChanges.isEmpty {
       result.append(currentLineChanges)
     }
 
+    // Prevent added/removed changes in the same words, and merge consecutives changes of the same type
+    result = result.map(Self.reformatWords(in:))
+
+    // Merge consecutives changes of the same type
+    result = result.map { lineChanges in lineChanges.reduce(into: [], { acc, change in
+      if let last = acc.last, last.type == change.type {
+        acc[acc.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
+      } else {
+        acc.append(change)
+      }
+    }) }
+
     // Remove context lines that are unchanged.
-    let trimmedResult = Array(result.trimming(while: { $0.allSatisfy({ $0.type == .unchanged }) }))
-    firstChangedLine += result.prefix(while: { $0.allSatisfy({ $0.type == .unchanged }) }).count
-    return (lineChanges: trimmedResult, firstChangedLine: firstChangedLine)
+    firstDiffLine += result.enumerated().prefix(while: { idx, lineChanges in
+      lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
+    }).count
+    result = Array(result.enumerated().trimming(while: { idx, lineChanges in
+      lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
+    }).map(\.element))
+
+    return (lineChanges: result, firstDiffLine: firstDiffLine)
   }
 
-  /// Helper to append text changes, grouping consecutive characters of the same type,
-  /// and handling newlines to split into separate result lines.
-  private static func appendGroupedChanges(
-    text: String,
-    type: DiffContentType,
-    to currentLineChanges: inout [CharacterLevelChange],
-    resultLines: inout [[CharacterLevelChange]])
-  {
-    var buffer = ""
+  /// Converts the changes to not break up words, ie `{+prin+}t[-est-]` -> `{+print+}[-test-]`
+  static func reformatWords(in line: [CharacterLevelChange]) -> [CharacterLevelChange] {
+    var res = [CharacterLevelChange]()
+    let wordChanges = line.flatMap { change in change.text.splitWords().map { CharacterLevelChange(
+      text: String($0),
+      type: change.type) }}
 
-    for char in text {
-      if char == "\n" {
-        // Flush current buffer if any
-        buffer.append(char)
-        if let lastChange = currentLineChanges.last, lastChange.type == type {
-          currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
-            text: lastChange.text + buffer,
-            type: type)
+    var currentWordChanges = [CharacterLevelChange]()
+    var wasWordy = false
+    func flushCurrentWordChanges() {
+      if currentWordChanges.allSatisfy({ $0.type != .added }) || currentWordChanges.allSatisfy({ $0.type != .removed }) {
+        res.append(contentsOf: currentWordChanges)
+      } else {
+        if currentWordChanges.first(where: { $0.type != .unchanged })?.type == .added {
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .removed }).map(\.text).joined(), type: .added))
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .added }).map(\.text).joined(), type: .removed))
         } else {
-          currentLineChanges.append(CharacterLevelChange(text: buffer, type: type))
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .added }).map(\.text).joined(), type: .removed))
+          res.append(.init(text: currentWordChanges.filter({ $0.type != .removed }).map(\.text).joined(), type: .added))
         }
-
-        // Start new line
-        resultLines.append(currentLineChanges)
-        currentLineChanges = []
-        buffer = ""
-      } else {
-        buffer.append(char)
       }
     }
-
-    // Flush any remaining buffer
-    if !buffer.isEmpty {
-      if let lastChange = currentLineChanges.last, lastChange.type == type {
-        currentLineChanges[currentLineChanges.count - 1] = CharacterLevelChange(
-          text: lastChange.text + buffer,
-          type: type)
+    for change in wordChanges {
+      let isWordy = change.text.allSatisfy({ !$0.isWordDelimiter })
+      if isWordy {
+        if !wasWordy {
+          res.append(contentsOf: currentWordChanges)
+          currentWordChanges = []
+        }
+        currentWordChanges.append(change)
       } else {
-        currentLineChanges.append(CharacterLevelChange(text: buffer, type: type))
+        // end of word
+        flushCurrentWordChanges()
+        currentWordChanges = [change]
       }
+      wasWordy = isWordy
     }
+    flushCurrentWordChanges()
+
+    // Merge consecutives chunks of the same type
+    res = res.reduce(into: [], { acc, change in
+      if let last = acc.last, last.type == change.type {
+        acc[acc.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
+      } else {
+        acc.append(change)
+      }
+    })
+
+    #if DEBUG
+    assert(
+      res.filter({ $0.type != .added }).map(\.text).joined() == line.filter({ $0.type != .added }).map(\.text).joined(),
+      "reformating diff `\(line.debugDescription)` altered it")
+    assert(
+      res.filter({ $0.type != .removed }).map(\.text).joined() == line.filter({ $0.type != .removed }).map(\.text).joined(),
+      "reformating diff `\(line.debugDescription)` altered it")
+    #endif
+
+    return res
   }
+}
 
+extension String {
+  func splitWords() -> [String.SubSequence] {
+    var result = [String.SubSequence]()
+    var index = startIndex
+    var last = startIndex
+    var wasWordy = true
+    while index < endIndex {
+      let isWordy = !self[index].isWordDelimiter
+      if wasWordy != isWordy || !isWordy {
+        result.append(self[last..<index])
+        last = index
+      }
+      wasWordy = isWordy
+      index = self.index(after: index)
+    }
+    result.append(self[last..<index])
+    return result.filter { !$0.isEmpty }
+  }
+}
+
+extension Character {
+  var isWordDelimiter: Bool {
+    !isLetter && !isNumber
+  }
+}
+
+extension [CharacterLevelChange] {
+  public var debugDescription: String {
+    map { change in
+      switch change.type {
+      case .added:
+        "{+\(change.text)+}"
+      case .removed:
+        "{-\(change.text)-}"
+      case .unchanged:
+        "\(change.text)"
+      }
+    }.joined(separator: "")
+  }
 }

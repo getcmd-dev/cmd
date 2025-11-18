@@ -38,7 +38,7 @@ public final class MockGithubCopilotService: GithubCopilotService {
   }
 
   public func suggestCompletion(
-    workspace: URL,
+    workspace: Workspace,
     file: URL,
     content: String,
     version: Int,
@@ -70,23 +70,23 @@ public final class MockGithubCopilotService: GithubCopilotService {
     codeCompletionProvider.close(workspace: workspace)
   }
 
-  public func didSave(workspace: URL, file: URL, content: String, version: Int) {
+  public func didSave(workspace: Workspace, file: URL, content: String, version: Int) {
     codeCompletionProvider.didSave(workspace: workspace, file: file, content: content, version: version)
   }
 
-  public func didOpen(workspace: URL, file: URL, content: String, version: Int) {
+  public func didOpen(workspace: Workspace, file: URL, content: String, version: Int) {
     codeCompletionProvider.didOpen(workspace: workspace, file: file, content: content, version: version)
   }
 
-  public func didChange(workspace: URL, file: URL, content: String, version: Int) {
+  public func didChange(workspace: Workspace, file: URL, content: String, version: Int) {
     codeCompletionProvider.didChange(workspace: workspace, file: file, content: content, version: version)
   }
 
-  public func didClose(workspace: URL, file: URL, content: String, version: Int) {
+  public func didClose(workspace: Workspace, file: URL, content: String, version: Int) {
     codeCompletionProvider.didClose(workspace: workspace, file: file, content: content, version: version)
   }
 
-  public func didDelete(workspace: URL, file: URL) {
+  public func didDelete(workspace: Workspace, file: URL) {
     codeCompletionProvider.didDelete(workspace: workspace, file: file)
   }
 

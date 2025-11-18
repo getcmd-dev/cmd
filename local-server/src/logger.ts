@@ -7,6 +7,8 @@ import { isUserFacingError } from "./server/errors"
 type LogLevel = "ERROR" | "INFO"
 
 const isRunningTest = process.env.NODE_ENV === "test"
+// Check if disk logging is enabled (defaults to false in production, true in debug)
+const isDiskLoggingEnabled = process.env.ENABLE_DISK_LOGGING === "true"
 
 // Get the directory where this file is located
 const LOG_FILE = join(
@@ -15,8 +17,8 @@ const LOG_FILE = join(
 	`${new Date().toISOString().replace("T", "__").replace(/:/g, "-").replace(/Z$/, "")}.node-server.txt`,
 )
 const SHARED_LOG_FILE = join(__dirname, "logs", `all-sessions.txt`)
-if (isRunningTest) {
-	// don't log to file in tests
+if (isRunningTest || !isDiskLoggingEnabled) {
+	// don't log to file in tests or when disk logging is disabled
 } else {
 	try {
 		mkdirSync(join(__dirname, "logs"), { recursive: true })
@@ -26,6 +28,9 @@ if (isRunningTest) {
 }
 
 export const startNewLogSession = ({ lineSpacing }: { lineSpacing: number } = { lineSpacing: 5 }) => {
+	if (!isDiskLoggingEnabled) {
+		return
+	}
 	const spacing = "\n".repeat(lineSpacing)
 	appendFileSync(LOG_FILE, spacing)
 	appendFileSync(SHARED_LOG_FILE, spacing)
@@ -34,7 +39,7 @@ export const startNewLogSession = ({ lineSpacing }: { lineSpacing: number } = { 
 const writeToLog = (level: LogLevel, message: unknown) => {
 	const timestamp = new Date().toISOString()
 	const logMessage = `[${timestamp}] [${level}] ${message instanceof Error ? message.stack || message.message : (message as string)}\n`
-	if (isRunningTest) {
+	if (isRunningTest || !isDiskLoggingEnabled) {
 		return
 	}
 
@@ -102,6 +107,9 @@ const logInfo = (info: string | object) => {
 }
 
 const saveLogToFile = (fileName: string, log: string): string | undefined => {
+	if (!isDiskLoggingEnabled) {
+		return undefined
+	}
 	const filePath = join(__dirname, "logs", fileName)
 	try {
 		mkdirSync(join(__dirname, "logs"), { recursive: true })

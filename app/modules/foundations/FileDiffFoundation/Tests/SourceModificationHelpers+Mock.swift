@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import FileDiffTypesFoundation
 @testable import FileDiffFoundation
 
 // MARK: - MockSourceTextBuffer
@@ -15,6 +16,7 @@ final class MockXCSourceTextBufferI: XCSourceTextBufferI {
   }
 
   var lines: [String]
+  var selections = [FileDiffTypesFoundation.TextRange]()
 
   var completeBuffer: String {
     lines.joined()
@@ -33,6 +35,18 @@ final class MockXCSourceTextBufferI: XCSourceTextBufferI {
       throw AppError("Index \(index) out of bounds for lines count \(lines.count)")
     }
     return lines[index]
+  }
+
+  func getSelections() -> [FileDiffTypesFoundation.TextRange] {
+    selections
+  }
+
+  func removeSelections() {
+    selections.removeAll()
+  }
+
+  func set(selections: [FileDiffTypesFoundation.TextRange]) {
+    self.selections = selections
   }
 
 }

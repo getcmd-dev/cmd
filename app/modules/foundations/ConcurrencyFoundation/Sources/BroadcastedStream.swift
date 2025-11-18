@@ -38,26 +38,49 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
   }
 
   /// Initialize with a stream that emits updates, and signal when the updates are done.
-  public convenience init(replayStrategy: ReplayStrategy, _ stream: AsyncStream<Element>) {
-    self.init(replayStrategy: replayStrategy, internalStream: stream)
+  /// - Parameters:
+  ///   - replayStrategy: The replay strategy for new subscribers
+  ///   - stream: The internal async stream
+  ///   - debugLog: Optional logging function for debugging stream lifecycle. Only use when debugging specific stream issues.
+  public convenience init(
+    replayStrategy: ReplayStrategy,
+    _ stream: AsyncStream<Element>,
+    debugLog: (@Sendable (String) -> Void)? = nil)
+  {
+    self.init(replayStrategy: replayStrategy, internalStream: stream, debugLog: debugLog)
   }
 
-  private init(replayStrategy: ReplayStrategy, internalStream: AsyncStream<Element>) {
+  private init(
+    replayStrategy: ReplayStrategy,
+    internalStream: AsyncStream<Element>,
+    debugLog: (@Sendable (String) -> Void)? = nil)
+  {
     self.replayStrategy = replayStrategy
     self.internalStream = internalStream
+    self.debugLog = debugLog
 
+    let streamId = UUID()
     var iterator = internalStream.makeAsyncIterator()
     let streamAddress = Unmanaged.passUnretained(internalStream as AnyObject).toOpaque().debugDescription
     Task { [weak self] in
+      debugLog?("BroadcastedStream[\(streamId)] Task starting")
       while let element = await iterator.next() {
-        if self == nil {
+        if let self {
+          broadcast(element)
+        } else {
+          debugLog?("BroadcastedStream[\(streamId)] deallocated, dropping element")
           os.Logger(subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp", category: "command")
             .warning(
               "The BroadcastedStream received an event after being deallocated. It will not be forwarded to its subscribers. Received element \(type(of: element), privacy: .public) \(String(describing: element), privacy: .public). Stream: \(streamAddress, privacy: .public)")
         }
-        self?.broadcast(element)
       }
-      self?.finish()
+      if let self {
+        debugLog?("BroadcastedStream[\(streamId)] Task loop exited, self alive, calling finish()")
+        finish()
+        debugLog?("BroadcastedStream[\(streamId)] Task completed")
+      } else {
+        debugLog?("BroadcastedStream[\(streamId)] Task loop exited, self deallocated, cannot call finish()")
+      }
     }
   }
 
@@ -127,18 +150,23 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
 
   private let cancellables = Atomic(Set<AnyCancellable>())
   private let internalStream: AsyncStream<Element>
+  private let debugLog: (@Sendable (String) -> Void)?
 
   /// Finish the stream, preventing further updates.
   private func finish() {
+    debugLog?("BroadcastedStream.finish() called")
     let subscribers: [AsyncStream<Element>.Continuation] = lock.withLock { state in
       guard !state.isFinished else {
+        debugLog?("BroadcastedStream.finish() already finished, returning")
         assertionFailure("Cannot freeze an already finished BroadcastedStream")
         return []
       }
       state.isFinished = true
+      debugLog?("BroadcastedStream.finish() set isFinished=true, finishing \(state.subscribers.count) subscribers")
       return Array(state.subscribers.values)
     }
     for subscriber in subscribers { subscriber.finish() }
+    debugLog?("BroadcastedStream.finish() completed")
   }
 
   /// Broadcast a new value. It will be send to existing and future observers.
@@ -166,11 +194,12 @@ public final class BroadcastedStream<Element: Sendable>: AsyncSequence, Sendable
 extension BroadcastedStream {
   public static func makeStream(
     of _: Element.Type = Element.self,
-    replayStrategy: ReplayStrategy)
+    replayStrategy: ReplayStrategy,
+    debugLog: (@Sendable (String) -> Void)? = nil)
     -> (stream: BroadcastedStream<Element>, continuation: AsyncStream<Element>.Continuation)
   {
     let (stream, continuation) = AsyncStream<Element>.makeStream()
-    let broadcastedStream = BroadcastedStream<Element>(replayStrategy: replayStrategy, internalStream: stream)
+    let broadcastedStream = BroadcastedStream<Element>(replayStrategy: replayStrategy, internalStream: stream, debugLog: debugLog)
     return (broadcastedStream, continuation)
   }
 }

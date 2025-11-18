@@ -13,7 +13,7 @@ import XcodeKit
 /// Unified command that handles all extension operations based on queued input from the host app.
 final class CmdCommand: CommandType, @unchecked Sendable {
 
-  override var name: String { ExtensionCommandNames.cmd }
+  override var name: String { ExtensionActionName.cmd.rawValue }
 
   override func timeout(_: XCSourceEditorCommandInvocation) -> TimeInterval {
     // We can't determine the exact operation type without async call to getQueuedInput,
@@ -23,24 +23,38 @@ final class CmdCommand: CommandType, @unchecked Sendable {
   }
 
   override func handle(_ invocation: XCSourceEditorCommandInvocation) async throws {
-    // Step 1: Ask the host app for queued input
-    let input: ExtensionInput = try await LocalServer().send(.getQueuedInput)
+    do {
+      // Step 1: Ask the host app for queued input
+      let input: ExtensionInput = try await LocalServer().send(.getQueuedInput)
 
-    // Step 2: Execute the appropriate action based on input type
-    let result: ExtensionResult =
-      switch input {
-      case .applyEdit(let fileChange):
-        handleApplyEdit(fileChange: fileChange, buffer: invocation.buffer)
+      // Step 2: Execute the appropriate action based on input type
+      let result: ExtensionResult =
+        switch input {
+        case .applyEdit(let fileChange):
+          handleApplyEdit(fileChange: fileChange, buffer: invocation.buffer)
 
-      case .reloadSettings:
+        case .reloadSettings:
+          // For reload settings, we need to send the ping before crashing
+          .reloadSettingsResult
+
+        case .getFormattingMetadata:
+          handleGetFormattingMetadata(buffer: invocation.buffer)
+
+        case .error(let errorMessage):
+          defaultLogger.error("Extension received error from host app: \(errorMessage)")
+          throw XcodeExtensionError(message: errorMessage)
+        }
+
+      // Step 3: Send the result back to the host app
+      let _: EmptyResponse = try await LocalServer().send(.sendResult(result))
+
+      // Step 4: If this was a reload settings request, crash the extension after sending the result
+      if case .reloadSettings = input {
         handleReloadSettings()
-
-      case .getFormattingMetadata:
-        handleGetFormattingMetadata(buffer: invocation.buffer)
       }
-
-    // Step 3: Send the result back to the host app
-    let _: EmptyResponse = try await LocalServer().send(.sendResult(result))
+    } catch {
+      defaultLogger.error("Internal action failed: \(error.localizedDescription)")
+    }
   }
 
   // MARK: - Action Handlers
@@ -50,18 +64,18 @@ final class CmdCommand: CommandType, @unchecked Sendable {
       try SourceModificationHelpers.update(buffer: buffer, with: fileChange)
       return .applyEditResult(.success(()))
     } catch {
+      defaultLogger.error("Failed to apply edit: \(error.localizedDescription)")
       let extensionError = ExtensionError(message: error.localizedDescription)
       return .applyEditResult(.failure(extensionError))
     }
   }
 
-  private func handleReloadSettings() -> ExtensionResult {
+  private func handleReloadSettings() {
     // Force crash the extension to trigger reload
     Task {
       try await Task.sleep(nanoseconds: 100_000_000)
       fatalError("Killing extension to reload settings")
     }
-    return .reloadSettingsResult
   }
 
   private func handleGetFormattingMetadata(buffer: XCSourceTextBuffer) -> ExtensionResult {

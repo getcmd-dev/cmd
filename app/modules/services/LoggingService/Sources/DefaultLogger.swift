@@ -285,7 +285,8 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
 
   /// Sets up local file logging with automatic file creation and timestamped naming.
   /// Creates log files in the application support directory under command/logs/.
-  /// Note: File logging is disabled in sandboxed environments (like Xcode extensions).
+  /// Note: File logging is disabled in sandboxed environments (like Xcode extensions)
+  /// and when enableDiskLogging is false (default in RELEASE builds).
   /// - Parameters:
   ///   - writeToFile: Optional custom file writing function
   ///   - fileManager: File manager for handling file operations
@@ -296,6 +297,17 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       // Skip file logging in sandboxed environments (like Xcode extensions)
       // Sandboxed processes can still log to the console via os.Logger, but cannot write log files
       guard Bundle.main.isHostApp else {
+        return
+      }
+
+      // Check if disk logging is enabled
+      // In DEBUG builds, always enable disk logging regardless of the setting
+      #if DEBUG
+      let isDiskLoggingEnabled = true
+      #else
+      let isDiskLoggingEnabled = userDefaults.bool(forKey: .enableDiskLogging)
+      #endif
+      guard isDiskLoggingEnabled else {
         return
       }
 

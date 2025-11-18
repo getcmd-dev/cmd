@@ -31,26 +31,56 @@ public struct CMDLogoDrawingAnimation: View {
 
 }
 
-// MARK: - CMDLogoDrawingAnimationRepresentable
+// MARK: - CMDLogoAnimationHostView
 
-private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
-  let size: CGFloat
-  let strokeWidth: CGFloat
-  let drawingWindowLength: CGFloat
-  let animationDuration: Double
+private final class CMDLogoAnimationHostView: NSView {
+  init(
+    size: CGFloat,
+    strokeWidth: CGFloat,
+    drawingWindowLength: CGFloat,
+    animationDuration: Double)
+  {
+    targetSize = size
+    self.strokeWidth = strokeWidth
+    self.drawingWindowLength = drawingWindowLength
+    self.animationDuration = animationDuration
+    super.init(frame: .zero)
+    wantsLayer = true
+    layer = CALayer()
+    setupAnimation()
+  }
 
-  func makeNSView(context _: Context) -> NSView {
-    let view = NSView()
-    view.wantsLayer = true
-    view.layer = CALayer()
+  required init?(coder _: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
 
+  override func viewDidMoveToWindow() {
+    super.viewDidMoveToWindow()
+    // Restart animations when view is added to window
+    if window != nil {
+      restartAnimations()
+    }
+  }
+
+  override func viewDidUnhide() {
+    super.viewDidUnhide()
+    // Restart animations when view becomes visible
+    restartAnimations()
+  }
+
+  private let strokeWidth: CGFloat
+  private let drawingWindowLength: CGFloat
+  private let animationDuration: Double
+  private let targetSize: CGFloat
+
+  private func setupAnimation() {
     // Parse the SVG file and create a continuous path from the line elements
     // The SVG contains lines in a specific order that flows around the logo
     guard
       let svgURL = Bundle.module.url(forResource: "cmd-logo", withExtension: "svg"),
-      let combinedPath = parseCMDLogoSVG(from: svgURL, targetSize: size)
+      let combinedPath = parseCMDLogoSVG(from: svgURL, targetSize: targetSize)
     else {
-      return view
+      return
     }
 
     // Create multiple non-overlapping shape layers to simulate an opacity gradient along the stroke
@@ -72,8 +102,17 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
       // Layer 9 (at the head/end) has highest opacity (100%)
       layer.opacity = Float(Double(index + 1) / Double(numberOfLayers))
 
-      view.layer?.addSublayer(layer)
+      self.layer?.addSublayer(layer)
+    }
 
+    startAnimations()
+  }
+
+  private func startAnimations() {
+    guard let sublayers = layer?.sublayers as? [CAShapeLayer] else { return }
+    let numberOfLayers = sublayers.count
+
+    for (index, layer) in sublayers.enumerated() {
       // Animate this layer's visible stroke segment
       let animGroup = CAAnimationGroup()
       animGroup.duration = animationDuration
@@ -100,14 +139,15 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
       endAnim.toValue = 0.5 + (startOffset + layerLength) / 2
 
       animGroup.animations = [startAnim, endAnim]
-      layer.add(animGroup, forKey: "animation_\(index)")
+      layer.add(animGroup, forKey: "drawingAnimation")
     }
-
-    return view
   }
 
-  func updateNSView(_: NSView, context _: Context) {
-    // Nothing to update
+  private func restartAnimations() {
+    // Remove all animations from sublayers
+    layer?.sublayers?.forEach { $0.removeAllAnimations() }
+    // Restart them from the beginning
+    startAnimations()
   }
 
   private func parseCMDLogoSVG(from url: URL, targetSize: CGFloat) -> CGPath? {
@@ -160,6 +200,27 @@ private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
     }
 
     return combinedPath
+  }
+}
+
+// MARK: - CMDLogoDrawingAnimationRepresentable
+
+private struct CMDLogoDrawingAnimationRepresentable: NSViewRepresentable {
+  let size: CGFloat
+  let strokeWidth: CGFloat
+  let drawingWindowLength: CGFloat
+  let animationDuration: Double
+
+  func makeNSView(context _: Context) -> CMDLogoAnimationHostView {
+    CMDLogoAnimationHostView(
+      size: size,
+      strokeWidth: strokeWidth,
+      drawingWindowLength: drawingWindowLength,
+      animationDuration: animationDuration)
+  }
+
+  func updateNSView(_: CMDLogoAnimationHostView, context _: Context) {
+    // Nothing to update
   }
 }
 

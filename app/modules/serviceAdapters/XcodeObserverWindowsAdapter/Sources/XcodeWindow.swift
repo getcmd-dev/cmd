@@ -26,6 +26,11 @@ open class XcodeWindow: NSWindow {
     updatePositionContinuously()
   }
 
+  /// The level that the window should have when it is active.
+  open var activatedLevel: NSWindow.Level {
+    .floating
+  }
+
   // MARK: - Public API
 
   /// Update the window's level (floating / normal) to match whether Xcode is the frontmost application.
@@ -71,6 +76,8 @@ open class XcodeWindow: NSWindow {
 
   @Dependency(\.xcodeObserver) public var xcodeObserver
   @Dependency(\.appsActivationState) public var appsActivationStatePublisher
+
+  public private(set) var trackedWindowNumber: CGWindowID?
 
   /// Whether the window will automatically position itself in relationship to Xcode.
   /// If false, the window's position will be managed by the user who can drag it.
@@ -120,11 +127,6 @@ open class XcodeWindow: NSWindow {
     return !windowInfos.isEmpty
   }
 
-  /// The level that the window should have when it is active.
-  var activatedLevel: NSWindow.Level {
-    .floating
-  }
-
   // MARK: - Constants
 
   private enum Constants {
@@ -139,7 +141,6 @@ open class XcodeWindow: NSWindow {
   private var axNotificationPublisher: AnyPublisher<AXNotification, Never>
   private var cancellables = Set<AnyCancellable>()
   private var _frame: CGRect?
-  private var trackedWindowNumber: CGWindowID?
   private var positionTimer: Timer?
 
   /// Whether the window should behave like an active window (ie be frontmost etc)
@@ -165,7 +166,6 @@ open class XcodeWindow: NSWindow {
   /// Sets up initial window properties including level, visibility and release behavior
   private func initWindowProperties() {
     level = activatedLevel
-    orderFrontRegardless()
     setIsVisible(true)
     isReleasedWhenClosed = false
   }
@@ -215,9 +215,8 @@ open class XcodeWindow: NSWindow {
     guard frame != _frame || !skippingIfUnchanged || !isOnScreen else { return }
     _frame = frame
 
-    setFrame(frame, display: true)
     setIsVisible(true)
-    orderFrontRegardless()
+    setFrame(frame, display: true)
   }
 
   /// Hides the window if position is automatically managed, otherwise marks it as not visible for when it will be.
@@ -249,7 +248,6 @@ open class XcodeWindow: NSWindow {
     guard isShown else { return }
 
     isActive = true
-    orderFrontRegardless()
     updateLevel()
     updatePosition(skippingIfUnchanged: false)
   }

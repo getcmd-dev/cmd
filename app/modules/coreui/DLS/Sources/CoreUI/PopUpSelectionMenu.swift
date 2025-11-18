@@ -118,13 +118,20 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View, BottomRow: View>
           Group {
             if let maxHeight {
               if maxHeight < contentHeight ?? 0 {
-                ScrollView {
-                  itemsList
-                    .readingSize { size in
-                      contentHeight = size.height
+                ScrollViewReader { proxy in
+                  ScrollView {
+                    itemsList
+                      .readingSize { size in
+                        contentHeight = size.height
+                      }
+                  }
+                  .frame(height: maxHeight)
+                  .onChange(of: selectedItem) { _, newValue in
+                    if let newValue {
+                      proxy.scrollTo(newValue.id, anchor: .top)
                     }
+                  }
                 }
-                .frame(height: maxHeight)
               } else {
                 itemsList
                   .readingSize { size in

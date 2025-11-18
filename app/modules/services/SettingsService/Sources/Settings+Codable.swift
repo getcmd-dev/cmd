@@ -54,6 +54,9 @@ extension Settings: Codable {
       codeCompletionProviderId: container.resilientlyDecodeIfPresent(String.self, forKey: "codeCompletionProviderId") ?? nil,
       enableCodeCompletion: container.resilientlyDecodeIfPresent(Bool.self, forKey: "enableCodeCompletion") ?? false,
       codeCompletionDebounceMs: container.resilientlyDecodeIfPresent(Int.self, forKey: "codeCompletionDebounceMs") ?? 250,
+      multiLineCodeCompletionDisplayMode: container.resilientlyDecodeIfPresent(
+        MultiLineCodeCompletionDisplayMode.self,
+        forKey: "multiLineCodeCompletionDisplayMode") ?? .expandCompletionOverExistingCodeWhenTriggered,
       queueMessagesWhileStreaming: container.resilientlyDecodeIfPresent(Bool.self, forKey: "queueMessagesWhileStreaming") ?? true)
   }
 
@@ -80,6 +83,10 @@ extension Settings: Codable {
     try container.encode(codeCompletionProviderId, forKey: "codeCompletionProviderId")
     try container.encode(enableCodeCompletion, forKey: "enableCodeCompletion")
     try container.encode(codeCompletionDebounceMs, forKey: "codeCompletionDebounceMs")
+    // Only encode multiLineCodeCompletionDisplayMode if it differs from the default value
+    if multiLineCodeCompletionDisplayMode != .expandCompletionOverExistingCodeWhenTriggered {
+      try container.encode(multiLineCodeCompletionDisplayMode, forKey: "multiLineCodeCompletionDisplayMode")
+    }
     // Only encode queueMessagesWhileStreaming if it differs from the default value
     if queueMessagesWhileStreaming != true {
       try container.encode(queueMessagesWhileStreaming, forKey: "queueMessagesWhileStreaming")

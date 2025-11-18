@@ -14,7 +14,7 @@ extension DefaultLocalServer {
 
     // Start a web socket connection to the local server that will relay messages to the extension
     guard let url = URL(string: "ws://localhost:\(port)") else {
-      defaultLogger.error("Failed to create URL for web socket connection.")
+      logger.error("Failed to create URL for web socket connection.")
       return
     }
     let webSocket = URLSession.shared.webSocketTask(with: url)
@@ -45,20 +45,21 @@ extension DefaultLocalServer {
         handleReception(of: data)
 
       case .data(let data):
-        defaultLogger.log("Received data: \(data)")
+        logger.log("Received data: \(data)")
         handleReception(of: data)
 
       @unknown default:
-        defaultLogger.error("Received unknown message type \(message)")
+        logger.error("Received unknown message type \(message)")
       }
 
     case .failure(let error):
-      defaultLogger.error("Failed to receive message: \(error)")
+      logger.error("Failed to receive message: \(error)")
     }
   }
 
   private func handleReception(of data: Data) {
     do {
+      logger.trace("Decoding ExecuteCommandRequest from data: \(String(data: data, encoding: .utf8) ?? "<invalid utf8>")")
       let request = try JSONDecoder().decode(ExecuteCommandRequest.self, from: data)
       let event = ExecuteExtensionRequestEvent(
         command: request.command,
@@ -74,7 +75,7 @@ extension DefaultLocalServer {
               result: result))
             try await self.serverConnection?.send(.data(responseData))
           } catch {
-            defaultLogger.error("Failed to encode response: \(error)")
+            self.logger.error("Failed to encode response: \(error)")
           }
         }
       }
@@ -82,7 +83,7 @@ extension DefaultLocalServer {
         await self.appEventHandlerRegistry.handle(event: event)
       }
     } catch {
-      defaultLogger.error("Failed to decode message: \(error)")
+      logger.error("Failed to decode message: \(error)")
     }
   }
 }

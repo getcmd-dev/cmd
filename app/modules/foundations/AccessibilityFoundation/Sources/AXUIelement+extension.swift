@@ -221,6 +221,9 @@ extension AXUIElement {
       return false
     } catch AXError.attributeUnsupported {
       return true
+    } catch let error as AXError {
+      print("Unexpected AX error: \(error.description)")
+      return false
     } catch {
       print("Unexpected AX error: \(error)")
       return false
@@ -321,6 +324,47 @@ extension AXUIElement {
     for (index, child) in children.enumerated() {
       let isLastChild = index == children.count - 1
       _buildDebugDescription(element: child, indent: childIndent, isLast: isLastChild, into: &result)
+    }
+  }
+}
+
+extension AXError {
+  public var description: String {
+    switch self {
+    case .success:
+      return "AX Error success"
+    case .failure:
+      return "AX Error failure"
+    case .illegalArgument:
+      return "AX Error illegalArgument"
+    case .invalidUIElement:
+      return "AX Error invalidUIElement"
+    case .invalidUIElementObserver:
+      return "AX Error invalidUIElementObserver"
+    case .cannotComplete:
+      return "AX Error cannotComplete"
+    case .attributeUnsupported:
+      return "AX Error attributeUnsupported"
+    case .actionUnsupported:
+      return "AX Error actionUnsupported"
+    case .notificationUnsupported:
+      return "AX Error notificationUnsupported"
+    case .notImplemented:
+      return "AX Error notImplemented"
+    case .notificationAlreadyRegistered:
+      return "AX Error notificationAlreadyRegistered"
+    case .notificationNotRegistered:
+      return "AX Error notificationNotRegistered"
+    case .apiDisabled:
+      return "AX Error apiDisabled"
+    case .noValue:
+      return "AX Error noValue"
+    case .parameterizedAttributeUnsupported:
+      return "AX Error parameterizedAttributeUnsupported"
+    case .notEnoughPrecision:
+      return "AX Error notEnoughPrecision"
+    @unknown default:
+      return localizedDescription
     }
   }
 }

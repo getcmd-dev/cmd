@@ -11,6 +11,7 @@ import FoundationInterfaces
 import LocalServerServiceInterface
 import LoggingServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 
 // MARK: - DefaultLocalServer
 
@@ -22,15 +23,17 @@ import ThreadSafe
 
 @ThreadSafe
 final class DefaultLocalServer: LocalServer {
-
   init(
     sharedUserDefaults: UserDefaultsI,
     appEventHandlerRegistry: AppEventHandlerRegistry,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    shellService: ShellService)
   {
     self.sharedUserDefaults = sharedUserDefaults
     self.appEventHandlerRegistry = appEventHandlerRegistry
     self.fileManager = fileManager
+    self.shellService = shellService
+    logger = defaultLogger.subLogger(subsystem: "local-server")
     hasCopiedFiles = false
     applicationSupportPath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
       .appendingPathComponent(Bundle.main.hostAppBundleId).path
@@ -52,6 +55,7 @@ final class DefaultLocalServer: LocalServer {
     }
   }
 
+  let logger: Logger
   let appEventHandlerRegistry: AppEventHandlerRegistry
 
   var serverConnection: URLSessionWebSocketTask?
@@ -96,29 +100,29 @@ final class DefaultLocalServer: LocalServer {
     request.httpBody = data
     configure(&request)
 
-    defaultLogger.log("postRequest starting for path: \(path), streaming: \(onReceiveJSONData != nil)")
+    logger.log("postRequest starting for path: \(path), streaming: \(onReceiveJSONData != nil)")
     let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData, idleTimeout: idleTimeout)
     try assertIsSuccess(response: response, data: data)
-    defaultLogger.log("postRequest completed successfully for path: \(path), received \(data.count) bytes total")
+    logger.log("postRequest completed successfully for path: \(path), received \(data.count) bytes total")
     return data
   }
 
   func handle(task: URLSessionTask, didCompleteWithError error: Error?) {
     guard let handler = inLock({ $0.inflightTasks.removeValue(forKey: task) }) else {
-      defaultLogger.log("Task \(task.taskIdentifier) completed but no handler found (already removed)")
+      logger.log("Task \(task.taskIdentifier) completed but no handler found (already removed)")
       return
     }
     let response = task.response
     Task { @MainActor in
       if let error {
-        defaultLogger.error("Task \(task.taskIdentifier) completed with error, resuming continuation with error", error)
+        logger.error("Task \(task.taskIdentifier) completed with error, resuming continuation with error", error)
         handler.continuation.resume(throwing: error)
       } else if let response {
-        defaultLogger
+        logger
           .log("Task \(task.taskIdentifier) completed successfully with \(handler.totalData.count) bytes, resuming continuation")
         handler.continuation.resume(returning: (handler.totalData, response))
       } else {
-        defaultLogger.error("Task \(task.taskIdentifier) completed without response, resuming with error")
+        logger.error("Task \(task.taskIdentifier) completed without response, resuming with error")
         assertionFailure("Task completed without response")
         handler.continuation.resume(throwing: URLError(.badServerResponse))
       }
@@ -188,6 +192,7 @@ final class DefaultLocalServer: LocalServer {
   private let pendingHandleDataTasks = TaskQueue<Void, Never>()
 
   private let fileManager: FileManagerI
+  private let shellService: ShellService
 
   private let applicationSupportPath: String
 
@@ -211,7 +216,7 @@ final class DefaultLocalServer: LocalServer {
       try await performConnect()
       retryCount = 0 // Reset retry count on successful connection
     } catch {
-      defaultLogger.error("Connection failed, will retry with backoff", error)
+      logger.error("Connection failed, will retry with backoff", error)
 
       retryCount += 1
       let delay = min(pow(2.0, Double(retryCount - 1)), maxRetryDelay)
@@ -245,6 +250,17 @@ final class DefaultLocalServer: LocalServer {
       }
       #endif
 
+      // Pass enableDiskLogging to the node server via environment variable
+      // In DEBUG builds, always enable disk logging regardless of the setting
+      #if DEBUG
+      let enableDiskLogging = true
+      #else
+      let enableDiskLogging = sharedUserDefaults.bool(forKey: .enableDiskLogging)
+      #endif
+      var environment = await shellService.env
+      environment["ENABLE_DISK_LOGGING"] = enableDiskLogging ? "true" : "false"
+      process.environment = environment
+
       let stdout = Pipe()
       let stderr = Pipe()
       process.standardOutput = stdout
@@ -268,7 +284,7 @@ final class DefaultLocalServer: LocalServer {
 
               listenToExtension(port: response.port)
               sharedUserDefaults.set(response.port, forKey: UserDefaultKeys.localServerPort)
-              defaultLogger.log("Local server started at port \(response.port)")
+              logger.log("Local server started at port \(response.port)")
             }
           }
         }
@@ -287,7 +303,7 @@ final class DefaultLocalServer: LocalServer {
             if let self {
               // The server crashed or was killed, restart it.
               let errorMessage = "Restarting server. This should not happen. Stdout: \(String(data: stdoutData.value, encoding: .utf8) ?? "<no data>"). Stderr: \(String(data: stderrData.value, encoding: .utf8) ?? "<no data>")"
-              defaultLogger
+              logger
                 .error(errorMessage)
               let hadAlreadyResponded = hasResponded.set(to: true)
               if !hadAlreadyResponded {
@@ -382,7 +398,7 @@ final class DefaultLocalServer: LocalServer {
       print("Timeout task fired after cancellation? \(isCancelled.value)")
 
       // No data received during timeout period - fail with timeout error
-      defaultLogger.error("Request timed out after \(idleTimeout)s of idle time")
+      self?.logger.error("Request timed out after \(idleTimeout)s of idle time")
 
       // Remove the handler and resume with timeout error before cancelling the task
       if let handler = self?.inLock({ $0.inflightTasks.removeValue(forKey: task) }) {
@@ -433,14 +449,14 @@ private final class LocalServerDelegate: NSObject, URLSessionDataDelegate, @unch
   weak var owner: DefaultLocalServer?
 
   func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-    defaultLogger.trace("URLSession delegate didReceive \(data.count) bytes for task \(dataTask.taskIdentifier)")
+    owner?.logger.trace("URLSession delegate didReceive \(data.count) bytes for task \(dataTask.taskIdentifier)")
     Task {
       owner?.handle(dataTask: dataTask, didReceive: data)
     }
   }
 
   func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-    defaultLogger
+    owner?.logger
       .log("URLSession delegate didCompleteWithError called for task \(task.taskIdentifier), error: \(String(describing: error))")
     Task {
       owner?.handle(task: task, didCompleteWithError: error)
@@ -457,14 +473,16 @@ private struct ConnectionResponse: Decodable, Sendable {
 extension BaseProviding where
   Self: UserDefaultsProviding,
   Self: AppEventHandlerRegistryProviding,
-  Self: FileManagerProviding
+  Self: FileManagerProviding,
+  Self: ShellServiceProviding
 {
   public var localServer: LocalServer {
     shared {
       DefaultLocalServer(
         sharedUserDefaults: sharedUserDefaults,
         appEventHandlerRegistry: appEventHandlerRegistry,
-        fileManager: fileManager)
+        fileManager: fileManager,
+        shellService: shellService)
     }
   }
 }
