@@ -32,11 +32,6 @@ public protocol XcodeController: Sendable {
   /// - Throws: An error if the file cannot be opened
   func open(file: URL, line: Int?, column: Int?) async throws
 
-  /// Execute an extension command by name.
-  /// - Parameter commandName: The name of the extension command to execute
-  /// - Throws: An error if the command cannot be executed
-  func executeExtensionCommand(_ commandName: String) async throws
-
   /// Get formatting metadata for the currently focused file in Xcode.
   /// - Returns: The formatting metadata extracted from Xcode's buffer
   /// - Throws: An error if the metadata cannot be retrieved
