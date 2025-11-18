@@ -53,7 +53,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     // Install if either:
     // 1. Current version is already installed (need to start auth server)
     // 2. A previous version exists but current version doesn't (need to upgrade)
-    if currentVersionInstalled || (!currentVersionInstalled && hasAnyVersionInstalled) {
+    if currentVersionInstalled || hasAnyVersionInstalled {
       Task {
         try await installLSPServer()
       }
