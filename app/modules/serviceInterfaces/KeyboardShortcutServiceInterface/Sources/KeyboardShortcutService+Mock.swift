@@ -41,7 +41,7 @@ public final class MockKeyboardShortcutService: KeyboardShortcutService {
   /// For testing: trigger a shortcut by key code and modifiers
   public func triggerShortcut(key: Key) async {
     for callback in registrations[key, default: []] {
-      try? await callback()
+      await callback()
     }
   }
 }

@@ -77,6 +77,18 @@ extension ColorScheme {
     self == .dark ? Color(white: 0.8) : Color(white: 0.2)
   }
 
+  public var primaryActionBackground: Color {
+    .accentColor
+  }
+
+  public var primaryActionForeground: Color {
+    .white
+  }
+
+  public var primaryActionHoveredBackground: Color {
+    .accentColor.mixed(with: primaryForeground, proportion: 0.1)
+  }
+
   // TODO: this depends on the theme used in Xcode.
   // The current color schema can be read with `defaults read ~/Library/Preferences/com.apple.dt.Xcode | grep XCFontAndColorCurrent`
   // also contains indentation info, path to the default app (eg file:///Applications/Xcode-16.2.0.app/),

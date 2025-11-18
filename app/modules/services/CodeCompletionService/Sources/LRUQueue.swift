@@ -85,6 +85,8 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
     } else {
       state.tail = node.prev
     }
+    node.prev = nil
+    node.next = nil
   }
 
   private func moveToHead(_ node: Node, _ state: inout _InternalState) {

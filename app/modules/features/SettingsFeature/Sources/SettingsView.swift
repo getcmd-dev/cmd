@@ -67,6 +67,12 @@ public struct SettingsView: View {
       case .mcp:
         MCPSettingsView(mcpServers: $viewModel.mcpServers)
 
+      case .codeCompletion:
+        CodeCompletionSettingsView(
+          enableCodeCompletion: $viewModel.enableCodeCompletion,
+          codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs,
+          multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode)
+
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)
 
@@ -83,10 +89,7 @@ public struct SettingsView: View {
           enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
-          defaultLogLevel: $viewModel.defaultLogLevel,
-          enableCodeCompletion: $viewModel.enableCodeCompletion,
-          codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs,
-          multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode)
+          defaultLogLevel: $viewModel.defaultLogLevel)
 
       case .about:
         AboutSettingsView(
@@ -111,6 +114,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case chatModes
   case tools
   case mcp
+  case codeCompletion
   case keyboardShortcuts
   case userDefinedXcodeShortcuts
   case internalSettings
@@ -130,6 +134,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "MCP"
     case .chatModes:
       "Chat Modes"
+    case .codeCompletion:
+      "Autocomplete"
     case .keyboardShortcuts:
       "Keyboard Shortcuts"
     case .userDefinedXcodeShortcuts:
@@ -153,6 +159,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "wrench.and.screwdriver"
     case .mcp:
       nil // MCP uses custom SVG icon
+    case .codeCompletion:
+      "chevron.left.forwardslash.chevron.right"
     case .keyboardShortcuts:
       "keyboard"
     case .userDefinedXcodeShortcuts:
@@ -226,6 +234,11 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .mcp,
             description: "Configure Model Context Protocol servers",
+            action: onNavigate)
+
+          SettingsCard(
+            section: .codeCompletion,
+            description: "Configure code completion settings and providers",
             action: onNavigate)
 
           SettingsCard(

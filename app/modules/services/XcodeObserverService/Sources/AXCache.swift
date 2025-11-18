@@ -33,8 +33,15 @@ final class AXCache: Sendable {
   ///   - from: The AX UI element to query from
   ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query (e.g., "children", "windows")
+  ///   - force: If true, forces a refresh of the cached value even if a valid cache exists
   /// - Returns: An array of AX UI elements, either from cache or freshly fetched
-  func caching(from: AXUIElement, _ operation: @Sendable (AXUIElement) -> [AXUIElement], cacheKey: String) -> [AXUIElement] {
+  func caching(
+    from: AXUIElement,
+    _ operation: @Sendable (AXUIElement) -> [AXUIElement],
+    cacheKey: String,
+    force: Bool = false)
+    -> AXUIElement?
+  {
     inLock { state in
       defer {
         // Schedule a cleanup task to remove the cached value after 10 minutes, to avoid keeping things in memory for too long while providing good caching.
@@ -57,22 +64,23 @@ final class AXCache: Sendable {
         }
       }
 
-      var cachedValue = state.cache[from]?[cacheKey]
-      if cachedValue?.allSatisfy(\.isValid) != true {
-        state.cache[from]?.removeValue(forKey: cacheKey)
-        cachedValue = nil
+      if let cachedValue = state.cache[from]?[cacheKey] {
+        if force || !cachedValue.isValid {
+          state.cache[from]?.removeValue(forKey: cacheKey)
+        } else {
+          return cachedValue
+        }
       }
-      if let cachedValue {
-        return cachedValue
+      let fetched = operation(from).first
+      if let fetched {
+        state.cache[from, default: [:]][cacheKey] = fetched
       }
-      let fetched = operation(from)
-      state.cache[from, default: [:]][cacheKey] = fetched
       return fetched
     }
   }
 
   /// Stores cached AX UI elements indexed by source element and cache key.
-  private var cache = [AXUIElement: [String: [AXUIElement]]]()
+  private var cache = [AXUIElement: [String: AXUIElement]]()
 
   /// Stores cleanup tasks that invalidate cache entries after 10 minutes.
   private var cleanupTasks = [AXUIElement: [String: AnyCancellable]]()
@@ -80,18 +88,6 @@ final class AXCache: Sendable {
 }
 
 extension AXUIElement {
-  /// Retrieves or computes a cached array of AX UI elements for this element.
-  ///
-  /// Convenience method that calls the shared AX cache with this element as the source.
-  ///
-  /// - Parameters:
-  ///   - operation: A closure that performs the expensive AX API query when cache misses occur
-  ///   - cacheKey: A unique identifier for this specific query
-  /// - Returns: An array of AX UI elements, either from cache or freshly fetched
-  func caching(_ operation: @Sendable (AXUIElement) -> [AXUIElement], cacheKey: String) -> [AXUIElement] {
-    AXCache.shared.caching(from: self, operation, cacheKey: cacheKey)
-  }
-
   /// Retrieves or computes a cached optional AX UI element for this element.
   ///
   /// Convenience method for queries that return a single optional element. Internally wraps the result
@@ -100,11 +96,12 @@ extension AXUIElement {
   /// - Parameters:
   ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query
+  ///   - force: If true, forces a refresh of the cached value even if a valid cache exists
   /// - Returns: An optional AX UI element, either from cache or freshly fetched
-  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement?, cacheKey: String) -> AXUIElement? {
+  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement?, cacheKey: String, force: Bool = false) -> AXUIElement? {
     AXCache.shared.caching(from: self, {
       [operation($0)].compactMap(\.self)
-    }, cacheKey: cacheKey).first
+    }, cacheKey: cacheKey, force: force)
   }
 
   /// Retrieves or computes a cached AX UI element for this element.
@@ -116,10 +113,12 @@ extension AXUIElement {
   /// - Parameters:
   ///   - operation: A closure that performs the expensive AX API query when cache misses occur
   ///   - cacheKey: A unique identifier for this specific query
+  ///   - force: If true, forces a refresh of the cached value even if a valid cache exists
   /// - Returns: An AX UI element, either from cache or freshly fetched
-  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement, cacheKey: String) -> AXUIElement {
+  func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement, cacheKey: String, force: Bool = false) -> AXUIElement {
     AXCache.shared.caching(from: self, {
       [operation($0)].compactMap(\.self)
-    }, cacheKey: cacheKey).first ?? operation(self) // The latter fallback cannot be executed, but it reads better than `!`.
+    }, cacheKey: cacheKey, force: force) ??
+      operation(self) // The latter fallback cannot be executed, but it reads better than `!`.
   }
 }

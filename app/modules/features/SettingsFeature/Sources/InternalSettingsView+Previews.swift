@@ -16,10 +16,7 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
-    defaultLogLevel: .constant(.info),
-    enableCodeCompletion: .constant(false),
-    codeCompletionDebounceMs: .constant(250),
-    multiLineCodeCompletionDisplayMode: .constant(.expandCompletionOverExistingCodeWhenTriggered))
+    defaultLogLevel: .constant(.info))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -34,10 +31,7 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
-    defaultLogLevel: .constant(.debug),
-    enableCodeCompletion: .constant(true),
-    codeCompletionDebounceMs: .constant(100),
-    multiLineCodeCompletionDisplayMode: .constant(.expandCompletionOverExistingCode))
+    defaultLogLevel: .constant(.debug))
     .frame(width: 600, height: 400)
     .padding()
 }

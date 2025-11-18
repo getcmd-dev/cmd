@@ -16,10 +16,11 @@ public final class GithubCopilotBuilder: RouteBuilder {
   public var routeId: String { GithubCopilotRoute.id }
 
   @MainActor
-  public func build(route _: GithubCopilotRoute, with _: RoutesRegistry) -> any View {
+  public func build(route: GithubCopilotRoute, with _: RoutesRegistry) -> any View {
     let viewModel = GithubCopilotStatusViewModel()
 
     return GithubCopilotStatusView(
-      viewModel: viewModel)
+      viewModel: viewModel,
+      isExpanded: route.isExpanded)
   }
 }

@@ -50,16 +50,16 @@ public enum MultiLineCodeCompletionDisplayMode: String, Sendable, Codable, Equat
   public var displayName: String {
     switch self {
     case .expandCompletionOverExistingCode:
-      "Always show expanded over editor"
+      "Overlay"
 
     case .expandCompletionAddingSpaceInExistingCode:
-      "Always show expanded with screenshot"
+      "Expand"
 
     case .expandCompletionOverExistingCodeWhenTriggered:
-      "Show expanded over editor"
+      "Overlay on trigger"
 
     case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
-      "Show expanded with screenshot"
+      "Expand on trigger"
     }
   }
 
@@ -67,22 +67,24 @@ public enum MultiLineCodeCompletionDisplayMode: String, Sendable, Codable, Equat
     switch self {
     case .expandCompletionOverExistingCode:
       """
-      Always show expanded over editor - Multi-line completions always display directly over the editor.
+      Display the multi-line completion over existing code.
       """
 
     case .expandCompletionAddingSpaceInExistingCode:
       """
-      Always show expanded with screenshot - Multi-line completions always show with a screenshot of the editor.
+      Expand the code to make room for the multi-line completion.
+      Requires Screen Recording permission.
       """
 
     case .expandCompletionOverExistingCodeWhenTriggered:
       """
-      Show expanded over editor - Multi-line completions display over the editor (default behavior).
+      Display the first completion line when ready, and the multiple line over existing code when triggered.
       """
 
     case .expandCompletionAddingSpaceInExistingCodeWhenTriggered:
       """
-      Show expanded with screenshot - Multi-line completions show with a screenshot of the editor (default behavior).
+      Display the first completion line when ready, and expand the code to make room for the multi-line completion.
+      Requires Screen Recording permission.
       """
     }
   }
