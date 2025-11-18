@@ -10,6 +10,7 @@ import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/ch
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
 import { registerEndpoint as registerListModelsEndpoint } from "./endpoints/listModels"
 import { registerEndpoint as registerACPClientEndpoint } from "./endpoints/sendMessage/acp/clients/ACPClient"
+import { registerEndpoint as registerCodeCompletionEndpoint } from "./endpoints/codeCompletion/codeCompletion"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -47,9 +48,8 @@ const aiProviders = [
 	new GroqAIProvider(),
 	new GeminiAIProvider(),
 ]
-registerSendMessageEndpoint(router, aiProviders, () => {
-	return connectionInfo.port
-})
+registerSendMessageEndpoint(router, aiProviders)
+registerCodeCompletionEndpoint(router, aiProviders)
 registerListModelsEndpoint(router, aiProviders)
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)

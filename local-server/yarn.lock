@@ -1709,6 +1709,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mistralai/mistralai@npm:^1.10.0":
+  version: 1.10.0
+  resolution: "@mistralai/mistralai@npm:1.10.0"
+  dependencies:
+    zod: "npm:^3.20.0"
+    zod-to-json-schema: "npm:^3.24.1"
+  checksum: 10c0/1fb5948a18559f14e39ed55d780648baa988446799d8ebdd5d609670a9cc6ef41afca90aa2864685e5b4c3c6b2c95d18356ab0c191943f246ac9f5626fdec485
+  languageName: node
+  linkType: hard
+
 "@modelcontextprotocol/sdk@npm:^1.17.0":
   version: 1.17.0
   resolution: "@modelcontextprotocol/sdk@npm:1.17.0"
@@ -7540,6 +7550,7 @@ __metadata:
     "@anthropic-ai/claude-agent-sdk": "npm:^0.1.15"
     "@anthropic-ai/sdk": "npm:^0.63.0"
     "@eslint/js": "npm:^9.19.0"
+    "@mistralai/mistralai": "npm:^1.10.0"
     "@modelcontextprotocol/sdk": "npm:^1.17.0"
     "@openrouter/ai-sdk-provider": "npm:^1.1.2"
     "@sentry/esbuild-plugin": "npm:^4.3.0"
@@ -10588,7 +10599,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.0.0, zod@npm:^3.23.8, zod@npm:^3.25.76":
+"zod@npm:^3.0.0, zod@npm:^3.20.0, zod@npm:^3.23.8, zod@npm:^3.25.76":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c

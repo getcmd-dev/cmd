@@ -1,5 +1,3 @@
-import { ListedFileInfo } from "./listFilesSchema"
-
 export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string

@@ -40,7 +40,7 @@ import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
 
-export const registerEndpoint = (router: Router, aiProviders: AIProvider[], getPort: () => number) => {
+export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
 			throw new UserFacingError({
