@@ -372,7 +372,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
   }
 
   private func applyWithXcodeExtension(fileChange: FileChange) async throws {
-    _ = try await tasksQueue.queueAndAwait { [weak self] () -> ExtensionResult in
+    let result = try await tasksQueue.queueAndAwait { [weak self] () -> ExtensionResult in
       guard let self else {
         throw AppError(message: "XcodeController deallocated")
       }
@@ -391,6 +391,13 @@ final class DefaultXcodeController: XcodeController, Sendable {
       let duration = Date().timeIntervalSince(start)
       defaultLogger.log("Time to trigger extension: \(duration)")
       return result
+    }
+    switch result {
+    case .applyEditResult(let result):
+      try result.get()
+    default:
+      assertionFailure("Unexpected extension result type")
+      throw AppError(message: "Unexpected extension result type")
     }
   }
 
