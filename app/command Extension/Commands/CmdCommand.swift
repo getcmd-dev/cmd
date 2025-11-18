@@ -34,7 +34,8 @@ final class CmdCommand: CommandType, @unchecked Sendable {
           handleApplyEdit(fileChange: fileChange, buffer: invocation.buffer)
 
         case .reloadSettings:
-          handleReloadSettings()
+          // For reload settings, we need to send the ping before crashing
+          .reloadSettingsResult
 
         case .getFormattingMetadata:
           handleGetFormattingMetadata(buffer: invocation.buffer)
@@ -46,6 +47,11 @@ final class CmdCommand: CommandType, @unchecked Sendable {
 
       // Step 3: Send the result back to the host app
       let _: EmptyResponse = try await LocalServer().send(.sendResult(result))
+
+      // Step 4: If this was a reload settings request, crash the extension after sending the result
+      if case .reloadSettings = input {
+        handleReloadSettings()
+      }
     } catch {
       defaultLogger.error("Internal action failed: \(error.localizedDescription)")
     }
@@ -64,13 +70,12 @@ final class CmdCommand: CommandType, @unchecked Sendable {
     }
   }
 
-  private func handleReloadSettings() -> ExtensionResult {
+  private func handleReloadSettings() {
     // Force crash the extension to trigger reload
     Task {
       try await Task.sleep(nanoseconds: 100_000_000)
       fatalError("Killing extension to reload settings")
     }
-    return .reloadSettingsResult
   }
 
   private func handleGetFormattingMetadata(buffer: XCSourceTextBuffer) -> ExtensionResult {

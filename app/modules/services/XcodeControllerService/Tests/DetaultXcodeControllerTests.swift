@@ -39,7 +39,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .xcodeExtension)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         xcodeExtensionTriggered.fulfill()
       })
 
@@ -91,7 +91,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .directIO)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -128,7 +128,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .directIO)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         xcodeExtensionTriggered.fulfill()
       })
 
@@ -181,7 +181,7 @@ struct DefaultXcodeControllerTests {
         pointReleaseXcodeExtensionToDebugApp: false,
         fileEditMode: .xcodeExtension)),
       fileManager: mockFileManager,
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -204,7 +204,7 @@ struct DefaultXcodeControllerTests {
     // given
     let controller = DefaultXcodeController(
       appsActivationState: .just(.inactive),
-      startApplyingFileChangeWithXcodeExtension: {
+      triggerExtensionCommand: {
         Issue.record("Xcode extension should not have been triggered")
       })
 
@@ -225,7 +225,7 @@ extension DefaultXcodeController {
     fileManager: MockFileManager = MockFileManager(),
     appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState> = .just(.inactive),
     timeout: TimeInterval = 10,
-    startApplyingFileChangeWithXcodeExtension: @escaping @Sendable () async throws -> Void = { })
+    triggerExtensionCommand: @escaping @Sendable () async throws -> Void = { })
   {
     self.init(
       appEventHandlerRegistry: appEventHandlerRegistry,
@@ -236,6 +236,6 @@ extension DefaultXcodeController {
       appsActivationState: appsActivationState,
       timeout: timeout,
       canUseAppleScript: false,
-      startApplyingFileChangeWithXcodeExtension: startApplyingFileChangeWithXcodeExtension)
+      triggerExtensionCommand: triggerExtensionCommand)
   }
 }
