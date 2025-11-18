@@ -767,12 +767,13 @@ final class ChatInputViewModel {
           throw TimeoutError()
         }
 
+        defer { group.cancelAll() }
+
         // Return the first result and cancel the other task
         guard let result = try await group.next() else {
           assertionFailure("Task group should never be empty")
           throw AppError("File suggestion task group returned no results")
         }
-        group.cancelAll()
         return result
       }
     }

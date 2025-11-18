@@ -14,6 +14,16 @@ import SettingsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
 
+let executableVersion = "1.396.0"
+
+extension FileManagerI {
+  var expectedExecutablePath: URL? {
+    urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+      .appendingPathComponent(Bundle.main.hostAppBundleId)
+      .appendingPathComponent("copilot-language-server-\(executableVersion)")
+  }
+}
+
 // MARK: - DefaultGithubCopilotService
 
 @ThreadSafe
@@ -24,13 +34,13 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     self.fileManager = fileManager
     self.jrpcService = jrpcService
     logger = defaultLogger.subLogger(subsystem: "githubCopilotService")
-    let expectedExecutablePath = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-      .appendingPathComponent(Bundle.main.hostAppBundleId)
-      .appendingPathComponent("copilot-language-server-\(executableVersion)")
+    let expectedExecutablePath = fileManager.expectedExecutablePath
     self.expectedExecutablePath = expectedExecutablePath
 
-    _isLSPServerInstalled = CurrentValueSubject<Bool, Never>(
-      expectedExecutablePath.map { fileManager.fileExists(atPath: $0.path) } ?? false)
+    let currentVersionInstalled = expectedExecutablePath.map { fileManager.fileExists(atPath: $0.path) } ?? false
+    let hasAnyVersionInstalled = Self.hasAnyLSPServerVersion(fileManager: fileManager)
+
+    _isLSPServerInstalled = CurrentValueSubject<Bool, Never>(currentVersionInstalled)
 
     let (executablePath, setExecutablePath) = Future<URL, Error>.make()
     self.executablePath = executablePath
@@ -40,8 +50,10 @@ final class DefaultGithubCopilotService: GithubCopilotService {
     self.authServer = authServer
     self.setAuthServer = setAuthServer
 
-    if _isLSPServerInstalled.value {
-      // If the server is already installed, calling `installLSPServer` will start the auth server
+    // Install if either:
+    // 1. Current version is already installed (need to start auth server)
+    // 2. A previous version exists but current version doesn't (need to upgrade)
+    if currentVersionInstalled || hasAnyVersionInstalled {
       Task {
         try await installLSPServer()
       }
@@ -124,7 +136,6 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   }
 
   private var cancellables = Set<AnyCancellable>()
-  private let executableVersion = "1.389.0"
 
   private let shellService: ShellService
   private let fileManager: FileManagerI
@@ -134,6 +145,37 @@ final class DefaultGithubCopilotService: GithubCopilotService {
 
   /// Each workspace needs its own LSP server instance
   private var servers = [URL: GithubCopilotServer]()
+
+  /// Checks if any version of the LSP server has been installed previously
+  private static func hasAnyLSPServerVersion(fileManager: FileManagerI) -> Bool {
+    guard
+      let dirPath = fileManager.expectedExecutablePath?.deletingLastPathComponent(),
+      let contents = try? fileManager.contentsOfDirectory(at: dirPath)
+    else { return false }
+
+    return contents.contains { $0.lastPathComponent.hasPrefix("copilot-language-server-") }
+  }
+
+  /// Removes old versions of the LSP server, keeping only the current version
+  private func cleanupOldVersions() {
+    guard
+      let dirPath = fileManager.expectedExecutablePath?.deletingLastPathComponent(),
+      let contents = try? fileManager.contentsOfDirectory(at: dirPath).map(\.lastPathComponent)
+    else { return }
+
+    let currentVersionName = "copilot-language-server-\(executableVersion)"
+    let oldVersions = contents.filter { $0.hasPrefix("copilot-language-server-") && $0 != currentVersionName }
+
+    for oldVersion in oldVersions {
+      let oldVersionPath = dirPath.appendingPathComponent(oldVersion)
+      do {
+        try fileManager.removeItem(atPath: oldVersionPath.path)
+        logger.info("Removed old LSP server version: \(oldVersion)")
+      } catch {
+        logger.error("Failed to remove old LSP server version \(oldVersion): \(error)", error)
+      }
+    }
+  }
 
   private func handle(authServerNotification: JRPCNotification) {
     if authServerNotification.method == "didChangeStatus" {
@@ -182,6 +224,9 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       env["COPILOT_LANGUAGE_SERVER_VERSION"] = executableVersion
       env["COPILOT_LANGUAGE_SERVER_INSTALL_PATH"] = executablePath.path
       try await shellService.runAndThrows("/bin/bash \"\(installScriptPath.path)\"", env: env)
+
+      // Clean up old versions after successful installation
+      cleanupOldVersions()
     }
 
     if !fileManager.fileExists(atPath: executablePath.path) {
