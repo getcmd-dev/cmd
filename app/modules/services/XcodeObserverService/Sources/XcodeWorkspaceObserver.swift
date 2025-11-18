@@ -91,10 +91,12 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     else {
       return
     }
-    let removedEditorObservers = editorObservers.filter { inspector in
-      !self.editorObservers.contains(where: { $0 === inspector })
+    // Stop tracking removed observers
+    self.editorObservers.filter { observer in
+      !editorObservers.contains(where: { $0 === observer })
     }
-    removedEditorObservers.forEach(stopTracking(_:))
+    .forEach(stopTracking(_:))
+
     self.editorObservers = editorObservers
 
     // Update tabs
