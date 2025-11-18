@@ -1317,7 +1317,8 @@ struct GithubCopilotServerTests {
   func test_serviceDetectsOldVersionsAndValidatesCleanup() async throws {
     // given
 
-    // Create file manager with current version already installed
+    // Create file manager with only the old version (1.0.0) installed.
+    // This test expects the service to detect the old version and upgrade to the current version.
     // Note: MockFileManager returns "/mock/applicationSupport" for application support directory
     // and Bundle.main.hostAppBundleId returns "dev.getcmd.command" in tests
     let appSupportDir = "/mock/applicationSupport/dev.getcmd.command"
