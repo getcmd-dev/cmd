@@ -3,6 +3,7 @@ Target.module(
   dependencies: [
     "AppFoundation",
     "CodeCompletionFoundation",
+    "CodeCompletionServiceInterface",
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",

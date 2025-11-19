@@ -6,6 +6,7 @@ Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatFoundation",
+    "CodeCompletionServiceInterface",
     "ConcurrencyFoundation",
     "DLS",
     "ExtensionEventsInterface",

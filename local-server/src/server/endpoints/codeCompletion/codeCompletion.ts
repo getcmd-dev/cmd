@@ -56,7 +56,7 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 			// build prefix
 			const prefix = (() => {
 				let prefix = ""
-				const maxPrefixLength = 10000
+				const maxPrefixLength = 2000
 				const minCodeLines = 10
 				if (body.pasteboardContent) {
 					prefix = `<pasteboard>${body.pasteboardContent}</pasteboard>\n${prefix}`
@@ -74,8 +74,11 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 					budget -= line.length + 1 // +1 for the newline character
 					selectedPrefixLinesCount += 1
 				}
-				selectedPrefixLinesCount = Math.min(selectedPrefixLinesCount, minCodeLines)
-				prefix = `${prefix}\n${prefixLines.slice(0, selectedPrefixLinesCount).join("\n")}`
+				logInfo(
+					`selectedPrefixLinesCount: ${selectedPrefixLinesCount} prefixLines.length: ${prefixLines.length} body.prefix: '${body.prefix}'`,
+				)
+				selectedPrefixLinesCount = Math.max(selectedPrefixLinesCount, minCodeLines)
+				prefix = `${prefix}\n${prefixLines.slice(0, selectedPrefixLinesCount).reverse().join("\n")}`
 				return prefix
 			})()
 
@@ -84,7 +87,7 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				if (!body.suffix) {
 					return undefined
 				}
-				const maxSuffixLength = 10000
+				const maxSuffixLength = 2000
 				const minCodeLines = 10
 				const suffixLines = body.suffix.split("\n")
 				let selectedSuffixLinesCount = 0
@@ -96,11 +99,14 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 					budget -= line.length + 1 // +1 for the newline character
 					selectedSuffixLinesCount += 1
 				}
-				selectedSuffixLinesCount = Math.min(selectedSuffixLinesCount, minCodeLines)
+				selectedSuffixLinesCount = Math.max(selectedSuffixLinesCount, minCodeLines)
 				return suffixLines.slice(0, selectedSuffixLinesCount).join("\n")
 			})()
 
-			const client = new Mistral({ apiKey: "zT7jUXi9QQCEtC0Naedtu3dOhoSRfEbm" })
+			const client = new Mistral({
+				apiKey: "zT7jUXi9QQCEtC0Naedtu3dOhoSRfEbm",
+				serverURL: process.env["MISTRAL_LOCAL_SERVER_PROXY"]?.replace("/v1", ""),
+			})
 			const result = await client.fim.complete({
 				model: "codestral-latest",
 				prompt: prefix,

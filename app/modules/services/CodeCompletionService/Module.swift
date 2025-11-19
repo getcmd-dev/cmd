@@ -10,6 +10,8 @@ Target.module(
     "DependencyFoundation",
     "FileDiffFoundation",
     "FoundationInterfaces",
+    "LLMFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "SettingsServiceInterface",

@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodeCompletionFoundation
 import Foundation
 import SharedValuesFoundation
 
@@ -24,10 +25,14 @@ public protocol CodeCompletionProvider: Sendable {
     selection: Range,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
-    async throws -> CompletionSuggestion?
+    async throws -> RawCompletionSuggestion?
   /// A unique identifier for the provider.
   /// It should remain stable across app updates.
   var id: String { get }
+  /// A user-friendly name for the provider.
+  var displayName: String { get }
+  /// Whether the provider is currently available/setup.
+  var isAvailable: Bool { get }
 
   func setUp(workspace: Workspace)
 
@@ -66,12 +71,6 @@ public protocol CodeCompletionProvider: Sendable {
   ///  - workspace: The workspace within which the file resides.
   ///  - file: The URL of the file that was deleted.
   func didDelete(workspace: Workspace, file: URL)
-}
-
-// MARK: - CodeCompletionProvidersPluginProviding
-
-public protocol CodeCompletionProvidersPluginProviding {
-  var codeCompletionProviders: [any CodeCompletionProvider] { get }
 }
 
 // MARK: - Workspace

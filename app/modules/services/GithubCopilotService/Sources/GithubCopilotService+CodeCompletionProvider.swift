@@ -3,6 +3,7 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+import CodeCompletionServiceInterface
 import Foundation
 import LoggingServiceInterface
 import SharedValuesFoundation
@@ -20,7 +21,7 @@ extension DefaultGithubCopilotService {
     selection: CodeCompletionFoundation.Range,
     pasteboardContent _: String?,
     formattingMetadata: FileFormattingMetadata?)
-    async throws -> CompletionSuggestion?
+    async throws -> RawCompletionSuggestion?
   {
     logger.trace("Requesting completion suggestion from LSP server")
     // Use formatting metadata from Xcode if available, otherwise use defaults
@@ -44,14 +45,14 @@ extension DefaultGithubCopilotService {
     }
 
     if let range = completion.range {
-      return CompletionSuggestion(
+      return RawCompletionSuggestion(
         file: file,
         startPosition: .init(line: range.start.line, character: range.start.character),
         endPosition: .init(line: range.end.line, character: range.end.character),
         completion: completion.insertText,
         id: UUID())
     } else {
-      return CompletionSuggestion(
+      return RawCompletionSuggestion(
         file: file,
         startPosition: selection.start,
         endPosition: selection.start, // Start here, as we only give Github the start position of the selected range.

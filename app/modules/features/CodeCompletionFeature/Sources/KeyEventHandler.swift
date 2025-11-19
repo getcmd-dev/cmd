@@ -5,9 +5,11 @@
 
 import AppKit
 import Foundation
+import LoggingServiceInterface
 
 // MARK: - KeyEventHandler.Configuration
 
+/// Configuration for KeyEventHandler
 extension KeyEventHandler {
   /// Configuration for key event monitoring
   struct Configuration {
@@ -138,22 +140,34 @@ final class KeyEventHandler {
         options: .defaultTap,
         eventsOfInterest: eventMask,
         callback: { proxy, type, event, refcon -> Unmanaged<CGEvent>? in
-          guard let refcon else { return Unmanaged.passUnretained(event) }
+          let d = Date()
+          guard let refcon else {
+            performanceLogger
+              .log(
+                "key \(event.getIntegerValueField(.keyboardEventKeycode)) handed in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970)")
+            return Unmanaged.passUnretained(event)
+          }
 
           let handler = Unmanaged<KeyEventHandler>.fromOpaque(refcon).takeUnretainedValue()
-          return handler.handleEvent(proxy: proxy, type: type, event: event)
+          let result = handler.handleEvent(proxy: proxy, type: type, event: event)
+
+          performanceLogger
+            .log(
+              "key \(event.getIntegerValueField(.keyboardEventKeycode)) handed in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
+          return result
         },
         userInfo: Unmanaged.passUnretained(self).toOpaque())
     else {
-      print("Failed to create event tap. Make sure accessibility permissions are granted.")
       return
     }
 
     eventTap = tap
     runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+    // Store the run loop we're adding to, so we can remove from the correct one
+    runLoop = CFRunLoopGetCurrent()
 
-    if let source = runLoopSource {
-      CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
+    if let source = runLoopSource, let runLoop {
+      CFRunLoopAddSource(runLoop, source, .commonModes)
       CGEvent.tapEnable(tap: tap, enable: true)
     }
   }
@@ -162,17 +176,20 @@ final class KeyEventHandler {
   func stop() {
     if let tap = eventTap {
       CGEvent.tapEnable(tap: tap, enable: false)
-      if let source = runLoopSource {
-        CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
+      if let source = runLoopSource, let runLoop {
+        CFRunLoopRemoveSource(runLoop, source, .commonModes)
       }
       CFMachPortInvalidate(tap)
     }
     eventTap = nil
     runLoopSource = nil
+    runLoop = nil
   }
 
   private var eventTap: CFMachPort?
   private var runLoopSource: CFRunLoopSource?
+  /// Store the run loop we added the source to, so we can remove from the correct one
+  private var runLoop: CFRunLoop?
   private let configuration: Configuration
   private let callbacks: Callbacks
   /// Track whether the monitored modifier key is currently pressed
@@ -239,7 +256,6 @@ final class KeyEventHandler {
 
       if isDoubleTap {
         // This is a double-tap
-        print("KeyEventHandler: Double-tap detected for keyCode \(configuration.keyCode)")
         // Reset timer to prevent triple-tap from triggering another double-tap
         lastKeyUpTime = nil
         // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
@@ -251,7 +267,6 @@ final class KeyEventHandler {
       } else {
         // Not a double-tap - call onKeyUp if it exists
         if let onKeyUp = callbacks.onKeyUp {
-          print("KeyEventHandler: Single keyUp for keyCode \(configuration.keyCode)")
           shouldConsume = onKeyUp(false, flags)
         } else {
           shouldConsume = false
@@ -265,7 +280,6 @@ final class KeyEventHandler {
     }
 
     // Return nil to consume the event, or pass it through
-    print("KeyEventHandler: Returning shouldConsume=\(shouldConsume) for keyCode \(configuration.keyCode)")
     return shouldConsume ? nil : Unmanaged.passUnretained(event)
   }
 

@@ -101,6 +101,10 @@ extension FileDiff {
         case (true, false):
           changeType = .removed
         case (false, false):
+          // Tmp debug
+          print("??")
+          let diffText = try? FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+          print("??")
           assertionFailure("Encountered a newline character that wasn't preceded or followed by a newline in either file")
           continue
         }

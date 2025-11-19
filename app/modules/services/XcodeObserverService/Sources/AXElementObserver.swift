@@ -60,7 +60,7 @@ class AXElementObserver: @unchecked Sendable {
     }
 
     Task { [weak self] in
-      try await Task.sleep(nanoseconds: 100_000_000)
+      try await Task.sleep(nanoseconds: 1_000_000_000)
       self?.monitorAXUIElementIsValid()
     }
   }

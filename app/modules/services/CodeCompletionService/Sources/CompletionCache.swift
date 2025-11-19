@@ -38,18 +38,20 @@ final class CompletionCache: Sendable {
     let fileURL: URL
     let prefix: String
     let suffix: String
-    let completion: AppliedCompletionSuggestion
+    let completion: CompletionSuggestion
   }
 
-  func store(suggestion: AppliedCompletionSuggestion, for request: CompletionCacheRequest) {
+  func store(suggestion: CompletionSuggestion, for request: CompletionCacheRequest) -> Int {
     let oldContent = request.content
     let newContent = suggestion.newContent
     let prefix = oldContent.commonPrefix(with: newContent)
     let suffix = oldContent.commonSuffix(with: newContent)
-    cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: suggestion))
+    return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: suggestion))
   }
 
-  func get(for request: CompletionCacheRequest) -> CodeCompletionServiceInterface.CompletionSuggestion? {
+  func get(for request: CompletionCacheRequest)
+    -> (cacheId: Int, suggestion: CodeCompletionServiceInterface.CompletionSuggestion)?
+  {
     let content = request.content
     for (k, cached) in cachedSuggestions {
       if cached.fileURL != request.file { continue }
@@ -59,7 +61,12 @@ final class CompletionCache: Sendable {
       let middleContent = String(content.dropFirst(cached.prefix.count).dropLast(cached.suffix.count))
       if middleContent.matches(cached.completion.diff) {
         cachedSuggestions.use(k)
-        return cached.completion.applied(to: request, changedRange: changedRange)
+
+        if let suggestion = cached.completion.applied(to: request, changedRange: changedRange) {
+          return (cacheId: k, suggestion: suggestion)
+        } else {
+          return nil
+        }
       }
     }
     return nil
@@ -278,21 +285,24 @@ extension StringProtocol {
   }
 }
 
-extension AppliedCompletionSuggestion {
-  func applied(to request: CompletionCacheRequest, changedRange: Range) -> AppliedCompletionSuggestion? {
+extension CompletionSuggestion {
+  func applied(to request: CompletionCacheRequest, changedRange: Range) -> CompletionSuggestion? {
     let completion = diff.inline
       .trimming(while: { $0.type == .unchanged })
       .filter { $0.type != .removed }
       .map(\.text)
       .joined()
 
-    return RawCompletionSuggestion(
+    let res = RawCompletionSuggestion(
       file: request.file,
       startPosition: changedRange.start,
       endPosition: changedRange.end,
       completion: completion,
       id: UUID())
       .applied(to: request.content, file: request.file, selection: request.selection)
+
+    print(res?.diff.debugDescription ?? "no diff")
+    return res
   }
 }
 

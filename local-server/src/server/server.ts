@@ -20,6 +20,7 @@ import { OpenAIAIProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterAIProvider } from "./providers/open-router"
 import { GroqAIProvider } from "./providers/groq"
+import { MistralAIProvider } from "./providers/mistral"
 import { GeminiAIProvider } from "./providers/gemini"
 
 const connectionInfo: ConnectionInfo = {
@@ -47,6 +48,7 @@ const aiProviders = [
 	new OpenRouterAIProvider(),
 	new GroqAIProvider(),
 	new GeminiAIProvider(),
+	new MistralAIProvider(),
 ]
 registerSendMessageEndpoint(router, aiProviders)
 registerCodeCompletionEndpoint(router, aiProviders)

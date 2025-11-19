@@ -17,7 +17,8 @@ struct AIProviderView: View {
     isConnected: Bool,
     enabledModels: [AIModelID],
     onSettingsChanged: ((AIProviderSettings?) -> Void)?,
-    onSelectModels: (() -> Void)?)
+    onSelectModels: (() -> Void)?,
+    frameless: Bool = false)
   {
     self.viewModel = viewModel
     self.provider = provider
@@ -26,6 +27,7 @@ struct AIProviderView: View {
     self.enabledModels = enabledModels
     self.onSettingsChanged = onSettingsChanged
     self.onSelectModels = onSelectModels
+    self.frameless = frameless
     modelsAvailable = viewModel.modelsAvailable(for: provider)
   }
 
@@ -92,8 +94,7 @@ struct AIProviderView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(Color(NSColor.textBackgroundColor))
-            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
+            .with(cornerRadius: 6, backgroundColor: Color(NSColor.textBackgroundColor), borderColor: Color.gray.opacity(0.3))
 
             Text("API keys are stored securely in the keychain")
               .font(.footnote)
@@ -123,15 +124,16 @@ struct AIProviderView: View {
           .foregroundColor(.primary)
           .padding(.horizontal, 12)
           .padding(.vertical, 8)
-          .background(Color(NSColor.textBackgroundColor))
-          .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
+          .with(cornerRadius: 6, backgroundColor: Color(NSColor.textBackgroundColor), borderColor: Color.gray.opacity(0.3))
         }
         .buttonStyle(.plain)
       }
     }
-    .padding(16)
-    .background(Color(NSColor.controlBackgroundColor))
-    .with(cornerRadius: 12, borderColor: Color.gray.opacity(0.2))
+    .padding(frameless ? 0 : 16)
+    .with(
+      cornerRadius: frameless ? nil : 12,
+      backgroundColor: frameless ? nil : Color(NSColor.textBackgroundColor),
+      borderColor: frameless ? nil : Color.gray.opacity(0.2))
     .onAppear {
       loadCurrentSettings()
     }
@@ -160,6 +162,7 @@ struct AIProviderView: View {
   private let isConnected: Bool
   private let onSettingsChanged: ((AIProviderSettings?) -> Void)?
   private let onSelectModels: (() -> Void)?
+  private let frameless: Bool
 
   private var enabledModelsCount: Int {
     modelsAvailable.wrappedValue
@@ -227,6 +230,8 @@ extension AIProvider {
       "Codex"
     case .gemini:
       "Gemini"
+    case .mistral:
+      "Mistral"
     default:
       "Unknown provider"
     }

@@ -414,6 +414,8 @@ extension Schema.APIProvider {
         return .groq
       case .gemini:
         return .gemini
+      case .mistral:
+        return .mistral
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }

@@ -3,6 +3,7 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+import CodeCompletionServiceInterface
 @preconcurrency import Combine
 import Foundation
 import FoundationInterfaces

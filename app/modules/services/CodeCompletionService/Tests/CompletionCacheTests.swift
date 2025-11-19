@@ -319,7 +319,7 @@ struct CompletionCacheTests {
     file: URL? = nil,
     cursor: Position,
     changeRange: Range? = nil)
-    -> AppliedCompletionSuggestion?
+    -> CompletionSuggestion?
   {
     let file = file ?? URL(fileURLWithPath: "/test.swift")
     let completion = RawCompletionSuggestion(

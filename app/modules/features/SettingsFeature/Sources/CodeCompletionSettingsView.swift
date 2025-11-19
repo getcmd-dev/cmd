@@ -1,8 +1,11 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import CodeCompletionServiceInterface
+import Dependencies
 import DLS
 import GithubCopilotFeatureInterface
+import LLMFoundation
 import RoutingFoundation
 import SettingsServiceInterface
 import SwiftUI
@@ -13,6 +16,8 @@ struct CodeCompletionSettingsView: View {
   @Binding var enableCodeCompletion: Bool
   @Binding var codeCompletionDebounceMs: Int
   @Binding var multiLineCodeCompletionDisplayMode: MultiLineCodeCompletionDisplayMode
+  @Binding var codeCompletionProviderId: String?
+  @Bindable var llmSettingsViewModel: LLMSettingsViewModel
 
   var body: some View {
     ScrollView {
@@ -121,13 +126,11 @@ struct CodeCompletionSettingsView: View {
           .disabledOverlay(isDisabled: !enableCodeCompletion)
 
           // Provider
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Provider").frame(maxWidth: .infinity, alignment: .leading)
-
-            CodeCompletionProviderSection()
-          }
-          .frame(maxWidth: .infinity)
-          .disabledOverlay(isDisabled: !enableCodeCompletion)
+          CodeCompletionProviderSection(
+            codeCompletionProviderId: $codeCompletionProviderId,
+            llmSettingsViewModel: llmSettingsViewModel)
+            .frame(maxWidth: .infinity)
+            .disabledOverlay(isDisabled: !enableCodeCompletion)
         }
         .padding(16)
         .with(cornerRadius: 8, backgroundColor: Color(NSColor.controlBackgroundColor), borderColor: Color.gray.opacity(0.2))
@@ -158,8 +161,121 @@ struct CodeCompletionSettingsView: View {
 // MARK: - CodeCompletionProviderSection
 
 private struct CodeCompletionProviderSection: View {
+  @Dependency(\.codeCompletionProviders) private var codeCompletionProviders
+  @State private var isSelecting = false
+  @Binding var codeCompletionProviderId: String?
+  @Bindable var llmSettingsViewModel: LLMSettingsViewModel
+
+  @Environment(\.colorScheme) private var colorScheme
+
   var body: some View {
-    AnyView(router.embed(route: GithubCopilotRoute()))
+    // Selected provider
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        VStack(alignment: .leading) {
+          Text("Provider")
+          Text("The AI provider for autocompletion")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+        Spacer()
+
+        HoveredButton(
+          action: {
+            isSelecting.toggle()
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 4,
+          cornerRadius: 6)
+        {
+          HStack {
+            if let selectedProvider {
+              HStack {
+                Text(selectedProvider.displayName)
+                Spacer(minLength: 0)
+                Circle()
+                  .fill(selectedProvider.isAvailable ? .green : .red)
+                  .frame(width: 8, height: 8)
+              }
+              //                      }
+            } else {
+              Text("Select")
+            }
+            IconButton(action: { }, systemName: isSelecting ? "chevron.down" : "chevron.right")
+              .frame(square: 12)
+          }
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      // Exanded selection
+      if isSelecting {
+        ForEach(codeCompletionProviders.enumerated(), id: \.offset) { _, provider in
+          VStack(alignment: .leading) {
+            if provider.id == "github-copilot" {
+              AnyView(router.embed(route: GithubCopilotRoute()))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else if let aiProvider = self.provider(id: provider.id) {
+              AIProviderView(
+                viewModel: llmSettingsViewModel,
+                provider: aiProvider,
+                providerSettings: llmSettingsViewModel.providerSettings[aiProvider],
+                isConnected: aiProvider.isConnected(llmSettingsViewModel.providerSettings[aiProvider]),
+                enabledModels: llmSettingsViewModel.enabledModels,
+                onSettingsChanged: { newSettings in
+                  updateProviderSettings(for: aiProvider, with: newSettings)
+                },
+                onSelectModels: nil,
+                frameless: true)
+            }
+            HoveredButton(
+              action: {
+                codeCompletionProviderId = provider.id
+              },
+              onHoverColor: colorScheme.tertiarySystemBackground,
+              backgroundColor: colorScheme.secondarySystemBackground,
+              padding: 4,
+              cornerRadius: 6)
+            {
+              Text("Select")
+                .frame(maxWidth: .infinity)
+            }
+          }
+          .padding(8)
+          .with(
+            cornerRadius: 6,
+            backgroundColor: colorScheme.secondarySystemBackground.mix(with: colorScheme.primaryBackground, by: 0.90),
+            borderColor: provider.id == codeCompletionProviderId ? colorScheme.textAreaBorderColor : .clear)
+        }
+      }
+    }
+  }
+
+  private func updateProviderSettings(for provider: AIProvider, with newSettings: AIProviderSettings?) {
+    // Add new settings if provided
+    if let newSettings {
+      let createdOrder = llmSettingsViewModel.providerSettings[provider]?.createdOrder ?? llmSettingsViewModel.providerSettings
+        .nextCreatedOrder
+      let providerSettings = AIProviderSettings(
+        apiKey: newSettings.apiKey,
+        baseUrl: newSettings.baseUrl,
+        executable: newSettings.executable,
+        createdOrder: createdOrder)
+      llmSettingsViewModel.save(providerSettings: providerSettings, for: provider)
+    } else {
+      // Remove existing settings for this provider
+      llmSettingsViewModel.remove(provider: provider)
+    }
+  }
+
+  private func provider(id: String) -> AIProvider? {
+    AIProvider.allCases.first(where: { $0.id == id })
+  }
+
+  private var selectedProvider: CodeCompletionProvider? {
+    guard let providerID = codeCompletionProviderId else { return nil }
+    return codeCompletionProviders.first(where: { $0.id == providerID })
   }
 
   @Environment(Router.self) private var router

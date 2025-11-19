@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import CodeCompletionFoundation
 @preconcurrency import Combine
 import Foundation
 import SharedValuesFoundation
@@ -24,16 +25,19 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
   }
 
   public let id: String
+  public let displayName = "Mock Code Completion Provider"
 
   public var onSetUp: @Sendable (Workspace) -> Void
   public var onClose: @Sendable (URL) -> Void
   public var onSuggestCompletion: (@Sendable (Workspace, URL, String, Int, Range, String?, FileFormattingMetadata?) async throws
-    -> CompletionSuggestion?)?
+    -> RawCompletionSuggestion?)?
   public var onDidSave: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidOpen: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidChange: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidClose: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidDelete: @Sendable (Workspace, URL) -> Void
+
+  public var isAvailable: Bool { true }
 
   public func setUp(workspace: Workspace) {
     onSetUp(workspace)
@@ -51,7 +55,7 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
     selection: Range,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
-    async throws -> CompletionSuggestion?
+    async throws -> RawCompletionSuggestion?
   {
     guard let onSuggestCompletion else {
       throw AppError("No completion provided")

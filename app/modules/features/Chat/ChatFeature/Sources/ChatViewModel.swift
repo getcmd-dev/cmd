@@ -186,7 +186,7 @@ public class ChatViewModel {
   func closeTab(at index: Int) {
     guard index >= 0, index < tabs.count else { return }
     guard tabs.count > 1 else {
-      // Don't close the last tab, just create a new one
+      // Don't close the last tab, just repalce it with a new one
       let newTab = ChatThreadViewModel()
       newTab.isFocused = true
       tabs[0] = newTab
@@ -205,7 +205,7 @@ public class ChatViewModel {
     }
 
     // Ensure the new current tab is focused
-    tabs[currentTabIndex].isFocused = true
+    for (idx, tab) in tabs.enumerated() { tab.isFocused = idx == currentTabIndex }
 
     saveTabState()
   }

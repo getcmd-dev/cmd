@@ -90,20 +90,19 @@ struct GithubCopilotStatusView: View {
       if case .loggedIn(user: let user) = viewModel.authStatus {
         HStack {
           Text("Signed in as \(user)")
-        }
-
-        Button(action: {
-          Task {
-            try await viewModel.signOut()
+          Spacer(minLength: 0)
+          Button(action: {
+            Task {
+              try await viewModel.signOut()
+            }
+          }) {
+            HStack {
+              Image(systemName: "rectangle.portrait.and.arrow.right")
+              Text("Sign Out")
+            }
           }
-        }) {
-          HStack {
-            Image(systemName: "rectangle.portrait.and.arrow.right")
-            Text("Sign Out")
-          }
-          .frame(maxWidth: .infinity)
+          .buttonStyle(.bordered)
         }
-        .buttonStyle(.bordered)
       } else if let signInInfo = viewModel.signInInfo {
         HStack(spacing: 0) {
           Text(.init("Visit [\(signInInfo.verificationUri)](\(signInInfo.verificationUri)) and enter \(signInInfo.userCode)"))

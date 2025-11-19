@@ -6,7 +6,7 @@ import CodeCompletionServiceInterface
 import FileDiffFoundation
 import Foundation
 
-extension CodeCompletionFoundation.CompletionSuggestion {
+extension RawCompletionSuggestion {
   func applied(to content: String, file: URL, selection _: Range) -> CodeCompletionServiceInterface.CompletionSuggestion? {
     // Convert the old content to lines for position calculation
     let lines = content.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)

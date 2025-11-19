@@ -315,7 +315,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
             return false
           }
         } catch {
-          defaultLogger.error("Failed to handle extension request: \(error)")
+          defaultLogger.error("Failed to handle extension request", error)
           event.completion(.failure(error))
           return true
         }

@@ -63,6 +63,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-sdk/mistral@npm:^2.0.24":
+  version: 2.0.24
+  resolution: "@ai-sdk/mistral@npm:2.0.24"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@ai-sdk/provider-utils": "npm:3.0.17"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/da0d37822fa96eb55e41a3a663488c8bfeb492b5dbde3914560fad4f0b70c47004bd649bf0c01359a4fb09d8ab2c63385e94ab280cf554d8ffe35fb5afbad340
+  languageName: node
+  linkType: hard
+
 "@ai-sdk/openai@npm:^2.0.19":
   version: 2.0.19
   resolution: "@ai-sdk/openai@npm:2.0.19"
@@ -85,6 +97,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/83886bf188cad0cc655b680b710a10413989eaba9ec59dd24a58b985c02a8a1d50ad0f96dd5259385c07592ec3c37a7769fdf4a1ef569a73c9edbdb2cd585915
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.17":
+  version: 3.0.17
+  resolution: "@ai-sdk/provider-utils@npm:3.0.17"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/1bae6dc4cacd0305b6aa152f9589bbd61c29f150155482c285a77f83d7ed416d52bc2aa7fdaba2e5764530392d9e8f799baea34a63dce6c72ecd3de364dc62d1
   languageName: node
   linkType: hard
 
@@ -5333,7 +5358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eventsource-parser@npm:^3.0.3, eventsource-parser@npm:^3.0.5":
+"eventsource-parser@npm:^3.0.3, eventsource-parser@npm:^3.0.5, eventsource-parser@npm:^3.0.6":
   version: 3.0.6
   resolution: "eventsource-parser@npm:3.0.6"
   checksum: 10c0/70b8ccec7dac767ef2eca43f355e0979e70415701691382a042a2df8d6a68da6c2fca35363669821f3da876d29c02abe9b232964637c1b6635c940df05ada78a
@@ -7546,6 +7571,7 @@ __metadata:
     "@ai-sdk/anthropic": "npm:^2.0.6"
     "@ai-sdk/google": "npm:^2.0.8"
     "@ai-sdk/groq": "npm:^2.0.14"
+    "@ai-sdk/mistral": "npm:^2.0.24"
     "@ai-sdk/openai": "npm:^2.0.19"
     "@anthropic-ai/claude-agent-sdk": "npm:^0.1.15"
     "@anthropic-ai/sdk": "npm:^0.63.0"
