@@ -78,7 +78,9 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     let lineOffset = selection.start.line == 0 ? 0 : lineOffsets[selection.start.line - 1]
     let offset = lineOffset + selection.start.character
 
-    // TODO: make this safe regarding the offset
+    guard offset <= content.count else {
+      throw AppError("Invalid offset: \(offset) exceeds content length: \(content.count)")
+    }
     let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: offset)))
     let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: offset)))
     print(selection.start.line, selection.start.character, offset, prefix.splitLines().last, suffix.splitLines().first)
@@ -124,12 +126,16 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
       return nil
     }
 
+    if firstChoice.text != "" {
+      print("??")
+    }
+
     // For now, return the completion text as-is
     // In a full implementation, we would calculate proper start/end positions
     return RawCompletionSuggestion(
       file: file,
       startPosition: selection.start,
-      endPosition: selection.end,
+      endPosition: selection.start,
       completion: firstChoice.text,
       id: UUID())
   }

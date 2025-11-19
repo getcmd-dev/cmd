@@ -73,7 +73,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   var displayName: String { "GitHub Copilot" }
 
   var isAvailable: Bool {
-    isLSPServerInstalled.currentValue
+    _loginStatus.value.isLoggedIn
   }
 
   var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool> {
