@@ -91,7 +91,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     input.didTapSendMessage = { [weak self] textInput, attachments in
       Task { await self?.sendMessage(textInput: textInput, attachments: attachments) }
     }
-    input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
+    input.didCancelMessage = { [weak self] processQueue in
+      self?.cancelCurrentMessage(processQueue: processQueue)
+    }
 
     setUp()
   }
@@ -157,7 +159,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func cancelCurrentMessage() {
+  func cancelCurrentMessage(processQueue: Bool = true) {
     streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
@@ -172,6 +174,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     // Release the strong reference and buffer for reuse when cancelling
     chatService.stopKeepingAlive(self, for: id)
     persistThread()
+
+    // Only process queue if requested
+    if processQueue {
+      input.processNextQueuedMessage()
+    }
   }
 
   func handleToggleChatHistory() {

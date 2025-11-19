@@ -276,6 +276,51 @@ struct ChatInputViewModelTests {
   }
 
   @MainActor
+  @Test("sendQueuedMessageNow prevents race condition with processNextQueuedMessage")
+  func test_sendQueuedMessageNow_preventsRaceCondition() {
+    let viewModel = ChatInputViewModel(
+      selectedModel: .gpt,
+      activeModels: [.gpt])
+
+    var sentMessages = [String]()
+    var isStreamActive = false
+
+    viewModel.didTapSendMessage = { textInput, _ in
+      let text = textInput.string.string
+      sentMessages.append(text)
+
+      // Simulate that a stream becomes active when we send
+      isStreamActive = true
+    }
+
+    // Add multiple messages to queue to simulate a real scenario
+    let message1 = QueuedMessageModel(id: UUID(), text: "First", attachments: [], createdAt: Date())
+    let message2 = QueuedMessageModel(id: UUID(), text: "Second", attachments: [], createdAt: Date())
+    viewModel.queuedMessages = [message1, message2]
+
+    // User clicks "Send Now" on message2 while a stream is active
+    viewModel.sendQueuedMessageNow(message2)
+
+    // At this point:
+    // - "Second" should have been sent
+    // - Queue should contain only [First] (Second was removed and sent)
+    #expect(sentMessages == ["Second"])
+    #expect(viewModel.queuedMessages.count == 1)
+    #expect(viewModel.queuedMessages.first?.text == "First")
+
+    // Now simulate the OLD stream completing and calling processNextQueuedMessage
+    // This is the race condition: the old stream's completion handler runs
+    viewModel.processNextQueuedMessage()
+
+    // The bug would cause "First" to be sent, which would cancel "Second"
+    // With the fix, we should prevent this second send
+    // Expected behavior: processNextQueuedMessage should be skipped ONCE
+    // So we should still have only sent "Second", not "First"
+    #expect(sentMessages == ["Second"], "First should not be sent by the old stream's completion handler")
+    #expect(viewModel.queuedMessages.count == 1, "First should still be in the queue")
+  }
+
+  @MainActor
   @Test("deleteQueuedMessage removes message from queue")
   func test_deleteQueuedMessage() {
     let viewModel = ChatInputViewModel(
@@ -333,7 +378,7 @@ struct ChatInputViewModelTests {
     viewModel.didTapSendMessage = { _, _ in
       sendCount += 1
     }
-    viewModel.didCancelMessage = { }
+    viewModel.didCancelMessage = { _ in }
 
     // Add multiple messages to queue
     let message1 = QueuedMessageModel(id: UUID(), text: "First", attachments: [], createdAt: Date())

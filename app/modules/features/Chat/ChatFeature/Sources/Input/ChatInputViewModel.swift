@@ -153,7 +153,7 @@ final class ChatInputViewModel {
 
   var didTapSendMessage: @MainActor (TextInput, [AttachmentModel]) -> Void = { _, _ in }
 
-  var didCancelMessage: @MainActor () -> Void = { }
+  var didCancelMessage: @MainActor (_ processQueue: Bool) -> Void = { _ in }
 
   /// Messages that have been queued while the assistant is streaming a response.
   var queuedMessages = [QueuedMessageModel]()
@@ -235,7 +235,7 @@ final class ChatInputViewModel {
   /// Create a deep copy of the view model.
   func copy(
     didTapSendMessage: @escaping @MainActor (TextInput, [AttachmentModel]) -> Void,
-    didCancelMessage: @escaping @MainActor () -> Void)
+    didCancelMessage: @escaping @MainActor (Bool) -> Void)
     -> ChatInputViewModel
   {
     let model = ChatInputViewModel(
@@ -325,7 +325,7 @@ final class ChatInputViewModel {
 
     if key == .escape {
       mergeQueuedMessagesToInput()
-      didCancelMessage()
+      didCancelMessage(true) // Cancel and process queue
       return true
     }
     return false
@@ -460,17 +460,23 @@ final class ChatInputViewModel {
     attachments = []
   }
 
-  /// Send a queued message immediately by moving it to the front of the queue and processing it.
+  /// Send a queued message immediately.
   func sendQueuedMessageNow(_ message: QueuedMessageModel) {
-    // Remove the selected message from its current position
+    // Remove the selected message from queue
     queuedMessages.removeAll(where: { $0.id == message.id })
 
-    // Put it at the front of the queue
-    queuedMessages.insert(message, at: 0)
+    // Increment skip counter to prevent the old stream's completion handler
+    // from calling processNextQueuedMessage() after the cancellation.
+    skipQueueProcessingCount += 1
 
-    // Process it immediately
-    // This will handle canceling any existing stream via ChatThreadViewModel.sendMessage
-    processNextQueuedMessage()
+    // Cancel the current stream without processing the queue.
+    // This prevents the old stream's completion handler from interfering with the "Send Now" message.
+    didCancelMessage(false)
+
+    // Send the selected message directly
+    let messageText = TextInput(NSAttributedString(string: message.text))
+    let messageAttachments = message.attachments
+    didTapSendMessage(messageText, messageAttachments)
   }
 
   /// Delete a message from the queue.
@@ -485,6 +491,12 @@ final class ChatInputViewModel {
 
   /// Process the next queued message (called after current message completes).
   func processNextQueuedMessage() {
+    // Check if we should skip this queue processing
+    if skipQueueProcessingCount > 0 {
+      skipQueueProcessingCount -= 1
+      return
+    }
+
     guard !queuedMessages.isEmpty else { return }
     let message = queuedMessages.removeFirst()
 
@@ -535,6 +547,10 @@ final class ChatInputViewModel {
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
   private static let userDefaultsChatModeKey = "chatMode"
+
+  /// Counter to skip the next N calls to processNextQueuedMessage.
+  /// Used to prevent race conditions when sending queued messages immediately.
+  private var skipQueueProcessingCount = 0
 
   /// Queue of tool approval requests waiting for user response.
   /// Each entry contains both the request details and the continuation that will receive the user's decision.
