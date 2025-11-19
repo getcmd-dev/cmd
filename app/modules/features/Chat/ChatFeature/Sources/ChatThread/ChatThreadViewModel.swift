@@ -88,7 +88,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel(queuedMessages: inputModel?.queuedMessages ?? [])
-    input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
+    input.didTapSendMessage = { [weak self] textInput, attachments in
+      Task { await self?.sendMessage(textInput: textInput, attachments: attachments) }
+    }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
     setUp()
@@ -228,7 +230,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func sendMessage() async {
+  func sendMessage(textInput: TextInput, attachments: [AttachmentModel]) async {
     let projectInfo = updateProjectInfo()
 
     await updateFocusFileInfo()
@@ -251,11 +253,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       defaultLogger.error("not sending as no model selected")
       return
     }
-    let textInput = input.textInput
-    let attachments = input.attachments
-
-    input.textInput = TextInput()
-    input.attachments = []
 
     for attachment in attachments {
       switch attachment {

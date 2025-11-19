@@ -28,7 +28,7 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
     thread.add(
       messageContents: chatCompletion.newUserMessages.map { .text(.init(projectRoot: projectRoot, text: $0)) },
       role: .user)
-    defer { Task { await thread.sendMessage() } }
+    defer { Task { await thread.input.sendMessage() } }
     let preExistingEventIds = Set<String>(thread.events.map(\.id))
 
     return AsyncStream<[ChatCompletionServiceInterface.ChatEvent]> { continuation in

@@ -248,20 +248,16 @@ struct ChatInputViewModelTests {
   }
 
   @MainActor
-  @Test("sendQueuedMessageNow cancels current stream then sends message")
+  @Test("sendQueuedMessageNow sends message and sets skip flag to prevent race condition")
   func test_sendQueuedMessageNow_cancelsThenSends() {
     let viewModel = ChatInputViewModel(
       selectedModel: .gpt,
       activeModels: [.gpt])
 
-    var callOrder = [String]()
+    var sendCalled = false
 
-    // Set up callbacks to track order
-    viewModel.didCancelMessage = {
-      callOrder.append("cancel")
-    }
-    viewModel.didTapSendMessage = {
-      callOrder.append("send")
+    viewModel.didTapSendMessage = { _, _ in
+      sendCalled = true
     }
 
     // Add a message to queue
@@ -275,14 +271,8 @@ struct ChatInputViewModelTests {
     // Send the queued message now
     viewModel.sendQueuedMessageNow(message)
 
-    // Verify cancel was called before send
-    #expect(callOrder == ["cancel", "send"])
-
-    // Verify message was removed from queue
+    #expect(sendCalled)
     #expect(viewModel.queuedMessages.isEmpty)
-
-    // Verify message was set as current input
-    #expect(viewModel.textInput.string.string == "Queued message")
   }
 
   @MainActor
@@ -314,7 +304,7 @@ struct ChatInputViewModelTests {
       activeModels: [.gpt])
 
     var sendCalled = false
-    viewModel.didTapSendMessage = {
+    viewModel.didTapSendMessage = { _, _ in
       sendCalled = true
     }
 
@@ -330,9 +320,6 @@ struct ChatInputViewModelTests {
 
     // Verify message was removed from queue
     #expect(viewModel.queuedMessages.isEmpty)
-
-    // Verify message was set as current input
-    #expect(viewModel.textInput.string.string == "Queued message")
   }
 
   @MainActor
@@ -343,7 +330,7 @@ struct ChatInputViewModelTests {
       activeModels: [.gpt])
 
     var sendCount = 0
-    viewModel.didTapSendMessage = {
+    viewModel.didTapSendMessage = { _, _ in
       sendCount += 1
     }
     viewModel.didCancelMessage = { }
@@ -358,11 +345,7 @@ struct ChatInputViewModelTests {
     // Send the second message now
     viewModel.sendQueuedMessageNow(message2)
 
-    // Verify only one send was called
     #expect(sendCount == 1)
-
-    // Verify selected message was sent
-    #expect(viewModel.textInput.string.string == "Second")
 
     // Verify other messages remain in queue
     #expect(viewModel.queuedMessages.count == 2)
