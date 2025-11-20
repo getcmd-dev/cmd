@@ -82,7 +82,7 @@ export class GeminiAIProvider implements AIProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Gemini                                ->  OpenRouter
 		// models/gemini-2.0-flash-live-001      ->  google/gemini-2.0-flash-001
 		// models/gemini-2.5-flash-live-preview  ->  google/gemini-2.5-flash-preview-09-2025
@@ -99,6 +99,8 @@ export class GeminiAIProvider implements AIProvider {
 				description: model.description || match.description,
 				context_length: model.inputTokenLimit || match.context_length,
 				max_completion_tokens: model.outputTokenLimit || match.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: false,
 			}
 		}
 		return undefined

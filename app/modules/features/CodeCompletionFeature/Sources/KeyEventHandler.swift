@@ -97,7 +97,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
           let result = manager.handleEvent(proxy: proxy, type: type, event: event)
 
           performanceLogger
-            .log(
+            .trace(
               "key \(event.getIntegerValueField(.keyboardEventKeycode)) handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
           return result
         },

@@ -157,7 +157,7 @@ extension FileDiff {
       }
     }) }
 
-    // Remove context lines that are unchanged.
+    // Remove context lines that are unchanged (keep one unchanged line if the next line starts with a change).
     firstDiffLine += result.enumerated().prefix(while: { idx, lineChanges in
       lineChanges.allSatisfy({ $0.type == .unchanged }) && (idx == result.count - 1 || result[idx + 1].first?.type == .unchanged)
     }).count

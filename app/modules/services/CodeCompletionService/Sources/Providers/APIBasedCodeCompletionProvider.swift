@@ -35,6 +35,8 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
   let id: String
   let displayName: String
 
+  var recentEditsTrackers: (@Sendable (URL) async -> RecentEditsTracker?) = { _ in nil }
+
   var isAvailable: Bool {
     provider != nil
   }
@@ -55,7 +57,7 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
   }
 
   func suggestCompletion(
-    workspace _: any Workspace,
+    workspace: any Workspace,
     file: URL,
     content: String,
     version _: Int,
@@ -83,7 +85,6 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     }
     let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: offset)))
     let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: offset)))
-    print(selection.start.line, selection.start.character, offset, prefix.splitLines().last, suffix.splitLines().first)
 
     // Convert formatting metadata to schema type
     guard let formattingMetadata else {
@@ -91,25 +92,25 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     }
 
     let schemaFormattingMetadata = Schema.FileFormattingMetadata(
-      tabSize: Double(formattingMetadata.tabSize),
-      indentSize: Double(formattingMetadata.indentSize),
+      tabSize: formattingMetadata.tabSize,
+      indentSize: formattingMetadata.indentSize,
       usesTabsForIndentation: formattingMetadata.usesTabsForIndentation,
       uti: formattingMetadata.uti ?? "")
 
     // Convert selection to schema type
     let schemaSelection = Schema.CursorRange(
       start: Schema.CursorPosition(
-        line: Double(selection.start.line),
-        character: Double(selection.start.character)),
+        line: selection.start.line,
+        character: selection.start.character),
       end: Schema.CursorPosition(
-        line: Double(selection.end.line),
-        character: Double(selection.end.character)))
+        line: selection.end.line,
+        character: selection.end.character))
 
-    let requestParams = Schema.CodeCompletionRequestParams(
+    let requestParams = await Schema.CodeCompletionRequestParams(
       model: model,
       provider: provider,
       selection: schemaSelection,
-      recentEdits: nil,
+      recentEdits: recentEditsTrackers(workspace.url)?.diff,
       pasteboardContent: pasteboardContent,
       formattingMetadata: schemaFormattingMetadata,
       prefix: prefix,
@@ -127,16 +128,16 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
       return nil
     }
 
-    if firstChoice.text != "" {
-      print("??")
-    }
+    print(firstChoice.text)
+    print(firstChoice.changedRange.start)
+    print(firstChoice.changedRange.end)
 
     // For now, return the completion text as-is
     // In a full implementation, we would calculate proper start/end positions
     return RawCompletionSuggestion(
       file: file,
-      startPosition: selection.start,
-      endPosition: selection.start,
+      startPosition: .init(line: firstChoice.changedRange.start.line, character: firstChoice.changedRange.start.character),
+      endPosition: .init(line: firstChoice.changedRange.end.line, character: firstChoice.changedRange.end.character),
       completion: firstChoice.text,
       id: UUID())
   }
@@ -173,16 +174,29 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
   private let providerName: Schema.APIProviderName
   private let localServer: LocalServer
   private let settingsService: SettingsService
-
 }
 
-extension BaseProviding where Self: LocalServerProviding, Self: SettingsServiceProviding {
+extension BaseProviding where
+  Self: LocalServerProviding,
+  Self: SettingsServiceProviding,
+  Self: CodeCompletionServiceProviding
+{
   public var mistralCodeCompletionProvider: CodeCompletionProvider {
     APIBasedCodeCompletionProvider(
       id: "mistral",
       displayName: "Mistral",
       model: "codestral-latest",
       providerName: .mistral,
+      localServer: localServer,
+      settingsService: settingsService)
+  }
+
+  public var inceptionCodeCompletionProvider: CodeCompletionProvider {
+    APIBasedCodeCompletionProvider(
+      id: "inception",
+      displayName: "Inception",
+      model: "mercury-coder",
+      providerName: .inception,
       localServer: localServer,
       settingsService: settingsService)
   }

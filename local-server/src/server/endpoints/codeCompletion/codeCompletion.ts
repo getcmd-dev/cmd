@@ -4,7 +4,7 @@ import { AIProvider } from "../../providers/provider"
 import { CodeCompletionRequestParams, CodeCompletionResponseParams } from "../../schemas/codeCompletionSchema"
 import { addUserFacingError, UserFacingError } from "../../errors"
 import { streamText } from "ai"
-import { buildRequest, buildInstructPrompt, processInstructCompletion } from "./helpers"
+import { buildInstructPrompt, processInstructCompletion } from "./helpers"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/completeCode", async (req: Request, res: Response) => {
@@ -18,6 +18,7 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 
 		try {
 			const body = req.body as CodeCompletionRequestParams
+			logInfo(`received completion request body: ${JSON.stringify(body, null, 2)}`)
 
 			// Find the AI provider
 			const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
@@ -33,25 +34,6 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 			const nextEdit = aiProvider.nextEdit?.(modelName)
 
 			// logInfo(`Using completion mode: ${mode}`)
-
-			// Build the context request
-			const requestResult = buildRequest({
-				prefix: body.prefix,
-				suffix: body.suffix,
-				pasteboardContent: body.pasteboardContent,
-				recentEdits: body.recentEdits,
-				recentlyOpenedFiles: body.recentlyOpenedFiles,
-				filepath: body.filepath,
-				cursorPosition: body.selection.start,
-				formattingMetadata: body.formattingMetadata,
-			})
-
-			logInfo(
-				`Code completion request built: ${JSON.stringify({
-					snippetsIncluded: requestResult.context.snippetsIncluded,
-					tokensUsed: requestResult.context.tokensUsed,
-				})}`,
-			)
 
 			// Cleanup when disconnected
 			const abortController = new AbortController()
@@ -70,50 +52,15 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				abortController.abort()
 			})
 
-			let completion: string
-			let fullFileContent: string
-			let changedRange:
-				| {
-						start: { line: number; character: number }
-						end: { line: number; character: number }
-				  }
-				| undefined
+			let result: CodeCompletionResponseParams
 
 			// Execute based on mode
 			if (fim) {
 				// Use FIM endpoint
-				completion = await fim(
-					{
-						prefix: requestResult.prompt,
-						suffix: requestResult.suffix || "",
-					},
-					body.provider.settings,
-				)
-
-				// Process FIM completion to get full file content
-				fullFileContent = body.prefix + completion + body.suffix
-				changedRange = {
-					start: body.selection.start,
-					end: body.selection.start,
-				}
+				result = await fim(body, body.provider.settings)
 			} else if (nextEdit) {
 				// Use Next Edit endpoint (if provider supports it)
-				completion = await nextEdit(
-					{
-						prefix: body.prefix,
-						suffix: body.suffix,
-						pasteboardContent: body.pasteboardContent,
-						recentEdits: body.recentEdits,
-						recentlyOpenedFiles: body.recentlyOpenedFiles,
-						filepath: body.filepath,
-						cursorPosition: body.selection.start,
-						formattingMetadata: body.formattingMetadata,
-					},
-					body.provider.settings,
-				)
-
-				// For next edit, the completion IS the full file content
-				fullFileContent = completion
+				result = await nextEdit(body, body.provider.settings)
 			} else {
 				// Use chat completion with instruct-style prompt
 				const { model, generalProviderOptions, addProviderOptionsToMessages } = await aiProvider.build({
@@ -151,7 +98,7 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 					},
 				]
 
-				const result = await streamText({
+				const responseStream = await streamText({
 					model,
 					abortSignal: abortController.signal,
 					messages: addProviderOptionsToMessages ? addProviderOptionsToMessages(messages) : messages,
@@ -161,11 +108,11 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 
 				// Collect the full text
 				let instructCompletion = ""
-				for await (const chunk of result.textStream) {
+				for await (const chunk of responseStream.textStream) {
 					instructCompletion += chunk
 				}
 
-				completion = instructCompletion
+				const completion = instructCompletion
 
 				// Process instruct completion to get full file content
 				const processResult = processInstructCompletion(
@@ -175,21 +122,17 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 					instructPrompt.editableRegionEnd,
 					completion,
 				)
-				fullFileContent = processResult.fullFileContent
-				changedRange = processResult.changedRange
+				result = {
+					choices: [
+						{
+							text: completion,
+							changedRange: processResult.changedRange,
+						},
+					],
+				}
 			}
 
-			const response: CodeCompletionResponseParams = {
-				choices: [
-					{
-						text: completion,
-						newContent: fullFileContent,
-						changedRange,
-					},
-				],
-			}
-
-			res.write(JSON.stringify(response))
+			res.write(JSON.stringify(result))
 			res.end()
 		} catch (error) {
 			const logFile = saveLogToFile("failed_complete_code.json", JSON.stringify(req.body, null, 2))

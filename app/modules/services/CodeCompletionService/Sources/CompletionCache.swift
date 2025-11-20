@@ -38,19 +38,31 @@ final class CompletionCache: Sendable {
     let fileURL: URL
     let prefix: String
     let suffix: String
-    let completion: CompletionSuggestion
+    let completion: CompletionSuggestion?
   }
 
-  func store(suggestion: CompletionSuggestion, for request: CompletionCacheRequest) -> Int {
-    let oldContent = request.content
-    let newContent = suggestion.newContent
-    let prefix = oldContent.commonPrefix(with: newContent)
-    let suffix = oldContent.commonSuffix(with: newContent)
-    return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: suggestion))
+  func store(suggestion: CompletionSuggestion?, for request: CompletionCacheRequest) -> Int {
+    if let suggestion {
+      let oldContent = request.content
+      let newContent = suggestion.newContent
+      let prefix = oldContent.commonPrefix(with: newContent)
+      let suffix = oldContent.commonSuffix(with: newContent)
+      return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: suggestion))
+    } else {
+      let content = request.content
+      let lines = content.splitLines()
+      let lineOffsets = lines.reduce(into: [0], { acc, l in
+        acc.append((acc.last ?? 0) + l.count)
+      })
+      let cursorOffset = lineOffsets[request.selection.start.line] + request.selection.start.character
+      let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: cursorOffset)))
+      let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: cursorOffset)))
+      return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: nil))
+    }
   }
 
   func get(for request: CompletionCacheRequest)
-    -> (cacheId: Int, suggestion: CodeCompletionServiceInterface.CompletionSuggestion)?
+    -> (cacheId: Int, suggestion: CodeCompletionServiceInterface.CompletionSuggestion?)?
   {
     let content = request.content
     for (k, cached) in cachedSuggestions {
@@ -59,14 +71,18 @@ final class CompletionCache: Sendable {
       let changedRange = changedRange(content: request.content, prefix: cached.prefix, suffix: cached.suffix)
       if !changedRange.contains(request.selection) { continue }
       let middleContent = String(content.dropFirst(cached.prefix.count).dropLast(cached.suffix.count))
-      if middleContent.matches(cached.completion.diff) {
-        cachedSuggestions.use(k)
-
-        if let suggestion = cached.completion.applied(to: request, changedRange: changedRange) {
-          return (cacheId: k, suggestion: suggestion)
-        } else {
-          return nil
+      if let completion = cached.completion {
+        if middleContent.matches(completion.diff) {
+          cachedSuggestions.use(k)
+          if let suggestion = completion.applied(to: request, changedRange: changedRange) {
+            return (cacheId: k, suggestion: suggestion)
+          } else {
+            return nil
+          }
         }
+      } else if middleContent.isEmpty {
+        cachedSuggestions.use(k)
+        return (cacheId: k, suggestion: nil)
       }
     }
     return nil

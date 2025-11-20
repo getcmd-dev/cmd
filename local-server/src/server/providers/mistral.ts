@@ -6,6 +6,8 @@ import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
 import { BaseModelCard } from "@mistralai/mistralai/models/components"
 import { notUndefined } from "@/utils/typeChecks"
+import { buildFIMRequest, CodeCompletionRequestParams } from "../endpoints/codeCompletion/helpers"
+import { CodeCompletionResponseParams } from "../schemas/codeCompletionSchema"
 
 export class MistralAIProvider implements AIProvider {
 	name: APIProviderName = "mistral"
@@ -32,7 +34,7 @@ export class MistralAIProvider implements AIProvider {
 		}
 	}
 	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
-		const baseUrl = process.env["MISTRAL_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.mistral.ai"
+		const baseUrl = process.env["MISTRAL_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.mistral.ai/v1"
 
 		const headers = {}
 		if (params.apiKey) {
@@ -64,7 +66,9 @@ export class MistralAIProvider implements AIProvider {
 			"ministral",
 			"mistral-tiny",
 		]
-		allModels = allModels.filter((model) => !ignoredModelsPrefix.some((prefix) => model.id.startsWith(prefix)))
+		allModels = allModels
+			.filter((model) => !ignoredModelsPrefix.some((prefix) => model.id.startsWith(prefix)))
+			.filter((model) => !knownUnmatchedModels.includes(model.id))
 
 		let models = [
 			...matchModelData(
@@ -116,7 +120,7 @@ export class MistralAIProvider implements AIProvider {
 			.filter(notUndefined)
 		return models
 	}
-	identifyModel(model: BaseModelCard, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: BaseModelCard, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Mistral                   ->  OpenRouter
 		// magistral-medium-latest   ->  mistralai/magistral-medium-latest
 		const matchedId = `mistralai/${model.id}`
@@ -127,20 +131,26 @@ export class MistralAIProvider implements AIProvider {
 				providerId: model.id,
 				globalId: match.id,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: model.id.startsWith("codestral"),
 			}
 		}
 		return undefined
 	}
 	fim(
-		providerId: string,
-	): ((params: { prefix: string; suffix: string }, config: ProviderConfig) => Promise<string>) | undefined {
+		modelProviderId: string,
+	):
+		| ((params: CodeCompletionRequestParams, config: ProviderConfig) => Promise<CodeCompletionResponseParams>)
+		| undefined {
 		// Check if model supports FIM (codestral models do)
-		const modelName = providerId.toLowerCase()
+		const modelName = modelProviderId.toLowerCase()
 		if (!modelName.includes("codestral") && !modelName.includes("code")) {
 			return undefined
 		}
 
-		return async (params: { prefix: string; suffix: string }, config: ProviderConfig) => {
+		return async (params: CodeCompletionRequestParams, config: ProviderConfig) => {
+			const fimRequest = buildFIMRequest(params)
+
 			const baseUrl =
 				process.env["MISTRAL_LOCAL_SERVER_PROXY"] || config.baseUrl || "https://codestral.mistral.ai/v1"
 			const apiKey = config.apiKey
@@ -153,9 +163,9 @@ export class MistralAIProvider implements AIProvider {
 					...(apiKey ? { "x-api-key": apiKey } : {}),
 				},
 				body: JSON.stringify({
-					model: providerId,
-					prompt: params.prefix,
-					suffix: params.suffix,
+					model: modelProviderId,
+					prompt: fimRequest.prompt,
+					suffix: fimRequest.suffix,
 					temperature: 0.01,
 					max_tokens: 256,
 				}),
@@ -170,8 +180,61 @@ export class MistralAIProvider implements AIProvider {
 			}
 
 			const data = await response.json()
-			const completion = data.choices?.[0]?.message?.content || ""
-			return completion
+			const completion = (data.choices?.[0]?.message?.content || "") as string
+			return {
+				choices: [
+					{
+						text: completion,
+						changedRange: {
+							start: params.selection.start,
+							end: params.selection.end,
+						},
+					},
+				],
+			} satisfies CodeCompletionResponseParams
 		}
 	}
 }
+
+const knownUnmatchedModels = [
+	"mistral-large-latest",
+	"mistral-medium-latest",
+	"mistral-medium",
+	"mistral-large-pixtral-2411",
+	"codestral-latest",
+	"devstral-small-2507",
+	"devstral-small-latest",
+	"devstral-medium-latest",
+	"mistral-small-2506",
+	"mistral-small-latest",
+	"magistral-medium-2509",
+	"magistral-medium-latest",
+	"magistral-small-2509",
+	"magistral-small-latest",
+	"magistral-small-2507",
+	"magistral-medium-2507",
+	"codestral-2412",
+	"codestral-2411-rc5",
+	"mistral-small-2503",
+	"mistral-small-2501",
+	"mistral-large-latest",
+	"mistral-medium-latest",
+	"mistral-medium",
+	"mistral-large-pixtral-2411",
+	"codestral-latest",
+	"devstral-small-2507",
+	"devstral-small-latest",
+	"devstral-medium-latest",
+	"mistral-small-2506",
+	"mistral-small-latest",
+	"magistral-medium-2509",
+	"magistral-medium-latest",
+	"magistral-small-2509",
+	"magistral-small-latest",
+	"magistral-small-2507",
+	"magistral-medium-2507",
+	"codestral-2412",
+	"codestral-2411-rc5",
+	"mistral-small-2503",
+	"mistral-small-2501",
+]

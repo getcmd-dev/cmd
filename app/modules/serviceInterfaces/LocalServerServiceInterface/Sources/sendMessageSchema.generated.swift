@@ -811,6 +811,7 @@ extension Schema {
     case groq = "groq"
     case gemini = "gemini"
     case mistral = "mistral"
+    case inception = "inception"
   }    
   public struct LocalExecutable: Codable, Sendable {
     public let executable: String

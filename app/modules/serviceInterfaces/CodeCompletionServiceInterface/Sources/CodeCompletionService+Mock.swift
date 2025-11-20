@@ -21,7 +21,7 @@ public final class MockCodeCompletionService: CodeCompletionService {
     suggestion: CompletionSuggestion)?)?
   public var onCachedCompletion: (@Sendable (CompletionRequest) throws -> (
     cachedRequestId: Int,
-    suggestion: CompletionSuggestion)?)?
+    suggestion: CompletionSuggestion?)?)?
   public var onLogCompletionAcceptance: (@Sendable (CompletionSuggestion, Bool) -> Void)?
 
   public var _isAvailable: CurrentValueSubject<Bool, Never>
@@ -40,7 +40,7 @@ public final class MockCodeCompletionService: CodeCompletionService {
   }
 
   public func cachedCompletion(_ request: CompletionRequest)
-    throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion)?
+    throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
   {
     guard let onCachedCompletion else {
       throw AppError("No completion provided")

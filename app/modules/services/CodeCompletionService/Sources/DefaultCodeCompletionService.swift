@@ -55,6 +55,14 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     self.xcodeController = xcodeController
     self.permissionsService = permissionsService
 
+    // DefaultCodeCompletionService and APIBasedCodeCompletionProvider depends on each other.
+    // So we complete hooking them up post init.
+    codeCompletionProviders
+      .compactMap({ $0 as? APIBasedCodeCompletionProvider })
+      .forEach { $0.recentEditsTrackers = { [weak self] url in
+        await self?.editTracker(for: url)
+      }}
+
     var cancellables = Set<AnyCancellable>()
     permissionsService.status(for: .xcodeExtension).sink { @Sendable value in
       Task { [weak self] in
@@ -96,9 +104,15 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
-    // Don
-    return codeCompletionProviders.first
-//    return nil
+    return nil
+  }
+
+  /// Return the recent edits tracker for a workspace.
+  func editTracker(for workspaceURL: URL) -> RecentEditsTracker? {
+    guard let workspace = workspaces[workspaceURL] else {
+      return nil
+    }
+    return recentEditsTrackers[workspace]
   }
 
   // TODO: support timeout
@@ -146,6 +160,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     if let suggestion {
       let cacheId = cachedCompletions.store(suggestion: suggestion, for: request)
       return (cachedRequestId: cacheId, suggestion: suggestion)
+    } else {
+      _ = cachedCompletions.store(suggestion: nil, for: request)
     }
     return nil
   }
@@ -153,7 +169,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   nonisolated func deleteCachedCompletion(cachedRequestId _: Int) { }
 
   nonisolated func cachedCompletion(_ request: CompletionRequest) throws
-    -> (cachedRequestId: Int, suggestion: CompletionSuggestion)?
+    -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
   {
     let file = request.file
     let workspace = request.workspace // TODO

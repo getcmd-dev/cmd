@@ -62,7 +62,7 @@ export class OpenAIAIProvider implements AIProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: Model, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: Model, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// OpenAI                  ->  OpenRouter
 		// gpt-3.5-turbo           ->  openai/gpt-3.5-turbo
 		// gpt-3.5-turbo-instruct  ->  openai/gpt-3.5-turbo-instruct
@@ -74,6 +74,8 @@ export class OpenAIAIProvider implements AIProvider {
 				providerId: model.id,
 				globalId: match.id,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: false,
 			}
 		}
 		return undefined

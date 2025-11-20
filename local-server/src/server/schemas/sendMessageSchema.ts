@@ -33,6 +33,7 @@ export type APIProviderName =
 	| "groq"
 	| "gemini"
 	| "mistral"
+	| "inception"
 
 export type StreamedResponseChunk =
 	| TextDelta

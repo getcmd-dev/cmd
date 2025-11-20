@@ -22,6 +22,7 @@ import { OpenRouterAIProvider } from "./providers/open-router"
 import { GroqAIProvider } from "./providers/groq"
 import { MistralAIProvider } from "./providers/mistral"
 import { GeminiAIProvider } from "./providers/gemini"
+import { InceptionAIProvider } from "./providers/inception"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -49,6 +50,7 @@ const aiProviders = [
 	new GroqAIProvider(),
 	new GeminiAIProvider(),
 	new MistralAIProvider(),
+	new InceptionAIProvider(),
 ]
 registerSendMessageEndpoint(router, aiProviders)
 registerCodeCompletionEndpoint(router, aiProviders)

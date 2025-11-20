@@ -1,7 +1,8 @@
 import { ModelMessage, JSONValue, LanguageModel, LanguageModelUsage, ProviderMetadata } from "ai"
 import { APIProviderName } from "../schemas/sendMessageSchema"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
-import { BuildRequestParams } from "../endpoints/codeCompletion/helpers"
+import { CodeCompletionRequestParams } from "../endpoints/codeCompletion/helpers"
+import { CodeCompletionResponseParams } from "../schemas/codeCompletionSchema"
 
 /**
  * Output from building an AI provider configuration.
@@ -163,6 +164,8 @@ export type ProviderModel = {
 	rankForProgramming: number
 	/** Whether the model supports extended reasoning/thinking */
 	supportsReasoning: boolean
+	supportsCompletion: boolean
+	supportsChat: boolean
 }
 
 /**
@@ -195,14 +198,18 @@ export interface AIProvider {
 	 * @returns If the model supports FIM, returns a function that takes the prefix and suffix and returns the completion
 	 */
 	fim?: (
-		providerId: string,
-	) => ((params: { prefix: string; suffix: string }, config: ProviderConfig) => Promise<string>) | undefined
+		modelProviderId: string,
+	) =>
+		| ((params: CodeCompletionRequestParams, config: ProviderConfig) => Promise<CodeCompletionResponseParams>)
+		| undefined
 	/**
 	 * Next Edit endpoint for rewriting the text around the cursor
 	 * @param model - The model to use
 	 * @returns If the model supports Next Edit, returns a function that takes the parameters and returns the completion
 	 */
 	nextEdit?: (
-		providerId: string,
-	) => ((params: BuildRequestParams, config: ProviderConfig) => Promise<string>) | undefined
+		modelProviderId: string,
+	) =>
+		| ((params: CodeCompletionRequestParams, config: ProviderConfig) => Promise<CodeCompletionResponseParams>)
+		| undefined
 }

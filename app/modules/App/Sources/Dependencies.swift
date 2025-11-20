@@ -240,6 +240,10 @@ extension AppScope: ChatCompletionServiceProviding { }
 
 extension AppScope: ChatServiceProviding { }
 
+// MARK: - AppScope + CodeCompletionServiceProviding
+
+extension AppScope: CodeCompletionServiceProviding { }
+
 // MARK: - AppScope + CodeCompletionProvidersPluginProviding
 
 extension AppScope: CodeCompletionProvidersPluginProviding {
@@ -247,6 +251,7 @@ extension AppScope: CodeCompletionProvidersPluginProviding {
     [
       githubCopilotService,
       mistralCodeCompletionProvider,
+      inceptionCodeCompletionProvider,
     ]
   }
 }

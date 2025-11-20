@@ -42,6 +42,7 @@ public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRep
       .claudeCode,
       .codex,
       .mistral,
+      .inception,
     ]
   }
 

@@ -416,6 +416,8 @@ extension Schema.APIProvider {
         return .gemini
       case .mistral:
         return .mistral
+      case .inception:
+        return .inception
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }

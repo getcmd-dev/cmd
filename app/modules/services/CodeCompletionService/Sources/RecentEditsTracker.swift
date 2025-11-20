@@ -143,28 +143,22 @@ final class RecentEditsTracker: Sendable {
       throw AppError("Git diff failed with exit code \(process.terminationStatus)")
     }
 
-    // Remove the first 4 lines (git headers) if present
-    let lines = output.split(separator: "\n", omittingEmptySubsequences: false)
-    guard lines.count > 4 else { return output }
-
-    var result = lines.dropFirst(4).joined(separator: "\n")
+    // Remove git headers
+    var result = output
+      .splitLines()
+      .filter { !$0.starts(with: "diff --git") && !$0.starts(with: "index ") }
+      .joined()
 
     // Replace tmp paths with root paths in the diff output
-    result = result.replacingOccurrences(of: oldContentDir.path, with: root.path)
-    result = result.replacingOccurrences(of: newContentDir.path, with: root.path)
+    result = result.replacingOccurrences(of: oldContentDir.path, with: ".")
+    result = result.replacingOccurrences(of: newContentDir.path, with: ".")
     result = result.replacingOccurrences(of: "\n\\ No newline at end of file", with: "")
-    // Replace lines like index 3ee2407..403e371 100644 with a regex
-    let indexPattern = #"index [0-9a-f]+\.\.[0-9a-f]+ [0-9a-f]+\n"#
-    result = result.replacingOccurrences(
-      of: indexPattern,
-      with: "",
-      options: .regularExpression)
 
     return result
   }
 
   private func size(of diff: String) -> Int {
-    diff.split(separator: "\n").count
+    diff.splitLines().count
   }
 
   private func discardsEdits(upTo idx: Int) {

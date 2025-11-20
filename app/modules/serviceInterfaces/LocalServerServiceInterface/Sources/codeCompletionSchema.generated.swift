@@ -113,8 +113,8 @@ extension Schema {
     }
   }
   public struct CursorPosition: Codable, Sendable {
-    public let line: Double
-    public let character: Double
+    public let line: Int
+    public let character: Int
   
     private enum CodingKeys: String, CodingKey {
       case line = "line"
@@ -122,8 +122,8 @@ extension Schema {
     }
   
     public init(
-        line: Double,
-        character: Double
+        line: Int,
+        character: Int
     ) {
       self.line = line
       self.character = character
@@ -131,8 +131,8 @@ extension Schema {
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      line = try container.decode(Double.self, forKey: .line)
-      character = try container.decode(Double.self, forKey: .character)
+      line = try container.decode(Int.self, forKey: .line)
+      character = try container.decode(Int.self, forKey: .character)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -177,8 +177,8 @@ extension Schema {
     }
   }
   public struct FileFormattingMetadata: Codable, Sendable {
-    public let tabSize: Double
-    public let indentSize: Double
+    public let tabSize: Int
+    public let indentSize: Int
     public let usesTabsForIndentation: Bool
     public let uti: String
   
@@ -190,8 +190,8 @@ extension Schema {
     }
   
     public init(
-        tabSize: Double,
-        indentSize: Double,
+        tabSize: Int,
+        indentSize: Int,
         usesTabsForIndentation: Bool,
         uti: String
     ) {
@@ -203,8 +203,8 @@ extension Schema {
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      tabSize = try container.decode(Double.self, forKey: .tabSize)
-      indentSize = try container.decode(Double.self, forKey: .indentSize)
+      tabSize = try container.decode(Int.self, forKey: .tabSize)
+      indentSize = try container.decode(Int.self, forKey: .indentSize)
       usesTabsForIndentation = try container.decode(Bool.self, forKey: .usesTabsForIndentation)
       uti = try container.decode(String.self, forKey: .uti)
     }
@@ -242,67 +242,31 @@ extension Schema {
   
     public struct Choices: Codable, Sendable {
       public let text: String
-      public let newContent: String
-      public let changedRange: ChangedRange?
+      public let changedRange: CursorRange
     
       private enum CodingKeys: String, CodingKey {
         case text = "text"
-        case newContent = "newContent"
         case changedRange = "changedRange"
       }
     
       public init(
           text: String,
-          newContent: String,
-          changedRange: ChangedRange? = nil
+          changedRange: CursorRange
       ) {
         self.text = text
-        self.newContent = newContent
         self.changedRange = changedRange
       }
     
       public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         text = try container.decode(String.self, forKey: .text)
-        newContent = try container.decode(String.self, forKey: .newContent)
-        changedRange = try container.decodeIfPresent(ChangedRange?.self, forKey: .changedRange)
+        changedRange = try container.decode(CursorRange.self, forKey: .changedRange)
       }
     
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(text, forKey: .text)
-        try container.encode(newContent, forKey: .newContent)
-        try container.encodeIfPresent(changedRange, forKey: .changedRange)
-      }
-    
-      public struct ChangedRange: Codable, Sendable {
-        public let start: CursorPosition
-        public let end: CursorPosition
-      
-        private enum CodingKeys: String, CodingKey {
-          case start = "start"
-          case end = "end"
-        }
-      
-        public init(
-            start: CursorPosition,
-            end: CursorPosition
-        ) {
-          self.start = start
-          self.end = end
-        }
-      
-        public init(from decoder: Decoder) throws {
-          let container = try decoder.container(keyedBy: CodingKeys.self)
-          start = try container.decode(CursorPosition.self, forKey: .start)
-          end = try container.decode(CursorPosition.self, forKey: .end)
-        }
-      
-        public func encode(to encoder: Encoder) throws {
-          var container = encoder.container(keyedBy: CodingKeys.self)
-          try container.encode(start, forKey: .start)
-          try container.encode(end, forKey: .end)
-        }
+        try container.encode(changedRange, forKey: .changedRange)
       }
     }
   }}

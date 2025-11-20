@@ -22,11 +22,7 @@ export interface RecentlyOpenedFile {
 export interface CodeCompletionResponseParams {
 	choices: {
 		text: string
-		newContent: string
-		changedRange?: {
-			start: CursorPosition
-			end: CursorPosition
-		}
+		changedRange: CursorRange
 	}[]
 }
 
@@ -36,12 +32,24 @@ export interface CursorRange {
 }
 
 export interface CursorPosition {
+	/**
+	 * @format integer
+	 */
 	line: number
+	/**
+	 * @format integer
+	 */
 	character: number
 }
 
 export interface FileFormattingMetadata {
+	/**
+	 * @format integer
+	 */
 	tabSize: number
+	/**
+	 * @format integer
+	 */
 	indentSize: number
 	usesTabsForIndentation: boolean
 	uti: string

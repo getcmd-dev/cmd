@@ -1,4 +1,4 @@
-import { FileFormattingMetadata, RecentlyOpenedFile } from "@/server/schemas/codeCompletionSchema"
+import { CursorRange, FileFormattingMetadata, RecentlyOpenedFile } from "@/server/schemas/codeCompletionSchema"
 import { Tiktoken, encodingForModel } from "js-tiktoken"
 
 // ============================================================================
@@ -6,6 +6,17 @@ import { Tiktoken, encodingForModel } from "js-tiktoken"
 // ============================================================================
 
 let encoding: Tiktoken | null = null
+
+export type CodeCompletionRequestParams = {
+	selection: CursorRange
+	recentEdits?: string
+	pasteboardContent?: string
+	recentlyOpenedFiles?: RecentlyOpenedFile[]
+	formattingMetadata: FileFormattingMetadata
+	prefix: string
+	suffix: string
+	filepath: string
+}
 
 function getEncoding(): Tiktoken {
 	if (!encoding) {
@@ -336,19 +347,7 @@ export function pruneLinesFromBottom(text: string, maxTokens: number): string {
 // Main Request Builder
 // ============================================================================
 
-export interface BuildRequestParams {
-	prefix: string
-	suffix?: string
-	pasteboardContent?: string
-	recentEdits?: string
-	recentlyOpenedFiles?: RecentlyOpenedFile[]
-	filepath?: string
-	cursorPosition?: { line: number; character: number }
-	formattingMetadata: FileFormattingMetadata
-	tokenBudget?: TokenBudget
-}
-
-export interface BuildRequestResult {
+export interface FIMRequest {
 	prompt: string
 	suffix?: string
 	context: {
@@ -362,7 +361,7 @@ export interface BuildRequestResult {
 	}
 }
 
-export function buildRequest(params: BuildRequestParams): BuildRequestResult {
+export function buildFIMRequest(params: CodeCompletionRequestParams & { tokenBudget?: TokenBudget }): FIMRequest {
 	const budget = params.tokenBudget || DEFAULT_TOKEN_BUDGET
 	const commentPrefix = getCommentPrefix(params.formattingMetadata.uti)
 
@@ -576,7 +575,7 @@ Predict and complete the changes for the editable region. Output only the revise
 
 export interface ProcessCompletionResponse {
 	fullFileContent: string
-	changedRange?: {
+	changedRange: {
 		start: { line: number; character: number }
 		end: { line: number; character: number }
 	}

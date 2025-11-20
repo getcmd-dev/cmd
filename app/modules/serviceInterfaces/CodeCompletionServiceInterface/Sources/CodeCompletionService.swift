@@ -19,7 +19,7 @@ public protocol CodeCompletionService: Sendable {
 
   /// Returns synchronously a cached completion suggestion if available.
   func cachedCompletion(_ request: CompletionRequest)
-    throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion)?
+    throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
 
   func deleteCachedCompletion(cachedRequestId: Int)
 

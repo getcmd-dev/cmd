@@ -232,6 +232,8 @@ extension AIProvider {
       "Gemini"
     case .mistral:
       "Mistral"
+    case .inception:
+      "Inception"
     default:
       "Unknown provider"
     }

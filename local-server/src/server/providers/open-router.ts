@@ -47,6 +47,8 @@ export class OpenRouterAIProvider implements AIProvider {
 				providerId: model.id,
 				globalId: model.id,
 				max_completion_tokens: model.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: false,
 			}),
 		)
 	}
