@@ -172,7 +172,8 @@ struct CompletionCacheTests {
     let result = await sut.get(for: request)
 
     // then
-    let retrievedSuggestion = try #require(result)
+    let retrieved = try #require(result)
+    let retrievedSuggestion = try #require(retrieved.suggestion)
     #expect(retrievedSuggestion.diff.debugDescription == "  {-// TODO: implement-}{+print(0)+}\n")
     #expect(retrievedSuggestion.file == file)
   }
@@ -214,7 +215,8 @@ struct CompletionCacheTests {
     let result = await sut.get(for: newRequest)
 
     // then
-    let retrievedSuggestion = try #require(result)
+    let retrieved = try #require(result)
+    let retrievedSuggestion = try #require(retrieved.suggestion)
     #expect(retrievedSuggestion.diff.debugDescription == "  pr{+int(0)+}\n")
     #expect(retrievedSuggestion.file == file)
   }
@@ -311,6 +313,180 @@ struct CompletionCacheTests {
   func testInlineDiff() throws {
     #expect(try getInlineChanges(from: "print hello", to: "print hello\n world\n")
       .debugDescription == "print hello{+\n world\n+}")
+  }
+
+  // MARK: - Stress Tests for matches() Algorithm
+
+  @Test("matches handles empty diff")
+  func matchesHandlesEmptyDiff() throws {
+    // given
+    let diff: InlineDiff = []
+
+    // when/then
+    #expect("".matches(diff))
+    #expect(!"non-empty".matches(diff))
+  }
+
+  @Test("matches handles unicode emoji")
+  func matchesHandlesUnicodeEmoji() throws {
+    // given
+    let oldContent = "let x = 1"
+    let newContent = "let x = 😀"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("let x = ".matches(diff))
+    #expect("let x = 😀".matches(diff))
+    #expect(!"let x = 😀extra".matches(diff))
+  }
+
+  @Test("matches handles Japanese characters")
+  func matchesHandlesJapanese() throws {
+    // given
+    let oldContent = "let text = hello"
+    let newContent = "let text = 日本語"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("let text = ".matches(diff))
+    #expect("let text = 日".matches(diff))
+    #expect("let text = 日本".matches(diff))
+    #expect("let text = 日本語".matches(diff))
+  }
+
+  @Test("matches handles very long strings")
+  func matchesHandlesVeryLongStrings() throws {
+    // given - create a 5KB diff
+    let oldContent = String(repeating: "let x = 1\n", count: 500)
+    let newContent = String(repeating: "let y = 2\n", count: 500)
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when - test partial match
+    let partial = String(repeating: "let ", count: 100)
+
+    // then - should complete without hanging
+    _ = partial.matches(diff)
+  }
+
+  @Test("matches handles escaped quotes in strings")
+  func matchesHandlesEscapedQuotes() throws {
+    // given
+    let oldContent = #"let str = "hello""#
+    let newContent = #"let str = "world""#
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect(#"let str = ""#.matches(diff))
+    #expect(#"let str = "w"#.matches(diff))
+  }
+
+  @Test("matches handles only first character")
+  func matchesHandlesOnlyFirstChar() throws {
+    // given
+    let oldContent = "hello"
+    let newContent = "world"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("".matches(diff))
+    #expect("w".matches(diff))
+    #expect("wo".matches(diff))
+    #expect(!"x".matches(diff))
+  }
+
+  @Test("matches handles only last character")
+  func matchesHandlesOnlyLastChar() throws {
+    // given
+    let oldContent = "hello"
+    let newContent = "helld"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("hell".matches(diff))
+    #expect("helld".matches(diff))
+    #expect(!"helle".matches(diff))
+  }
+
+  @Test("matches handles middle segment only")
+  func matchesHandlesMiddleSegment() throws {
+    // given
+    let oldContent = "func test() { old }"
+    let newContent = "func test() { new }"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("func test() { ".matches(diff))
+    #expect("func test() { n".matches(diff))
+    #expect("func test() { ne".matches(diff))
+    #expect("func test() { new".matches(diff))
+    #expect(!"func wrong() { new".matches(diff))
+  }
+
+  @Test("matches handles deep nesting")
+  func matchesHandlesDeeplyNested() throws {
+    // given
+    let oldContent = """
+      func outer() {
+        func inner() {
+          func deep() {
+            let x = 1
+          }
+        }
+      }
+      """
+    let newContent = """
+      func outer() {
+        func inner() {
+          func deep() {
+            let x = 2
+          }
+        }
+      }
+      """
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then - test partial typing in the deeply nested section
+    let partial = """
+      func outer() {
+        func inner() {
+          func deep() {
+            let x =
+      """
+    #expect(partial.matches(diff))
+  }
+
+  @Test("matches handles mixed required and optional characters")
+  func matchesHandlesMixedRequiredOptional() throws {
+    // given
+    let oldContent = "abc def ghi"
+    let newContent = "abc XYZ ghi"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("abc ".matches(diff)) // unchanged prefix
+    #expect("abc X".matches(diff)) // partial new content
+    #expect("abc XYZ".matches(diff)) // full new content
+    #expect("abc XYZ ".matches(diff)) // with trailing space
+    #expect("abc XYZ ghi".matches(diff)) // full match
+    #expect(!"abc Z ghi".matches(diff)) // skipping required chars
+  }
+
+  @Test("matches performance benchmark")
+  func matchesPerformanceBenchmark() throws {
+    // given - 10KB of changes
+    let oldContent = String(repeating: "a", count: 5000) + String(repeating: "b", count: 5000)
+    let newContent = String(repeating: "x", count: 5000) + String(repeating: "y", count: 5000)
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when - measure performance
+    let start = Date()
+    let candidate = String(repeating: "x", count: 2500)
+    let result = candidate.matches(diff)
+    let elapsed = Date().timeIntervalSince(start)
+
+    // then - should complete in reasonable time (< 1 second)
+    #expect(result == true)
+    #expect(elapsed < 1.0, "matches() took \(elapsed)s, expected < 1.0s")
   }
 
   private func createCompletion(

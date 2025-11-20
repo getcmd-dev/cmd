@@ -30,7 +30,9 @@ struct RecentEditsTrackingTests {
     #expect(history.last?.content == "let x = 1")
     let diff = await tracker.getDiff()
     #expect(diff.trimmingCharacters(in: .whitespacesAndNewlines) == """
-      +++ b/workspace/file.swift
+      new file mode 100644
+      --- /dev/null
+      +++ b./file.swift
       @@ -0,0 +1 @@
       +let x = 1
       """.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -99,8 +101,11 @@ struct RecentEditsTrackingTests {
     // then
     let diff = await tracker.getDiff()
     #expect(diff.trimmingCharacters(in: .whitespacesAndNewlines) == """
-      --- a/workspace/file1.swift
-      +++ b/workspace/file2.swift
+      similarity index 68%
+      rename from ./file1.swift
+      rename to ./file2.swift
+      --- a./file1.swift
+      +++ b./file2.swift
       @@ -1,3 +1,3 @@
        let x = 1
        let y = 2

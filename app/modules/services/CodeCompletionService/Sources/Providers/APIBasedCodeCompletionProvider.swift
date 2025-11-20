@@ -56,6 +56,35 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
         localExecutable: nil))
   }
 
+  /// Split content into prefix and suffix at the given position
+  /// - Parameters:
+  ///   - content: The file content
+  ///   - position: The cursor position
+  /// - Returns: A tuple of (prefix, suffix)
+  /// - Throws: AppError if the position is invalid
+  static func splitContent(_ content: String, at position: Position) throws -> (prefix: String, suffix: String) {
+    let lines = content.splitLines()
+    let lineOffsets = lines.reduce(into: [Int](), { acc, l in
+      acc.append((acc.last ?? 0) + l.count)
+    })
+
+    if position.line > lineOffsets.count {
+      throw AppError("Selection line \(position.line) exceeds content lines \(lineOffsets.count)")
+    }
+
+    let lineOffset = position.line == 0 ? 0 : lineOffsets[position.line - 1]
+    let offset = lineOffset + position.character
+
+    guard offset <= content.count else {
+      throw AppError("Invalid offset: \(offset) exceeds content length: \(content.count)")
+    }
+
+    let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: offset)))
+    let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: offset)))
+
+    return (prefix, suffix)
+  }
+
   func suggestCompletion(
     workspace: any Workspace,
     file: URL,
@@ -69,22 +98,9 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     guard let provider else {
       throw AppError("The provider \(providerName.rawValue) is not configured for autocompletion")
     }
-    // Split content into prefix and suffix based on selection
-    let lines = content.splitLines()
-    let lineOffsets = lines.reduce(into: [Int](), { acc, l in
-      acc.append((acc.last ?? 0) + l.count)
-    })
-    if selection.start.line > lineOffsets.count {
-      throw AppError("Corrupted content")
-    }
-    let lineOffset = selection.start.line == 0 ? 0 : lineOffsets[selection.start.line - 1]
-    let offset = lineOffset + selection.start.character
 
-    guard offset <= content.count else {
-      throw AppError("Invalid offset: \(offset) exceeds content length: \(content.count)")
-    }
-    let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: offset)))
-    let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: offset)))
+    // Split content into prefix and suffix based on selection
+    let (prefix, suffix) = try Self.splitContent(content, at: selection.start)
 
     // Convert formatting metadata to schema type
     guard let formattingMetadata else {
@@ -174,6 +190,7 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
   private let providerName: Schema.APIProviderName
   private let localServer: LocalServer
   private let settingsService: SettingsService
+
 }
 
 extension BaseProviding where

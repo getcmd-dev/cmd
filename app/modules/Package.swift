@@ -1027,6 +1027,7 @@ targets.append(
     testsDependencies: [
       "AppFoundation",
       "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotService",

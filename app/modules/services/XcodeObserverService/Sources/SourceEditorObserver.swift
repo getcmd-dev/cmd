@@ -113,13 +113,11 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
 
     let lineAnnotationElements = editorElement.children.filter { $0.identifier == "Line Annotation" }
     let lineAnnotations = lineAnnotationElements.compactMap(\.description)
-    print("will call updateStailteWith at \(Date().timeIntervalSince1970)")
 
     updateStateWith(
       content: content,
       selections: selections,
       compilerMessages: lineAnnotations)
-    print("did call updateStailteWith at \(Date().timeIntervalSince1970)")
   }
 
   private func updateStateWith(

@@ -156,84 +156,7 @@ export class InceptionAIProvider implements AIProvider {
 		editableRegionRange: CursorRange
 		prompt: string
 	} {
-		const fileContent = params.prefix + params.suffix
-		const lines = fileContent.split("\n")
-
-		// Calculate editable region (0 lines before, 5 lines after cursor)
-		const cursorLine = params.selection.start.line
-		const editableRegionStart = Math.max(0, cursorLine)
-		const editableRegionEnd = Math.min(lines.length - 1, cursorLine + 5)
-
-		// Build recently viewed code snippets section
-		let recentlyViewedSnippets = ""
-		let snippets: string[] = []
-		if (params.recentlyOpenedFiles && params.recentlyOpenedFiles.length > 0) {
-			snippets = params.recentlyOpenedFiles.slice(0, 3).map((file) => {
-				return `${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_OPEN}\ncode_snippet_file_path: ${file.filepath}\n${file.content}\n${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_CLOSE}`
-			})
-		}
-		if (params.pasteboardContent?.length) {
-			snippets.push(
-				`${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_OPEN}\ncode_snippet_file_path: clipboard\n${params.pasteboardContent}\n${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_CLOSE}`,
-			)
-		}
-		recentlyViewedSnippets = snippets.join("\n")
-
-		// Build current file content with editable region and cursor
-		const beforeRegion = lines.slice(0, editableRegionStart)
-		const editableRegion = lines.slice(editableRegionStart, editableRegionEnd + 1)
-		const afterRegion = lines.slice(editableRegionEnd + 1)
-
-		// Insert cursor token
-		const relativeCursorLine = cursorLine - editableRegionStart
-		const cursorChar = params.selection.start.character
-		if (relativeCursorLine >= 0 && relativeCursorLine < editableRegion.length) {
-			const line = editableRegion[relativeCursorLine]
-			const charPos = Math.min(Math.max(0, cursorChar), line.length)
-			editableRegion[relativeCursorLine] = line.slice(0, charPos) + INCEPTION_CURSOR + line.slice(charPos)
-		}
-
-		const prefix = beforeRegion.join("\n") + (beforeRegion.length > 0 ? "\n" : "")
-		const suffix = (afterRegion.length > 0 ? "\n" : "") + afterRegion.join("\n")
-
-		const currentFileContent =
-			prefix +
-			INCEPTION_CODE_TO_EDIT_OPEN +
-			"\n" +
-			editableRegion.join("\n") +
-			"\n" +
-			INCEPTION_CODE_TO_EDIT_CLOSE +
-			suffix
-
-		// Build edit diff history
-		const editDiffHistory = params.recentEdits || ""
-
-		// Assemble the full prompt
-		const prompt = `${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_OPEN}
-${recentlyViewedSnippets}
-${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_CLOSE}
-
-${INCEPTION_CURRENT_FILE_CONTENT_OPEN}
-${currentFileContent}
-${INCEPTION_CURRENT_FILE_CONTENT_CLOSE}
-
-${INCEPTION_EDIT_DIFF_HISTORY_OPEN}
-${editDiffHistory}
-${INCEPTION_EDIT_DIFF_HISTORY_CLOSE}`
-
-		return {
-			prompt,
-			editableRegionRange: {
-				start: {
-					line: beforeRegion.length,
-					character: 0,
-				},
-				end: {
-					line: beforeRegion.length + editableRegion.length - 1,
-					character: editableRegion[editableRegion.length - 1].length,
-				},
-			},
-		}
+		return buildInceptionNextEditPrompt(params)
 	}
 
 	private extractCodeFromResponse(response: string): string {
@@ -249,6 +172,7 @@ ${INCEPTION_EDIT_DIFF_HISTORY_CLOSE}`
 		// If no code blocks found, return as-is
 		return response
 	}
+
 	private identifyModel(model: Model, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// OpenAI            ->  OpenRouter
 		// mercury           ->  inception/mercury
@@ -266,4 +190,104 @@ ${INCEPTION_EDIT_DIFF_HISTORY_CLOSE}`
 		}
 		return undefined
 	}
+}
+
+// Exported for testing
+export function buildInceptionNextEditPrompt(params: CodeCompletionRequestParams): {
+	editableRegionRange: CursorRange
+	prompt: string
+} {
+	const fileContent = params.prefix + params.suffix
+	const lines = fileContent.split("\n")
+
+	// Calculate editable region (0 lines before, 5 lines after cursor)
+	const cursorLine = params.selection.start.line
+	const editableRegionStart = Math.max(0, cursorLine)
+	const editableRegionEnd = Math.min(lines.length - 1, cursorLine + 5)
+
+	// Build recently viewed code snippets section
+	let recentlyViewedSnippets = ""
+	let snippets: string[] = []
+	if (params.recentlyOpenedFiles && params.recentlyOpenedFiles.length > 0) {
+		snippets = params.recentlyOpenedFiles.slice(0, 3).map((file) => {
+			return `${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_OPEN}\ncode_snippet_file_path: ${file.filepath}\n${file.content}\n${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_CLOSE}`
+		})
+	}
+	if (params.pasteboardContent?.length) {
+		snippets.push(
+			`${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_OPEN}\ncode_snippet_file_path: clipboard\n${params.pasteboardContent}\n${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_CLOSE}`,
+		)
+	}
+	recentlyViewedSnippets = snippets.join("\n")
+
+	// Build current file content with editable region and cursor
+	const beforeRegion = lines.slice(0, editableRegionStart)
+	const editableRegion = lines.slice(editableRegionStart, editableRegionEnd + 1)
+	const afterRegion = lines.slice(editableRegionEnd + 1)
+
+	// Insert cursor token
+	const relativeCursorLine = cursorLine - editableRegionStart
+	const cursorChar = params.selection.start.character
+	if (relativeCursorLine >= 0 && relativeCursorLine < editableRegion.length) {
+		const line = editableRegion[relativeCursorLine]
+		const charPos = Math.min(Math.max(0, cursorChar), line.length)
+		editableRegion[relativeCursorLine] = line.slice(0, charPos) + INCEPTION_CURSOR + line.slice(charPos)
+	}
+
+	const prefix = beforeRegion.join("\n") + (beforeRegion.length > 0 ? "\n" : "")
+	const suffix = (afterRegion.length > 0 ? "\n" : "") + afterRegion.join("\n")
+
+	const currentFileContent =
+		prefix +
+		INCEPTION_CODE_TO_EDIT_OPEN +
+		"\n" +
+		editableRegion.join("\n") +
+		"\n" +
+		INCEPTION_CODE_TO_EDIT_CLOSE +
+		suffix
+
+	// Build edit diff history
+	const editDiffHistory = params.recentEdits || ""
+
+	// Assemble the full prompt
+	const prompt = `${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_OPEN}
+${recentlyViewedSnippets}
+${INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_CLOSE}
+
+${INCEPTION_CURRENT_FILE_CONTENT_OPEN}
+${currentFileContent}
+${INCEPTION_CURRENT_FILE_CONTENT_CLOSE}
+
+${INCEPTION_EDIT_DIFF_HISTORY_OPEN}
+${editDiffHistory}
+${INCEPTION_EDIT_DIFF_HISTORY_CLOSE}`
+
+	return {
+		prompt,
+		editableRegionRange: {
+			start: {
+				line: beforeRegion.length,
+				character: 0,
+			},
+			end: {
+				line: beforeRegion.length + editableRegion.length - 1,
+				character: editableRegion[editableRegion.length - 1].length,
+			},
+		},
+	}
+}
+
+// Re-export constants for testing
+export const INCEPTION_CONSTANTS = {
+	RECENTLY_VIEWED_CODE_SNIPPETS_OPEN: INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_OPEN,
+	RECENTLY_VIEWED_CODE_SNIPPETS_CLOSE: INCEPTION_RECENTLY_VIEWED_CODE_SNIPPETS_CLOSE,
+	RECENTLY_VIEWED_CODE_SNIPPET_OPEN: INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_OPEN,
+	RECENTLY_VIEWED_CODE_SNIPPET_CLOSE: INCEPTION_RECENTLY_VIEWED_CODE_SNIPPET_CLOSE,
+	CURRENT_FILE_CONTENT_OPEN: INCEPTION_CURRENT_FILE_CONTENT_OPEN,
+	CURRENT_FILE_CONTENT_CLOSE: INCEPTION_CURRENT_FILE_CONTENT_CLOSE,
+	CODE_TO_EDIT_OPEN: INCEPTION_CODE_TO_EDIT_OPEN,
+	CODE_TO_EDIT_CLOSE: INCEPTION_CODE_TO_EDIT_CLOSE,
+	EDIT_DIFF_HISTORY_OPEN: INCEPTION_EDIT_DIFF_HISTORY_OPEN,
+	EDIT_DIFF_HISTORY_CLOSE: INCEPTION_EDIT_DIFF_HISTORY_CLOSE,
+	CURSOR: INCEPTION_CURSOR,
 }

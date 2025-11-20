@@ -17,6 +17,8 @@ import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 import XcodeThemeFoundation
 
+// TODO: Remove performance logging.
+
 // MARK: - CodeCompletionViewModel
 
 let performanceLogger = defaultLogger.subLogger(subsystem: "code-completion-performance")

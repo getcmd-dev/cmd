@@ -298,7 +298,7 @@ function processRecentlyOpenedFiles(
 /**
  * Prune lines from top (earliest lines) to fit within token limit
  */
-export function pruneLinesFromTop(text: string, maxTokens: number): string {
+function pruneLinesFromTop(text: string, maxTokens: number): string {
 	const lines = text.split("\n")
 	const lineTokens = lines.map((line) => countTokens(line))
 	let totalTokens = lineTokens.reduce((sum, tokens) => sum + tokens, 0)
@@ -322,7 +322,7 @@ export function pruneLinesFromTop(text: string, maxTokens: number): string {
 /**
  * Prune lines from bottom (latest lines) to fit within token limit
  */
-export function pruneLinesFromBottom(text: string, maxTokens: number): string {
+function pruneLinesFromBottom(text: string, maxTokens: number): string {
 	const lines = text.split("\n")
 	const lineTokens = lines.map((line) => countTokens(line))
 	let totalTokens = lineTokens.reduce((sum, tokens) => sum + tokens, 0)
