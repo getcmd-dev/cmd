@@ -12,9 +12,11 @@ extension Schema {
     public let selection: CursorRange
     public let recentEdits: String?
     public let pasteboardContent: String?
+    public let recentlyOpenedFiles: [RecentlyOpenedFile]?
     public let formattingMetadata: FileFormattingMetadata
     public let prefix: String
-    public let suffix: String?
+    public let suffix: String
+    public let filepath: String
   
     private enum CodingKeys: String, CodingKey {
       case model = "model"
@@ -22,9 +24,11 @@ extension Schema {
       case selection = "selection"
       case recentEdits = "recentEdits"
       case pasteboardContent = "pasteboardContent"
+      case recentlyOpenedFiles = "recentlyOpenedFiles"
       case formattingMetadata = "formattingMetadata"
       case prefix = "prefix"
       case suffix = "suffix"
+      case filepath = "filepath"
     }
   
     public init(
@@ -33,18 +37,22 @@ extension Schema {
         selection: CursorRange,
         recentEdits: String? = nil,
         pasteboardContent: String? = nil,
+        recentlyOpenedFiles: [RecentlyOpenedFile]? = nil,
         formattingMetadata: FileFormattingMetadata,
         prefix: String,
-        suffix: String? = nil
+        suffix: String,
+        filepath: String
     ) {
       self.model = model
       self.provider = provider
       self.selection = selection
       self.recentEdits = recentEdits
       self.pasteboardContent = pasteboardContent
+      self.recentlyOpenedFiles = recentlyOpenedFiles
       self.formattingMetadata = formattingMetadata
       self.prefix = prefix
       self.suffix = suffix
+      self.filepath = filepath
     }
   
     public init(from decoder: Decoder) throws {
@@ -54,9 +62,11 @@ extension Schema {
       selection = try container.decode(CursorRange.self, forKey: .selection)
       recentEdits = try container.decodeIfPresent(String?.self, forKey: .recentEdits)
       pasteboardContent = try container.decodeIfPresent(String?.self, forKey: .pasteboardContent)
+      recentlyOpenedFiles = try container.decodeIfPresent([RecentlyOpenedFile]?.self, forKey: .recentlyOpenedFiles)
       formattingMetadata = try container.decode(FileFormattingMetadata.self, forKey: .formattingMetadata)
       prefix = try container.decode(String.self, forKey: .prefix)
-      suffix = try container.decodeIfPresent(String?.self, forKey: .suffix)
+      suffix = try container.decode(String.self, forKey: .suffix)
+      filepath = try container.decode(String.self, forKey: .filepath)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -66,9 +76,11 @@ extension Schema {
       try container.encode(selection, forKey: .selection)
       try container.encodeIfPresent(recentEdits, forKey: .recentEdits)
       try container.encodeIfPresent(pasteboardContent, forKey: .pasteboardContent)
+      try container.encodeIfPresent(recentlyOpenedFiles, forKey: .recentlyOpenedFiles)
       try container.encode(formattingMetadata, forKey: .formattingMetadata)
       try container.encode(prefix, forKey: .prefix)
-      try container.encodeIfPresent(suffix, forKey: .suffix)
+      try container.encode(suffix, forKey: .suffix)
+      try container.encode(filepath, forKey: .filepath)
     }
   }
   public struct CursorRange: Codable, Sendable {
@@ -127,6 +139,41 @@ extension Schema {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(line, forKey: .line)
       try container.encode(character, forKey: .character)
+    }
+  }
+  public struct RecentlyOpenedFile: Codable, Sendable {
+    public let filepath: String
+    public let content: String
+    public let lastAccessedAt: String?
+  
+    private enum CodingKeys: String, CodingKey {
+      case filepath = "filepath"
+      case content = "content"
+      case lastAccessedAt = "lastAccessedAt"
+    }
+  
+    public init(
+        filepath: String,
+        content: String,
+        lastAccessedAt: String? = nil
+    ) {
+      self.filepath = filepath
+      self.content = content
+      self.lastAccessedAt = lastAccessedAt
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      filepath = try container.decode(String.self, forKey: .filepath)
+      content = try container.decode(String.self, forKey: .content)
+      lastAccessedAt = try container.decodeIfPresent(String?.self, forKey: .lastAccessedAt)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(filepath, forKey: .filepath)
+      try container.encode(content, forKey: .content)
+      try container.encodeIfPresent(lastAccessedAt, forKey: .lastAccessedAt)
     }
   }
   public struct FileFormattingMetadata: Codable, Sendable {
@@ -195,25 +242,67 @@ extension Schema {
   
     public struct Choices: Codable, Sendable {
       public let text: String
+      public let newContent: String
+      public let changedRange: ChangedRange?
     
       private enum CodingKeys: String, CodingKey {
         case text = "text"
+        case newContent = "newContent"
+        case changedRange = "changedRange"
       }
     
       public init(
-          text: String
+          text: String,
+          newContent: String,
+          changedRange: ChangedRange? = nil
       ) {
         self.text = text
+        self.newContent = newContent
+        self.changedRange = changedRange
       }
     
       public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         text = try container.decode(String.self, forKey: .text)
+        newContent = try container.decode(String.self, forKey: .newContent)
+        changedRange = try container.decodeIfPresent(ChangedRange?.self, forKey: .changedRange)
       }
     
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(text, forKey: .text)
+        try container.encode(newContent, forKey: .newContent)
+        try container.encodeIfPresent(changedRange, forKey: .changedRange)
+      }
+    
+      public struct ChangedRange: Codable, Sendable {
+        public let start: CursorPosition
+        public let end: CursorPosition
+      
+        private enum CodingKeys: String, CodingKey {
+          case start = "start"
+          case end = "end"
+        }
+      
+        public init(
+            start: CursorPosition,
+            end: CursorPosition
+        ) {
+          self.start = start
+          self.end = end
+        }
+      
+        public init(from decoder: Decoder) throws {
+          let container = try decoder.container(keyedBy: CodingKeys.self)
+          start = try container.decode(CursorPosition.self, forKey: .start)
+          end = try container.decode(CursorPosition.self, forKey: .end)
+        }
+      
+        public func encode(to encoder: Encoder) throws {
+          var container = encoder.container(keyedBy: CodingKeys.self)
+          try container.encode(start, forKey: .start)
+          try container.encode(end, forKey: .end)
+        }
       }
     }
   }}

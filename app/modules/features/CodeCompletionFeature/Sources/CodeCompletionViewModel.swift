@@ -51,11 +51,13 @@ final class CodeCompletionViewModel {
         .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
     }
 
+    // Create the key event handler manager
+    keyEventHandlerManager = KeyEventHandlerManager(appsActivationState: appsActivationState)
+
     isEnabled = codeCompletionService.isAvailable.currentValue
     if isEnabled {
       enable()
     }
-
     // Load Xcode theme font name
     Task {
       await loadXcodeTheme()
@@ -63,6 +65,7 @@ final class CodeCompletionViewModel {
 
     // Initialize Tab key handler (triggered on key down, allows Command modifier)
     completionKeyHandlers.append(KeyEventHandler(
+      manager: keyEventHandlerManager,
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
         onKeyDown: { [weak self] _, modifiers in
@@ -93,6 +96,7 @@ final class CodeCompletionViewModel {
 
     // Initialize Escape key handler (triggered on key up - when press is completed)
     escapeKeyHandler = KeyEventHandler(
+      manager: keyEventHandlerManager,
       configuration: .escape(),
       callbacks: .init(
         onKeyDown: { [weak self] isDoubleTap, _ in
@@ -123,6 +127,7 @@ final class CodeCompletionViewModel {
     // Left Command key code is 55, Right Command key code is 54
     for code in [54, 55] {
       completionKeyHandlers.append(KeyEventHandler(
+        manager: keyEventHandlerManager,
         configuration: .key(code),
         callbacks: .init(
           onKeyDown: { [weak self] _, _ in
@@ -266,6 +271,7 @@ final class CodeCompletionViewModel {
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
   private var editorState: EditorState?
+  private let keyEventHandlerManager: KeyEventHandlerManager
   private var completionKeyHandlers = [KeyEventHandler]()
   private var escapeKeyHandler: KeyEventHandler?
 

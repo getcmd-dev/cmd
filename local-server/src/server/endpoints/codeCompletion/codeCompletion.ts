@@ -3,8 +3,8 @@ import { logError, logInfo, saveLogToFile } from "../../../logger"
 import { AIProvider } from "../../providers/provider"
 import { CodeCompletionRequestParams, CodeCompletionResponseParams } from "../../schemas/codeCompletionSchema"
 import { addUserFacingError, UserFacingError } from "../../errors"
-import { Mistral } from "@mistralai/mistralai"
-import { notUndefined } from "@/utils/typeChecks"
+import { streamText } from "ai"
+import { buildRequest, buildInstructPrompt, processInstructCompletion } from "./helpers"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/completeCode", async (req: Request, res: Response) => {
@@ -14,27 +14,44 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				statusCode: 400,
 			})
 		}
-		logInfo("Received request to /sendMessage endpoint")
+		logInfo("Received request to /completeCode endpoint")
 
 		try {
 			const body = req.body as CodeCompletionRequestParams
 
-			// const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
-			// if (!aiProvider) {
-			// 	throw new UserFacingError({
-			// 		message: `Unsupported API provider ${body.provider.name}.`,
-			// 	})
-			// }
-			// const modelName = body.model
-			// const { model } = await aiProvider.build({
-			// 	provider: body.provider.settings,
-			// 	modelName,
-			// })
-			// if (!model) {
-			// 	throw new UserFacingError({
-			// 		message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
-			// 	})
-			// }
+			// Find the AI provider
+			const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
+			if (!aiProvider) {
+				throw new UserFacingError({
+					message: `Unsupported API provider ${body.provider.name}.`,
+				})
+			}
+
+			// Determine completion mode
+			const modelName = body.model
+			const fim = aiProvider.fim?.(modelName)
+			const nextEdit = aiProvider.nextEdit?.(modelName)
+
+			// logInfo(`Using completion mode: ${mode}`)
+
+			// Build the context request
+			const requestResult = buildRequest({
+				prefix: body.prefix,
+				suffix: body.suffix,
+				pasteboardContent: body.pasteboardContent,
+				recentEdits: body.recentEdits,
+				recentlyOpenedFiles: body.recentlyOpenedFiles,
+				filepath: body.filepath,
+				cursorPosition: body.selection.start,
+				formattingMetadata: body.formattingMetadata,
+			})
+
+			logInfo(
+				`Code completion request built: ${JSON.stringify({
+					snippetsIncluded: requestResult.context.snippetsIncluded,
+					tokensUsed: requestResult.context.tokensUsed,
+				})}`,
+			)
 
 			// Cleanup when disconnected
 			const abortController = new AbortController()
@@ -53,89 +70,133 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				abortController.abort()
 			})
 
-			// build prefix
-			const prefix = (() => {
-				let prefix = ""
-				const maxPrefixLength = 2000
-				const minCodeLines = 10
-				if (body.pasteboardContent) {
-					prefix = `<pasteboard>${body.pasteboardContent}</pasteboard>\n${prefix}`
-				}
-				if (body.recentEdits) {
-					prefix = `<recent-edits>${body.recentEdits}</recent-edits>\n${prefix}`
-				}
-				const prefixLines = body.prefix.split("\n").reverse()
-				let selectedPrefixLinesCount = 0
-				let budget = maxPrefixLength - prefix.length
-				for (const line of prefixLines) {
-					if (budget <= 0) {
-						break
-					}
-					budget -= line.length + 1 // +1 for the newline character
-					selectedPrefixLinesCount += 1
-				}
-				logInfo(
-					`selectedPrefixLinesCount: ${selectedPrefixLinesCount} prefixLines.length: ${prefixLines.length} body.prefix: '${body.prefix}'`,
+			let completion: string
+			let fullFileContent: string
+			let changedRange:
+				| {
+						start: { line: number; character: number }
+						end: { line: number; character: number }
+				  }
+				| undefined
+
+			// Execute based on mode
+			if (fim) {
+				// Use FIM endpoint
+				completion = await fim(
+					{
+						prefix: requestResult.prompt,
+						suffix: requestResult.suffix || "",
+					},
+					body.provider.settings,
 				)
-				selectedPrefixLinesCount = Math.max(selectedPrefixLinesCount, minCodeLines)
-				prefix = `${prefix}\n${prefixLines.slice(0, selectedPrefixLinesCount).reverse().join("\n")}`
-				return prefix
-			})()
 
-			// build suffix
-			const suffix = (() => {
-				if (!body.suffix) {
-					return undefined
+				// Process FIM completion to get full file content
+				fullFileContent = body.prefix + completion + body.suffix
+				changedRange = {
+					start: body.selection.start,
+					end: body.selection.start,
 				}
-				const maxSuffixLength = 2000
-				const minCodeLines = 10
-				const suffixLines = body.suffix.split("\n")
-				let selectedSuffixLinesCount = 0
-				let budget = maxSuffixLength
-				for (const line of suffixLines) {
-					if (budget <= 0) {
-						break
-					}
-					budget -= line.length + 1 // +1 for the newline character
-					selectedSuffixLinesCount += 1
-				}
-				selectedSuffixLinesCount = Math.max(selectedSuffixLinesCount, minCodeLines)
-				return suffixLines.slice(0, selectedSuffixLinesCount).join("\n")
-			})()
+			} else if (nextEdit) {
+				// Use Next Edit endpoint (if provider supports it)
+				completion = await nextEdit(
+					{
+						prefix: body.prefix,
+						suffix: body.suffix,
+						pasteboardContent: body.pasteboardContent,
+						recentEdits: body.recentEdits,
+						recentlyOpenedFiles: body.recentlyOpenedFiles,
+						filepath: body.filepath,
+						cursorPosition: body.selection.start,
+						formattingMetadata: body.formattingMetadata,
+					},
+					body.provider.settings,
+				)
 
-			const client = new Mistral({
-				apiKey: "zT7jUXi9QQCEtC0Naedtu3dOhoSRfEbm",
-				serverURL: process.env["MISTRAL_LOCAL_SERVER_PROXY"]?.replace("/v1", ""),
-			})
-			const result = await client.fim.complete({
-				model: "codestral-latest",
-				prompt: prefix,
-				suffix: suffix,
-				// temperature: 0,
-				// minTokens: 1, // Uncomment to enforce completions to at least 1 token
-			})
-			const response = {
-				choices: result.choices
-					.map((choice) => {
-						if (typeof choice.message.content === "string") {
-							return {
-								text: choice.message.content,
-							}
-						} else {
-							return undefined
-						}
+				// For next edit, the completion IS the full file content
+				fullFileContent = completion
+			} else {
+				// Use chat completion with instruct-style prompt
+				const { model, generalProviderOptions, addProviderOptionsToMessages } = await aiProvider.build({
+					provider: body.provider.settings,
+					modelName,
+				})
+
+				if (!model) {
+					throw new UserFacingError({
+						message: `Failed to build model for ${modelName}.`,
 					})
-					.filter(notUndefined),
-			} satisfies CodeCompletionResponseParams
+				}
+
+				// Build instruct prompt
+				const instructPrompt = buildInstructPrompt({
+					prefix: body.prefix,
+					suffix: body.suffix,
+					cursorPosition: body.selection.start,
+					editableRangeMargin: { top: 0, bottom: 5 },
+					recentEdits: body.recentEdits,
+					contextSnippets: [], // Could add context snippets here
+					filepath: body.filepath,
+					commentPrefix: `//`,
+				})
+
+				// Call chat completion
+				const messages = [
+					{
+						role: "system" as const,
+						content: instructPrompt.systemPrompt,
+					},
+					{
+						role: "user" as const,
+						content: instructPrompt.userPrompt,
+					},
+				]
+
+				const result = await streamText({
+					model,
+					abortSignal: abortController.signal,
+					messages: addProviderOptionsToMessages ? addProviderOptionsToMessages(messages) : messages,
+					providerOptions: generalProviderOptions,
+					maxOutputTokens: 2048,
+				})
+
+				// Collect the full text
+				let instructCompletion = ""
+				for await (const chunk of result.textStream) {
+					instructCompletion += chunk
+				}
+
+				completion = instructCompletion
+
+				// Process instruct completion to get full file content
+				const processResult = processInstructCompletion(
+					body.prefix,
+					body.suffix,
+					instructPrompt.editableRegionStart,
+					instructPrompt.editableRegionEnd,
+					completion,
+				)
+				fullFileContent = processResult.fullFileContent
+				changedRange = processResult.changedRange
+			}
+
+			const response: CodeCompletionResponseParams = {
+				choices: [
+					{
+						text: completion,
+						newContent: fullFileContent,
+						changedRange,
+					},
+				],
+			}
 
 			res.write(JSON.stringify(response))
 			res.end()
 		} catch (error) {
-			const logFile = saveLogToFile("failed_send_message.json", JSON.stringify(req.body, null, 2))
+			const logFile = saveLogToFile("failed_complete_code.json", JSON.stringify(req.body, null, 2))
 			logInfo(`Request body that led to error saved to ${logFile}`)
 			logError(error)
 
-			throw addUserFacingError(error, "Failed to process message.")
+			throw addUserFacingError(error, "Failed to process code completion.")
 		}
 	})
 }

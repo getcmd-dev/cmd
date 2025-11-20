@@ -3,135 +3,77 @@
 
 // Adapted from CopilotForXcode's TabToAcceptSuggestion.swift
 
-import AppKit
+@preconcurrency import AppKit
+@preconcurrency import Combine
+import ConcurrencyFoundation
 import Foundation
 import LoggingServiceInterface
+import ThreadSafe
+import XcodeObserverServiceInterface
 
-// MARK: - KeyEventHandler.Configuration
+// MARK: - KeyEventHandlerManager
 
-/// Configuration for KeyEventHandler
-extension KeyEventHandler {
-  /// Configuration for key event monitoring
-  struct Configuration {
-    /// The key code to monitor (e.g., 48 for Tab, 36 for Return)
-    let keyCode: Int
+/// Manager for handling key events across multiple keys with a single CGEvent tap
+@ThreadSafe
+final class KeyEventHandlerManager: @unchecked Sendable {
 
-    /// Whether to allow modifier keys (Shift, Control, Command, Option)
-    /// When false, events with any modifiers will be ignored
-    let allowModifiers: Bool
+  init(appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>) {
+    self.appsActivationState = appsActivationState
 
-    /// Check if this key code is a modifier key
-    var isModifierKey: Bool {
-      // Modifier key codes:
-      // 54 = Right Command, 55 = Left Command
-      // 56 = Left Shift, 60 = Right Shift
-      // 58 = Left Option, 61 = Right Option
-      // 59 = Left Control, 62 = Right Control
-      // 57 = Caps Lock, 63 = Function
-      [54, 55, 56, 58, 59, 60, 61, 62, 57, 63].contains(keyCode)
-    }
-
-    /// Creates a configuration for a specific key code
-    static func key(_ keyCode: Int, allowModifiers: Bool = false) -> Configuration {
-      Configuration(keyCode: keyCode, allowModifiers: allowModifiers)
-    }
-
-    /// Creates a configuration for Tab key (key code 48)
-    static func tab(allowModifiers: Bool = false) -> Configuration {
-      .key(48, allowModifiers: allowModifiers)
-    }
-
-    /// Creates a configuration for Escape key (key code 53)
-    static func escape(allowModifiers: Bool = false) -> Configuration {
-      .key(53, allowModifiers: allowModifiers)
-    }
-
-    /// Creates a configuration for Command key (key code 55 for left, 54 for right)
-    static func command(allowModifiers: Bool = false, useRightCommand: Bool = false) -> Configuration {
-      .key(useRightCommand ? 54 : 55, allowModifiers: allowModifiers)
-    }
-  }
-}
-
-// MARK: - KeyEventHandler
-
-/// Handles keyboard events to accept code completion suggestions.
-/// Uses low-level CGEvent monitoring to intercept keys before they reach Xcode.
-///
-/// The handler can be configured to:
-/// - Monitor any key code
-/// - Respond to key down and/or key up events
-/// - Allow or block modifier keys
-final class KeyEventHandler {
-
-  init(configuration: Configuration, callbacks: Callbacks) {
-    self.configuration = configuration
-    self.callbacks = callbacks
-
-    start()
+    observeXcodeActivationStateChanges()
   }
 
-  deinit {
-    stop()
+  var isXcodeActive: Bool {
+    appsActivationState.currentValue.isXcodeActive
   }
 
-  /// Callbacks for key events
-  struct Callbacks {
-    init(
-      onKeyDown: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
-      onKeyUp: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
-      doubleTapInterval: TimeInterval = 0.3)
-    {
-      self.onKeyDown = onKeyDown
-      self.onKeyUp = onKeyUp
-      self.doubleTapInterval = doubleTapInterval
+  /// Register a listener for a specific key code
+  @MainActor
+  func register(configuration: KeyEventHandler.Configuration, callbacks: KeyEventHandler.Callbacks) -> KeyEventListener {
+    let listener = KeyEventListener(configuration: configuration, callbacks: callbacks)
+    listeners[configuration.keyCode] = listener
+    ensureTapIsRunning()
+    return listener
+  }
+
+  /// Unregister a listener for a specific key code
+  func unregister(keyCode: Int) {
+    listeners.removeValue(forKey: keyCode)
+    if listeners.isEmpty {
+      stopTap()
     }
-
-    /// Called when a key down event occurs (if monitored)
-    /// Parameters:
-    /// - isDoubleTap: Whether this is part of a double-tap sequence
-    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
-    /// Return true to consume the event, false to pass it through
-    let onKeyDown: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
-
-    /// Called when a key up event occurs (if monitored)
-    /// Parameters:
-    /// - isDoubleTap: Whether this is part of a double-tap sequence
-    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
-    /// Return true to consume the event, false to pass it through
-    let onKeyUp: ((_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
-
-    /// Maximum time interval (in seconds) between taps to be considered a double-tap
-    /// Default is 0.3 seconds
-    let doubleTapInterval: TimeInterval
-
   }
 
-  /// Start monitoring for key events
-  func start() {
+  private let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
+  private var cancellables = Set<AnyCancellable>()
+
+  private var eventTap: CFMachPort?
+  private var runLoopSource: CFRunLoopSource?
+  private var runLoop: CFRunLoop?
+  private var listeners = [Int: KeyEventListener]()
+
+  /// Moved out of the initializer to work around a compiler bug.
+  private func observeXcodeActivationStateChanges() {
+    appsActivationState.sink { @Sendable [weak self] value in
+      runOnMainThread {
+        if value.isXcodeActive {
+          self?.ensureTapIsRunning()
+        } else {
+          self?.stopTap()
+        }
+      }
+    }.store(in: &cancellables)
+  }
+
+  @MainActor
+  private func ensureTapIsRunning() {
     guard eventTap == nil else { return }
 
-    // Infer which events to monitor based on provided callbacks
+    // Create event mask for all events we might need
     var eventMask: CGEventMask = 0
-
-    // Modifier keys use flagsChanged instead of keyDown/keyUp
-    if configuration.isModifierKey {
-      if callbacks.onKeyDown != nil || callbacks.onKeyUp != nil {
-        eventMask |= (1 << CGEventType.flagsChanged.rawValue)
-      }
-    } else {
-      if callbacks.onKeyDown != nil {
-        eventMask |= (1 << CGEventType.keyDown.rawValue)
-      }
-      if callbacks.onKeyUp != nil {
-        eventMask |= (1 << CGEventType.keyUp.rawValue)
-      }
-    }
-
-    guard eventMask != 0 else {
-      // No event callbacks configured for monitoring
-      return
-    }
+    eventMask |= (1 << CGEventType.keyDown.rawValue)
+    eventMask |= (1 << CGEventType.keyUp.rawValue)
+    eventMask |= (1 << CGEventType.flagsChanged.rawValue)
 
     guard
       let tap = CGEvent.tapCreate(
@@ -142,18 +84,21 @@ final class KeyEventHandler {
         callback: { proxy, type, event, refcon -> Unmanaged<CGEvent>? in
           let d = Date()
           guard let refcon else {
-            performanceLogger
-              .log(
-                "key \(event.getIntegerValueField(.keyboardEventKeycode)) handed in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970)")
             return Unmanaged.passUnretained(event)
           }
 
-          let handler = Unmanaged<KeyEventHandler>.fromOpaque(refcon).takeUnretainedValue()
-          let result = handler.handleEvent(proxy: proxy, type: type, event: event)
+          let manager = Unmanaged<KeyEventHandlerManager>.fromOpaque(refcon).takeUnretainedValue()
+
+          // Check if Xcode is active before processing any events
+          guard manager.isXcodeActive else {
+            return Unmanaged.passUnretained(event)
+          }
+
+          let result = manager.handleEvent(proxy: proxy, type: type, event: event)
 
           performanceLogger
             .log(
-              "key \(event.getIntegerValueField(.keyboardEventKeycode)) handed in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
+              "key \(event.getIntegerValueField(.keyboardEventKeycode)) handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
           return result
         },
         userInfo: Unmanaged.passUnretained(self).toOpaque())
@@ -163,7 +108,6 @@ final class KeyEventHandler {
 
     eventTap = tap
     runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-    // Store the run loop we're adding to, so we can remove from the correct one
     runLoop = CFRunLoopGetCurrent()
 
     if let source = runLoopSource, let runLoop {
@@ -172,8 +116,7 @@ final class KeyEventHandler {
     }
   }
 
-  /// Stop monitoring for key events
-  func stop() {
+  private func stopTap() {
     if let tap = eventTap {
       CGEvent.tapEnable(tap: tap, enable: false)
       if let source = runLoopSource, let runLoop {
@@ -186,18 +129,8 @@ final class KeyEventHandler {
     runLoop = nil
   }
 
-  private var eventTap: CFMachPort?
-  private var runLoopSource: CFRunLoopSource?
-  /// Store the run loop we added the source to, so we can remove from the correct one
-  private var runLoop: CFRunLoop?
-  private let configuration: Configuration
-  private let callbacks: Callbacks
-  /// Track whether the monitored modifier key is currently pressed
-  private var modifierKeyPressed = false
-  /// Track the last time the key was released for double-tap detection
-  private var lastKeyUpTime: Date?
-
-  private func handleEvent(proxy _: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+  @MainActor
+  private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle tap disabled events
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
       if let tap = eventTap {
@@ -206,6 +139,30 @@ final class KeyEventHandler {
       return Unmanaged.passUnretained(event)
     }
 
+    let keycode = event.getIntegerValueField(.keyboardEventKeycode)
+    guard let listener = listeners[Int(keycode)] else {
+      return Unmanaged.passUnretained(event)
+    }
+
+    return listener.handleEvent(proxy: proxy, type: type, event: event)
+  }
+}
+
+// MARK: - KeyEventListener
+
+/// Listener for a specific key's events
+@ThreadSafe
+final class KeyEventListener: Sendable {
+  init(configuration: KeyEventHandler.Configuration, callbacks: KeyEventHandler.Callbacks) {
+    self.configuration = configuration
+    self.callbacks = callbacks
+  }
+
+  let configuration: KeyEventHandler.Configuration
+  let callbacks: KeyEventHandler.Callbacks
+
+  @MainActor
+  func handleEvent(proxy _: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle flagsChanged for modifier keys
     if type == .flagsChanged, configuration.isModifierKey {
       return handleModifierFlagsChanged(event: event)
@@ -283,6 +240,12 @@ final class KeyEventHandler {
     return shouldConsume ? nil : Unmanaged.passUnretained(event)
   }
 
+  /// Track whether the monitored modifier key is currently pressed
+  private var modifierKeyPressed = false
+  /// Track the last time the key was released for double-tap detection
+  private var lastKeyUpTime: Date?
+
+  @MainActor
   private func handleModifierFlagsChanged(event: CGEvent) -> Unmanaged<CGEvent>? {
     let flags = event.flags
 
@@ -358,4 +321,125 @@ final class KeyEventHandler {
     // Return nil to consume the event, or pass it through
     return shouldConsume ? nil : Unmanaged.passUnretained(event)
   }
+}
+
+// MARK: - KeyEventHandler.Configuration
+
+/// Configuration for KeyEventHandler
+extension KeyEventHandler {
+  /// Configuration for key event monitoring
+  struct Configuration: Sendable {
+    /// The key code to monitor (e.g., 48 for Tab, 36 for Return)
+    let keyCode: Int
+
+    /// Whether to allow modifier keys (Shift, Control, Command, Option)
+    /// When false, events with any modifiers will be ignored
+    let allowModifiers: Bool
+
+    /// Check if this key code is a modifier key
+    var isModifierKey: Bool {
+      // Modifier key codes:
+      // 54 = Right Command, 55 = Left Command
+      // 56 = Left Shift, 60 = Right Shift
+      // 58 = Left Option, 61 = Right Option
+      // 59 = Left Control, 62 = Right Control
+      // 57 = Caps Lock, 63 = Function
+      [54, 55, 56, 58, 59, 60, 61, 62, 57, 63].contains(keyCode)
+    }
+
+    /// Creates a configuration for a specific key code
+    static func key(_ keyCode: Int, allowModifiers: Bool = false) -> Configuration {
+      Configuration(keyCode: keyCode, allowModifiers: allowModifiers)
+    }
+
+    /// Creates a configuration for Tab key (key code 48)
+    static func tab(allowModifiers: Bool = false) -> Configuration {
+      .key(48, allowModifiers: allowModifiers)
+    }
+
+    /// Creates a configuration for Escape key (key code 53)
+    static func escape(allowModifiers: Bool = false) -> Configuration {
+      .key(53, allowModifiers: allowModifiers)
+    }
+
+    /// Creates a configuration for Command key (key code 55 for left, 54 for right)
+    static func command(allowModifiers: Bool = false, useRightCommand: Bool = false) -> Configuration {
+      .key(useRightCommand ? 54 : 55, allowModifiers: allowModifiers)
+    }
+  }
+}
+
+// MARK: - KeyEventHandler
+
+/// Handles keyboard events to accept code completion suggestions.
+/// Uses a KeyEventHandlerManager to process events with a single CGEvent tap.
+///
+/// The handler can be configured to:
+/// - Monitor any key code
+/// - Respond to key down and/or key up events
+/// - Allow or block modifier keys
+final class KeyEventHandler {
+
+  init(manager: KeyEventHandlerManager, configuration: Configuration, callbacks: Callbacks) {
+    self.manager = manager
+    self.configuration = configuration
+    self.callbacks = callbacks
+  }
+
+  deinit {
+    stop()
+  }
+
+  /// Callbacks for key events
+  struct Callbacks: Sendable {
+    init(
+      onKeyDown: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      onKeyUp: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      doubleTapInterval: TimeInterval = 0.3)
+    {
+      self.onKeyDown = onKeyDown
+      self.onKeyUp = onKeyUp
+      self.doubleTapInterval = doubleTapInterval
+    }
+
+    /// Called when a key down event occurs (if monitored)
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
+    /// Return true to consume the event, false to pass it through
+    let onKeyDown: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
+
+    /// Called when a key up event occurs (if monitored)
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
+    /// Return true to consume the event, false to pass it through
+    let onKeyUp: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
+
+    /// Maximum time interval (in seconds) between taps to be considered a double-tap
+    /// Default is 0.3 seconds
+    let doubleTapInterval: TimeInterval
+
+  }
+
+  /// Start monitoring for key events
+  @MainActor
+  func start() {
+    guard listener == nil else { return }
+    listener = manager.register(configuration: configuration, callbacks: callbacks)
+  }
+
+  /// Stop monitoring for key events
+  func stop() {
+    if listener != nil {
+      manager.unregister(keyCode: configuration.keyCode)
+      listener = nil
+    }
+  }
+
+  private let manager: KeyEventHandlerManager
+
+  private var listener: KeyEventListener?
+  private let configuration: Configuration
+  private let callbacks: Callbacks
 }

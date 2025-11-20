@@ -1,6 +1,7 @@
 import { ModelMessage, JSONValue, LanguageModel, LanguageModelUsage, ProviderMetadata } from "ai"
 import { APIProviderName } from "../schemas/sendMessageSchema"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
+import { BuildRequestParams } from "../endpoints/codeCompletion/helpers"
 
 /**
  * Output from building an AI provider configuration.
@@ -188,4 +189,20 @@ export interface AIProvider {
 	 */
 	listModels: (config: ProviderConfig, referenceModels: ProviderModelFullInfo[]) => Promise<ProviderModel[]>
 	extractTokenUsage?: (usage: LanguageModelUsage, providerMetadata: ProviderMetadata) => LanguageModelUsage
+	/**
+	 * FIM endpoint for filling in the middle of the text
+	 * @param model - The model to use
+	 * @returns If the model supports FIM, returns a function that takes the prefix and suffix and returns the completion
+	 */
+	fim?: (
+		providerId: string,
+	) => ((params: { prefix: string; suffix: string }, config: ProviderConfig) => Promise<string>) | undefined
+	/**
+	 * Next Edit endpoint for rewriting the text around the cursor
+	 * @param model - The model to use
+	 * @returns If the model supports Next Edit, returns a function that takes the parameters and returns the completion
+	 */
+	nextEdit?: (
+		providerId: string,
+	) => ((params: BuildRequestParams, config: ProviderConfig) => Promise<string>) | undefined
 }

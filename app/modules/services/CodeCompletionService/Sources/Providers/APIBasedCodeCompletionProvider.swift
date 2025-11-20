@@ -113,7 +113,8 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
       pasteboardContent: pasteboardContent,
       formattingMetadata: schemaFormattingMetadata,
       prefix: prefix,
-      suffix: suffix)
+      suffix: suffix,
+      filepath: file.path)
 
     let requestData = try JSONEncoder().encode(requestParams)
 
@@ -180,7 +181,7 @@ extension BaseProviding where Self: LocalServerProviding, Self: SettingsServiceP
     APIBasedCodeCompletionProvider(
       id: "mistral",
       displayName: "Mistral",
-      model: "mistral-7b-instruct-v0.1.Q4_0.gguf",
+      model: "codestral-latest",
       providerName: .mistral,
       localServer: localServer,
       settingsService: settingsService)

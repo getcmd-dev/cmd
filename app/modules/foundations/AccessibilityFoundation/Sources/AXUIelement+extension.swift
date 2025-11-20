@@ -277,6 +277,14 @@ extension AXUIElement {
 
 }
 
+// MARK: - AXError + @retroactive _BridgedNSError
+
+extension AXError: @retroactive _BridgedNSError { }
+
+// MARK: - AXError + @retroactive _ObjectiveCBridgeableError
+
+extension AXError: @retroactive _ObjectiveCBridgeableError { }
+
 // MARK: - AXError + @retroactive Error
 
 extension AXError: @retroactive Error { }

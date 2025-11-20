@@ -17,6 +17,7 @@ Target.module(
     "RoutingFoundation",
     "SettingsServiceInterface",
     "ShellServiceInterface",
+    "ThreadSafe",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
     "XcodeObserverWindowsAdapter",

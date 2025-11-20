@@ -9,7 +9,7 @@
 //
 import Foundation
 
-func runOnMainThread(_ work: @MainActor @Sendable @escaping () -> Void) {
+public func runOnMainThread(_ work: @MainActor @Sendable @escaping () -> Void) {
   if Thread.isMainThread {
     MainActor.assumeIsolated {
       work()

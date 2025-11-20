@@ -640,6 +640,7 @@ targets.append(
       "RoutingFoundation",
       "SettingsServiceInterface",
       "ShellServiceInterface",
+      "ThreadSafe",
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
       "XcodeObserverWindowsAdapter",

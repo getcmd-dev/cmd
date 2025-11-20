@@ -2,11 +2,10 @@ import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderC
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createMistral, MistralLanguageModelOptions } from "@ai-sdk/mistral"
 import { UserFacingError } from "../errors"
-// import { Model } from "openai/resources/models.mjs"
 import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
 import { BaseModelCard } from "@mistralai/mistralai/models/components"
-import { logInfo } from "@/logger"
+import { notUndefined } from "@/utils/typeChecks"
 
 export class MistralAIProvider implements AIProvider {
 	name: APIProviderName = "mistral"
@@ -51,16 +50,71 @@ export class MistralAIProvider implements AIProvider {
 			})
 		}
 		const data = await response.json()
-		const allModels = data.data?.map((model: BaseModelCard): BaseModelCard => model) || []
-		logInfo(`Available Mistral Models: ${JSON.stringify(allModels, null, 2)}`)
-		logInfo(`Available Mistral Models ids: ${allModels.map((model) => model.id)}`)
+		let allModels = data.data?.map((model: BaseModelCard): BaseModelCard => model) || []
 
-		return matchModelData(
-			allModels.map((model) => model.id),
-			this.name,
-			referenceModels,
-			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
-		)
+		// Remove some models that are not relevant for coding
+		const ignoredModelsPrefix = [
+			"codestral-embed",
+			"mistral-embed",
+			"pixtral",
+			"voxtral",
+			"mistral-moderation",
+			"mistral-ocr",
+			"open-mistral",
+			"ministral",
+			"mistral-tiny",
+		]
+		allModels = allModels.filter((model) => !ignoredModelsPrefix.some((prefix) => model.id.startsWith(prefix)))
+
+		let models = [
+			...matchModelData(
+				allModels.map((model) => model.id),
+				this.name,
+				referenceModels,
+				(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+			),
+		]
+
+		// Only keep latest model for each model category
+		const modelCategories = [
+			"codestral",
+			"devstral-small",
+			"devstral-medium",
+			"mistral-small",
+			"mistral-medium",
+			"mistral-large",
+			"magistral-small",
+			"magistral-medium",
+		]
+		const latestModels: { [key: string]: ProviderModel | undefined } = modelCategories.reduce((acc, category) => {
+			return {
+				...acc,
+				[category]: models
+					.filter((model) => model.providerId.startsWith(category))
+					.sort((a, b) => (b.name < a.name ? 1 : -1))[0],
+			}
+		}, {})
+		models = models
+			.map((model) => {
+				const category = modelCategories.find((c) => model.providerId.startsWith(c))
+				if (!category) {
+					return model
+				}
+				const latestModel = latestModels[category]
+				if (latestModel?.providerId === model.providerId) {
+					return {
+						...model,
+						globalId: `mistralai/${category}-latest`,
+						// Remove trailing number
+						name: model.name.replace(/\s+\d+(\.\d+)*$/, ""),
+					}
+				} else {
+					// Only keep latest
+					return undefined
+				}
+			})
+			.filter(notUndefined)
+		return models
 	}
 	identifyModel(model: BaseModelCard, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Mistral                   ->  OpenRouter
@@ -77,25 +131,47 @@ export class MistralAIProvider implements AIProvider {
 		}
 		return undefined
 	}
+	fim(
+		providerId: string,
+	): ((params: { prefix: string; suffix: string }, config: ProviderConfig) => Promise<string>) | undefined {
+		// Check if model supports FIM (codestral models do)
+		const modelName = providerId.toLowerCase()
+		if (!modelName.includes("codestral") && !modelName.includes("code")) {
+			return undefined
+		}
+
+		return async (params: { prefix: string; suffix: string }, config: ProviderConfig) => {
+			const baseUrl =
+				process.env["MISTRAL_LOCAL_SERVER_PROXY"] || config.baseUrl || "https://codestral.mistral.ai/v1"
+			const apiKey = config.apiKey
+
+			const response = await fetch(`${baseUrl}/fim/completions`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${apiKey}`,
+					...(apiKey ? { "x-api-key": apiKey } : {}),
+				},
+				body: JSON.stringify({
+					model: providerId,
+					prompt: params.prefix,
+					suffix: params.suffix,
+					temperature: 0.01,
+					max_tokens: 256,
+				}),
+			})
+
+			if (!response.ok) {
+				const errorText = await response.text()
+				throw new UserFacingError({
+					message: `Mistral FIM request failed: ${response.statusText} - ${errorText}`,
+					statusCode: response.status,
+				})
+			}
+
+			const data = await response.json()
+			const completion = data.choices?.[0]?.message?.content || ""
+			return completion
+		}
+	}
 }
-
-// const mistralFetch: typeof fetch = (input, init) => {
-// 	if (!init?.body) return fetch(input, init)
-
-// 	const body = JSON.parse(init.body as string)
-
-// 	// Remove strict from the schema validation
-// 	body.tools = [
-// 		...(body.tools ?? []).map((tool) => ({
-// 			...tool,
-// 			function: {
-// 				...tool.function,
-// 				strict: false,
-// 			},
-// 		})),
-// 	]
-
-// 	init.body = JSON.stringify(body)
-
-// 	return fetch(input, init)
-// }
