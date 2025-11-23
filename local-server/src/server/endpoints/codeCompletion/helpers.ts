@@ -98,7 +98,7 @@ function getShortPath(filepath: string, maxSegments = 2): string {
 /**
  * Format snippet content as comments
  */
-function formatSnippetAsComment(snippet: CodeSnippet, commentPrefix: string): string {
+export function formatSnippetAsComments(snippet: CodeSnippet, commentPrefix: string): string {
 	const shortPath = getShortPath(snippet.filepath)
 	const lines = snippet.content.split("\n")
 
@@ -158,7 +158,7 @@ function calculateSimilarity(textA: string, textB: string): number {
 /**
  * Rank snippets by relevance to the code around cursor
  */
-function rankSnippets(snippets: CodeSnippet[], contextAroundCursor: string): CodeSnippet[] {
+export function rankSnippets(snippets: CodeSnippet[], contextAroundCursor: string): CodeSnippet[] {
 	const scored = snippets.map((snippet) => ({
 		snippet,
 		score: calculateSimilarity(snippet.content, contextAroundCursor),
@@ -192,7 +192,7 @@ function selectSnippetsWithinBudget(
 	const TOKEN_BUFFER = 10 // Safety buffer per snippet
 
 	for (const snippet of snippets) {
-		const formatted = formatSnippetAsComment(snippet, commentPrefix)
+		const formatted = formatSnippetAsComments(snippet, commentPrefix)
 		const snippetTokens = countTokens(formatted) + TOKEN_BUFFER
 
 		if (tokensUsed + snippetTokens <= maxTokens) {
@@ -229,7 +229,6 @@ function trimContentFromBottom(content: string, maxTokens: number): string {
 function processRecentlyOpenedFiles(
 	files: RecentlyOpenedFile[],
 	maxTokens: number,
-	commentPrefix: string,
 	currentFilepath?: string,
 ): CodeSnippet[] {
 	const MIN_TOKENS_PER_FILE = 125
@@ -415,7 +414,6 @@ export function buildFIMRequest(params: CodeCompletionRequestParams & { tokenBud
 		const recentFileSnippets = processRecentlyOpenedFiles(
 			params.recentlyOpenedFiles,
 			remainingSnippetTokens * 0.7, // Allocate 70% of snippet budget to recent files
-			commentPrefix,
 			params.filepath,
 		)
 		allSnippets.push(...recentFileSnippets)
@@ -444,7 +442,7 @@ export function buildFIMRequest(params: CodeCompletionRequestParams & { tokenBud
 	// ========================================================================
 
 	const formattedSnippets = selectedSnippets
-		.map((snippet) => formatSnippetAsComment(snippet, commentPrefix))
+		.map((snippet) => formatSnippetAsComments(snippet, commentPrefix))
 		.join("\n\n")
 
 	// Add current file path at the end if we have it

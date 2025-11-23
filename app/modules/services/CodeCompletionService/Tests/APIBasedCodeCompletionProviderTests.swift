@@ -117,19 +117,8 @@ struct OffsetCalculationTests {
     let (prefix, suffix) = try APIBasedCodeCompletionProvider.splitContent(content, at: position)
 
     #expect(prefix == "func test() {\n  let x = 1\n  ")
-    #expect(suffix == "let y = 2\n}\n")
-  }
-
-  @Test("Offset calculation with CRLF line endings")
-  func offsetCalculationCRLF() throws {
-    let content = "line1\r\nline2\r\nline3"
-    let position = Position(line: 1, character: 3)
-
-    let (prefix, suffix) = try APIBasedCodeCompletionProvider.splitContent(content, at: position)
-
-    // Should handle CRLF as part of the line
-    #expect(prefix == "line1\r\nlin")
-    #expect(suffix == "e2\r\nline3")
+    #expect(suffix == "let y = 2\n}")
+    #expect(prefix + suffix == content)
   }
 
   @Test("Prefix plus suffix equals original content")

@@ -46,338 +46,270 @@ describe("countTokens", () => {
 
 describe("formatSnippetAsComments", () => {
 	it("should format Python with # comments", () => {
-		const result = formatSnippetAsComments("def test():\n  pass", "test.py", "public.python-script")
+		const snippet: CodeSnippet = {
+			filepath: "test.py",
+			content: "def test():\n  pass",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "#")
 		expect(result).toContain("# Path: test.py")
 		expect(result).toContain("# def test():")
 		expect(result).toContain("#   pass")
 	})
 
 	it("should format Swift with // comments", () => {
-		const result = formatSnippetAsComments("func test() {}", "test.swift", "public.swift-source")
+		const snippet: CodeSnippet = {
+			filepath: "test.swift",
+			content: "func test() {}",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("// Path: test.swift")
 		expect(result).toContain("// func test() {}")
 	})
 
 	it("should format TypeScript with // comments", () => {
-		const result = formatSnippetAsComments("function test() {}", "test.ts", "public.typescript-source")
+		const snippet: CodeSnippet = {
+			filepath: "test.ts",
+			content: "function test() {}",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("// Path: test.ts")
 		expect(result).toContain("// function test() {}")
 	})
 
 	it("should use // as default for unknown UTI", () => {
-		const result = formatSnippetAsComments("content", "test.xyz", "unknown.file")
+		const snippet: CodeSnippet = {
+			filepath: "test.xyz",
+			content: "content",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("// Path: test.xyz")
 		expect(result).toContain("// content")
 	})
 
 	it("should handle multi-line content", () => {
-		const content = "line1\nline2\nline3"
-		const result = formatSnippetAsComments(content, "test.swift", "public.swift-source")
+		const snippet: CodeSnippet = {
+			filepath: "test.swift",
+			content: "line1\nline2\nline3",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("// line1")
 		expect(result).toContain("// line2")
 		expect(result).toContain("// line3")
 	})
 
 	it("should preserve indentation", () => {
-		const content = "func test() {\n  let x = 1\n}"
-		const result = formatSnippetAsComments(content, "test.swift", "public.swift-source")
+		const snippet: CodeSnippet = {
+			filepath: "test.swift",
+			content: "func test() {\n  let x = 1\n}",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("//   let x = 1")
 	})
 
 	it("should handle empty content", () => {
-		const result = formatSnippetAsComments("", "test.swift", "public.swift-source")
+		const snippet: CodeSnippet = {
+			filepath: "test.swift",
+			content: "",
+			type: "recentFile",
+		}
+		const result = formatSnippetAsComments(snippet, "//")
 		expect(result).toContain("// Path: test.swift")
 	})
 })
 
 describe("rankSnippets", () => {
-	it("should respect token budget limits", () => {
+	it("should rank by similarity to context", () => {
 		const snippets: CodeSnippet[] = [
-			{ filepath: "file1.swift", content: "a".repeat(1000), type: "clipboard" },
-			{ filepath: "file2.swift", content: "b".repeat(1000), type: "recentEdit" },
-			{ filepath: "file3.swift", content: "c".repeat(1000), type: "recentFile" },
+			{ filepath: "file1.swift", content: "func calculate() { let x = 1 }", type: "recentFile" },
+			{ filepath: "file2.swift", content: "import UIKit", type: "recentFile" },
+			{ filepath: "file3.swift", content: "let result = calculate()", type: "recentFile" },
 		]
 
-		const budget = { ...DEFAULT_TOKEN_BUDGET, maxPromptTokens: 100 }
-		const ranked = rankSnippets(snippets, "public.swift-source", budget)
+		const contextAroundCursor = "let value = calculate()"
+		const ranked = rankSnippets(snippets, contextAroundCursor)
 
-		// Total tokens should not exceed budget
-		const totalTokens = ranked.reduce((sum, s) => sum + countTokens(s.content), 0)
-		expect(totalTokens).toBeLessThanOrEqual(budget.maxPromptTokens)
-	})
-
-	it("should prioritize clipboard over recent edits", () => {
-		const snippets: CodeSnippet[] = [
-			{ filepath: "file1.swift", content: "recent edit", type: "recentEdit" },
-			{ filepath: "file2.swift", content: "clipboard content", type: "clipboard" },
-		]
-
-		const ranked = rankSnippets(snippets, "public.swift-source", DEFAULT_TOKEN_BUDGET)
-
-		// Clipboard should come first
-		expect(ranked[0].type).toBe("clipboard")
-	})
-
-	it("should deduplicate exact matches", () => {
-		const snippets: CodeSnippet[] = [
-			{ filepath: "file1.swift", content: "duplicate", type: "clipboard" },
-			{ filepath: "file2.swift", content: "duplicate", type: "recentEdit" },
-		]
-
-		const ranked = rankSnippets(snippets, "public.swift-source", DEFAULT_TOKEN_BUDGET)
-
-		// Should only include one copy
-		expect(ranked.length).toBe(1)
-	})
-
-	it("should truncate snippets to fit budget", () => {
-		const snippets: CodeSnippet[] = [{ filepath: "file.swift", content: "x".repeat(10000), type: "clipboard" }]
-
-		const budget = { ...DEFAULT_TOKEN_BUDGET, maxPromptTokens: 100 }
-		const ranked = rankSnippets(snippets, "public.swift-source", budget)
-
-		expect(ranked.length).toBeGreaterThan(0)
-		const tokens = countTokens(ranked[0].content)
-		expect(tokens).toBeLessThanOrEqual(budget.maxPromptTokens)
+		// Snippet with 'calculate' should rank higher than 'import UIKit'
+		expect(ranked[0].content).toContain("calculate")
 	})
 
 	it("should handle empty snippets array", () => {
-		const ranked = rankSnippets([], "public.swift-source", DEFAULT_TOKEN_BUDGET)
+		const ranked = rankSnippets([], "let x = 1")
 		expect(ranked).toEqual([])
 	})
 
-	it("should handle snippets with empty content", () => {
-		const snippets: CodeSnippet[] = [{ filepath: "empty.swift", content: "", type: "clipboard" }]
-
-		const ranked = rankSnippets(snippets, "public.swift-source", DEFAULT_TOKEN_BUDGET)
-		expect(ranked.length).toBe(0) // Empty snippets should be filtered out
-	})
-
-	it("should prioritize by type: clipboard > recentEdit > recentFile > currentFile", () => {
+	it("should handle empty context", () => {
 		const snippets: CodeSnippet[] = [
-			{ filepath: "current.swift", content: "current file", type: "currentFile" },
-			{ filepath: "recent.swift", content: "recent file", type: "recentFile" },
-			{ filepath: "edit.swift", content: "recent edit", type: "recentEdit" },
-			{ filepath: "clip.swift", content: "clipboard", type: "clipboard" },
+			{ filepath: "file1.swift", content: "func test() {}", type: "recentFile" },
+			{ filepath: "file2.swift", content: "let x = 1", type: "recentFile" },
 		]
 
-		const ranked = rankSnippets(snippets, "public.swift-source", DEFAULT_TOKEN_BUDGET)
+		const ranked = rankSnippets(snippets, "")
+		// Should still return snippets even with empty context
+		expect(ranked.length).toBe(2)
+	})
 
-		expect(ranked[0].type).toBe("clipboard")
-		expect(ranked[1].type).toBe("recentEdit")
-		expect(ranked[2].type).toBe("recentFile")
-		expect(ranked[3].type).toBe("currentFile")
+	it("should rank snippets with shared symbols higher", () => {
+		const snippets: CodeSnippet[] = [
+			{ filepath: "file1.swift", content: "class User { var name: String }", type: "recentFile" },
+			{ filepath: "file2.swift", content: "func calculateTotal() { return 100 }", type: "recentFile" },
+		]
+
+		const contextAroundCursor = "let user = User(name: userName)"
+		const ranked = rankSnippets(snippets, contextAroundCursor)
+
+		// Snippet with User/name should rank higher
+		expect(ranked[0].content).toContain("User")
 	})
 })
 
 describe("buildInstructPrompt", () => {
 	it("should match snapshot for basic prefix/suffix", () => {
-		const prompt = buildInstructPrompt({
+		const result = buildInstructPrompt({
 			prefix: "function test() {",
 			suffix: "}",
+			cursorPosition: { line: 0, character: 17 },
 			filepath: "test.ts",
-			selection: { start: { line: 0, character: 16 }, end: { line: 0, character: 16 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
 		})
 
-		expect(prompt).toMatchSnapshot()
+		expect(result).toMatchSnapshot()
 	})
 
-	it("should include prefix and suffix", () => {
-		const prompt = buildInstructPrompt({
+	it("should include prefix and suffix in user prompt", () => {
+		const result = buildInstructPrompt({
 			prefix: "function test() {",
 			suffix: "}",
+			cursorPosition: { line: 0, character: 17 },
 			filepath: "test.ts",
-			selection: { start: { line: 0, character: 16 }, end: { line: 0, character: 16 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
 		})
 
-		expect(prompt).toContain("function test() {")
-		expect(prompt).toContain("}")
-		expect(prompt).toContain("<COMPLETION_TARGET />")
+		expect(result.userPrompt).toContain("function test() {")
+		expect(result.userPrompt).toContain("}")
+		expect(result.userPrompt).toContain("<|cursor|>")
 	})
 
-	it("should match snapshot with clipboard content", () => {
-		const prompt = buildInstructPrompt({
-			prefix: "let x = ",
+	it("should match snapshot with context snippets", () => {
+		const contextSnippets: CodeSnippet[] = [
+			{ filepath: "helper.ts", content: "export function help() {}", type: "recentFile" },
+			{ filepath: "utils.ts", content: "export const PI = 3.14", type: "recentFile" },
+		]
+
+		const result = buildInstructPrompt({
+			prefix: "import ",
 			suffix: "",
+			cursorPosition: { line: 0, character: 7 },
 			filepath: "test.ts",
-			pasteboardContent: "42",
-			selection: { start: { line: 0, character: 8 }, end: { line: 0, character: 8 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
+			contextSnippets,
 		})
 
-		expect(prompt).toMatchSnapshot()
+		expect(result).toMatchSnapshot()
 	})
 
-	it("should include clipboard content when provided", () => {
-		const prompt = buildInstructPrompt({
-			prefix: "let x = ",
+	it("should include context snippets when provided", () => {
+		const contextSnippets: CodeSnippet[] = [
+			{ filepath: "helper.ts", content: "export function help() {}", type: "recentFile" },
+			{ filepath: "utils.ts", content: "export const PI = 3.14", type: "recentFile" },
+		]
+
+		const result = buildInstructPrompt({
+			prefix: "import ",
 			suffix: "",
+			cursorPosition: { line: 0, character: 7 },
 			filepath: "test.ts",
-			pasteboardContent: "42",
-			selection: { start: { line: 0, character: 8 }, end: { line: 0, character: 8 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
+			contextSnippets,
 		})
 
-		expect(prompt).toContain("clipboard")
-		expect(prompt).toContain("42")
+		expect(result.userPrompt).toContain("helper.ts")
+		expect(result.userPrompt).toContain("utils.ts")
 	})
 
 	it("should match snapshot with recent edits", () => {
-		const prompt = buildInstructPrompt({
+		const result = buildInstructPrompt({
 			prefix: "let x = ",
 			suffix: "",
+			cursorPosition: { line: 0, character: 8 },
 			filepath: "test.ts",
+			commentPrefix: "//",
 			recentEdits: "diff --git a/file.ts b/file.ts\n+let y = 1",
-			selection: { start: { line: 0, character: 8 }, end: { line: 0, character: 8 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
 		})
 
-		expect(prompt).toMatchSnapshot()
+		expect(result).toMatchSnapshot()
 	})
 
 	it("should include recent edits when provided", () => {
-		const prompt = buildInstructPrompt({
+		const result = buildInstructPrompt({
 			prefix: "let x = ",
 			suffix: "",
+			cursorPosition: { line: 0, character: 8 },
 			filepath: "test.ts",
+			commentPrefix: "//",
 			recentEdits: "previous changes",
-			selection: { start: { line: 0, character: 8 }, end: { line: 0, character: 8 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
 		})
 
-		expect(prompt).toContain("recent edits")
-		expect(prompt).toContain("previous changes")
-	})
-
-	it("should match snapshot with recently opened files", () => {
-		const prompt = buildInstructPrompt({
-			prefix: "import ",
-			suffix: "",
-			filepath: "test.ts",
-			recentlyOpenedFiles: [
-				{ filepath: "/workspace/src/helper.ts", content: "export function help() {}" },
-				{ filepath: "/workspace/src/utils.ts", content: "export const PI = 3.14" },
-			],
-			selection: { start: { line: 0, character: 7 }, end: { line: 0, character: 7 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
-		})
-
-		expect(prompt).toMatchSnapshot()
-	})
-
-	it("should include recently opened files when provided", () => {
-		const prompt = buildInstructPrompt({
-			prefix: "import ",
-			suffix: "",
-			filepath: "test.ts",
-			recentlyOpenedFiles: [
-				{ filepath: "helper.ts", content: "export function help() {}" },
-				{ filepath: "utils.ts", content: "export const PI = 3.14" },
-			],
-			selection: { start: { line: 0, character: 7 }, end: { line: 0, character: 7 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
-		})
-
-		expect(prompt).toContain("helper.ts")
-		expect(prompt).toContain("utils.ts")
+		expect(result.userPrompt).toContain("Recent Edits")
+		expect(result.userPrompt).toContain("previous changes")
 	})
 
 	it("should handle empty prefix", () => {
-		const prompt = buildInstructPrompt({
+		const result = buildInstructPrompt({
 			prefix: "",
 			suffix: "function test() {}",
+			cursorPosition: { line: 0, character: 0 },
 			filepath: "test.ts",
-			selection: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
 		})
 
-		expect(prompt).toContain("<COMPLETION_TARGET />")
-		expect(prompt).toContain("function test() {}")
+		expect(result.userPrompt).toContain("<|cursor|>")
+		expect(result.userPrompt).toContain("function test() {}")
 	})
 
 	it("should handle empty suffix", () => {
-		const prompt = buildInstructPrompt({
+		const result = buildInstructPrompt({
 			prefix: "function test() {}",
 			suffix: "",
+			cursorPosition: { line: 0, character: 18 },
 			filepath: "test.ts",
-			selection: { start: { line: 0, character: 18 }, end: { line: 0, character: 18 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
 		})
 
-		expect(prompt).toContain("function test() {}")
-		expect(prompt).toContain("<COMPLETION_TARGET />")
+		expect(result.userPrompt).toContain("function test() {}")
+		expect(result.userPrompt).toContain("<|cursor|>")
 	})
 
-	it("should respect token budget and omit low-priority snippets", () => {
-		const prompt = buildInstructPrompt({
-			prefix: "x",
-			suffix: "y",
+	it("should calculate correct editable region", () => {
+		const result = buildInstructPrompt({
+			prefix: "line1\nline2\nline3\n",
+			suffix: "line5\nline6",
+			cursorPosition: { line: 3, character: 0 },
 			filepath: "test.ts",
-			pasteboardContent: "a".repeat(5000),
-			recentEdits: "b".repeat(5000),
-			recentlyOpenedFiles: [{ filepath: "big.ts", content: "c".repeat(5000) }],
-			selection: { start: { line: 0, character: 1 }, end: { line: 0, character: 1 } },
-			formattingMetadata: {
-				tabSize: 2,
-				indentSize: 2,
-				usesTabsForIndentation: false,
-				uti: "public.typescript-source",
-			},
+			commentPrefix: "//",
+			editableRangeMargin: { top: 1, bottom: 2 },
 		})
 
-		// Should include high-priority clipboard but may omit low-priority items
-		expect(prompt.length).toBeLessThan(20000) // Reasonable limit
+		// With margin { top: 1, bottom: 2 }, editable region should be lines 2-5 (0-indexed)
+		expect(result.editableRegionStart).toBe(2)
+		expect(result.editableRegionEnd).toBe(4) // line 3 + 2 = 5, but 0-indexed is 4
+	})
+
+	it("should include editable region markers in user prompt", () => {
+		const result = buildInstructPrompt({
+			prefix: "let x = 1\n",
+			suffix: "let z = 3",
+			cursorPosition: { line: 1, character: 0 },
+			filepath: "test.ts",
+			commentPrefix: "//",
+		})
+
+		expect(result.userPrompt).toContain("<|editable_region_start|>")
+		expect(result.userPrompt).toContain("<|editable_region_end|>")
 	})
 })

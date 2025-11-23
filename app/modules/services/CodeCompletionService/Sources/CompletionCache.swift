@@ -309,16 +309,13 @@ extension CompletionSuggestion {
       .map(\.text)
       .joined()
 
-    let res = RawCompletionSuggestion(
+    return RawCompletionSuggestion(
       file: request.file,
       startPosition: changedRange.start,
       endPosition: changedRange.end,
       completion: completion,
       id: UUID())
       .applied(to: request.content, file: request.file, selection: request.selection)
-
-    print(res?.diff.debugDescription ?? "no diff")
-    return res
   }
 }
 

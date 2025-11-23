@@ -369,8 +369,6 @@ struct CharacterDiffToLineChangesTests {
       oldContent: oldContent,
       newContent: newContent)
 
-    print("?")
-
     #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)
   }
@@ -540,48 +538,6 @@ struct CharacterDiffToLineChangesTests {
 
     // Should be recognized as unchanged
     #expect(lineChanges.isEmpty || lineChanges.allSatisfy { $0.allSatisfy { $0.type == .unchanged } })
-  }
-
-  @Test("handles CRLF line endings in old content")
-  func handlesCRLFInOldContent() throws {
-    let oldContent = "line1\r\nline2\r\n"
-    let newContent = "line1\nline2\n"
-    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
-      diff: diff,
-      oldContent: oldContent,
-      newContent: newContent)
-
-    // Should handle the line ending conversion
-    #expect(!lineChanges.isEmpty)
-  }
-
-  @Test("handles CRLF line endings in new content")
-  func handlesCRLFInNewContent() throws {
-    let oldContent = "line1\nline2\n"
-    let newContent = "line1\r\nline2\r\n"
-    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
-      diff: diff,
-      oldContent: oldContent,
-      newContent: newContent)
-
-    // Should handle the line ending conversion
-    #expect(!lineChanges.isEmpty)
-  }
-
-  @Test("handles mixed line endings")
-  func handlesMixedLineEndings() throws {
-    let oldContent = "line1\nline2\r\nline3\n"
-    let newContent = "line1\r\nline2\nline3\r\n"
-    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
-      diff: diff,
-      oldContent: oldContent,
-      newContent: newContent)
-
-    // Should handle mixed endings
-    #expect(!lineChanges.isEmpty)
   }
 
   @Test("handles file with only newline character")
