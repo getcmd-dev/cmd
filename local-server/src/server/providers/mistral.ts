@@ -4,8 +4,8 @@ import { createMistral, MistralLanguageModelOptions } from "@ai-sdk/mistral"
 import { UserFacingError } from "../errors"
 import { ProviderModelFullInfo } from "./provider"
 import { matchModelData } from "./provider-utils"
-import { BaseModelCard } from "@mistralai/mistralai/models/components"
 import { notUndefined } from "@/utils/typeChecks"
+import { Model } from "openai/resources/models.mjs"
 import { buildFIMRequest, CodeCompletionRequestParams } from "../endpoints/codeCompletion/helpers"
 import { CodeCompletionResponseParams } from "../schemas/codeCompletionSchema"
 
@@ -52,7 +52,7 @@ export class MistralAIProvider implements AIProvider {
 			})
 		}
 		const data = await response.json()
-		let allModels = data.data?.map((model: BaseModelCard): BaseModelCard => model) || []
+		let allModels = data.data?.map((model: Model): Model => model) || []
 
 		// Remove some models that are not relevant for coding
 		const ignoredModelsPrefix = [
@@ -120,7 +120,7 @@ export class MistralAIProvider implements AIProvider {
 			.filter(notUndefined)
 		return models
 	}
-	private identifyModel(model: BaseModelCard, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: Model, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Mistral                   ->  OpenRouter
 		// magistral-medium-latest   ->  mistralai/magistral-medium-latest
 		const matchedId = `mistralai/${model.id}`

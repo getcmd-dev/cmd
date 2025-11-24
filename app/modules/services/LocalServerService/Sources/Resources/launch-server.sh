@@ -61,12 +61,12 @@ setup_dependencies() {
 	fi
 
 	# download codex-acp
-	if [ ! -f "./codex-acp-0.3.8" ]; then
-		curl -L https://github.com/zed-industries/codex-acp/releases/download/v0.3.8/codex-acp-0.3.8-aarch64-apple-darwin.tar.gz -o codex-acp-0.3.8.tar.gz
-		# unzip to ./codex-acp-0.3.8
-		tar -xzf codex-acp-0.3.8.tar.gz
-		mv codex-acp ./codex-acp-0.3.8
-		rm codex-acp-0.3.8.tar.gz
+	if [ ! -f "./codex-acp-0.5.1" ]; then
+		curl -L https://github.com/zed-industries/codex-acp/releases/download/v0.5.1/codex-acp-0.5.1-aarch64-apple-darwin.tar.gz -o codex-acp-0.5.1.tar.gz
+		# unzip to ./codex-acp-0.5.1
+		tar -xzf codex-acp-0.5.1.tar.gz
+		mv codex-acp ./codex-acp-0.5.1
+		rm codex-acp-0.5.1.tar.gz
 	fi
 }
 
@@ -74,7 +74,7 @@ setup_node_environment >"./launch-server.log" 2>&1
 setup_dependencies >"./launch-server.log" 2>&1
 
 # Set the codex-acp path as an environment variable
-export CODEX_ACP_PATH="$SCRIPT_DIR/codex-acp-0.3.8"
+export CODEX_ACP_PATH="$SCRIPT_DIR/codex-acp-0.5.1"
 
 gunzip ./main.bundle.cjs.gz --force --keep
 ./node --enable-source-maps ./main.bundle.cjs "$@" 2> >(tee "./launch-server.stderr.log") 1> >(tee "./launch-server.stdout.log")
