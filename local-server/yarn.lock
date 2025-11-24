@@ -5,12 +5,12 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agentclientprotocol/sdk@npm:^0.4.8":
-  version: 0.4.8
-  resolution: "@agentclientprotocol/sdk@npm:0.4.8"
+"@agentclientprotocol/sdk@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "@agentclientprotocol/sdk@npm:0.5.1"
   dependencies:
     zod: "npm:^3.0.0"
-  checksum: 10c0/6bec88946bc268e90f2a062912d6d87561e224ab7acc84eb73a92ff62822b9f2a3d7db2460bcb6226fb3be97c7c3a93dcef04d76aeb0218b7eb83468d8d6171a
+  checksum: 10c0/4c1b7f064226b7c248f76062fa2c3c6fa8ad4d582ff80a62b9b5a81bfbcdb8ad12ee39ca65925c883e9ed7500efa4cc9c76e9cf633f8438a12c03acc62a3eb99
   languageName: node
   linkType: hard
 
@@ -146,15 +146,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@anthropic-ai/claude-agent-sdk@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@anthropic-ai/claude-agent-sdk@npm:0.1.15"
+"@anthropic-ai/claude-agent-sdk@npm:^0.1.51":
+  version: 0.1.52
+  resolution: "@anthropic-ai/claude-agent-sdk@npm:0.1.52"
   dependencies:
     "@img/sharp-darwin-arm64": "npm:^0.33.5"
     "@img/sharp-darwin-x64": "npm:^0.33.5"
     "@img/sharp-linux-arm": "npm:^0.33.5"
     "@img/sharp-linux-arm64": "npm:^0.33.5"
     "@img/sharp-linux-x64": "npm:^0.33.5"
+    "@img/sharp-linuxmusl-arm64": "npm:^0.33.5"
+    "@img/sharp-linuxmusl-x64": "npm:^0.33.5"
     "@img/sharp-win32-x64": "npm:^0.33.5"
   peerDependencies:
     zod: ^3.24.1
@@ -169,9 +171,13 @@ __metadata:
       optional: true
     "@img/sharp-linux-x64":
       optional: true
+    "@img/sharp-linuxmusl-arm64":
+      optional: true
+    "@img/sharp-linuxmusl-x64":
+      optional: true
     "@img/sharp-win32-x64":
       optional: true
-  checksum: 10c0/50eabdb0ecbb50c3e878fb5f706fa81f58169e7060c1a4cfaa0dfa5035bf5b039571002356593fd02c78166f6ac4dc7542c7f500e8270d89630c39fe05558cc4
+  checksum: 10c0/bb93abf8a2c29eed284df39b1d684546feebe25ea625c1981eb372c6774565f3f315f8979d36b9182d619da88b6cb8e2fb979978a825ec7bb3238af9f8dce75b
   languageName: node
   linkType: hard
 
@@ -1333,6 +1339,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@img/sharp-libvips-linuxmusl-arm64@npm:1.0.4":
+  version: 1.0.4
+  resolution: "@img/sharp-libvips-linuxmusl-arm64@npm:1.0.4"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@img/sharp-libvips-linuxmusl-x64@npm:1.0.4":
+  version: 1.0.4
+  resolution: "@img/sharp-libvips-linuxmusl-x64@npm:1.0.4"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
 "@img/sharp-linux-arm64@npm:^0.33.5":
   version: 0.33.5
   resolution: "@img/sharp-linux-arm64@npm:0.33.5"
@@ -1366,6 +1386,30 @@ __metadata:
     "@img/sharp-libvips-linux-x64":
       optional: true
   conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@img/sharp-linuxmusl-arm64@npm:^0.33.5":
+  version: 0.33.5
+  resolution: "@img/sharp-linuxmusl-arm64@npm:0.33.5"
+  dependencies:
+    "@img/sharp-libvips-linuxmusl-arm64": "npm:1.0.4"
+  dependenciesMeta:
+    "@img/sharp-libvips-linuxmusl-arm64":
+      optional: true
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@img/sharp-linuxmusl-x64@npm:^0.33.5":
+  version: 0.33.5
+  resolution: "@img/sharp-linuxmusl-x64@npm:0.33.5"
+  dependencies:
+    "@img/sharp-libvips-linuxmusl-x64": "npm:1.0.4"
+  dependenciesMeta:
+    "@img/sharp-libvips-linuxmusl-x64":
+      optional: true
+  conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
@@ -1731,16 +1775,6 @@ __metadata:
   version: 1.1.1
   resolution: "@kwsites/promise-deferred@npm:1.1.1"
   checksum: 10c0/ef1ad3f1f50991e3bed352b175986d8b4bc684521698514a2ed63c1d1fc9848843da4f2bc2df961c9b148c94e1c34bf33f0da8a90ba2234e452481f2cc9937b1
-  languageName: node
-  linkType: hard
-
-"@mistralai/mistralai@npm:^1.10.0":
-  version: 1.10.0
-  resolution: "@mistralai/mistralai@npm:1.10.0"
-  dependencies:
-    zod: "npm:^3.20.0"
-    zod-to-json-schema: "npm:^3.24.1"
-  checksum: 10c0/1fb5948a18559f14e39ed55d780648baa988446799d8ebdd5d609670a9cc6ef41afca90aa2864685e5b4c3c6b2c95d18356ab0c191943f246ac9f5626fdec485
   languageName: node
   linkType: hard
 
@@ -7583,16 +7617,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "local-server@workspace:."
   dependencies:
-    "@agentclientprotocol/sdk": "npm:^0.4.8"
+    "@agentclientprotocol/sdk": "npm:^0.5.1"
     "@ai-sdk/anthropic": "npm:^2.0.6"
     "@ai-sdk/google": "npm:^2.0.8"
     "@ai-sdk/groq": "npm:^2.0.14"
     "@ai-sdk/mistral": "npm:^2.0.24"
     "@ai-sdk/openai": "npm:^2.0.19"
-    "@anthropic-ai/claude-agent-sdk": "npm:^0.1.15"
+    "@anthropic-ai/claude-agent-sdk": "npm:^0.1.51"
     "@anthropic-ai/sdk": "npm:^0.63.0"
     "@eslint/js": "npm:^9.19.0"
-    "@mistralai/mistralai": "npm:^1.10.0"
     "@modelcontextprotocol/sdk": "npm:^1.17.0"
     "@openrouter/ai-sdk-provider": "npm:^1.1.2"
     "@sentry/esbuild-plugin": "npm:^4.3.0"
@@ -10642,7 +10675,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:^3.0.0, zod@npm:^3.20.0, zod@npm:^3.23.8, zod@npm:^3.25.76":
+"zod@npm:^3.0.0, zod@npm:^3.23.8, zod@npm:^3.25.76":
   version: 3.25.76
   resolution: "zod@npm:3.25.76"
   checksum: 10c0/5718ec35e3c40b600316c5b4c5e4976f7fee68151bc8f8d90ec18a469be9571f072e1bbaace10f1e85cf8892ea12d90821b200e980ab46916a6166a4260a983c

@@ -33,15 +33,14 @@
 		"export-schema-swift": "yarn tsx ./tools/generateSwiftSchema.ts"
 	},
 	"dependencies": {
-		"@agentclientprotocol/sdk": "^0.4.8",
+		"@agentclientprotocol/sdk": "^0.5.1",
 		"@ai-sdk/anthropic": "^2.0.6",
 		"@ai-sdk/google": "^2.0.8",
 		"@ai-sdk/groq": "^2.0.14",
 		"@ai-sdk/mistral": "^2.0.24",
 		"@ai-sdk/openai": "^2.0.19",
-		"@anthropic-ai/claude-agent-sdk": "^0.1.15",
+		"@anthropic-ai/claude-agent-sdk": "^0.1.51",
 		"@anthropic-ai/sdk": "^0.63.0",
-		"@mistralai/mistralai": "^1.10.0",
 		"@modelcontextprotocol/sdk": "^1.17.0",
 		"@openrouter/ai-sdk-provider": "^1.1.2",
 		"@sentry/node": "^10.10.0",

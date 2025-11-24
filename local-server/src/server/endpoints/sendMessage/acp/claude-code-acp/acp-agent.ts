@@ -369,8 +369,8 @@ export class ClaudeAcpAgent implements Agent {
 							this.sessions[params.sessionId].claudeCodeSessionId = message.session_id
 							break
 						case "compact_boundary":
-							break
 						case "hook_response":
+						case "status":
 							break
 						default:
 							// @ts-expect-error this is expected to be unreachable
@@ -465,6 +465,9 @@ export class ClaudeAcpAgent implements Agent {
 					)
 					break
 				}
+				case "tool_progress":
+				case "auth_status":
+					break
 
 				default:
 					// @ts-expect-error this is expected to be unreachable

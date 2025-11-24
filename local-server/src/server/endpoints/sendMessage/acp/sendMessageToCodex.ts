@@ -6,12 +6,13 @@ import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "@/utils/spawn-promise"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
 import { CodexACPClient } from "../acp/clients/codex/codexACPClient"
+import { SendMessageToExternalAgent } from "."
 
 // TODO: support resuming the conversation after the app restarts.
 
 let acpClient: CodexACPClient | undefined
 
-export const sendMessageToCodex = async (
+export const sendMessageToCodex: SendMessageToExternalAgent = async (
 	{
 		messages,
 		threadId,

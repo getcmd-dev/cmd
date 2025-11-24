@@ -5,6 +5,7 @@ import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "child_process"
 import { Readable, Writable } from "stream"
+import { ACPToolCall } from "../.."
 
 export type CodexACPSessionInitializationParams = {
 	cwd: string
@@ -15,13 +16,7 @@ type SessionManager = {
 	acpSessionId: string
 	eventHandler?: AsyncStream<acp.SessionNotification>
 	onPromptDone?: () => void
-	permissionRequestHandler?: ({
-		toolCall,
-		toolName,
-	}: {
-		toolCall: acp.ToolCallUpdate
-		toolName: string
-	}) => Promise<boolean>
+	permissionRequestHandler?: ({ toolCall, toolName }: { toolCall: ACPToolCall; toolName: string }) => Promise<boolean>
 	interrupt: () => void
 	prompt: (message: acp.ContentBlock[]) => void
 }
@@ -33,7 +28,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	private eventHandlerByACPSessionId: Record<string, (event: acp.SessionNotification) => void> = {}
 	private permissionRequestHandlerByACPSessionId: Record<
 		string,
-		({ toolCall, toolName }: { toolCall: acp.ToolCallUpdate; toolName: string }) => Promise<boolean>
+		({ toolCall, toolName }: { toolCall: ACPToolCall; toolName: string }) => Promise<boolean>
 	> = {}
 	private spawnError?: Error
 
@@ -85,7 +80,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 			toolCall,
 			toolName,
 		}: {
-			toolCall: acp.ToolCallUpdate
+			toolCall: ACPToolCall
 			toolName: string
 		}) => Promise<boolean>,
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
