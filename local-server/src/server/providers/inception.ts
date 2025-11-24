@@ -226,12 +226,13 @@ export function buildInceptionNextEditPrompt(params: CodeCompletionRequestParams
 	const afterRegion = lines.slice(editableRegionEnd + 1)
 
 	// Insert cursor token
+	const editableRegionWithCursor = [...editableRegion]
 	const relativeCursorLine = cursorLine - editableRegionStart
 	const cursorChar = params.selection.start.character
 	if (relativeCursorLine >= 0 && relativeCursorLine < editableRegion.length) {
 		const line = editableRegion[relativeCursorLine]
 		const charPos = Math.min(Math.max(0, cursorChar), line.length)
-		editableRegion[relativeCursorLine] = line.slice(0, charPos) + INCEPTION_CURSOR + line.slice(charPos)
+		editableRegionWithCursor[relativeCursorLine] = line.slice(0, charPos) + INCEPTION_CURSOR + line.slice(charPos)
 	}
 
 	const prefix = beforeRegion.join("\n") + (beforeRegion.length > 0 ? "\n" : "")
@@ -241,7 +242,7 @@ export function buildInceptionNextEditPrompt(params: CodeCompletionRequestParams
 		prefix +
 		INCEPTION_CODE_TO_EDIT_OPEN +
 		"\n" +
-		editableRegion.join("\n") +
+		editableRegionWithCursor.join("\n") +
 		"\n" +
 		INCEPTION_CODE_TO_EDIT_CLOSE +
 		suffix

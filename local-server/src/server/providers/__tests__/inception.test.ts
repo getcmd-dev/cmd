@@ -224,4 +224,82 @@ describe("buildInceptionNextEditPrompt", () => {
 		expect(result.prompt).toContain(INCEPTION_CONSTANTS.EDIT_DIFF_HISTORY_OPEN)
 		expect(result.prompt).toContain(INCEPTION_CONSTANTS.EDIT_DIFF_HISTORY_CLOSE)
 	})
+
+	it("should not include cursor marker length in changedRange when cursor is on last line of editable region", () => {
+		// Single-line file where cursor line is also the last line of editable region
+		const params: CodeCompletionRequestParams = {
+			...baseParams,
+			prefix: "const x = ",
+			suffix: "",
+			selection: { start: { line: 0, character: 10 }, end: { line: 0, character: 10 } },
+		}
+
+		const result = buildInceptionNextEditPrompt(params)
+
+		// The changedRange end character should be 10 (actual text length)
+		// NOT 20 (text length + cursor marker length of 10)
+		expect(result.editableRegionRange.end.character).toBe(10)
+		expect(result.editableRegionRange.end.line).toBe(0)
+
+		// Verify the prompt includes the cursor marker
+		expect(result.prompt).toContain(INCEPTION_CONSTANTS.CURSOR)
+	})
+
+	it("should correctly calculate changedRange for cursor at end of single-line file", () => {
+		const params: CodeCompletionRequestParams = {
+			...baseParams,
+			prefix: "hello world",
+			suffix: "",
+			selection: { start: { line: 0, character: 11 }, end: { line: 0, character: 11 } },
+		}
+
+		const result = buildInceptionNextEditPrompt(params)
+
+		// End character should match the actual text length (11)
+		// not include the cursor marker
+		expect(result.editableRegionRange.start.line).toBe(0)
+		expect(result.editableRegionRange.start.character).toBe(0)
+		expect(result.editableRegionRange.end.line).toBe(0)
+		expect(result.editableRegionRange.end.character).toBe(11)
+	})
+
+	it("should correctly calculate changedRange when cursor is on last line of multi-line editable region", () => {
+		// Multi-line file where cursor is at the end (line 5 is the last line of the 6-line editable region)
+		const params: CodeCompletionRequestParams = {
+			...baseParams,
+			prefix: "line0\nline1\nline2\nline3\nline4\nline5",
+			suffix: "",
+			selection: { start: { line: 5, character: 5 }, end: { line: 5, character: 5 } },
+		}
+
+		const result = buildInceptionNextEditPrompt(params)
+
+		// The editable region starts at line 5 (0 lines before cursor)
+		// and extends to line 5 (last line of file, no lines after)
+		expect(result.editableRegionRange.start.line).toBe(5)
+		expect(result.editableRegionRange.start.character).toBe(0)
+		expect(result.editableRegionRange.end.line).toBe(5)
+		// Should be 5 (length of "line5"), NOT 15 (with cursor marker)
+		expect(result.editableRegionRange.end.character).toBe(5)
+
+		// Verify cursor was inserted in the prompt
+		expect(result.prompt).toContain(INCEPTION_CONSTANTS.CURSOR)
+	})
+
+	it("should correctly calculate changedRange when cursor is in middle of last line of editable region", () => {
+		const params: CodeCompletionRequestParams = {
+			...baseParams,
+			prefix: "function test() {\n  return ",
+			suffix: "\n}",
+			selection: { start: { line: 1, character: 9 }, end: { line: 1, character: 9 } },
+		}
+
+		const result = buildInceptionNextEditPrompt(params)
+
+		// Line 1 is "  return " (9 chars) - cursor is at the end
+		// This is within the editable region
+		// The last line of the editable region will be line 2 ("}")
+		// So end.character should be 1 (length of "}"), not include cursor marker
+		expect(result.editableRegionRange.end.character).toBe(1)
+	})
 })

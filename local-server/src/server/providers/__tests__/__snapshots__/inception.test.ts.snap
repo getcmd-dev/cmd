@@ -4,7 +4,7 @@ exports[`buildInceptionNextEditPrompt should handle empty file 1`] = `
 {
   "editableRegionRange": {
     "end": {
-      "character": 10,
+      "character": 0,
       "line": 0,
     },
     "start": {
@@ -32,7 +32,7 @@ exports[`buildInceptionNextEditPrompt should match snapshot for basic single-lin
 {
   "editableRegionRange": {
     "end": {
-      "character": 30,
+      "character": 20,
       "line": 0,
     },
     "start": {
@@ -130,7 +130,7 @@ exports[`buildInceptionNextEditPrompt should match snapshot with clipboard conte
 {
   "editableRegionRange": {
     "end": {
-      "character": 24,
+      "character": 14,
       "line": 0,
     },
     "start": {

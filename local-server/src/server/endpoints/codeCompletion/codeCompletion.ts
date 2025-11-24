@@ -15,10 +15,8 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 			})
 		}
 		logInfo("Received request to /completeCode endpoint")
-
 		try {
 			const body = req.body as CodeCompletionRequestParams
-			logInfo(`received completion request body: ${JSON.stringify(body, null, 2)}`)
 
 			// Find the AI provider
 			const aiProvider = aiProviders.find((provider) => provider.name === body.provider.name)
@@ -135,8 +133,6 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 			res.write(JSON.stringify(result))
 			res.end()
 		} catch (error) {
-			const logFile = saveLogToFile("failed_complete_code.json", JSON.stringify(req.body, null, 2))
-			logInfo(`Request body that led to error saved to ${logFile}`)
 			logError(error)
 
 			throw addUserFacingError(error, "Failed to process code completion.")

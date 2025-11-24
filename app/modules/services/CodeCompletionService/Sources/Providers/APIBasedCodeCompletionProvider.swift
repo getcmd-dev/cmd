@@ -103,9 +103,11 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     let (prefix, suffix) = try Self.splitContent(content, at: selection.start)
 
     // Convert formatting metadata to schema type
-    guard let formattingMetadata else {
-      return nil
-    }
+    let formattingMetadata = formattingMetadata ?? FileFormattingMetadata(
+      tabSize: 4,
+      indentSize: 4,
+      usesTabsForIndentation: false,
+      uti: "")
 
     let schemaFormattingMetadata = Schema.FileFormattingMetadata(
       tabSize: formattingMetadata.tabSize,
@@ -143,10 +145,6 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     guard let firstChoice = response.choices.first else {
       return nil
     }
-
-    print(firstChoice.text)
-    print(firstChoice.changedRange.start)
-    print(firstChoice.changedRange.end)
 
     // For now, return the completion text as-is
     // In a full implementation, we would calculate proper start/end positions
