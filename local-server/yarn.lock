@@ -146,9 +146,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@anthropic-ai/claude-agent-sdk@npm:^0.1.15":
-  version: 0.1.15
-  resolution: "@anthropic-ai/claude-agent-sdk@npm:0.1.15"
+"@anthropic-ai/claude-agent-sdk@npm:^0.1.51":
+  version: 0.1.51
+  resolution: "@anthropic-ai/claude-agent-sdk@npm:0.1.51"
   dependencies:
     "@img/sharp-darwin-arm64": "npm:^0.33.5"
     "@img/sharp-darwin-x64": "npm:^0.33.5"
@@ -171,7 +171,7 @@ __metadata:
       optional: true
     "@img/sharp-win32-x64":
       optional: true
-  checksum: 10c0/50eabdb0ecbb50c3e878fb5f706fa81f58169e7060c1a4cfaa0dfa5035bf5b039571002356593fd02c78166f6ac4dc7542c7f500e8270d89630c39fe05558cc4
+  checksum: 10c0/d9d7dbef3643170743a267a174250df57ceb6ba8bdf2d5f3431ff80a113e2c4d861707edb71a82bbdbe300b5f6081c1da3812277425679aa89e2ea70fb47174a
   languageName: node
   linkType: hard
 
@@ -7579,7 +7579,7 @@ __metadata:
     "@ai-sdk/groq": "npm:^2.0.14"
     "@ai-sdk/mistral": "npm:^2.0.24"
     "@ai-sdk/openai": "npm:^2.0.19"
-    "@anthropic-ai/claude-agent-sdk": "npm:^0.1.15"
+    "@anthropic-ai/claude-agent-sdk": "npm:^0.1.51"
     "@anthropic-ai/sdk": "npm:^0.63.0"
     "@eslint/js": "npm:^9.19.0"
     "@modelcontextprotocol/sdk": "npm:^1.17.0"

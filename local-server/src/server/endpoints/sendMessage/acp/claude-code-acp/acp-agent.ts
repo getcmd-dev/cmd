@@ -40,7 +40,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import * as os from "node:os"
 import { v7 as uuidv7 } from "uuid"
-import { nodeToWebReadable, nodeToWebWritable, Pushable, unreachable } from "./utils"
+import { nodeToWebReadable, nodeToWebWritable, Pushable } from "./utils"
 import { SessionNotification } from "@agentclientprotocol/sdk"
 import { createMcpServer, createPermissionMcpServer, PERMISSION_TOOL_NAME, toolNames } from "./mcp-server"
 import { AddressInfo } from "node:net"
@@ -372,6 +372,8 @@ export class ClaudeAcpAgent implements Agent {
 							break
 						case "hook_response":
 							break
+						case "status":
+							break
 						default:
 							// @ts-expect-error this is expected to be unreachable
 							this.logger.error(`unhandled system message subtype ${message.subtype}`)
@@ -465,6 +467,10 @@ export class ClaudeAcpAgent implements Agent {
 					)
 					break
 				}
+
+				case "tool_progress":
+				case "auth_status":
+					break
 
 				default:
 					// @ts-expect-error this is expected to be unreachable

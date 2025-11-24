@@ -1,4 +1,4 @@
-import { ContentBlock, SessionNotification, ToolCallUpdate } from "@agentclientprotocol/sdk"
+import { ContentBlock, SessionNotification } from "@agentclientprotocol/sdk"
 import {
 	Message,
 	ReasoningDelta,
@@ -18,6 +18,7 @@ import { mapToolCallContent } from "./helper"
 import { attachmentAsPart } from "../../helpers"
 
 import { pendingToolApprovalRequests } from "../../pendingToolApprovalRequests"
+import { ACPToolCall } from ".."
 
 export interface ACPClient<SessionInitializationParams extends { cwd: string }> {
 	prompt(
@@ -28,7 +29,7 @@ export interface ACPClient<SessionInitializationParams extends { cwd: string }> 
 			toolCall,
 			toolName,
 		}: {
-			toolCall: ToolCallUpdate
+			toolCall: ACPToolCall
 			toolName: string
 		}) => Promise<boolean>,
 		abortController?: AbortController,
@@ -255,7 +256,7 @@ export const askAppForPermission = async ({
 	toolName,
 	eventStream,
 }: {
-	toolCall: ToolCallUpdate
+	toolCall: ACPToolCall
 	toolName: string
 	eventStream: AsyncStream<ResponseChunkWithoutIndex>
 }): Promise<boolean> => {

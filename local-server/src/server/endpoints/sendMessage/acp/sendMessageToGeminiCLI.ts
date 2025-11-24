@@ -26,7 +26,6 @@ export const sendMessageToGeminiCLI: SendMessageToExternalAgent = async (
 	},
 	res: Response,
 ) => {
-	logInfo("sendMessageToGeminiCLI")
 	const eventStream = await createEventStream(res, {
 		messages,
 		localExecutable,
@@ -105,9 +104,7 @@ const createEventStream = async (
 	}
 
 	const messageContent = toACPContentBlocks(newUserMessages)
-	logInfo("creating acpClient")
 	acpClient = acpClient || new GeminiCLIACPClient(executableInfo)
-	logInfo("created acpClient")
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },
 		messageContent,

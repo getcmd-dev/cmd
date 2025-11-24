@@ -32,6 +32,8 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	> = {}
 	private spawnError?: Error
 
+	private onCloseCallbacks: ((code: number | null) => void)[] = []
+
 	constructor() {
 		const agentPath = process.env.CODEX_ACP_PATH
 		if (!agentPath) {
@@ -56,6 +58,9 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		agentProcess.on("error", (err) => {
 			this.spawnError = err
 			logError(`Failed to spawn codex process at ${agentPath}: ${err.message}`)
+		})
+		agentProcess.on("close", (code, signal) => {
+			this.onCloseCallbacks.forEach((callback) => callback(code))
 		})
 
 		// Create streams to communicate with the agent
@@ -84,20 +89,29 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 			toolName: string
 		}) => Promise<boolean>,
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
-		const session =
-			this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
+		return await Promise.race([
+			(async () => {
+				const session =
+					this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
 
-		const eventStream = new AsyncStream<acp.SessionNotification>()
+				const eventStream = new AsyncStream<acp.SessionNotification>()
 
-		session.onPromptDone?.()
-		session.onPromptDone = () => {
-			eventStream.done()
-		}
-		session.eventHandler = eventStream
-		session.permissionRequestHandler = permissionRequestHandler
-		session.prompt(message)
+				session.onPromptDone?.()
+				session.onPromptDone = () => {
+					eventStream.done()
+				}
+				session.eventHandler = eventStream
+				session.permissionRequestHandler = permissionRequestHandler
+				session.prompt(message)
 
-		return { events: eventStream, sessionId: session.acpSessionId }
+				return { events: eventStream, sessionId: session.acpSessionId }
+			})(),
+			new Promise<never>((resolve, reject) => {
+				this.onCloseCallbacks.push((code) => {
+					reject(new Error(`Codex closed with code ${code}. ${this.spawnError?.message || ""}`))
+				})
+			}),
+		])
 	}
 
 	private async createSession(

@@ -33,6 +33,8 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 	> = {}
 	private spawnError?: Error
 
+	private onCloseCallbacks: ((code: number | null) => void)[] = []
+
 	constructor(executableInfo: { path: string; args: string[] }) {
 		const agentPath = executableInfo.path
 
@@ -55,6 +57,9 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 		agentProcess.on("error", (err) => {
 			this.spawnError = err
 			logError(`Failed to spawn gemini process at ${agentPath}: ${err.message}`)
+		})
+		agentProcess.on("close", (code) => {
+			this.onCloseCallbacks.forEach((callback) => callback(code))
 		})
 
 		// Create streams to communicate with the agent
@@ -126,20 +131,29 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 			toolName: string
 		}) => Promise<boolean>,
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
-		const session =
-			this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
+		return await Promise.race([
+			(async () => {
+				const session =
+					this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
 
-		const eventStream = new AsyncStream<acp.SessionNotification>()
+				const eventStream = new AsyncStream<acp.SessionNotification>()
 
-		session.onPromptDone?.()
-		session.onPromptDone = () => {
-			eventStream.done()
-		}
-		session.eventHandler = eventStream
-		session.permissionRequestHandler = permissionRequestHandler
-		session.prompt(message)
+				session.onPromptDone?.()
+				session.onPromptDone = () => {
+					eventStream.done()
+				}
+				session.eventHandler = eventStream
+				session.permissionRequestHandler = permissionRequestHandler
+				session.prompt(message)
 
-		return { events: eventStream, sessionId: session.acpSessionId }
+				return { events: eventStream, sessionId: session.acpSessionId }
+			})(),
+			new Promise<never>((resolve, reject) => {
+				this.onCloseCallbacks.push((code) => {
+					reject(new Error(`Gemini closed with code ${code}. ${this.spawnError?.message || ""}`))
+				})
+			}),
+		])
 	}
 
 	private async createSession(
@@ -151,27 +165,30 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 		}
 		const abortController = sessionInitializationParams.abortController || new AbortController()
 		// Initialize the connection
-		await this.clientConnection.initialize({
-			protocolVersion: acp.PROTOCOL_VERSION,
-			clientCapabilities: {
-				fs: {
-					readTextFile: false,
-					writeTextFile: false,
+		try {
+			await this.clientConnection.initialize({
+				protocolVersion: acp.PROTOCOL_VERSION,
+				clientCapabilities: {
+					fs: {
+						readTextFile: false,
+						writeTextFile: false,
+					},
+					terminal: false,
+					_meta: {
+						"terminal-auth": true,
+					},
 				},
-				terminal: false,
-			},
-		})
+			})
+		} catch (error) {
+			logError(`[GeminiCLIACPClient] Error initializing connection: ${error}`)
+			throw error
+		}
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
 			cwd: sessionInitializationParams.cwd,
 			mcpServers: [],
 		})
-		// TODO: also support read-only?
-		// await this.clientConnection.setSessionMode({
-		// 	sessionId: sessionResult.sessionId,
-		// 	modeId: "auto",
-		// })
 		const acpSessionId = sessionResult.sessionId
 
 		const sessionManager: SessionManager = {
