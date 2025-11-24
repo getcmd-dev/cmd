@@ -7,13 +7,14 @@ import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "@/utils/spawn-promise"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
+import { SendMessageToExternalAgent } from "."
 
 // Constants
 const TOOL_NAME_PREFIX = "claude_code_"
 
 let acpClient: ClaudeCodeACPClient | undefined
 
-export const sendMessageToClaudeCode = async (
+export const sendMessageToClaudeCode: SendMessageToExternalAgent = async (
 	{
 		messages,
 		threadId,

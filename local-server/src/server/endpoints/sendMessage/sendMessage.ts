@@ -36,9 +36,10 @@ import {
 	ProviderMetadata,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
-import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
-import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
+import { sendMessageToClaudeCode } from "./acp/sendMessageToClaudeCode"
+import { sendMessageToCodex } from "./acp/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
+import { SendMessageToExternalAgent } from "./acp"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
@@ -80,7 +81,19 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				}
 
 				// Route to appropriate handler based on provider
-				const sendMessageImpl = body.provider.name == "codex" ? sendMessageToCodex : sendMessageToClaudeCode
+				let sendMessageImpl: SendMessageToExternalAgent
+				switch (body.provider.name) {
+					case "codex":
+						sendMessageImpl = sendMessageToCodex
+						break
+					case "claude_code":
+						sendMessageImpl = sendMessageToClaudeCode
+						break
+					default:
+						throw new UserFacingError({
+							message: `Unsupported external agent provider: ${body.provider.name}`,
+						})
+				}
 
 				await sendMessageImpl({ messages, localExecutable, threadId, tools }, res)
 				return
