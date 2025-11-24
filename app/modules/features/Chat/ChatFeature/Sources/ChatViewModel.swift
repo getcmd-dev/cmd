@@ -157,8 +157,8 @@ public class ChatViewModel {
         didTapSendMessage: { textInput, attachments in
           Task { [weak newTab] in await newTab?.sendMessage(textInput: textInput, attachments: attachments) }
         },
-        didCancelMessage: { processQueue in
-          newTab.cancelCurrentMessage(processQueue: processQueue)
+        didCancelMessage: { processNextQueuedMessage in
+          newTab.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
         })
     }
     // Unfocus the previously selected tab

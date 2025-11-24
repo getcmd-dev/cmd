@@ -91,8 +91,8 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     input.didTapSendMessage = { [weak self] textInput, attachments in
       Task { await self?.sendMessage(textInput: textInput, attachments: attachments) }
     }
-    input.didCancelMessage = { [weak self] processQueue in
-      self?.cancelCurrentMessage(processQueue: processQueue)
+    input.didCancelMessage = { [weak self] processNextQueuedMessage in
+      self?.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
     }
 
     setUp()
@@ -159,7 +159,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func cancelCurrentMessage(processQueue: Bool = true) {
+  func cancelCurrentMessage(processNextQueuedMessage: Bool = true) {
     streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
@@ -176,7 +176,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     persistThread()
 
     // Only process queue if requested
-    if processQueue {
+    if processNextQueuedMessage {
       input.processNextQueuedMessage()
     }
   }
@@ -441,9 +441,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
-
-      // Process next queued message if available (even after error)
-      input.processNextQueuedMessage()
+        
+        if error as? CancellationError == nil {
+            // Process next queued message if available even after error.
+            // (unless this is a cancellation error in which case the cancelling code should decide whether to dequeue)
+            input.processNextQueuedMessage()
+        }
     }
   }
 

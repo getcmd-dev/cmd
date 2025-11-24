@@ -153,7 +153,7 @@ final class ChatInputViewModel {
 
   var didTapSendMessage: @MainActor (TextInput, [AttachmentModel]) -> Void = { _, _ in }
 
-  var didCancelMessage: @MainActor (_ processQueue: Bool) -> Void = { _ in }
+  var didCancelMessage: @MainActor (_ processNextQueuedMessage: Bool) -> Void = { _ in }
 
   /// Messages that have been queued while the assistant is streaming a response.
   var queuedMessages = [QueuedMessageModel]()
