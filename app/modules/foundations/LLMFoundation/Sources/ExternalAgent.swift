@@ -36,6 +36,13 @@ extension AIProvider {
         installationInstructions: URL(string: "https://developers.openai.com/codex/cli/")!,
         llmProvider: self)
 
+    case .geminiCLI:
+      .init(
+        name: "Gemini CLI",
+        defaultExecutableName: "gemini",
+        installationInstructions: URL(string: "https://ai.google.dev/")!,
+        llmProvider: self)
+
     default:
       nil
     }

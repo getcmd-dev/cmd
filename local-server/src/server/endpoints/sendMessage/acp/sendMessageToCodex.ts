@@ -3,15 +3,16 @@ import { LocalExecutable, Message, Tool } from "@/server/schemas/sendMessageSche
 import { Response } from "express"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
-import { spawn } from "@/utils/spawn-promise"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
 import { CodexACPClient } from "../acp/clients/codex/codexACPClient"
+import { SendMessageToExternalAgent } from "."
+import { extractExecutableInfo } from "./clients/helper"
 
 // TODO: support resuming the conversation after the app restarts.
 
 let acpClient: CodexACPClient | undefined
 
-export const sendMessageToCodex = async (
+export const sendMessageToCodex: SendMessageToExternalAgent = async (
 	{
 		messages,
 		threadId,
@@ -120,29 +121,4 @@ const createEventStream = async (
 	eventStream.pipeFrom(toMessageStream(events))
 
 	return eventStream
-}
-
-// Extract the executable path and args from the LocalExecutable configuration.
-// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
-// For instance `claude --dangerously-skip-permissions`
-const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<{ path: string; args: string[] }> => {
-	const parts = localExecutable.executable.match(/(?:[^\s"]+|"[^"]*")+/g) || []
-	const execName = parts[0]?.replace(/(^"|"$)/g, "") // Remove surrounding quotes if any
-	const args = parts.slice(1).map((arg) => arg.replace(/(^"|"$)/g, ""))
-	if (!execName) {
-		throw new Error("Invalid executable path")
-	}
-	if (execName.startsWith("/")) {
-		// absolute path
-		return { path: execName, args }
-	}
-	const execPath = await spawn("which", {
-		args: [execName],
-		env: localExecutable.env,
-		cwd: localExecutable.cwd,
-	}).then((r) => r.stdout.trim())
-	if (!execPath.length) {
-		throw new Error(`Executable ${execName} not found in PATH`)
-	}
-	return { path: execPath, args }
 }

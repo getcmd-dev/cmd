@@ -7,6 +7,7 @@ import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
 import { withParsedToolCalls } from "./helper"
+import { ACPToolCall } from "../../index"
 
 export type ClaudeCodeACPSessionInitializationParams = {
 	cwd: string
@@ -16,13 +17,7 @@ type SessionManager = {
 	acpSessionId: string
 	eventHandler?: AsyncStream<acp.SessionNotification>
 	onPromptDone?: () => void
-	permissionRequestHandler?: ({
-		toolCall,
-		toolName,
-	}: {
-		toolCall: acp.ToolCallUpdate
-		toolName: string
-	}) => Promise<boolean>
+	permissionRequestHandler?: ({ toolCall, toolName }: { toolCall: ACPToolCall; toolName: string }) => Promise<boolean>
 	interrupt: () => void
 	prompt: (message: acp.ContentBlock[]) => void
 }
@@ -37,7 +32,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	private eventHandlerByACPSessionId: Record<string, (event: acp.SessionNotification) => void> = {}
 	private permissionRequestHandlerByACPSessionId: Record<
 		string,
-		({ toolCall, toolName }: { toolCall: acp.ToolCallUpdate; toolName: string }) => Promise<boolean>
+		({ toolCall, toolName }: { toolCall: ACPToolCall; toolName: string }) => Promise<boolean>
 	> = {}
 
 	constructor() {
@@ -69,7 +64,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 			toolCall,
 			toolName,
 		}: {
-			toolCall: acp.ToolCallUpdate
+			toolCall: ACPToolCall
 			toolName: string
 		}) => Promise<boolean>,
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {

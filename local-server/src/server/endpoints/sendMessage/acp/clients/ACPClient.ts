@@ -172,7 +172,7 @@ export async function* toMessageStream(
 					...(combinedToolStates[event.update.toolCallId] ?? {}),
 					...event.update,
 					_meta: {
-						...combinedToolStates[event.update.toolCallId]._meta,
+						...(combinedToolStates[event.update.toolCallId] ?? {})._meta,
 						...event.update._meta,
 					},
 				}

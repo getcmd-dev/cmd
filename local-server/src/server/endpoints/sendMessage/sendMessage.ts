@@ -36,9 +36,11 @@ import {
 	ProviderMetadata,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
-import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
-import { sendMessageToCodex } from "./claudeCode/sendMessageToCodex"
+import { sendMessageToClaudeCode } from "./acp/sendMessageToClaudeCode"
+import { sendMessageToGeminiCLI } from "./acp/sendMessageToGeminiCLI"
+import { sendMessageToCodex } from "./acp/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
+import { SendMessageToExternalAgent } from "./acp"
 
 export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
@@ -69,7 +71,11 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 
 			const tools = body.tools
 
-			if (body.provider.name == "claude_code" || body.provider.name == "codex") {
+			if (
+				body.provider.name == "claude_code" ||
+				body.provider.name == "codex" ||
+				body.provider.name == "gemini_cli"
+			) {
 				// External agent, route to appropriate handler based on provider.
 				const threadId = body.threadId || uuidv4() // When no thread is provided, we use a random one to support an ephemeral conversation.
 				const localExecutable = body.provider.settings.localExecutable
@@ -80,7 +86,22 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				}
 
 				// Route to appropriate handler based on provider
-				const sendMessageImpl = body.provider.name == "codex" ? sendMessageToCodex : sendMessageToClaudeCode
+				let sendMessageImpl: SendMessageToExternalAgent
+				switch (body.provider.name) {
+					case "claude_code":
+						sendMessageImpl = sendMessageToClaudeCode
+						break
+					case "codex":
+						sendMessageImpl = sendMessageToCodex
+						break
+					case "gemini_cli":
+						sendMessageImpl = sendMessageToGeminiCLI
+						break
+					default:
+						throw new UserFacingError({
+							message: `Unsupported external agent provider: ${body.provider.name}`,
+						})
+				}
 
 				await sendMessageImpl({ messages, localExecutable, threadId, tools }, res)
 				return

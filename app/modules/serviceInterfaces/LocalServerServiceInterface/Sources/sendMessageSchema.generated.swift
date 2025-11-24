@@ -806,12 +806,13 @@ extension Schema {
     case openai = "openai"
     case anthropic = "anthropic"
     case openrouter = "openrouter"
-    case claudeCode = "claude_code"
-    case codex = "codex"
     case groq = "groq"
     case gemini = "gemini"
     case mistral = "mistral"
     case inception = "inception"
+    case claudeCode = "claude_code"
+    case codex = "codex"
+    case geminiCli = "gemini_cli"
   }    
   public struct LocalExecutable: Codable, Sendable {
     public let executable: String

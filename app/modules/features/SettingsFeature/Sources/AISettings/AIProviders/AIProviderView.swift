@@ -230,6 +230,8 @@ extension AIProvider {
       "Codex"
     case .gemini:
       "Gemini"
+    case .geminiCLI:
+      "Gemini CLI"
     case .mistral:
       "Mistral"
     case .inception:
