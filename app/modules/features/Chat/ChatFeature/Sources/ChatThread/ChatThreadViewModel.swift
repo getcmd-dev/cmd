@@ -441,12 +441,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
-        
-        if error as? CancellationError == nil {
-            // Process next queued message if available even after error.
-            // (unless this is a cancellation error in which case the cancelling code should decide whether to dequeue)
-            input.processNextQueuedMessage()
-        }
+
+      if error as? CancellationError == nil {
+        // Process next queued message if available even after error.
+        // (unless this is a cancellation error in which case the cancelling code should decide whether to dequeue)
+        input.processNextQueuedMessage()
+      }
     }
   }
 
