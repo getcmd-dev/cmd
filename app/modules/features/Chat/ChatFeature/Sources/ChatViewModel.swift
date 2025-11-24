@@ -154,8 +154,12 @@ public class ChatViewModel {
     let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     if copyingCurrentInput {
       newTab.input = currentTab.input.copy(
-        didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },
-        didCancelMessage: { newTab.cancelCurrentMessage() })
+        didTapSendMessage: { textInput, attachments in
+          Task { [weak newTab] in await newTab?.sendMessage(textInput: textInput, attachments: attachments) }
+        },
+        didCancelMessage: { processNextQueuedMessage in
+          newTab.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
+        })
     }
     // Unfocus the previously selected tab
     if currentTabIndex >= 0, currentTabIndex < tabs.count {

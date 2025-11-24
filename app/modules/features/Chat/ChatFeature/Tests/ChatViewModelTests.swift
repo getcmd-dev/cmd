@@ -53,7 +53,8 @@ struct ChatViewModelTests {
     let firstTab = sut.tab
     // Make the first tab non-empty by sending a message
     firstTab.input.textInput = TextInput([.text("Test")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(sut.tabs.count == 1)
     #expect(sut.currentTabIndex == 0)
 
@@ -75,7 +76,8 @@ struct ChatViewModelTests {
     let initialTab = sut.tab
     // Make the initial tab non-empty
     initialTab.input.textInput = TextInput([.text("Initial message")])
-    await initialTab.sendMessage()
+    initialTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     // Now set the input for copying
     initialTab.input.textInput = TextInput([.text("Test input")])
 
@@ -102,7 +104,8 @@ struct ChatViewModelTests {
 
     let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(firstTab.events.count == 1)
 
     // when
@@ -129,7 +132,8 @@ struct ChatViewModelTests {
     }
     let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(firstTab.events.count == 1)
 
     // when
@@ -644,7 +648,8 @@ struct ChatViewModelTests {
     let originalTabId = sut.tab.id
     // Make the current tab non-empty so addTab creates a new one
     sut.tab.input.textInput = TextInput([.text("Test")])
-    await sut.tab.sendMessage()
+    sut.tab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // when
     sut.addTab()
@@ -919,7 +924,8 @@ struct ChatViewModelTests {
     let originalId = originalTab.id
     // Make the original tab non-empty
     originalTab.input.textInput = TextInput([.text("Test")])
-    await originalTab.sendMessage()
+    originalTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // Switch to a new tab
     sut.addTab()
@@ -1295,7 +1301,8 @@ struct ChatViewModelTests {
     let sut = ChatViewModel()
     let initialTab = sut.tab
     initialTab.input.textInput = TextInput([.text("Test input")])
-    await initialTab.sendMessage()
+    initialTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(initialTab.isEmpty == false)
     #expect(sut.tabs.count == 1)
 
@@ -1696,7 +1703,8 @@ struct ChatViewModelTests {
       }
     }
 
-    await sut.tab.sendMessage()
+    sut.tab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     try await fulfillment(of: [messageCompleted, streamingStarted])
     _ = cancellable
 

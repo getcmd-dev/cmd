@@ -88,8 +88,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel(queuedMessages: inputModel?.queuedMessages ?? [])
-    input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
-    input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
+    input.didTapSendMessage = { [weak self] textInput, attachments in
+      Task { await self?.sendMessage(textInput: textInput, attachments: attachments) }
+    }
+    input.didCancelMessage = { [weak self] processNextQueuedMessage in
+      self?.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
+    }
 
     setUp()
   }
@@ -155,7 +159,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func cancelCurrentMessage() {
+  func cancelCurrentMessage(processNextQueuedMessage: Bool = true) {
     streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
@@ -170,6 +174,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     // Release the strong reference and buffer for reuse when cancelling
     chatService.stopKeepingAlive(self, for: id)
     persistThread()
+
+    // Only process queue if requested
+    if processNextQueuedMessage {
+      input.processNextQueuedMessage()
+    }
   }
 
   func handleToggleChatHistory() {
@@ -228,7 +237,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func sendMessage() async {
+  func sendMessage(textInput: TextInput, attachments: [AttachmentModel]) async {
     let projectInfo = updateProjectInfo()
 
     await updateFocusFileInfo()
@@ -251,11 +260,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       defaultLogger.error("not sending as no model selected")
       return
     }
-    let textInput = input.textInput
-    let attachments = input.attachments
-
-    input.textInput = TextInput()
-    input.attachments = []
 
     for attachment in attachments {
       switch attachment {
@@ -438,8 +442,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
 
-      // Process next queued message if available (even after error)
-      input.processNextQueuedMessage()
+      if error as? CancellationError == nil {
+        // Process next queued message if available even after error.
+        // (unless this is a cancellation error in which case the cancelling code should decide whether to dequeue)
+        input.processNextQueuedMessage()
+      }
     }
   }
 

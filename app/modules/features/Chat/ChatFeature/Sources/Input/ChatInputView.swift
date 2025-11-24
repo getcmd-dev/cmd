@@ -271,7 +271,7 @@ struct ChatInputView: View {
 
   private var stopButton: some View {
     Button(action: {
-      inputViewModel.didCancelMessage()
+      inputViewModel.didCancelMessage(true)
     }) {
       Image(systemName: "stop.circle.fill")
         .tappableTransparentBackground()

@@ -93,7 +93,8 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "sup?"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     try await fulfillment(of: isDoneStreaming)
@@ -124,7 +125,8 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     try await fulfillment(of: hasSentMessages)
 
     // then
@@ -153,9 +155,13 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
+    try? await Task.sleep(for: .milliseconds(10)) // Let async send complete
     sut.input.textInput = .init(NSAttributedString(string: "Thanks"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
+    try? await Task.sleep(for: .milliseconds(10)) // Let async send complete
 
     // then
     let sentMessages = messagesSent.value
@@ -186,7 +192,8 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.textInput = .init(NSAttributedString(string: "How do I fix this?"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     let xcodeWorkspaceState = try #require(mockXcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first)
     mockXcodeObserver.mutableStatePublisher.send(.state(
       XcodeState(
@@ -208,7 +215,8 @@ struct ChatThreadViewModelTests {
           ]),
         ])))
     sut.input.textInput = .init(NSAttributedString(string: "Thanks"))
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     let sentMessages = messagesSent.value
@@ -255,7 +263,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("Test message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     #expect(summarizeConversationCalled.value == true)
@@ -303,7 +312,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("Test message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     #expect(summarizeConversationCalled.value == false)
@@ -354,7 +364,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("User message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     #expect(capturedModel.value == .gpt)
@@ -392,7 +403,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("Test message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     #expect(sut.messages.count > initialMessageCount)
@@ -461,15 +473,18 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("First message")])
 
     // when
-    async let firstMessage: Void = sut.sendMessage()
+    async let firstMessage: Void = sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     try await fulfillment(of: summarizationStarted)
 
     sut.input.textInput = TextInput([.text("Second message")])
-    async let secondMessage: Void = sut.sendMessage()
+    async let secondMessage: Void = sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     secondMessageSentByUser.fulfill()
 
     _ = await firstMessage
     _ = await secondMessage
+    try? await Task.sleep(for: .milliseconds(50)) // Extra time for summarization
 
     // then
     let messages = messagesSent.value.map { $0.flatMap { $0.content.map(\.text) } }
@@ -569,7 +584,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("Test message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
@@ -610,7 +626,8 @@ struct ChatThreadViewModelTests {
     sut.input.textInput = TextInput([.text("Test message")])
 
     // when
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     let latestTokenUsage = try #require(sut.latestTokenUsage)
@@ -654,10 +671,12 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.textInput = TextInput([.text("First message")])
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     sut.input.textInput = TextInput([.text("Second message")])
-    await sut.sendMessage()
+    sut.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // then
     let tokenUsageEvents = sut.events.compactMap(\.tokenUsage)
@@ -770,7 +789,8 @@ struct ChatThreadViewModelTests {
     weakViewModel = viewModel.value
     viewModel.value?.input.textInput = TextInput([.text("Test message")])
 
-    async let sendTask: Void? = viewModel.value?.sendMessage()
+    async let sendTask: Void? = viewModel.value?.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     try await fulfillment(of: streamingStarted)
     viewModel.set(to: nil)
 
