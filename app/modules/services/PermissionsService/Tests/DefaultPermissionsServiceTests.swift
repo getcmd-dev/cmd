@@ -89,6 +89,43 @@ struct DefaultPermissionsServiceTests {
     _ = cancellable
   }
 
+  @Test
+  func testRequestingPushNotificationPermissions() async throws {
+    let exp = expectation(description: "push notification permission requested")
+    let sut = DefaultPermissionsService(
+      requestAccessibilityPermission: { },
+      requestXcodeExtensionPermission: { },
+      requestPushNotificationPermission: {
+        exp.fulfill()
+      })
+    sut.request(permission: .pushNotification)
+    try await fulfillment(of: exp)
+  }
+
+  @Test
+  func testReadingPushNotificationPermissionsPollUntilPermissionIsGranted() async throws {
+    let pollUntilGranted = 5
+    let exp = expectation(description: "push notification permission status granted")
+    let pollCount = Atomic(0)
+
+    let sut = DefaultPermissionsService(
+      isPushNotificationPermissionGranted: {
+        pollCount.increment() >= pollUntilGranted
+      })
+
+    let receivedValues = Atomic<[Bool?]>([])
+    let cancellable = sut.status(for: .pushNotification).sink { value in
+      receivedValues.mutate { $0.append(value) }
+      if value == true {
+        exp.fulfill()
+      }
+    }
+    try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
+    #expect(pollCount.value == pollUntilGranted)
+    #expect(receivedValues.value.compactMap(\.self) == [false, true])
+    _ = cancellable
+  }
+
 }
 
 extension DefaultPermissionsService {
@@ -97,7 +134,9 @@ extension DefaultPermissionsService {
     userDefaults: UserDefaults = UserDefaults.standard,
     isAccessibilityPermissionGranted: @escaping @Sendable () -> Bool = { false },
     requestAccessibilityPermission: @escaping @Sendable () -> Void = { },
-    requestXcodeExtensionPermission: @escaping @Sendable () -> Void = { })
+    requestXcodeExtensionPermission: @escaping @Sendable () -> Void = { },
+    isPushNotificationPermissionGranted: @escaping @Sendable () async -> Bool = { false },
+    requestPushNotificationPermission: @escaping @Sendable () async -> Void = { })
   {
     self.init(
       shellService: shellService,
@@ -106,6 +145,8 @@ extension DefaultPermissionsService {
       isAccessibilityPermissionGranted: isAccessibilityPermissionGranted,
       requestAccessibilityPermission: requestAccessibilityPermission,
       requestXcodeExtensionPermission: requestXcodeExtensionPermission,
+      isPushNotificationPermissionGranted: isPushNotificationPermissionGranted,
+      requestPushNotificationPermission: requestPushNotificationPermission,
       pollIntervalNS: 1)
   }
 }

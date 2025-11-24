@@ -13,10 +13,12 @@ public final class MockPermissionsService: PermissionsService {
   public init(grantedPermissions: [Permission] = []) {
     isAccessibilityPermissionGranted = .init(grantedPermissions.contains(.accessibility))
     isXcodeExtensionPermissionGranted = .init(grantedPermissions.contains(.xcodeExtension))
+    isPushNotificationPermissionGranted = .init(grantedPermissions.contains(.pushNotification))
   }
 
   public var onRequestAccessibilityPermission: (@Sendable () -> Void)?
   public var onRequestXcodeExtensionPermission: (@Sendable () -> Void)?
+  public var onRequestPushNotificationPermission: (@Sendable () -> Void)?
 
   public func request(permission: Permission) {
     switch permission {
@@ -29,6 +31,11 @@ public final class MockPermissionsService: PermissionsService {
       Task { @MainActor in
         onRequestXcodeExtensionPermission?()
       }
+
+    case .pushNotification:
+      Task { @MainActor in
+        onRequestPushNotificationPermission?()
+      }
     }
   }
 
@@ -38,6 +45,8 @@ public final class MockPermissionsService: PermissionsService {
       isAccessibilityPermissionGranted.readonly(removingDuplicate: true)
     case .xcodeExtension:
       isXcodeExtensionPermissionGranted.readonly(removingDuplicate: true)
+    case .pushNotification:
+      isPushNotificationPermissionGranted.readonly(removingDuplicate: true)
     }
   }
 
@@ -48,12 +57,16 @@ public final class MockPermissionsService: PermissionsService {
       isAccessibilityPermissionGranted.send(granted)
     case .xcodeExtension:
       isXcodeExtensionPermissionGranted.send(granted)
+    case .pushNotification:
+      isPushNotificationPermissionGranted.send(granted)
     }
   }
 
   private let isAccessibilityPermissionGranted: CurrentValueSubject<Bool?, Never>
 
   private let isXcodeExtensionPermissionGranted: CurrentValueSubject<Bool?, Never>
+
+  private let isPushNotificationPermissionGranted: CurrentValueSubject<Bool?, Never>
 
 }
 #endif

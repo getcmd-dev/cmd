@@ -1410,6 +1410,38 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
+    name: "PushNotificationService",
+    dependencies: [
+      "DependencyFoundation",
+      "LoggingServiceInterface",
+      "PermissionsServiceInterface",
+      "PushNotificationServiceInterface",
+      "ThreadSafe",
+    ],
+    testsDependencies: [
+      "PermissionsServiceInterface",
+      "PushNotificationService",
+      "PushNotificationServiceInterface",
+      "SwiftTesting",
+    ],
+    path: "./services/PushNotificationService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "PushNotificationServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "ConcurrencyFoundation",
+      "ThreadSafe",
+    ],
+    testsDependencies: [
+      "PushNotificationServiceInterface",
+      "SwiftTesting",
+    ],
+    path: "./serviceInterfaces/PushNotificationServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
     name: "ReadFileTool",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),

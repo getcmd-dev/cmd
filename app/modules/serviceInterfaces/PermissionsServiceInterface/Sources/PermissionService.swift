@@ -9,6 +9,7 @@ import ConcurrencyFoundation
 public enum Permission {
   case accessibility
   case xcodeExtension
+  case pushNotification
 }
 
 // MARK: - PermissionsService

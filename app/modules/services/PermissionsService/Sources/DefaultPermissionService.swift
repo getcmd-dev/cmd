@@ -11,6 +11,7 @@ import LoggingServiceInterface
 import PermissionsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
+import UserNotifications
 
 // MARK: - DefaultPermissionsService
 
@@ -24,12 +25,16 @@ final class DefaultPermissionsService: PermissionsService {
     isAccessibilityPermissionGranted: @MainActor @escaping @Sendable () -> Bool,
     requestAccessibilityPermission: @MainActor @escaping @Sendable () -> Void,
     requestXcodeExtensionPermission: @MainActor @escaping @Sendable () -> Void,
+    isPushNotificationPermissionGranted: @MainActor @escaping @Sendable () async -> Bool,
+    requestPushNotificationPermission: @MainActor @escaping @Sendable () async -> Void,
     pollIntervalNS: UInt64 = 1_000_000_000)
   {
     self.shellService = shellService
     self.isAccessibilityPermissionGranted = isAccessibilityPermissionGranted
     self.requestAccessibilityPermission = requestAccessibilityPermission
     self.requestXcodeExtensionPermission = requestXcodeExtensionPermission
+    self.isPushNotificationPermissionGranted = isPushNotificationPermissionGranted
+    self.requestPushNotificationPermission = requestPushNotificationPermission
     self.pollIntervalNS = pollIntervalNS
     self.bundle = bundle
   }
@@ -44,6 +49,11 @@ final class DefaultPermissionsService: PermissionsService {
     case .xcodeExtension:
       Task { @MainActor in
         requestXcodeExtensionPermission()
+      }
+
+    case .pushNotification:
+      Task { @MainActor in
+        await requestPushNotificationPermission()
       }
     }
   }
@@ -73,6 +83,18 @@ final class DefaultPermissionsService: PermissionsService {
       }
       return xcodeExtensionPermissionStatus
         .readonly(removingDuplicate: true)
+
+    case .pushNotification:
+      let isPolling: Bool = inLock { state in
+        let isPolling = state.isPollingPushNotificationPermissionStatus
+        state.isPollingPushNotificationPermissionStatus = true
+        return isPolling
+      }
+      if !isPolling {
+        Task { await pollPushNotificationPermissionStatus() }
+      }
+      return pushNotificationPermissionStatus
+        .readonly(removingDuplicate: true)
     }
   }
 
@@ -81,13 +103,17 @@ final class DefaultPermissionsService: PermissionsService {
 
   private var isPollingAccessibilityPermissionStatus = false
   private var isPollingXcodeExtensionPermissionStatus = false
+  private var isPollingPushNotificationPermissionStatus = false
 
   private let pollIntervalNS: UInt64
   private let isAccessibilityPermissionGranted: @MainActor @Sendable () -> Bool
   private let requestAccessibilityPermission: @MainActor @Sendable () -> Void
   private let requestXcodeExtensionPermission: @MainActor @Sendable () -> Void
+  private let isPushNotificationPermissionGranted: @MainActor @Sendable () async -> Bool
+  private let requestPushNotificationPermission: @MainActor @Sendable () async -> Void
   private let accessibilityPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
   private let xcodeExtensionPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
+  private let pushNotificationPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
 
   private func pollAccessibilityPermissionStatus() {
     Task { @MainActor in
@@ -132,6 +158,21 @@ final class DefaultPermissionsService: PermissionsService {
     return isGranted
   }
 
+  private func pollPushNotificationPermissionStatus() async {
+    if await isPushNotificationPermissionGranted() {
+      Task { @MainActor in
+        pushNotificationPermissionStatus.send(true)
+      }
+    } else {
+      pushNotificationPermissionStatus.send(false)
+      let pollIntervalNS = pollIntervalNS
+      Task { [weak self] in
+        try await Task.sleep(nanoseconds: pollIntervalNS)
+        await self?.pollPushNotificationPermissionStatus()
+      }
+    }
+  }
+
 }
 
 extension BaseProviding where
@@ -159,6 +200,19 @@ extension BaseProviding where
               string: "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.dt.Xcode.extension.source-editor")
           {
             NSWorkspace.shared.open(url)
+          }
+        },
+        isPushNotificationPermissionGranted: {
+          let center = UNUserNotificationCenter.current()
+          let settings = await center.notificationSettings()
+          return settings.authorizationStatus == .authorized
+        },
+        requestPushNotificationPermission: {
+          let center = UNUserNotificationCenter.current()
+          do {
+            _ = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+          } catch {
+            defaultLogger.error("Failed to request push notification permission: \(error)")
           }
         })
     }
