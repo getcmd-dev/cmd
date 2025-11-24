@@ -145,3 +145,13 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
   }
 
 }
+
+extension AIModel {
+  public var supportsCompletion: Bool {
+    ["inception/mercury-coder-small", "mistralai/codestral-latest"].contains(id)
+  }
+
+  public var supportsChat: Bool {
+    id != "inception/mercury-coder-small"
+  }
+}

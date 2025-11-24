@@ -25,9 +25,6 @@ import XcodeObserverServiceInterface
 // TODO: buffer updates for file change (don't do every char)
 // TODO: check if URL is a stable key for dictionaries
 
-typealias RawCompletionSuggestion = CodeCompletionFoundation.CompletionSuggestion
-typealias AppliedCompletionSuggestion = CodeCompletionServiceInterface.CompletionSuggestion
-
 // MARK: - CodeCompletionIsolation
 
 @globalActor
@@ -57,6 +54,14 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     self.shellService = shellService
     self.xcodeController = xcodeController
     self.permissionsService = permissionsService
+
+    // DefaultCodeCompletionService and APIBasedCodeCompletionProvider depends on each other.
+    // So we complete hooking them up post init.
+    codeCompletionProviders
+      .compactMap({ $0 as? APIBasedCodeCompletionProvider })
+      .forEach { $0.recentEditsTrackers = { [weak self] url in
+        await self?.editTracker(for: url)
+      }}
 
     var cancellables = Set<AnyCancellable>()
     permissionsService.status(for: .xcodeExtension).sink { @Sendable value in
@@ -99,13 +104,19 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     if let id = settingsService.value(for: \.codeCompletionProviderId) {
       return codeCompletionProviders.first(where: { $0.id == id })
     }
-    // Don
-    return codeCompletionProviders.first
-//    return nil
+    return nil
+  }
+
+  /// Return the recent edits tracker for a workspace.
+  func editTracker(for workspaceURL: URL) -> RecentEditsTracker? {
+    guard let workspace = workspaces[workspaceURL] else {
+      return nil
+    }
+    return recentEditsTrackers[workspace]
   }
 
   // TODO: support timeout
-  func suggestCompletion(_ request: CompletionRequest) async throws -> AppliedCompletionSuggestion? {
+  func suggestCompletion(_ request: CompletionRequest) async throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion)? {
     let file = request.file
     let workspace = request.workspace
     let content = request.content
@@ -133,11 +144,6 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     }
     let request = CompletionCacheRequest(file: file, content: content, selection: selection)
 
-    if let cachedCompletion = cachedCompletions.get(for: request) {
-      defaultLogger.log("Returning cached completion")
-      return cachedCompletion
-    }
-
     // Get formatting metadata for the workspace
     let formattingMetadata = await getFormattingMetadata(for: workspace)
 
@@ -152,14 +158,21 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       .applied(to: content, file: file, selection: selection)
 
     if let suggestion {
-      cachedCompletions.store(suggestion: suggestion, for: request)
+      let cacheId = cachedCompletions.store(suggestion: suggestion, for: request)
+      return (cachedRequestId: cacheId, suggestion: suggestion)
+    } else {
+      _ = cachedCompletions.store(suggestion: nil, for: request)
     }
-    return suggestion
+    return nil
   }
 
-  nonisolated func cachedCompletion(_ request: CompletionRequest) throws -> AppliedCompletionSuggestion? {
+  nonisolated func deleteCachedCompletion(cachedRequestId _: Int) { }
+
+  nonisolated func cachedCompletion(_ request: CompletionRequest) throws
+    -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
+  {
     let file = request.file
-    let workspace = request.workspace
+    let workspace = request.workspace // TODO
     let content = request.content
     let selection = request.selection
     guard isAvailable.currentValue else {
@@ -167,15 +180,15 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     }
     let request = CompletionCacheRequest(file: file, content: content, selection: selection)
 
-    if let cachedCompletion = cachedCompletions.get(for: request) {
+    if let (cacheId, cachedCompletion) = cachedCompletions.get(for: request) {
       defaultLogger.log("Returning cached completion")
-      return cachedCompletion
+      return (cachedRequestId: cacheId, suggestion: cachedCompletion)
     }
     return nil
   }
 
   nonisolated func logCompletionAcceptance(
-    suggestion _: AppliedCompletionSuggestion,
+    suggestion _: CompletionSuggestion,
     accepted _: Bool) { }
 
   /// Handle state changes from XcodeObserver and emit appropriate LSP events

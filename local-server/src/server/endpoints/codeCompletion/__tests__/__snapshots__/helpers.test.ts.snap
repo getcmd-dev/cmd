@@ -1,0 +1,104 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`buildInstructPrompt should match snapshot for basic prefix/suffix 1`] = `
+{
+  "editableRegionEnd": 0,
+  "editableRegionStart": 0,
+  "systemPrompt": "You are an intelligent code completion assistant. Your role is to predict and complete the next edit the developer will make within the editable region marked by <|editable_region_start|> and <|editable_region_end|>.
+
+The <|cursor|> marker indicates where the developer's cursor is currently located. The developer may have stopped in the middle of typing.
+
+Your task:
+1. Review the context, recent edits, and current code
+2. Determine if changes are needed in the editable region
+3. If changes are needed, provide the complete revised code for the editable region
+4. Maintain consistent indentation and formatting
+5. Do not undo recent changes unless there are obvious errors
+
+Output only the revised code that should replace the content between the markers. Do not include the markers themselves in your output.",
+  "userPrompt": "### Current File
+
+// Path: test.ts
+
+
+<|editable_region_start|>
+function test() {<|cursor|>}
+<|editable_region_end|>
+
+
+Predict and complete the changes for the editable region. Output only the revised code, without the markers.",
+}
+`;
+
+exports[`buildInstructPrompt should match snapshot with context snippets 1`] = `
+{
+  "editableRegionEnd": 0,
+  "editableRegionStart": 0,
+  "systemPrompt": "You are an intelligent code completion assistant. Your role is to predict and complete the next edit the developer will make within the editable region marked by <|editable_region_start|> and <|editable_region_end|>.
+
+The <|cursor|> marker indicates where the developer's cursor is currently located. The developer may have stopped in the middle of typing.
+
+Your task:
+1. Review the context, recent edits, and current code
+2. Determine if changes are needed in the editable region
+3. If changes are needed, provide the complete revised code for the editable region
+4. Maintain consistent indentation and formatting
+5. Do not undo recent changes unless there are obvious errors
+
+Output only the revised code that should replace the content between the markers. Do not include the markers themselves in your output.",
+  "userPrompt": "### Context
+
+// File: helper.ts
+export function help() {}
+
+// File: utils.ts
+export const PI = 3.14
+
+### Current File
+
+// Path: test.ts
+
+
+<|editable_region_start|>
+import <|cursor|>
+<|editable_region_end|>
+
+
+Predict and complete the changes for the editable region. Output only the revised code, without the markers.",
+}
+`;
+
+exports[`buildInstructPrompt should match snapshot with recent edits 1`] = `
+{
+  "editableRegionEnd": 0,
+  "editableRegionStart": 0,
+  "systemPrompt": "You are an intelligent code completion assistant. Your role is to predict and complete the next edit the developer will make within the editable region marked by <|editable_region_start|> and <|editable_region_end|>.
+
+The <|cursor|> marker indicates where the developer's cursor is currently located. The developer may have stopped in the middle of typing.
+
+Your task:
+1. Review the context, recent edits, and current code
+2. Determine if changes are needed in the editable region
+3. If changes are needed, provide the complete revised code for the editable region
+4. Maintain consistent indentation and formatting
+5. Do not undo recent changes unless there are obvious errors
+
+Output only the revised code that should replace the content between the markers. Do not include the markers themselves in your output.",
+  "userPrompt": "### Recent Edits
+
+diff --git a/file.ts b/file.ts
++let y = 1
+
+### Current File
+
+// Path: test.ts
+
+
+<|editable_region_start|>
+let x = <|cursor|>
+<|editable_region_end|>
+
+
+Predict and complete the changes for the editable region. Output only the revised code, without the markers.",
+}
+`;

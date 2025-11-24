@@ -6,6 +6,7 @@ Target.module(
     "CodeCompletionFoundation",
     "ConcurrencyFoundation",
     "FileDiffTypesFoundation",
+    "SharedValuesFoundation",
     "ThreadSafe",
     "XcodeObserverServiceInterface",
   ])

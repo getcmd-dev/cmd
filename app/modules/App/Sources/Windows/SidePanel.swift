@@ -188,19 +188,20 @@ final class SidePanel: XcodeWindow {
 
   @MainActor
   private func frame(from window: AnyAXUIElement) -> CGRect? {
-    // TODO: gracefully handle when the screen changes
-    // TODO: make the experience moving the window nicer.
-    // TODO: prevent the combine frame from extending beyond the screen.
-    guard let workspaceFrame = window.appKitFrame else {
-      // This can happen when there is no screen. For instance the laptop was closed.
-      return nil
-    }
-    defer {
-      lastWorkspaceFrame = workspaceFrame
-      lastWorkspaceElement = window
-    }
     if changeMadeToWorkspaceFrame == nil {
       // only do this once after the side panel is shown (this can happen several times if the side panel is hidden and shown again).
+
+      // TODO: gracefully handle when the screen changes
+      // TODO: make the experience moving the window nicer.
+      // TODO: prevent the combine frame from extending beyond the screen.
+      guard let workspaceFrame = window.appKitFrame else {
+        // This can happen when there is no screen. For instance the laptop was closed.
+        return nil
+      }
+      defer {
+        lastWorkspaceFrame = workspaceFrame
+        lastWorkspaceElement = window
+      }
 
       // The desired frame is on the side of Xcode
       let desiredFrame = CGRect(

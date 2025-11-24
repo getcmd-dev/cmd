@@ -5,7 +5,6 @@ import AppFoundation
 import Foundation
 
 extension AIProvider {
-
   public static let gemini = AIProvider(
     id: "gemini",
     name: "Google Gemini",

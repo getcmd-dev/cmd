@@ -102,7 +102,9 @@ var targets = [Target]()
 targets.append(
   contentsOf: Target.module(
     name: "AccessibilityFoundation",
-    dependencies: [],
+    dependencies: [
+      "LoggingServiceInterface",
+    ],
     testsDependencies: [
       "AccessibilityFoundation",
     ],
@@ -638,6 +640,7 @@ targets.append(
       "RoutingFoundation",
       "SettingsServiceInterface",
       "ShellServiceInterface",
+      "ThreadSafe",
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
       "XcodeObserverWindowsAdapter",
@@ -648,11 +651,7 @@ targets.append(
 targets.append(
   contentsOf: Target.module(
     name: "CodeCompletionFoundation",
-    dependencies: [
-      "AppFoundation",
-      "SharedValuesFoundation",
-      "ThreadSafe",
-    ],
+    dependencies: [],
     path: "./foundations/CodeCompletionFoundation"))
 
 targets.append(
@@ -668,6 +667,8 @@ targets.append(
       "DependencyFoundation",
       "FileDiffFoundation",
       "FoundationInterfaces",
+      "LLMFoundation",
+      "LocalServerServiceInterface",
       "LoggingServiceInterface",
       "PermissionsServiceInterface",
       "SettingsServiceInterface",
@@ -706,6 +707,7 @@ targets.append(
       "CodeCompletionFoundation",
       "ConcurrencyFoundation",
       "FileDiffTypesFoundation",
+      "SharedValuesFoundation",
       "ThreadSafe",
       "XcodeObserverServiceInterface",
     ],
@@ -1006,6 +1008,7 @@ targets.append(
     dependencies: [
       "AppFoundation",
       "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "FoundationInterfaces",
@@ -1024,6 +1027,7 @@ targets.append(
     testsDependencies: [
       "AppFoundation",
       "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
       "GithubCopilotService",
@@ -1043,6 +1047,7 @@ targets.append(
       .product(name: "Dependencies", package: "swift-dependencies"),
       "AppFoundation",
       "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "SharedValuesFoundation",
@@ -1486,6 +1491,7 @@ targets.append(
       "AppFoundation",
       "AppUpdateServiceInterface",
       "ChatFoundation",
+      "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
       "DLS",
       "ExtensionEventsInterface",

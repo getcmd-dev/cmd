@@ -1,0 +1,232 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`buildInceptionNextEditPrompt should handle empty file 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 0,
+      "line": 0,
+    },
+    "start": {
+      "character": 0,
+      "line": 0,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+<|code_to_edit|>
+<|cursor|>
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot for basic single-line file 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 20,
+      "line": 0,
+    },
+    "start": {
+      "character": 0,
+      "line": 0,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+<|code_to_edit|>
+function test() { <|cursor|> }
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot for multi-line file with cursor in middle 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 1,
+      "line": 4,
+    },
+    "start": {
+      "character": 0,
+      "line": 2,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+function example() {
+  const x = 1
+<|code_to_edit|>
+  <|cursor|>
+  return x
+}
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot with all context types 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 1,
+      "line": 2,
+    },
+    "start": {
+      "character": 0,
+      "line": 1,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+<|recently_viewed_code_snippet|>
+code_snippet_file_path: math.ts
+export const add = (a, b) => a + b
+<|/recently_viewed_code_snippet|>
+<|recently_viewed_code_snippet|>
+code_snippet_file_path: clipboard
+multiply(a: number, b: number): number
+<|/recently_viewed_code_snippet|>
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+class Calculator {
+<|code_to_edit|>
+  <|cursor|>
+}
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
++++ b/calculator.ts
++class Calculator
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot with clipboard content 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 14,
+      "line": 0,
+    },
+    "start": {
+      "character": 0,
+      "line": 0,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+<|recently_viewed_code_snippet|>
+code_snippet_file_path: clipboard
+42
+<|/recently_viewed_code_snippet|>
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+<|code_to_edit|>
+const value = <|cursor|>
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot with recent edits 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 1,
+      "line": 2,
+    },
+    "start": {
+      "character": 0,
+      "line": 1,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+function calculate() {
+<|code_to_edit|>
+  <|cursor|>
+}
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+diff --git a/test.ts b/test.ts
+--- a/test.ts
++++ b/test.ts
+@@ -1,3 +1,3 @@
+-const x = 1
++const x = 2
+<|/edit_diff_history|>",
+}
+`;
+
+exports[`buildInceptionNextEditPrompt should match snapshot with recently opened files 1`] = `
+{
+  "editableRegionRange": {
+    "end": {
+      "character": 25,
+      "line": 2,
+    },
+    "start": {
+      "character": 0,
+      "line": 0,
+    },
+  },
+  "prompt": "<|recently_viewed_code_snippets|>
+<|recently_viewed_code_snippet|>
+code_snippet_file_path: /workspace/src/helper.ts
+export function help() {
+  return 'help'
+}
+<|/recently_viewed_code_snippet|>
+<|recently_viewed_code_snippet|>
+code_snippet_file_path: /workspace/src/utils.ts
+export const PI = 3.14
+<|/recently_viewed_code_snippet|>
+<|/recently_viewed_code_snippets|>
+
+<|current_file_content|>
+<|code_to_edit|>
+import <|cursor|>
+
+export function main() {}
+<|/code_to_edit|>
+<|/current_file_content|>
+
+<|edit_diff_history|>
+
+<|/edit_diff_history|>",
+}
+`;

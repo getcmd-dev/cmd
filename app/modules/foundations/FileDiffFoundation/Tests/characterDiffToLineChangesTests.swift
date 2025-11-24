@@ -369,8 +369,6 @@ struct CharacterDiffToLineChangesTests {
       oldContent: oldContent,
       newContent: newContent)
 
-    print("?")
-
     #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)
   }
@@ -494,5 +492,94 @@ struct CharacterDiffToLineChangesTests {
       "{+      return a + b\n+}",
       "{+  }\n+}",
     ])
+  }
+
+  // MARK: - Trailing Newline Tests
+
+  @Test("handles missing trailing newline in old content")
+  func handlesMissingTrailingNewlineInOld() throws {
+    let oldContent = "line1\nline2" // no trailing \n
+    let newContent = "line1\nline2\n"
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the added newline
+    let lastLine = lineChanges.last?.debugDescription ?? ""
+    #expect(lastLine.contains("{+") || lastLine.contains("\n"))
+  }
+
+  @Test("handles missing trailing newline in new content")
+  func handlesMissingTrailingNewlineInNew() throws {
+    let oldContent = "line1\nline2\n"
+    let newContent = "line1\nline2" // no trailing \n
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the removed newline
+    let lastLine = lineChanges.last?.debugDescription ?? ""
+    #expect(lastLine.contains("{-") || lastLine.contains("\n"))
+  }
+
+  @Test("handles both files missing trailing newline")
+  func handlesBothFilesMissingTrailingNewline() throws {
+    let oldContent = "line1\nline2" // no trailing \n
+    let newContent = "line1\nline2" // no trailing \n
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should be recognized as unchanged
+    #expect(lineChanges.isEmpty || lineChanges.allSatisfy { $0.allSatisfy { $0.type == .unchanged } })
+  }
+
+  @Test("handles file with only newline character")
+  func handlesFileWithOnlyNewline() throws {
+    let oldContent = "\n"
+    let newContent = "x\n"
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the added character
+    #expect(!lineChanges.isEmpty)
+    #expect(lineChanges.first?.contains(where: { $0.type == .added }) == true)
+  }
+
+  @Test("handles empty file to newline")
+  func handlesEmptyFileToNewline() throws {
+    let oldContent = ""
+    let newContent = "\n"
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the added newline
+    #expect(!lineChanges.isEmpty)
+  }
+
+  @Test("handles newline to empty file")
+  func handlesNewlineToEmptyFile() throws {
+    let oldContent = "\n"
+    let newContent = ""
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the removed newline
+    #expect(!lineChanges.isEmpty)
   }
 }

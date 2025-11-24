@@ -1,5 +1,3 @@
-import { ListedFileInfo } from "./listFilesSchema"
-
 export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string
@@ -26,7 +24,16 @@ export interface LocalExecutable {
 	cwd: string
 }
 
-export type APIProviderName = "openai" | "anthropic" | "openrouter" | "claude_code" | "codex" | "groq" | "gemini"
+export type APIProviderName =
+	| "openai"
+	| "anthropic"
+	| "openrouter"
+	| "claude_code"
+	| "codex"
+	| "groq"
+	| "gemini"
+	| "mistral"
+	| "inception"
 
 export type StreamedResponseChunk =
 	| TextDelta

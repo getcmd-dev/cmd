@@ -3,6 +3,7 @@ Target.module(
   dependencies: [
     "AppFoundation",
     "CodeCompletionFoundation",
+    "CodeCompletionServiceInterface",
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
@@ -21,6 +22,7 @@ Target.module(
   testsDependencies: [
     "AppFoundation",
     "CodeCompletionFoundation",
+    "CodeCompletionServiceInterface",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "GithubCopilotService",

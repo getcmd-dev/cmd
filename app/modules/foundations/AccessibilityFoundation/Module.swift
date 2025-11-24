@@ -1,6 +1,8 @@
 Target.module(
   name: "AccessibilityFoundation",
-  dependencies: [],
+  dependencies: [
+    "LoggingServiceInterface",
+  ],
   testsDependencies: [
     "AccessibilityFoundation",
   ])

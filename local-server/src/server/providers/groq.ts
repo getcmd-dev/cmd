@@ -72,7 +72,7 @@ export class GroqAIProvider implements AIProvider {
 			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
 		)
 	}
-	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Groq                                       ->  OpenRouter
 		// meta-llama/llama-4-scout-17b-16e-instruct  ->  meta-llama/llama-4-scout
 		// moonshotai/kimi-k2-instruct                ->  moonshotai/kimi-k2
@@ -84,6 +84,8 @@ export class GroqAIProvider implements AIProvider {
 				providerId: model.id,
 				globalId: match.id,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: false,
 			}
 		}
 		return undefined

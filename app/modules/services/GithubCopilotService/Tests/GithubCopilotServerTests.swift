@@ -5,6 +5,7 @@ import Testing
 
 import AppFoundation
 import CodeCompletionFoundation
+import CodeCompletionServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
@@ -192,7 +193,7 @@ struct GithubCopilotServerTests {
     _ = try await server.initializedTransport.value
 
     // when
-    let result: CheckStatusResult = try await server.sendRequest("checkStatus", params: .object([:]))
+    let result: CheckStatusResult = try await server.sendRequest("checkStatus", params: JSON.object([:]))
 
     // then
     try await fulfillment(of: expectCheckStatusRequest)
@@ -276,7 +277,7 @@ struct GithubCopilotServerTests {
     _ = try await server.initializedTransport.value
 
     // when
-    let result: SignInInitiationResult = try await server.sendRequest("signInInitiate", params: .object([:]))
+    let result: SignInInitiationResult = try await server.sendRequest("signInInitiate", params: JSON.object([:]))
 
     // then
     try await fulfillment(of: expectSignInInitiateRequest)

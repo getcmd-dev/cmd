@@ -218,6 +218,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var codeCompletionProviderId: String? {
+    get {
+      settings.codeCompletionProviderId
+    }
+    set {
+      settings.codeCompletionProviderId = newValue
+      settingsService.update(setting: \.codeCompletionProviderId, to: newValue)
+    }
+  }
+
   var queueMessagesWhileStreaming: Bool {
     get {
       settings.queueMessagesWhileStreaming

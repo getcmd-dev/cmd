@@ -15,11 +15,13 @@ public protocol CodeCompletionService: Sendable {
   var isAvailable: ReadonlyCurrentValueSubject<Bool> { get }
   /// Fetches a completion suggestion for the given file content and selection.
   func suggestCompletion(_ request: CompletionRequest)
-    async throws -> CompletionSuggestion?
+    async throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion)?
 
   /// Returns synchronously a cached completion suggestion if available.
   func cachedCompletion(_ request: CompletionRequest)
-    throws -> CompletionSuggestion?
+    throws -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
+
+  func deleteCachedCompletion(cachedRequestId: Int)
 
   /// Logs whether a suggested completion was accepted or rejected by the user.
   func logCompletionAcceptance(suggestion: CompletionSuggestion, accepted: Bool)

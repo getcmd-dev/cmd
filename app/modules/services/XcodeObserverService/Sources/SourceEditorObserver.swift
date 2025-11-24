@@ -79,6 +79,7 @@ final class SourceEditorObserver: AXElementObserver, @unchecked Sendable {
 
     axSubscription = axNotificationPublisher.sink { [weak self] notification in
       guard let self else { return }
+      print("Got axnotification at \(Date().timeIntervalSince1970)")
 
       guard let event = AXNotification(rawValue: notification.name) else {
         return

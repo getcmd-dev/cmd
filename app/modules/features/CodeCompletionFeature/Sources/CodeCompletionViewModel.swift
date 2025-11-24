@@ -17,10 +17,17 @@ import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 import XcodeThemeFoundation
 
+// TODO: Remove performance logging.
+
+// MARK: - CodeCompletionViewModel
+
+let performanceLogger = defaultLogger.subLogger(subsystem: "code-completion-performance")
+
 // MARK: - CodeCompletionViewModel
 
 @Observable @MainActor
 final class CodeCompletionViewModel {
+
   init(
     needsLayout: @escaping @MainActor () -> Void,
     screenshotEditor: @escaping @MainActor () async throws -> CGImage?)
@@ -46,11 +53,13 @@ final class CodeCompletionViewModel {
         .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
     }
 
+    // Create the key event handler manager
+    keyEventHandlerManager = KeyEventHandlerManager(appsActivationState: appsActivationState)
+
     isEnabled = codeCompletionService.isAvailable.currentValue
     if isEnabled {
       enable()
     }
-
     // Load Xcode theme font name
     Task {
       await loadXcodeTheme()
@@ -58,6 +67,7 @@ final class CodeCompletionViewModel {
 
     // Initialize Tab key handler (triggered on key down, allows Command modifier)
     completionKeyHandlers.append(KeyEventHandler(
+      manager: keyEventHandlerManager,
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
         onKeyDown: { [weak self] _, modifiers in
@@ -88,10 +98,17 @@ final class CodeCompletionViewModel {
 
     // Initialize Escape key handler (triggered on key up - when press is completed)
     escapeKeyHandler = KeyEventHandler(
+      manager: keyEventHandlerManager,
       configuration: .escape(),
       callbacks: .init(
-        onKeyDown: { [weak self] _, _ in
+        onKeyDown: { [weak self] isDoubleTap, _ in
           guard let self, isXcodeActive, editorState != nil else { return false }
+          if isDoubleTap {
+            return true
+          }
+          guard !isAutomaticCompletionEnabled || completion != nil else {
+            return false
+          }
           return true
         },
         onKeyUp: { [weak self] (isDoubleTap: Bool, _: CGEventFlags) in
@@ -112,6 +129,7 @@ final class CodeCompletionViewModel {
     // Left Command key code is 55, Right Command key code is 54
     for code in [54, 55] {
       completionKeyHandlers.append(KeyEventHandler(
+        manager: keyEventHandlerManager,
         configuration: .key(code),
         callbacks: .init(
           onKeyDown: { [weak self] _, _ in
@@ -146,6 +164,7 @@ final class CodeCompletionViewModel {
           editorState = nil
           completionTask = nil
           completion = nil
+          cachedRequestId = nil
         }
         if state.isXcodeActive, completion != nil {
           for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
@@ -236,6 +255,8 @@ final class CodeCompletionViewModel {
     fontHeight = font.size(for: content).height
   }
 
+  private var cachedRequestId: Int?
+
   private let needsLayout: () -> Void
   private let screenshotEditor: () async throws -> CGImage?
   /// Font name from Xcode theme
@@ -252,10 +273,13 @@ final class CodeCompletionViewModel {
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
   private var editorState: EditorState?
+  private let keyEventHandlerManager: KeyEventHandlerManager
   private var completionKeyHandlers = [KeyEventHandler]()
   private var escapeKeyHandler: KeyEventHandler?
 
   private var statusMessageTask: Task<Void, Never>?
+
+  private var logId = 0
 
   private var isXcodeActive: Bool {
     appsActivationState.currentValue.isXcodeActive
@@ -264,6 +288,7 @@ final class CodeCompletionViewModel {
   private func enable() {
     isEnabled = true
     xcodeObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      performanceLogger.trace("xcodeObservation sink called at \(Date().timeIntervalSince1970) ")
       Task { @MainActor [weak self] in
         await self?.handleXcodeStateChange(state)
       }
@@ -271,9 +296,13 @@ final class CodeCompletionViewModel {
   }
 
   private func handleXcodeStateChange(_ state: AXState<XcodeState>) async {
+    logId += 1
+    let logId = logId
+    performanceLogger.trace("(\(logId)) handleXcodeStateChange called at \(Date().timeIntervalSince1970) ")
     guard isXcodeActive else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger.log("Not requesting completion: Xcode is not active")
@@ -283,24 +312,35 @@ final class CodeCompletionViewModel {
     guard let workspace = state.focusedWorkspace else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger.log("Not requesting completion: no focused workspace")
       return
     }
 
-    guard let focussedFile = await xcodeObserver.focusedTabURL(in: workspace) else {
+    performanceLogger.trace("(\(logId)) will call focusedTabURL at \(Date().timeIntervalSince1970) ")
+    let focussedFile: URL? =
+      if let file = workspace.tabs.first(where: { $0.isFocused })?.knownPath {
+        file
+      } else {
+        await xcodeObserver.focusedTabURL(in: workspace)
+      }
+    guard let focussedFile else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger.log("Not requesting completion: no focused file")
       return
     }
+    performanceLogger.trace("(\(logId)) did call focusedTabURL at \(Date().timeIntervalSince1970) ")
 
     guard let editor = workspace.focussedEditor else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger.log("Not requesting completion: no focused editor")
@@ -310,6 +350,7 @@ final class CodeCompletionViewModel {
     guard let tab = workspace.tabs.first(where: { $0.isFocused && $0.fileName == focussedFile.lastPathComponent }) else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger
@@ -321,6 +362,7 @@ final class CodeCompletionViewModel {
     guard let content = tab.lastKnownContent else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       editorState = nil
       defaultLogger.log("Not requesting completion: no tab content")
@@ -331,6 +373,7 @@ final class CodeCompletionViewModel {
     guard selections.count == 1, let selection = selections.first else {
       completionTask = nil
       completion = nil
+      cachedRequestId = nil
       screenshot = nil
       defaultLogger.log("Not requesting completion due to missing selection")
       return
@@ -350,14 +393,16 @@ final class CodeCompletionViewModel {
 
     self.editorState = editorState
     completion = nil
+    cachedRequestId = nil
     screenshot = nil
     completionTask = nil
     guard isAutomaticCompletionEnabled else { return }
 
-    fetchCompletion()
+    fetchCompletion(logId: logId)
   }
 
-  private func fetchCompletion() {
+  private func fetchCompletion(logId: Int = -1) {
+    performanceLogger.trace("(\(logId)) fetchCompletion called at \(Date().timeIntervalSince1970) ")
     guard let editorState else { return }
     let selection = editorState.selection
     let completionRequest = CompletionRequest(
@@ -370,24 +415,39 @@ final class CodeCompletionViewModel {
       timeout: 1)
     let taskId = UUID()
 
-    if let cachedCompletion = try? codeCompletionService.cachedCompletion(completionRequest) {
+    performanceLogger.trace("(\(logId)) calling cachedCompletion at \(Date().timeIntervalSince1970) ")
+    if let (cacheId, cachedCompletion) = try? codeCompletionService.cachedCompletion(completionRequest) {
+      performanceLogger.trace("got cachedCompletion at \(Date().timeIntervalSince1970) ")
       completion = cachedCompletion
+      cachedRequestId = cacheId
       completionTask = CompletionTask(
         id: taskId,
         request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection))
     } else {
+      performanceLogger
+        .log("(\(logId)) got no cachedCompletion, calling suggestCompletion instead at \(Date().timeIntervalSince1970) ")
       let task = Task { [weak self] in
-        let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
-        try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
-        try Task.checkCancellation() // TODO: check if this work (We have fallbacks)
-        guard let self, completionTask?.id == taskId else {
-          return
+        do {
+          let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
+          try await Task.sleep(nanoseconds: UInt64(debounceMs) * 1_000_000)
+          try Task.checkCancellation()
+          guard let self, completionTask?.id == taskId else {
+            return
+          }
+          performanceLogger.trace("(\(logId)) Requesting completion at \(Date().timeIntervalSince1970)")
+          let result = try await codeCompletionService.suggestCompletion(completionRequest)
+          try Task.checkCancellation()
+          guard completionTask?.id == taskId else {
+            return
+          }
+          performanceLogger
+            .log("(\(logId)) Got completion response at \(Date().timeIntervalSince1970). Has suggestions? \(completion != nil)")
+          completion = result?.suggestion
+          cachedRequestId = result?.cachedRequestId
+          isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+        } catch {
+          throw error
         }
-        defaultLogger.log("Requesting completion")
-        let completion = try await codeCompletionService.suggestCompletion(completionRequest)
-        defaultLogger.log("Got completion response. Has suggestions? \(completion != nil)")
-        self.completion = completion
-        isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
       }
       let cancellable = AnyCancellable { task.cancel() }
       completionTask = CompletionTask(
@@ -400,6 +460,7 @@ final class CodeCompletionViewModel {
   private func disable() {
     isEnabled = false
     completion = nil
+    cachedRequestId = nil
     for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 
@@ -424,17 +485,23 @@ final class CodeCompletionViewModel {
 
         try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
         self.completion = nil
+        self.cachedRequestId = nil
       } catch {
         defaultLogger.error("Failed to apply code completion", error)
         self.completion = nil
+        self.cachedRequestId = nil
       }
     }
   }
 
   private func handleEscape() {
-    if isAutomaticCompletionEnabled {
+    if completion != nil {
       completion = nil
-    } else {
+      cachedRequestId = nil
+      if let cachedRequestId {
+        codeCompletionService.deleteCachedCompletion(cachedRequestId: cachedRequestId)
+      }
+    } else if !isAutomaticCompletionEnabled {
       fetchCompletion()
     }
   }

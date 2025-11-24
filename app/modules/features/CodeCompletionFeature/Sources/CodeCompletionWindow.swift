@@ -30,6 +30,7 @@ final class CodeCompletionWindow: XcodeWindow {
 
     needsLayout.set(to: { [weak self] in
       self?.show()
+      performanceLogger.trace("CodeCompletionWindow layout at \(Date().timeIntervalSince1970)")
     })
     screenshotEditor.set(to: { [weak self] in
       try await self?.screenshotEditor()

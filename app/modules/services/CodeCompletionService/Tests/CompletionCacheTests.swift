@@ -168,11 +168,12 @@ struct CompletionCacheTests {
       changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 20))))
 
     // when
-    await sut.store(suggestion: suggestion, for: request)
-    let result = await sut.get(for: request)
+    _ = sut.store(suggestion: suggestion, for: request)
+    let result = sut.get(for: request)
 
     // then
-    let retrievedSuggestion = try #require(result)
+    let retrieved = try #require(result)
+    let retrievedSuggestion = try #require(retrieved.suggestion)
     #expect(retrievedSuggestion.diff.debugDescription == "  {-// TODO: implement-}{+print(0)+}\n")
     #expect(retrievedSuggestion.file == file)
   }
@@ -201,7 +202,7 @@ struct CompletionCacheTests {
       changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 20))))
 
     // when
-    await sut.store(suggestion: suggestion, for: request)
+    _ = sut.store(suggestion: suggestion, for: request)
     let newCursorPosition = Position(line: 1, character: 4)
     let newRequest = CompletionCacheRequest(
       file: file,
@@ -211,10 +212,11 @@ struct CompletionCacheTests {
         }
         """,
       selection: .init(start: newCursorPosition, end: newCursorPosition))
-    let result = await sut.get(for: newRequest)
+    let result = sut.get(for: newRequest)
 
     // then
-    let retrievedSuggestion = try #require(result)
+    let retrieved = try #require(result)
+    let retrievedSuggestion = try #require(retrieved.suggestion)
     #expect(retrievedSuggestion.diff.debugDescription == "  pr{+int(0)+}\n")
     #expect(retrievedSuggestion.file == file)
   }
@@ -235,7 +237,7 @@ struct CompletionCacheTests {
       completion: " world",
       file: file,
       cursor: cursor))
-    await sut.store(suggestion: suggestion, for: request)
+    _ = sut.store(suggestion: suggestion, for: request)
 
     let outsideSelection = Position(line: 0, character: 0)
     let lookup = CompletionCacheRequest(
@@ -243,7 +245,7 @@ struct CompletionCacheTests {
       content: content,
       selection: .init(start: outsideSelection, end: outsideSelection))
 
-    let result = await sut.get(for: lookup)
+    let result = sut.get(for: lookup)
     #expect(result == nil)
   }
 
@@ -261,12 +263,12 @@ struct CompletionCacheTests {
       completion: " world",
       file: fileA,
       cursor: cursor))
-    await sut.store(suggestion: suggestion, for: requestA)
+    _ = sut.store(suggestion: suggestion, for: requestA)
 
     let fileB = URL(fileURLWithPath: "/b.swift")
     let requestB = CompletionCacheRequest(file: fileB, content: content, selection: selection)
 
-    let result = await sut.get(for: requestB)
+    let result = sut.get(for: requestB)
     #expect(result == nil)
   }
 
@@ -286,7 +288,7 @@ struct CompletionCacheTests {
       completion: " world",
       file: file,
       cursor: cursor))
-    await sut.store(suggestion: suggestion, for: request)
+    _ = sut.store(suggestion: suggestion, for: request)
 
     let mismatchedContent = "HELLO world"
     let mismatchCursor = Position(line: 0, character: mismatchedContent.count)
@@ -295,7 +297,7 @@ struct CompletionCacheTests {
       content: mismatchedContent,
       selection: .init(start: mismatchCursor, end: mismatchCursor))
 
-    let result = await sut.get(for: mismatchedRequest)
+    let result = sut.get(for: mismatchedRequest)
     #expect(result == nil)
   }
 
@@ -313,13 +315,141 @@ struct CompletionCacheTests {
       .debugDescription == "print hello{+\n world\n+}")
   }
 
+  // MARK: - Stress Tests for matches() Algorithm
+
+  @Test("matches handles empty diff")
+  func matchesHandlesEmptyDiff() throws {
+    // given
+    let diff: InlineDiff = []
+
+    // when/then
+    #expect("".matches(diff))
+    #expect(!"non-empty".matches(diff))
+  }
+
+  @Test("matches handles unicode emoji")
+  func matchesHandlesUnicodeEmoji() throws {
+    // given
+    let oldContent = "let x = 1"
+    let newContent = "let x = 😀"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("let x = ".matches(diff))
+    #expect("let x = 😀".matches(diff))
+    #expect(!"let x = 😀extra".matches(diff))
+  }
+
+  @Test("matches handles Japanese characters")
+  func matchesHandlesJapanese() throws {
+    // given
+    let oldContent = "let text = hello"
+    let newContent = "let text = 日本語"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("let text = ".matches(diff))
+    #expect("let text = 日".matches(diff))
+    #expect("let text = 日本".matches(diff))
+    #expect("let text = 日本語".matches(diff))
+  }
+
+  @Test("matches handles very long strings")
+  func matchesHandlesVeryLongStrings() throws {
+    // given - create a 5KB diff
+    let oldContent = String(repeating: "let x = 1\n", count: 500)
+    let newContent = String(repeating: "let y = 2\n", count: 500)
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when - test partial match
+    let partial = String(repeating: "let ", count: 100)
+
+    // then - should complete without hanging
+    _ = partial.matches(diff)
+  }
+
+  // TODO: Fix matches() algorithm - currently fails on partial matches with quotes
+  @Test("matches handles escaped quotes in strings")
+  func matchesHandlesEscapedQuotes() throws {
+    // given
+    let oldContent = "let str = \"hello\""
+    let newContent = "let str = \"world\""
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("let str = \"\"".matches(diff))
+    #expect("let str = \"w\"".matches(diff))
+  }
+
+  @Test("matches handles only first character")
+  func matchesHandlesOnlyFirstChar() throws {
+    // given
+    let oldContent = "hello"
+    let newContent = "world"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("".matches(diff))
+    #expect("w".matches(diff))
+    #expect("wo".matches(diff))
+    #expect(!"x".matches(diff))
+  }
+
+  // TODO: Fix matches() algorithm - currently fails on edge cases
+  // These tests expose bugs in the DP algorithm that need investigation
+  @Test("matches handles only last character")
+  func matchesHandlesOnlyLastChar() throws {
+    // given
+    let oldContent = "hello"
+    let newContent = "helld"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("hell".matches(diff))
+    #expect("helld".matches(diff))
+    #expect("helle".matches(diff)) // fine: [hell from {+hello+}] + [e from {-helld-}]
+  }
+
+  @Test("matches handles middle segment only")
+  func matchesHandlesMiddleSegment() throws {
+    // given
+    let oldContent = "func test() { old }"
+    let newContent = "func test() { new }"
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when/then
+    #expect("func test() {  }".matches(diff))
+    #expect("func test() { n }".matches(diff))
+    #expect("func test() { ne }".matches(diff))
+    #expect("func test() { new }".matches(diff))
+    #expect(!"func wrong() { new }".matches(diff))
+  }
+
+  @Test("matches performance benchmark")
+  func matchesPerformanceBenchmark() throws {
+    // given - 2KB of changes
+    let oldContent = String(repeating: "a", count: 1000) + String(repeating: "b", count: 1000)
+    let newContent = String(repeating: "x", count: 1000) + String(repeating: "y", count: 1000)
+    let diff = try getInlineChanges(from: oldContent, to: newContent)
+
+    // when - measure performance
+    let start = Date()
+    let candidate = String(repeating: "x", count: 500)
+    let result = candidate.matches(diff)
+    let elapsed = Date().timeIntervalSince(start)
+
+    // then - should complete in reasonable time (< 1 second)
+    #expect(result == true)
+    #expect(elapsed < 1.0, "matches() took \(elapsed)s, expected < 1.0s")
+  }
+
   private func createCompletion(
     oldContent: String,
     completion: String,
     file: URL? = nil,
     cursor: Position,
     changeRange: Range? = nil)
-    -> AppliedCompletionSuggestion?
+    -> CompletionSuggestion?
   {
     let file = file ?? URL(fileURLWithPath: "/test.swift")
     let completion = RawCompletionSuggestion(

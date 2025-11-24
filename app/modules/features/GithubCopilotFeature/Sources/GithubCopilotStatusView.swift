@@ -53,6 +53,8 @@ struct GithubCopilotStatusView: View {
 
   @State private var isRequestingSigninInfo = false
 
+  @State private var isOpeningSigninPage = false
+
   private let isExpanded: Bool
 
   private var installLSPServerView: some View {
@@ -90,20 +92,19 @@ struct GithubCopilotStatusView: View {
       if case .loggedIn(user: let user) = viewModel.authStatus {
         HStack {
           Text("Signed in as \(user)")
-        }
-
-        Button(action: {
-          Task {
-            try await viewModel.signOut()
+          Spacer(minLength: 0)
+          Button(action: {
+            Task {
+              try await viewModel.signOut()
+            }
+          }) {
+            HStack {
+              Image(systemName: "rectangle.portrait.and.arrow.right")
+              Text("Sign Out")
+            }
           }
-        }) {
-          HStack {
-            Image(systemName: "rectangle.portrait.and.arrow.right")
-            Text("Sign Out")
-          }
-          .frame(maxWidth: .infinity)
+          .buttonStyle(.bordered)
         }
-        .buttonStyle(.bordered)
       } else if let signInInfo = viewModel.signInInfo {
         HStack(spacing: 0) {
           Text(.init("Visit [\(signInInfo.verificationUri)](\(signInInfo.verificationUri)) and enter \(signInInfo.userCode)"))
@@ -115,6 +116,7 @@ struct GithubCopilotStatusView: View {
             action: {
               isRequestingSigninInfo = true
               do {
+                isOpeningSigninPage = false
                 try await viewModel.startSignIn()
               } catch { }
               isRequestingSigninInfo = false
@@ -127,12 +129,14 @@ struct GithubCopilotStatusView: View {
         HoveredButton(
           action: {
             Task {
+              isOpeningSigninPage = true
               NSPasteboard.general.clearContents()
               NSPasteboard.general.setString(signInInfo.userCode, forType: .string)
               if let url = URL(string: signInInfo.verificationUri) {
                 NSWorkspace.shared.open(url)
               }
               try await viewModel.confirmSignIn()
+              isOpeningSigninPage = false
             }
           },
           onHoverColor: colorScheme.primaryActionHoveredBackground,
@@ -140,8 +144,13 @@ struct GithubCopilotStatusView: View {
           cornerRadius: 6)
         {
           HStack {
-            Image(systemName: "doc.on.doc")
-            Text("Copy code and open link")
+            if isOpeningSigninPage {
+              Text("Waiting for sign in confirmation")
+              CMDLogoDrawingAnimation(size: 12)
+            } else {
+              Image(systemName: "doc.on.doc")
+              Text("Copy code and open link")
+            }
           }
           .foregroundColor(colorScheme.primaryActionForeground)
           .padding(4)
@@ -183,9 +192,9 @@ struct GithubCopilotStatusView: View {
     case .loggedIn(user: _):
       .green
     case .loggedOut:
-      .orange
+      .red
     case .loggingIn:
-      .orange
+      .red
     }
   }
 }

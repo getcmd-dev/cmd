@@ -10,6 +10,7 @@ import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/ch
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
 import { registerEndpoint as registerListModelsEndpoint } from "./endpoints/listModels"
 import { registerEndpoint as registerACPClientEndpoint } from "./endpoints/sendMessage/acp/clients/ACPClient"
+import { registerEndpoint as registerCodeCompletionEndpoint } from "./endpoints/codeCompletion/codeCompletion"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
@@ -19,7 +20,9 @@ import { OpenAIAIProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 import { OpenRouterAIProvider } from "./providers/open-router"
 import { GroqAIProvider } from "./providers/groq"
+import { MistralAIProvider } from "./providers/mistral"
 import { GeminiAIProvider } from "./providers/gemini"
+import { InceptionAIProvider } from "./providers/inception"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -46,10 +49,11 @@ const aiProviders = [
 	new OpenRouterAIProvider(),
 	new GroqAIProvider(),
 	new GeminiAIProvider(),
+	new MistralAIProvider(),
+	new InceptionAIProvider(),
 ]
-registerSendMessageEndpoint(router, aiProviders, () => {
-	return connectionInfo.port
-})
+registerSendMessageEndpoint(router, aiProviders)
+registerCodeCompletionEndpoint(router, aiProviders)
 registerListModelsEndpoint(router, aiProviders)
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)

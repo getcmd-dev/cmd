@@ -297,6 +297,8 @@ export const matchModelData = (
 				providerId: modelId,
 				globalId: reference.id,
 				max_completion_tokens: reference.top_provider.max_completion_tokens,
+				supportsCompletion: false,
+				supportsChat: true,
 			}
 		})
 		.filter(notUndefined)

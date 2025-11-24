@@ -3,6 +3,7 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+import CodeCompletionServiceInterface
 @preconcurrency import Combine
 import DependencyFoundation
 import Foundation
@@ -28,7 +29,6 @@ extension FileManagerI {
 
 @ThreadSafe
 final class DefaultGithubCopilotService: GithubCopilotService {
-
   init(shellService: ShellService, fileManager: FileManagerI, jrpcService: JRPCService) {
     self.shellService = shellService
     self.fileManager = fileManager
@@ -69,6 +69,12 @@ final class DefaultGithubCopilotService: GithubCopilotService {
   let setExecutablePath: @Sendable (Result<URL, Error>) -> Void
   let authServer: Future<GithubCopilotServer, Error>
   let setAuthServer: @Sendable (Result<GithubCopilotServer, Error>) -> Void
+
+  var displayName: String { "GitHub Copilot" }
+
+  var isAvailable: Bool {
+    _loginStatus.value.isLoggedIn
+  }
 
   var isLSPServerInstalled: ReadonlyCurrentValueSubject<Bool> {
     _isLSPServerInstalled.readonly()

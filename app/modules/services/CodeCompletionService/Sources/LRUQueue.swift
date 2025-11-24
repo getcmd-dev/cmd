@@ -32,7 +32,7 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
     }
   }
 
-  func insert(_ value: Item) {
+  func insert(_ value: Item) -> Int {
     inLock { state in
       let key = state.nextKey
       state.nextKey += 1
@@ -40,6 +40,7 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
       if state.dict.count > capacity {
         removeTail(&state)
       }
+      return key
     }
   }
 

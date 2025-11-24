@@ -71,7 +71,9 @@ public struct SettingsView: View {
         CodeCompletionSettingsView(
           enableCodeCompletion: $viewModel.enableCodeCompletion,
           codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs,
-          multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode)
+          multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode,
+          codeCompletionProviderId: $viewModel.codeCompletionProviderId,
+          llmSettingsViewModel: viewModel.llmSettings)
 
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)

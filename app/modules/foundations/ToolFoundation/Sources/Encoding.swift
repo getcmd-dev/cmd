@@ -170,9 +170,9 @@ extension ToolUseExecutionStatus: Codable {
   }
 }
 
-// MARK: - Result + Codable
+// MARK: - Result + @retroactive Codable
 
-extension Result: Codable where Success: Codable, Failure == Error {
+extension Result: @retroactive Codable where Success: Codable, Failure == Error {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let type = try container.decode(String.self, forKey: .type)

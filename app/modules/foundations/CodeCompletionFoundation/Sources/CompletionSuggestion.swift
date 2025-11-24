@@ -5,7 +5,7 @@ import Foundation
 
 // MARK: - CompletionSuggestion
 
-public struct CompletionSuggestion: Sendable {
+public struct RawCompletionSuggestion: Sendable {
   public let file: URL
   /// The position where the completion starts (inclusive) in the old content.
   public let startPosition: Position

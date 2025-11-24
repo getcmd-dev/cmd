@@ -3,6 +3,7 @@
 
 import AppKit
 import Foundation
+import LoggingServiceInterface
 
 // TODO: look at reusing AXSwift?
 
@@ -207,9 +208,20 @@ extension AXUIElement: Tree {
   public typealias Child = AXUIElement
 }
 
+// MARK: - Search
 public typealias SearchNextStep = TreeSearchNextStep
 
 // MARK: - Helper
+
+nonisolated(unsafe) var acc: TimeInterval = 0
+nonisolated(unsafe) var timer: Timer? = nil
+let logTimeInterval: TimeInterval = 10.0
+
+func logAXusage() {
+  let v = acc
+  acc = 0
+  defaultLogger.log("ax time spent: \(String(format: "%.2f", v / logTimeInterval * 100))%")
+}
 
 extension AXUIElement {
   public var isValid: Bool {
@@ -231,6 +243,12 @@ extension AXUIElement {
   }
 
   public func copyValue<T>(key: String, ofType _: T.Type = T.self) throws -> T {
+    let d = Date()
+    defer { acc += Date().timeIntervalSince(d) }
+    timer = timer ?? Timer.scheduledTimer(withTimeInterval: logTimeInterval, repeats: true) { _ in
+      logAXusage()
+    }
+
     var value: AnyObject?
     let error = AXUIElementCopyAttributeValue(self, key as CFString, &value)
     if error == .success, let value = value as? T {
@@ -258,6 +276,14 @@ extension AXUIElement {
   }
 
 }
+
+// MARK: - AXError + @retroactive _BridgedNSError
+
+extension AXError: @retroactive _BridgedNSError { }
+
+// MARK: - AXError + @retroactive _ObjectiveCBridgeableError
+
+extension AXError: @retroactive _ObjectiveCBridgeableError { }
 
 // MARK: - AXError + @retroactive Error
 

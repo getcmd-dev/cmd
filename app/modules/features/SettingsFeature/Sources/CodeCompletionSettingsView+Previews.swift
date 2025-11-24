@@ -12,16 +12,22 @@ import SwiftUI
   CodeCompletionSettingsView(
     enableCodeCompletion: .mutable(true),
     codeCompletionDebounceMs: .mutable(250),
-    multiLineCodeCompletionDisplayMode: .mutable(.expandCompletionOverExistingCodeWhenTriggered))
+    // The
+    multiLineCodeCompletionDisplayMode: .mutable(.expandCompletionOverExistingCodeWhenTriggered),
+    codeCompletionProviderId: .mutable(nil),
+    llmSettingsViewModel: LLMSettingsViewModel())
     .frame(width: 600, height: 600)
     .padding()
 }
 
 #Preview("Code Completion Settings - Advanced", traits: .emptyRouter) {
   CodeCompletionSettingsView(
+    // The
     enableCodeCompletion: .mutable(true),
     codeCompletionDebounceMs: .mutable(100),
-    multiLineCodeCompletionDisplayMode: .mutable(.expandCompletionOverExistingCode))
+    multiLineCodeCompletionDisplayMode: .mutable(.expandCompletionOverExistingCode),
+    codeCompletionProviderId: .mutable(nil),
+    llmSettingsViewModel: LLMSettingsViewModel())
     .frame(width: 600, height: 600)
     .padding()
 }

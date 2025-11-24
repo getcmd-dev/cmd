@@ -92,7 +92,7 @@ export class AnthropicAIProvider implements AIProvider {
 			cachedInputTokens: anthropicMetadata.usage.cache_read_input_tokens as number | undefined,
 		}
 	}
-	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+	private identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
 		// Anthropic.model.id claude-sonnet-4-5-20250929
 		// OpenRoutermodel.id: anthropic/claude-sonnet-4.5
 		// OpenRoutermodel.canonical_slug: anthropic/claude-4.5-sonnet-20250929
@@ -107,6 +107,8 @@ export class AnthropicAIProvider implements AIProvider {
 				globalId: match.id,
 				name: model.display_name || match.name,
 				max_completion_tokens: match.top_provider.max_completion_tokens,
+				supportsChat: true,
+				supportsCompletion: false,
 			}
 		}
 		return undefined

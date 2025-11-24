@@ -3,6 +3,7 @@
 
 import AppFoundation
 import CodeCompletionFoundation
+import CodeCompletionServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
@@ -12,10 +13,11 @@ import ThreadSafe
 #if DEBUG
 @ThreadSafe @dynamicMemberLookup
 public final class MockGithubCopilotService: GithubCopilotService {
-
   public init(id: String = "mock-code-completion-provider") {
     self.id = id
   }
+
+  public let displayName = "Mock GitHub Copilot Service"
 
   public var _loginStatus = CurrentValueSubject<LoginStatus, Never>(.loggedOut)
   public var _isLSPServerInstalled = CurrentValueSubject<Bool, Never>(false)
@@ -28,6 +30,8 @@ public final class MockGithubCopilotService: GithubCopilotService {
   public var onInitiateSignIn: (@Sendable () async throws -> SignInInitiationResult)?
   public var onConfirmSignIn: (@Sendable (String) async throws -> Void)?
   public var onSignOut: (@Sendable () async throws -> Void)?
+
+  public var isAvailable: Bool { true }
 
   public var loginStatus: ReadonlyCurrentValueSubject<LoginStatus> {
     _loginStatus.readonly()
@@ -45,7 +49,7 @@ public final class MockGithubCopilotService: GithubCopilotService {
     selection: Range,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
-    async throws -> CompletionSuggestion?
+    async throws -> RawCompletionSuggestion?
   {
     try await codeCompletionProvider.suggestCompletion(
       workspace: workspace,

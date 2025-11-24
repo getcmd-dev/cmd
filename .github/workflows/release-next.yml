@@ -42,11 +42,6 @@ jobs:
           npm install --global @bugsnag/cli
           brew install graphicsmagick imagemagick sentry-cli
           cd app/fastlane && gem install bundler && bundle install
-      - name: Load derived data cache
-        uses: actions/cache/restore@v4
-        with:
-          path: app/build/derived_data
-          key: ${{ runner.os }}-app-derived-data-main
       - name: Publish release
         run: cd app/fastlane && bundle exec fastlane mac distribute_release next:true
         env:
