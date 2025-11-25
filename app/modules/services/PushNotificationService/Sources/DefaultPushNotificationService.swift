@@ -136,11 +136,12 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
     // Handle callbacks asynchronously
     Task {
-      // Handle action callback
-      if
-        actionIdentifier != UNNotificationDismissActionIdentifier,
-        actionIdentifier != UNNotificationDefaultActionIdentifier
-      {
+      // Handle notification tap (default action)
+      if actionIdentifier == UNNotificationDefaultActionIdentifier {
+        await handleTapped(notificationId: notificationId)
+      }
+      // Handle action button callback
+      else if actionIdentifier != UNNotificationDismissActionIdentifier {
         await handleActionCallback(actionIdentifier: actionIdentifier)
       }
 
@@ -203,6 +204,28 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
     if let notification, let onNotShown = notification.onNotShown {
       await onNotShown()
+    }
+  }
+
+  private func handleTapped(notificationId: String) async {
+    let notification = inLock { state in
+      state.notificationIdMapping[notificationId]
+    }
+
+    if let notification, let onTapped = notification.onTapped {
+      await onTapped()
+    }
+
+    // Remove from active notifications after being tapped
+    _notifications.send(_notifications.value.filter { $0.id != notificationId })
+
+    // Clean up state
+    inLock { state in
+      if let notification = state.notificationIdMapping.removeValue(forKey: notificationId) {
+        for action in notification.actions {
+          state.actionCallbacks.removeValue(forKey: action.identifier)
+        }
+      }
     }
   }
 }

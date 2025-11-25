@@ -85,7 +85,7 @@ struct OnboardingViewModelTests {
     #expect(viewModel.currentStep == .accessibilityPermission)
 
     // Grant accessibility permission
-    mockPermissionsService.set(permission: .accessibility, granted: true)
+    mockPermissionsService.set(permission: .accessibility, status: .grantedEnabled)
 
     // Wait for the step change
     try await viewModel.wait(for: \.currentStep, toBe: .xcodeExtensionPermission)
@@ -189,7 +189,7 @@ struct OnboardingViewModelTests {
     #expect(viewModel.isAccessibilityPermissionGranted == false)
 
     // Grant accessibility permission
-    mockPermissionsService.set(permission: .accessibility, granted: true)
+    mockPermissionsService.set(permission: .accessibility, status: .grantedEnabled)
     // Wait for async update
     try await viewModel.wait(for: \.isAccessibilityPermissionGranted, toBe: true)
 

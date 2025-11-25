@@ -155,10 +155,10 @@ final class OnboardingViewModel {
     if !hasSkippedWelcomeScreen {
       return .welcome
     }
-    if !permissionsService.status(for: .accessibility).currentValue.isGranted {
+    if permissionsService.status(for: .accessibility).currentValue == .notGranted {
       return .accessibilityPermission
     }
-    if !permissionsService.status(for: .xcodeExtension).currentValue.isGranted, !skipXcodeExtension {
+    if permissionsService.status(for: .xcodeExtension).currentValue == .notGranted, !skipXcodeExtension {
       return .xcodeExtensionPermission
     }
     if !hasSkippedProviderSetup {

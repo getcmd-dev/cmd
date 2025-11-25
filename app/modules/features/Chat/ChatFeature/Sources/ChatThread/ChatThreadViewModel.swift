@@ -1,7 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppEventServiceInterface
 import AppFoundation
+import ChatAppEvents
 import ChatFoundation
 import ChatHistoryServiceInterface
 import ChatServiceInterface
@@ -67,6 +69,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     @Dependency(\.chatService) var chatService
     @Dependency(\.pushNotificationService) var pushNotificationService
     @Dependency(\.permissionsService) var permissionsService
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
 
     self.toolsPlugin = toolsPlugin
     self.settingsService = settingsService
@@ -78,6 +81,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     self.chatService = chatService
     self.pushNotificationService = pushNotificationService
     self.permissionsService = permissionsService
+    self.appEventHandlerRegistry = appEventHandlerRegistry
     self.id = id
     self.name = name
     self.messages = messages
@@ -479,6 +483,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   private let chatService: ChatService
   private let pushNotificationService: PushNotificationService
   private let permissionsService: PermissionsService
+  private let appEventHandlerRegistry: AppEventHandlerRegistry
 
   // MARK: - Change Tracking
 
@@ -771,9 +776,14 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
         }
       }
 
+      let threadId = self.id
       let notification = PushNotification(
         title: name ?? "Chat",
-        body: preview)
+        body: preview,
+        onTapped: { @Sendable [appEventHandlerRegistry] in
+          // Send event to switch to this chat thread
+          _ = await appEventHandlerRegistry.handle(event: SwitchToChatThreadEvent(threadId: threadId))
+        })
 
       do {
         try await pushNotificationService.send(notification)

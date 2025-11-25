@@ -39,6 +39,12 @@ final class DefaultPermissionsService: PermissionsService {
     self.requestPushNotificationPermission = requestPushNotificationPermission
     self.pollIntervalNS = pollIntervalNS
     self.bundle = bundle
+
+    // Initialize accessibility permission status synchronously to avoid onboarding flash
+    Task { @MainActor in
+      let isGranted = isAccessibilityPermissionGranted()
+      self.accessibilityPermissionStatus.send(isGranted ? .grantedEnabled : .notGranted)
+    }
   }
 
   func request(permission: Permission) {

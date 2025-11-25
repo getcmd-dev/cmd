@@ -13,6 +13,7 @@ Target.module(
   testsDependencies: [
     "ConcurrencyFoundation",
     "PermissionsService",
+    "PermissionsServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
   ])

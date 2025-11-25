@@ -4,6 +4,7 @@
 import Combine
 import ConcurrencyFoundation
 import Foundation
+import PermissionsServiceInterface
 import ShellServiceInterface
 import SwiftTesting
 import Testing
@@ -48,16 +49,16 @@ struct DefaultPermissionsServiceTests {
       },
       requestXcodeExtensionPermission: { })
 
-    let receivedValues = Atomic<[Bool?]>([])
+    let receivedValues = Atomic<[PermissionStatus]>([])
     let cancellable = sut.status(for: .accessibility).sink { value in
       receivedValues.mutate { $0.append(value) }
-      if value == true {
+      if value.isGranted {
         exp.fulfill()
       }
     }
     try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(pollCount.value == pollUntilGranted)
-    #expect(receivedValues.value.compactMap(\.self) == [false, true])
+    #expect(receivedValues.value == [.notGranted, .grantedEnabled])
     _ = cancellable
   }
 
@@ -80,7 +81,7 @@ struct DefaultPermissionsServiceTests {
     let sut = DefaultPermissionsService(shellService: shellService)
 
     let cancellable = sut.status(for: .xcodeExtension).sink { value in
-      if value == true {
+      if value.isGranted {
         exp.fulfill()
       }
     }
@@ -113,16 +114,16 @@ struct DefaultPermissionsServiceTests {
         pollCount.increment() >= pollUntilGranted
       })
 
-    let receivedValues = Atomic<[Bool?]>([])
+    let receivedValues = Atomic<[PermissionStatus]>([])
     let cancellable = sut.status(for: .pushNotification).sink { value in
       receivedValues.mutate { $0.append(value) }
-      if value == true {
+      if value.isGranted {
         exp.fulfill()
       }
     }
     try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(pollCount.value == pollUntilGranted)
-    #expect(receivedValues.value.compactMap(\.self) == [false, true])
+    #expect(receivedValues.value == [.notGranted, .grantedEnabled])
     _ = cancellable
   }
 

@@ -14,6 +14,7 @@ public final class MockPushNotificationService: PushNotificationService {
 
   public var onSend: (@Sendable (PushNotification) async throws -> Void)?
   public var onHandleActionCallback: (@Sendable (String) async -> Void)?
+  public var onHandleTapped: (@Sendable (String) async -> Void)?
   public var onClearAllNotifications: (@Sendable () async -> Void)?
   public var onClear: (@Sendable (PushNotification) async -> Void)?
 
@@ -34,6 +35,19 @@ public final class MockPushNotificationService: PushNotificationService {
     if let callback {
       await callback()
     }
+  }
+
+  /// Internal method for handling notification taps (not part of public protocol)
+  public func handleTapped(notificationId: String) async {
+    if let onHandleTapped {
+      await onHandleTapped(notificationId)
+    }
+    let notification = notifications.value.first(where: { $0.id == notificationId })
+    if let notification, let onTapped = notification.onTapped {
+      await onTapped()
+    }
+    // Remove notification after being tapped
+    notifications.send(notifications.value.filter { $0.id != notificationId })
   }
 
   public func activeNotificationCount() -> ReadonlyCurrentValueSubject<Int> {

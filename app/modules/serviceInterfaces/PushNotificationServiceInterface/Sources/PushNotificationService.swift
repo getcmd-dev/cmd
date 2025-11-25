@@ -31,6 +31,7 @@ public struct PushNotification: Sendable, Identifiable, Equatable {
     title: String,
     body: String,
     actions: [PushNotificationAction] = [],
+    onTapped: (@Sendable () async -> Void)? = nil,
     onDismissed: (@Sendable () async -> Void)? = nil,
     onNotShown: (@Sendable () async -> Void)? = nil)
   {
@@ -38,6 +39,7 @@ public struct PushNotification: Sendable, Identifiable, Equatable {
     self.title = title
     self.body = body
     self.actions = actions
+    self.onTapped = onTapped
     self.onDismissed = onDismissed
     self.onNotShown = onNotShown
   }
@@ -46,6 +48,7 @@ public struct PushNotification: Sendable, Identifiable, Equatable {
   public let title: String
   public let body: String
   public let actions: [PushNotificationAction]
+  public let onTapped: (@Sendable () async -> Void)?
   public let onDismissed: (@Sendable () async -> Void)?
   public let onNotShown: (@Sendable () async -> Void)?
 
