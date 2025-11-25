@@ -27,8 +27,8 @@ final class WindowsViewModel {
     appEventHandlerRegistry.registerHandler { [weak self] event in
       await self?.handle(appEvent: event) ?? false
     }
-    permissionsService.status(for: .accessibility).sink { [weak self] isGranted in
-      self?.handle(.accessibilityPermissionChanged(isGranted: isGranted))
+    permissionsService.status(for: .accessibility).sink { [weak self] status in
+      self?.handle(.accessibilityPermissionChanged(isGranted: status.isGranted))
     }.store(in: &cancellables)
   }
 

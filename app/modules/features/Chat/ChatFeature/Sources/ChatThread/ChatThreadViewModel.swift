@@ -18,6 +18,8 @@ import LLMServiceInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
+import PermissionsServiceInterface
+import PushNotificationServiceInterface
 import SettingsServiceInterface
 import SettingsServiceToolsAdapter
 import SharedValuesFoundation
@@ -57,19 +59,25 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   {
     @Dependency(\.toolsPlugin) var toolsPlugin
     @Dependency(\.settingsService) var settingsService
+    @Dependency(\.appsActivationState) var appsActivationState
     @Dependency(\.llmService) var llmService
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.fileManager) var fileManager
     @Dependency(\.checkpointService) var checkpointService
     @Dependency(\.chatService) var chatService
+    @Dependency(\.pushNotificationService) var pushNotificationService
+    @Dependency(\.permissionsService) var permissionsService
 
     self.toolsPlugin = toolsPlugin
     self.settingsService = settingsService
+    self.appsActivationState = appsActivationState
     self.llmService = llmService
     self.xcodeObserver = xcodeObserver
     self.fileManager = fileManager
     self.checkpointService = checkpointService
     self.chatService = chatService
+    self.pushNotificationService = pushNotificationService
+    self.permissionsService = permissionsService
     self.id = id
     self.name = name
     self.messages = messages
@@ -469,6 +477,8 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   private let chatHistoryService: ChatHistoryService
   private let chatService: ChatService
+  private let pushNotificationService: PushNotificationService
+  private let permissionsService: PermissionsService
 
   // MARK: - Change Tracking
 
@@ -480,6 +490,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
   private let toolsPlugin: ToolsPlugin
   private let settingsService: SettingsService
+  private let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
   private let llmService: LLMService
 
   private let xcodeObserver: XcodeObserver
@@ -499,9 +510,14 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       let isStreaming = streamingTask != nil
       isStreamingResponse = isStreaming
 
-      // When streaming completes and tab is not focused, set the badge
+      // When streaming completes and tab is not focused, set the badge and send notification
       if wasStreaming, !isStreaming, !isFocused {
-        hasUnreadCompletion = true
+        if !isFocused {
+          hasUnreadCompletion = true
+        }
+        if !appsActivationState.currentValue.isEitherXcodeOrHostAppActive {
+          sendStreamingCompletionNotification()
+        }
       }
     }
   }
@@ -727,6 +743,44 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       return projectInfo
     }
     return nil
+  }
+
+  // MARK: - Push Notifications
+
+  private func sendStreamingCompletionNotification() {
+    Task {
+      // Check if we have permission
+      guard permissionsService.status(for: .pushNotification).currentValue != .grantedDisabled
+      else {
+        return
+      }
+
+      // Get the last assistant message
+      let lastMessage = messages.last(where: { $0.role == .assistant })
+
+      // Extract text from the content
+      var preview = "Response complete"
+      if let content = lastMessage?.content.first {
+        switch content {
+        case .text(let textContent):
+          preview = String(textContent.text.prefix(100))
+        case .reasoning(let reasoningContent):
+          preview = String(reasoningContent.text.prefix(100))
+        default:
+          preview = "Response complete"
+        }
+      }
+
+      let notification = PushNotification(
+        title: name ?? "Chat",
+        body: preview)
+
+      do {
+        try await pushNotificationService.send(notification)
+      } catch {
+        defaultLogger.error("Failed to send push notification", error)
+      }
+    }
   }
 
 }

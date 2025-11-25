@@ -40,8 +40,8 @@ final class OnboardingViewModel {
     @Dependency(\.permissionsService) var permissionsService
     self.permissionsService = permissionsService
 
-    isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).currentValue == true
-    isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).currentValue == true
+    isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).currentValue.isGranted
+    isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).currentValue.isGranted
     canSkipProviderSetup = !llmService.activeModels.currentValue.isEmpty
 
     currentStep = .welcome
@@ -50,8 +50,8 @@ final class OnboardingViewModel {
     permissionsService.status(for: .accessibility).sink { @Sendable [weak self] status in
       Task { @MainActor in
         guard let self else { return }
-        self.isAccessibilityPermissionGranted = status == true
-        if status == true, self.currentStep == .accessibilityPermission {
+        self.isAccessibilityPermissionGranted = status.isGranted
+        if status.isGranted, self.currentStep == .accessibilityPermission {
           defaultLogger.record(
             event: "accessibility_permission_granted",
             metadata: [
@@ -66,8 +66,8 @@ final class OnboardingViewModel {
     permissionsService.status(for: .xcodeExtension).sink { @Sendable [weak self] status in
       Task { @MainActor in
         guard let self else { return }
-        self.isXcodeExtensionPermissionGranted = status == true
-        if status == true, self.currentStep == .xcodeExtensionPermission {
+        self.isXcodeExtensionPermissionGranted = status.isGranted
+        if status.isGranted, self.currentStep == .xcodeExtensionPermission {
           defaultLogger.record(
             event: "xcode_extension_permission_granted",
             metadata: [
@@ -155,10 +155,10 @@ final class OnboardingViewModel {
     if !hasSkippedWelcomeScreen {
       return .welcome
     }
-    if permissionsService.status(for: .accessibility).currentValue == false {
+    if !permissionsService.status(for: .accessibility).currentValue.isGranted {
       return .accessibilityPermission
     }
-    if permissionsService.status(for: .xcodeExtension).currentValue == false, !skipXcodeExtension {
+    if !permissionsService.status(for: .xcodeExtension).currentValue.isGranted, !skipXcodeExtension {
       return .xcodeExtensionPermission
     }
     if !hasSkippedProviderSetup {

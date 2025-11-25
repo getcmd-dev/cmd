@@ -4,6 +4,7 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "ShellServiceInterface",

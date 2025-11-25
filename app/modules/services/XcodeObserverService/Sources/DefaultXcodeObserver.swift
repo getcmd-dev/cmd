@@ -93,17 +93,17 @@ final class DefaultXcodeObserver: XcodeObserver {
   }
 
   @MainActor
-  private func update(with isAccessibilityPermissionGranted: Bool?) {
-    if isAccessibilityPermissionGranted == nil, internalState.value != .unknown {
+  private func update(with permissionStatus: PermissionStatus) {
+    if permissionStatus == .unknown, internalState.value != .unknown {
       stopObservations()
       internalState.send(.unknown)
       return
-    } else if isAccessibilityPermissionGranted == false, internalState.value != .missingAXPermission {
+    } else if !permissionStatus.isGranted, internalState.value != .missingAXPermission {
       stopObservations()
       internalState.send(.missingAXPermission)
       return
     } else if
-      isAccessibilityPermissionGranted == true, internalState.value == .missingAXPermission || internalState
+      permissionStatus.isGranted, internalState.value == .missingAXPermission || internalState
         .value == .unknown
     {
       startObservations { state in
