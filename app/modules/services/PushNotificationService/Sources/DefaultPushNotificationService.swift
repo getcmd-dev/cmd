@@ -39,23 +39,29 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
     content.body = notification.body
     content.sound = .none
 
-    // Add actions if provided
-    if !notification.actions.isEmpty {
-      let notificationActions = notification.actions.map { action in
-        UNNotificationAction(
-          identifier: action.identifier,
-          title: action.title,
-          options: [])
+    // Set up category (even if no actions, to keep notification persistent)
+    let notificationActions: [UNNotificationAction] =
+      if !notification.actions.isEmpty {
+        notification.actions.map { action in
+          UNNotificationAction(
+            identifier: action.identifier,
+            title: action.title,
+            options: [])
+        }
+      } else {
+        []
       }
-      let category = UNNotificationCategory(
-        identifier: "CMD_NOTIFICATION_CATEGORY",
-        actions: notificationActions,
-        intentIdentifiers: [],
-        options: [])
-      notificationCenter.setNotificationCategories([category])
-      content.categoryIdentifier = "CMD_NOTIFICATION_CATEGORY"
 
-      // Store action callbacks mapped to notification ID
+    let category = UNNotificationCategory(
+      identifier: "CMD_NOTIFICATION_CATEGORY",
+      actions: notificationActions,
+      intentIdentifiers: [],
+      options: [])
+    notificationCenter.setNotificationCategories([category])
+    content.categoryIdentifier = "CMD_NOTIFICATION_CATEGORY"
+
+    // Store action callbacks mapped to notification ID
+    if !notification.actions.isEmpty {
       inLock { state in
         for action in notification.actions {
           state.actionCallbacks[action.identifier] = action.callback
@@ -158,9 +164,7 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void)
   {
     let notificationId = notification.request.identifier
-
-    // Still show the notification even when app is active
-    completionHandler([.banner, .sound])
+    completionHandler([.banner, .list])
 
     // Call the onNotShown callback asynchronously
     Task {

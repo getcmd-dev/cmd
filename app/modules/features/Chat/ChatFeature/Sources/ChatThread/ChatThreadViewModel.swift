@@ -516,7 +516,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       isStreamingResponse = isStreaming
 
       // When streaming completes and tab is not focused, set the badge and send notification
-      if wasStreaming, !isStreaming, !isFocused {
+      if wasStreaming, !isStreaming {
         if !isFocused {
           hasUnreadCompletion = true
         }
