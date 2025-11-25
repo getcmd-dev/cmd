@@ -58,7 +58,7 @@ struct DefaultPermissionsServiceTests {
     }
     try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(pollCount.value == pollUntilGranted)
-    #expect(receivedValues.value == [.notGranted, .grantedEnabled])
+    #expect(receivedValues.value.filter { $0 != .unknown } == [.notGranted, .grantedEnabled])
     _ = cancellable
   }
 

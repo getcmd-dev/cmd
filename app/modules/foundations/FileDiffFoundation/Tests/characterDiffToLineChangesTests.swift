@@ -369,8 +369,6 @@ struct CharacterDiffToLineChangesTests {
       oldContent: oldContent,
       newContent: newContent)
 
-    print("?")
-
     #expect(firstDiffLine == 1)
     #expect(lineChanges.count == 1)
   }
