@@ -15,13 +15,13 @@ func createMockPermissionService() -> MockPermissionsService {
   service.onRequestAccessibilityPermission = {
     Task {
       try await Task.sleep(nanoseconds: 1_000_000_000) // Simulate a delay
-      await service.set(permission: .accessibility, granted: true)
+      await service.set(permission: .accessibility, status: .grantedEnabled)
     }
   }
   service.onRequestXcodeExtensionPermission = {
     Task {
       try await Task.sleep(nanoseconds: 1_000_000_000) // Simulate a delay
-      await service.set(permission: .xcodeExtension, granted: true)
+      await service.set(permission: .xcodeExtension, status: .grantedEnabled)
     }
   }
   return service

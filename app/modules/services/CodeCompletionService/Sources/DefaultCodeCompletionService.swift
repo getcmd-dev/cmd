@@ -316,7 +316,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   nonisolated private let filesPerWorkspace = Atomic([WorkspaceIndex: Set<URL>]())
   private var openFiles = [WorkspaceIndex: [URL: FileState]]()
 
-  private func handle(xcodeExtensionPermissionIsGranted _: Bool?) {
+  private func handle(xcodeExtensionPermissionIsGranted _: PermissionStatus) {
     updateIsAvailable()
   }
 
@@ -329,10 +329,10 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       #if DEBUG
       // Debug builds don't work well with Xcode extension.
       // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
-      permissionsService.status(for: .xcodeExtension).currentValue == true ||
+      permissionsService.status(for: .xcodeExtension).currentValue.isGranted ||
         settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
       #else
-      permissionsService.status(for: .xcodeExtension).currentValue == true
+      permissionsService.status(for: .xcodeExtension).currentValue.isGranted
       #endif
     }()
     let isEnabledInSettings = settingsService.value(for: \.enableCodeCompletion)

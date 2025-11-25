@@ -1,19 +1,15 @@
 Target.module(
-  name: "PermissionsService",
+  name: "PushNotificationService",
   dependencies: [
-    "AppFoundation",
-    "ConcurrencyFoundation",
     "DependencyFoundation",
-    "FoundationInterfaces",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
-    "ShellServiceInterface",
+    "PushNotificationServiceInterface",
     "ThreadSafe",
   ],
   testsDependencies: [
-    "ConcurrencyFoundation",
-    "PermissionsService",
     "PermissionsServiceInterface",
-    "ShellServiceInterface",
+    "PushNotificationService",
+    "PushNotificationServiceInterface",
     "SwiftTesting",
   ])

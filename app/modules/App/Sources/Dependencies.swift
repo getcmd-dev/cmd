@@ -38,6 +38,8 @@ import MCPService
 import MCPServiceInterface
 import PermissionsService
 import PermissionsServiceInterface
+import PushNotificationService
+import PushNotificationServiceInterface
 import SettingsService
 import SettingsServiceInterface
 import ShellService
@@ -158,16 +160,22 @@ extension MCPServiceDependencyKey: DependencyKey {
   public static var liveValue: MCPService { AppScope.shared.mcpService }
 }
 
-// MARK: - PermissionsServiceDependencyKey + DependencyKey
-
-extension PermissionsServiceDependencyKey: DependencyKey {
-  public static var liveValue: PermissionsService { AppScope.shared.permissionsService }
-}
-
 // MARK: - LocalServerDependencyKey + DependencyKey
 
 extension LocalServerDependencyKey: DependencyKey {
   public static var liveValue: LocalServer { AppScope.shared.localServer }
+}
+
+// MARK: - PushNotificationServiceDependencyKey + DependencyKey
+
+extension PushNotificationServiceDependencyKey: DependencyKey {
+  public static var liveValue: PushNotificationService { AppScope.shared.pushNotificationService }
+}
+
+// MARK: - PermissionsServiceDependencyKey + DependencyKey
+
+extension PermissionsServiceDependencyKey: DependencyKey {
+  public static var liveValue: PermissionsService { AppScope.shared.permissionsService }
 }
 
 // MARK: - SettingsServiceDependencyKey + DependencyKey
@@ -291,6 +299,10 @@ extension AppScope: LLMServiceProviding { }
 // MARK: - AppScope + PermissionsServiceProviding
 
 extension AppScope: PermissionsServiceProviding { }
+
+// MARK: - AppScope + PushNotificationServiceProviding
+
+extension AppScope: PushNotificationServiceProviding { }
 
 // MARK: - AppScope + LocalServerProviding
 

@@ -100,8 +100,8 @@ struct WindowsViewModelTests {
     #expect(viewModel.state.isSidePanelVisible == false)
   }
 
-  @Test("accessibilityPermissionChanged with nil value ignores change")
-  func test_handleAction_accessibilityPermissionChanged_nilValue() {
+  @Test("accessibilityPermissionChanged with unknown value ignores change")
+  func test_handleAction_accessibilityPermissionChanged_unknownValue() {
     let mockAppEventRegistry = MockAppEventHandlerRegistry()
     let mockPermissionsService = MockPermissionsService()
     let mockUserDefaults = MockUserDefaults()
@@ -116,15 +116,15 @@ struct WindowsViewModelTests {
 
     let initialState = viewModel.state
 
-    viewModel.handle(.accessibilityPermissionChanged(isGranted: nil))
+    viewModel.handle(.accessibilityPermissionChanged(status: .unknown))
 
     // State should remain unchanged
     #expect(viewModel.state.isSidePanelVisible == initialState.isSidePanelVisible)
     #expect(viewModel.state.isOnboardingVisible == initialState.isOnboardingVisible)
   }
 
-  @Test("accessibilityPermissionChanged with false shows onboarding")
-  func test_handleAction_accessibilityPermissionChanged_false() {
+  @Test("accessibilityPermissionChanged with notGranted shows onboarding")
+  func test_handleAction_accessibilityPermissionChanged_notGranted() {
     let mockAppEventRegistry = MockAppEventHandlerRegistry()
     let mockPermissionsService = MockPermissionsService()
     let mockUserDefaults = MockUserDefaults()
@@ -140,13 +140,13 @@ struct WindowsViewModelTests {
       WindowsViewModel()
     }
 
-    viewModel.handle(.accessibilityPermissionChanged(isGranted: false))
+    viewModel.handle(.accessibilityPermissionChanged(status: .notGranted))
 
     #expect(viewModel.state.isOnboardingVisible == true)
   }
 
-  @Test("accessibilityPermissionChanged with true hides onboarding when completed")
-  func test_handleAction_accessibilityPermissionChanged_true() {
+  @Test("accessibilityPermissionChanged with grantedEnabled hides onboarding when completed")
+  func test_handleAction_accessibilityPermissionChanged_grantedEnabled() {
     let mockAppEventRegistry = MockAppEventHandlerRegistry()
     let mockPermissionsService = MockPermissionsService()
     let mockUserDefaults = MockUserDefaults()
@@ -162,7 +162,7 @@ struct WindowsViewModelTests {
       WindowsViewModel()
     }
 
-    viewModel.handle(.accessibilityPermissionChanged(isGranted: true))
+    viewModel.handle(.accessibilityPermissionChanged(status: .grantedEnabled))
 
     #expect(viewModel.state.isOnboardingVisible == false)
   }
@@ -226,7 +226,7 @@ struct WindowsViewModelTests {
     }
 
     // Trigger accessibility permission change
-    viewModel.handle(.accessibilityPermissionChanged(isGranted: false))
+    viewModel.handle(.accessibilityPermissionChanged(status: .notGranted))
 
     #expect(viewModel.state.isOnboardingVisible == true)
   }
@@ -248,8 +248,8 @@ struct WindowsViewModelTests {
       WindowsViewModel()
     }
 
-    // Trigger accessibility permission change to true
-    viewModel.handle(.accessibilityPermissionChanged(isGranted: true))
+    // Trigger accessibility permission change to grantedEnabled
+    viewModel.handle(.accessibilityPermissionChanged(status: .grantedEnabled))
 
     #expect(viewModel.state.isOnboardingVisible == false)
   }

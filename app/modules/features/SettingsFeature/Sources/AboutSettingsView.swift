@@ -3,6 +3,7 @@
 
 import AppFoundation
 import AppUpdateServiceInterface
+import ConcurrencyFoundation
 import Dependencies
 import DLS
 import PermissionsServiceInterface
@@ -17,6 +18,10 @@ struct AboutSettingsView: View {
   @Binding var fileEditMode: FileEditMode
   @Binding var launchHostAppWhenXcodeDidActivate: Bool
   @Binding var queueMessagesWhileStreaming: Bool
+  @Binding var enablePushNotifications: Bool
+  @Bindable var accessibilityPermission: ObservableValue<PermissionStatus>
+  @Bindable var xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  @Bindable var pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var body: some View {
     ScrollView {
@@ -59,9 +64,29 @@ struct AboutSettingsView: View {
             InfoRow(label: "Build", value: Bundle.main.version)
             InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
             Divider()
-            PermissionStatusRow(permission: .accessibility, permissionsService: permissionsService)
+            PermissionStatusRow(
+              permission: .accessibility,
+              permissionsService: permissionsService,
+              status: accessibilityPermission)
             Divider()
-            PermissionStatusRow(permission: .xcodeExtension, permissionsService: permissionsService)
+            PermissionStatusRow(
+              permission: .xcodeExtension,
+              permissionsService: permissionsService,
+              status: xcodeExtensionPermission)
+            Divider()
+            PermissionStatusRow(
+              permission: .pushNotification,
+              permissionsService: permissionsService,
+              status: pushNotificationsPermission)
+            if pushNotificationsPermission.isGranted {
+              HStack {
+                Text("Enable")
+                  .foregroundColor(.secondary)
+                Spacer()
+                Toggle("", isOn: $enablePushNotifications)
+                  .toggleStyle(.switch)
+              }
+            }
           }
           .padding(16)
           .background(Color(NSColor.controlBackgroundColor))
@@ -334,25 +359,20 @@ private struct ManualUpdateStatus: Equatable {
 private struct PermissionStatusRow: View {
   let permission: Permission
   let permissionsService: PermissionsService
+  @Bindable var status: ObservableValue<PermissionStatus>
 
   var body: some View {
     HStack {
-      Text(permissionLabel)
-        .foregroundColor(.secondary)
+      PlainLink(permissionLabel, action: {
+        permissionsService.request(permission: permission)
+      })
+      .foregroundColor(.secondary)
       Spacer()
       Text(statusText)
         .fontWeight(.medium)
         .foregroundColor(statusColor)
     }
-    .onAppear {
-      status = permissionsService.status(for: permission).currentValue
-    }
-    .onReceive(permissionsService.status(for: permission)) { newStatus in
-      status = newStatus
-    }
   }
-
-  @State private var status: Bool?
 
   private var permissionLabel: String {
     switch permission {
@@ -360,28 +380,16 @@ private struct PermissionStatusRow: View {
       "Accessibility Permission"
     case .xcodeExtension:
       "Xcode Extension Permission"
+    case .pushNotification:
+      "Push Notification Permission"
     }
   }
 
   private var statusText: String {
-    switch status {
-    case .some(true):
-      "Granted"
-    case .some(false):
-      "Denied"
-    case .none:
-      "Unknown"
-    }
+    status.isGranted ? "Granted" : "Not granted"
   }
 
   private var statusColor: Color {
-    switch status {
-    case .some(true):
-      .green
-    case .some(false):
-      .red
-    case .none:
-      .secondary
-    }
+    status.isGranted ? .green : .red
   }
 }

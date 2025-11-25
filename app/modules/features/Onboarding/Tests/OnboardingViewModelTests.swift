@@ -85,14 +85,14 @@ struct OnboardingViewModelTests {
     #expect(viewModel.currentStep == .accessibilityPermission)
 
     // Grant accessibility permission
-    mockPermissionsService.set(permission: .accessibility, granted: true)
+    mockPermissionsService.set(permission: .accessibility, status: .grantedEnabled)
 
     // Wait for the step change
     try await viewModel.wait(for: \.currentStep, toBe: .xcodeExtensionPermission)
     #expect(viewModel.currentStep == .xcodeExtensionPermission)
 
     // Grant Xcode extension permission
-    mockPermissionsService.set(permission: .xcodeExtension, granted: true)
+    mockPermissionsService.set(permission: .xcodeExtension, status: .grantedEnabled)
 
     // Wait for the step change
     try await viewModel.wait(for: \.currentStep, toBe: .providersSetup)
@@ -189,7 +189,7 @@ struct OnboardingViewModelTests {
     #expect(viewModel.isAccessibilityPermissionGranted == false)
 
     // Grant accessibility permission
-    mockPermissionsService.set(permission: .accessibility, granted: true)
+    mockPermissionsService.set(permission: .accessibility, status: .grantedEnabled)
     // Wait for async update
     try await viewModel.wait(for: \.isAccessibilityPermissionGranted, toBe: true)
 
@@ -213,7 +213,7 @@ struct OnboardingViewModelTests {
     #expect(viewModel.isXcodeExtensionPermissionGranted == false)
 
     // Grant xcode extension permission
-    mockPermissionsService.set(permission: .xcodeExtension, granted: true)
+    mockPermissionsService.set(permission: .xcodeExtension, status: .grantedEnabled)
     // Wait for async update
     try await viewModel.wait(for: \.isXcodeExtensionPermissionGranted, toBe: true)
 

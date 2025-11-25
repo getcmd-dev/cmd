@@ -11,8 +11,8 @@ struct MockPermissionsServiceTests {
   @Test
   func test_usesInitialValues() async throws {
     let sut = MockPermissionsService(grantedPermissions: [.accessibility])
-    #expect(sut.status(for: .accessibility).currentValue == true)
-    #expect(sut.status(for: .xcodeExtension).currentValue == false)
+    #expect(sut.status(for: .accessibility).currentValue == .grantedEnabled)
+    #expect(sut.status(for: .xcodeExtension).currentValue == .notGranted)
   }
 
   @Test
@@ -21,13 +21,13 @@ struct MockPermissionsServiceTests {
 
     let exp = expectation(description: "Xcode extension permission granted")
     let cancellable = sut.status(for: .xcodeExtension).sink { status in
-      if status == true {
+      if status.isGranted {
         exp.fulfill()
       }
     }
     #expect(exp.isFulfilled == false)
     Task { @MainActor in
-      sut.set(permission: .xcodeExtension, granted: true)
+      sut.set(permission: .xcodeExtension, status: .grantedEnabled)
     }
     try await fulfillment(of: exp)
 

@@ -353,6 +353,9 @@ public class ChatViewModel {
       } else if event is NewChatEvent {
         await addTab(copyingCurrentInput: true)
         return true
+      } else if let event = event as? SwitchToChatThreadEvent {
+        await selectChatThread(id: event.threadId)
+        return true
       } else {
         return false
       }

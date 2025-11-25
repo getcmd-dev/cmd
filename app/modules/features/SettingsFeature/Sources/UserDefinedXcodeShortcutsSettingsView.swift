@@ -145,8 +145,8 @@ struct UserDefinedXcodeShortcutsSettingsView: View {
 
       Spacer()
     }
-    .onReceive(permissionsService.status(for: .xcodeExtension)) { isGranted in
-      isXcodeExtensionPermissionGranted = isGranted == true
+    .onReceive(permissionsService.status(for: .xcodeExtension)) { status in
+      isXcodeExtensionPermissionGranted = status.isGranted
     }
   }
 

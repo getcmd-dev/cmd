@@ -99,7 +99,11 @@ public struct SettingsView: View {
           automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
           fileEditMode: $viewModel.fileEditMode,
           launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate,
-          queueMessagesWhileStreaming: $viewModel.queueMessagesWhileStreaming)
+          queueMessagesWhileStreaming: $viewModel.queueMessagesWhileStreaming,
+          enablePushNotifications: $viewModel.enablePushNotifications,
+          accessibilityPermission: viewModel.accessibilityPermission,
+          xcodeExtensionPermission: viewModel.xcodeExtensionPermission,
+          pushNotificationsPermission: viewModel.pushNotificationsPermission)
       }
     }
     .padding(.horizontal, Constants.horizontalPadding)

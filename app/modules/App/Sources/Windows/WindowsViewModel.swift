@@ -27,8 +27,8 @@ final class WindowsViewModel {
     appEventHandlerRegistry.registerHandler { [weak self] event in
       await self?.handle(appEvent: event) ?? false
     }
-    permissionsService.status(for: .accessibility).sink { [weak self] isGranted in
-      self?.handle(.accessibilityPermissionChanged(isGranted: isGranted))
+    permissionsService.status(for: .accessibility).sink { [weak self] status in
+      self?.handle(.accessibilityPermissionChanged(status: status))
     }.store(in: &cancellables)
   }
 
@@ -58,7 +58,7 @@ final class WindowsViewModel {
     case showSettings
     case didShowSettings
     case closeSidePanel
-    case accessibilityPermissionChanged(isGranted: Bool?)
+    case accessibilityPermissionChanged(status: PermissionStatus)
   }
 
   private(set) var state: State
@@ -94,10 +94,10 @@ final class WindowsViewModel {
     case .closeSidePanel:
       state = state.with(isSidePanelVisible: false)
 
-    case .accessibilityPermissionChanged(let isGranted):
-      guard let isGranted else { return }
+    case .accessibilityPermissionChanged(let status):
+      guard status != .unknown else { return }
 
-      isAccessibilityPermissionGranted = isGranted
+      isAccessibilityPermissionGranted = status.isGranted
       state = state.with(isOnboardingVisible: isOnboardingVisible)
 
     case .onboardingDidComplete:

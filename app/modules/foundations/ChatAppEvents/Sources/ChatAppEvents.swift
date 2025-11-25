@@ -3,6 +3,7 @@
 
 import AppEventServiceInterface
 import ChatFoundation
+import Foundation
 
 // MARK: - AddCodeToChatEvent
 
@@ -42,4 +43,14 @@ public struct HideChatEvent: AppEvent {
 
 public struct SuggestCodeCompletionEvent: AppEvent {
   public init() { }
+}
+
+// MARK: - SwitchToChatThreadEvent
+
+public struct SwitchToChatThreadEvent: AppEvent {
+  public init(threadId: UUID) {
+    self.threadId = threadId
+  }
+
+  public let threadId: UUID
 }

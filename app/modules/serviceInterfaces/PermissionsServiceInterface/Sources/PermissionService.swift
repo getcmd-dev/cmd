@@ -9,6 +9,7 @@ import ConcurrencyFoundation
 public enum Permission {
   case accessibility
   case xcodeExtension
+  case pushNotification
 }
 
 // MARK: - PermissionsService
@@ -18,11 +19,32 @@ public protocol PermissionsService: Sendable {
   func request(permission: Permission)
 
   /// Check if the permission is granted. The publisher will be updated as the permissions status changes.
-  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?>
+  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<PermissionStatus>
+
+  func enablePushNotifications()
+
+  func disablePushNotifications()
 }
 
 // MARK: - PermissionsServiceProviding
 
 public protocol PermissionsServiceProviding {
   var permissionsService: PermissionsService { get }
+}
+
+// MARK: - PermissionStatus
+
+public enum PermissionStatus: Sendable, Equatable {
+  case unknown
+  /// The permission has not been granted at the OS level.
+  case notGranted
+  /// The permission has been granted at the OS level, and is enabled at the app level.
+  case grantedEnabled
+  /// The permission has been granted at the OS level, but is disabled at the app level.
+  case grantedDisabled
+
+  /// Whether the permission has been granted at the OS level.
+  public var isGranted: Bool {
+    self == .grantedEnabled || self == .grantedDisabled
+  }
 }

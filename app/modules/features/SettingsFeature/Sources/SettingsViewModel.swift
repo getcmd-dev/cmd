@@ -2,11 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
 import LoggingServiceInterface
+import PermissionsServiceInterface
 import SettingsServiceInterface
 import SharedUtilsFoundation
 import SharedValuesFoundation
@@ -30,6 +32,8 @@ public final class SettingsViewModel {
     self.toolsPlugin = toolsPlugin
     @Dependency(\.xcodeController) var xcodeController
     self.xcodeController = xcodeController
+    @Dependency(\.permissionsService) var permissionService
+    self.permissionService = permissionService
 
     let settings = settingsService.values()
     self.settings = settings
@@ -45,6 +49,9 @@ public final class SettingsViewModel {
     launchHostAppWhenXcodeDidActivate = userDefaults.object(forKey: .launchHostAppWhenXcodeDidActivate) == nil
       ? true
       : userDefaults.bool(forKey: .launchHostAppWhenXcodeDidActivate)
+    accessibilityPermission = permissionService.status(for: .accessibility).asObservableValue()
+    xcodeExtensionPermission = permissionService.status(for: .xcodeExtension).asObservableValue()
+    pushNotificationsPermission = permissionService.status(for: .pushNotification).asObservableValue()
 
     if
       let storedLevel = userDefaults.string(forKey: .defaultLogLevel),
@@ -83,6 +90,10 @@ public final class SettingsViewModel {
   private(set) var settings: SettingsServiceInterface.Settings
 
   let toolsPlugin: ToolsPlugin
+
+  let accessibilityPermission: ObservableValue<PermissionStatus>
+  let xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  let pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var allowAnonymousAnalytics: Bool {
     get {
@@ -238,6 +249,19 @@ public final class SettingsViewModel {
     }
   }
 
+  var enablePushNotifications: Bool {
+    get {
+      permissionService.status(for: .pushNotification).currentValue == .grantedEnabled
+    }
+    set {
+      if newValue {
+        permissionService.enablePushNotifications()
+      } else {
+        permissionService.disablePushNotifications()
+      }
+    }
+  }
+
   var chatModeConfigurations: [String: SettingsServiceInterface.Settings.ChatModeConfiguration] {
     get {
       settings.chatModeConfigurations
@@ -294,4 +318,5 @@ public final class SettingsViewModel {
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
   private let xcodeController: XcodeController
+  private let permissionService: PermissionsService
 }
