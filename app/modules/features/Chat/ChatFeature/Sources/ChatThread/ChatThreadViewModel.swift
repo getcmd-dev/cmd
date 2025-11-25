@@ -754,7 +754,8 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   private func sendStreamingCompletionNotification() {
     Task {
-      // Check if we have permission
+      // Check if we have disabled permission in the app.
+      // If the permission is not granted, this will ask for permission.
       guard permissionsService.status(for: .pushNotification).currentValue != .grantedDisabled
       else {
         return

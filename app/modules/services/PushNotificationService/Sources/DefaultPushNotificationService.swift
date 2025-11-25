@@ -61,12 +61,13 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
     content.categoryIdentifier = "CMD_NOTIFICATION_CATEGORY"
 
     // Store action callbacks mapped to notification ID
-    if !notification.actions.isEmpty {
-      inLock { state in
+
+    inLock { state in
+      state.notificationIdMapping[notification.id] = notification
+      if !notification.actions.isEmpty {
         for action in notification.actions {
           state.actionCallbacks[action.identifier] = action.callback
         }
-        state.notificationIdMapping[notification.id] = notification
       }
     }
 
@@ -76,22 +77,21 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
       content: content,
       trigger: nil) // nil trigger means show immediately
 
-    // Send notification
-    try await notificationCenter.add(request)
+    do {
+      // Send notification
+      try await notificationCenter.add(request)
 
-    // Update the notifications subject
-    inLock { state in
-      state.notificationIdMapping[notification.id] = notification
+      // Update the notifications subject
+      _notifications.send(_notifications.value + [notification])
+    } catch {
+      clear(notification: notification)
+      throw error
     }
-    _notifications.send(_notifications.value + [notification])
   }
 
   /// Internal method for handling action callbacks (not part of public protocol)
   func handleActionCallback(actionIdentifier: String) async {
-    let callback = inLock { state in
-      state.actionCallbacks[actionIdentifier]
-    }
-    if let callback {
+    if let callback = actionCallbacks[actionIdentifier] {
       await callback()
     } else {
       defaultLogger.info("No callback found for action identifier: \(actionIdentifier)")
@@ -115,7 +115,7 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
     _notifications.send([])
   }
 
-  func clear(notification: PushNotification) async {
+  func clear(notification: PushNotification) {
     notificationCenter.removeDeliveredNotifications(withIdentifiers: [notification.id])
     inLock { state in
       state.notificationIdMapping.removeValue(forKey: notification.id)
@@ -129,7 +129,7 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
   // MARK: - UNUserNotificationCenterDelegate
 
-  nonisolated func userNotificationCenter(
+  func userNotificationCenter(
     _: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse,
     withCompletionHandler completionHandler: @escaping () -> Void)
@@ -158,7 +158,7 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
     }
   }
 
-  nonisolated func userNotificationCenter(
+  func userNotificationCenter(
     _: UNUserNotificationCenter,
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void)
@@ -180,8 +180,14 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
   private var notificationIdMapping = [String: PushNotification]()
 
   private func handleDismissed(notificationId: String) async {
-    let notification = inLock { state in
-      state.notificationIdMapping[notificationId]
+    let notification: PushNotification? = inLock { state in
+      if let notification = state.notificationIdMapping.removeValue(forKey: notificationId) {
+        for action in notification.actions {
+          state.actionCallbacks.removeValue(forKey: action.identifier)
+        }
+        return notification
+      }
+      return nil
     }
 
     if let notification, let onDismissed = notification.onDismissed {
@@ -190,21 +196,10 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
     // Remove from active notifications
     _notifications.send(_notifications.value.filter { $0.id != notificationId })
-
-    // Clean up state
-    inLock { state in
-      if let notification = state.notificationIdMapping.removeValue(forKey: notificationId) {
-        for action in notification.actions {
-          state.actionCallbacks.removeValue(forKey: action.identifier)
-        }
-      }
-    }
   }
 
   private func handleNotShown(notificationId: String) async {
-    let notification = inLock { state in
-      state.notificationIdMapping[notificationId]
-    }
+    let notification = notificationIdMapping[notificationId]
 
     if let notification, let onNotShown = notification.onNotShown {
       await onNotShown()
@@ -212,8 +207,14 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
   }
 
   private func handleTapped(notificationId: String) async {
-    let notification = inLock { state in
-      state.notificationIdMapping[notificationId]
+    let notification: PushNotification? = inLock { state in
+      if let notification = state.notificationIdMapping.removeValue(forKey: notificationId) {
+        for action in notification.actions {
+          state.actionCallbacks.removeValue(forKey: action.identifier)
+        }
+        return notification
+      }
+      return nil
     }
 
     if let notification, let onTapped = notification.onTapped {
@@ -222,15 +223,6 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
     // Remove from active notifications after being tapped
     _notifications.send(_notifications.value.filter { $0.id != notificationId })
-
-    // Clean up state
-    inLock { state in
-      if let notification = state.notificationIdMapping.removeValue(forKey: notificationId) {
-        for action in notification.actions {
-          state.actionCallbacks.removeValue(forKey: action.identifier)
-        }
-      }
-    }
   }
 }
 

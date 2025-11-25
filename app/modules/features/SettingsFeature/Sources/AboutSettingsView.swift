@@ -83,16 +83,7 @@ struct AboutSettingsView: View {
                 Text("Enable")
                   .foregroundColor(.secondary)
                 Spacer()
-                Toggle("", isOn: .init(
-                  get: {
-                    pushNotificationsPermission.wrappedValue == .grantedEnabled
-                  }, set: { isOn in
-                    if isOn {
-                      permissionsService.enablePushNotifications()
-                    } else {
-                      permissionsService.disablePushNotifications()
-                    }
-                  }))
+                Toggle("", isOn: $enablePushNotifications)
                   .toggleStyle(.switch)
               }
             }
@@ -382,8 +373,6 @@ private struct PermissionStatusRow: View {
         .foregroundColor(statusColor)
     }
   }
-
-  @State private var isGranted: Bool?
 
   private var permissionLabel: String {
     switch permission {
