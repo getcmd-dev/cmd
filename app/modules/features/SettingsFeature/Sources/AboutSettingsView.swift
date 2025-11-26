@@ -169,7 +169,7 @@ struct AboutSettingsView: View {
 
             VStack(spacing: 12) {
               ForEach(FileEditMode.allCases, id: \.self) { mode in
-                HStack {
+                HStack(alignment: .top, spacing: 12) {
                   VStack(alignment: .leading, spacing: 4) {
                     Text(mode.rawValue)
                       .fontWeight(.medium)
@@ -177,10 +177,11 @@ struct AboutSettingsView: View {
                       .font(.caption)
                       .foregroundColor(.secondary)
                   }
-                  Spacer()
+                  Spacer(minLength: 0)
                   RadioButton(isSelected: fileEditMode == mode) {
                     fileEditMode = mode
                   }
+                  .fixedSize()
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {

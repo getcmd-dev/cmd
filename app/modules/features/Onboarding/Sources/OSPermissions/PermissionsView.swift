@@ -31,11 +31,11 @@ struct PermissionsView: View {
             if viewModel.isXcodeExtensionPermissionGranted || viewModel.hasSkippedXcodeExtension {
               XcodeAIProviderPermissionView(
                 isXcodeAIProviderPermissionGranted: viewModel.isXcodeAIProviderPermissionGranted,
-                hasSkippedXcodeAIProvider: viewModel.hasSkippedXcodeExtension,
+                hasSkippedXcodeAIProvider: viewModel.hasSkippedXcodeAIProviderPermissions,
                 skipXcodeAIProviderPermissions: {
                   viewModel.handleSkipXcodeAIProviderPermissions()
                 },
-                requestXcodeAIIntegrationPermission: viewModel.handleRequestXcodeExtensionPermission)
+                requestXcodeAIIntegrationPermission: viewModel.requestXcodeAIIntegrationPermission)
             }
           }
         }

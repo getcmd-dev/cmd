@@ -8,6 +8,7 @@ import Foundation
 import FoundationInterfaces
 import LLMServiceInterface
 import PermissionsServiceInterface
+import SettingsServiceInterface
 import SwiftTesting
 import Testing
 @testable import Onboarding
@@ -31,23 +32,29 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("moving to next step from welcome updates hasSkippedWelcomeScreen", .dependencies {
-    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  @Test("moving to next step from welcome with all permissions granted", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
   })
   func test_handleMoveToNextStep_fromWelcome() {
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
+    // Move to osPermissions
     viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .osPermissions)
 
+    // Since all permissions are granted, can immediately move to next step
+    #expect(viewModel.canGoToNextStep == true)
+    viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
   }
 
   @MainActor
   @Test("moving to next step from setupComplete calls onDone and sets user defaults", .dependencies {
-    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
     $0.llmService = MockLLMService(activeModels: [.gpt])
+    $0.settingsService = MockSettingsService(Settings(codeCompletionProviderId: "test-provider"))
   })
   func test_handleMoveToNextStep_fromSetupComplete() throws {
     @Dependency(\.userDefaults) var userDefaults
@@ -56,11 +63,17 @@ struct OnboardingViewModelTests {
     var onDoneCalled = false
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
 
-    // Should go directly to providers setup since permissions are granted
-    viewModel.handleMoveToNextStep() // welcome -> providersSetup
+    // welcome -> osPermissions
+    viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .osPermissions)
+    // osPermissions -> providersSetup (since all permissions are granted)
+    viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
-    // Should go directly to setup complete since models are available
-    viewModel.handleMoveToNextStep() // providersSetup -> setupComplete
+    // providersSetup -> autocompletion (since models are available)
+    viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .autocompletion)
+    // autocompletion -> setupComplete (since autocompletion provider is set)
+    viewModel.handleMoveToNextStep()
 
     #expect(viewModel.currentStep == .setupComplete)
     #expect(onDoneCalled == false)
@@ -81,40 +94,54 @@ struct OnboardingViewModelTests {
 
     #expect(viewModel.currentStep == .welcome)
 
-    viewModel.handleMoveToNextStep() // welcome -> accessibility
-    #expect(viewModel.currentStep == .accessibilityPermission)
+    viewModel.handleMoveToNextStep() // welcome -> osPermissions
+    #expect(viewModel.currentStep == .osPermissions)
 
     // Grant accessibility permission
     mockPermissionsService.set(permission: .accessibility, status: .grantedEnabled)
 
-    // Wait for the step change
-    try await viewModel.wait(for: \.currentStep, toBe: .xcodeExtensionPermission)
-    #expect(viewModel.currentStep == .xcodeExtensionPermission)
+    // Wait for accessibility to be granted
+    try await viewModel.wait(for: \.isAccessibilityPermissionGranted, toBe: true)
 
     // Grant Xcode extension permission
     mockPermissionsService.set(permission: .xcodeExtension, status: .grantedEnabled)
 
-    // Wait for the step change
-    try await viewModel.wait(for: \.currentStep, toBe: .providersSetup)
+    // Wait for xcode extension to be granted
+    try await viewModel.wait(for: \.isXcodeExtensionPermissionGranted, toBe: true)
+
+    // Grant Xcode automation permission
+    mockPermissionsService.set(permission: .xcodeAutomation, status: .grantedEnabled)
+
+    // Wait for xcode automation to be granted
+    try await viewModel.wait(for: \.isXcodeAIProviderPermissionGranted, toBe: true)
+
+    // Now move to next step
+    viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
   }
 
   @MainActor
-  @Test("step progression skips permissions when already granted", .dependencies {
-    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  @Test("step progression allows moving through osPermissions when already granted", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
   })
   func test_stepProgression_withGrantedPermissions() {
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
-    viewModel.handleMoveToNextStep() // welcome -> providers (skipping permissions)
+    // welcome -> osPermissions
+    viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .osPermissions)
+
+    // Can immediately move to next since permissions are granted
+    #expect(viewModel.canGoToNextStep == true)
+    viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
   }
 
   @MainActor
   @Test("step progression doesn't skip provider setup when models are available", .dependencies {
-    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
     $0.llmService = MockLLMService(activeModels: [.gpt])
   })
   func test_stepProgression_withAvailableModels() async throws {
@@ -122,8 +149,12 @@ struct OnboardingViewModelTests {
 
     #expect(viewModel.currentStep == .welcome)
 
-    viewModel
-      .handleMoveToNextStep() // welcome -> providersSetup (does not skip providers, even though they are already configured)
+    // welcome -> osPermissions
+    viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .osPermissions)
+
+    // osPermissions -> providersSetup (does not skip providers, even though they are already configured)
+    viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
   }
 
@@ -183,9 +214,9 @@ struct OnboardingViewModelTests {
 
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
-    // Move to accessibility permission step
+    // Move to osPermissions step
     viewModel.handleMoveToNextStep()
-    #expect(viewModel.currentStep == .accessibilityPermission)
+    #expect(viewModel.currentStep == .osPermissions)
     #expect(viewModel.isAccessibilityPermissionGranted == false)
 
     // Grant accessibility permission
@@ -194,7 +225,8 @@ struct OnboardingViewModelTests {
     try await viewModel.wait(for: \.isAccessibilityPermissionGranted, toBe: true)
 
     #expect(viewModel.isAccessibilityPermissionGranted == true)
-    #expect(viewModel.currentStep == .xcodeExtensionPermission)
+    // Step should still be osPermissions until all required permissions are granted
+    #expect(viewModel.currentStep == .osPermissions)
   }
 
   @MainActor
@@ -207,9 +239,9 @@ struct OnboardingViewModelTests {
 
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
-    // Move to xcode extension permission step
+    // Move to osPermissions step (accessibility is already granted in dependencies)
     viewModel.handleMoveToNextStep()
-    #expect(viewModel.currentStep == .xcodeExtensionPermission)
+    #expect(viewModel.currentStep == .osPermissions)
     #expect(viewModel.isXcodeExtensionPermissionGranted == false)
 
     // Grant xcode extension permission
@@ -218,12 +250,13 @@ struct OnboardingViewModelTests {
     try await viewModel.wait(for: \.isXcodeExtensionPermissionGranted, toBe: true)
 
     #expect(viewModel.isXcodeExtensionPermissionGranted == true)
-    #expect(viewModel.currentStep == .providersSetup)
+    // Step should still be osPermissions - need to manually move to next step
+    #expect(viewModel.currentStep == .osPermissions)
   }
 
   @MainActor
   @Test("available models changes trigger step updates", .dependencies {
-    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
   })
   func test_availableModelsChanges() async throws {
     @Dependency(\.llmService) var llmService
@@ -231,7 +264,11 @@ struct OnboardingViewModelTests {
 
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
-    // Move to providers setup step
+    // welcome -> osPermissions
+    viewModel.handleMoveToNextStep()
+    #expect(viewModel.currentStep == .osPermissions)
+
+    // osPermissions -> providersSetup
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
 
@@ -239,27 +276,35 @@ struct OnboardingViewModelTests {
     mockLLMService._activeModels.send([.gpt])
     try await viewModel.wait(for: \.hasSetupAIProvider, toBe: true)
 
+    // Can now move to next step
     viewModel.handleMoveToNextStep()
-    // Wait for async update
-    try await viewModel.wait(for: \.currentStep, toBe: .setupComplete)
-
-    #expect(viewModel.currentStep == .setupComplete)
+    #expect(viewModel.currentStep == .autocompletion)
   }
 
   @MainActor
-  @Test("skipping xcode extension from permission step sets skipXcodeExtension flag", .dependencies {
+  @Test("skipping xcode extension and AI provider permissions allows moving to next step", .dependencies {
     $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility])
   })
   func test_skipXcodeExtensionFromPermissionStep() {
     let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
-    // Move to xcode extension permission step
+    // Move to osPermissions step
     viewModel.handleMoveToNextStep()
-    #expect(viewModel.currentStep == .xcodeExtensionPermission)
+    #expect(viewModel.currentStep == .osPermissions)
 
-    // Skip xcode extension
+    // Can't move to next step yet - missing xcode extension and AI provider permissions
+    #expect(viewModel.canGoToNextStep == false)
+
+    // Skip xcode extension permissions
+    viewModel.handleSkipXcodeExtensionPermissions()
+    #expect(viewModel.canGoToNextStep == false) // Still can't move - need to skip AI provider too
+
+    // Skip AI provider permissions
+    viewModel.handleSkipXcodeAIProviderPermissions()
+    #expect(viewModel.canGoToNextStep == true)
+
+    // Now can move to next step
     viewModel.handleMoveToNextStep()
-
     #expect(viewModel.currentStep == .providersSetup)
   }
 }
@@ -269,5 +314,6 @@ extension DependencyValues {
     userDefaults = MockUserDefaults()
     permissionsService = MockPermissionsService()
     llmService = MockLLMService()
+    settingsService = MockSettingsService()
   }
 }

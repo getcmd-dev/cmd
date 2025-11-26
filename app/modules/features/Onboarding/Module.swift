@@ -19,5 +19,6 @@ Target.module(
     "LLMServiceInterface",
     "Onboarding",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
     "SwiftTesting",
   ])
