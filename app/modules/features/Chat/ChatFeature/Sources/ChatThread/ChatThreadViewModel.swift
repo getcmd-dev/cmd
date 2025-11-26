@@ -170,6 +170,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     hasChangedSinceLastSave = false
   }
 
+  /// Clear the cached project info. This allows to focus on the current workspace on next message send.
+  func clearProjectInfo() {
+    assert(events.isEmpty, "Clearing project info while there are events is not allowed")
+    projectInfo = nil
+  }
+
   @MainActor
   func cancelCurrentMessage(processNextQueuedMessage: Bool = true) {
     streamingTask?.task.cancel()
