@@ -90,6 +90,98 @@ struct ChatViewModelTests {
   }
 
   @MainActor
+  @Test("adding a new tab when empty tab has different workspace updates workspace instead of creating new tab")
+  func addingNewTabWhenEmptyTabHasDifferentWorkspace() async throws {
+    // given
+    let workspace1URL = try #require(URL(string: "file:///test/workspace1.xcodeproj"))
+    let workspace2URL = try #require(URL(string: "file:///test/workspace2.xcodeproj"))
+
+    let xcodeState1 = XcodeState(
+      activeApplicationProcessIdentifier: 123,
+      previousApplicationProcessIdentifier: nil,
+      xcodesState: [
+        XcodeAppState(
+          processIdentifier: 123,
+          isActive: true,
+          workspaces: [XcodeWorkspaceState(
+            axElement: dummyAXElement,
+            url: workspace1URL,
+            editors: [],
+            isFocused: true,
+            document: nil,
+            tabs: [])]),
+      ])
+
+    let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.state(xcodeState1))
+
+    // Create a thread model with projectInfo set for workspace1 but empty (no events)
+    let threadId = UUID()
+    let emptyThreadWithProject = ChatThreadModel(
+      id: threadId,
+      name: "Empty Thread",
+      messages: [],
+      events: [],
+      projectInfo: ChatThreadModel.SelectedProjectInfo(
+        path: workspace1URL,
+        dirPath: workspace1URL.deletingLastPathComponent()),
+      knownFilesContent: [:],
+      input: ChatInputModel(queuedMessages: []),
+      createdAt: Date())
+
+    let sut = withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
+      $0.chatHistoryService = MockChatHistoryService(chatThreads: [emptyThreadWithProject])
+    } operation: {
+      ChatViewModel()
+    }
+
+    // Wait for the persisted thread to load
+    try? await Task.sleep(for: .milliseconds(50))
+
+    // Switch to the loaded thread
+    sut.selectTab(at: 0)
+
+    let originalTab = sut.tab
+
+    // Verify the tab has projectInfo set but is empty
+    #expect(originalTab.projectInfo?.path == workspace1URL)
+    #expect(originalTab.isEmpty)
+    #expect(sut.tabs.count == 1)
+
+    // Simulate workspace change to workspace2
+    let xcodeState2 = XcodeState(
+      activeApplicationProcessIdentifier: 123,
+      previousApplicationProcessIdentifier: nil,
+      xcodesState: [
+        XcodeAppState(
+          processIdentifier: 123,
+          isActive: true,
+          workspaces: [XcodeWorkspaceState(
+            axElement: dummyAXElement,
+            url: workspace2URL,
+            editors: [],
+            isFocused: true,
+            document: nil,
+            tabs: [])]),
+      ])
+    mockXcodeObserver.mutableStatePublisher.send(AXState<XcodeState>.state(xcodeState2))
+
+    // Wait for the state update to propagate
+    try? await Task.sleep(for: .milliseconds(50))
+
+    // when
+    sut.addTab()
+
+    // then
+    // Should NOT create a new tab, but instead clear the projectInfo of the existing empty tab
+    // so it gets updated to the new workspace on next message send
+    #expect(sut.tabs.count == 1)
+    #expect(sut.currentTabIndex == 0)
+    #expect(sut.tab == originalTab)
+    #expect(sut.tab.projectInfo == nil) // projectInfo cleared, will be set to workspace2 on next message
+  }
+
+  @MainActor
   @Test("handling NewChatEvent adds a new tab")
   func handlingNewChatEventAddsNewTab() async {
     // given

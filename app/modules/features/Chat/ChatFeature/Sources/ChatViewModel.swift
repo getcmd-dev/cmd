@@ -144,6 +144,12 @@ public class ChatViewModel {
     // If the current tab is empty and we're creating a new tab (not opening an existing thread),
     // don't create a new tab - just reuse the current empty tab
     if threadId == nil, currentTab.isEmpty {
+      // Check if the workspace has changed
+      if currentTab.projectInfo?.path != focusedWorkspacePath {
+        // Clear the projectInfo so it gets updated to the new workspace on next message send
+        currentTab.clearProjectInfo()
+      }
+
       if copyingCurrentInput {
         // Input is already in the current tab, nothing to do
       }
