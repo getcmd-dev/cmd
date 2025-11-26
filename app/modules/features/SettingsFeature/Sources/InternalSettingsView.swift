@@ -24,6 +24,7 @@ struct InternalSettingsView: View {
   @Binding var enableNetworkProxy: Bool
   @Binding var showToolInputCopyButtonInRelease: Bool
   @Binding var defaultLogLevel: LogLevel
+  @Binding var enableDiskLogging: Bool
 
   var body: some View {
     ScrollView {
@@ -78,6 +79,11 @@ struct InternalSettingsView: View {
             .padding(.top, 14)
             .padding(.bottom, 4)
           }
+
+          InternalSettingsRow(
+            "Enable disk logging",
+            caption: "Write logs to disk. In DEBUG builds, logs are always written to disk regardless of this setting",
+            value: $enableDiskLogging)
 
           #if DEBUG
           InternalSettingsRow(
