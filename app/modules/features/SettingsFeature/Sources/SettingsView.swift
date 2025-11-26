@@ -91,7 +91,8 @@ public struct SettingsView: View {
           enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
-          defaultLogLevel: $viewModel.defaultLogLevel)
+          defaultLogLevel: $viewModel.defaultLogLevel,
+          enableDiskLogging: $viewModel.enableDiskLogging)
 
       case .about:
         AboutSettingsView(

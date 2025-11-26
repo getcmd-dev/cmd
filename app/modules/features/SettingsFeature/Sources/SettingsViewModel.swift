@@ -199,6 +199,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var enableDiskLogging: Bool {
+    get {
+      settings.enableDiskLogging
+    }
+    set {
+      settings.enableDiskLogging = newValue
+      settingsService.update(setting: \.enableDiskLogging, to: newValue)
+    }
+  }
+
   var enableCodeCompletion: Bool {
     get {
       settings.enableCodeCompletion

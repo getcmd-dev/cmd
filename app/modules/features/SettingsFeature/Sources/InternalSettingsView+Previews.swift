@@ -16,7 +16,8 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
-    defaultLogLevel: .constant(.info))
+    defaultLogLevel: .constant(.info),
+    enableDiskLogging: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -31,7 +32,8 @@ import SwiftUI
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
-    defaultLogLevel: .constant(.debug))
+    defaultLogLevel: .constant(.debug),
+    enableDiskLogging: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }
