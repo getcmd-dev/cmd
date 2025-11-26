@@ -21,6 +21,7 @@ struct AboutSettingsView: View {
   @Binding var enablePushNotifications: Bool
   @Bindable var accessibilityPermission: ObservableValue<PermissionStatus>
   @Bindable var xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  @Bindable var xcodeAutomationPermission: ObservableValue<PermissionStatus>
   @Bindable var pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var body: some View {
@@ -73,6 +74,11 @@ struct AboutSettingsView: View {
               permission: .xcodeExtension,
               permissionsService: permissionsService,
               status: xcodeExtensionPermission)
+            Divider()
+            PermissionStatusRow(
+              permission: .xcodeAutomation,
+              permissionsService: permissionsService,
+              status: xcodeAutomationPermission)
             Divider()
             PermissionStatusRow(
               permission: .pushNotification,
@@ -382,6 +388,8 @@ private struct PermissionStatusRow: View {
       "Xcode Extension Permission"
     case .pushNotification:
       "Push Notification Permission"
+    case .xcodeAutomation:
+      "Xcode Preference Management"
     }
   }
 

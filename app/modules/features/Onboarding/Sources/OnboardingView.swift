@@ -22,29 +22,73 @@ struct OnboardingView: View {
   }
 
   var body: some View {
-    ZStack {
-      Rectangle()
-        .foregroundColor(.clear)
-        .background(colorScheme.primaryBackground)
+    VStack {
       Group {
-        WelcomeView(onGetStarted: {
-          viewModel.handleMoveToNextStep()
-        })
-        .readingSize($referenceViewSize)
-        .isHidden(viewModel.currentStep != .welcome)
+        switch viewModel.currentStep {
+        case .welcome:
+          WelcomeView(onGetStarted: {
+            viewModel.handleMoveToNextStep()
+          })
+          .readingSize($referenceViewSize)
 
-        if viewModel.currentStep == .accessibilityPermission || viewModel.currentStep == .xcodeExtensionPermission {
+        case .osPermissions:
           PermissionsView(viewModel: viewModel)
-        } else if viewModel.currentStep == .providersSetup {
+
+        case .providersSetup:
           llmProviderSetupView
-            .isHidden(viewModel.currentStep != .providersSetup)
-        } else if viewModel.currentStep == .setupComplete {
-          OnboardingCompletedView(onDone: viewModel.handleMoveToNextStep)
+
+        case .autocompletion:
+          autocompletionSetupView
+
+        case .setupComplete:
+          OnboardingCompletedView()
         }
       }
-      .frame(height: referenceViewSize.height)
+      .frame(width: referenceViewSize.width, height: referenceViewSize.height, alignment: .top)
       .padding(40)
+
+      HStack {
+        if viewModel.currentStep != .welcome {
+          HoveredButton(
+            action: {
+              viewModel.handleMoveToPreviousStep()
+            },
+            padding: 8,
+            cornerRadius: 4)
+          {
+            Text("Back")
+              .foregroundColor(colorScheme.secondaryForeground)
+          }
+        }
+        Spacer(minLength: 0)
+        HoveredButton(
+          action: {
+            viewModel.handleMoveToNextStep()
+          },
+          onHoverColor: nextButtonHoverColor,
+          backgroundColor: nextButtonBackgroundColor,
+          padding: 8,
+          cornerRadius: 4,
+          isEnable: viewModel.canGoToNextStep)
+        {
+          Text(nextButtonLabel)
+            .foregroundColor(.white)
+        }
+      }
+      .padding(.horizontal, 16)
+      .frame(maxWidth: .infinity)
+
+      HStack(spacing: 12) {
+        ForEach(OnboardingStep.allCases.enumerated(), id: \.offset) { _, step in
+          Circle()
+            .fill(step == viewModel.currentStep ? Color.accentColor : Color.gray.opacity(0.5))
+            .frame(square: 7)
+        }
+      }
+      .padding(.bottom, 10)
     }
+    .padding(20)
+    .with(backgroundColor: colorScheme.primaryBackground)
   }
 
   @State private var referenceViewSize = CGSize.zero
@@ -55,40 +99,77 @@ struct OnboardingView: View {
 
   @Environment(Router.self) private var router
 
+  private var nextButtonLabel: String {
+    if viewModel.currentStep == .setupComplete {
+      return "Start using cmd"
+    }
+    if viewModel.currentStep == .autocompletion, !viewModel.hasSetupAutocompletionProvider {
+      return "Skip for now"
+    }
+    return "Next"
+  }
+
+  private var nextButtonBackgroundColor: Color {
+    if viewModel.currentStep == .autocompletion, !viewModel.hasSetupAutocompletionProvider {
+      return colorScheme.secondarySystemBackground
+    }
+    return viewModel.canGoToNextStep ? .accentColor : colorScheme.secondarySystemBackground
+  }
+
+  private var nextButtonHoverColor: Color {
+    if viewModel.currentStep == .autocompletion, !viewModel.hasSetupAutocompletionProvider {
+      return colorScheme.tertiarySystemBackground
+    }
+    return viewModel.canGoToNextStep ? .accentColor.opacity(0.8) : nextButtonBackgroundColor
+  }
+
   @ViewBuilder
   private var llmProviderSetupView: some View {
     VStack {
-      Text("2/2 - Configure LLM Providers")
+      Text("AI Provider")
         .font(.headline)
         .padding(.bottom, 8)
 
       HStack {
         Text(
-          "**cmd** is free to use, but you need to bring your own API key. Configure at least one provider below to get started.")
+          "Configure at least one AI provider to get started. You can always add or change providers later in the app settings.")
           .lineLimit(nil)
           .fixedSize(horizontal: false, vertical: true)
-        Spacer(minLength: 0)
       }
+      .frame(maxWidth: .infinity, alignment: .leading)
 
       AnyView(router.embed(route: AIProviderSettingsRoute()))
+    }
+  }
 
-      if viewModel.canSkipProviderSetup {
-        HoveredButton(
-          action: {
-            viewModel.handleMoveToNextStep()
-          },
-          onHoverColor: .accentColor.opacity(0.8),
-          backgroundColor: .accentColor,
-          padding: 8,
-          cornerRadius: 6)
-        {
-          Text("Next")
-            .font(.headline)
-            .foregroundColor(.white)
-            .lineLimit(1)
+  @ViewBuilder
+  private var autocompletionSetupView: some View {
+    VStack(alignment: .leading) {
+      Text("Autocompletion")
+        .font(.headline)
+        .padding(.bottom, 8)
+
+      if !viewModel.isXcodeExtensionPermissionGranted {
+        Text("Xcode Extension permission is required to enable autocompletion.")
+
+        XcodeExtensionPermissionView(
+          isXcodeExtensionPermissionGranted: viewModel.isXcodeExtensionPermissionGranted,
+          hasSkippedXcodeExtension: viewModel.hasSkippedXcodeExtension,
+          canSkip: false,
+          skipXcodeExtensionPermissions: {
+            viewModel.handleSkipXcodeExtensionPermissions()
+          }, requestXcodeExtensionPermission: viewModel.handleRequestXcodeExtensionPermission)
+      } else {
+        HStack {
+          Text(
+            "To use autocompletion, you need to configure one of the AI provider below:")
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+
+        AnyView(router.embed(route: AutocompletionProviderSettingsRoute(showDetailedSettings: false)))
       }
-      Spacer(minLength: 0)
     }
   }
 

@@ -84,6 +84,14 @@ extension ObservableValue {
   }
 }
 
+extension Observable where Self: Sendable {
+  public func binding<Value: Sendable>(to keyPath: ReferenceWritableKeyPath<Self, Value>) -> Binding<Value> {
+    Binding(
+      get: { self[keyPath: keyPath] },
+      set: { self[keyPath: keyPath] = $0 })
+  }
+}
+
 extension ReadonlyCurrentValueSubject where Failure == Never {
   @MainActor
   public func asObservableValue() -> ObservableValue<Output> {

@@ -237,7 +237,7 @@ struct OnboardingViewModelTests {
 
     // Add an active model
     mockLLMService._activeModels.send([.gpt])
-    try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
+    try await viewModel.wait(for: \.hasSetupAIProvider, toBe: true)
 
     viewModel.handleMoveToNextStep()
     // Wait for async update

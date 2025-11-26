@@ -15,6 +15,7 @@ import SwiftUI
     enablePushNotifications: .mutable(true),
     accessibilityPermission: .constant(.grantedEnabled),
     xcodeExtensionPermission: .constant(.grantedEnabled),
+    xcodeAutomationPermission: .constant(.grantedEnabled),
     pushNotificationsPermission: .constant(.grantedEnabled))
     .frame(width: 400, height: 600)
     .padding()
@@ -30,6 +31,7 @@ import SwiftUI
     enablePushNotifications: .mutable(true),
     accessibilityPermission: .constant(.grantedEnabled),
     xcodeExtensionPermission: .constant(.grantedEnabled),
+    xcodeAutomationPermission: .constant(.grantedEnabled),
     pushNotificationsPermission: .constant(.grantedEnabled))
     .frame(width: 400, height: 600)
     .padding()

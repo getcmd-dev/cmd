@@ -28,6 +28,22 @@ public struct AIProviderSettingsRoute: Route {
   public init() { }
 }
 
+// MARK: - AutocompletionProviderSettingsRoute
+
+public struct AutocompletionProviderSettingsRoute: Route {
+  public var id: String { Self.id }
+
+  public static let name = "autocompletion-provider-settings"
+  public static var id: String { name }
+  public var name: String { Self.name }
+  public let showDetailedSettings: Bool
+
+  public init(showDetailedSettings: Bool = false) {
+    self.showDetailedSettings = showDetailedSettings
+  }
+
+}
+
 // MARK: - ChatModeSettingsRoute
 
 public struct ChatModeSettingsRoute: Route {

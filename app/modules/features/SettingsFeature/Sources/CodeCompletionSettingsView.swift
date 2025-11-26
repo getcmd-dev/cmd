@@ -19,111 +19,116 @@ struct CodeCompletionSettingsView: View {
   @Binding var codeCompletionProviderId: String?
   @Bindable var llmSettingsViewModel: LLMSettingsViewModel
 
+  /// Whether to show detailed settings or only the provider setup.
+  let showDetailedSettings: Bool
+
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 20) {
         // Code Completion Settings Section
         VStack(spacing: 16) {
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Autocomplete")
-                .font(.title2)
-            }
-            Spacer()
-            Toggle("", isOn: $enableCodeCompletion)
-              .toggleStyle(.switch)
-          }
-
-          // Debounce Setting
-          VStack(alignment: .leading, spacing: 4) {
+          if showDetailedSettings {
             HStack {
-              Text("Debounce (ms)")
+              VStack(alignment: .leading, spacing: 4) {
+                Text("Autocomplete")
+                  .font(.title2)
+              }
               Spacer()
+              Toggle("", isOn: $enableCodeCompletion)
+                .toggleStyle(.switch)
+            }
 
-              VStack {
-                TextField("Debounce (ms)", text: $debounceInputText)
-                  .textFieldStyle(.roundedBorder)
-                  .fixedSize()
-                  .onChange(of: debounceInputText) { _, newValue in
-                    validateAndUpdateDebounce(newValue)
+            // Debounce Setting
+            VStack(alignment: .leading, spacing: 4) {
+              HStack {
+                Text("Debounce (ms)")
+                Spacer()
+
+                VStack {
+                  TextField("Debounce (ms)", text: $debounceInputText)
+                    .textFieldStyle(.roundedBorder)
+                    .fixedSize()
+                    .onChange(of: debounceInputText) { _, newValue in
+                      validateAndUpdateDebounce(newValue)
+                    }
+                    .onAppear {
+                      debounceInputText = "\(codeCompletionDebounceMs)"
+                    }
+                    .onChange(of: codeCompletionDebounceMs) { _, newValue in
+                      if debounceInputText != "\(newValue)" {
+                        debounceInputText = "\(newValue)"
+                      }
+                    }
+                  if isInvalidInput {
+                    Text("Invalid integer")
+                      .font(.caption)
+                      .foregroundColor(.red)
                   }
-                  .onAppear {
-                    debounceInputText = "\(codeCompletionDebounceMs)"
+                }
+              }
+              Text("Time to trigger an autocomplete request after a change")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .disabledOverlay(isDisabled: !enableCodeCompletion)
+
+            // Multi-line Display Mode Setting
+            VStack(alignment: .leading, spacing: 4) {
+              HStack {
+                VStack(alignment: .leading) {
+                  Text("Multi-line display")
+                  Text("How multi-line completions should be shown in the editor")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+                Spacer()
+
+                HoveredButton(
+                  action: {
+                    isSelectingDisplayMode.toggle()
+                  },
+                  onHoverColor: colorScheme.tertiarySystemBackground,
+                  backgroundColor: colorScheme.secondarySystemBackground,
+                  padding: 4,
+                  cornerRadius: 6,
+                  isEnable: true)
+                {
+                  HStack {
+                    VStack(alignment: .leading) {
+                      Text(multiLineCodeCompletionDisplayMode.displayName)
+                    }
+                    IconButton(action: { }, systemName: isSelectingDisplayMode ? "chevron.down" : "chevron.right")
+                      .frame(square: 12)
                   }
-                  .onChange(of: codeCompletionDebounceMs) { _, newValue in
-                    if debounceInputText != "\(newValue)" {
-                      debounceInputText = "\(newValue)"
+                }
+              }
+              if isSelectingDisplayMode {
+                ForEach(MultiLineCodeCompletionDisplayMode.allCases, id: \.self) { mode in
+                  HStack(alignment: .top, spacing: 8) {
+                    RadioButton(
+                      isSelected: multiLineCodeCompletionDisplayMode == mode,
+                      action: {
+                        multiLineCodeCompletionDisplayMode = mode
+                      })
+                      .frame(square: 20)
+
+                    VStack(alignment: .leading) {
+                      Text(mode.displayName)
+                      Text(mode.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     }
                   }
-                if isInvalidInput {
-                  Text("Invalid integer")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                }
-              }
-            }
-            Text("Time to trigger an autocomplete request after a change")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-          .disabledOverlay(isDisabled: !enableCodeCompletion)
-
-          // Multi-line Display Mode Setting
-          VStack(alignment: .leading, spacing: 4) {
-            HStack {
-              VStack(alignment: .leading) {
-                Text("Multi-line display")
-                Text("How multi-line completions should be shown in the editor")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
-              Spacer()
-
-              HoveredButton(
-                action: {
-                  isSelectingDisplayMode.toggle()
-                },
-                onHoverColor: colorScheme.tertiarySystemBackground,
-                backgroundColor: colorScheme.secondarySystemBackground,
-                padding: 4,
-                cornerRadius: 6,
-                isEnable: true)
-              {
-                HStack {
-                  VStack(alignment: .leading) {
-                    Text(multiLineCodeCompletionDisplayMode.displayName)
-                  }
-                  IconButton(action: { }, systemName: isSelectingDisplayMode ? "chevron.down" : "chevron.right")
-                    .frame(square: 12)
-                }
-              }
-            }
-            if isSelectingDisplayMode {
-              ForEach(MultiLineCodeCompletionDisplayMode.allCases, id: \.self) { mode in
-                HStack(alignment: .top, spacing: 8) {
-                  RadioButton(
-                    isSelected: multiLineCodeCompletionDisplayMode == mode,
-                    action: {
-                      multiLineCodeCompletionDisplayMode = mode
-                    })
-                    .frame(square: 20)
-
-                  VStack(alignment: .leading) {
-                    Text(mode.displayName)
-                    Text(mode.description)
-                      .font(.caption)
-                      .foregroundColor(.secondary)
+                  .tappableTransparentBackground()
+                  .onTapGesture {
+                    multiLineCodeCompletionDisplayMode = mode
                   }
                 }
-                .tappableTransparentBackground()
-                .onTapGesture {
-                  multiLineCodeCompletionDisplayMode = mode
-                }
               }
             }
+            .frame(maxWidth: .infinity)
+            .disabledOverlay(isDisabled: !enableCodeCompletion)
           }
-          .frame(maxWidth: .infinity)
-          .disabledOverlay(isDisabled: !enableCodeCompletion)
 
           // Provider
           CodeCompletionProviderSection(
@@ -193,12 +198,11 @@ private struct CodeCompletionProviderSection: View {
             if let selectedProvider {
               HStack {
                 Text(selectedProvider.displayName)
-                Spacer(minLength: 0)
+                Spacer(minLength: 4)
                 Circle()
                   .fill(selectedProvider.isAvailable ? .green : .red)
                   .frame(width: 8, height: 8)
               }
-              //                      }
             } else {
               Text("Select")
             }
@@ -229,17 +233,19 @@ private struct CodeCompletionProviderSection: View {
                 onSelectModels: nil,
                 frameless: true)
             }
-            HoveredButton(
-              action: {
-                codeCompletionProviderId = provider.id
-              },
-              onHoverColor: colorScheme.tertiarySystemBackground,
-              backgroundColor: colorScheme.secondarySystemBackground,
-              padding: 4,
-              cornerRadius: 6)
-            {
-              Text("Select")
-                .frame(maxWidth: .infinity)
+            if provider.isAvailable, provider.id != codeCompletionProviderId {
+              HoveredButton(
+                action: {
+                  codeCompletionProviderId = provider.id
+                },
+                onHoverColor: colorScheme.tertiarySystemBackground,
+                backgroundColor: colorScheme.secondarySystemBackground,
+                padding: 4,
+                cornerRadius: 6)
+              {
+                Text("Select")
+                  .frame(maxWidth: .infinity)
+              }
             }
           }
           .padding(8)
@@ -248,6 +254,16 @@ private struct CodeCompletionProviderSection: View {
             backgroundColor: colorScheme.secondarySystemBackground.mix(with: colorScheme.primaryBackground, by: 0.90),
             borderColor: provider.id == codeCompletionProviderId ? colorScheme.textAreaBorderColor : .clear)
         }
+      }
+    }
+    .onChange(of: configuredProviderIds) { _, newValue in
+      if codeCompletionProviderId == nil, let firstId = newValue.first {
+        codeCompletionProviderId = firstId
+      }
+    }
+    .onAppear {
+      if codeCompletionProviderId == nil, let firstId = configuredProviderIds.first {
+        codeCompletionProviderId = firstId
       }
     }
   }
@@ -276,6 +292,14 @@ private struct CodeCompletionProviderSection: View {
   private var selectedProvider: CodeCompletionProvider? {
     guard let providerID = codeCompletionProviderId else { return nil }
     return codeCompletionProviders.first(where: { $0.id == providerID })
+  }
+
+  private var configuredProviders: [any CodeCompletionProvider] {
+    codeCompletionProviders.filter(\.isAvailable)
+  }
+
+  private var configuredProviderIds: [String] {
+    configuredProviders.map(\.id)
   }
 
   @Environment(Router.self) private var router

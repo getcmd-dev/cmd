@@ -16,7 +16,7 @@ import XcodeObserverServiceInterface
 
 struct InternalSettingsView: View {
   @Binding var repeatLastLLMInteraction: Bool
-  @Binding var showOnboardingScreenAgain: Bool
+  @Binding var alwaysShowOnboardingScreen: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
   @Binding var showInternalSettingsInRelease: Bool
   @Binding var defaultChatPositionIsInverted: Bool
@@ -24,6 +24,7 @@ struct InternalSettingsView: View {
   @Binding var enableNetworkProxy: Bool
   @Binding var showToolInputCopyButtonInRelease: Bool
   @Binding var defaultLogLevel: LogLevel
+  @Binding var overrideAutomaticallyUpdateXcodeSettings: Bool?
 
   var body: some View {
     ScrollView {
@@ -37,9 +38,9 @@ struct InternalSettingsView: View {
             value: $repeatLastLLMInteraction)
 
           InternalSettingsRow(
-            "Show onboarding again",
-            caption: "Show onboarding flow at next app launch",
-            value: $showOnboardingScreenAgain)
+            "Always show onboarding",
+            caption: "Show onboarding screen at each app launch",
+            value: $alwaysShowOnboardingScreen)
 
           InternalSettingsRow(
             "Point Release Xcode Extension to Debug App",
@@ -60,6 +61,21 @@ struct InternalSettingsView: View {
             "Show tool input copy button in Release",
             caption: "Display the copy button for tool inputs in Release builds",
             value: $showToolInputCopyButtonInRelease)
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Override Xcode AI Integration Setting")
+            Text("When set, overrides the user's Xcode AI integration preference for testing purposes")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Picker("Override", selection: $overrideAutomaticallyUpdateXcodeSettings) {
+              Text("Default (user's choice)").tag(nil as Bool?)
+              Text("Force On").tag(true as Bool?)
+              Text("Force Off").tag(false as Bool?)
+            }
+            .pickerStyle(.menu)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+          }
 
           VStack(alignment: .leading, spacing: 4) {
             Text("Default log level for file persistence")

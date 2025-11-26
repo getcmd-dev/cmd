@@ -4,6 +4,7 @@
 import Dependencies
 import DLS
 import PermissionsServiceInterface
+import RoutingFoundation
 import SwiftUI
 
 // MARK: - OnboardingView
@@ -42,7 +43,7 @@ extension OnboardingView {
   }
 }
 
-#Preview("OnboardingView") {
+#Preview("OnboardingView", traits: .emptyRouter) {
   withDependencies {
     $0.permissionsService = createMockPermissionService()
   } operation: {

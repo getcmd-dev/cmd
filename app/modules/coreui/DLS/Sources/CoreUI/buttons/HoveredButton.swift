@@ -78,6 +78,7 @@ public struct HoveredButton<Content: View>: View {
   public var body: some View {
     Button(action: action, label: {
       content(isHovered)
+        .fixedSize()
         .padding(padding)
         .tappableTransparentBackground()
         .background((isHovered && isEnable) ? onHoverColor : backgroundColor)

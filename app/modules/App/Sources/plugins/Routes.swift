@@ -9,6 +9,7 @@ extension RoutesRegistry {
   func registerRoutes() {
     register(routeBuilder: SettingsBuilder())
     register(routeBuilder: AIProviderSettingsBuilder())
+    register(routeBuilder: AutocompletionProviderSettingsBuilder())
     register(routeBuilder: ChatModeSettingsBuilder())
     register(routeBuilder: GithubCopilotBuilder())
   }

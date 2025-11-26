@@ -9,14 +9,15 @@ import SwiftUI
 #Preview("Internal Settings - Component Only") {
   InternalSettingsView(
     repeatLastLLMInteraction: .constant(true),
-    showOnboardingScreenAgain: .constant(true),
+    alwaysShowOnboardingScreen: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(false),
     showInternalSettingsInRelease: .constant(false),
     defaultChatPositionIsInverted: .constant(false),
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
-    defaultLogLevel: .constant(.info))
+    defaultLogLevel: .constant(.info),
+    overrideAutomaticallyUpdateXcodeSettings: .constant(nil))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -24,14 +25,15 @@ import SwiftUI
 #Preview("Internal Settings - Debug Enabled") {
   InternalSettingsView(
     repeatLastLLMInteraction: .constant(false),
-    showOnboardingScreenAgain: .constant(true),
+    alwaysShowOnboardingScreen: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(true),
     showInternalSettingsInRelease: .constant(true),
     defaultChatPositionIsInverted: .constant(true),
     enableAnalyticsAndCrashReporting: .constant(false),
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
-    defaultLogLevel: .constant(.debug))
+    defaultLogLevel: .constant(.debug),
+    overrideAutomaticallyUpdateXcodeSettings: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }

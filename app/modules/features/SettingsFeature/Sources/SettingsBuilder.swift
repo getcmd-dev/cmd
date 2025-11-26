@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ConcurrencyFoundation
 import RoutingFoundation
 import SettingsFeatureInterface
 import SwiftUI
@@ -33,6 +34,27 @@ public struct AIProviderSettingsBuilder: RouteBuilder {
   public func build(route _: AIProviderSettingsRoute, with _: RoutingFoundation.RoutesRegistry) throws -> any View {
     let settings = LLMSettingsViewModel()
     return AIProvidersView(viewModel: settings)
+  }
+
+}
+
+// MARK: - AutocompletionProviderSettingsBuilder
+
+public struct AutocompletionProviderSettingsBuilder: RouteBuilder {
+  public init() { }
+
+  public var routeId: String { AutocompletionProviderSettingsRoute.id }
+
+  public func build(route: AutocompletionProviderSettingsRoute, with _: RoutingFoundation.RoutesRegistry) throws -> any View {
+    let viewModel = SettingsViewModel()
+    return
+      CodeCompletionSettingsView(
+        enableCodeCompletion: viewModel.binding(to: \.enableCodeCompletion),
+        codeCompletionDebounceMs: viewModel.binding(to: \.codeCompletionDebounceMs),
+        multiLineCodeCompletionDisplayMode: viewModel.binding(to: \.multiLineCodeCompletionDisplayMode),
+        codeCompletionProviderId: viewModel.binding(to: \.codeCompletionProviderId),
+        llmSettingsViewModel: viewModel.llmSettings,
+        showDetailedSettings: route.showDetailedSettings)
   }
 
 }
