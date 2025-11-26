@@ -160,7 +160,10 @@ public struct ChatView: View {
 
   @ViewBuilder
   private var secondaryActionRow: some View {
-    if viewModel.focusedWorkspacePath != nil, viewModel.tab.projectInfo?.path != viewModel.focusedWorkspacePath {
+    if
+      viewModel.focusedWorkspacePath != nil, let focussedWorkspace = viewModel.tab.projectInfo,
+      focussedWorkspace.path != viewModel.focusedWorkspacePath
+    {
       HStack {
         focusOnNewProjectCTA
         Spacer()
