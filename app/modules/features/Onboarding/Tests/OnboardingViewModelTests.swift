@@ -307,6 +307,37 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
   }
+
+  @MainActor
+  @Test("code completion provider changes trigger hasSetupAutocompletionProvider updates", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension, .xcodeAutomation])
+    $0.llmService = MockLLMService(activeModels: [.gpt])
+  })
+  func test_codeCompletionProviderChanges() async throws {
+    @Dependency(\.settingsService) var settingsService
+    let mockSettingsService = try #require(settingsService as? MockSettingsService)
+
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
+
+    // Initially hasSetupAutocompletionProvider should be false
+    #expect(viewModel.hasSetupAutocompletionProvider == false)
+
+    // Update the code completion provider ID
+    mockSettingsService.update(setting: \.codeCompletionProviderId, to: "test-provider")
+
+    // Wait for async update
+    try await viewModel.wait(for: \.hasSetupAutocompletionProvider, toBe: true)
+
+    #expect(viewModel.hasSetupAutocompletionProvider == true)
+
+    // Set it back to nil
+    mockSettingsService.update(setting: \.codeCompletionProviderId, to: nil)
+
+    // Wait for async update
+    try await viewModel.wait(for: \.hasSetupAutocompletionProvider, toBe: false)
+
+    #expect(viewModel.hasSetupAutocompletionProvider == false)
+  }
 }
 
 extension DependencyValues {

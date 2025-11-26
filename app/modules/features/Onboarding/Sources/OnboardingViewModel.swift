@@ -102,6 +102,12 @@ final class OnboardingViewModel {
       }
     }.store(in: &cancellables)
 
+    settingsService.liveValue(for: \.codeCompletionProviderId).sink { @Sendable [weak self] providerId in
+      Task { @MainActor in
+        self?.hasSetupAutocompletionProvider = providerId != nil
+      }
+    }.store(in: &cancellables)
+
     llmService.activeModels.sink { @Sendable [weak self] models in
       Task { @MainActor in
         guard let self else { return }
