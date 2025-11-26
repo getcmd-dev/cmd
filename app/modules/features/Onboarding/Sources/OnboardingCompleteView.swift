@@ -7,41 +7,24 @@ import SwiftUI
 // MARK: - OnboardingCompletedView
 
 struct OnboardingCompletedView: View {
-  let onDone: () -> Void
 
   var body: some View {
     VStack(spacing: 16) {
-      Text("Setup Complete!")
-        .font(.title)
+      Text("All Setup")
         .bold()
 
-      Text("When in Xcode, you can now use:\n- **⌘ + I** to bring **cmd**")
+      Text("When in Xcode, you can now press **⌘ + I** to bring **cmd**")
         .lineLimit(nil)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: OnboardingView.Constants.maxTextWidth, alignment: .leading)
-
-      HoveredButton(
-        action: {
-          onDone()
-        },
-        onHoverColor: .accentColor.opacity(0.8),
-        backgroundColor: .accentColor,
-        padding: 16,
-        cornerRadius: 12)
-      {
-        Text("Start using **cmd**")
-      }
-      Spacer(minLength: 0)
     }
     .padding()
   }
-
-  @Environment(\.colorScheme) private var colorScheme
 }
 
 #if DEBUG
 #Preview(traits: .sizeThatFitsLayout) {
-  OnboardingCompletedView(onDone: { })
+  OnboardingCompletedView()
     .padding()
 }
 #endif

@@ -40,7 +40,7 @@ public final class SettingsViewModel {
 
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: .repeatLastLLMInteraction)
-    showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
+    alwaysShowOnboardingScreen = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
@@ -51,6 +51,7 @@ public final class SettingsViewModel {
       : userDefaults.bool(forKey: .launchHostAppWhenXcodeDidActivate)
     accessibilityPermission = permissionService.status(for: .accessibility).asObservableValue()
     xcodeExtensionPermission = permissionService.status(for: .xcodeExtension).asObservableValue()
+    xcodeAutomationPermission = permissionService.status(for: .xcodeAutomation).asObservableValue()
     pushNotificationsPermission = permissionService.status(for: .pushNotification).asObservableValue()
 
     if
@@ -61,6 +62,10 @@ public final class SettingsViewModel {
     } else {
       defaultLogLevel = .info
     }
+
+    overrideAutomaticallyUpdateXcodeSettings = userDefaults.object(forKey: .overrideAutomaticallyUpdateXcodeSettings) == nil
+      ? nil
+      : userDefaults.bool(forKey: .overrideAutomaticallyUpdateXcodeSettings)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -93,6 +98,7 @@ public final class SettingsViewModel {
 
   let accessibilityPermission: ObservableValue<PermissionStatus>
   let xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  let xcodeAutomationPermission: ObservableValue<PermissionStatus>
   let pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var allowAnonymousAnalytics: Bool {
@@ -132,10 +138,10 @@ public final class SettingsViewModel {
     }
   }
 
-  var showOnboardingScreenAgain: Bool {
+  var alwaysShowOnboardingScreen: Bool {
     didSet {
-      userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
-      if showOnboardingScreenAgain {
+      userDefaults.set(alwaysShowOnboardingScreen, forKey: .alwaysShowOnboardingDefaultKey)
+      if alwaysShowOnboardingScreen {
         AIProvider.allCases
           .compactMap(\.externalAgent)
           .forEach {
@@ -196,6 +202,17 @@ public final class SettingsViewModel {
       userDefaults.set(defaultLogLevel.rawValue, forKey: .defaultLogLevel)
       settings.defaultLogLevel = defaultLogLevel
       settingsService.update(setting: \.defaultLogLevel, to: defaultLogLevel)
+    }
+  }
+
+  var overrideAutomaticallyUpdateXcodeSettings: Bool? {
+    didSet {
+      if let overrideAutomaticallyUpdateXcodeSettings {
+        userDefaults.set(overrideAutomaticallyUpdateXcodeSettings, forKey: .overrideAutomaticallyUpdateXcodeSettings)
+        settingsService.update(setting: \.automaticallyUpdateXcodeSettings, to: overrideAutomaticallyUpdateXcodeSettings)
+      } else {
+        userDefaults.removeObject(forKey: .overrideAutomaticallyUpdateXcodeSettings)
+      }
     }
   }
 

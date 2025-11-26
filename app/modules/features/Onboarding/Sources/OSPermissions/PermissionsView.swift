@@ -9,7 +9,7 @@ struct PermissionsView: View {
 
   var body: some View {
     VStack {
-      Text("1/2 - Permissions")
+      Text("Permissions")
         .font(.headline)
         .padding(.bottom, 8)
 
@@ -22,13 +22,23 @@ struct PermissionsView: View {
           if viewModel.isAccessibilityPermissionGranted {
             XcodeExtensionPermissionView(
               isXcodeExtensionPermissionGranted: viewModel.isXcodeExtensionPermissionGranted,
+              hasSkippedXcodeExtension: viewModel.hasSkippedXcodeExtension, canSkip: true,
               skipXcodeExtensionPermissions: {
-                viewModel.handleMoveToNextStep()
-              }, requestXcodeExtensionPermission: viewModel.handleRequestXcodeExtensionPermission)
+                viewModel.handleSkipXcodeExtensionPermissions()
+              },
+              requestXcodeExtensionPermission: viewModel.handleRequestXcodeExtensionPermission)
+
+            if viewModel.isXcodeExtensionPermissionGranted || viewModel.hasSkippedXcodeExtension {
+              XcodeAIProviderPermissionView(
+                isXcodeAIProviderPermissionGranted: viewModel.isXcodeAIProviderPermissionGranted,
+                hasSkippedXcodeAIProvider: viewModel.hasSkippedXcodeAIProviderPermissions,
+                skipXcodeAIProviderPermissions: {
+                  viewModel.handleSkipXcodeAIProviderPermissions()
+                },
+                requestXcodeAIIntegrationPermission: viewModel.requestXcodeAIIntegrationPermission)
+            }
           }
-          Spacer(minLength: 0)
         }
-        Spacer(minLength: 0)
       }
     }
   }

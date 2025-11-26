@@ -13,6 +13,7 @@ struct MockPermissionsServiceTests {
     let sut = MockPermissionsService(grantedPermissions: [.accessibility])
     #expect(sut.status(for: .accessibility).currentValue == .grantedEnabled)
     #expect(sut.status(for: .xcodeExtension).currentValue == .notGranted)
+    #expect(sut.status(for: .xcodeAutomation).currentValue == .notGranted)
   }
 
   @Test
@@ -28,6 +29,32 @@ struct MockPermissionsServiceTests {
     #expect(exp.isFulfilled == false)
     Task { @MainActor in
       sut.set(permission: .xcodeExtension, status: .grantedEnabled)
+    }
+    try await fulfillment(of: exp)
+
+    _ = cancellable
+  }
+
+  @Test
+  func test_xcodeAutomationUsesInitialValues() async throws {
+    let sut = MockPermissionsService(grantedPermissions: [.xcodeAutomation])
+    #expect(sut.status(for: .xcodeAutomation).currentValue == .grantedEnabled)
+    #expect(sut.status(for: .accessibility).currentValue == .notGranted)
+  }
+
+  @Test
+  func test_xcodeAutomationUpdateSubscriberWithNewValues() async throws {
+    let sut = MockPermissionsService(grantedPermissions: [])
+
+    let exp = expectation(description: "Xcode automation permission granted")
+    let cancellable = sut.status(for: .xcodeAutomation).sink { status in
+      if status.isGranted {
+        exp.fulfill()
+      }
+    }
+    #expect(exp.isFulfilled == false)
+    Task { @MainActor in
+      sut.set(permission: .xcodeAutomation, status: .grantedEnabled)
     }
     try await fulfillment(of: exp)
 

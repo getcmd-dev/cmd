@@ -51,7 +51,7 @@ struct SettingsViewModelTests {
     }
 
     #expect(viewModel.repeatLastLLMInteraction == true)
-    #expect(viewModel.showOnboardingScreenAgain == true) // Inverted logic
+    #expect(viewModel.alwaysShowOnboardingScreen == true) // Inverted logic
   }
 
   @Test("allowAnonymousAnalytics setter updates settings service")
@@ -126,8 +126,8 @@ struct SettingsViewModelTests {
     #expect(mockUserDefaults.bool(forKey: .repeatLastLLMInteraction) == true)
   }
 
-  @Test("showOnboardingScreenAgain setter updates user defaults with inverted logic")
-  func test_showOnboardingScreenAgain_setter() {
+  @Test("alwaysShowOnboardingScreen setter updates user defaults")
+  func test_alwaysShowOnboardingScreen_setter() {
     let mockSettingsService = MockSettingsService()
     let mockUserDefaults = MockUserDefaults()
 
@@ -138,15 +138,15 @@ struct SettingsViewModelTests {
       SettingsViewModel()
     }
 
-    viewModel.showOnboardingScreenAgain = false
+    viewModel.alwaysShowOnboardingScreen = false
 
-    // Should set hasCompletedOnboardingUserDefaultsKey to true (inverted)
-    #expect(mockUserDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) == true)
+    // Should set alwaysShowOnboardingDefaultKey to false
+    #expect(mockUserDefaults.bool(forKey: .alwaysShowOnboardingDefaultKey) == false)
 
-    viewModel.showOnboardingScreenAgain = true
+    viewModel.alwaysShowOnboardingScreen = true
 
-    // Should set hasCompletedOnboardingUserDefaultsKey to false (inverted)
-    #expect(mockUserDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) == false)
+    // Should set alwaysShowOnboardingDefaultKey to true
+    #expect(mockUserDefaults.bool(forKey: .alwaysShowOnboardingDefaultKey) == true)
   }
 
   @Test("pointReleaseXcodeExtensionToDebugApp setter updates settings service")

@@ -4,18 +4,20 @@
 import DLS
 import SwiftUI
 
-// MARK: - XcodeExtensionPermissionView
+// MARK: - XcodeAIProviderPermissionView
 
-struct XcodeExtensionPermissionView: View {
+struct XcodeAIProviderPermissionView: View {
   init(
-    isXcodeExtensionPermissionGranted: Bool,
-    skipXcodeExtensionPermissions: @escaping () -> Void,
-    requestXcodeExtensionPermission: @escaping () -> Void)
+    isXcodeAIProviderPermissionGranted: Bool,
+    hasSkippedXcodeAIProvider: Bool,
+    skipXcodeAIProviderPermissions: @escaping () -> Void,
+    requestXcodeAIIntegrationPermission: @escaping () -> Void)
   {
     hasClickedGivePermission = false
-    self.isXcodeExtensionPermissionGranted = isXcodeExtensionPermissionGranted
-    self.skipXcodeExtensionPermissions = skipXcodeExtensionPermissions
-    self.requestXcodeExtensionPermission = requestXcodeExtensionPermission
+    self.hasSkippedXcodeAIProvider = hasSkippedXcodeAIProvider
+    self.isXcodeAIProviderPermissionGranted = isXcodeAIProviderPermissionGranted
+    self.skipXcodeAIProviderPermissions = skipXcodeAIProviderPermissions
+    self.requestXcodeAIIntegrationPermission = requestXcodeAIIntegrationPermission
   }
 
   var body: some View {
@@ -36,15 +38,16 @@ struct XcodeExtensionPermissionView: View {
             .with(cornerRadius: 8)
             .padding(.trailing, 8)
         }
-        Text("**cmd** works better when it can modify source code through Xcode")
-        if isXcodeExtensionPermissionGranted {
+        Text("Allow **cmd** to manage Xcode's AI configuration to integrate with the Xcode's AI interface.")
+          .padding(.leading, 8)
+        if isXcodeAIProviderPermissionGranted {
           Icon(systemName: "checkmark.circle.fill")
             .foregroundStyle(.green)
             .frame(width: 16, height: 16)
             .padding(.leading, 8)
         }
       }.padding()
-      if !isXcodeExtensionPermissionGranted {
+      if !isXcodeAIProviderPermissionGranted {
         if !hasClickedGivePermission {
           askForPermissionView
         } else {
@@ -57,13 +60,15 @@ struct XcodeExtensionPermissionView: View {
   @Environment(\.colorScheme) private var colorScheme
   @State private var hasClickedGivePermission = false
 
-  private let isXcodeExtensionPermissionGranted: Bool
+  private let hasSkippedXcodeAIProvider: Bool
 
-  private let skipXcodeExtensionPermissions: () -> Void
-  private let requestXcodeExtensionPermission: () -> Void
+  private let isXcodeAIProviderPermissionGranted: Bool
+
+  private let skipXcodeAIProviderPermissions: () -> Void
+  private let requestXcodeAIIntegrationPermission: () -> Void
 
   private var xcodeIcon: NSImage? {
-    guard let svgPath = Bundle.module.path(forResource: "Xcode", ofType: "svg") else {
+    guard let svgPath = Bundle.module.path(forResource: "Xcode-intelligence", ofType: "png") else {
       return nil
     }
     return try? SVGImageLoader.svg(atPath: svgPath)
@@ -75,7 +80,7 @@ struct XcodeExtensionPermissionView: View {
       Spacer()
       HoveredButton(
         action: {
-          requestXcodeExtensionPermission()
+          requestXcodeAIIntegrationPermission()
           hasClickedGivePermission = true
         },
         onHoverColor: colorScheme.tertiarySystemBackground,
@@ -87,14 +92,15 @@ struct XcodeExtensionPermissionView: View {
       }
       HoveredButton(
         action: {
-          skipXcodeExtensionPermissions()
+          skipXcodeAIProviderPermissions()
         },
         onHoverColor: colorScheme.tertiarySystemBackground,
         backgroundColor: colorScheme.secondarySystemBackground,
         padding: 6,
-        cornerRadius: 8)
+        cornerRadius: 8,
+        isEnable: !hasSkippedXcodeAIProvider)
       {
-        Text("Skip")
+        Text(hasSkippedXcodeAIProvider ? "Skipped" : "Skip")
       }
       Spacer()
     }
@@ -109,14 +115,14 @@ struct XcodeExtensionPermissionView: View {
       }
 
       Text(
-        "Follow the pop up, or navigate to \(Text("[**Settings > Login Items & Extensions > Xcode Source Editor (at the bottom)**](x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.dt.Xcode.extension.source-editor)")) and allow **cmd**.")
+        "Follow the pop up to allow **cmd** to integrate with Xcode's AI interface. This enables automatic management of the AI provider integration.")
         .lineLimit(nil)
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: OnboardingView.Constants.maxTextWidth, alignment: .leading)
 
       HoveredButton(
         action: {
-          skipXcodeExtensionPermissions()
+          skipXcodeAIProviderPermissions()
         },
         onHoverColor: colorScheme.tertiarySystemBackground,
         backgroundColor: colorScheme.secondarySystemBackground,
@@ -132,20 +138,21 @@ struct XcodeExtensionPermissionView: View {
 
 #if DEBUG
 
-extension XcodeExtensionPermissionView {
-  init(hasClickedGivePermission: Bool, isXcodeExtensionPermissionGranted: Bool = false) {
+extension XcodeAIProviderPermissionView {
+  init(hasClickedGivePermission: Bool, isXcodeAIProviderPermissionGranted: Bool = false) {
     self.hasClickedGivePermission = hasClickedGivePermission
-    self.isXcodeExtensionPermissionGranted = isXcodeExtensionPermissionGranted
-    skipXcodeExtensionPermissions = { }
-    requestXcodeExtensionPermission = { }
+    hasSkippedXcodeAIProvider = false
+    self.isXcodeAIProviderPermissionGranted = isXcodeAIProviderPermissionGranted
+    skipXcodeAIProviderPermissions = { }
+    requestXcodeAIIntegrationPermission = { }
   }
 }
 
-#Preview("XcodeExtensionPermissionView") {
-  XcodeExtensionPermissionView(hasClickedGivePermission: false)
+#Preview("XcodeAIProviderPermissionView") {
+  XcodeAIProviderPermissionView(hasClickedGivePermission: false)
 }
 
-#Preview("XcodeExtensionPermissionView - waiting for permission") {
-  XcodeExtensionPermissionView(hasClickedGivePermission: true)
+#Preview("XcodeAIProviderPermissionView - waiting for permission") {
+  XcodeAIProviderPermissionView(hasClickedGivePermission: true)
 }
 #endif

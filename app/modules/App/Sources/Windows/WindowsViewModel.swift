@@ -70,6 +70,9 @@ final class WindowsViewModel {
       // Show onboarding at least once
       return true
     }
+    if userDefaults.bool(forKey: .alwaysShowOnboardingDefaultKey) {
+      return true
+    }
     if !isAccessibilityPermissionGranted {
       // Show onboarding if accessibility permission is not granted
       return true

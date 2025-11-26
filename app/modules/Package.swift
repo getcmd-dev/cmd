@@ -1379,6 +1379,7 @@ targets.append(
       "LLMServiceInterface",
       "Onboarding",
       "PermissionsServiceInterface",
+      "SettingsServiceInterface",
       "SwiftTesting",
     ],
     path: "./features/Onboarding"))

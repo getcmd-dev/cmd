@@ -21,6 +21,7 @@ struct AboutSettingsView: View {
   @Binding var enablePushNotifications: Bool
   @Bindable var accessibilityPermission: ObservableValue<PermissionStatus>
   @Bindable var xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  @Bindable var xcodeAutomationPermission: ObservableValue<PermissionStatus>
   @Bindable var pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var body: some View {
@@ -73,6 +74,11 @@ struct AboutSettingsView: View {
               permission: .xcodeExtension,
               permissionsService: permissionsService,
               status: xcodeExtensionPermission)
+            Divider()
+            PermissionStatusRow(
+              permission: .xcodeAutomation,
+              permissionsService: permissionsService,
+              status: xcodeAutomationPermission)
             Divider()
             PermissionStatusRow(
               permission: .pushNotification,
@@ -163,7 +169,7 @@ struct AboutSettingsView: View {
 
             VStack(spacing: 12) {
               ForEach(FileEditMode.allCases, id: \.self) { mode in
-                HStack {
+                HStack(alignment: .top, spacing: 12) {
                   VStack(alignment: .leading, spacing: 4) {
                     Text(mode.rawValue)
                       .fontWeight(.medium)
@@ -171,10 +177,11 @@ struct AboutSettingsView: View {
                       .font(.caption)
                       .foregroundColor(.secondary)
                   }
-                  Spacer()
+                  Spacer(minLength: 0)
                   RadioButton(isSelected: fileEditMode == mode) {
                     fileEditMode = mode
                   }
+                  .fixedSize()
                 }
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -382,6 +389,8 @@ private struct PermissionStatusRow: View {
       "Xcode Extension Permission"
     case .pushNotification:
       "Push Notification Permission"
+    case .xcodeAutomation:
+      "Xcode Preference Management"
     }
   }
 
