@@ -93,7 +93,8 @@ public struct SettingsView: View {
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
           defaultLogLevel: $viewModel.defaultLogLevel,
-          overrideAutomaticallyUpdateXcodeSettings: $viewModel.overrideAutomaticallyUpdateXcodeSettings)
+          overrideAutomaticallyUpdateXcodeSettings: $viewModel.overrideAutomaticallyUpdateXcodeSettings,
+          enableDiskLogging: $viewModel.enableDiskLogging)
 
       case .about:
         AboutSettingsView(

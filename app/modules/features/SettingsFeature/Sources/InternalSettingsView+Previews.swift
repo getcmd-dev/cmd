@@ -17,7 +17,8 @@ import SwiftUI
     enableNetworkProxy: .constant(false),
     showToolInputCopyButtonInRelease: .constant(false),
     defaultLogLevel: .constant(.info),
-    overrideAutomaticallyUpdateXcodeSettings: .constant(nil))
+    overrideAutomaticallyUpdateXcodeSettings: .constant(nil),
+    enableDiskLogging: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -33,7 +34,8 @@ import SwiftUI
     enableNetworkProxy: .constant(true),
     showToolInputCopyButtonInRelease: .constant(true),
     defaultLogLevel: .constant(.debug),
-    overrideAutomaticallyUpdateXcodeSettings: .constant(true))
+    overrideAutomaticallyUpdateXcodeSettings: .constant(true),
+    enableDiskLogging: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }
