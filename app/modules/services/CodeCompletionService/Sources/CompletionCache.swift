@@ -3,6 +3,8 @@
 
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
+import FileDiffFoundation
+import FileDiffTypesFoundation
 import Foundation
 import ThreadSafe
 
@@ -10,6 +12,7 @@ import ThreadSafe
 
 /// Represents a code completion request used for caching
 struct CompletionCacheRequest: Sendable, Hashable {
+  let workspace: URL
   let file: URL
   let content: String
   let selection: CodeCompletionFoundation.Range
@@ -35,6 +38,7 @@ final class CompletionCache: Sendable {
   }
 
   struct CachedSuggestion {
+    let workspaceURL: URL
     let fileURL: URL
     let prefix: String
     let suffix: String
@@ -47,7 +51,12 @@ final class CompletionCache: Sendable {
       let newContent = suggestion.newContent
       let prefix = oldContent.commonPrefix(with: newContent)
       let suffix = oldContent.commonSuffix(with: newContent)
-      return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: suggestion))
+      return cachedSuggestions.insert(.init(
+        workspaceURL: request.workspace,
+        fileURL: request.file,
+        prefix: prefix,
+        suffix: suffix,
+        completion: suggestion))
     } else {
       let content = request.content
       let lines = content.splitLines()
@@ -57,7 +66,12 @@ final class CompletionCache: Sendable {
       let cursorOffset = lineOffsets[request.selection.start.line] + request.selection.start.character
       let prefix = String(content.prefix(upTo: content.index(content.startIndex, offsetBy: cursorOffset)))
       let suffix = String(content.suffix(from: content.index(content.startIndex, offsetBy: cursorOffset)))
-      return cachedSuggestions.insert(.init(fileURL: request.file, prefix: prefix, suffix: suffix, completion: nil))
+      return cachedSuggestions.insert(.init(
+        workspaceURL: request.workspace,
+        fileURL: request.file,
+        prefix: prefix,
+        suffix: suffix,
+        completion: nil))
     }
   }
 
@@ -66,13 +80,13 @@ final class CompletionCache: Sendable {
   {
     let content = request.content
     for (k, cached) in cachedSuggestions {
-      if cached.fileURL != request.file { continue }
+      if cached.workspaceURL != request.workspace || cached.fileURL != request.file { continue }
       if !content.hasPrefix(cached.prefix) || !content.hasSuffix(cached.suffix) { continue }
       let changedRange = changedRange(content: request.content, prefix: cached.prefix, suffix: cached.suffix)
       if !changedRange.contains(request.selection) { continue }
       let middleContent = String(content.dropFirst(cached.prefix.count).dropLast(cached.suffix.count))
       if let completion = cached.completion {
-        if middleContent.matches(completion.diff) {
+        if middleContent.matches(Array(completion.diff.inline.trimming(while: { $0.type == .unchanged }))) {
           cachedSuggestions.use(k)
           if let suggestion = completion.applied(to: request, changedRange: changedRange) {
             return (cacheId: k, suggestion: suggestion)
@@ -127,14 +141,14 @@ extension StringProtocol {
 }
 
 typealias Diff = [CodeCompletionServiceInterface.CompletionSuggestion.LineChange]
-typealias InlineDiff = [CodeCompletionServiceInterface.CompletionSuggestion.LineChange.WordChange]
+typealias InlineDiff = [CharacterLevelChange]
 
-extension Diff {
+extension [[CharacterLevelChange]] {
   var inline: InlineDiff {
     var result: InlineDiff = []
     var lastChange: InlineDiff.Element? = nil
     for lineChange in self {
-      for wordChange in lineChange.changes {
+      for wordChange in lineChange {
         if lastChange?.type == wordChange.type {
           // Merge with last
           lastChange = InlineDiff.Element(
@@ -156,6 +170,12 @@ extension Diff {
   }
 }
 
+extension Diff {
+  var inline: InlineDiff {
+    map(\.changes).inline
+  }
+}
+
 extension StringProtocol {
   /// Returns whether the string corresponds to the diff partially applied.
   /// Example:
@@ -165,11 +185,25 @@ extension StringProtocol {
   ///     "hello wo" -> true
   ///     "hello o" -> true  (any part of the added/removed segment is acceptable)
   ///     "ello world" -> false
-  func matches(_ diff: Diff) -> Bool {
-    matches(Array(diff.inline.trimming(while: { $0.type == .unchanged })))
+  func matches(_ diff: InlineDiff) -> Bool {
+    let unchangedDiffPrefix = diff.prefix(while: { $0.type == .unchanged })
+    if unchangedDiffPrefix.count == diff.count {
+      // All unchanged
+      return self == diff.map(\.text).joined()
+    }
+    let unchangedDiffSuffix = diff.suffix(while: { $0.type == .unchanged })
+    let changedDiff = diff[unchangedDiffPrefix.count..<diff.count - unchangedDiffSuffix.count]
+    let unchangedPrefix = unchangedDiffPrefix.map(\.text).joined()
+    let unchangedSuffix = unchangedDiffSuffix.map(\.text).joined()
+    if !hasPrefix(unchangedPrefix) || !hasSuffix(unchangedSuffix) { return false }
+    if unchangedPrefix.count + unchangedSuffix.count == count {
+      return changedDiff.allSatisfy({ $0.type != .unchanged })
+    }
+    let matchedRange = index(startIndex, offsetBy: unchangedPrefix.count)..<index(endIndex, offsetBy: -unchangedSuffix.count)
+    return self[matchedRange].matchesChangedOnly(Array(changedDiff))
   }
 
-  func matches(_ diff: InlineDiff) -> Bool {
+  private func matchesChangedOnly(_ diff: InlineDiff) -> Bool {
     let cand = Array(self)
     let M = cand.count
 
@@ -228,6 +262,33 @@ extension StringProtocol {
       }
     }
 
+    var hasTestedSimplicity = false
+    // Validate that the change from the current content to the target content is simpler than the original one.
+    // The git diff is likely more expensive than the compute as it calls into a subprocess, so we run it once before returning true.
+    // This validation prevents accepting content that quite clearly doesn't correspond to the user making progress from the cached content to the suggested content, ie:
+    // "hello you" matches? "hello [+some extremely long suggested content+]" -> false even though we could find a subset like:
+    // "hello [+some extremel+]y[+ l+]o[+ng s+]u[+ggested content+]"
+
+    let testNewChangeIsSimpler = {
+      if hasTestedSimplicity { return true }
+      hasTestedSimplicity = true
+
+      // Quick verification that the diff didn
+      let targetContent = diff.filter { $0.type != .removed }.map(\.text).joined()
+      let oldContent = String(self)
+      guard let newDiff = try? FileDiff.getCharacterDiff(oldContent: oldContent, newContent: targetContent) else {
+        return false
+      }
+      let newChange = FileDiff.characterDiffToLineChanges(
+        diff: newDiff,
+        oldContent: oldContent,
+        newContent: targetContent).lineChanges.inline
+      if
+        newChange.filter({ $0.type != .unchanged }).count > diff.filter({ $0.type != .unchanged }).count || newChange.map(\.text)
+          .joined().count > diff.map(\.text).joined().count { return false }
+      return true
+    }
+
     for i in 0..<N {
       let (ch, required) = flat[i]
       resetNext()
@@ -280,12 +341,15 @@ extension StringProtocol {
 
       // Early success: candidate fully consumed and no required chars left
       if dp[M], requiredSuffix[i + 1] == 0 {
+        if !testNewChangeIsSimpler() { return false }
         return true
       }
     }
 
     // At the end we must have consumed the whole candidate
-    return dp[M]
+    if !dp[M] { return false }
+    if !testNewChangeIsSimpler() { return false }
+    return true
   }
 
   private func isSubsequence<T: Equatable>(_ small: [T], in big: [T]) -> Bool {

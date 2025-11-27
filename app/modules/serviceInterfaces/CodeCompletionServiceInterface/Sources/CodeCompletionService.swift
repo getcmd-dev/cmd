@@ -63,15 +63,7 @@ public struct CompletionSuggestion: Sendable {
       self.changes = changes
     }
 
-    public struct WordChange: Sendable {
-      public let text: String
-      public let type: DiffContentType
-
-      public init(text: String, type: DiffContentType) {
-        self.text = text
-        self.type = type
-      }
-    }
+    public typealias WordChange = CharacterLevelChange
   }
 
   /// The file for which the completion is suggested
@@ -87,7 +79,7 @@ public struct CompletionSuggestion: Sendable {
 
 }
 
-#if DEBUG
+/// #if DEBUG
 extension [CompletionSuggestion.LineChange] {
   public var debugDescription: String {
     map(\.debugDescription).joined(separator: "")
@@ -121,4 +113,5 @@ extension CompletionSuggestion.LineChange.WordChange {
     }
   }
 }
-#endif
+
+// #endif

@@ -670,6 +670,7 @@ targets.append(
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "FileDiffFoundation",
+      "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "LLMFoundation",
       "LocalServerServiceInterface",
