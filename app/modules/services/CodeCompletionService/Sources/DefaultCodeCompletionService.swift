@@ -142,7 +142,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
     }
-    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
+    let request = CompletionCacheRequest(workspace: workspace.url, file: file, content: content, selection: selection)
 
     // Get formatting metadata for the workspace
     let formattingMetadata = await getFormattingMetadata(for: workspace)
@@ -158,6 +158,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       .applied(to: content, file: file, selection: selection)
 
     if let suggestion {
+      defaultLogger.trace("Got completion suggestion \(suggestion.diff.debugDescription)")
       let cacheId = cachedCompletions.store(suggestion: suggestion, for: request)
       return (cachedRequestId: cacheId, suggestion: suggestion)
     } else {
@@ -172,16 +173,16 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
   {
     let file = request.file
-    let workspace = request.workspace // TODO
+    let workspace = request.workspace
     let content = request.content
     let selection = request.selection
     guard isAvailable.currentValue else {
       return nil
     }
-    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
+    let request = CompletionCacheRequest(workspace: workspace, file: file, content: content, selection: selection)
 
     if let (cacheId, cachedCompletion) = cachedCompletions.get(for: request) {
-      defaultLogger.log("Returning cached completion")
+      defaultLogger.log("Returning cached completion \(cachedCompletion?.diff.debugDescription ?? "nil")")
       return (cachedRequestId: cacheId, suggestion: cachedCompletion)
     }
     return nil

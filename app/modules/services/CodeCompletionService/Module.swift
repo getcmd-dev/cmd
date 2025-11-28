@@ -9,6 +9,7 @@ Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FileDiffFoundation",
+    "FileDiffTypesFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
     "LocalServerServiceInterface",

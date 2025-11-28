@@ -4,19 +4,6 @@
 import Algorithms
 import FileDiffTypesFoundation
 
-// MARK: - CharacterLevelChange
-
-/// Represents a character-level change in a diff.
-public struct CharacterLevelChange: Sendable {
-  public let text: String
-  public let type: DiffContentType
-
-  public init(text: String, type: DiffContentType) {
-    self.text = text
-    self.type = type
-  }
-}
-
 extension FileDiff {
 
   /// Parses a character-level git diff (from `git diff --word-diff-regex=.`) and returns
