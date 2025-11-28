@@ -432,6 +432,195 @@ struct CompletionCacheTests {
       .debugDescription == "print hello{+\n world\n+}")
   }
 
+  // MARK: - Remove Tests
+
+  @Test("Remove deletes cached entry by ID")
+  func removeDeletesCachedEntryById() async throws {
+    // given
+    let sut = CompletionCache()
+    let content = """
+      func test() {
+        // TODO: implement
+      }
+      """
+    let cursorPosition = Position(line: 1, character: 2)
+    let file = URL(fileURLWithPath: "/test.swift")
+    let workspace = URL(fileURLWithPath: "/workspace")
+
+    let request = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: content,
+      selection: .init(start: cursorPosition, end: cursorPosition))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: "  print(0)",
+      cursor: .init(line: 1, character: 2),
+      changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 20))))
+
+    // when
+    let cacheId = sut.store(suggestion: suggestion, for: request)
+    let beforeRemove = sut.get(for: request)
+    #expect(beforeRemove != nil)
+
+    sut.remove(cachedRequestId: cacheId)
+    let afterRemove = sut.get(for: request)
+
+    // then
+    #expect(afterRemove == nil)
+  }
+
+  @Test("Remove with non-existent ID does not affect cache")
+  func removeWithNonExistentIdDoesNotAffectCache() async throws {
+    // given
+    let sut = CompletionCache()
+    let content = "func test() {}"
+    let cursorPosition = Position(line: 0, character: 5)
+    let file = URL(fileURLWithPath: "/test.swift")
+    let workspace = URL(fileURLWithPath: "/workspace")
+
+    let request = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: content,
+      selection: .init(start: cursorPosition, end: cursorPosition))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: " myFunc",
+      cursor: cursorPosition))
+
+    // when
+    let cacheId = sut.store(suggestion: suggestion, for: request)
+    sut.remove(cachedRequestId: 99999) // non-existent ID
+    let result = sut.get(for: request)
+
+    // then
+    let retrieved = try #require(result)
+    #expect(retrieved.cacheId == cacheId)
+    #expect(retrieved.suggestion != nil)
+  }
+
+  @Test("Remove does not affect other cached entries")
+  func removeDoesNotAffectOtherCachedEntries() async throws {
+    // given
+    let sut = CompletionCache()
+    let workspace = URL(fileURLWithPath: "/workspace")
+    let file1 = URL(fileURLWithPath: "/test1.swift")
+    let file2 = URL(fileURLWithPath: "/test2.swift")
+
+    // First entry - multiline to make cache matching more reliable
+    let content1 = """
+      func test1() {
+        // TODO
+      }
+      """
+    let cursor1 = Position(line: 1, character: 2)
+    let request1 = CompletionCacheRequest(
+      workspace: workspace,
+      file: file1,
+      content: content1,
+      selection: .init(start: cursor1, end: cursor1))
+    let suggestion1 = try #require(createCompletion(
+      oldContent: content1,
+      completion: "  first()",
+      cursor: cursor1,
+      changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 8))))
+
+    // Second entry - multiline to make cache matching more reliable
+    let content2 = """
+      func test2() {
+        // TODO
+      }
+      """
+    let cursor2 = Position(line: 1, character: 2)
+    let request2 = CompletionCacheRequest(
+      workspace: workspace,
+      file: file2,
+      content: content2,
+      selection: .init(start: cursor2, end: cursor2))
+    let suggestion2 = try #require(createCompletion(
+      oldContent: content2,
+      completion: "  second()",
+      cursor: cursor2,
+      changeRange: .init(start: .init(line: 1, character: 0), end: .init(line: 1, character: 8))))
+
+    // when
+    let cacheId1 = sut.store(suggestion: suggestion1, for: request1)
+    let cacheId2 = sut.store(suggestion: suggestion2, for: request2)
+
+    sut.remove(cachedRequestId: cacheId1)
+
+    let result1 = sut.get(for: request1)
+    let result2 = sut.get(for: request2)
+
+    // then
+    #expect(result1 == nil)
+    let retrieved2 = try #require(result2)
+    #expect(retrieved2.cacheId == cacheId2)
+    #expect(retrieved2.suggestion != nil)
+  }
+
+  @Test("Remove can be called multiple times with same ID")
+  func removeCanBeCalledMultipleTimesWithSameId() async throws {
+    // given
+    let sut = CompletionCache()
+    let content = "test"
+    let cursor = Position(line: 0, character: content.count)
+    let file = URL(fileURLWithPath: "/test.swift")
+    let workspace = URL(fileURLWithPath: "/workspace")
+
+    let request = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: content,
+      selection: .init(start: cursor, end: cursor))
+
+    let suggestion = try #require(createCompletion(
+      oldContent: content,
+      completion: "ing",
+      file: file,
+      cursor: cursor))
+
+    // when
+    let cacheId = sut.store(suggestion: suggestion, for: request)
+    sut.remove(cachedRequestId: cacheId)
+    sut.remove(cachedRequestId: cacheId) // call again
+
+    let result = sut.get(for: request)
+
+    // then
+    #expect(result == nil)
+  }
+
+  @Test("Remove works with nil suggestion entries")
+  func removeWorksWithNilSuggestionEntries() async throws {
+    // given
+    let sut = CompletionCache()
+    let content = "hello"
+    let cursor = Position(line: 0, character: content.count)
+    let file = URL(fileURLWithPath: "/test.swift")
+    let workspace = URL(fileURLWithPath: "/workspace")
+
+    let request = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: content,
+      selection: .init(start: cursor, end: cursor))
+
+    // when - store nil suggestion
+    let cacheId = sut.store(suggestion: nil, for: request)
+    let beforeRemove = sut.get(for: request)
+    #expect(beforeRemove != nil)
+
+    sut.remove(cachedRequestId: cacheId)
+    let afterRemove = sut.get(for: request)
+
+    // then
+    #expect(afterRemove == nil)
+  }
+
   private func createCompletion(
     oldContent: String,
     completion: String,

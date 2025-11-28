@@ -98,7 +98,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
 
           performanceLogger
             .trace(
-              "key \(event.getIntegerValueField(.keyboardEventKeycode)) handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
+              "key handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
           return result
         },
         userInfo: Unmanaged.passUnretained(self).toOpaque())
