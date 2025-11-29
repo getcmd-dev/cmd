@@ -187,4 +187,48 @@ struct CodeSuggestionHelperTests {
     // then
     #expect(result.diff.debugDescription == "line 2{+0+}\n")
   }
+
+  // MARK: - containsNonWhitespaceCompletion
+
+  @Test("containsNonWhitespaceCompletion returns false for whitespace-only completion")
+  func containsNonWhitespaceCompletionReturnsFalseForWhitespaceOnly() throws {
+    // given
+    let content = "func test() {}"
+    let file = URL(fileURLWithPath: "/test.swift")
+    let cursor = Position(line: 0, character: 14)
+    let selection = Range(start: cursor, end: cursor)
+    let suggestion = RawCompletionSuggestion(
+      file: file,
+      startPosition: cursor,
+      endPosition: cursor,
+      completion: "   \t  ", // only whitespace
+      id: UUID())
+
+    // when
+    let result = try #require(suggestion.applied(to: content, file: file, selection: selection))
+
+    // then
+    #expect(result.containsNonWhitespaceCompletion == false)
+  }
+
+  @Test("containsNonWhitespaceCompletion returns true for non-whitespace completion")
+  func containsNonWhitespaceCompletionReturnsTrueForNonWhitespace() throws {
+    // given
+    let content = "func test() {}"
+    let file = URL(fileURLWithPath: "/test.swift")
+    let cursor = Position(line: 0, character: 14)
+    let selection = Range(start: cursor, end: cursor)
+    let suggestion = RawCompletionSuggestion(
+      file: file,
+      startPosition: cursor,
+      endPosition: cursor,
+      completion: "  code()", // has non-whitespace
+      id: UUID())
+
+    // when
+    let result = try #require(suggestion.applied(to: content, file: file, selection: selection))
+
+    // then
+    #expect(result.containsNonWhitespaceCompletion == true)
+  }
 }
