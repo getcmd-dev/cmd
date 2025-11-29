@@ -102,6 +102,10 @@ final class CompletionCache: Sendable {
     return nil
   }
 
+  func remove(cachedRequestId: Int) {
+    cachedSuggestions.remove(cachedRequestId)
+  }
+
   // TODO: find the right way to store/index this data
   private var cachedSuggestions = LRUQueue<CachedSuggestion>()
 

@@ -32,6 +32,7 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
     }
   }
 
+  @discardableResult
   func insert(_ value: Item) -> Int {
     inLock { state in
       let key = state.nextKey
@@ -41,6 +42,17 @@ final class LRUQueue<Item: Sendable>: Sendable, Sequence {
         removeTail(&state)
       }
       return key
+    }
+  }
+
+  @discardableResult
+  func remove(_ key: Int) -> Item? {
+    inLock { state in
+      if let node = state.dict[key] {
+        remove(node, &state)
+        return state.dict.removeValue(forKey: key)?.value
+      }
+      return nil
     }
   }
 

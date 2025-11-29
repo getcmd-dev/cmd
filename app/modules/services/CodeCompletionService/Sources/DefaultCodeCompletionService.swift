@@ -167,7 +167,9 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     return nil
   }
 
-  nonisolated func deleteCachedCompletion(cachedRequestId _: Int) { }
+  nonisolated func deleteCachedCompletion(cachedRequestId: Int) {
+    cachedCompletions.remove(cachedRequestId: cachedRequestId)
+  }
 
   nonisolated func cachedCompletion(_ request: CompletionRequest) throws
     -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
