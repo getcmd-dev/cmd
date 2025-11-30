@@ -157,7 +157,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       formattingMetadata: formattingMetadata)?
       .applied(to: content, file: file, selection: selection)
 
-    if let suggestion {
+    if let suggestion, suggestion.containsNonWhitespaceCompletion {
       defaultLogger.trace("Got completion suggestion \(suggestion.diff.debugDescription)")
       let cacheId = cachedCompletions.store(suggestion: suggestion, for: request)
       return (cachedRequestId: cacheId, suggestion: suggestion)
@@ -184,6 +184,9 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     let request = CompletionCacheRequest(workspace: workspace, file: file, content: content, selection: selection)
 
     if let (cacheId, cachedCompletion) = cachedCompletions.get(for: request) {
+      if let cachedCompletion, !cachedCompletion.containsNonWhitespaceCompletion {
+        return nil
+      }
       defaultLogger.log("Returning cached completion \(cachedCompletion?.diff.debugDescription ?? "nil")")
       return (cachedRequestId: cacheId, suggestion: cachedCompletion)
     }

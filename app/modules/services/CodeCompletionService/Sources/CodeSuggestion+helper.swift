@@ -78,3 +78,17 @@ extension RawCompletionSuggestion {
       diff: diff)
   }
 }
+
+extension CompletionSuggestion {
+  /// Returns true if the completion contains at least one non-whitespace character in its changed (added or removed) text.
+  var containsNonWhitespaceCompletion: Bool {
+    for lineChange in diff {
+      for change in lineChange.changes where change.type != .unchanged {
+        if change.text.contains(where: { !$0.isWhitespace }) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+}
