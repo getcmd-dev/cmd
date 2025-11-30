@@ -586,117 +586,46 @@ struct CharacterDiffToLineChangesTests {
   @Test
   func testFoo() throws {
     let oldContent = """
-      // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
-      // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-      import Observation
-      import Foundation
-      import XcodeObserverServiceInterface
-      import Dependencies
-      import AppEventServiceInterface
-      import ChatAppEventsFoundation
-      import Combine
-      @Observable @MainActor
-      final class InlineChatsViewModel {
-          // Workspace URL -> File URL -> InlineChats
-          var chats: [URL: [URL: [InlineChatViewModel]]] = [:]
+      self.xcodeObserver = xcodeObserver
+      @Dependency(\\.appEventHandlerRegistry) var appEventHandlerRegistry
 
-          init() {
-              @Dependency(\\.xcodeObserver) var xcodeObserver
-              self.xcodeObserver = xcodeObserver
-              @Dependency(\\.appEventHandlerRegistry) var appEventHandlerRegistry
-
-              appEventHandlerRegistry.registerHandler() { [weak self] event in
-                  guard let self else { return false }
-                  switch event {
-                  case is InlineChatViewModel:
-                      Task {
-                          await self.addNewChat()
-                      }
-                      return true
-                  default:
-                      return false
-                  }
+      appEventHandlerRegistry.registerHandler() { [weak self] event in
+          guard let self else { return false }
+          switch event {
+          case is InlineChatViewModel:
+              Task {
+                  await self.addNewChat()
               }
-      }
-          @ObservationIgnored
-          private var cancellables = Set<AnyCancellable>()
-
-          func addNewChat() async {
-              guard let workspace = xcodeObserver.state.focusedWorkspace,
-                    let editor = workspace.focussedEditor,
-                    let file = await xcodeObserver.focusedTabURL(in: workspace),
-                      let selection = editor.selections.first else { return }
-
-              chats[workspace.url] = chats[workspace.url, default: [:]]
-              chats[workspace.url]?[file] = chats[workspace.url]?[file, default: []]
-              let newChat = InlineChatViewModel(workspace: workspace.url, file: file, selection: selection)
-              chats[workspace.url]?[file]?.append(newChat)
+              return true
+          default:
+              return false
           }
-
-          func removeChat(_ chat: InlineChatViewModel) {
-              guard let workspaceChats = chats[chat.workspace],
-                    let fileChats = workspaceChats[chat.file],
-                    let index = fileChats.firstIndex(where: { $0.id == chat.id }) else { return }
-              chats[chat.workspace]?[chat.file]?.remove(at: index)
-          }
-
-          private let xcodeObserver: XcodeObserver
       }
       """
 
     let newContent = """
-      // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
-      // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-      import Observation
-      import Foundation
-      import XcodeObserverServiceInterface
-      import Dependencies
-      import AppEventServiceInterface
-      import ChatAppEventsFoundation
-      import Combine
-      @Observable @MainActor
-      final class InlineChatsViewModel {
-          // Workspace URL -> File URL -> InlineChats
-          var chats: [URL: [URL: [InlineChatViewModel]]] = [:]
-
-          init() {
-              @Dependency(\\.xcodeObserver) var xcodeObserver
-              self.xcodeObserver = xcodeObserver:
-                      Task {
-                          await self.addNewChat()
-                      }
-                      return true
-                  default:
-                      return false
-                  }
+      self.xcodeObserver = xcodeObserver:
+              Task {
+                  await self.addNewChat()
               }
-      }
-          @ObservationIgnored
-          private var cancellables = Set<AnyCancellable>()
-
-          func addNewChat() async {
-              guard let workspace = xcodeObserver.state.focusedWorkspace,
-                    let editor = workspace.focussedEditor,
-                    let file = await xcodeObserver.focusedTabURL(in: workspace),
-                      let selection = editor.selections.first else { return }
-
-              chats[workspace.url] = chats[workspace.url, default: [:]]
-              chats[workspace.url]?[file] = chats[workspace.url]?[file, default: []]
-              let newChat = InlineChatViewModel(workspace: workspace.url, file: file, selection: selection)
-              chats[workspace.url]?[file]?.append(newChat)
+              return true
+          default:
+              return false
           }
-
-          func removeChat(_ chat: InlineChatViewModel) {
-              guard let workspaceChats = chats[chat.workspace],
-                    let fileChats = workspaceChats[chat.file],
-                    let index = fileChats.firstIndex(where: { $0.id == chat.id }) else { return }
-              chats[chat.workspace]?[chat.file]?.remove(at: index)
-          }
-
-          private let xcodeObserver: XcodeObserver
       }
       """
     let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    // Diff is:
+//      @@ -1,10 +1,4 @@
+//      self.xcodeObserver = xcodeObserver[-@Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry-]
+//
+//      [-appEventHandlerRegistry.registerHandler() { [weak self] event in-]
+//      [-    guard let self else { return false }-]
+//      [-    switch event {-]
+//      [-    case is InlineChatViewModel-]:
+//              Task {
+//                  await self.addNewChat()
+//              }
     let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
       diff: diff,
       oldContent: oldContent,
