@@ -129,7 +129,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     runLoop = nil
   }
 
-  @MainActor
   private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle tap disabled events
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
@@ -161,7 +160,6 @@ final class KeyEventListener: Sendable {
   let configuration: KeyEventHandler.Configuration
   let callbacks: KeyEventHandler.Callbacks
 
-  @MainActor
   func handleEvent(proxy _: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle flagsChanged for modifier keys
     if type == .flagsChanged, configuration.isModifierKey {
@@ -245,7 +243,6 @@ final class KeyEventListener: Sendable {
   /// Track the last time the key was released for double-tap detection
   private var lastKeyUpTime: Date?
 
-  @MainActor
   private func handleModifierFlagsChanged(event: CGEvent) -> Unmanaged<CGEvent>? {
     let flags = event.flags
 
@@ -391,10 +388,13 @@ final class KeyEventHandler {
   }
 
   /// Callbacks for key events
+  /// IMPORTANT: These callbacks run synchronously on the CGEvent callback thread, NOT on the main actor.
+  /// They must return quickly (ideally < 1ms) to avoid blocking keyboard input.
+  /// Any side effects should be dispatched to the main actor asynchronously.
   struct Callbacks: Sendable {
     init(
-      onKeyDown: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
-      onKeyUp: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      onKeyDown: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      onKeyUp: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
       doubleTapInterval: TimeInterval = 0.3)
     {
       self.onKeyDown = onKeyDown
@@ -407,14 +407,14 @@ final class KeyEventHandler {
     /// - isDoubleTap: Whether this is part of a double-tap sequence
     /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
     /// Return true to consume the event, false to pass it through
-    let onKeyDown: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
+    let onKeyDown: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
 
     /// Called when a key up event occurs (if monitored)
     /// Parameters:
     /// - isDoubleTap: Whether this is part of a double-tap sequence
     /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
     /// Return true to consume the event, false to pass it through
-    let onKeyUp: (@MainActor (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
+    let onKeyUp: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
 
     /// Maximum time interval (in seconds) between taps to be considered a double-tap
     /// Default is 0.3 seconds
