@@ -13,6 +13,7 @@ import LoggingServiceInterface
 import Observation
 import SettingsServiceInterface
 import ShellServiceInterface
+import ThreadSafe
 import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 import XcodeThemeFoundation
@@ -22,6 +23,39 @@ import XcodeThemeFoundation
 // MARK: - CodeCompletionViewModel
 
 let performanceLogger = defaultLogger.subLogger(subsystem: "code-completion-performance")
+
+// MARK: - KeyEventState
+
+/// Thread-safe state container for key event decision-making.
+/// This allows CGEvent callbacks to check state without blocking on the main actor.
+@ThreadSafe
+final class KeyEventState: Sendable {
+  var hasCompletion = false
+
+  var hasEditorState = false
+
+  var isCompletionExpandable = false
+
+  var isAutomaticCompletionEnabled = false
+
+  var multiLineDisplayModeIsAlwaysShown = false
+
+  func update(
+    hasCompletion: Bool? = nil,
+    hasEditorState: Bool? = nil,
+    isCompletionExpandable: Bool? = nil,
+    isAutomaticCompletionEnabled: Bool? = nil,
+    multiLineDisplayModeIsAlwaysShown: Bool? = nil)
+  {
+    inLock { state in
+      if let hasCompletion { state.hasCompletion = hasCompletion }
+      if let hasEditorState { state.hasEditorState = hasEditorState }
+      if let isCompletionExpandable { state.isCompletionExpandable = isCompletionExpandable }
+      if let isAutomaticCompletionEnabled { state.isAutomaticCompletionEnabled = isAutomaticCompletionEnabled }
+      if let multiLineDisplayModeIsAlwaysShown { state.multiLineDisplayModeIsAlwaysShown = multiLineDisplayModeIsAlwaysShown }
+    }
+  }
+}
 
 // MARK: - CodeCompletionViewModel
 
@@ -66,92 +100,96 @@ final class CodeCompletionViewModel {
     }
 
     // Initialize Tab key handler (triggered on key down, allows Command modifier)
+    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
     completionKeyHandlers.append(KeyEventHandler(
       manager: keyEventHandlerManager,
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
-        onKeyDown: { [weak self] _, modifiers in
-          guard let self, editorState != nil, completion != nil else { return false }
+        onKeyDown: { [keyEventState] _, modifiers in
+          guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
           guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
           guard
-            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
-              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+            !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
+              !keyEventState.multiLineDisplayModeIsAlwaysShown)
           else {
             // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
             return false
           }
           return true
         },
-        onKeyUp: { [weak self] (_: Bool, modifiers: CGEventFlags) in
-          guard let self, isXcodeActive, editorState != nil, completion != nil else { return false }
+        onKeyUp: { [weak self, keyEventState] (_: Bool, modifiers: CGEventFlags) in
+          guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
           guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
           guard
-            !modifiers.contains(.maskCommand) || (isCompletionExpandable &&
-              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+            !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
+              !keyEventState.multiLineDisplayModeIsAlwaysShown)
           else {
             // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
             return false
           }
-          handleTabKeyPressed()
+          // Dispatch side effect to main actor asynchronously
+          Task { @MainActor in self?.handleTabKeyPressed() }
           return true
         })))
 
     // Initialize Escape key handler (triggered on key up - when press is completed)
+    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
     escapeKeyHandler = KeyEventHandler(
       manager: keyEventHandlerManager,
       configuration: .escape(),
       callbacks: .init(
-        onKeyDown: { [weak self] isDoubleTap, _ in
-          guard let self, isXcodeActive, editorState != nil else { return false }
+        onKeyDown: { [keyEventState] isDoubleTap, _ in
+          guard keyEventState.hasEditorState else { return false }
           if isDoubleTap {
             return true
           }
-          guard !isAutomaticCompletionEnabled || completion != nil else {
+          guard !keyEventState.isAutomaticCompletionEnabled || keyEventState.hasCompletion else {
             return false
           }
           return true
         },
-        onKeyUp: { [weak self] (isDoubleTap: Bool, _: CGEventFlags) in
-          guard let self, isXcodeActive, editorState != nil else { return false }
+        onKeyUp: { [weak self, keyEventState] (isDoubleTap: Bool, _: CGEventFlags) in
+          guard keyEventState.hasEditorState else { return false }
           if isDoubleTap {
-            handleEscapeDoubleTap()
+            // Dispatch side effect to main actor asynchronously
+            Task { @MainActor in self?.handleEscapeDoubleTap() }
             return true
           }
-          guard !isAutomaticCompletionEnabled || completion != nil else {
+          guard !keyEventState.isAutomaticCompletionEnabled || keyEventState.hasCompletion else {
             return false
           }
-          handleEscape()
+          // Dispatch side effect to main actor asynchronously
+          Task { @MainActor in self?.handleEscape() }
           return true
         }))
     escapeKeyHandler?.start()
 
     // Initialize Command key handlers (triggered on both key down and key up)
     // Left Command key code is 55, Right Command key code is 54
+    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
     for code in [54, 55] {
       completionKeyHandlers.append(KeyEventHandler(
         manager: keyEventHandlerManager,
         configuration: .key(code),
         callbacks: .init(
-          onKeyDown: { [weak self] _, _ in
+          onKeyDown: { [weak self, keyEventState] _, _ in
             guard
-              let self,
-              isXcodeActive,
-              editorState != nil,
-              isCompletionExpandable,
-              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+              keyEventState.hasEditorState,
+              keyEventState.isCompletionExpandable,
+              !keyEventState.multiLineDisplayModeIsAlwaysShown
             else { return false }
-            handleCommandKeyDown()
+            // Dispatch side effect to main actor asynchronously
+            Task { @MainActor in self?.handleCommandKeyDown() }
             return true
           },
-          onKeyUp: { [weak self] (_: Bool, _: CGEventFlags) in
+          onKeyUp: { [weak self, keyEventState] (_: Bool, _: CGEventFlags) in
             guard
-              let self,
-              isXcodeActive,
-              editorState != nil,
-              isCompletionExpandable,
-              !settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
+              keyEventState.hasEditorState,
+              keyEventState.isCompletionExpandable,
+              !keyEventState.multiLineDisplayModeIsAlwaysShown
             else { return false }
-            handleCommandKeyUp()
+            // Dispatch side effect to main actor asynchronously
+            Task { @MainActor in self?.handleCommandKeyUp() }
             return true
           })))
     }
@@ -211,7 +249,12 @@ final class CodeCompletionViewModel {
   private(set) var isCompletionExpanded = false
   private(set) var showAutomaticCompletionStatusMessage = false
 
-  private(set) var isAutomaticCompletionEnabled = true
+  private(set) var isAutomaticCompletionEnabled = true {
+    didSet {
+      // Update thread-safe state for CGEvent callbacks
+      keyEventState.update(isAutomaticCompletionEnabled: isAutomaticCompletionEnabled)
+    }
+  }
 
   /// The offset between the top of the view and the top of the text being completed.
   var verticalContentOffset: CGFloat = 0 {
@@ -224,6 +267,12 @@ final class CodeCompletionViewModel {
 
   private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
     didSet {
+      // Update thread-safe state for CGEvent callbacks
+      keyEventState.update(
+        hasCompletion: completion != nil,
+        isCompletionExpandable: completion?.diff.count ?? 0 > 1,
+        multiLineDisplayModeIsAlwaysShown: settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
+
       if completion == nil {
         for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
       } else {
@@ -272,14 +321,21 @@ final class CodeCompletionViewModel {
   private let keyboardShortcutService: KeyboardShortcutService
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
-  private var editorState: EditorState?
   private let keyEventHandlerManager: KeyEventHandlerManager
   private var completionKeyHandlers = [KeyEventHandler]()
   private var escapeKeyHandler: KeyEventHandler?
+  /// Thread-safe state for CGEvent callbacks to check without blocking on main actor
+  private let keyEventState = KeyEventState()
 
   private var statusMessageTask: Task<Void, Never>?
 
   private var logId = 0
+
+  private var editorState: EditorState? {
+    didSet {
+      keyEventState.update(hasEditorState: editorState != nil)
+    }
+  }
 
   private var isXcodeActive: Bool {
     appsActivationState.currentValue.isXcodeActive
