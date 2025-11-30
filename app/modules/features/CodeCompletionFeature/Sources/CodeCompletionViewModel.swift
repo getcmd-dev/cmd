@@ -36,7 +36,7 @@ final class KeyEventState: Sendable {
 
   var isCompletionExpandable = false
 
-  var isAutomaticCompletionEnabled = false
+  var isAutomaticCompletionEnabled = true
 
   var multiLineDisplayModeIsAlwaysShown = false
 
