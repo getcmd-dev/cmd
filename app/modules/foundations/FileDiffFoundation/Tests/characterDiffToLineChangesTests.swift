@@ -584,7 +584,7 @@ struct CharacterDiffToLineChangesTests {
   }
 
   @Test
-  func testFoo() throws {
+  func testNewLineMixedWithContentInGitDiff() throws {
     let oldContent = """
       self.xcodeObserver = xcodeObserver
       @Dependency(\\.appEventHandlerRegistry) var appEventHandlerRegistry
