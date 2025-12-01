@@ -47,7 +47,7 @@ extension TextInput {
     elements = newElements
   }
 
-  var string: NSAttributedString {
+  public var string: NSAttributedString {
     let attributedString = NSMutableAttributedString()
     for element in elements {
       switch element {

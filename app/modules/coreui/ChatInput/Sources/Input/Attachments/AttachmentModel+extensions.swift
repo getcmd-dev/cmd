@@ -9,11 +9,11 @@ import SwiftUI
 // MARK: - Attachment
 
 extension AttachmentModel {
-  typealias FileAttachment = AttachmentModel.FileAttachmentModel
-  typealias ImageAttachment = AttachmentModel.ImageAttachmentModel
-  typealias FileSelectionAttachment = AttachmentModel.FileSelectionAttachmentModel
-  typealias FolderAttachment = AttachmentModel.FolderAttachmentModel
-  typealias BuildError = AttachmentModel.BuildErrorModel
+  public typealias FileAttachment = AttachmentModel.FileAttachmentModel
+  public typealias ImageAttachment = AttachmentModel.ImageAttachmentModel
+  public typealias FileSelectionAttachment = AttachmentModel.FileSelectionAttachmentModel
+  public typealias FolderAttachment = AttachmentModel.FolderAttachmentModel
+  public typealias BuildError = AttachmentModel.BuildErrorModel
 
   var file: FileAttachment? {
     switch self {
@@ -83,29 +83,29 @@ extension AttachmentModel: Equatable {
 }
 
 extension AttachmentModel.FileAttachment {
-  init(path: URL, content: String) {
+  public init(path: URL, content: String) {
     self.init(id: UUID(), path: path, content: content)
   }
 }
 
 extension AttachmentModel.FolderAttachmentModel {
-  init(path: URL, files: [AttachmentModel.FolderAttachmentModel.Entry]) {
+  public init(path: URL, files: [AttachmentModel.FolderAttachmentModel.Entry]) {
     self.init(id: UUID(), path: path, files: files)
   }
 }
 
 extension AttachmentModel.FileSelectionAttachment {
-  init(file: AttachmentModel.FileAttachment, startLine: Int, endLine: Int) {
+  public init(file: AttachmentModel.FileAttachment, startLine: Int, endLine: Int) {
     self.init(id: UUID(), file: file, startLine: startLine, endLine: endLine)
   }
 }
 
 extension AttachmentModel.ImageAttachment {
-  init(imageData: Data, path: URL?, mimeType: String) {
+  public init(imageData: Data, path: URL?, mimeType: String) {
     self.init(id: UUID(), imageData: imageData, path: path, mimeType: mimeType)
   }
 
-  func loadImage() async -> Image? {
+  public func loadImage() async -> Image? {
     await Task.detached {
       if #available(macOS 15.2, *) {
         return try? await Image(importing: imageData, contentType: nil)
@@ -118,7 +118,7 @@ extension AttachmentModel.ImageAttachment {
 }
 
 extension AttachmentModel.BuildError {
-  init(message: String, filePath: URL, line: Int, column: Int) {
+  public init(message: String, filePath: URL, line: Int, column: Int) {
     self.init(id: UUID(), message: message, filePath: filePath, line: line, column: column)
   }
 }

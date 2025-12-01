@@ -5,7 +5,7 @@ import AppKit
 import Foundation
 import SwiftTesting
 import Testing
-@testable import ChatFeature
+@testable import ChatInput
 
 struct TextInputTests {
 

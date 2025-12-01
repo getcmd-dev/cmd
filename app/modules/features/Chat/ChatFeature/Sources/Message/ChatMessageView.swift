@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatHistoryServiceInterface
+import ChatInput
 import CodePreview
 import Dependencies
 import DLS
@@ -11,7 +12,6 @@ import FileIcon
 import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
-// import Down
 import Markdown
 import SwiftUI
 import ToolFoundation

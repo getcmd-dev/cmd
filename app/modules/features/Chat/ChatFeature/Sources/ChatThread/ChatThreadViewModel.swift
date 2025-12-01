@@ -6,6 +6,7 @@ import AppFoundation
 import ChatAppEventsFoundation
 import ChatFoundation
 import ChatHistoryServiceInterface
+import ChatInput
 import ChatServiceInterface
 import CheckpointServiceInterface
 import Combine

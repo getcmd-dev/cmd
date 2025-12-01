@@ -15,18 +15,45 @@ import SettingsFeatureInterface
 import SettingsServiceInterface
 import SwiftUI
 
+// MARK: - ContextControlsConfig
+
+/// Configuration for context usage controls in the chat input view.
+public struct ContextControlsConfig {
+  public init(
+    tokenUsage: TokenUsageEvent?,
+    isCompacting: Bool,
+    onCompact: @escaping @MainActor () async -> Void,
+    compactIconURL: URL? = nil)
+  {
+    self.tokenUsage = tokenUsage
+    self.isCompacting = isCompacting
+    self.onCompact = onCompact
+    self.compactIconURL = compactIconURL
+  }
+
+  /// The latest token usage information to display
+  public let tokenUsage: TokenUsageEvent?
+  /// Whether a conversation compaction is currently in progress
+  public let isCompacting: Bool
+  /// Action to perform when the compact button is tapped
+  public let onCompact: @MainActor () async -> Void
+  /// URL to the compact icon resource
+  public let compactIconURL: URL?
+
+}
+
 // MARK: - ChatInputView
 
 @MainActor
-struct ChatInputView: View {
+public struct ChatInputView: View {
 
-  init(
+  public init(
     inputViewModel: ChatInputViewModel,
-    threadViewModel: ChatThreadViewModel? = nil,
+    contextControlsConfig: ContextControlsConfig? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
-    self.threadViewModel = threadViewModel
+    self.contextControlsConfig = contextControlsConfig
     _isStreamingResponse = isStreamingResponse
     #if DEBUG
     _debugTextViewHandler = nil
@@ -37,23 +64,17 @@ struct ChatInputView: View {
   init(
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
-    threadViewModel: ChatThreadViewModel? = nil,
+    contextControlsConfig: ContextControlsConfig? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
-    self.threadViewModel = threadViewModel
+    self.contextControlsConfig = contextControlsConfig
     _isStreamingResponse = isStreamingResponse
     self._debugTextViewHandler = _debugTextViewHandler
   }
   #endif
 
-  static let cornerRadius: CGFloat = 10
-
-  #if DEBUG
-  let _debugTextViewHandler: (@Sendable (NSTextView) -> Void)?
-  #endif
-
-  var body: some View {
+  public var body: some View {
     VStack(spacing: 0) {
       if let pendingToolApproval = inputViewModel.pendingToolApproval {
         approvalView(for: pendingToolApproval)
@@ -125,6 +146,12 @@ struct ChatInputView: View {
     }
   }
 
+  static let cornerRadius: CGFloat = 10
+
+  #if DEBUG
+  let _debugTextViewHandler: (@Sendable (NSTextView) -> Void)?
+  #endif
+
   @State private var searchResultsViewHeight: CGFloat = 0
 
   @State private var isHoveringContextIndicator = false
@@ -144,7 +171,7 @@ struct ChatInputView: View {
 
   @Dependency(\.settingsService) private var settingsService
 
-  private let threadViewModel: ChatThreadViewModel?
+  private let contextControlsConfig: ContextControlsConfig?
 
   @Dependency(\.llmService) private var llmService
 
@@ -317,7 +344,7 @@ struct ChatInputView: View {
 
   /// Whether to show context usage controls
   private var shouldShowContextControls: Bool {
-    guard threadViewModel != nil else { return false }
+    guard let config = contextControlsConfig, config.tokenUsage != nil else { return false }
     guard let selectedModel = inputViewModel.selectedModel else { return false }
     // Don't show controls when chatting with external agent
     let provider = llmService.provider(for: selectedModel).value
@@ -326,23 +353,23 @@ struct ChatInputView: View {
 
   @ViewBuilder
   private var contextUsageControls: some View {
-    if let threadViewModel, let tokenUsage = threadViewModel.latestTokenUsage, let model = inputViewModel.selectedModel {
+    if let config = contextControlsConfig, let tokenUsage = config.tokenUsage, let model = inputViewModel.selectedModel {
       HStack(spacing: 6) {
         // Show compact button only on hover
-        if isHoveringContextIndicator {
+        if isHoveringContextIndicator, let compactIconURL = config.compactIconURL {
           Button(action: {
             Task {
-              await threadViewModel.compactConversation()
+              await config.onCompact()
             }
           }) {
-            SVGImage(resourceBundle.url(forResource: "compactContext", withExtension: "svg") ?? URL(filePath: ""))
+            SVGImage(compactIconURL)
               .frame(width: 14, height: 14)
           }
           .tappableTransparentBackground()
           .acceptClickThrough()
           .buttonStyle(.plain)
           .foregroundColor(.primary)
-          .disabled(threadViewModel.isCompactingConversation)
+          .disabled(config.isCompacting)
           .transition(.opacity.combined(with: .move(edge: .trailing)))
         }
 
@@ -438,5 +465,3 @@ extension AIModel: MenuItem { }
 extension ChatMode: MenuItem {
   public var id: String { rawValue }
 }
-
-private let resourceBundle = Bundle.module

@@ -1,6 +1,8 @@
 Target.module(
   name: "ChatFoundation",
-  dependencies: [],
+  dependencies: [
+    "LLMFoundation",
+  ],
   testsDependencies: [
     "ChatFoundation",
     "SwiftTesting",

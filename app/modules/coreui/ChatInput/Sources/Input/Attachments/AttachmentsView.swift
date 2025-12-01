@@ -10,10 +10,10 @@ import SwiftUI
 // MARK: - AttachmentsView
 
 @MainActor
-struct AttachmentsView: View {
+public struct AttachmentsView: View {
 
   /// Creates a view to display an attachment in the chat input.
-  init(
+  public init(
     searchAttachment: ((Bool) -> Void)? = nil,
     attachments: Binding<[AttachmentModel]>,
     isEditable: Bool = true)
@@ -23,11 +23,7 @@ struct AttachmentsView: View {
     self.isEditable = isEditable
   }
 
-  @Binding var attachments: [AttachmentModel]
-  @State var previewedAttachment: AttachmentModel?
-  @State var isSearching = false
-
-  var body: some View {
+  public var body: some View {
     WrappingHStack(horizontalSpacing: horizontalSpacing, verticalSpacing: verticalSpacing) {
       if isEditable, let searchAttachment {
         RoundedButton(
@@ -58,6 +54,10 @@ struct AttachmentsView: View {
       AttachmentPreview(attachment: previewedAttachment)
     }
   }
+
+  @Binding var attachments: [AttachmentModel]
+  @State var previewedAttachment: AttachmentModel?
+  @State var isSearching = false
 
   private let searchAttachment: ((Bool) -> Void)?
 

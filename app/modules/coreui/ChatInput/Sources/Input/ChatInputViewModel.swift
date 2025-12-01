@@ -26,18 +26,18 @@ import XcodeObserverServiceInterface
 
 /// Represents a request for user approval to execute a tool.
 /// Used to display approval prompts and track pending tool execution requests.
-struct ToolApprovalRequest: Identifiable {
+public struct ToolApprovalRequest: Identifiable {
   /// Unique identifier for the request, automatically generated.
-  let id = UUID()
+  public let id = UUID()
   /// Internal name of the tool requesting approval.
-  let toolName: String
+  public let toolName: String
   /// User-friendly name of the tool to display in the approval UI.
-  let displayName: String
+  public let displayName: String
 }
 
 // MARK: - ToolApprovalResult
 
-enum ToolApprovalResult {
+public enum ToolApprovalResult: Sendable {
   case approved
   case denied
   case alwaysApprove
@@ -55,10 +55,10 @@ private struct PendingToolApproval {
 // MARK: - ChatInputViewModel
 
 @Observable @MainActor
-final class ChatInputViewModel {
+public final class ChatInputViewModel {
 
   #if DEBUG
-  convenience init(
+  public convenience init(
     selectedModel: AIModel? = nil,
     activeModels: [AIModel]? = nil,
     mode: ChatMode = .agent,
@@ -73,7 +73,7 @@ final class ChatInputViewModel {
   }
   #endif
 
-  convenience init(queuedMessages: [QueuedMessageModel] = []) {
+  public convenience init(queuedMessages: [QueuedMessageModel] = []) {
     @Dependency(\.userDefaults) var userDefaults
     @Dependency(\.llmService) var llmService
     let selectedModel: AIModel? =
@@ -138,31 +138,24 @@ final class ChatInputViewModel {
     }.store(in: &cancellables)
   }
 
-  /// The list of available LLM models that can be selected.
-  private(set) var activeModels: [AIModel]
-  /// Attachments selected by the user as explicit context for the next message.
-  var attachments: [AttachmentModel]
   /// Whether the text input needs to be focused on. This will be reset to false once focus has been updated.
-  var textInputNeedsFocus = false
+  public var textInputNeedsFocus = false
+  public var didTapSendMessage: @MainActor (TextInput, [AttachmentModel]) -> Void = { _, _ in }
 
-  /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
-  var selectedSearchResultIndex = 0
-
-  /// The suggested result for the current pending tool approval request.
-  var pendingToolApprovalSuggestedResult = ToolApprovalResult.alwaysApprove
-
-  var didTapSendMessage: @MainActor (TextInput, [AttachmentModel]) -> Void = { _, _ in }
-
-  var didCancelMessage: @MainActor (_ processNextQueuedMessage: Bool) -> Void = { _ in }
+  public var didCancelMessage: @MainActor (_ processNextQueuedMessage: Bool) -> Void = { _ in }
 
   /// Messages that have been queued while the assistant is streaming a response.
-  var queuedMessages = [QueuedMessageModel]()
+  internal(set) public var queuedMessages = [QueuedMessageModel]()
 
-  /// The current tool approval request pending user response.
-  var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
+  /// The input text, which can contain inline references to attachments.
+  public var textInput: TextInput {
+    didSet {
+      handleTextInputChange(from: oldValue)
+    }
+  }
 
   /// Which LLM model is selected to respond to the next message.
-  var selectedModel: AIModel? {
+  public var selectedModel: AIModel? {
     didSet {
       if let selectedModel {
         userDefaults.set(selectedModel.id, forKey: Self.userDefaultsSelectLLMModelKey)
@@ -171,18 +164,105 @@ final class ChatInputViewModel {
   }
 
   /// The chat mode to use for this conversation.
-  var mode: ChatMode {
+  public var mode: ChatMode {
     didSet {
       userDefaults.set(mode.rawValue, forKey: Self.userDefaultsChatModeKey)
     }
   }
 
-  /// The input text, which can contain inline references to attachments.
-  var textInput: TextInput {
-    didSet {
-      handleTextInputChange(from: oldValue)
+  /// Create a deep copy of the view model.
+  public func copy(
+    didTapSendMessage: @escaping @MainActor (TextInput, [AttachmentModel]) -> Void,
+    didCancelMessage: @escaping @MainActor (Bool) -> Void)
+    -> ChatInputViewModel
+  {
+    let model = ChatInputViewModel(
+      textInput: TextInput(textInput.string),
+      selectedModel: selectedModel,
+      // Pass nil here to signal that the value from settings should be observed.
+      // This method is not expected to be called in Previews where the mock settings might not have the right content.
+      activeModels: nil,
+      mode: mode,
+      attachments: attachments)
+    model.didTapSendMessage = didTapSendMessage
+    model.didCancelMessage = didCancelMessage
+    return model
+  }
+
+  /// Send the current message in the input.
+  public func sendMessage() {
+    let messageText = textInput
+    let messageAttachments = attachments
+
+    // Clear input state before sending
+    textInput = TextInput()
+    attachments = []
+
+    // Trigger the actual send
+    didTapSendMessage(messageText, messageAttachments)
+  }
+
+  /// Add an attachment to the input.
+  @MainActor
+  public func add(attachment: AttachmentModel) {
+    guard attachments.contains(where: { $0 === attachment }) == false else { return }
+    attachments.append(attachment)
+  }
+
+  /// Request approval for a tool use operation.
+  public func requestApproval(for toolUse: any ToolUse) async -> ToolApprovalResult {
+    await withCheckedContinuation { continuation in
+      let request = ToolApprovalRequest(
+        toolName: toolUse.toolName,
+        displayName: toolUse.toolDisplayName)
+      self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
     }
   }
+
+  /// Cancels all pending tool approval requests.
+  /// We must clear the array before resuming continuations to prevent crashes from double-resumption if called multiple times.
+  public func cancelAllPendingToolApprovalRequests() {
+    guard !toolCallsPendingApproval.isEmpty else { return }
+
+    let pendingItems = toolCallsPendingApproval
+    toolCallsPendingApproval.removeAll()
+    pendingToolApprovalSuggestedResult = .alwaysApprove
+
+    for item in pendingItems {
+      item.continuation.resume(returning: .cancelled)
+    }
+  }
+
+  /// Process the next queued message (called after current message completes).
+  public func processNextQueuedMessage() {
+    // Check if we should skip this queue processing
+    if skipQueueProcessingCount > 0 {
+      skipQueueProcessingCount -= 1
+      return
+    }
+
+    guard !queuedMessages.isEmpty else { return }
+    let message = queuedMessages.removeFirst()
+
+    // Send the message with its text and attachments
+    let messageText = TextInput(NSAttributedString(string: message.text))
+    let messageAttachments = message.attachments
+    didTapSendMessage(messageText, messageAttachments)
+  }
+
+  /// The list of available LLM models that can be selected.
+  private(set) var activeModels: [AIModel]
+  /// Attachments selected by the user as explicit context for the next message.
+  var attachments: [AttachmentModel]
+
+  /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
+  var selectedSearchResultIndex = 0
+
+  /// The suggested result for the current pending tool approval request.
+  var pendingToolApprovalSuggestedResult = ToolApprovalResult.alwaysApprove
+
+  /// The current tool approval request pending user response.
+  var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
   /// The results from the current reference search.
   private(set) var searchResults: [FileSuggestion]? = nil {
@@ -232,25 +312,6 @@ final class ChatInputViewModel {
     }
   }
 
-  /// Create a deep copy of the view model.
-  func copy(
-    didTapSendMessage: @escaping @MainActor (TextInput, [AttachmentModel]) -> Void,
-    didCancelMessage: @escaping @MainActor (Bool) -> Void)
-    -> ChatInputViewModel
-  {
-    let model = ChatInputViewModel(
-      textInput: TextInput(textInput.string),
-      selectedModel: selectedModel,
-      // Pass nil here to signal that the value from settings should be observed.
-      // This method is not expected to be called in Previews where the mock settings might not have the right content.
-      activeModels: nil,
-      mode: mode,
-      attachments: attachments)
-    model.didTapSendMessage = didTapSendMessage
-    model.didCancelMessage = didCancelMessage
-    return model
-  }
-
   func handleStartExternalSearch(isSearching: Bool) {
     if isSearching {
       externalSearchQuery = ""
@@ -263,29 +324,9 @@ final class ChatInputViewModel {
     clearSearchResults()
   }
 
-  /// Send the current message in the input.
-  func sendMessage() {
-    let messageText = textInput
-    let messageAttachments = attachments
-
-    // Clear input state before sending
-    textInput = TextInput()
-    attachments = []
-
-    // Trigger the actual send
-    didTapSendMessage(messageText, messageAttachments)
-  }
-
   /// Handle sending the message.
   func handleDidTapSend() {
     sendMessage()
-  }
-
-  /// Add an attachment to the input.
-  @MainActor
-  func add(attachment: AttachmentModel) {
-    guard attachments.contains(where: { $0 === attachment }) == false else { return }
-    attachments.append(attachment)
   }
 
   @MainActor
@@ -402,30 +443,6 @@ final class ChatInputViewModel {
     }
   }
 
-  /// Request approval for a tool use operation.
-  func requestApproval(for toolUse: any ToolUse) async -> ToolApprovalResult {
-    await withCheckedContinuation { continuation in
-      let request = ToolApprovalRequest(
-        toolName: toolUse.toolName,
-        displayName: toolUse.toolDisplayName)
-      self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
-    }
-  }
-
-  /// Cancels all pending tool approval requests.
-  /// We must clear the array before resuming continuations to prevent crashes from double-resumption if called multiple times.
-  func cancelAllPendingToolApprovalRequests() {
-    guard !toolCallsPendingApproval.isEmpty else { return }
-
-    let pendingItems = toolCallsPendingApproval
-    toolCallsPendingApproval.removeAll()
-    pendingToolApprovalSuggestedResult = .alwaysApprove
-
-    for item in pendingItems {
-      item.continuation.resume(returning: .cancelled)
-    }
-  }
-
   /// Handle the user's approval response.
   func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult? = nil) {
     let currentSuggestedResult = pendingToolApprovalSuggestedResult
@@ -487,23 +504,6 @@ final class ChatInputViewModel {
   /// Clear all queued messages.
   func clearQueue() {
     queuedMessages = []
-  }
-
-  /// Process the next queued message (called after current message completes).
-  func processNextQueuedMessage() {
-    // Check if we should skip this queue processing
-    if skipQueueProcessingCount > 0 {
-      skipQueueProcessingCount -= 1
-      return
-    }
-
-    guard !queuedMessages.isEmpty else { return }
-    let message = queuedMessages.removeFirst()
-
-    // Send the message with its text and attachments
-    let messageText = TextInput(NSAttributedString(string: message.text))
-    let messageAttachments = message.attachments
-    didTapSendMessage(messageText, messageAttachments)
   }
 
   /// Merge queued messages back to the input (called when user manually cancels stream).
@@ -802,24 +802,24 @@ final class ChatInputViewModel {
 
 // MARK: - TextInput
 
-struct TextInput {
+public struct TextInput {
 
-  init(_ elements: [Element] = []) {
+  public init(_ elements: [Element] = []) {
     self.elements = elements
   }
 
-  enum Element {
+  public enum Element {
     case text(_ text: String)
     case reference(_ reference: Reference)
 
-    var reference: Reference? {
+    public var reference: Reference? {
       if case .reference(let reference) = self {
         return reference
       }
       return nil
     }
 
-    var text: String? {
+    public var text: String? {
       if case .text(let text) = self {
         return text
       }
@@ -827,18 +827,18 @@ struct TextInput {
     }
   }
 
-  struct Reference: Equatable {
-    let display: String
-    let id: String
+  public struct Reference: Equatable {
+    public let display: String
+    public let id: String
   }
 
-  var elements: [Element]
+  public var elements: [Element]
 
-  var isEmpty: Bool {
+  public var isEmpty: Bool {
     elements.isEmpty
   }
 
-  mutating func append(_ str: String) {
+  public mutating func append(_ str: String) {
     if case .text(let lastText) = elements.last {
       elements[elements.count - 1] = .text(lastText + str)
     } else {

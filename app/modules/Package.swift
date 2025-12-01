@@ -430,6 +430,7 @@ targets.append(
       "ChatCompletionServiceInterface",
       "ChatFoundation",
       "ChatHistoryServiceInterface",
+      "ChatInput",
       "ChatServiceInterface",
       "CheckpointServiceInterface",
       "CodePreview",
@@ -475,7 +476,6 @@ targets.append(
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
       "ExtensionEventsInterface",
-      "FileSuggestionServiceInterface",
       "FoundationInterfaces",
       "JSONFoundation",
       "LLMFoundation",
@@ -496,7 +496,9 @@ targets.append(
 targets.append(
   contentsOf: Target.module(
     name: "ChatFoundation",
-    dependencies: [],
+    dependencies: [
+      "LLMFoundation",
+    ],
     testsDependencies: [
       "ChatFoundation",
       "SwiftTesting",
@@ -523,6 +525,45 @@ targets.append(
       "SwiftTesting",
     ],
     path: "./serviceInterfaces/ChatHistoryServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "ChatInput",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
+      "ChatFoundation",
+      "ChatHistoryServiceInterface",
+      "CodePreview",
+      "ConcurrencyFoundation",
+      "DLS",
+      "FileIcon",
+      "FileSuggestionServiceInterface",
+      "FoundationInterfaces",
+      "LLMFoundation",
+      "LLMServiceInterface",
+      "LoggingServiceInterface",
+      "RoutingFoundation",
+      "SettingsFeatureInterface",
+      "SettingsServiceInterface",
+      "ToolFoundation",
+      "XcodeObserverServiceInterface",
+    ],
+    testsDependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AccessibilityFoundation",
+      "ChatHistoryServiceInterface",
+      "ChatInput",
+      "ConcurrencyFoundation",
+      "FileSuggestionServiceInterface",
+      "FoundationInterfaces",
+      "LLMFoundation",
+      "LLMServiceInterface",
+      "SettingsServiceInterface",
+      "SwiftTesting",
+      "XcodeObserverServiceInterface",
+    ],
+    path: "./coreui/ChatInput"))
 
 targets.append(
   contentsOf: Target.module(

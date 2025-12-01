@@ -12,7 +12,7 @@ import LLMServiceInterface
 import SwiftTesting
 import Testing
 import XcodeObserverServiceInterface
-@testable import ChatFeature
+@testable import ChatInput
 
 // MARK: - ChatInputViewModelKeyboardTests
 

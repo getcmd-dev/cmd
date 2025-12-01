@@ -18,7 +18,12 @@ extension ChatInputViewModel {
 #Preview("Waiting for permission", traits: .sizeThatFitsLayout) {
   ChatInputView(
     inputViewModel: ChatInputViewModel(activeModels: AIModel.allTestCases, mode: .ask)
-      .withApproval(for: TestTool.Use()),
+      .withApproval(for: TestTool.Use(
+        callingTool: TestTool(),
+        toolUseId: "test",
+        input: .null,
+        context: ToolExecutionContext(),
+        initialStatus: nil)),
     isStreamingResponse: .constant(false))
     .frame(minHeight: 300)
 }

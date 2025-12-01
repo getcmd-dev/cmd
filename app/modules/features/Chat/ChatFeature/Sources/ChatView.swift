@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatInput
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -47,7 +48,13 @@ public struct ChatView: View {
 
         ChatInputView(
           inputViewModel: viewModel.tab.input,
-          threadViewModel: viewModel.tab,
+          contextControlsConfig: ContextControlsConfig(
+            tokenUsage: viewModel.tab.latestTokenUsage,
+            isCompacting: viewModel.tab.isCompactingConversation,
+            onCompact: { @MainActor in
+              await viewModel.tab.compactConversation()
+            },
+            compactIconURL: Bundle.module.url(forResource: "compactContext", withExtension: "svg")),
           isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {

@@ -6,6 +6,31 @@ import ConcurrencyFoundation
 import SwiftUI
 
 #if DEBUG
+
+let mediumFileContent = """
+  // 1
+  // 2
+  // 3
+  struct CodePreview: View {
+    let filePath: URL
+    let fileContent: String
+    let startLine: Int?
+    let endLine: Int?
+
+    var body: some View {
+      Text(content)
+    }
+  }
+  // 14
+  // 15
+  """
+
+let shortFileContent = """
+    var body: some View {
+      Text(content) // some very very very very very long comment
+    }
+  """
+
 extension ChatMessageList {
   init(messages: [ChatMessageViewModel]) {
     self.init(events: messages.flatMap { message in
