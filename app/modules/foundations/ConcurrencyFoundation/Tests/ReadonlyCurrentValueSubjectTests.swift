@@ -15,7 +15,7 @@ struct ReadonlyCurrentValueSubjectTests {
     let subject = CurrentValueSubject<Int, Never>(42)
     let sut = ReadonlyCurrentValueSubject(subject)
 
-    #expect(sut.currentValue == 42)
+    #expect(sut.value == 42)
   }
 
   @Test("Updates current value when publisher emits")
@@ -23,7 +23,7 @@ struct ReadonlyCurrentValueSubjectTests {
     let subject = CurrentValueSubject<Int, Never>(0)
     let sut = ReadonlyCurrentValueSubject(subject)
 
-    #expect(sut.currentValue == 0)
+    #expect(sut.value == 0)
 
     let updates = expectation(description: "Updates received")
     let cancellable = sut.sink { @Sendable value in
@@ -37,7 +37,7 @@ struct ReadonlyCurrentValueSubjectTests {
     subject.send(3)
 
     try await fulfillment(of: [updates])
-    #expect(sut.currentValue == 3)
+    #expect(sut.value == 3)
     _ = cancellable
   }
 
@@ -81,7 +81,7 @@ struct ReadonlyCurrentValueSubjectTests {
     }
 
     try await fulfillment(of: [updates])
-    #expect(sut.currentValue == 100)
+    #expect(sut.value == 100)
     _ = cancellable
   }
 
@@ -95,8 +95,8 @@ struct ReadonlyCurrentValueSubjectTests {
     let subject = CurrentValueSubject<TestData, Never>(TestData(value: 1, text: "first"))
     let sut = ReadonlyCurrentValueSubject(subject)
 
-    #expect(sut.currentValue.value == 1)
-    #expect(sut.currentValue.text == "first")
+    #expect(sut.value.value == 1)
+    #expect(sut.value.text == "first")
 
     let updates = expectation(description: "Update received")
     let cancellable = sut.sink { @Sendable value in
@@ -108,8 +108,8 @@ struct ReadonlyCurrentValueSubjectTests {
     subject.send(TestData(value: 2, text: "second"))
 
     try await fulfillment(of: [updates])
-    #expect(sut.currentValue.value == 2)
-    #expect(sut.currentValue.text == "second")
+    #expect(sut.value.value == 2)
+    #expect(sut.value.text == "second")
     _ = cancellable
   }
 
@@ -118,7 +118,7 @@ struct ReadonlyCurrentValueSubjectTests {
     let subject = CurrentValueSubject<String, Never>("hello")
     let sut = subject.readonly()
 
-    #expect(sut.currentValue == "hello")
+    #expect(sut.value == "hello")
 
     let updates = expectation(description: "Update received")
     let cancellable = sut.sink { @Sendable value in
@@ -130,7 +130,7 @@ struct ReadonlyCurrentValueSubjectTests {
     subject.send("world")
 
     try await fulfillment(of: [updates])
-    #expect(sut.currentValue == "world")
+    #expect(sut.value == "world")
     _ = cancellable
   }
 
@@ -157,7 +157,7 @@ struct ReadonlyCurrentValueSubjectTests {
 
     try await fulfillment(of: [updates])
     #expect(valuesReceived.value == [0, 1, 2, 3])
-    #expect(sut.currentValue == 3)
+    #expect(sut.value == 3)
     _ = cancellable
   }
 
@@ -165,7 +165,7 @@ struct ReadonlyCurrentValueSubjectTests {
   func test_justFactoryMethod() async throws {
     let sut = ReadonlyCurrentValueSubject<Int>.just(42)
 
-    #expect(sut.currentValue == 42)
+    #expect(sut.value == 42)
 
     let valuesReceived = Atomic<[Int]>([])
     let updates = expectation(description: "Initial value received")
@@ -177,7 +177,7 @@ struct ReadonlyCurrentValueSubjectTests {
     try await fulfillment(of: [updates])
 
     #expect(valuesReceived.value == [42])
-    #expect(sut.currentValue == 42)
+    #expect(sut.value == 42)
     _ = cancellable
   }
 
@@ -206,14 +206,14 @@ struct ReadonlyCurrentValueSubjectTests {
 
     Task {
       for _ in 1...50 {
-        _ = sut.currentValue
+        _ = sut.value
         try? await Task.sleep(nanoseconds: 1_000_000)
       }
       didReadManyTimes.fulfill()
     }
 
     try await fulfillment(of: [didReadManyTimes, didReceiveAllUpdates])
-    #expect(sut.currentValue == 50)
+    #expect(sut.value == 50)
     _ = cancellable
   }
 
@@ -222,7 +222,7 @@ struct ReadonlyCurrentValueSubjectTests {
     let subject = CurrentValueSubject<Int, Never>(0)
     let sut = ReadonlyCurrentValueSubject(subject)
 
-    #expect(sut.currentValue == 0)
+    #expect(sut.value == 0)
 
     let intermediateUpdate = expectation(description: "Intermediate update")
     var cancellableTemp: AnyCancellable? = sut.sink { @Sendable value in
@@ -235,7 +235,7 @@ struct ReadonlyCurrentValueSubjectTests {
     subject.send(20)
 
     try await fulfillment(of: [intermediateUpdate])
-    #expect(sut.currentValue == 20)
+    #expect(sut.value == 20)
     cancellableTemp = nil
 
     // Now subscribe again and verify we get the latest value
@@ -253,7 +253,7 @@ struct ReadonlyCurrentValueSubjectTests {
     try await fulfillment(of: [updates])
     #expect(valuesReceived.value.contains(20)) // Should receive current value
     #expect(valuesReceived.value.contains(30))
-    #expect(sut.currentValue == 30)
+    #expect(sut.value == 30)
     _ = cancellable
   }
 
@@ -288,7 +288,7 @@ struct ReadonlyCurrentValueSubjectTests {
     try await fulfillment(of: [updates1, updates2])
     #expect(valuesReceived1.value == [0, 1, 2, 3])
     #expect(valuesReceived2.value == [0, 1, 2, 3])
-    #expect(sut.currentValue == 3)
+    #expect(sut.value == 3)
     _ = cancellable1
     _ = cancellable2
   }

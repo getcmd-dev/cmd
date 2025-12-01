@@ -533,7 +533,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
         if !isFocused {
           hasUnreadCompletion = true
         }
-        if !appsActivationState.currentValue.isEitherXcodeOrHostAppActive {
+        if !appsActivationState.value.isEitherXcodeOrHostAppActive {
           sendStreamingCompletionNotification()
         }
       }
@@ -769,7 +769,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     Task {
       // Check if we have disabled permission in the app.
       // If the permission is not granted, this will ask for permission.
-      guard permissionsService.status(for: .pushNotification).currentValue != .grantedDisabled
+      guard permissionsService.status(for: .pushNotification).value != .grantedDisabled
       else {
         return
       }

@@ -219,7 +219,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     let removedWorkspaces = existingWorkspaces.values.filter { !visibleWorkspaces.keys.contains($0.workspaceURL) }
 
     let worspacesState = internalState.value.workspaces.filter { existingWorkspaces.keys.contains($0.url) } + newWorkspaces
-      .map(\.state.currentValue)
+      .map(\.state.value)
     updateStateWith(workspaces: worspacesState)
 
     for ws in removedWorkspaces { stopTracking(ws) }
@@ -269,7 +269,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     let cancellable = workspaceInspector.state.sink { [weak self] state in
       guard let self else { return }
 
-      let workspacesState = self.state.currentValue.workspaces.map { workspace in
+      let workspacesState = self.state.value.workspaces.map { workspace in
         workspace.url == state.url ? state : workspace
       }
       updateStateWith(workspaces: workspacesState)

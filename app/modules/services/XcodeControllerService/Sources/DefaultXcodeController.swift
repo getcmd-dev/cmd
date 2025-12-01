@@ -46,7 +46,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
           xcodeObserver: xcodeObserver,
           shellService: shellService,
           settingsService: settingsService,
-          appsActivationState: appsActivationState.currentValue)
+          appsActivationState: appsActivationState.value)
       }})
   }
 
@@ -162,7 +162,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
       guard let self else {
         throw AppError(message: "XcodeController deallocated")
       }
-      guard appsActivationState.currentValue.isXcodeActive == true else {
+      guard appsActivationState.value.isXcodeActive == true else {
         // If Xcode is not active, we do not want to trigger the extension as this would have the side effect of activating Xcode.
         // Failing here has no user visible effect. It just means that the metadata will have to be fetched at a later time.
         throw AppError(message: "Xcode must be active to get formatting metadata")

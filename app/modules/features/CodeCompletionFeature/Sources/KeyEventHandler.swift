@@ -24,7 +24,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
   }
 
   var isXcodeActive: Bool {
-    appsActivationState.currentValue.isXcodeActive
+    appsActivationState.value.isXcodeActive
   }
 
   /// Register a listener for a specific key code

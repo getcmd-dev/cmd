@@ -90,7 +90,7 @@ final class CodeCompletionViewModel {
     // Create the key event handler manager
     keyEventHandlerManager = KeyEventHandlerManager(appsActivationState: appsActivationState)
 
-    isEnabled = codeCompletionService.isAvailable.currentValue
+    isEnabled = codeCompletionService.isAvailable.value
     if isEnabled {
       enable()
     }
@@ -338,7 +338,7 @@ final class CodeCompletionViewModel {
   }
 
   private var isXcodeActive: Bool {
-    appsActivationState.currentValue.isXcodeActive
+    appsActivationState.value.isXcodeActive
   }
 
   private func enable() {

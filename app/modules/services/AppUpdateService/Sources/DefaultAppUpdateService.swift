@@ -124,7 +124,7 @@ final class DefaultAppUpdateService: AppUpdateService {
     updateTask?.cancel()
     updateTask = Task { @MainActor [weak self] in
       while let self, canCheckForUpdates {
-        guard hasUpdateAvailable.currentValue == .noUpdateAvailable else {
+        guard hasUpdateAvailable.value == .noUpdateAvailable else {
           // Stop checking for updates if an update is already available.
           // It appears that checking for update when one has been installed for the next launch will unexpectedly quit and relaunch the app.
           break

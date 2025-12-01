@@ -12,7 +12,7 @@ import os
 public final class ObservableObjectBox<Value: Sendable>: ObservableObject, @unchecked Sendable {
   @MainActor
   public init(from value: ReadonlyCurrentValueSubject<Value>) {
-    wrappedValue = value.currentValue
+    wrappedValue = value.value
 
     cancellable = value.sink { @Sendable [weak self] newValue in
       runOnMainThread {

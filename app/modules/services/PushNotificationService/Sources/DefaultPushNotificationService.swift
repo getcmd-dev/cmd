@@ -27,7 +27,7 @@ final class DefaultPushNotificationService: NSObject, PushNotificationService, U
 
   func send(_ notification: PushNotification) async throws {
     // Check if we have permission
-    let hasPermission = permissionsService.status(for: .pushNotification).currentValue.isGranted
+    let hasPermission = permissionsService.status(for: .pushNotification).value.isGranted
     if !hasPermission {
       defaultLogger.info("Push notification permission not granted. Cannot send notification.")
       throw PushNotificationError.permissionNotGranted

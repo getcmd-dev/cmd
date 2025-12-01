@@ -24,7 +24,7 @@ struct DefaultPushNotificationServiceTests {
 
     try await sut.send(notification)
 
-    let count = sut.activeNotificationCount().currentValue
+    let count = sut.activeNotificationCount().value
     #expect(count == 1)
   }
 
@@ -50,7 +50,7 @@ struct DefaultPushNotificationServiceTests {
 
     try await sut.send(PushNotification(title: "Test", body: "Body"))
 
-    let count = sut.activeNotificationCount().currentValue
+    let count = sut.activeNotificationCount().value
     #expect(count == 1)
   }
 
@@ -59,13 +59,13 @@ struct DefaultPushNotificationServiceTests {
     let sut = MockPushNotificationService()
 
     // Initially no notifications
-    var count = sut.activeNotificationCount().currentValue
+    var count = sut.activeNotificationCount().value
     #expect(count == 0)
 
     // Add notification
     try await sut.send(PushNotification(title: "Test 1", body: "Body 1"))
 
-    count = sut.activeNotificationCount().currentValue
+    count = sut.activeNotificationCount().value
     #expect(count == 1)
   }
 
@@ -79,7 +79,7 @@ struct DefaultPushNotificationServiceTests {
     try await sut.send(notification1)
     try await sut.send(notification2)
 
-    let notifications = sut.activeNotifications().currentValue
+    let notifications = sut.activeNotifications().value
     #expect(notifications.count == 2)
     #expect(notifications[0].title == "Test 1")
     #expect(notifications[1].title == "Test 2")
@@ -92,12 +92,12 @@ struct DefaultPushNotificationServiceTests {
     try await sut.send(PushNotification(title: "Test 1", body: "Body 1"))
     try await sut.send(PushNotification(title: "Test 2", body: "Body 2"))
 
-    var count = sut.activeNotificationCount().currentValue
+    var count = sut.activeNotificationCount().value
     #expect(count == 2)
 
     await sut.clearAllNotifications()
 
-    count = sut.activeNotificationCount().currentValue
+    count = sut.activeNotificationCount().value
     #expect(count == 0)
   }
 
@@ -111,15 +111,15 @@ struct DefaultPushNotificationServiceTests {
     try await sut.send(notification1)
     try await sut.send(notification2)
 
-    let notifications = sut.activeNotifications().currentValue
+    let notifications = sut.activeNotifications().value
     #expect(notifications.count == 2)
 
     await sut.clear(notification: notification1)
 
-    let remainingCount = sut.activeNotificationCount().currentValue
+    let remainingCount = sut.activeNotificationCount().value
     #expect(remainingCount == 1)
 
-    let remaining = sut.activeNotifications().currentValue
+    let remaining = sut.activeNotifications().value
     #expect(remaining == [notification2])
   }
 }

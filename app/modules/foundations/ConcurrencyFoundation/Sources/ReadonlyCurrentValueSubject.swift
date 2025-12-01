@@ -11,10 +11,10 @@ import os
 /// It can be used to represent a value that can be observed but not modified directly.
 public final class ReadonlyCurrentValueSubject<Output: Sendable>: Publisher, Sendable {
   public init(_ value: Output, publisher: AnyPublisher<Output, Never>) {
-    self.value = Atomic(value)
+    _value = Atomic(value)
     self.publisher = publisher
     let cancellable = publisher.sink { [weak self] newValue in
-      self?.value.set(to: newValue)
+      self?._value.set(to: newValue)
     }
     subscription.set(to: cancellable)
   }
@@ -25,8 +25,8 @@ public final class ReadonlyCurrentValueSubject<Output: Sendable>: Publisher, Sen
 
   public typealias Failure = Never
 
-  public var currentValue: Output {
-    value.value
+  public var value: Output {
+    _value.value
   }
 
   public static func just(_ value: Output) -> Self {
@@ -37,7 +37,7 @@ public final class ReadonlyCurrentValueSubject<Output: Sendable>: Publisher, Sen
     publisher.receive(subscriber: subscriber)
   }
 
-  private let value: Atomic<Output>
+  private let _value: Atomic<Output>
   private let subscription = Atomic(nil as AnyCancellable?)
   private let publisher: AnyPublisher<Output, Never>
 

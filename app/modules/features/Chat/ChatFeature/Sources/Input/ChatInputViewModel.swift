@@ -120,7 +120,7 @@ final class ChatInputViewModel {
       updateSelectedModel()
     } else {
       @Dependency(\.llmService) var llmService
-      self.activeModels = llmService.activeModels.currentValue
+      self.activeModels = llmService.activeModels.value
       updateSelectedModel()
       llmService.activeModels.sink { @Sendable [weak self] activeModels in
         Task { @MainActor in
