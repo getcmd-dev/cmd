@@ -49,6 +49,11 @@ final class InlineChatsViewModel {
   /// The inline chats that are visible in the current editor.
   var inlineChat: InlineChatViewModel? { inlineChats.last }
 
+  func closeChat(_ chat: InlineChatViewModel) {
+    chats[chat.workspace]?[chat.file]?.removeAll { $0.id == chat.id }
+    inlineChats = inlineChats.filter { $0.id != chat.id }
+  }
+
   private var inlineChats = [InlineChatViewModel]()
 
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
@@ -67,12 +72,16 @@ final class InlineChatsViewModel {
   }
 
   private func addNewChat() async {
+    defaultLogger.trace("Adding new inline chat")
     guard
       let workspace = xcodeObserver.state.focusedWorkspace,
       let editor = workspace.focussedEditor,
       let file = await xcodeObserver.focusedTabURL(in: workspace),
       let selection = editor.selections.first
-    else { return }
+    else {
+      defaultLogger.trace("not ading new inline chat")
+      return
+    }
 
     if chats[workspace.url] == nil {
       chats[workspace.url] = [:]
@@ -87,6 +96,8 @@ final class InlineChatsViewModel {
       content: editor.content)
     defaultLogger.trace("Addint inline chat at line: \(selection.start.line)")
     chats[workspace.url]?[file]?.append(newChat)
+
+    await update(inlineChatsFor: xcodeObserver.state)
   }
 
 }

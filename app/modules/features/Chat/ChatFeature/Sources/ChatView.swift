@@ -55,7 +55,9 @@ public struct ChatView: View {
               await viewModel.tab.compactConversation()
             },
             compactIconURL: Bundle.module.url(forResource: "compactContext", withExtension: "svg")),
-          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")
+          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse)
+          .padding(8)
+          .id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {
         ChatHistoryView(

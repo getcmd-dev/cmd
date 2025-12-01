@@ -3,6 +3,7 @@
 
 import FileDiffFoundation
 import Foundation
+import RoutingFoundation
 import SwiftUI
 import XcodeObserverServiceInterface
 import XcodeObserverWindowsAdapter
@@ -28,8 +29,11 @@ final class InlineChatWindow: XcodeWindow {
 
     backgroundColor = .clear
 
+    let router = Router(registry: .init())
+
     let root = AnyView(InlineChatView(viewModel: viewModel))
       .background(.clear)
+      .environment(router)
 
     let hostingView = NSHostingView(rootView: root)
 
@@ -37,6 +41,10 @@ final class InlineChatWindow: XcodeWindow {
     hostingView.layer?.masksToBounds = true
     contentView = hostingView
   }
+
+  override var canBecomeKey: Bool { true }
+
+  override var acceptsFirstResponder: Bool { true }
 
   override func getFrame() -> CGRect? {
     guard let chat = viewModel.inlineChat else {
@@ -125,5 +133,4 @@ final class InlineChatWindow: XcodeWindow {
     viewModel.lineHeight = lineHeight
     viewModel.verticalContentOffset = frame.maxY - completedTextFrame.maxY
   }
-
 }

@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatInput
 import DLS
 import SwiftUI
 
@@ -11,18 +12,36 @@ struct InlineChatView: View {
     GeometryReader { geometry in
       ZStack(alignment: .topLeading) {
         if let chat = viewModel.inlineChat {
-          Text("Inline Chat Feature Coming Soon!")
-            .font(.headline)
-            .padding()
-            .border(.green)
-            .readingSize { contentSize in
-              self.contentSize = contentSize
-            }
-            .padding(.leading, viewModel.leadingContentOffset + 1) // 1 to leave space for the cursor
-            .padding(.trailing, viewModel.trailingContentOffset + 2) // 2 to not overlap with the scrollbar
-            .frame(width: geometry.size.width)
-            .fixedSize()
-            .padding(.top, viewModel.verticalContentOffset - (contentSize?.height ?? 0))
+          Group {
+            ChatInputView(
+              inputViewModel: chat.input,
+              config: ChatInputConfig(
+                placeholderText: "Enter instructions",
+                showChatMode: false,
+                showAttachmentButton: false),
+              contextControlsConfig: nil,
+              isStreamingResponse: .constant(false))
+              .overlay(alignment: .topTrailing) {
+                IconButton(
+                  action: {
+                    viewModel.closeChat(chat)
+                  },
+                  systemName: "xmark",
+                  padding: 2)
+                  .frame(square: 10)
+                  .padding(.top, 6)
+                  .padding(.trailing, 6)
+              }
+          }
+          .readingSize { contentSize in
+            self.contentSize = contentSize
+          }
+          .padding(.leading, viewModel.leadingContentOffset + 1) // 1 to leave space for the cursor
+          .padding(.trailing, viewModel.trailingContentOffset + 2) // 2 to not overlap with the scrollbar
+          .frame(width: geometry.size.width)
+          .fixedSize()
+          .padding(.top, viewModel.verticalContentOffset - (contentSize?.height ?? 0))
+
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)
@@ -35,5 +54,4 @@ struct InlineChatView: View {
   }
 
   @State private var contentSize: CGSize?
-
 }

@@ -15,6 +15,28 @@ import SettingsFeatureInterface
 import SettingsServiceInterface
 import SwiftUI
 
+// MARK: - ChatInputConfig
+
+/// Configuration for customizing the chat input view appearance and behavior.
+public struct ChatInputConfig {
+  public init(
+    placeholderText: String = "Ask anything (⌘L), @ to mention",
+    showChatMode: Bool = true,
+    showAttachmentButton: Bool = true)
+  {
+    self.placeholderText = placeholderText
+    self.showChatMode = showChatMode
+    self.showAttachmentButton = showAttachmentButton
+  }
+
+  /// The placeholder text to display in the text input
+  public let placeholderText: String
+  /// Whether to show the chat mode selector (agent/ask)
+  public let showChatMode: Bool
+  /// Whether to show the @ attachment button
+  public let showAttachmentButton: Bool
+}
+
 // MARK: - ContextControlsConfig
 
 /// Configuration for context usage controls in the chat input view.
@@ -49,10 +71,12 @@ public struct ChatInputView: View {
 
   public init(
     inputViewModel: ChatInputViewModel,
+    config: ChatInputConfig = ChatInputConfig(),
     contextControlsConfig: ContextControlsConfig? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
+    self.config = config
     self.contextControlsConfig = contextControlsConfig
     _isStreamingResponse = isStreamingResponse
     #if DEBUG
@@ -64,10 +88,12 @@ public struct ChatInputView: View {
   init(
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
+    config: ChatInputConfig = ChatInputConfig(),
     contextControlsConfig: ContextControlsConfig? = nil,
     isStreamingResponse: Binding<Bool>)
   {
     self.inputViewModel = inputViewModel
+    self.config = config
     self.contextControlsConfig = contextControlsConfig
     _isStreamingResponse = isStreamingResponse
     self._debugTextViewHandler = _debugTextViewHandler
@@ -95,7 +121,7 @@ public struct ChatInputView: View {
         }
         .padding(.horizontal, sidePadding)
         .padding(.top, sidePadding)
-        .isHidden(!enableAttachments, remove: true)
+        .isHidden(!shouldShowAttachmentsRow, remove: true)
         textInput
         Rectangle()
           .foregroundColor(.clear)
@@ -139,7 +165,6 @@ public struct ChatInputView: View {
           }
       }
     }
-    .padding(8)
     .animation(.easeInOut, value: hasPendingToolApproval)
     .onTapGesture {
       inputViewModel.textInputNeedsFocus = true
@@ -171,6 +196,8 @@ public struct ChatInputView: View {
 
   @Dependency(\.settingsService) private var settingsService
 
+  private let config: ChatInputConfig
+
   private let contextControlsConfig: ContextControlsConfig?
 
   @Dependency(\.llmService) private var llmService
@@ -179,6 +206,16 @@ public struct ChatInputView: View {
 
   private var enableAttachments: Bool {
     inputViewModel.pendingToolApproval == nil
+  }
+
+  private var shouldShowAttachmentsRow: Bool {
+    guard enableAttachments else { return false }
+    // If attachment button is shown, always show the row
+    if config.showAttachmentButton {
+      return true
+    }
+    // If attachment button is hidden, only show row when there are attachments
+    return !inputViewModel.attachments.isEmpty
   }
 
   private var isInputReady: Bool {
@@ -227,7 +264,9 @@ public struct ChatInputView: View {
 
   private var bottomRow: some View {
     HStack(alignment: .center, spacing: 6) {
-      chatModeSelection
+      if config.showChatMode {
+        chatModeSelection
+      }
       PopUpSelectionMenu(
         selectedItem: $inputViewModel.selectedModel,
         availableItems: inputViewModel.activeModels,
@@ -241,9 +280,11 @@ public struct ChatInputView: View {
       HStack(spacing: 10) {
         Spacer()
 
-        ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
-          .frame(width: 14, height: 14)
-          .isHidden(!enableAttachments, remove: true)
+        if config.showAttachmentButton {
+          ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
+            .frame(width: 14, height: 14)
+            .isHidden(!enableAttachments, remove: true)
+        }
         if isStreamingResponse, !hasPendingToolApproval {
           stopButton
         } else {
@@ -273,7 +314,7 @@ public struct ChatInputView: View {
             inputViewModel.inlineSearch = search
           },
           onKeyDown: { key, modifiers in onKeyDown(key: key, modifiers: modifiers) },
-          placeholder: "Ask anything (⌘L), @ to mention")
+          placeholder: config.placeholderText)
           .scrollContentBackground(.hidden)
           .fixedSize(horizontal: false, vertical: true)
           .onAppear {
