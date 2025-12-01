@@ -175,7 +175,7 @@ struct DefaultMCPServiceTests {
     // then
     try await fulfillment(of: [didConnectToHttpServer, didConnectToStdioServer, didConnectToBothServers])
     _ = cancellable
-    #expect(sut.servers.currentValue.count == 2)
+    #expect(sut.servers.value.count == 2)
   }
 
   @Test
@@ -208,7 +208,7 @@ struct DefaultMCPServiceTests {
     }
 
     try await fulfillment(of: didConnectToStdioServer)
-    #expect(sut.servers.currentValue.count == 1)
+    #expect(sut.servers.value.count == 1)
 
     // when
     settingsService.update(setting: \.mcpServers, to: [
@@ -219,7 +219,7 @@ struct DefaultMCPServiceTests {
     // then
     try await fulfillment(of: [didConnectToHttpServer, didConnectToBothServers])
     _ = cancellable
-    #expect(sut.servers.currentValue.count == 2)
+    #expect(sut.servers.value.count == 2)
   }
 
 }

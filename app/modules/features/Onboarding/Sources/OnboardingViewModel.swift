@@ -49,10 +49,10 @@ final class OnboardingViewModel {
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
 
-    isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).currentValue.isGranted
-    isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).currentValue.isGranted
-    isXcodeAIProviderPermissionGranted = permissionsService.status(for: .xcodeAutomation).currentValue.isGranted
-    hasSetupAIProvider = !llmService.activeModels.currentValue.isEmpty
+    isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).value.isGranted
+    isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).value.isGranted
+    isXcodeAIProviderPermissionGranted = permissionsService.status(for: .xcodeAutomation).value.isGranted
+    hasSetupAIProvider = !llmService.activeModels.value.isEmpty
     hasSetupAutocompletionProvider = settingsService.value(for: \.codeCompletionProviderId) != nil
 
     currentStep = .welcome

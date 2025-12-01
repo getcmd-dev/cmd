@@ -11,9 +11,9 @@ struct MockPermissionsServiceTests {
   @Test
   func test_usesInitialValues() async throws {
     let sut = MockPermissionsService(grantedPermissions: [.accessibility])
-    #expect(sut.status(for: .accessibility).currentValue == .grantedEnabled)
-    #expect(sut.status(for: .xcodeExtension).currentValue == .notGranted)
-    #expect(sut.status(for: .xcodeAutomation).currentValue == .notGranted)
+    #expect(sut.status(for: .accessibility).value == .grantedEnabled)
+    #expect(sut.status(for: .xcodeExtension).value == .notGranted)
+    #expect(sut.status(for: .xcodeAutomation).value == .notGranted)
   }
 
   @Test
@@ -38,8 +38,8 @@ struct MockPermissionsServiceTests {
   @Test
   func test_xcodeAutomationUsesInitialValues() async throws {
     let sut = MockPermissionsService(grantedPermissions: [.xcodeAutomation])
-    #expect(sut.status(for: .xcodeAutomation).currentValue == .grantedEnabled)
-    #expect(sut.status(for: .accessibility).currentValue == .notGranted)
+    #expect(sut.status(for: .xcodeAutomation).value == .grantedEnabled)
+    #expect(sut.status(for: .accessibility).value == .notGranted)
   }
 
   @Test

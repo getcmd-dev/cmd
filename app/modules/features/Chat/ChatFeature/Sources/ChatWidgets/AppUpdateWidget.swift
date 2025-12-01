@@ -13,7 +13,7 @@ struct AppUpdateWidget: View {
   init() {
     @Dependency(\.appUpdateService) var appUpdateService
     let availableAppUpdate = appUpdateService.hasUpdateAvailable
-    self.availableAppUpdate = ObservableValue(availableAppUpdate.eraseToAnyPublisher(), initial: availableAppUpdate.currentValue)
+    self.availableAppUpdate = ObservableValue(availableAppUpdate.eraseToAnyPublisher(), initial: availableAppUpdate.value)
   }
 
   var body: some View {

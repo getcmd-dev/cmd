@@ -116,7 +116,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
     let providersAvailableForModel = providerModelsByModelId.subscribeToValue(for: model.id)
 
     return ReadonlyCurrentValueSubject<AIProvider?>(
-      preferredProvider.currentValue[model.id] ?? providersAvailableForModel.currentValue?.first?.provider,
+      preferredProvider.value[model.id] ?? providersAvailableForModel.value?.first?.provider,
       publisher: preferredProvider
         .map { $0[model.id] }
         .combineLatest(providersAvailableForModel)
@@ -129,7 +129,7 @@ final class AIModelsManager: AIModelsManagerProtocol {
 
   func modelsAvailable(for provider: AIProvider) -> ReadonlyCurrentValueSubject<[AIProviderModel]> {
     let publisher = llmModelByProvider.subscribeToValue(for: provider)
-    return .init(publisher.currentValue ?? [], publisher: publisher.map { $0 ?? [] }.eraseToAnyPublisher())
+    return .init(publisher.value ?? [], publisher: publisher.map { $0 ?? [] }.eraseToAnyPublisher())
   }
 
   func refetchModelsAvailable(

@@ -121,7 +121,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     let workspace = request.workspace
     let content = request.content
     let selection = request.selection
-    guard isAvailable.currentValue else {
+    guard isAvailable.value else {
       return nil
     }
     guard let provider = configuredProvider else {
@@ -178,7 +178,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     let workspace = request.workspace
     let content = request.content
     let selection = request.selection
-    guard isAvailable.currentValue else {
+    guard isAvailable.value else {
       return nil
     }
     let request = CompletionCacheRequest(workspace: workspace, file: file, content: content, selection: selection)
@@ -335,10 +335,10 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       #if DEBUG
       // Debug builds don't work well with Xcode extension.
       // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
-      permissionsService.status(for: .xcodeExtension).currentValue.isGranted ||
+      permissionsService.status(for: .xcodeExtension).value.isGranted ||
         settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
       #else
-      permissionsService.status(for: .xcodeExtension).currentValue.isGranted
+      permissionsService.status(for: .xcodeExtension).value.isGranted
       #endif
     }()
     let isEnabledInSettings = settingsService.value(for: \.enableCodeCompletion)

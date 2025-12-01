@@ -65,7 +65,7 @@ public final class WebFetchTool: Tool {
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
-      guard let model = llmService.lowTierModel()?.modelInfo ?? llmService.activeModels.currentValue.first else {
+      guard let model = llmService.lowTierModel()?.modelInfo ?? llmService.activeModels.value.first else {
         updateStatus.complete(with: .failure(AppError("No available LLM models to process the web content.")))
         return
       }

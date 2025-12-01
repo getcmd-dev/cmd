@@ -278,7 +278,7 @@ public final class SettingsViewModel {
 
   var enablePushNotifications: Bool {
     get {
-      permissionService.status(for: .pushNotification).currentValue == .grantedEnabled
+      permissionService.status(for: .pushNotification).value == .grantedEnabled
     }
     set {
       if newValue {

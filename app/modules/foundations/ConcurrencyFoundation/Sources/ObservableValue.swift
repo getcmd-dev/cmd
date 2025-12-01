@@ -95,7 +95,7 @@ extension Observable where Self: Sendable {
 extension ReadonlyCurrentValueSubject where Failure == Never {
   @MainActor
   public func asObservableValue() -> ObservableValue<Output> {
-    .init(eraseToAnyPublisher(), initial: currentValue)
+    .init(eraseToAnyPublisher(), initial: value)
   }
 }
 

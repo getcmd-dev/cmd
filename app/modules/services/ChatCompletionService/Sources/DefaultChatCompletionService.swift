@@ -140,7 +140,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
   private func getAvailableModels(req _: Request) -> ModelsResult {
     ModelsResult(
       data:
-      llmService.activeModels.currentValue.map { model in
+      llmService.activeModels.value.map { model in
         ModelResult(id: model.name, created: 0, object: "model", ownedBy: "cmd")
       },
       object: "list")
