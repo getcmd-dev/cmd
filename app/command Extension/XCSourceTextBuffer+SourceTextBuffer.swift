@@ -54,8 +54,8 @@ extension XCSourceTextBuffer: @retroactive XCSourceTextBufferI {
       .compactMap { $0 as? XCSourceTextRange }
     return selectionsRanges.map { range in
       TextRange(
-        start: .init(line: range.start.line, column: range.start.column),
-        end: .init(line: range.end.line, column: range.end.column))
+        start: .init(line: range.start.line, character: range.start.column),
+        end: .init(line: range.end.line, character: range.end.column))
     }
   }
 
@@ -66,8 +66,8 @@ extension XCSourceTextBuffer: @retroactive XCSourceTextBufferI {
   public func set(selections: [FileDiffTypesFoundation.TextRange]) {
     for range in selections {
       self.selections.add(XCSourceTextRange(
-        start: .init(line: range.start.line, column: range.start.column),
-        end: .init(line: range.end.line, column: range.end.column)))
+        start: .init(line: range.start.line, column: range.start.character),
+        end: .init(line: range.end.line, column: range.end.character)))
     }
   }
 }

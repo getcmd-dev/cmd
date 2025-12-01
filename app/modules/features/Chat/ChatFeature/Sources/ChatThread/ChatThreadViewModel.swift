@@ -3,7 +3,7 @@
 
 import AppEventServiceInterface
 import AppFoundation
-import ChatAppEvents
+import ChatAppEventsFoundation
 import ChatFoundation
 import ChatHistoryServiceInterface
 import ChatServiceInterface

@@ -4,7 +4,7 @@
 import AccessibilityFoundation
 import AppFoundation
 import AppKit
-import ChatAppEvents
+import ChatAppEventsFoundation
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 @preconcurrency import Combine

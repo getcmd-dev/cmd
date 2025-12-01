@@ -4,7 +4,7 @@
 import AppEventServiceInterface
 import AppFoundation
 import AppKit
-import ChatAppEvents
+import ChatAppEventsFoundation
 @preconcurrency import Combine
 import Dependencies
 import KeyboardShortcuts
@@ -76,7 +76,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     on(.addContextToNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: nil))
     on(.hideChat, trigger: HideChatEvent())
     on(.new, trigger: NewChatEvent())
-    on(.suggestCodeCompletion, trigger: SuggestCodeCompletionEvent())
+    on(.editCodeInline, trigger: EditCodeInlineEvent())
   }
 
   // MARK: - Settings integration
@@ -95,6 +95,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     let keyBoardMap: [(SettingsServiceInterface.Settings.KeyboardShortcut, KeyboardShortcuts.Name)] = [
       (settings[withDefault: .addContextToCurrentChat], .addContext),
       (settings[withDefault: .addContextToNewChat], .addContextToNewThread),
+      (settings[withDefault: .editCodeInline], .editCodeInline),
       (settings[withDefault: .dismissChat], .hideChat),
     ]
     for (setting, shortcutName) in keyBoardMap {
@@ -117,14 +118,14 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
 extension KeyboardShortcuts.Name {
   static let hideChat = Self("hideChat", default: .init(.escape, modifiers: [.command]))
   // Xcode shortcuts
-  static let addContext = Self("addContext", default: .init(.i, modifiers: [.command]))
-  static let addContextToNewThread = Self("addContextToNewThread", default: .init(.i, modifiers: [.command, .shift]))
-  static let suggestCodeCompletion = Self("suggestCodeCompletion", default: .init(.escape, modifiers: [.command, .shift]))
+  static let addContext = Self("addContext", default: .init(.l, modifiers: [.command]))
+  static let addContextToNewThread = Self("addContextToNewThread", default: .init(.l, modifiers: [.command, .shift]))
+  static let editCodeInline = Self("editCodeInline", default: .init(.i, modifiers: [.command]))
 
   static let xcodeShortcuts = [
     Self.addContext,
     Self.addContextToNewThread,
-    Self.suggestCodeCompletion,
+    Self.editCodeInline,
   ]
   /// Host app shortcuts
   static let new = Self("new", default: .init(.n, modifiers: [.command]))

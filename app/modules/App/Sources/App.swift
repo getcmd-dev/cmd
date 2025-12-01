@@ -9,6 +9,7 @@ import Dependencies
 import DLS
 import ExtensionCommandHandler
 import Foundation
+import InlineChatFeature
 import LoggingServiceInterface
 import SwiftUI
 
@@ -93,7 +94,9 @@ public struct commandApp: App {
     }
   }
 
+  // TODO: look for a better pattern to initiate and keep alive some features
   let codeCompletion = Atomic<CodeCompletionWindowsManager?>(nil)
+  let inlineChat = Atomic<InlineChatWindowsManager?>(nil)
 
   let isAppActive: AnyPublisher<Bool, Never>
 

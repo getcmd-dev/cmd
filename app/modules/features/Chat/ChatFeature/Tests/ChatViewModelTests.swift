@@ -4,7 +4,7 @@
 import AccessibilityFoundation
 import AppEventServiceInterface
 import AppKit
-import ChatAppEvents
+import ChatAppEventsFoundation
 import ChatFoundation
 import ChatHistoryServiceInterface
 import Combine

@@ -3,7 +3,7 @@
 
 import AppEventServiceInterface
 import AppKit
-import ChatAppEvents
+import ChatAppEventsFoundation
 import ChatFeature
 import Combine
 import Dependencies

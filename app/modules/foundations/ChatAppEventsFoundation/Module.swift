@@ -1,5 +1,5 @@
 Target.module(
-  name: "ChatAppEvents",
+  name: "ChatAppEventsFoundation",
   dependencies: [
     "AppEventServiceInterface",
     "ChatFoundation",

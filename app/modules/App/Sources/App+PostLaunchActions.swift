@@ -12,6 +12,7 @@ import ChatCompletionServiceInterface
 import CodeCompletionFeature
 import CodeCompletionServiceInterface
 import Dependencies
+import InlineChatFeature
 import LoggingServiceInterface
 import XcodeObserverServiceInterface
 
@@ -34,6 +35,7 @@ extension commandApp {
     _ = codeCompletionService
 
     codeCompletion.set(to: CodeCompletionWindowsManager())
+    inlineChat.set(to: InlineChatWindowsManager())
 
     // Setup login item for first time if not already enabled
     // Ensure the launch agent is up to date and enabled

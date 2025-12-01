@@ -370,11 +370,14 @@ extension Settings {
     case addContextToNewChat
     /// Dismiss the chat UI.
     case dismissChat
+    /// Edit code inline.
+    case editCodeInline
 
     public var defaultShortcut: KeyboardShortcut {
       switch self {
-      case .addContextToCurrentChat: KeyboardShortcut(key: "i", modifiers: [.command])
-      case .addContextToNewChat: KeyboardShortcut(key: "i", modifiers: [.command, .shift])
+      case .addContextToCurrentChat: KeyboardShortcut(key: "l", modifiers: [.command])
+      case .addContextToNewChat: KeyboardShortcut(key: "l", modifiers: [.command, .shift])
+      case .editCodeInline: KeyboardShortcut(key: "i", modifiers: [.command])
       case .dismissChat: KeyboardShortcut(key: .escape, modifiers: [.command])
       }
     }

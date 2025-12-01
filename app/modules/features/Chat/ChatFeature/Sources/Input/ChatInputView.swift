@@ -246,7 +246,7 @@ struct ChatInputView: View {
             inputViewModel.inlineSearch = search
           },
           onKeyDown: { key, modifiers in onKeyDown(key: key, modifiers: modifiers) },
-          placeholder: "Write something here")
+          placeholder: "Ask anything (⌘L), @ to mention")
           .scrollContentBackground(.hidden)
           .fixedSize(horizontal: false, vertical: true)
           .onAppear {

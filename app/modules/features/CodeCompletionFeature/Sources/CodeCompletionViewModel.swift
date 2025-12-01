@@ -106,8 +106,12 @@ final class CodeCompletionViewModel {
       configuration: .tab(allowModifiers: true),
       callbacks: .init(
         onKeyDown: { [keyEventState] _, modifiers in
-          guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
-          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard keyEventState.hasEditorState, keyEventState.hasCompletion else {
+            return false
+          }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else {
+            return false
+          }
           guard
             !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
               !keyEventState.multiLineDisplayModeIsAlwaysShown)
@@ -119,7 +123,9 @@ final class CodeCompletionViewModel {
         },
         onKeyUp: { [weak self, keyEventState] (_: Bool, modifiers: CGEventFlags) in
           guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
-          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
+          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else {
+            return false
+          }
           guard
             !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
               !keyEventState.multiLineDisplayModeIsAlwaysShown)
@@ -536,8 +542,10 @@ final class CodeCompletionViewModel {
           suggestedNewContent: completion.newContent,
           selectedChange: lineByLineChange,
           newSelections: [.init(
-            start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
-            end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
+            start: .init(
+              line: completion.newCursorSelection.start.line,
+              character: completion.newCursorSelection.start.character),
+            end: .init(line: completion.newCursorSelection.end.line, character: completion.newCursorSelection.end.character))])
 
         try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
         self.completion = nil

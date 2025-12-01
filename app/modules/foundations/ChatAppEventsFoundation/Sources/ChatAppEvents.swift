@@ -17,6 +17,12 @@ public struct AddCodeToChatEvent: AppEvent {
   public let chatMode: ChatMode?
 }
 
+// MARK: - EditCodeInlineEvent
+
+public struct EditCodeInlineEvent: AppEvent {
+  public init() { }
+}
+
 // MARK: - ChangeChatModeEvent
 
 public struct ChangeChatModeEvent: AppEvent {
@@ -36,12 +42,6 @@ public struct NewChatEvent: AppEvent {
 // MARK: - HideChatEvent
 
 public struct HideChatEvent: AppEvent {
-  public init() { }
-}
-
-// MARK: - SuggestCodeCompletionEvent
-
-public struct SuggestCodeCompletionEvent: AppEvent {
   public init() { }
 }
 

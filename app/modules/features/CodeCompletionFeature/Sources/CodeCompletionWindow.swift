@@ -7,6 +7,7 @@ import AppKit
 import ConcurrencyFoundation
 import Dependencies
 import DLS
+import FileDiffFoundation
 import FoundationInterfaces
 import LoggingServiceInterface
 import RoutingFoundation
@@ -109,7 +110,10 @@ final class CodeCompletionWindow: XcodeWindow {
       completionId = completionTask.id
       // Cache `completionRange` as this requires counting characters throughout the completed file
       // which is somewhat resource intensive.
-      completionRange = completionTask.request.content.nsRange(of: completionTask.request.selection)
+      let range = completionTask.request.selection
+      completionRange = completionTask.request.content.nsRange(of: .init(
+        start: .init(line: range.start.line, character: range.start.character),
+        end: .init(line: range.end.line, character: range.end.character)))
     }
     guard
       let completionRange,
@@ -118,7 +122,8 @@ final class CodeCompletionWindow: XcodeWindow {
       return
     }
     let request = completionTask.request
-    let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
+    let lineHeight = completedTextFrame
+      .height / CGFloat(request.selection.end.line - request.selection.start.line + 1) // TODO: deal with line wapping.
 
     // Leading offset between editor frame and text area frame
     if
@@ -160,6 +165,7 @@ final class CodeCompletionWindow: XcodeWindow {
         toMatch: size.width,
         for: content)
     }
+    // TODO: avoid setting if unchanged
     viewModel.verticalContentOffset = frame.maxY - completedTextFrame.maxY
   }
 

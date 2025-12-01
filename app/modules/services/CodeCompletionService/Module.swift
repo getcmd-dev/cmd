@@ -3,7 +3,7 @@ Target.module(
   dependencies: [
     "AccessibilityFoundation",
     "AppFoundation",
-    "ChatAppEvents",
+    "ChatAppEventsFoundation",
     "CodeCompletionFoundation",
     "CodeCompletionServiceInterface",
     "ConcurrencyFoundation",

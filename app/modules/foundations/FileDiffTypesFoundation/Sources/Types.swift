@@ -151,11 +151,11 @@ public struct TextRange: Codable, Sendable {
 
   public struct TextPosition: Codable, Sendable {
     public let line: Int
-    public let column: Int
+    public let character: Int
 
-    public init(line: Int, column: Int) {
+    public init(line: Int, character: Int) {
       self.line = line
-      self.column = column
+      self.character = character
     }
   }
 }

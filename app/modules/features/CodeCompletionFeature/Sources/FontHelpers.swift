@@ -154,27 +154,3 @@ extension Substring {
     canBeUsedForFontSizeInference && count > 10
   }
 }
-
-extension String {
-  func nsRange(of range: CursorRange) -> NSRange? {
-    var position = 0
-    var length = 0
-    for (idx, line) in split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
-      if idx < range.start.line {
-        position += line.count + 1 // +1 for the \n separator
-      }
-      if idx == range.start.line {
-        position += range.start.character
-        length -= range.start.character
-      }
-      if idx >= range.start.line, idx < range.end.line {
-        length += line.count + 1 // +1 for the \n separator
-      }
-      if idx == range.end.line {
-        length += range.end.character
-        return NSRange(location: position, length: length)
-      }
-    }
-    return nil
-  }
-}

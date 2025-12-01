@@ -153,7 +153,7 @@ targets.append(
       "AppUpdateServiceInterface",
       "AskFollowUpTool",
       "BuildTool",
-      "ChatAppEvents",
+      "ChatAppEventsFoundation",
       "ChatCompletionService",
       "ChatCompletionServiceInterface",
       "ChatFeature",
@@ -181,6 +181,7 @@ targets.append(
       "GithubCopilotService",
       "GithubCopilotServiceInterface",
       "HighlighterServiceInterface",
+      "InlineChatFeature",
       "JRPCService",
       "JRPCServiceInterface",
       "KeyboardShortcutService",
@@ -224,7 +225,7 @@ targets.append(
       .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
       "App",
       "AppEventServiceInterface",
-      "ChatAppEvents",
+      "ChatAppEventsFoundation",
       "ChatFoundation",
       "ConcurrencyFoundation",
       "FoundationInterfaces",
@@ -378,12 +379,12 @@ targets.append(
 
 targets.append(
   contentsOf: Target.module(
-    name: "ChatAppEvents",
+    name: "ChatAppEventsFoundation",
     dependencies: [
       "AppEventServiceInterface",
       "ChatFoundation",
     ],
-    path: "./foundations/ChatAppEvents"))
+    path: "./foundations/ChatAppEventsFoundation"))
 
 targets.append(
   contentsOf: Target.module(
@@ -425,7 +426,7 @@ targets.append(
       "AppEventServiceInterface",
       "AppFoundation",
       "AppUpdateServiceInterface",
-      "ChatAppEvents",
+      "ChatAppEventsFoundation",
       "ChatCompletionServiceInterface",
       "ChatFoundation",
       "ChatHistoryServiceInterface",
@@ -465,7 +466,7 @@ targets.append(
       .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
       "AccessibilityFoundation",
       "AppEventServiceInterface",
-      "ChatAppEvents",
+      "ChatAppEventsFoundation",
       "ChatCompletionServiceInterface",
       "ChatFeature",
       "ChatFoundation",
@@ -490,7 +491,7 @@ targets.append(
 targets.append(
   contentsOf: Target.module(
     name: "ChatFeatureInterface",
-    path: "./features/Chat/ChatFeatureInterface"))
+    path: "./featureInterfaces/ChatFeatureInterface"))
 
 targets.append(
   contentsOf: Target.module(
@@ -664,7 +665,7 @@ targets.append(
     dependencies: [
       "AccessibilityFoundation",
       "AppFoundation",
-      "ChatAppEvents",
+      "ChatAppEventsFoundation",
       "CodeCompletionFoundation",
       "CodeCompletionServiceInterface",
       "ConcurrencyFoundation",
@@ -1070,6 +1071,23 @@ targets.append(
       "DependencyFoundation",
     ],
     path: "./serviceInterfaces/HighlighterServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "InlineChatFeature",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppEventServiceInterface",
+      "ChatAppEventsFoundation",
+      "DLS",
+      "FileDiffFoundation",
+      "LLMFoundation",
+      "LoggingServiceInterface",
+      "XcodeObserverServiceInterface",
+      "XcodeObserverWindowsAdapter",
+    ],
+    testsDependencies: [],
+    path: "./features/InlineChatFeature"))
 
 targets.append(
   contentsOf: Target.module(
