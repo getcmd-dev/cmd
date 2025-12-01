@@ -1,7 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AccessibilityObjCFoundation
 import AppEventServiceInterface
+import AppKit
 import ChatAppEventsFoundation
 import Combine
 import Dependencies
@@ -52,6 +54,23 @@ final class InlineChatsViewModel {
   func closeChat(_ chat: InlineChatViewModel) {
     chats[chat.workspace]?[chat.file]?.removeAll { $0.id == chat.id }
     inlineChats = inlineChats.filter { $0.id != chat.id }
+    if inlineChats.isEmpty {
+      // refocus Xcode
+      if
+        let workspace = xcodeObserver.state.focusedWorkspace
+      {
+        if
+          let pid = xcodeObserver.state.focusedInstance?.processIdentifier,
+          xcodeObserver.state.focusedInstance?.workspaces.count == 1
+        {
+          // If there's only one workspace, activating the app is sufficient to bring the window to front.
+          WindowActivation.activateApp(pid)
+        } else {
+          // Otherwise we use AX to raise the window. This might change which element is focussed.
+          workspace.axElement.raise()
+        }
+      }
+    }
   }
 
   private var inlineChats = [InlineChatViewModel]()
@@ -91,6 +110,7 @@ final class InlineChatsViewModel {
     }
     let newChat = InlineChatViewModel(
       workspace: workspace.url,
+      editor: editor.axElement,
       file: file,
       selection: selection,
       content: editor.content)

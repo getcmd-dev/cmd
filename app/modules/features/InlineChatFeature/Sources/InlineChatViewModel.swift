@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AccessibilityFoundation
 import ChatHistoryServiceInterface
 import ChatInput
 import Dependencies
@@ -11,8 +12,9 @@ import XcodeObserverServiceInterface
 
 @Observable @MainActor
 final class InlineChatViewModel {
-  init(workspace: URL, file: URL, selection: CursorRange, content: String) {
+  init(workspace: URL, editor: AnyAXUIElement, file: URL, selection: CursorRange, content: String) {
     self.workspace = workspace
+    self.editor = editor
     self.file = file
     self.selection = selection
     self.content = content
@@ -28,6 +30,7 @@ final class InlineChatViewModel {
 
   let input: ChatInputViewModel
   let id = UUID()
+  let editor: AnyAXUIElement
   let workspace: URL
   let file: URL
   let selection: CursorRange

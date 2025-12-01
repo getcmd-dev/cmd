@@ -306,7 +306,16 @@ open class XcodeWindow: NSWindow {
 
       // Raise the tracked window and then reactivate after a slight delay
       if let trackedWindow {
-        trackedWindow.raise()
+        if
+          let pid = xcodeObserver.state.focusedInstance?.processIdentifier,
+          xcodeObserver.state.focusedInstance?.workspaces.count == 1
+        {
+          // If there's only one workspace, activating the app is sufficient to bring the window to front.
+          WindowActivation.activateApp(pid)
+        } else {
+          // Otherwise we use AX to raise the window. This might change which element is focussed.
+          trackedWindow.raise()
+        }
       }
 
       DispatchQueue.main.asyncAfter(deadline: .now() + Constants.reactivationDelay) { [weak self] in

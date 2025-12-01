@@ -1118,6 +1118,8 @@ targets.append(
     name: "InlineChatFeature",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
+      "AccessibilityFoundation",
+      "AccessibilityObjCFoundation",
       "AppEventServiceInterface",
       "ChatAppEventsFoundation",
       "ChatHistoryServiceInterface",
