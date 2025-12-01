@@ -1303,7 +1303,7 @@ struct GithubCopilotServerTests {
     try await fulfillment(of: [stdioConnectionStarted, hasSentInitializationRequest, hasCheckedForStatus])
 
     // Verify isLSPServerInstalled is true
-    #expect(service.isLSPServerInstalled.currentValue == true)
+    #expect(service.isLSPServerInstalled.value == true)
     // Verify no shell commands were run (no installation needed)
     #expect(shellCommands.value.isEmpty)
 
@@ -1406,7 +1406,7 @@ struct GithubCopilotServerTests {
     try await fulfillment(of: [hasCalledInstaller, stdioConnectionStarted, hasSentInitializationRequest, hasCheckedForStatus])
 
     // Verify isLSPServerInstalled is true
-    #expect(service.isLSPServerInstalled.currentValue == true)
+    #expect(service.isLSPServerInstalled.value == true)
     // Verify that the old version file has been removed and the new one added.
     #expect(fileManager.files.map { $0.key.path() }.sorted() == [
       currentVersionPath,

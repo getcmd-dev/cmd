@@ -21,7 +21,7 @@ extension ChatViewModel: ChatCompletionServiceDelegate {
       throw AppError("The provided threadId \(chatCompletion.threadId) is not a valid UUID")
     }
     let thread = try await loadThread(withId: threadId)
-    thread.input.selectedModel = llmService.activeModels.currentValue.first(where: { $0.name == chatCompletion.modelName })
+    thread.input.selectedModel = llmService.activeModels.value.first(where: { $0.name == chatCompletion.modelName })
     @Dependency(\.xcodeObserver) var xcodeObserver
     let projectRoot = xcodeObserver.state.focusedWorkspace?.url
 

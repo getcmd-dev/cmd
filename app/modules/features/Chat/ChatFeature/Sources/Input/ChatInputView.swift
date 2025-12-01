@@ -320,7 +320,7 @@ struct ChatInputView: View {
     guard threadViewModel != nil else { return false }
     guard let selectedModel = inputViewModel.selectedModel else { return false }
     // Don't show controls when chatting with external agent
-    let provider = llmService.provider(for: selectedModel).currentValue
+    let provider = llmService.provider(for: selectedModel).value
     return !(provider?.isExternalAgent ?? false)
   }
 

@@ -12,7 +12,7 @@ struct MockAppUpdateServiceTests {
     let updateInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
     let sut = MockAppUpdateService(hasUpdateAvailable: .updateAvailable(info: updateInfo))
 
-    if case .updateAvailable(let info) = sut.hasUpdateAvailable.currentValue {
+    if case .updateAvailable(let info) = sut.hasUpdateAvailable.value {
       #expect(info?.version == "1.0.0")
     } else {
       Issue.record("Expected updateAvailable")
@@ -22,7 +22,7 @@ struct MockAppUpdateServiceTests {
   @Test
   func test_defaultInitialValue() async throws {
     let sut = MockAppUpdateService()
-    #expect(sut.hasUpdateAvailable.currentValue == .noUpdateAvailable)
+    #expect(sut.hasUpdateAvailable.value == .noUpdateAvailable)
   }
 
   @Test

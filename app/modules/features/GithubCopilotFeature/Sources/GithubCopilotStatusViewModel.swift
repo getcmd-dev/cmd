@@ -14,9 +14,9 @@ final class GithubCopilotStatusViewModel: Sendable {
     self.githubCopilotService = githubCopilotService
 
     let loginStatus = githubCopilotService.loginStatus
-    authStatus = loginStatus.currentValue
+    authStatus = loginStatus.value
     let isLSPServerInstalled = githubCopilotService.isLSPServerInstalled
-    self.isLSPServerInstalled = isLSPServerInstalled.currentValue
+    self.isLSPServerInstalled = isLSPServerInstalled.value
 
     loginStatus.sink { @Sendable status in
       Task { @MainActor [weak self] in

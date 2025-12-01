@@ -182,7 +182,7 @@ struct InternalSettingsView: View {
   @Dependency(\.xcodeObserver) private var xcodeObserver
 
   private func copyAXState() {
-    let state = xcodeObserver.statePublisher.currentValue
+    let state = xcodeObserver.statePublisher.value
 
     Task {
       var stateRepresentation = ""

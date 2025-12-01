@@ -112,7 +112,7 @@ extension LLMService {
   /// - Parameter provider: The LLM provider to get models for.
   /// - Returns: An array of available models for the provider.
   public func modelsAvailable(for provider: AIProvider) -> [AIProviderModel] {
-    modelsAvailable(for: provider).currentValue
+    modelsAvailable(for: provider).value
   }
 
   /// Retrieves a model by its provider-specific model identifier.
@@ -120,7 +120,7 @@ extension LLMService {
   /// - Parameter providerModelId: The provider-specific identifier for the model.
   /// - Returns: The model if found, otherwise nil.
   public func getModel(by providerModelId: String) -> AIProviderModel? {
-    getModel(by: providerModelId).currentValue
+    getModel(by: providerModelId).value
   }
 
   /// Retrieves model information by its model info identifier.
@@ -128,7 +128,7 @@ extension LLMService {
   /// - Parameter modelInfoId: The unique identifier for the model info.
   /// - Returns: The model information if found, otherwise nil.
   public func getModelInfo(by modelInfoId: AIModelID) -> AIModel? {
-    getModelInfo(by: modelInfoId).currentValue
+    getModelInfo(by: modelInfoId).value
   }
 
   /// Determines which provider is associated with the given model.
@@ -136,7 +136,7 @@ extension LLMService {
   /// - Parameter model: The model information to find the provider for.
   /// - Returns: The provider that owns the model, or nil if not found.
   public func provider(for model: AIModel) -> AIProvider? {
-    provider(for: model).currentValue
+    provider(for: model).value
   }
 
   /// - Parameters:

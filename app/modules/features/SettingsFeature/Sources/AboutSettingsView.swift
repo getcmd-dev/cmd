@@ -33,7 +33,7 @@ struct AboutSettingsView: View {
             .font(.headline)
 
           VStack(alignment: .leading, spacing: 12) {
-            if case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.currentValue {
+            if case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.value {
               AppUpdateRow(
                 appUpdateInfo: appUpdateInfo,
                 onRelaunchTapped: { appUpdateService.relaunch() })
@@ -240,7 +240,7 @@ struct AboutSettingsView: View {
 
   private func handleCheckForUpdatesTapped() {
     guard !isCheckingForUpdates else { return }
-    if case .updateAvailable(let info) = appUpdateService.hasUpdateAvailable.currentValue {
+    if case .updateAvailable(let info) = appUpdateService.hasUpdateAvailable.value {
       manualUpdateStatus = ManualUpdateStatus(
         message: (info?.version)
           .map { "Version \($0) is ready to install. Relaunch to update." }
@@ -255,7 +255,7 @@ struct AboutSettingsView: View {
 
     Task {
       await appUpdateService.checkForUpdates()
-      let result = appUpdateService.hasUpdateAvailable.currentValue
+      let result = appUpdateService.hasUpdateAvailable.value
       await MainActor.run {
         switch result {
         case .updateAvailable(let info):
