@@ -34,7 +34,7 @@ final class DefaultXcodeObserver: XcodeObserver {
       shellService: shellService)
 
     let accessibilityPermissionStatus = permissionsService.status(for: .accessibility)
-    update(with: accessibilityPermissionStatus.currentValue)
+    update(with: accessibilityPermissionStatus.value)
     let accessibilitySubscription = accessibilityPermissionStatus.sink(receiveValue: update(with:))
     inLock { state in state.accessibilitySubscription = accessibilitySubscription }
 
@@ -93,17 +93,17 @@ final class DefaultXcodeObserver: XcodeObserver {
   }
 
   @MainActor
-  private func update(with isAccessibilityPermissionGranted: Bool?) {
-    if isAccessibilityPermissionGranted == nil, internalState.value != .unknown {
+  private func update(with permissionStatus: PermissionStatus) {
+    if permissionStatus == .unknown, internalState.value != .unknown {
       stopObservations()
       internalState.send(.unknown)
       return
-    } else if isAccessibilityPermissionGranted == false, internalState.value != .missingAXPermission {
+    } else if !permissionStatus.isGranted, internalState.value != .missingAXPermission {
       stopObservations()
       internalState.send(.missingAXPermission)
       return
     } else if
-      isAccessibilityPermissionGranted == true, internalState.value == .missingAXPermission || internalState
+      permissionStatus.isGranted, internalState.value == .missingAXPermission || internalState
         .value == .unknown
     {
       startObservations { state in
@@ -222,7 +222,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     let activeApplicationPid = NSWorkspace.shared.frontmostApplication?.processIdentifier
 
     let xcodesState = xcodes
-      .map(\.state.currentValue)
+      .map(\.state.value)
 
     let state = InternalXcodeState(
       activeApplicationProcessIdentifier: activeApplicationPid,
@@ -329,7 +329,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     }
     updateStateWith(
       xcodesState: [
-        newXcodeApp.state.currentValue,
+        newXcodeApp.state.value,
       ] + state.xcodesState
         .filter { $0.processIdentifier != newXcodeApp.processIdentifier })
 
@@ -374,7 +374,7 @@ final class DefaultXcodeObserver: XcodeObserver {
       assertionFailure("tracking Xcode without having AX permissions")
       return
     }
-    let xcodeState = xcodeApp.state.currentValue
+    let xcodeState = xcodeApp.state.value
 
     let toRelease: (AnyCancellable?, XcodeAppInstanceObserver?) = inLock { state in
       let toCancel = state.xcodeObserverSubscriptions[xcodeState.processIdentifier]

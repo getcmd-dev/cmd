@@ -45,4 +45,48 @@ struct LRUQueueTests {
     #expect(secondIteration[1].1 == "second")
     #expect(secondIteration[2].1 == "first")
   }
+
+  @Test("Remove item from middle of queue")
+  func removeItemFromMiddle() async throws {
+    // given
+    let sut = LRUQueue<String>()
+    sut.insert("first")
+    let secondKey = sut.insert("second")
+    sut.insert("third")
+
+    // when - remove the middle item
+    let removed = sut.remove(secondKey)
+
+    // when - iterate over the list
+    var items = [String]()
+    for item in sut {
+      items.append(item.1)
+    }
+
+    // then - verify the middle item is removed
+    #expect(items == ["third", "first"])
+    #expect(removed == "second")
+  }
+
+  @Test("Remove non-existent key does not affect queue")
+  func removeNonExistentKey() async throws {
+    // given
+    let sut = LRUQueue<String>()
+    sut.insert("first")
+    sut.insert("second")
+
+    // when - remove a key that doesn't exist
+    let removed = sut.remove(999)
+
+    // when - iterate over the list
+    var items = [String]()
+    for item in sut {
+      items.append(item.1)
+    }
+
+    // then - verify queue is unchanged
+    #expect(items.count == 2)
+    #expect(items == ["second", "first"])
+    #expect(removed == nil)
+  }
 }

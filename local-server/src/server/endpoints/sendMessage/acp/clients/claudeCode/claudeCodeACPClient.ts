@@ -7,7 +7,7 @@ import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
 import { withParsedToolCalls } from "./helper"
-import { ACPToolCall } from "../../index"
+import { ACPToolCall } from "../.."
 
 export type ClaudeCodeACPSessionInitializationParams = {
 	cwd: string

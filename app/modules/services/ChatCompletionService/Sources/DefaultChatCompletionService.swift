@@ -41,8 +41,8 @@ final class DefaultChatCompletionService: ChatCompletionService {
 
     /// When the setting to automatically sync Xcode settings is changed, do the sync if needed.
     settingsService.liveValue(for: \.automaticallyUpdateXcodeSettings).sink { @Sendable [weak self] value in
-      if value, let port = self?.port {
-        try? self?.updateXcodeSettings(port: port)
+      if value {
+        self?.updateXcodeSettings()
       }
     }.store(in: &cancellables)
   }
@@ -61,12 +61,6 @@ final class DefaultChatCompletionService: ChatCompletionService {
     app.post("v1", "chat", "completions", use: chatCompletion(req:))
   }
 
-  func updateXcodeSettings() {
-    if let port {
-      try? updateXcodeSettings(port: port)
-    }
-  }
-
   private weak var delegate: ChatCompletionServiceDelegate?
 
   private var cancellables = Set<AnyCancellable>()
@@ -75,6 +69,16 @@ final class DefaultChatCompletionService: ChatCompletionService {
   private let userDefaults: UserDefaultsI
   private let llmService: LLMService
   private let xcodeUserDefaults: UserDefaultsI?
+
+  private func updateXcodeSettings() {
+    if let port {
+      do {
+        try updateXcodeSettings(port: port)
+      } catch {
+        defaultLogger.error("Could not update Xcode settings to sync cmd port", error)
+      }
+    }
+  }
 
   /// Find an available port where to start the HTTP server.
   private func findAvailablePort() async throws -> Int {
@@ -136,7 +140,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
   private func getAvailableModels(req _: Request) -> ModelsResult {
     ModelsResult(
       data:
-      llmService.activeModels.currentValue.map { model in
+      llmService.activeModels.value.map { model in
         ModelResult(id: model.name, created: 0, object: "model", ownedBy: "cmd")
       },
       object: "list")

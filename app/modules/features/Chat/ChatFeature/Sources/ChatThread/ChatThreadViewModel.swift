@@ -1,7 +1,9 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppEventServiceInterface
 import AppFoundation
+import ChatAppEvents
 import ChatFoundation
 import ChatHistoryServiceInterface
 import ChatServiceInterface
@@ -18,6 +20,8 @@ import LLMServiceInterface
 import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
+import PermissionsServiceInterface
+import PushNotificationServiceInterface
 import SettingsServiceInterface
 import SettingsServiceToolsAdapter
 import SharedValuesFoundation
@@ -57,19 +61,27 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   {
     @Dependency(\.toolsPlugin) var toolsPlugin
     @Dependency(\.settingsService) var settingsService
+    @Dependency(\.appsActivationState) var appsActivationState
     @Dependency(\.llmService) var llmService
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.fileManager) var fileManager
     @Dependency(\.checkpointService) var checkpointService
     @Dependency(\.chatService) var chatService
+    @Dependency(\.pushNotificationService) var pushNotificationService
+    @Dependency(\.permissionsService) var permissionsService
+    @Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry
 
     self.toolsPlugin = toolsPlugin
     self.settingsService = settingsService
+    self.appsActivationState = appsActivationState
     self.llmService = llmService
     self.xcodeObserver = xcodeObserver
     self.fileManager = fileManager
     self.checkpointService = checkpointService
     self.chatService = chatService
+    self.pushNotificationService = pushNotificationService
+    self.permissionsService = permissionsService
+    self.appEventHandlerRegistry = appEventHandlerRegistry
     self.id = id
     self.name = name
     self.messages = messages
@@ -88,8 +100,12 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel(queuedMessages: inputModel?.queuedMessages ?? [])
-    input.didTapSendMessage = { [weak self] in Task { await self?.sendMessage() } }
-    input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
+    input.didTapSendMessage = { [weak self] textInput, attachments in
+      Task { await self?.sendMessage(textInput: textInput, attachments: attachments) }
+    }
+    input.didCancelMessage = { [weak self] processNextQueuedMessage in
+      self?.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
+    }
 
     setUp()
   }
@@ -154,8 +170,14 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     hasChangedSinceLastSave = false
   }
 
+  /// Clear the cached project info. This allows to focus on the current workspace on next message send.
+  func clearProjectInfo() {
+    assert(events.isEmpty, "Clearing project info while there are events is not allowed")
+    projectInfo = nil
+  }
+
   @MainActor
-  func cancelCurrentMessage() {
+  func cancelCurrentMessage(processNextQueuedMessage: Bool = true) {
     streamingTask?.task.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
@@ -170,6 +192,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     // Release the strong reference and buffer for reuse when cancelling
     chatService.stopKeepingAlive(self, for: id)
     persistThread()
+
+    // Only process queue if requested
+    if processNextQueuedMessage {
+      input.processNextQueuedMessage()
+    }
   }
 
   func handleToggleChatHistory() {
@@ -228,7 +255,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   }
 
   @MainActor
-  func sendMessage() async {
+  func sendMessage(textInput: TextInput, attachments: [AttachmentModel]) async {
     let projectInfo = updateProjectInfo()
 
     await updateFocusFileInfo()
@@ -251,11 +278,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       defaultLogger.error("not sending as no model selected")
       return
     }
-    let textInput = input.textInput
-    let attachments = input.attachments
-
-    input.textInput = TextInput()
-    input.attachments = []
 
     for attachment in attachments {
       switch attachment {
@@ -438,8 +460,11 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       // Release the strong reference and buffer for reuse after error handling and persistence are complete
       chatService.stopKeepingAlive(self, for: id)
 
-      // Process next queued message if available (even after error)
-      input.processNextQueuedMessage()
+      if error as? CancellationError == nil {
+        // Process next queued message if available even after error.
+        // (unless this is a cancellation error in which case the cancelling code should decide whether to dequeue)
+        input.processNextQueuedMessage()
+      }
     }
   }
 
@@ -469,6 +494,9 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   private let chatHistoryService: ChatHistoryService
   private let chatService: ChatService
+  private let pushNotificationService: PushNotificationService
+  private let permissionsService: PermissionsService
+  private let appEventHandlerRegistry: AppEventHandlerRegistry
 
   // MARK: - Change Tracking
 
@@ -480,6 +508,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
   private let toolsPlugin: ToolsPlugin
   private let settingsService: SettingsService
+  private let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
   private let llmService: LLMService
 
   private let xcodeObserver: XcodeObserver
@@ -499,9 +528,14 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       let isStreaming = streamingTask != nil
       isStreamingResponse = isStreaming
 
-      // When streaming completes and tab is not focused, set the badge
-      if wasStreaming, !isStreaming, !isFocused {
-        hasUnreadCompletion = true
+      // When streaming completes and tab is not focused, set the badge and send notification
+      if wasStreaming, !isStreaming {
+        if !isFocused {
+          hasUnreadCompletion = true
+        }
+        if !appsActivationState.value.isEitherXcodeOrHostAppActive {
+          sendStreamingCompletionNotification()
+        }
       }
     }
   }
@@ -727,6 +761,50 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
       return projectInfo
     }
     return nil
+  }
+
+  // MARK: - Push Notifications
+
+  private func sendStreamingCompletionNotification() {
+    Task {
+      // Check if we have disabled permission in the app.
+      // If the permission is not granted, this will ask for permission.
+      guard permissionsService.status(for: .pushNotification).value != .grantedDisabled
+      else {
+        return
+      }
+
+      // Get the last assistant message
+      let lastMessage = messages.last(where: { $0.role == .assistant })
+
+      // Extract text from the content
+      var preview = "Response complete"
+      if let content = lastMessage?.content.first {
+        switch content {
+        case .text(let textContent):
+          preview = String(textContent.text.prefix(100))
+        case .reasoning(let reasoningContent):
+          preview = String(reasoningContent.text.prefix(100))
+        default:
+          preview = "Response complete"
+        }
+      }
+
+      let threadId = self.id
+      let notification = PushNotification(
+        title: name ?? "Chat",
+        body: preview,
+        onTapped: { @Sendable [appEventHandlerRegistry] in
+          // Send event to switch to this chat thread
+          _ = await appEventHandlerRegistry.handle(event: SwitchToChatThreadEvent(threadId: threadId))
+        })
+
+      do {
+        try await pushNotificationService.send(notification)
+      } catch {
+        defaultLogger.error("Failed to send push notification", error)
+      }
+    }
   }
 
 }

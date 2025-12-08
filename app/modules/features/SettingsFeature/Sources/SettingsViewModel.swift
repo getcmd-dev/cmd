@@ -2,11 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
 import LoggingServiceInterface
+import PermissionsServiceInterface
 import SettingsServiceInterface
 import SharedUtilsFoundation
 import SharedValuesFoundation
@@ -30,13 +32,15 @@ public final class SettingsViewModel {
     self.toolsPlugin = toolsPlugin
     @Dependency(\.xcodeController) var xcodeController
     self.xcodeController = xcodeController
+    @Dependency(\.permissionsService) var permissionService
+    self.permissionService = permissionService
 
     let settings = settingsService.values()
     self.settings = settings
 
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: .repeatLastLLMInteraction)
-    showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
+    alwaysShowOnboardingScreen = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
     defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
     enableAnalyticsAndCrashReporting = userDefaults.bool(forKey: .enableAnalyticsAndCrashReporting)
@@ -45,6 +49,10 @@ public final class SettingsViewModel {
     launchHostAppWhenXcodeDidActivate = userDefaults.object(forKey: .launchHostAppWhenXcodeDidActivate) == nil
       ? true
       : userDefaults.bool(forKey: .launchHostAppWhenXcodeDidActivate)
+    accessibilityPermission = permissionService.status(for: .accessibility).asObservableValue()
+    xcodeExtensionPermission = permissionService.status(for: .xcodeExtension).asObservableValue()
+    xcodeAutomationPermission = permissionService.status(for: .xcodeAutomation).asObservableValue()
+    pushNotificationsPermission = permissionService.status(for: .pushNotification).asObservableValue()
 
     if
       let storedLevel = userDefaults.string(forKey: .defaultLogLevel),
@@ -54,6 +62,10 @@ public final class SettingsViewModel {
     } else {
       defaultLogLevel = .info
     }
+
+    overrideAutomaticallyUpdateXcodeSettings = userDefaults.object(forKey: .overrideAutomaticallyUpdateXcodeSettings) == nil
+      ? nil
+      : userDefaults.bool(forKey: .overrideAutomaticallyUpdateXcodeSettings)
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
@@ -83,6 +95,11 @@ public final class SettingsViewModel {
   private(set) var settings: SettingsServiceInterface.Settings
 
   let toolsPlugin: ToolsPlugin
+
+  let accessibilityPermission: ObservableValue<PermissionStatus>
+  let xcodeExtensionPermission: ObservableValue<PermissionStatus>
+  let xcodeAutomationPermission: ObservableValue<PermissionStatus>
+  let pushNotificationsPermission: ObservableValue<PermissionStatus>
 
   var allowAnonymousAnalytics: Bool {
     get {
@@ -121,10 +138,10 @@ public final class SettingsViewModel {
     }
   }
 
-  var showOnboardingScreenAgain: Bool {
+  var alwaysShowOnboardingScreen: Bool {
     didSet {
-      userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
-      if showOnboardingScreenAgain {
+      userDefaults.set(alwaysShowOnboardingScreen, forKey: .alwaysShowOnboardingDefaultKey)
+      if alwaysShowOnboardingScreen {
         AIProvider.allCases
           .compactMap(\.externalAgent)
           .forEach {
@@ -188,6 +205,27 @@ public final class SettingsViewModel {
     }
   }
 
+  var overrideAutomaticallyUpdateXcodeSettings: Bool? {
+    didSet {
+      if let overrideAutomaticallyUpdateXcodeSettings {
+        userDefaults.set(overrideAutomaticallyUpdateXcodeSettings, forKey: .overrideAutomaticallyUpdateXcodeSettings)
+        settingsService.update(setting: \.automaticallyUpdateXcodeSettings, to: overrideAutomaticallyUpdateXcodeSettings)
+      } else {
+        userDefaults.removeObject(forKey: .overrideAutomaticallyUpdateXcodeSettings)
+      }
+    }
+  }
+
+  var enableDiskLogging: Bool {
+    get {
+      settings.enableDiskLogging
+    }
+    set {
+      settings.enableDiskLogging = newValue
+      settingsService.update(setting: \.enableDiskLogging, to: newValue)
+    }
+  }
+
   var enableCodeCompletion: Bool {
     get {
       settings.enableCodeCompletion
@@ -235,6 +273,19 @@ public final class SettingsViewModel {
     set {
       settings.queueMessagesWhileStreaming = newValue
       settingsService.update(setting: \.queueMessagesWhileStreaming, to: newValue)
+    }
+  }
+
+  var enablePushNotifications: Bool {
+    get {
+      permissionService.status(for: .pushNotification).value == .grantedEnabled
+    }
+    set {
+      if newValue {
+        permissionService.enablePushNotifications()
+      } else {
+        permissionService.disablePushNotifications()
+      }
     }
   }
 
@@ -294,4 +345,5 @@ public final class SettingsViewModel {
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
   private let xcodeController: XcodeController
+  private let permissionService: PermissionsService
 }

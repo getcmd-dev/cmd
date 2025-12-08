@@ -53,7 +53,8 @@ struct ChatViewModelTests {
     let firstTab = sut.tab
     // Make the first tab non-empty by sending a message
     firstTab.input.textInput = TextInput([.text("Test")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(sut.tabs.count == 1)
     #expect(sut.currentTabIndex == 0)
 
@@ -75,7 +76,8 @@ struct ChatViewModelTests {
     let initialTab = sut.tab
     // Make the initial tab non-empty
     initialTab.input.textInput = TextInput([.text("Initial message")])
-    await initialTab.sendMessage()
+    initialTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     // Now set the input for copying
     initialTab.input.textInput = TextInput([.text("Test input")])
 
@@ -85,6 +87,98 @@ struct ChatViewModelTests {
     // then
     #expect(sut.tab != initialTab)
     #expect(sut.tab.input.textInput.string.string == "Test input")
+  }
+
+  @MainActor
+  @Test("adding a new tab when empty tab has different workspace updates workspace instead of creating new tab")
+  func addingNewTabWhenEmptyTabHasDifferentWorkspace() async throws {
+    // given
+    let workspace1URL = try #require(URL(string: "file:///test/workspace1.xcodeproj"))
+    let workspace2URL = try #require(URL(string: "file:///test/workspace2.xcodeproj"))
+
+    let xcodeState1 = XcodeState(
+      activeApplicationProcessIdentifier: 123,
+      previousApplicationProcessIdentifier: nil,
+      xcodesState: [
+        XcodeAppState(
+          processIdentifier: 123,
+          isActive: true,
+          workspaces: [XcodeWorkspaceState(
+            axElement: dummyAXElement,
+            url: workspace1URL,
+            editors: [],
+            isFocused: true,
+            document: nil,
+            tabs: [])]),
+      ])
+
+    let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.state(xcodeState1))
+
+    // Create a thread model with projectInfo set for workspace1 but empty (no events)
+    let threadId = UUID()
+    let emptyThreadWithProject = ChatThreadModel(
+      id: threadId,
+      name: "Empty Thread",
+      messages: [],
+      events: [],
+      projectInfo: ChatThreadModel.SelectedProjectInfo(
+        path: workspace1URL,
+        dirPath: workspace1URL.deletingLastPathComponent()),
+      knownFilesContent: [:],
+      input: ChatInputModel(queuedMessages: []),
+      createdAt: Date())
+
+    let sut = withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
+      $0.chatHistoryService = MockChatHistoryService(chatThreads: [emptyThreadWithProject])
+    } operation: {
+      ChatViewModel()
+    }
+
+    // Wait for the persisted thread to load
+    try? await Task.sleep(for: .milliseconds(50))
+
+    // Switch to the loaded thread
+    sut.selectTab(at: 0)
+
+    let originalTab = sut.tab
+
+    // Verify the tab has projectInfo set but is empty
+    #expect(originalTab.projectInfo?.path == workspace1URL)
+    #expect(originalTab.isEmpty)
+    #expect(sut.tabs.count == 1)
+
+    // Simulate workspace change to workspace2
+    let xcodeState2 = XcodeState(
+      activeApplicationProcessIdentifier: 123,
+      previousApplicationProcessIdentifier: nil,
+      xcodesState: [
+        XcodeAppState(
+          processIdentifier: 123,
+          isActive: true,
+          workspaces: [XcodeWorkspaceState(
+            axElement: dummyAXElement,
+            url: workspace2URL,
+            editors: [],
+            isFocused: true,
+            document: nil,
+            tabs: [])]),
+      ])
+    mockXcodeObserver.mutableStatePublisher.send(AXState<XcodeState>.state(xcodeState2))
+
+    // Wait for the state update to propagate
+    try? await Task.sleep(for: .milliseconds(50))
+
+    // when
+    sut.addTab()
+
+    // then
+    // Should NOT create a new tab, but instead clear the projectInfo of the existing empty tab
+    // so it gets updated to the new workspace on next message send
+    #expect(sut.tabs.count == 1)
+    #expect(sut.currentTabIndex == 0)
+    #expect(sut.tab == originalTab)
+    #expect(sut.tab.projectInfo == nil) // projectInfo cleared, will be set to workspace2 on next message
   }
 
   @MainActor
@@ -102,7 +196,8 @@ struct ChatViewModelTests {
 
     let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(firstTab.events.count == 1)
 
     // when
@@ -129,7 +224,8 @@ struct ChatViewModelTests {
     }
     let firstTab = sut.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
-    await firstTab.sendMessage()
+    firstTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(firstTab.events.count == 1)
 
     // when
@@ -644,7 +740,8 @@ struct ChatViewModelTests {
     let originalTabId = sut.tab.id
     // Make the current tab non-empty so addTab creates a new one
     sut.tab.input.textInput = TextInput([.text("Test")])
-    await sut.tab.sendMessage()
+    sut.tab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // when
     sut.addTab()
@@ -919,7 +1016,8 @@ struct ChatViewModelTests {
     let originalId = originalTab.id
     // Make the original tab non-empty
     originalTab.input.textInput = TextInput([.text("Test")])
-    await originalTab.sendMessage()
+    originalTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
 
     // Switch to a new tab
     sut.addTab()
@@ -1295,7 +1393,8 @@ struct ChatViewModelTests {
     let sut = ChatViewModel()
     let initialTab = sut.tab
     initialTab.input.textInput = TextInput([.text("Test input")])
-    await initialTab.sendMessage()
+    initialTab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     #expect(initialTab.isEmpty == false)
     #expect(sut.tabs.count == 1)
 
@@ -1696,7 +1795,8 @@ struct ChatViewModelTests {
       }
     }
 
-    await sut.tab.sendMessage()
+    sut.tab.input.sendMessage()
+    try? await Task.sleep(for: .milliseconds(10))
     try await fulfillment(of: [messageCompleted, streamingStarted])
     _ = cancellable
 

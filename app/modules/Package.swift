@@ -197,6 +197,8 @@ targets.append(
       "Onboarding",
       "PermissionsService",
       "PermissionsServiceInterface",
+      "PushNotificationService",
+      "PushNotificationServiceInterface",
       "ReadFileTool",
       "RoutingFoundation",
       "SearchFilesTool",
@@ -445,6 +447,8 @@ targets.append(
       "LocalServerServiceInterface",
       "LoggingServiceInterface",
       "Markdown",
+      "PermissionsServiceInterface",
+      "PushNotificationServiceInterface",
       "RoutingFoundation",
       "SettingsFeatureInterface",
       "SettingsServiceInterface",
@@ -666,6 +670,7 @@ targets.append(
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "FileDiffFoundation",
+      "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "LLMFoundation",
       "LocalServerServiceInterface",
@@ -1375,6 +1380,7 @@ targets.append(
       "LLMServiceInterface",
       "Onboarding",
       "PermissionsServiceInterface",
+      "SettingsServiceInterface",
       "SwiftTesting",
     ],
     path: "./features/Onboarding"))
@@ -1386,6 +1392,7 @@ targets.append(
       "AppFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
+      "FoundationInterfaces",
       "LoggingServiceInterface",
       "PermissionsServiceInterface",
       "ShellServiceInterface",
@@ -1394,6 +1401,7 @@ targets.append(
     testsDependencies: [
       "ConcurrencyFoundation",
       "PermissionsService",
+      "PermissionsServiceInterface",
       "ShellServiceInterface",
       "SwiftTesting",
     ],
@@ -1412,6 +1420,38 @@ targets.append(
       "SwiftTesting",
     ],
     path: "./serviceInterfaces/PermissionsServiceInterface"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "PushNotificationService",
+    dependencies: [
+      "DependencyFoundation",
+      "LoggingServiceInterface",
+      "PermissionsServiceInterface",
+      "PushNotificationServiceInterface",
+      "ThreadSafe",
+    ],
+    testsDependencies: [
+      "PermissionsServiceInterface",
+      "PushNotificationService",
+      "PushNotificationServiceInterface",
+      "SwiftTesting",
+    ],
+    path: "./services/PushNotificationService"))
+
+targets.append(
+  contentsOf: Target.module(
+    name: "PushNotificationServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "ConcurrencyFoundation",
+      "ThreadSafe",
+    ],
+    testsDependencies: [
+      "PushNotificationServiceInterface",
+      "SwiftTesting",
+    ],
+    path: "./serviceInterfaces/PushNotificationServiceInterface"))
 
 targets.append(
   contentsOf: Target.module(

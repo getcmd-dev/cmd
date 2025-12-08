@@ -4,19 +4,6 @@
 import Algorithms
 import FileDiffTypesFoundation
 
-// MARK: - CharacterLevelChange
-
-/// Represents a character-level change in a diff.
-public struct CharacterLevelChange: Sendable {
-  public let text: String
-  public let type: DiffContentType
-
-  public init(text: String, type: DiffContentType) {
-    self.text = text
-    self.type = type
-  }
-}
-
 extension FileDiff {
 
   /// Parses a character-level git diff (from `git diff --word-diff-regex=.`) and returns
@@ -72,6 +59,20 @@ extension FileDiff {
     while diffPosition < diff.endIndex {
       // Try to match addition
       if let addMatch = diff[diffPosition...].prefixMatch(of: additionPattern) {
+        // Check if there's a hidden newline in new content before the addition content.
+        // Git word-diff sometimes omits newlines when the following line is entirely added.
+        if newContent[safe: newContentPosition] == "\n" {
+          let addedTextStart = addMatch.output.added.first
+          if addedTextStart != "\n" {
+            // The newline in new content is not part of the addition marker but was added
+            currentLineChanges.append(.init(text: "\n", type: .added))
+            newContentPosition = newContent.safeIndex(after: newContentPosition)
+            result.append(currentLineChanges)
+            currentLineChanges = []
+            // Don't advance diffPosition - we still need to process the addition marker
+            continue
+          }
+        }
         let addedText = String(addMatch.output.added)
         currentLineChanges.append(.init(text: addedText, type: .added))
         diffPosition = addMatch.range.upperBound
@@ -81,6 +82,20 @@ extension FileDiff {
 
       // Try to match removal
       if let remMatch = diff[diffPosition...].prefixMatch(of: removalPattern) {
+        // Check if there's a hidden newline in old content before the removal content.
+        // Git word-diff sometimes omits newlines when the following line is entirely removed.
+        if oldContent[safe: oldContentPosition] == "\n" {
+          let removedTextStart = remMatch.output.removed.first
+          if removedTextStart != "\n" {
+            // The newline in old content is not part of the removal marker but was removed
+            currentLineChanges.append(.init(text: "\n", type: .removed))
+            oldContentPosition = oldContent.safeIndex(after: oldContentPosition)
+            result.append(currentLineChanges)
+            currentLineChanges = []
+            // Don't advance diffPosition - we still need to process the removal marker
+            continue
+          }
+        }
         let removedText = String(remMatch.output.removed)
         currentLineChanges.append(.init(text: removedText, type: .removed))
         diffPosition = remMatch.range.upperBound
@@ -93,7 +108,9 @@ extension FileDiff {
         // New lines are not clearly attributed by the git diff.
         // We lookup in the compared content to know what type of change we are facing.
         let changeType: DiffContentType
-        switch (oldContent[safe: oldContentPosition] == "\n", newContent[safe: newContentPosition] == "\n") {
+        let oldChar = oldContent[safe: oldContentPosition]
+        let newChar = newContent[safe: newContentPosition]
+        switch (oldChar == "\n", newChar == "\n") {
         case (true, true):
           changeType = .unchanged
         case (false, true):

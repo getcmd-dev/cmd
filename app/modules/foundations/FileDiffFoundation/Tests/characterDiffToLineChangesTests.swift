@@ -582,4 +582,56 @@ struct CharacterDiffToLineChangesTests {
     // Should detect the removed newline
     #expect(!lineChanges.isEmpty)
   }
+
+  @Test
+  func testNewLineMixedWithContentInGitDiff() throws {
+    let oldContent = """
+      self.xcodeObserver = xcodeObserver
+      @Dependency(\\.appEventHandlerRegistry) var appEventHandlerRegistry
+
+      appEventHandlerRegistry.registerHandler() { [weak self] event in
+          guard let self else { return false }
+          switch event {
+          case is InlineChatViewModel:
+              Task {
+                  await self.addNewChat()
+              }
+              return true
+          default:
+              return false
+          }
+      }
+      """
+
+    let newContent = """
+      self.xcodeObserver = xcodeObserver:
+              Task {
+                  await self.addNewChat()
+              }
+              return true
+          default:
+              return false
+          }
+      }
+      """
+    let diff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+    // Diff is:
+//      @@ -1,10 +1,4 @@
+//      self.xcodeObserver = xcodeObserver[-@Dependency(\.appEventHandlerRegistry) var appEventHandlerRegistry-]
+//
+//      [-appEventHandlerRegistry.registerHandler() { [weak self] event in-]
+//      [-    guard let self else { return false }-]
+//      [-    switch event {-]
+//      [-    case is InlineChatViewModel-]:
+//              Task {
+//                  await self.addNewChat()
+//              }
+    let (lineChanges, _) = FileDiff.characterDiffToLineChanges(
+      diff: diff,
+      oldContent: oldContent,
+      newContent: newContent)
+
+    // Should detect the removed newline
+    #expect(!lineChanges.isEmpty)
+  }
 }

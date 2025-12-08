@@ -220,7 +220,10 @@ let logTimeInterval: TimeInterval = 10.0
 func logAXusage() {
   let v = acc
   acc = 0
-  defaultLogger.log("ax time spent: \(String(format: "%.2f", v / logTimeInterval * 100))%")
+  let usage = v / logTimeInterval * 100
+  if usage > 5 {
+    defaultLogger.log("ax time spent: \(String(format: "%.2f", v / logTimeInterval * 100))%")
+  }
 }
 
 extension AXUIElement {

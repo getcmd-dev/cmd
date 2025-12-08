@@ -28,6 +28,8 @@ Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "Markdown",
+    "PermissionsServiceInterface",
+    "PushNotificationServiceInterface",
     "RoutingFoundation",
     "SettingsFeatureInterface",
     "SettingsServiceInterface",

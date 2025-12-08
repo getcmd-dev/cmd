@@ -144,6 +144,12 @@ public class ChatViewModel {
     // If the current tab is empty and we're creating a new tab (not opening an existing thread),
     // don't create a new tab - just reuse the current empty tab
     if threadId == nil, currentTab.isEmpty {
+      // Check if the workspace has changed
+      if currentTab.projectInfo?.path != focusedWorkspacePath {
+        // Clear the projectInfo so it gets updated to the new workspace on next message send
+        currentTab.clearProjectInfo()
+      }
+
       if copyingCurrentInput {
         // Input is already in the current tab, nothing to do
       }
@@ -154,8 +160,12 @@ public class ChatViewModel {
     let newTab = threadId.map { chatService.knownObject(for: $0) } ??? ChatThreadViewModel(id: threadId)
     if copyingCurrentInput {
       newTab.input = currentTab.input.copy(
-        didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },
-        didCancelMessage: { newTab.cancelCurrentMessage() })
+        didTapSendMessage: { textInput, attachments in
+          Task { [weak newTab] in await newTab?.sendMessage(textInput: textInput, attachments: attachments) }
+        },
+        didCancelMessage: { processNextQueuedMessage in
+          newTab.cancelCurrentMessage(processNextQueuedMessage: processNextQueuedMessage)
+        })
     }
     // Unfocus the previously selected tab
     if currentTabIndex >= 0, currentTabIndex < tabs.count {
@@ -348,6 +358,9 @@ public class ChatViewModel {
         return true
       } else if event is NewChatEvent {
         await addTab(copyingCurrentInput: true)
+        return true
+      } else if let event = event as? SwitchToChatThreadEvent {
+        await selectChatThread(id: event.threadId)
         return true
       } else {
         return false

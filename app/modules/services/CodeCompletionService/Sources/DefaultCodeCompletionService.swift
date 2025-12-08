@@ -121,7 +121,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     let workspace = request.workspace
     let content = request.content
     let selection = request.selection
-    guard isAvailable.currentValue else {
+    guard isAvailable.value else {
       return nil
     }
     guard let provider = configuredProvider else {
@@ -142,7 +142,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
         provider.didOpen(workspace: workspace, file: file, content: content, version: 0)
       }
     }
-    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
+    let request = CompletionCacheRequest(workspace: workspace.url, file: file, content: content, selection: selection)
 
     // Get formatting metadata for the workspace
     let formattingMetadata = await getFormattingMetadata(for: workspace)
@@ -157,7 +157,8 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       formattingMetadata: formattingMetadata)?
       .applied(to: content, file: file, selection: selection)
 
-    if let suggestion {
+    if let suggestion, suggestion.containsNonWhitespaceCompletion {
+      defaultLogger.trace("Got completion suggestion \(suggestion.diff.debugDescription)")
       let cacheId = cachedCompletions.store(suggestion: suggestion, for: request)
       return (cachedRequestId: cacheId, suggestion: suggestion)
     } else {
@@ -166,22 +167,27 @@ final class DefaultCodeCompletionService: CodeCompletionService {
     return nil
   }
 
-  nonisolated func deleteCachedCompletion(cachedRequestId _: Int) { }
+  nonisolated func deleteCachedCompletion(cachedRequestId: Int) {
+    cachedCompletions.remove(cachedRequestId: cachedRequestId)
+  }
 
   nonisolated func cachedCompletion(_ request: CompletionRequest) throws
     -> (cachedRequestId: Int, suggestion: CompletionSuggestion?)?
   {
     let file = request.file
-    let workspace = request.workspace // TODO
+    let workspace = request.workspace
     let content = request.content
     let selection = request.selection
-    guard isAvailable.currentValue else {
+    guard isAvailable.value else {
       return nil
     }
-    let request = CompletionCacheRequest(file: file, content: content, selection: selection)
+    let request = CompletionCacheRequest(workspace: workspace, file: file, content: content, selection: selection)
 
     if let (cacheId, cachedCompletion) = cachedCompletions.get(for: request) {
-      defaultLogger.log("Returning cached completion")
+      if let cachedCompletion, !cachedCompletion.containsNonWhitespaceCompletion {
+        return nil
+      }
+      defaultLogger.log("Returning cached completion \(cachedCompletion?.diff.debugDescription ?? "nil")")
       return (cachedRequestId: cacheId, suggestion: cachedCompletion)
     }
     return nil
@@ -316,7 +322,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
   nonisolated private let filesPerWorkspace = Atomic([WorkspaceIndex: Set<URL>]())
   private var openFiles = [WorkspaceIndex: [URL: FileState]]()
 
-  private func handle(xcodeExtensionPermissionIsGranted _: Bool?) {
+  private func handle(xcodeExtensionPermissionIsGranted _: PermissionStatus) {
     updateIsAvailable()
   }
 
@@ -329,10 +335,10 @@ final class DefaultCodeCompletionService: CodeCompletionService {
       #if DEBUG
       // Debug builds don't work well with Xcode extension.
       // The permission is typically not granted to DEBUG builds, that instead trigger extension request through the release app.
-      permissionsService.status(for: .xcodeExtension).currentValue == true ||
+      permissionsService.status(for: .xcodeExtension).value.isGranted ||
         settingsService.value(for: \.pointReleaseXcodeExtensionToDebugApp)
       #else
-      permissionsService.status(for: .xcodeExtension).currentValue == true
+      permissionsService.status(for: .xcodeExtension).value.isGranted
       #endif
     }()
     let isEnabledInSettings = settingsService.value(for: \.enableCodeCompletion)

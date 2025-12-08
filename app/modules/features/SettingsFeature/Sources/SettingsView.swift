@@ -73,7 +73,8 @@ public struct SettingsView: View {
           codeCompletionDebounceMs: $viewModel.codeCompletionDebounceMs,
           multiLineCodeCompletionDisplayMode: $viewModel.multiLineCodeCompletionDisplayMode,
           codeCompletionProviderId: $viewModel.codeCompletionProviderId,
-          llmSettingsViewModel: viewModel.llmSettings)
+          llmSettingsViewModel: viewModel.llmSettings,
+          showDetailedSettings: true)
 
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)
@@ -84,14 +85,16 @@ public struct SettingsView: View {
       case .internalSettings:
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
-          showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
+          alwaysShowOnboardingScreen: $viewModel.alwaysShowOnboardingScreen,
           pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
           showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease,
           defaultChatPositionIsInverted: $viewModel.defaultChatPositionIsInverted,
           enableAnalyticsAndCrashReporting: $viewModel.enableAnalyticsAndCrashReporting,
           enableNetworkProxy: $viewModel.enableNetworkProxy,
           showToolInputCopyButtonInRelease: $viewModel.showToolInputCopyButtonInRelease,
-          defaultLogLevel: $viewModel.defaultLogLevel)
+          defaultLogLevel: $viewModel.defaultLogLevel,
+          overrideAutomaticallyUpdateXcodeSettings: $viewModel.overrideAutomaticallyUpdateXcodeSettings,
+          enableDiskLogging: $viewModel.enableDiskLogging)
 
       case .about:
         AboutSettingsView(
@@ -99,7 +102,12 @@ public struct SettingsView: View {
           automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates,
           fileEditMode: $viewModel.fileEditMode,
           launchHostAppWhenXcodeDidActivate: $viewModel.launchHostAppWhenXcodeDidActivate,
-          queueMessagesWhileStreaming: $viewModel.queueMessagesWhileStreaming)
+          queueMessagesWhileStreaming: $viewModel.queueMessagesWhileStreaming,
+          enablePushNotifications: $viewModel.enablePushNotifications,
+          accessibilityPermission: viewModel.accessibilityPermission,
+          xcodeExtensionPermission: viewModel.xcodeExtensionPermission,
+          xcodeAutomationPermission: viewModel.xcodeAutomationPermission,
+          pushNotificationsPermission: viewModel.pushNotificationsPermission)
       }
     }
     .padding(.horizontal, Constants.horizontalPadding)

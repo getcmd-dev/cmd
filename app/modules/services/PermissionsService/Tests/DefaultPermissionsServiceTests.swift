@@ -4,6 +4,7 @@
 import Combine
 import ConcurrencyFoundation
 import Foundation
+import PermissionsServiceInterface
 import ShellServiceInterface
 import SwiftTesting
 import Testing
@@ -48,16 +49,16 @@ struct DefaultPermissionsServiceTests {
       },
       requestXcodeExtensionPermission: { })
 
-    let receivedValues = Atomic<[Bool?]>([])
+    let receivedValues = Atomic<[PermissionStatus]>([])
     let cancellable = sut.status(for: .accessibility).sink { value in
       receivedValues.mutate { $0.append(value) }
-      if value == true {
+      if value.isGranted {
         exp.fulfill()
       }
     }
     try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(pollCount.value == pollUntilGranted)
-    #expect(receivedValues.value.compactMap(\.self) == [false, true])
+    #expect(receivedValues.value.filter { $0 != .unknown } == [.notGranted, .grantedEnabled])
     _ = cancellable
   }
 
@@ -80,12 +81,86 @@ struct DefaultPermissionsServiceTests {
     let sut = DefaultPermissionsService(shellService: shellService)
 
     let cancellable = sut.status(for: .xcodeExtension).sink { value in
-      if value == true {
+      if value.isGranted {
         exp.fulfill()
       }
     }
     try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(pollCount.value == pollUntilGranted)
+    _ = cancellable
+  }
+
+  @Test
+  func testRequestingPushNotificationPermissions() async throws {
+    let exp = expectation(description: "push notification permission requested")
+    let sut = DefaultPermissionsService(
+      requestAccessibilityPermission: { },
+      requestXcodeExtensionPermission: { },
+      requestPushNotificationPermission: {
+        exp.fulfill()
+      })
+    sut.request(permission: .pushNotification)
+    try await fulfillment(of: exp)
+  }
+
+  @Test
+  func testReadingPushNotificationPermissionsPollUntilPermissionIsGranted() async throws {
+    let pollUntilGranted = 5
+    let exp = expectation(description: "push notification permission status granted")
+    let pollCount = Atomic(0)
+
+    let sut = DefaultPermissionsService(
+      isPushNotificationPermissionGranted: {
+        pollCount.increment() >= pollUntilGranted
+      })
+
+    let receivedValues = Atomic<[PermissionStatus]>([])
+    let cancellable = sut.status(for: .pushNotification).sink { value in
+      receivedValues.mutate { $0.append(value) }
+      if value.isGranted {
+        exp.fulfill()
+      }
+    }
+    try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
+    #expect(pollCount.value == pollUntilGranted)
+    #expect(receivedValues.value.filter { $0 != .unknown } == [.notGranted, .grantedEnabled])
+    _ = cancellable
+  }
+
+  @Test
+  func testRequestingXcodeAutomationPermissions() async throws {
+    let exp = expectation(description: "xcode automation permission requested")
+    let sut = DefaultPermissionsService(
+      requestAccessibilityPermission: { },
+      requestXcodeExtensionPermission: { },
+      requestXcodeAutomationPermission: {
+        exp.fulfill()
+      })
+    sut.request(permission: .xcodeAutomation)
+    try await fulfillment(of: exp)
+  }
+
+  @Test
+  func testReadingXcodeAutomationPermissionsPollUntilPermissionIsGranted() async throws {
+    let pollUntilGranted = 5
+    let exp = expectation(description: "xcode automation permission status granted")
+    let pollCount = Atomic(0)
+
+    let sut = DefaultPermissionsService(
+      isXcodeAutomationPermissionGranted: {
+        pollCount.increment() >= pollUntilGranted
+      })
+
+    let receivedValues = Atomic<[PermissionStatus]>([])
+    let cancellable = sut.status(for: .xcodeAutomation).sink { value in
+      receivedValues.mutate { $0.append(value) }
+      if value.isGranted {
+        exp.fulfill()
+      }
+    }
+    try await fulfillment(of: exp, timeout: 10) // Large timeout as Task.sleep is not accurate.
+    #expect(pollCount.value == pollUntilGranted)
+    #expect(receivedValues.value.filter { $0 != .unknown } == [.notGranted, .grantedEnabled])
     _ = cancellable
   }
 
@@ -97,7 +172,11 @@ extension DefaultPermissionsService {
     userDefaults: UserDefaults = UserDefaults.standard,
     isAccessibilityPermissionGranted: @escaping @Sendable () -> Bool = { false },
     requestAccessibilityPermission: @escaping @Sendable () -> Void = { },
-    requestXcodeExtensionPermission: @escaping @Sendable () -> Void = { })
+    requestXcodeExtensionPermission: @escaping @Sendable () -> Void = { },
+    isXcodeAutomationPermissionGranted: @escaping @Sendable () -> Bool = { false },
+    requestXcodeAutomationPermission: @escaping @Sendable () -> Void = { },
+    isPushNotificationPermissionGranted: @escaping @Sendable () async -> Bool = { false },
+    requestPushNotificationPermission: @escaping @Sendable () async -> Void = { })
   {
     self.init(
       shellService: shellService,
@@ -106,6 +185,10 @@ extension DefaultPermissionsService {
       isAccessibilityPermissionGranted: isAccessibilityPermissionGranted,
       requestAccessibilityPermission: requestAccessibilityPermission,
       requestXcodeExtensionPermission: requestXcodeExtensionPermission,
+      isXcodeAutomationPermissionGranted: isXcodeAutomationPermissionGranted,
+      requestXcodeAutomationPermission: requestXcodeAutomationPermission,
+      isPushNotificationPermissionGranted: isPushNotificationPermissionGranted,
+      requestPushNotificationPermission: requestPushNotificationPermission,
       pollIntervalNS: 1)
   }
 }

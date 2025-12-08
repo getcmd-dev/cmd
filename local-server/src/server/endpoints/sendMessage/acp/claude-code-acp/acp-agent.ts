@@ -369,9 +369,7 @@ export class ClaudeAcpAgent implements Agent {
 							this.sessions[params.sessionId].claudeCodeSessionId = message.session_id
 							break
 						case "compact_boundary":
-							break
 						case "hook_response":
-							break
 						case "status":
 							break
 						default:
@@ -467,7 +465,6 @@ export class ClaudeAcpAgent implements Agent {
 					)
 					break
 				}
-
 				case "tool_progress":
 				case "auth_status":
 					break

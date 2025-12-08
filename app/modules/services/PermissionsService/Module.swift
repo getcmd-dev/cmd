@@ -4,6 +4,7 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "LoggingServiceInterface",
     "PermissionsServiceInterface",
     "ShellServiceInterface",
@@ -12,6 +13,7 @@ Target.module(
   testsDependencies: [
     "ConcurrencyFoundation",
     "PermissionsService",
+    "PermissionsServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
   ])

@@ -45,7 +45,7 @@ public struct ListFilesResult {
 
 extension XcodeObserver {
   public var state: AXState<XcodeState> {
-    statePublisher.currentValue
+    statePublisher.value
   }
 
   /// The URL of the file currently focussed in the IDE, if any.

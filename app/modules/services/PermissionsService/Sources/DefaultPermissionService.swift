@@ -3,14 +3,17 @@
 
 import AppFoundation
 @preconcurrency import AppKit
+@preconcurrency import ApplicationServices
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
+import FoundationInterfaces
 import LoggingServiceInterface
 import PermissionsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
+import UserNotifications
 
 // MARK: - DefaultPermissionsService
 
@@ -19,19 +22,34 @@ final class DefaultPermissionsService: PermissionsService {
 
   init(
     shellService: ShellService,
-    userDefaults _: UserDefaults,
+    userDefaults: UserDefaultsI,
     bundle: Bundle,
     isAccessibilityPermissionGranted: @MainActor @escaping @Sendable () -> Bool,
     requestAccessibilityPermission: @MainActor @escaping @Sendable () -> Void,
     requestXcodeExtensionPermission: @MainActor @escaping @Sendable () -> Void,
+    isXcodeAutomationPermissionGranted: @MainActor @escaping @Sendable () -> Bool,
+    requestXcodeAutomationPermission: @MainActor @escaping @Sendable () -> Void,
+    isPushNotificationPermissionGranted: @MainActor @escaping @Sendable () async -> Bool,
+    requestPushNotificationPermission: @MainActor @escaping @Sendable () async -> Void,
     pollIntervalNS: UInt64 = 1_000_000_000)
   {
     self.shellService = shellService
+    self.userDefaults = userDefaults
     self.isAccessibilityPermissionGranted = isAccessibilityPermissionGranted
     self.requestAccessibilityPermission = requestAccessibilityPermission
     self.requestXcodeExtensionPermission = requestXcodeExtensionPermission
+    self.isXcodeAutomationPermissionGranted = isXcodeAutomationPermissionGranted
+    self.requestXcodeAutomationPermission = requestXcodeAutomationPermission
+    self.isPushNotificationPermissionGranted = isPushNotificationPermissionGranted
+    self.requestPushNotificationPermission = requestPushNotificationPermission
     self.pollIntervalNS = pollIntervalNS
     self.bundle = bundle
+
+    // Initialize accessibility permission status synchronously to avoid onboarding flash
+    Task { @MainActor in
+      let isGranted = isAccessibilityPermissionGranted()
+      self.accessibilityPermissionStatus.send(isGranted ? .grantedEnabled : .notGranted)
+    }
   }
 
   func request(permission: Permission) {
@@ -45,10 +63,20 @@ final class DefaultPermissionsService: PermissionsService {
       Task { @MainActor in
         requestXcodeExtensionPermission()
       }
+
+    case .xcodeAutomation:
+      Task { @MainActor in
+        requestXcodeAutomationPermission()
+      }
+
+    case .pushNotification:
+      Task { @MainActor in
+        await requestPushNotificationPermission()
+      }
     }
   }
 
-  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?> {
+  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<PermissionStatus> {
     switch permission {
     case .accessibility:
       let isPolling: Bool = inLock { state in
@@ -73,28 +101,75 @@ final class DefaultPermissionsService: PermissionsService {
       }
       return xcodeExtensionPermissionStatus
         .readonly(removingDuplicate: true)
+
+    case .xcodeAutomation:
+      let isPolling: Bool = inLock { state in
+        let isPolling = state.isPollingXcodeAutomationPermissionStatus
+        state.isPollingXcodeAutomationPermissionStatus = true
+        return isPolling
+      }
+      if !isPolling {
+        pollXcodeAutomationPermissionStatus()
+      }
+      return xcodeAutomationPermissionStatus
+        .readonly(removingDuplicate: true)
+
+    case .pushNotification:
+      let isPolling: Bool = inLock { state in
+        let isPolling = state.isPollingPushNotificationPermissionStatus
+        state.isPollingPushNotificationPermissionStatus = true
+        return isPolling
+      }
+      if !isPolling {
+        Task { await pollPushNotificationPermissionStatus() }
+      }
+      return pushNotificationPermissionStatus
+        .readonly(removingDuplicate: true)
+    }
+  }
+
+  func enablePushNotifications() {
+    userDefaults.set(false, forKey: .arePushNotificationsDisabled)
+    if pushNotificationPermissionStatus.value.isGranted {
+      pushNotificationPermissionStatus.send(.grantedEnabled)
+    }
+  }
+
+  func disablePushNotifications() {
+    userDefaults.set(true, forKey: .arePushNotificationsDisabled)
+    if pushNotificationPermissionStatus.value.isGranted {
+      pushNotificationPermissionStatus.send(.grantedDisabled)
     }
   }
 
   private let shellService: ShellService
+  private let userDefaults: UserDefaultsI
   private let bundle: Bundle
 
   private var isPollingAccessibilityPermissionStatus = false
   private var isPollingXcodeExtensionPermissionStatus = false
+  private var isPollingXcodeAutomationPermissionStatus = false
+  private var isPollingPushNotificationPermissionStatus = false
 
   private let pollIntervalNS: UInt64
   private let isAccessibilityPermissionGranted: @MainActor @Sendable () -> Bool
   private let requestAccessibilityPermission: @MainActor @Sendable () -> Void
   private let requestXcodeExtensionPermission: @MainActor @Sendable () -> Void
-  private let accessibilityPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
-  private let xcodeExtensionPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
+  private let isXcodeAutomationPermissionGranted: @MainActor @Sendable () -> Bool
+  private let requestXcodeAutomationPermission: @MainActor @Sendable () -> Void
+  private let isPushNotificationPermissionGranted: @MainActor @Sendable () async -> Bool
+  private let requestPushNotificationPermission: @MainActor @Sendable () async -> Void
+  private let accessibilityPermissionStatus = CurrentValueSubject<PermissionStatus, Never>(.unknown)
+  private let xcodeExtensionPermissionStatus = CurrentValueSubject<PermissionStatus, Never>(.unknown)
+  private let xcodeAutomationPermissionStatus = CurrentValueSubject<PermissionStatus, Never>(.unknown)
+  private let pushNotificationPermissionStatus = CurrentValueSubject<PermissionStatus, Never>(.unknown)
 
   private func pollAccessibilityPermissionStatus() {
     Task { @MainActor in
       if isAccessibilityPermissionGranted() {
-        accessibilityPermissionStatus.send(true)
+        accessibilityPermissionStatus.send(.grantedEnabled)
       } else {
-        accessibilityPermissionStatus.send(false)
+        accessibilityPermissionStatus.send(.notGranted)
         let pollIntervalNS = pollIntervalNS
         Task { [weak self] in
           try await Task.sleep(nanoseconds: pollIntervalNS)
@@ -107,10 +182,10 @@ final class DefaultPermissionsService: PermissionsService {
   private func pollXcodeExtensionPermissionStatus() async {
     if await isXcodeExtensionPermissionGranted() {
       Task { @MainActor in
-        xcodeExtensionPermissionStatus.send(true)
+        xcodeExtensionPermissionStatus.send(.grantedEnabled)
       }
     } else {
-      xcodeExtensionPermissionStatus.send(false)
+      xcodeExtensionPermissionStatus.send(.notGranted)
       let pollIntervalNS = pollIntervalNS
       Task { [weak self] in
         try await Task.sleep(nanoseconds: pollIntervalNS)
@@ -132,16 +207,48 @@ final class DefaultPermissionsService: PermissionsService {
     return isGranted
   }
 
+  private func pollXcodeAutomationPermissionStatus() {
+    Task { @MainActor in
+      if isXcodeAutomationPermissionGranted() {
+        xcodeAutomationPermissionStatus.send(.grantedEnabled)
+      } else {
+        xcodeAutomationPermissionStatus.send(.notGranted)
+        let pollIntervalNS = pollIntervalNS
+        Task { [weak self] in
+          try await Task.sleep(nanoseconds: pollIntervalNS)
+          self?.pollXcodeAutomationPermissionStatus()
+        }
+      }
+    }
+  }
+
+  private func pollPushNotificationPermissionStatus() async {
+    if await isPushNotificationPermissionGranted() {
+      Task { @MainActor in
+        let arePushNotificationsDisabled = userDefaults.bool(forKey: .arePushNotificationsDisabled)
+        pushNotificationPermissionStatus.send(arePushNotificationsDisabled ? .grantedDisabled : .grantedEnabled)
+      }
+    } else {
+      pushNotificationPermissionStatus.send(.notGranted)
+      let pollIntervalNS = pollIntervalNS
+      Task { [weak self] in
+        try await Task.sleep(nanoseconds: pollIntervalNS)
+        await self?.pollPushNotificationPermissionStatus()
+      }
+    }
+  }
+
 }
 
 extension BaseProviding where
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: UserDefaultsProviding
 {
   public var permissionsService: PermissionsService {
     shared {
       DefaultPermissionsService(
         shellService: shellService,
-        userDefaults: .standard,
+        userDefaults: sharedUserDefaults,
         bundle: .main,
         isAccessibilityPermissionGranted: { AXIsProcessTrusted() },
         requestAccessibilityPermission: {
@@ -160,7 +267,44 @@ extension BaseProviding where
           {
             NSWorkspace.shared.open(url)
           }
+        },
+        isXcodeAutomationPermissionGranted: {
+          let targetDesc = NSAppleEventDescriptor(bundleIdentifier: "com.apple.dt.Xcode")
+          guard let aeDescPointer = targetDesc.aeDesc else {
+            return false
+          }
+          var aeTarget = aeDescPointer.pointee
+          let status = AEDeterminePermissionToAutomateTarget(&aeTarget, typeWildCard, typeWildCard, false)
+          return status == noErr
+        },
+        requestXcodeAutomationPermission: {
+          let targetDesc = NSAppleEventDescriptor(bundleIdentifier: "com.apple.dt.Xcode")
+          guard let aeDescPointer = targetDesc.aeDesc else {
+            return
+          }
+          var aeTarget = aeDescPointer.pointee
+          _ = AEDeterminePermissionToAutomateTarget(&aeTarget, typeWildCard, typeWildCard, true)
+          if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") {
+            NSWorkspace.shared.open(url)
+          }
+        },
+        isPushNotificationPermissionGranted: {
+          let center = UNUserNotificationCenter.current()
+          let settings = await center.notificationSettings()
+          return settings.authorizationStatus == .authorized
+        },
+        requestPushNotificationPermission: {
+          let center = UNUserNotificationCenter.current()
+          do {
+            _ = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+          } catch {
+            defaultLogger.error("Failed to request push notification permission: \(error)")
+          }
         })
     }
   }
+}
+
+extension String {
+  static let arePushNotificationsDisabled = "arePushNotificationsDisabled"
 }

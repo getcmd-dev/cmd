@@ -5,7 +5,7 @@ import { ACPClient } from "../ACPClient"
 import { AsyncStream } from "@/utils/asyncStream"
 import { spawn } from "child_process"
 import { Readable, Writable } from "stream"
-import { ACPToolCall } from "../../index"
+import { ACPToolCall } from "../.."
 
 export type CodexACPSessionInitializationParams = {
 	cwd: string

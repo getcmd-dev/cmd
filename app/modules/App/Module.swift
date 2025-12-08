@@ -57,6 +57,8 @@ Target.module(
     "Onboarding",
     "PermissionsService",
     "PermissionsServiceInterface",
+    "PushNotificationService",
+    "PushNotificationServiceInterface",
     "ReadFileTool",
     "RoutingFoundation",
     "SearchFilesTool",

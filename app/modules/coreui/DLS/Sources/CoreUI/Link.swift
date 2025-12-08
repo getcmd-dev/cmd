@@ -5,33 +5,41 @@ import LoggingServiceInterface
 import SwiftUI
 
 public struct PlainLink: View {
-  public init(_ title: some StringProtocol, destination: URL?) {
+  public init(
+    _ title: some StringProtocol,
+    destination: URL?)
+  {
+    self.init(title, action: {
+      if let destination {
+        NSWorkspace.shared.open(destination)
+      }
+    })
+  }
+
+  public init(
+    _ title: some StringProtocol,
+    action: @escaping () -> Void)
+  {
     label = { Text(title) }
-    if destination == nil {
-      defaultLogger.error("The URL provided for the PlainLink is nil. title: \(title)")
-    }
-    self.destination = destination
+    self.action = action
   }
 
   @ViewBuilder public let label: () -> Text
 
-  public let destination: URL?
+  public let action: () -> Void
 
   public var body: some View {
-    if let destination {
-      Link(destination: destination, label: label)
+    Button(action: action) {
+      label()
         .underline()
-        .buttonStyle(PlainButtonStyle())
-        .help(destination.absoluteString)
-        .onHover { isHovering in
-          if isHovering {
-            NSCursor.pointingHand.push()
-          } else {
-            NSCursor.pop()
-          }
-        }
-    } else {
-      EmptyView()
+    }
+    .buttonStyle(PlainButtonStyle())
+    .onHover { isHovering in
+      if isHovering {
+        NSCursor.pointingHand.push()
+      } else {
+        NSCursor.pop()
+      }
     }
   }
 

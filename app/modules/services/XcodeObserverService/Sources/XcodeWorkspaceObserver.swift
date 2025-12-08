@@ -116,7 +116,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
     let documentURL = workspace.documentURL
 
     let focusEditorState = editorObservers.lazy.compactMap { editor in
-      let state = editor.state.currentValue
+      let state = editor.state.value
       return state.fileName == focusedTabName ? state : nil
     }.first
 
@@ -135,7 +135,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
 
     updateStateWith(
       tabs: tabs,
-      editors: editorObservers.map(\.state.currentValue).sorted(by: { $1.id == focusedEditorId }),
+      editors: editorObservers.map(\.state.value).sorted(by: { $1.id == focusedEditorId }),
       documentURL: workspace.documentURL,
       focusedEditorId: focusedEditorId,
       focusedTabName: focusedTabName)
@@ -222,7 +222,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   @MainActor
   private func startTracking(_ observer: SourceEditorObserver) {
     let editors = internalState.value.editors
-    updateStateWith(editors: editors + [observer.state.currentValue])
+    updateStateWith(editors: editors + [observer.state.value])
 
     let cancellable = observer
       .state

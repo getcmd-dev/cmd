@@ -7,22 +7,32 @@ import SwiftUI
 
 #Preview("About Settings - Analytics Enabled") {
   AboutSettingsView(
-    allowAnonymousAnalytics: .constant(true),
-    automaticallyCheckForUpdates: .constant(true),
-    fileEditMode: .constant(.xcodeExtension),
-    launchHostAppWhenXcodeDidActivate: .constant(true),
-    queueMessagesWhileStreaming: .constant(true))
+    allowAnonymousAnalytics: .mutable(true),
+    automaticallyCheckForUpdates: .mutable(true),
+    fileEditMode: .mutable(.xcodeExtension),
+    launchHostAppWhenXcodeDidActivate: .mutable(true),
+    queueMessagesWhileStreaming: .mutable(true),
+    enablePushNotifications: .mutable(true),
+    accessibilityPermission: .constant(.grantedEnabled),
+    xcodeExtensionPermission: .constant(.grantedEnabled),
+    xcodeAutomationPermission: .constant(.grantedEnabled),
+    pushNotificationsPermission: .constant(.grantedEnabled))
     .frame(width: 400, height: 600)
     .padding()
 }
 
 #Preview("About Settings - Analytics Disabled") {
   AboutSettingsView(
-    allowAnonymousAnalytics: .constant(false),
-    automaticallyCheckForUpdates: .constant(false),
-    fileEditMode: .constant(.directIO),
-    launchHostAppWhenXcodeDidActivate: .constant(false),
-    queueMessagesWhileStreaming: .constant(false))
+    allowAnonymousAnalytics: .mutable(false),
+    automaticallyCheckForUpdates: .mutable(false),
+    fileEditMode: .mutable(.directIO),
+    launchHostAppWhenXcodeDidActivate: .mutable(false),
+    queueMessagesWhileStreaming: .mutable(false),
+    enablePushNotifications: .mutable(true),
+    accessibilityPermission: .constant(.grantedEnabled),
+    xcodeExtensionPermission: .constant(.grantedEnabled),
+    xcodeAutomationPermission: .constant(.grantedEnabled),
+    pushNotificationsPermission: .constant(.grantedEnabled))
     .frame(width: 400, height: 600)
     .padding()
 }
