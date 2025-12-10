@@ -116,6 +116,7 @@ const createEventStream = async (
 		new GeminiCLIACPClient({
 			args: executableInfo.args,
 			path: pathToExecutable,
+			env: localExecutable.env,
 		})
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },

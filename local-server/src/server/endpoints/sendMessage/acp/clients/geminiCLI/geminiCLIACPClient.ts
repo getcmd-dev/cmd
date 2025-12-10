@@ -36,14 +36,14 @@ export class GeminiCLIACPClient implements ACPClient<NewGeminiCLIACPSessionParam
 	private onCloseCallbacks: ((code: number | null) => void)[] = []
 	private initialization: Promise<void>
 
-	constructor(executableInfo: { path: string; args: string[] }) {
+	constructor(executableInfo: { path: string; args: string[]; env: Record<string, string> }) {
 		const agentPath = executableInfo.path
 
 		// Spawn the agent as a subprocess
 		logInfo(`spawning gemini process at ${agentPath} with args ${[...executableInfo.args, "--experimental-acp"]}`)
 		const agentProcess = spawn(agentPath, [...executableInfo.args, "--experimental-acp"], {
 			stdio: ["pipe", "pipe", "inherit"],
-			env: process.env,
+			env: executableInfo.env,
 		})
 
 		agentProcess.on("error", (err) => {
