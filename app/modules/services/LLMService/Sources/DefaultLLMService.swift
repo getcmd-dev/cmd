@@ -414,6 +414,8 @@ extension Schema.APIProvider {
         return .groq
       case .gemini:
         return .gemini
+      case .geminiCLI:
+        return .geminiCli
       case .mistral:
         return .mistral
       case .inception:

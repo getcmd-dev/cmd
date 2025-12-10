@@ -67,6 +67,7 @@ claude "$@"
 EOF
 chmod +x "$HOME/.claude/start_with_proxy.sh"
 export CLAUDE_CODE_PROXY="$HOME/.claude/start_with_proxy.sh"
+#~ same for GEMINI_CLI_PROXY
 
 # If you use Proxyman, this will allow Claude Code to be proxied (this works for any node.js program)
 
