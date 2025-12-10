@@ -7,7 +7,7 @@ import { spawn } from "child_process"
 import { Readable, Writable } from "stream"
 import { ACPToolCall } from "../.."
 
-export type CodexACPSessionInitializationParams = {
+export type NewCodexACPSessionParams = {
 	cwd: string
 	abortController?: AbortController
 }
@@ -21,7 +21,7 @@ type SessionManager = {
 	prompt: (message: acp.ContentBlock[]) => void
 }
 
-export class CodexACPClient implements ACPClient<CodexACPSessionInitializationParams>, acp.Client {
+export class CodexACPClient implements ACPClient<NewCodexACPSessionParams>, acp.Client {
 	// keep track of active session to avoid creating multiple sessions
 	private activeSessions: Record<string, SessionManager> = {}
 	private readonly clientConnection: acp.ClientSideConnection
@@ -78,7 +78,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	}
 
 	async prompt(
-		sessionInitializationParams: CodexACPSessionInitializationParams,
+		newSessionParams: NewCodexACPSessionParams,
 		message: acp.ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
@@ -91,8 +91,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
 		return await Promise.race([
 			(async () => {
-				const session =
-					this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
+				const session = this.activeSessions[threadId] || (await this.createSession(newSessionParams, threadId))
 
 				const eventStream = new AsyncStream<acp.SessionNotification>()
 
@@ -114,14 +113,11 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 		])
 	}
 
-	private async createSession(
-		sessionInitializationParams: CodexACPSessionInitializationParams,
-		threadId: string,
-	): Promise<SessionManager> {
+	private async createSession(newSessionParams: NewCodexACPSessionParams, threadId: string): Promise<SessionManager> {
 		if (this.spawnError) {
 			throw new Error(`Cannot create session: codex process failed to spawn - ${this.spawnError.message}`)
 		}
-		const abortController = sessionInitializationParams.abortController || new AbortController()
+		const abortController = newSessionParams.abortController || new AbortController()
 		// Initialize the connection
 		await this.clientConnection.initialize({
 			protocolVersion: acp.PROTOCOL_VERSION,
@@ -130,7 +126,7 @@ export class CodexACPClient implements ACPClient<CodexACPSessionInitializationPa
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
-			cwd: sessionInitializationParams.cwd,
+			cwd: newSessionParams.cwd,
 			mcpServers: [],
 		})
 		// TODO: also support read-only?

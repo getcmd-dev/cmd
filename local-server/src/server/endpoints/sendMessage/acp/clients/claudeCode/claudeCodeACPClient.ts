@@ -9,7 +9,7 @@ import { AsyncStream } from "@/utils/asyncStream"
 import { withParsedToolCalls } from "./helper"
 import { ACPToolCall } from "../.."
 
-export type ClaudeCodeACPSessionInitializationParams = {
+export type NewClaudeCodeACPSessionParams = {
 	cwd: string
 } & Options
 
@@ -22,7 +22,7 @@ type SessionManager = {
 	prompt: (message: acp.ContentBlock[]) => void
 }
 
-export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitializationParams>, acp.Client {
+export class ClaudeCodeACPClient implements ACPClient<NewClaudeCodeACPSessionParams>, acp.Client {
 	private readonly agentOutputStream = new TransformStream<acp.AnyMessage, acp.AnyMessage>()
 	private readonly agentInputStream = new TransformStream<acp.AnyMessage, acp.AnyMessage>()
 	// keep track of active session to avoid creating multiple sessions
@@ -57,7 +57,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	}
 
 	async prompt(
-		sessionInitializationParams: ClaudeCodeACPSessionInitializationParams,
+		newSessionParams: NewClaudeCodeACPSessionParams,
 		message: acp.ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
@@ -68,8 +68,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 			toolName: string
 		}) => Promise<boolean>,
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
-		const session =
-			this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
+		const session = this.activeSessions[threadId] || (await this.createSession(newSessionParams, threadId))
 
 		const eventStream = new AsyncStream<acp.SessionNotification>()
 
@@ -85,11 +84,11 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 	}
 
 	private async createSession(
-		sessionInitializationParams: ClaudeCodeACPSessionInitializationParams,
+		newSessionParams: NewClaudeCodeACPSessionParams,
 		threadId: string,
 	): Promise<SessionManager> {
-		const abortController = sessionInitializationParams.abortController || new AbortController()
-		const meta: ClaudeAgentMeta = { options: { ...sessionInitializationParams, abortController } }
+		const abortController = newSessionParams.abortController || new AbortController()
+		const meta: ClaudeAgentMeta = { options: { ...newSessionParams, abortController } }
 		// Initialize the connection
 		await this.clientConnection.initialize({
 			protocolVersion: acp.PROTOCOL_VERSION,
@@ -99,7 +98,7 @@ export class ClaudeCodeACPClient implements ACPClient<ClaudeCodeACPSessionInitia
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
-			cwd: sessionInitializationParams.cwd,
+			cwd: newSessionParams.cwd,
 			mcpServers: [],
 			_meta: meta,
 		})

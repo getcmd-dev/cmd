@@ -8,7 +8,7 @@ import { Readable, Writable } from "stream"
 
 import { ACPToolCall } from "../../index"
 
-export type GeminiCLIACPSessionInitializationParams = {
+export type NewGeminiCLIACPSessionParams = {
 	cwd: string
 	abortController?: AbortController
 }
@@ -22,7 +22,7 @@ type SessionManager = {
 	prompt: (message: acp.ContentBlock[]) => void
 }
 
-export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitializationParams>, acp.Client {
+export class GeminiCLIACPClient implements ACPClient<NewGeminiCLIACPSessionParams>, acp.Client {
 	// keep track of active session to avoid creating multiple sessions
 	private activeSessions: Record<string, SessionManager> = {}
 	private readonly clientConnection: acp.ClientSideConnection
@@ -38,20 +38,11 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 	constructor(executableInfo: { path: string; args: string[] }) {
 		const agentPath = executableInfo.path
 
-		// Set proxy if configured
-		const env: NodeJS.ProcessEnv = {
-			...process.env,
-		}
-		const geminiProxy = process.env.GEMINI_PROXY
-		if (geminiProxy) {
-			env["HTTP_PROXY"] = geminiProxy
-		}
-
 		// Spawn the agent as a subprocess
 		logInfo(`spawning gemini process at ${agentPath} with args ${[...executableInfo.args, "--experimental-acp"]}`)
 		const agentProcess = spawn(agentPath, [...executableInfo.args, "--experimental-acp"], {
 			stdio: ["pipe", "pipe", "inherit"],
-			env,
+			env: process.env,
 		})
 
 		agentProcess.on("error", (err) => {
@@ -120,7 +111,7 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 	}
 
 	async prompt(
-		sessionInitializationParams: GeminiCLIACPSessionInitializationParams,
+		newSessionParams: NewGeminiCLIACPSessionParams,
 		message: acp.ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
@@ -133,8 +124,7 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 	): Promise<{ events: AsyncIterable<acp.SessionNotification>; sessionId: string }> {
 		return await Promise.race([
 			(async () => {
-				const session =
-					this.activeSessions[threadId] || (await this.createSession(sessionInitializationParams, threadId))
+				const session = this.activeSessions[threadId] || (await this.createSession(newSessionParams, threadId))
 
 				const eventStream = new AsyncStream<acp.SessionNotification>()
 
@@ -157,13 +147,13 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 	}
 
 	private async createSession(
-		sessionInitializationParams: GeminiCLIACPSessionInitializationParams,
+		newSessionParams: NewGeminiCLIACPSessionParams,
 		threadId: string,
 	): Promise<SessionManager> {
 		if (this.spawnError) {
 			throw new Error(`Cannot create session: gemini process failed to spawn - ${this.spawnError.message}`)
 		}
-		const abortController = sessionInitializationParams.abortController || new AbortController()
+		const abortController = newSessionParams.abortController || new AbortController()
 		// Initialize the connection
 		try {
 			await this.clientConnection.initialize({
@@ -186,7 +176,7 @@ export class GeminiCLIACPClient implements ACPClient<GeminiCLIACPSessionInitiali
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
-			cwd: sessionInitializationParams.cwd,
+			cwd: newSessionParams.cwd,
 			mcpServers: [],
 		})
 		const acpSessionId = sessionResult.sessionId

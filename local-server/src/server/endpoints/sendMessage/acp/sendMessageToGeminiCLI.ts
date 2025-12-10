@@ -7,10 +7,11 @@ import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp
 import { GeminiCLIACPClient } from "../acp/clients/geminiCLI/geminiCLIACPClient"
 import { SendMessageToExternalAgent } from "."
 import { extractExecutableInfo } from "./clients/helper"
+import { readFileSync } from "fs"
 
 // TODO: support resuming the conversation after the app restarts.
 
-let acpClient: GeminiCLIACPClient | undefined
+const acpClients: Record<string, GeminiCLIACPClient> = {}
 
 export const sendMessageToGeminiCLI: SendMessageToExternalAgent = async (
 	{
@@ -103,8 +104,20 @@ const createEventStream = async (
 		return eventStream
 	}
 
+	const pathToExecutable = process.env.GEMINI_CLI_PROXY || executableInfo.path
+	const args = executableInfo.args
+	if (existingSessionId) {
+		args.push("--resume", existingSessionId)
+	}
+
 	const messageContent = toACPContentBlocks(newUserMessages)
-	acpClient = acpClient || new GeminiCLIACPClient(executableInfo)
+	const acpClient =
+		acpClients[threadId] ||
+		new GeminiCLIACPClient({
+			args,
+			path: pathToExecutable,
+		})
+	acpClients[threadId] = acpClient
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },
 		messageContent,
@@ -113,6 +126,7 @@ const createEventStream = async (
 			return await askAppForPermission({ toolCall, toolName, eventStream })
 		},
 	)
+	eventStream.yield({ type: "internal_content", value: { type: "session_id", sessionId } })
 	abortController.signal.addEventListener("abort", async () => {
 		await acpClient?.cancel(sessionId)
 	})

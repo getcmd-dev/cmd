@@ -10,4 +10,6 @@ export default () => {
 	delete process.env["GROQ_LOCAL_SERVER_PROXY"]
 	delete process.env["GEMINI_LOCAL_SERVER_PROXY"]
 	delete process.env["CLAUDE_CODE_PROXY"]
+	delete process.env["CODEX_PROXY"]
+	delete process.env["GEMINI_CLI_PROXY"]
 }

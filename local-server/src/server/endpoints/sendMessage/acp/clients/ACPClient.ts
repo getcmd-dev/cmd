@@ -20,9 +20,9 @@ import { attachmentAsPart } from "../../helpers"
 import { pendingToolApprovalRequests } from "../../pendingToolApprovalRequests"
 import { ACPToolCall } from ".."
 
-export interface ACPClient<SessionInitializationParams extends { cwd: string }> {
+export interface ACPClient<NewSessionParams extends { cwd: string }> {
 	prompt(
-		sessionInitializationParams: SessionInitializationParams,
+		newSessionParams: NewSessionParams,
 		message: ContentBlock[],
 		threadId: string,
 		permissionRequestHandler: ({
