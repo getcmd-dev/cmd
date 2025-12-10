@@ -34,6 +34,7 @@ export class ClaudeCodeACPClient implements ACPClient<NewClaudeCodeACPSessionPar
 		string,
 		({ toolCall, toolName }: { toolCall: ACPToolCall; toolName: string }) => Promise<boolean>
 	> = {}
+	private initialization: Promise<void>
 
 	constructor() {
 		this.clientConnection = new acp.ClientSideConnection((_agent) => this, {
@@ -48,6 +49,20 @@ export class ClaudeCodeACPClient implements ACPClient<NewClaudeCodeACPSessionPar
 				readable: this.agentInputStream.readable,
 			},
 		)
+
+		// Initialize the connection
+		/* eslint-disable-next-line no-async-promise-executor */
+		this.initialization = new Promise(async (resolve, reject) => {
+			try {
+				await this.clientConnection.initialize({
+					protocolVersion: acp.PROTOCOL_VERSION,
+					clientCapabilities: {},
+				})
+				resolve()
+			} catch (error) {
+				reject(error)
+			}
+		})
 	}
 
 	async cancel(sessionId: string): Promise<void> {
@@ -87,14 +102,9 @@ export class ClaudeCodeACPClient implements ACPClient<NewClaudeCodeACPSessionPar
 		newSessionParams: NewClaudeCodeACPSessionParams,
 		threadId: string,
 	): Promise<SessionManager> {
+		await this.initialization
 		const abortController = newSessionParams.abortController || new AbortController()
 		const meta: ClaudeAgentMeta = { options: { ...newSessionParams, abortController } }
-		// Initialize the connection
-		await this.clientConnection.initialize({
-			protocolVersion: acp.PROTOCOL_VERSION,
-			clientCapabilities: {},
-			_meta: meta,
-		})
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({

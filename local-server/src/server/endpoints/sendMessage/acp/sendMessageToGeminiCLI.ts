@@ -7,9 +7,13 @@ import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp
 import { GeminiCLIACPClient } from "../acp/clients/geminiCLI/geminiCLIACPClient"
 import { SendMessageToExternalAgent } from "."
 import { extractExecutableInfo } from "./clients/helper"
-import { readFileSync } from "fs"
 
 // TODO: support resuming the conversation after the app restarts.
+// This is not supported by the Gemini CLI yet, nor by ACP.
+// The current setup spawns one shared subprocess to Gemini CLI for all sessions, and uses Gemini CLI's ACP support to manage concurrent sessions. Within this setup it's impossible to resume sessions.
+// An alternative would be to spawn a new subprocess for each session, using the `--resume` parameter and writting our own ACP client using Gemini CLI's API.
+// However, Gemini CLI doesn't have an equivalent to @anthropic-ai/claude-agent-sdk which is an SDK independent of the main library. Without this, we would force the user to use the version of Gemini CLI embedded in cmd, instead of their own (and incure an app size cost for this embedding).
+// We could manage all the configuration, and use `--output-format stream-json` to stream updates to an internal ACP client, but this is a lot of work. Instead we are not supporting resuming sessions for now, and will wait on ACP making progress on this.
 
 const acpClients: Record<string, GeminiCLIACPClient> = {}
 
@@ -105,16 +109,17 @@ const createEventStream = async (
 	}
 
 	const pathToExecutable = process.env.GEMINI_CLI_PROXY || executableInfo.path
-	const args = executableInfo.args
-	if (existingSessionId) {
-		args.push("--resume", existingSessionId)
-	}
 
 	const messageContent = toACPContentBlocks(newUserMessages)
+	if (existingSessionId && !acpClients[threadId]) {
+		logInfo(
+			`Gemini CLI doesn't support resuming the conversation after the app restarts. Continuing without resuming.`,
+		)
+	}
 	const acpClient =
 		acpClients[threadId] ||
 		new GeminiCLIACPClient({
-			args,
+			args: executableInfo.args,
 			path: pathToExecutable,
 		})
 	acpClients[threadId] = acpClient

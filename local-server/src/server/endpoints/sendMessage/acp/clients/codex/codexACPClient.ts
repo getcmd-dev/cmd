@@ -33,6 +33,7 @@ export class CodexACPClient implements ACPClient<NewCodexACPSessionParams>, acp.
 	private spawnError?: Error
 
 	private onCloseCallbacks: ((code: number | null) => void)[] = []
+	private initialization: Promise<void>
 
 	constructor() {
 		const agentPath = process.env.CODEX_ACP_PATH
@@ -69,6 +70,20 @@ export class CodexACPClient implements ACPClient<NewCodexACPSessionParams>, acp.
 		const stream = acp.ndJsonStream(input, output)
 
 		this.clientConnection = new acp.ClientSideConnection((_agent) => this, stream)
+
+		// Initialize the connection
+		/* eslint-disable-next-line no-async-promise-executor */
+		this.initialization = new Promise(async (resolve, reject) => {
+			try {
+				await this.clientConnection.initialize({
+					protocolVersion: acp.PROTOCOL_VERSION,
+					clientCapabilities: {},
+				})
+				resolve()
+			} catch (error) {
+				reject(error)
+			}
+		})
 	}
 
 	async cancel(sessionId: string): Promise<void> {
@@ -114,6 +129,7 @@ export class CodexACPClient implements ACPClient<NewCodexACPSessionParams>, acp.
 	}
 
 	private async createSession(newSessionParams: NewCodexACPSessionParams, threadId: string): Promise<SessionManager> {
+		await this.initialization
 		if (this.spawnError) {
 			throw new Error(`Cannot create session: codex process failed to spawn - ${this.spawnError.message}`)
 		}

@@ -34,6 +34,7 @@ export class GeminiCLIACPClient implements ACPClient<NewGeminiCLIACPSessionParam
 	private spawnError?: Error
 
 	private onCloseCallbacks: ((code: number | null) => void)[] = []
+	private initialization: Promise<void>
 
 	constructor(executableInfo: { path: string; args: string[] }) {
 		const agentPath = executableInfo.path
@@ -102,6 +103,30 @@ export class GeminiCLIACPClient implements ACPClient<NewGeminiCLIACPSessionParam
 		const stream = acp.ndJsonStream(input, output)
 
 		this.clientConnection = new acp.ClientSideConnection((_agent) => this, stream)
+
+		// Initialize the connection
+		/* eslint-disable-next-line no-async-promise-executor */
+		this.initialization = new Promise(async (resolve, reject) => {
+			try {
+				await this.clientConnection.initialize({
+					protocolVersion: acp.PROTOCOL_VERSION,
+					clientCapabilities: {
+						fs: {
+							readTextFile: false,
+							writeTextFile: false,
+						},
+						terminal: false,
+						_meta: {
+							"terminal-auth": true,
+						},
+					},
+				})
+				resolve()
+			} catch (error) {
+				logError(`[GeminiCLIACPClient] Error initializing connection: ${error}`)
+				reject(error)
+			}
+		})
 	}
 
 	async cancel(sessionId: string): Promise<void> {
@@ -154,25 +179,7 @@ export class GeminiCLIACPClient implements ACPClient<NewGeminiCLIACPSessionParam
 			throw new Error(`Cannot create session: gemini process failed to spawn - ${this.spawnError.message}`)
 		}
 		const abortController = newSessionParams.abortController || new AbortController()
-		// Initialize the connection
-		try {
-			await this.clientConnection.initialize({
-				protocolVersion: acp.PROTOCOL_VERSION,
-				clientCapabilities: {
-					fs: {
-						readTextFile: false,
-						writeTextFile: false,
-					},
-					terminal: false,
-					_meta: {
-						"terminal-auth": true,
-					},
-				},
-			})
-		} catch (error) {
-			logError(`[GeminiCLIACPClient] Error initializing connection: ${error}`)
-			throw error
-		}
+		await this.initialization
 
 		// Create a new session
 		const sessionResult = await this.clientConnection.newSession({
