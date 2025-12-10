@@ -15,7 +15,7 @@ import { extractExecutableInfo } from "./clients/helper"
 // However, Gemini CLI doesn't have an equivalent to @anthropic-ai/claude-agent-sdk which is an SDK independent of the main library. Without this, we would force the user to use the version of Gemini CLI embedded in cmd, instead of their own (and incure an app size cost for this embedding).
 // We could manage all the configuration, and use `--output-format stream-json` to stream updates to an internal ACP client, but this is a lot of work. Instead we are not supporting resuming sessions for now, and will wait on ACP making progress on this.
 
-const acpClients: Record<string, GeminiCLIACPClient> = {}
+let acpClient: GeminiCLIACPClient | undefined
 
 export const sendMessageToGeminiCLI: SendMessageToExternalAgent = async (
 	{
@@ -111,18 +111,12 @@ const createEventStream = async (
 	const pathToExecutable = process.env.GEMINI_CLI_PROXY || executableInfo.path
 
 	const messageContent = toACPContentBlocks(newUserMessages)
-	if (existingSessionId && !acpClients[threadId]) {
-		logInfo(
-			`Gemini CLI doesn't support resuming the conversation after the app restarts. Continuing without resuming.`,
-		)
-	}
-	const acpClient =
-		acpClients[threadId] ||
+	acpClient =
+		acpClient ||
 		new GeminiCLIACPClient({
 			args: executableInfo.args,
 			path: pathToExecutable,
 		})
-	acpClients[threadId] = acpClient
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },
 		messageContent,
