@@ -3,43 +3,32 @@
 
 import SwiftUI
 
+// TODO: check if we still need this. For now we draw the border with .clear, so there's limited use for this custom shape.
+
+// MARK: - SuggestionBorderShape
+
 /// A shape that draws a border around code completion suggestions.
 /// The shape handles the "stepped" outline where the first line may start
 /// after an unchanged prefix, creating an L-shaped or stepped polygon.
 struct SuggestionBorderShape: Shape {
-    
-    init(
-        lineGeometries: [LineGeometry],
-        lineHeight: CGFloat,
-        cornerRadius: CGFloat,
-        leadingPadding: CGFloat = 0,
-        trailingPadding: CGFloat = 0,
-        topPadding: CGFloat = 0,
-        bottomPadding: CGFloat = 0) {
-        self.lineGeometries = lineGeometries
-        self.lineHeight = lineHeight
-        self.cornerRadius = cornerRadius
-            self.leadingPadding = leadingPadding
-            self.trailingPadding = trailingPadding
-        self.bottomPadding = bottomPadding
-            self.topPadding = topPadding
-    }
-  /// The geometry of each line in the suggestion.
-  /// Each entry contains (xOffset, width) where:
-  /// - xOffset: The x position where the suggestion starts on this line
-  /// - width: The width of the suggestion content on this line
-  let lineGeometries: [LineGeometry]
 
-  /// The height of each line.
-  let lineHeight: CGFloat
-
-  /// The corner radius for the border.
-  let cornerRadius: CGFloat
-    
-    let bottomPadding: CGFloat
-    let topPadding: CGFloat
-    let leadingPadding: CGFloat
-    let trailingPadding: CGFloat
+  init(
+    lineGeometries: [LineGeometry],
+    lineHeight: CGFloat,
+    cornerRadius: CGFloat,
+    leadingPadding: CGFloat = 0,
+    trailingPadding: CGFloat = 0,
+    topPadding: CGFloat = 0,
+    bottomPadding: CGFloat = 0)
+  {
+    self.lineGeometries = lineGeometries
+    self.lineHeight = lineHeight
+    self.cornerRadius = cornerRadius
+    self.leadingPadding = leadingPadding
+    self.trailingPadding = trailingPadding
+    self.bottomPadding = bottomPadding
+    self.topPadding = topPadding
+  }
 
   struct LineGeometry: Equatable {
     /// The x offset where the suggestion content starts on this line.
@@ -51,7 +40,24 @@ struct SuggestionBorderShape: Shape {
     var xEnd: CGFloat { xOffset + width }
   }
 
-  func path(in rect: CGRect) -> Path {
+  /// The geometry of each line in the suggestion.
+  /// Each entry contains (xOffset, width) where:
+  /// - xOffset: The x position where the suggestion starts on this line
+  /// - width: The width of the suggestion content on this line
+  let lineGeometries: [LineGeometry]
+
+  /// The height of each line.
+  let lineHeight: CGFloat
+
+  /// The corner radius for the border.
+  let cornerRadius: CGFloat
+
+  let bottomPadding: CGFloat
+  let topPadding: CGFloat
+  let leadingPadding: CGFloat
+  let trailingPadding: CGFloat
+
+  func path(in _: CGRect) -> Path {
     guard !lineGeometries.isEmpty else {
       return Path()
     }
@@ -93,14 +99,17 @@ struct SuggestionBorderShape: Shape {
     points.append(CGPoint(x: firstLine.xOffset - leadingPadding, y: 0 - topPadding))
     // Top-right corner of first line
     points.append(CGPoint(x: firstLine.xEnd + trailingPadding, y: 0 - topPadding))
-      
+
     // === RIGHT EDGE (going down) ===
     for (index, geo) in lineGeometries.enumerated() {
-        let yBottom: CGFloat
-        if index < lineGeometries.count - 1, lineGeometries[index + 1].width + lineGeometries[index + 1].xOffset > geo.width + geo.xOffset {
-            yBottom = CGFloat(index + 1) * lineHeight - topPadding
+      let yBottom =
+        if
+          index < lineGeometries.count - 1,
+          lineGeometries[index + 1].width + lineGeometries[index + 1].xOffset > geo.width + geo.xOffset
+        {
+          CGFloat(index + 1) * lineHeight - topPadding
         } else {
-            yBottom = CGFloat(index + 1) * lineHeight + bottomPadding
+          CGFloat(index + 1) * lineHeight + bottomPadding
         }
 
       if index < lineGeometries.count - 1 {
@@ -123,7 +132,7 @@ struct SuggestionBorderShape: Shape {
     }
 
     // === BOTTOM EDGE ===
-      let yBottom = points.last?.y ?? 0
+    let yBottom = points.last?.y ?? 0
     // Bottom-left corner (at the leftmost x of all lines)
     points.append(CGPoint(x: minXOffset - leadingPadding, y: yBottom))
 

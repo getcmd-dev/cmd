@@ -108,7 +108,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
       CFRunLoopAddSource(runLoop, source, .commonModes)
       CGEvent.tapEnable(tap: tap, enable: true)
     }
-    defaultLogger.log("Added key event tap")
   }
 
   private func stopTap() {
@@ -122,7 +121,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     eventTap = nil
     runLoopSource = nil
     runLoop = nil
-    defaultLogger.log("Destroyed key event tap")
   }
 
   private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {

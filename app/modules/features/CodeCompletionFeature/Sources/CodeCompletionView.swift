@@ -10,6 +10,8 @@ import XcodeThemeFoundation
 
 // MARK: - CodeCompletionView
 
+// TODO: if we don't plan on using the border highlight when expanding the completion, a good amount of this code can be simplified.
+
 struct CodeCompletionView: View {
   @Bindable var viewModel: CodeCompletionViewModel
 
@@ -159,9 +161,8 @@ struct CompletionDiffView: View {
   @ViewBuilder
   private var borderOverlay: some View {
     if let lineHeight, !lineGeometries.isEmpty {
-      let bottomPadding: CGFloat = 2
-      let topPadding: CGFloat = 2
-      //        let borderColor: Color = .white.opacity(0.5)
+//      let bottomPadding: CGFloat = 2
+//      let topPadding: CGFloat = 2
       let borderColor = Color.clear
       let borderWidth: CGFloat = 1
       let borderCornerRadius: CGFloat = 4
@@ -178,8 +179,9 @@ struct CompletionDiffView: View {
         cornerRadius: borderCornerRadius,
         leadingPadding: leadingPadding,
         trailingPadding: trailingPadding,
-        topPadding: topPadding,
-        bottomPadding: bottomPadding)
+//        topPadding: topPadding,
+//        bottomPadding: bottomPadding
+      )
 
       shape
         .fill(Color(nsColor: currentLineBackgroundColor))
@@ -266,12 +268,9 @@ struct CompletionDiffView: View {
             })
           if lineIdx == 0, showCompletionExpansionInfo {
             Text("⌘ to expand")
-//                    .foregroundColor(.secondary)
               .frame(height: lineHeight)
               .padding(.horizontal, 3)
-//                                .padding(2)
               .with(cornerRadius: 6, backgroundColor: colorScheme.xcodeSidebarBackground)
-//                    .opacity(0.75)
               .padding(.leading, 16)
           }
         }

@@ -451,7 +451,6 @@ final class CodeCompletionViewModel {
     guard isAutomaticCompletionEnabled else { return }
 
     fetchCompletion()
-//    setDebugCompletion()
   }
 
   private func fetchCompletion() {
@@ -646,97 +645,3 @@ extension MultiLineCodeCompletionDisplayMode {
     self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionAddingSpaceInExistingCodeWhenTriggered
   }
 }
-
-// MARK: - Debug Helpers
-
-#if DEBUG
-extension CodeCompletionViewModel {
-  // ============================================================================
-
-  // swiftlint:enable line_length
-
-  /// Sets a fixed debug completion for UI iteration.
-  /// Call this from `init` or externally to preview the completion UI.
-  func setDebugCompletion() {
-    Task {
-      guard let debugCompletion = await Self.createDebugCompletion() else {
-        return
-      }
-      completion = debugCompletion
-      completionTask = CompletionTask(
-        id: UUID(),
-        request: .init(
-          fileURL: debugCompletion.file,
-          content: Self.debugOriginalCode,
-          selection: .init(
-            start: .init(line: 0, character: 0),
-            end: .init(line: 0, character: 0))))
-//      isCompletionExpanded = true
-    }
-  }
-
-  // swiftlint:disable line_length
-
-  // ============================================================================
-  // MARK: - Edit these strings to iterate on the UI
-  // ============================================================================
-
-  /// The original code before the completion suggestion.
-  private static let debugOriginalCode = """
-    func calculateSum(items: [Int]) -> Int {
-      return items.reduce(0, +)
-    }
-    """
-
-  /// The new code after the completion suggestion.
-  private static let debugNewCode = """
-    func calculateTotal(items: [Double]) -> Double {
-      return items.reduce(0, +)
-    }
-    """
-
-  /// Creates a `CompletionSuggestion` from the debug original and new code.
-  private static func createDebugCompletion() async -> CompletionSuggestion? {
-    let oldContent = debugOriginalCode
-    let newContent = debugNewCode
-
-    do {
-      let characterDiff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
-      let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
-        diff: characterDiff,
-        oldContent: oldContent,
-        newContent: newContent)
-
-      let diff = lineChanges.map { changes in
-        CompletionSuggestion.LineChange(changes: changes.map { change in
-          CharacterLevelChange(text: change.text, type: change.type)
-        })
-      }
-
-      // Create highlighting tasks for caching
-      let styledOldContent = FileDiff.createHighlightingTask(
-        for: oldContent,
-        language: .swift,
-        xcodeTheme: nil)
-      let styledNewContent = FileDiff.createHighlightingTask(
-        for: newContent,
-        language: .swift,
-        xcodeTheme: nil)
-
-      return CompletionSuggestion(
-        file: URL(fileURLWithPath: "/debug/file.swift"),
-        oldContent: oldContent,
-        newContent: newContent,
-        newCursorSelection: .init(
-          start: .init(line: 0, character: 0),
-          end: .init(line: 0, character: 0)),
-        diffLineStart: firstDiffLine,
-        diff: diff,
-        styledOldContent: styledOldContent,
-        styledNewContent: styledNewContent)
-    } catch {
-      return nil
-    }
-  }
-}
-#endif

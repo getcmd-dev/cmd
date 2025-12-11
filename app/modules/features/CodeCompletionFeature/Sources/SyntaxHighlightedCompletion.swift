@@ -6,7 +6,6 @@ import CodeCompletionServiceInterface
 import FileDiffFoundation
 import FileDiffTypesFoundation
 import Foundation
-import HighlightSwift
 import SwiftUI
 import XcodeThemeFoundation
 
@@ -67,7 +66,7 @@ enum CompletionSyntaxHighlighter {
         newContent: completion.newContent,
         characterChanges: characterChanges,
         diffLineStart: completion.diffLineStart,
-        language: language(for: completion.file),
+        language: .init(rawValue: languageId(for: completion.file)) ?? .swift,
         xcodeTheme: xcodeTheme,
         styledOldContent: completion.styledOldContent,
         styledNewContent: completion.styledNewContent)
@@ -90,36 +89,34 @@ enum CompletionSyntaxHighlighter {
   }
 
   /// Determines the highlight language based on file extension.
-  private static func language(for file: URL) -> HighlightLanguage {
+  private static func languageId(for file: URL) -> String {
     let ext = file.pathExtension.lowercased()
     // Try to map common extensions to highlight.js language identifiers
-    let languageId =
-      switch ext {
-      case "swift": "swift"
-      case "m", "mm": "objectivec"
-      case "c": "c"
-      case "cpp", "cc", "cxx": "cpp"
-      case "h", "hpp": "cpp"
-      case "py": "python"
-      case "js": "javascript"
-      case "ts": "typescript"
-      case "jsx": "javascript"
-      case "tsx": "typescript"
-      case "rb": "ruby"
-      case "go": "go"
-      case "rs": "rust"
-      case "java": "java"
-      case "kt": "kotlin"
-      case "json": "json"
-      case "yaml", "yml": "yaml"
-      case "xml": "xml"
-      case "html", "htm": "html"
-      case "css": "css"
-      case "sh", "bash", "zsh": "bash"
-      case "sql": "sql"
-      case "md", "markdown": "markdown"
-      default: "swift"
-      }
-    return HighlightLanguage(rawValue: languageId) ?? .swift
+    return switch ext {
+    case "swift": "swift"
+    case "m", "mm": "objectivec"
+    case "c": "c"
+    case "cpp", "cc", "cxx": "cpp"
+    case "h", "hpp": "cpp"
+    case "py": "python"
+    case "js": "javascript"
+    case "ts": "typescript"
+    case "jsx": "javascript"
+    case "tsx": "typescript"
+    case "rb": "ruby"
+    case "go": "go"
+    case "rs": "rust"
+    case "java": "java"
+    case "kt": "kotlin"
+    case "json": "json"
+    case "yaml", "yml": "yaml"
+    case "xml": "xml"
+    case "html", "htm": "html"
+    case "css": "css"
+    case "sh", "bash", "zsh": "bash"
+    case "sql": "sql"
+    case "md", "markdown": "markdown"
+    default: "swift"
+    }
   }
 }
