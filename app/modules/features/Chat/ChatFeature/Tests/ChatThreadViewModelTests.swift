@@ -338,10 +338,12 @@ struct ChatThreadViewModelTests {
     mockLLMService._activeModels.send([.gpt])
     let capturedMessageHistory = Atomic<[Schema.Message]?>(nil)
     let capturedModel = Atomic<AIModel?>(nil)
+    let summarizationCalled = expectation(description: "Summarization called")
 
     mockLLMService.onSummarizeConversation = { messageHistory, model in
       capturedModel.set(to: model)
       capturedMessageHistory.set(to: messageHistory)
+      summarizationCalled.fulfill()
       return SummarizeConversationResponse(summary: "Summary", usageInfo: nil)
     }
 
@@ -365,7 +367,7 @@ struct ChatThreadViewModelTests {
 
     // when
     sut.input.sendMessage()
-    try? await Task.sleep(for: .milliseconds(10))
+    try await fulfillment(of: summarizationCalled)
 
     // then
     #expect(capturedModel.value == .gpt)
