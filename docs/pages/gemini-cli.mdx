@@ -1,0 +1,101 @@
+---
+title: "Gemini CLI"
+description: "Configure Gemini CLI to use with cmd"
+---
+
+## Overview
+
+While cmd's agent mode can autonomously take on complex tasks, you might prefer to bring in an external agent.<br/>
+Setting up Gemini CLI gives you access to powerful agentic capabilities through cmd's native interface in Xcode.
+
+## Prerequisites
+
+Before configuring Gemini CLI in cmd, you need to have Gemini CLI installed and set up on your system.
+
+<Steps>
+  <Step title="Install Gemini CLI">
+    Follow [the official setup guide](https://geminicli.com/docs/get-started/deployment/#1-standard-installation-recommended-for-standard-users) to install Gemini CLI.
+  </Step>
+
+  <Step title="Verify Installation">
+    Ensure Gemini CLI is working properly and that your version is higher or equal to `0.20.0`:
+
+    ```bash
+    gemini --version # Should be >= 0.20.0
+    ```
+  </Step>
+  <Step title="Login in Gemini CLI">
+    Launch Gemini CLI in your terminal to authenticate with your Google account or API key
+  </Step>
+</Steps>
+
+## Configuring Gemini CLI in cmd
+
+Once Gemini CLI is installed and configured, you can enable it in cmd:
+
+<Steps>
+  <Step title="Open AI Provider Settings">
+    Go to **Settings > AI Providers** in cmd
+  </Step>
+
+  <Step title="Configuration">
+    cmd should **automatically detect** where Gemini CLI is installed on your system.
+
+    Otherwise, or if you need specific launch arguments, you can manually specify how to launch Gemini CLI
+
+    1. Click **"Add Provider"** or **"Configure"** for Gemini CLI
+    2. Provide the path to the Gemini CLI binary
+    3. Optionally, specify a custom command if you use a specific way to run Gemini CLI
+
+    <AccordionGroup>
+      <Accordion title="Example: Direct binary path">
+        If you have Gemini CLI installed in a specific location:
+
+        ```bash
+        /usr/local/bin/gemini
+        ```
+      </Accordion>
+
+      <Accordion title="Example: npm global install">
+        If installed via npm globally:
+
+        ```bash
+        npx @google/gemini-cli
+        ```
+      </Accordion>
+
+      <Accordion title="Example: Homebrew install">
+        If installed via Homebrew:
+
+        ```bash
+        /opt/homebrew/bin/gemini
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Enable Gemini CLI">
+    Toggle **"Enable"** for Gemini CLI
+  </Step>
+</Steps>
+
+## Using Gemini CLI
+
+Once enabled, Gemini CLI will appear in your model selection:
+
+<Steps>
+  <Step title="Select Gemini CLI">
+    In the cmd interface, open the model selector and choose **"Gemini CLI"**
+  </Step>
+
+  <Step title="Start Using">
+    You can now use Gemini CLI's advanced agentic capabilities:
+    - Multi-step task execution
+    - Integrates with your existing Gemini CLI configuration, including `GEMINI.md`
+    - Rich native UI in cmd
+  </Step>
+</Steps>
+
+<Tip>
+  Gemini CLI appears in the model selector just like any other AI model, but as an external agent it provides advanced capabilities that go beyond simple chat interactions.
+</Tip>
