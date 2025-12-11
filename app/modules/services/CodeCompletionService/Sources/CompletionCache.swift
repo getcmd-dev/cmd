@@ -132,15 +132,19 @@ final class CompletionCache: Sendable {
 extension StringProtocol {
   func commonSuffix(with string: some StringProtocol) -> String {
     var matchingLength = 0
-    let minLength = Swift.min(count, string.count)
-    for i in 0..<minLength {
-      if self[index(endIndex, offsetBy: -i - 1)] == string[string.index(string.endIndex, offsetBy: -i - 1)] {
-        matchingLength += 1
-      } else {
-        break
+    utf8.withContiguousStorageIfAvailable { selfBuf in
+      String(string).utf8.withContiguousStorageIfAvailable { otherBuf in
+        let minLength = Swift.min(selfBuf.count, otherBuf.count)
+        for i in 0..<minLength {
+          if selfBuf[selfBuf.count - 1 - i] == otherBuf[otherBuf.count - 1 - i] {
+            matchingLength += 1
+          } else {
+            break
+          }
+        }
       }
     }
-    return String(self[index(endIndex, offsetBy: -matchingLength)..<endIndex])
+    return String(decoding: utf8.suffix(matchingLength), as: UTF8.self)
   }
 }
 
