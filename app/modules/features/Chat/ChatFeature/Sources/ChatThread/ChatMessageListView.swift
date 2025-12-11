@@ -14,11 +14,13 @@ struct ChatMessageList: View {
   init(
     events: [ChatEvent],
     onRestoreTapped: ((Checkpoint) -> Void)? = nil,
-    isStreaming: Bool = false)
+    isStreaming: Bool = false,
+    streamingStartTime: Date? = nil)
   {
     self.events = events
     self.onRestoreTapped = onRestoreTapped
     self.isStreaming = isStreaming
+    self.streamingStartTime = streamingStartTime
   }
   #endif
 
@@ -28,6 +30,7 @@ struct ChatMessageList: View {
       viewModel?.handleRestore(checkpoint: checkpoint)
     }
     isStreaming = viewModel.isStreamingResponse
+    streamingStartTime = viewModel.streamingStartTime
   }
 
   var body: some View {
@@ -95,8 +98,9 @@ struct ChatMessageList: View {
     // Streaming animation
     Spacer(minLength: 0)
     if isStreaming {
-      HStack {
+      HStack(spacing: 8) {
         CMDLogoDrawingAnimation(size: 24)
+        StreamingTimerView(streamingStartTime: streamingStartTime)
         Spacer(minLength: 0)
       }
       .padding(.horizontal, ChatView.Constants.chatPadding)
@@ -114,6 +118,7 @@ struct ChatMessageList: View {
   @State private var isUserScrolling = false
 
   private let isStreaming: Bool
+  private let streamingStartTime: Date?
 
   private let events: [ChatEvent]
   private let onRestoreTapped: ((Checkpoint) -> Void)?
@@ -123,4 +128,31 @@ struct ChatMessageList: View {
     proxy.scrollTo(Constants.scrollAnchorID, anchor: .bottom)
   }
 
+}
+
+// MARK: - StreamingTimerView
+
+private struct StreamingTimerView: View {
+  let streamingStartTime: Date?
+
+  var body: some View {
+    TimelineView(.periodic(from: .now, by: 0.1)) { context in
+      Text(formattedElapsedTime(at: context.date))
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .monospacedDigit()
+    }
+  }
+
+  private func formattedElapsedTime(at currentTime: Date) -> String {
+    guard let startTime = streamingStartTime else { return "" }
+    let elapsed = currentTime.timeIntervalSince(startTime)
+    let minutes = Int(elapsed) / 60
+    let seconds = elapsed.truncatingRemainder(dividingBy: 60)
+    if minutes > 0 {
+      return String(format: "%dm, %.1fs", minutes, seconds)
+    } else {
+      return String(format: "%.1fs", seconds)
+    }
+  }
 }
