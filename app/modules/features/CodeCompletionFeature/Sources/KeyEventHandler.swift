@@ -82,7 +82,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
         options: .defaultTap,
         eventsOfInterest: eventMask,
         callback: { proxy, type, event, refcon -> Unmanaged<CGEvent>? in
-          let d = Date()
           guard let refcon else {
             return Unmanaged.passUnretained(event)
           }
@@ -94,12 +93,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
             return Unmanaged.passUnretained(event)
           }
 
-          let result = manager.handleEvent(proxy: proxy, type: type, event: event)
-
-          performanceLogger
-            .trace(
-              "key handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
-          return result
+          return manager.handleEvent(proxy: proxy, type: type, event: event)
         },
         userInfo: Unmanaged.passUnretained(self).toOpaque())
     else {
@@ -114,6 +108,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
       CFRunLoopAddSource(runLoop, source, .commonModes)
       CGEvent.tapEnable(tap: tap, enable: true)
     }
+    defaultLogger.log("Added key event tap")
   }
 
   private func stopTap() {
@@ -127,6 +122,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     eventTap = nil
     runLoopSource = nil
     runLoop = nil
+    defaultLogger.log("Destroyed key event tap")
   }
 
   private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {

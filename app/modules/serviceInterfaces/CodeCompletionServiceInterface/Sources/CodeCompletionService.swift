@@ -48,8 +48,16 @@ public struct CompletionRequest: Sendable {
 // MARK: - CompletionSuggestion
 
 public struct CompletionSuggestion: Sendable {
-  public init(file: URL, newContent: String, newCursorSelection: Range, diffLineStart: Int, diff: [LineChange]) {
+  public init(
+    file: URL,
+    oldContent: String,
+    newContent: String,
+    newCursorSelection: Range,
+    diffLineStart: Int,
+    diff: [LineChange])
+  {
     self.file = file
+    self.oldContent = oldContent
     self.newContent = newContent
     self.newCursorSelection = newCursorSelection
     self.diffLineStart = diffLineStart
@@ -68,6 +76,8 @@ public struct CompletionSuggestion: Sendable {
 
   /// The file for which the completion is suggested
   public let file: URL
+  /// The entire old content of the file before applying the suggestion
+  public let oldContent: String
   /// The entire new content of the file after applying the suggestion
   public let newContent: String
   /// The cursor selection range in the new content
