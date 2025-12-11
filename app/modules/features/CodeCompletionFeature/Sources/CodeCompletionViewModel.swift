@@ -8,6 +8,7 @@ import CodeCompletionServiceInterface
 import Combine
 import Dependencies
 import FileDiffFoundation
+import FileDiffTypesFoundation
 import KeyboardShortcutServiceInterface
 import LoggingServiceInterface
 import Observation
@@ -19,10 +20,6 @@ import XcodeObserverServiceInterface
 import XcodeThemeFoundation
 
 // TODO: Remove performance logging.
-
-// MARK: - CodeCompletionViewModel
-
-let performanceLogger = defaultLogger.subLogger(subsystem: "code-completion-performance")
 
 // MARK: - KeyEventState
 
@@ -98,7 +95,6 @@ final class CodeCompletionViewModel {
     Task {
       await loadXcodeTheme()
     }
-
     // Initialize Tab key handler (triggered on key down, allows Command modifier)
     // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
     completionKeyHandlers.append(KeyEventHandler(
@@ -222,6 +218,10 @@ final class CodeCompletionViewModel {
         }
       }
     }.store(in: &cancellables)
+
+    // Temporarily disable some key listeners
+    escapeKeyHandler?.stop()
+    for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 
   /// Indicates if code completion is enabled (i.e. service is available)
@@ -234,6 +234,8 @@ final class CodeCompletionViewModel {
   var lineHeight: CGFloat?
   private(set) var xcodeBackgroundColor: NSColor?
   private(set) var xcodeCurrentLineColor: NSColor?
+  /// The Xcode theme used for syntax highlighting.
+  private(set) var xcodeTheme: XcodeTheme?
   /// The color space used by the window where the view is rendered.
   var colorSpace = NSColorSpace.sRGB
 
@@ -275,10 +277,12 @@ final class CodeCompletionViewModel {
 
       if completion == nil {
         for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
+        escapeKeyHandler?.stop() // Tmp: remove
       } else {
         needsLayout()
         screenShotEditorIfNeeded()
         for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
+        escapeKeyHandler?.start() // Tmp: remove
       }
     }
   }
@@ -329,8 +333,6 @@ final class CodeCompletionViewModel {
 
   private var statusMessageTask: Task<Void, Never>?
 
-  private var logId = 0
-
   private var editorState: EditorState? {
     didSet {
       keyEventState.update(hasEditorState: editorState != nil)
@@ -344,7 +346,6 @@ final class CodeCompletionViewModel {
   private func enable() {
     isEnabled = true
     xcodeObservation = xcodeObserver.statePublisher.sink { @Sendable state in
-      performanceLogger.trace("xcodeObservation sink called at \(Date().timeIntervalSince1970) ")
       Task { @MainActor [weak self] in
         await self?.handleXcodeStateChange(state)
       }
@@ -352,9 +353,6 @@ final class CodeCompletionViewModel {
   }
 
   private func handleXcodeStateChange(_ state: AXState<XcodeState>) async {
-    logId += 1
-    let logId = logId
-    performanceLogger.trace("(\(logId)) handleXcodeStateChange called at \(Date().timeIntervalSince1970) ")
     guard isXcodeActive else {
       completionTask = nil
       completion = nil
@@ -375,7 +373,6 @@ final class CodeCompletionViewModel {
       return
     }
 
-    performanceLogger.trace("(\(logId)) will call focusedTabURL at \(Date().timeIntervalSince1970) ")
     let focussedFile: URL? =
       if let file = workspace.tabs.first(where: { $0.isFocused })?.knownPath {
         file
@@ -391,7 +388,6 @@ final class CodeCompletionViewModel {
       defaultLogger.log("Not requesting completion: no focused file")
       return
     }
-    performanceLogger.trace("(\(logId)) did call focusedTabURL at \(Date().timeIntervalSince1970) ")
 
     guard let editor = workspace.focussedEditor else {
       completionTask = nil
@@ -454,11 +450,11 @@ final class CodeCompletionViewModel {
     completionTask = nil
     guard isAutomaticCompletionEnabled else { return }
 
-    fetchCompletion(logId: logId)
+    fetchCompletion()
+//    setDebugCompletion()
   }
 
-  private func fetchCompletion(logId: Int = -1) {
-    performanceLogger.trace("(\(logId)) fetchCompletion called at \(Date().timeIntervalSince1970) ")
+  private func fetchCompletion() {
     guard let editorState else { return }
     let selection = editorState.selection
     let completionRequest = CompletionRequest(
@@ -471,17 +467,13 @@ final class CodeCompletionViewModel {
       timeout: 1)
     let taskId = UUID()
 
-    performanceLogger.trace("(\(logId)) calling cachedCompletion at \(Date().timeIntervalSince1970) ")
     if let (cacheId, cachedCompletion) = try? codeCompletionService.cachedCompletion(completionRequest) {
-      performanceLogger.trace("got cachedCompletion at \(Date().timeIntervalSince1970) ")
       completion = cachedCompletion
       cachedRequestId = cacheId
       completionTask = CompletionTask(
         id: taskId,
         request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection))
     } else {
-      performanceLogger
-        .log("(\(logId)) got no cachedCompletion, calling suggestCompletion instead at \(Date().timeIntervalSince1970) ")
       let task = Task { [weak self] in
         do {
           let debounceMs = self?.settingsService.value(for: \.codeCompletionDebounceMs) ?? 250
@@ -490,14 +482,11 @@ final class CodeCompletionViewModel {
           guard let self, completionTask?.id == taskId else {
             return
           }
-          performanceLogger.trace("(\(logId)) Requesting completion at \(Date().timeIntervalSince1970)")
           let result = try await codeCompletionService.suggestCompletion(completionRequest)
           try Task.checkCancellation()
           guard completionTask?.id == taskId else {
             return
           }
-          performanceLogger
-            .log("(\(logId)) Got completion response at \(Date().timeIntervalSince1970). Has suggestions? \(completion != nil)")
           completion = result?.suggestion
           cachedRequestId = result?.cachedRequestId
           isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
@@ -609,6 +598,7 @@ final class CodeCompletionViewModel {
       xcodeThemeFontName = "SFMono-Medium"
       return
     }
+    xcodeTheme = theme
     xcodeThemeFontName = theme.plainTextFont.name
     xcodeBackgroundColor = theme.backgroundColor?.nsColor(windowColorSpace: colorSpace)
     xcodeCurrentLineColor = theme.currentLineColor?.nsColor(windowColorSpace: colorSpace)
@@ -656,3 +646,97 @@ extension MultiLineCodeCompletionDisplayMode {
     self == .expandCompletionAddingSpaceInExistingCode || self == .expandCompletionAddingSpaceInExistingCodeWhenTriggered
   }
 }
+
+// MARK: - Debug Helpers
+
+#if DEBUG
+extension CodeCompletionViewModel {
+  // ============================================================================
+
+  // swiftlint:enable line_length
+
+  /// Sets a fixed debug completion for UI iteration.
+  /// Call this from `init` or externally to preview the completion UI.
+  func setDebugCompletion() {
+    Task {
+      guard let debugCompletion = await Self.createDebugCompletion() else {
+        return
+      }
+      completion = debugCompletion
+      completionTask = CompletionTask(
+        id: UUID(),
+        request: .init(
+          fileURL: debugCompletion.file,
+          content: Self.debugOriginalCode,
+          selection: .init(
+            start: .init(line: 0, character: 0),
+            end: .init(line: 0, character: 0))))
+//      isCompletionExpanded = true
+    }
+  }
+
+  // swiftlint:disable line_length
+
+  // ============================================================================
+  // MARK: - Edit these strings to iterate on the UI
+  // ============================================================================
+
+  /// The original code before the completion suggestion.
+  private static let debugOriginalCode = """
+    func calculateSum(items: [Int]) -> Int {
+      return items.reduce(0, +)
+    }
+    """
+
+  /// The new code after the completion suggestion.
+  private static let debugNewCode = """
+    func calculateTotal(items: [Double]) -> Double {
+      return items.reduce(0, +)
+    }
+    """
+
+  /// Creates a `CompletionSuggestion` from the debug original and new code.
+  private static func createDebugCompletion() async -> CompletionSuggestion? {
+    let oldContent = debugOriginalCode
+    let newContent = debugNewCode
+
+    do {
+      let characterDiff = try FileDiff.getCharacterDiff(oldContent: oldContent, newContent: newContent)
+      let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+        diff: characterDiff,
+        oldContent: oldContent,
+        newContent: newContent)
+
+      let diff = lineChanges.map { changes in
+        CompletionSuggestion.LineChange(changes: changes.map { change in
+          CharacterLevelChange(text: change.text, type: change.type)
+        })
+      }
+
+      // Create highlighting tasks for caching
+      let styledOldContent = FileDiff.createHighlightingTask(
+        for: oldContent,
+        language: .swift,
+        xcodeTheme: nil)
+      let styledNewContent = FileDiff.createHighlightingTask(
+        for: newContent,
+        language: .swift,
+        xcodeTheme: nil)
+
+      return CompletionSuggestion(
+        file: URL(fileURLWithPath: "/debug/file.swift"),
+        oldContent: oldContent,
+        newContent: newContent,
+        newCursorSelection: .init(
+          start: .init(line: 0, character: 0),
+          end: .init(line: 0, character: 0)),
+        diffLineStart: firstDiffLine,
+        diff: diff,
+        styledOldContent: styledOldContent,
+        styledNewContent: styledNewContent)
+    } catch {
+      return nil
+    }
+  }
+}
+#endif

@@ -629,6 +629,7 @@ targets.append(
     name: "CodeCompletionFeature",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "HighlightSwift", package: "highlightswift"),
       "AccessibilityFoundation",
       "AccessibilityObjCFoundation",
       "AppFoundation",
@@ -909,6 +910,7 @@ targets.append(
       "AppFoundation",
       "FileDiffTypesFoundation",
       "LoggingServiceInterface",
+      "XcodeThemeFoundation",
     ],
     testsDependencies: [
       .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),

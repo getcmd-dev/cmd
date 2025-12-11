@@ -91,6 +91,107 @@ extension FileDiff {
     let oldHighlighted = try await oldHighlightedTask
     let newHighlighted = try await newHighlightedTask
 
+    return buildFormattedDiff(
+      oldContent: oldContent,
+      newContent: newContent,
+      oldHighlighted: oldHighlighted,
+      newHighlighted: newHighlighted,
+      characterChanges: characterChanges,
+      diffLineStart: diffLineStart)
+  }
+
+  /// Creates a syntax-highlighted character-level diff using an XcodeTheme for colors.
+  ///
+  /// - Parameters:
+  ///   - oldContent: The original content string
+  ///   - newContent: The modified content string
+  ///   - characterChanges: Array of lines, where each line contains character-level changes
+  ///   - diffLineStart: The 0-based line index where the diff starts
+  ///   - language: The language for syntax highlighting (default: swift)
+  ///   - xcodeTheme: Optional Xcode theme to use for colors. If nil, uses default Xcode colors.
+  ///   - styledOldContent: Optional pre-computed highlighted old content task (for caching across calls)
+  ///   - styledNewContent: Optional pre-computed highlighted new content task (for caching across calls)
+  /// - Returns: A `FormattedCharacterDiff` with syntax highlighting applied (foreground colors only, no background)
+  /// - Throws: May throw errors from the syntax highlighter
+  public static func getColoredCharacterDiff(
+    oldContent: String,
+    newContent: String,
+    characterChanges: [[CharacterLevelChange]],
+    diffLineStart: Int,
+    language: HighlightLanguage = .swift,
+    xcodeTheme: XcodeTheme?,
+    styledOldContent: Task<AttributedString, Error>? = nil,
+    styledNewContent: Task<AttributedString, Error>? = nil)
+    async throws -> FormattedCharacterDiff
+  {
+    let highlightColors = highlightColors(from: xcodeTheme)
+
+    // Use pre-computed highlighting if available, otherwise compute it
+    let oldHighlighted: AttributedString
+    let newHighlighted: AttributedString
+
+    if let styledOldContent, let styledNewContent {
+      // Use cached highlighting tasks
+      oldHighlighted = try await styledOldContent.value
+      newHighlighted = try await styledNewContent.value
+    } else {
+      // Compute highlighting in parallel
+      async let oldHighlightedTask = characterHighlighter.unTrimmedAttributedText(
+        oldContent,
+        language: language,
+        colors: highlightColors)
+      async let newHighlightedTask = characterHighlighter.unTrimmedAttributedText(
+        newContent,
+        language: language,
+        colors: highlightColors)
+
+      oldHighlighted = try await oldHighlightedTask
+      newHighlighted = try await newHighlightedTask
+    }
+
+    return buildFormattedDiff(
+      oldContent: oldContent,
+      newContent: newContent,
+      oldHighlighted: oldHighlighted,
+      newHighlighted: newHighlighted,
+      characterChanges: characterChanges,
+      diffLineStart: diffLineStart)
+  }
+
+  /// Creates highlighting tasks that can be cached and reused across multiple calls.
+  ///
+  /// - Parameters:
+  ///   - content: The content string to highlight
+  ///   - language: The language for syntax highlighting
+  ///   - xcodeTheme: Optional Xcode theme to use for colors
+  /// - Returns: A task that produces the highlighted AttributedString
+  public static func createHighlightingTask(
+    for content: String,
+    language: HighlightLanguage = .swift,
+    xcodeTheme: XcodeTheme?)
+    -> Task<AttributedString, Error>
+  {
+    let colors = highlightColors(from: xcodeTheme)
+    return Task {
+      try await characterHighlighter.unTrimmedAttributedText(
+        content,
+        language: language,
+        colors: colors)
+    }
+  }
+
+  private static let characterHighlighter = Highlight()
+
+  /// Builds the formatted diff from pre-highlighted content.
+  private static func buildFormattedDiff(
+    oldContent: String,
+    newContent: String,
+    oldHighlighted: AttributedString,
+    newHighlighted: AttributedString,
+    characterChanges: [[CharacterLevelChange]],
+    diffLineStart: Int)
+    -> FormattedCharacterDiff
+  {
     // Compute line offsets for both contents
     let oldLines = oldContent.splitLines()
     let newLines = newContent.splitLines()
@@ -153,38 +254,6 @@ extension FileDiff {
 
     return FormattedCharacterDiff(lines: formattedLines)
   }
-
-  /// Creates a syntax-highlighted character-level diff using an XcodeTheme for colors.
-  ///
-  /// - Parameters:
-  ///   - oldContent: The original content string
-  ///   - newContent: The modified content string
-  ///   - characterChanges: Array of lines, where each line contains character-level changes
-  ///   - diffLineStart: The 0-based line index where the diff starts
-  ///   - language: The language for syntax highlighting (default: swift)
-  ///   - xcodeTheme: Optional Xcode theme to use for colors. If nil, uses default Xcode colors.
-  /// - Returns: A `FormattedCharacterDiff` with syntax highlighting applied (foreground colors only, no background)
-  /// - Throws: May throw errors from the syntax highlighter
-  public static func getColoredCharacterDiff(
-    oldContent: String,
-    newContent: String,
-    characterChanges: [[CharacterLevelChange]],
-    diffLineStart: Int,
-    language: HighlightLanguage = .swift,
-    xcodeTheme: XcodeTheme?)
-    async throws -> FormattedCharacterDiff
-  {
-    let highlightColors = highlightColors(from: xcodeTheme)
-    return try await getColoredCharacterDiff(
-      oldContent: oldContent,
-      newContent: newContent,
-      characterChanges: characterChanges,
-      diffLineStart: diffLineStart,
-      language: language,
-      highlightColors: highlightColors)
-  }
-
-  private static let characterHighlighter = Highlight()
 
   /// Builds HighlightColors from an XcodeTheme, or returns default Xcode colors.
   private static func highlightColors(from theme: XcodeTheme?) -> HighlightColors {

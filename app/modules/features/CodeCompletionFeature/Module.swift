@@ -2,6 +2,7 @@ Target.module(
   name: "CodeCompletionFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
+    .product(name: "HighlightSwift", package: "highlightswift"),
     "AccessibilityFoundation",
     "AccessibilityObjCFoundation",
     "AppFoundation",

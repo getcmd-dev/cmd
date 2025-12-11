@@ -54,7 +54,9 @@ public struct CompletionSuggestion: Sendable {
     newContent: String,
     newCursorSelection: Range,
     diffLineStart: Int,
-    diff: [LineChange])
+    diff: [LineChange],
+    styledOldContent: StyledContentTask? = nil,
+    styledNewContent: StyledContentTask? = nil)
   {
     self.file = file
     self.oldContent = oldContent
@@ -62,6 +64,8 @@ public struct CompletionSuggestion: Sendable {
     self.newCursorSelection = newCursorSelection
     self.diffLineStart = diffLineStart
     self.diff = diff
+    self.styledOldContent = styledOldContent
+    self.styledNewContent = styledNewContent
   }
 
   public struct LineChange: Sendable {
@@ -73,6 +77,10 @@ public struct CompletionSuggestion: Sendable {
 
     public typealias WordChange = CharacterLevelChange
   }
+
+  /// A task that produces a syntax-highlighted `AttributedString`.
+  /// This is used to cache highlighting work across cache hits.
+  public typealias StyledContentTask = Task<AttributedString, Error>
 
   /// The file for which the completion is suggested
   public let file: URL
@@ -86,6 +94,11 @@ public struct CompletionSuggestion: Sendable {
   public let diffLineStart: Int
   /// The diff between the old and new content, character by character.
   public let diff: [LineChange]
+
+  /// Cached syntax-highlighted old content (optional, for performance).
+  public let styledOldContent: StyledContentTask?
+  /// Cached syntax-highlighted new content (optional, for performance).
+  public let styledNewContent: StyledContentTask?
 
 }
 
