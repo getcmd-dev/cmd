@@ -154,6 +154,8 @@ open class XcodeWindow: NSWindow {
   private var isTrackedWindowMiniaturized: Bool?
   private var showWhenXcodeWindowDeminiaturized = false
 
+  private var previousActivationState: AppsActivationState?
+
   /// Whether this window is on screen
   private var isOnScreen: Bool {
     (CGWindowListCopyWindowInfo(.optionAll, CGWindowID(windowNumber)) as? [WindowInfo])?
@@ -295,34 +297,25 @@ open class XcodeWindow: NSWindow {
   /// Handles changes in the activation state between Xcode and the host app
   /// - Parameter activationState: The new activation state
   private func handle(activationState: AppsActivationState) {
-    switch activationState {
-    case .bothActive, .xcodeActive:
+    defer { previousActivationState = activationState }
+
+    let isXcodeActive = activationState.isXcodeActive
+    let wasXcodeActive = previousActivationState?.isXcodeActive ?? false
+
+    if isXcodeActive, !wasXcodeActive {
       guard isShown else { return }
       activate()
-
-    case .hostAppActive:
+    } else if activationState.isHostAppActive, previousActivationState?.isHostAppActive != true {
       guard isShown else { return }
       activate()
 
       // Raise the tracked window and then reactivate after a slight delay
-      if let trackedWindow {
-        if
-          let pid = xcodeObserver.state.focusedInstance?.processIdentifier,
-          xcodeObserver.state.focusedInstance?.workspaces.count == 1
-        {
-          // If there's only one workspace, activating the app is sufficient to bring the window to front.
-          WindowActivation.activateApp(pid)
-        } else {
-          // Otherwise we use AX to raise the window. This might change which element is focussed.
-          trackedWindow.raise()
-        }
-      }
+      trackedWindow?.raise()
 
       DispatchQueue.main.asyncAfter(deadline: .now() + Constants.reactivationDelay) { [weak self] in
         self?.activate()
       }
-
-    case .inactive:
+    } else if activationState == .inactive {
       deactivate()
     }
   }

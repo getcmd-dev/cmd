@@ -33,6 +33,7 @@ struct InlineChatView: View {
                   .padding(.trailing, 6)
               }
           }
+          .id(chat.id)
           .readingSize { contentSize in
             self.contentSize = contentSize
           }
