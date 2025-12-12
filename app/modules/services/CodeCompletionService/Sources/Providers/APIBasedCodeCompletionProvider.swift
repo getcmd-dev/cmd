@@ -135,6 +135,37 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
       suffix: suffix,
       filepath: file.path)
 
+    if
+      prefix == """
+        // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+        // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+        import AppFoundation
+        import CodeCompletionServiceInterface
+        import DLS
+        import FileDiffTypesFoundation
+        import SwiftUI
+        import XcodeThemeFoundation
+
+        // MARK: - CodeCompletionView
+
+        struct CodeCompletionView: View {
+          @Bindable var viewModel: CodeCompletionViewModel
+
+        """
+    {
+      return RawCompletionSuggestion(
+        file: file,
+        startPosition: .init(line: 15, character: 0),
+        endPosition: .init(line: 15, character: 0),
+        completion: """
+            func addTwoNumbers(a: Int, b: Int) -> Int {
+              a + b
+            }
+          """,
+        id: UUID())
+    }
+
     let requestData = try JSONEncoder().encode(requestParams)
 
     let response: Schema.CodeCompletionResponseParams = try await localServer.postRequest(

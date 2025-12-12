@@ -4,10 +4,10 @@ import { Response } from "express"
 import { Options } from "@anthropic-ai/claude-agent-sdk"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
-import { spawn } from "@/utils/spawn-promise"
 import { ClaudeCodeACPClient } from "../acp/clients/claudeCode/claudeCodeACPClient"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
 import { SendMessageToExternalAgent } from "."
+import { extractExecutableInfo } from "./clients/helper"
 
 // Constants
 const TOOL_NAME_PREFIX = "claude_code_"
@@ -195,29 +195,4 @@ const createEventStream = async (
 			throw new Error(error)
 		}),
 	])
-}
-
-// Extract the executable path and args from the LocalExecutable configuration.
-// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
-// For instance `claude --dangerously-skip-permissions`
-const extractExecutableInfo = async (localExecutable: LocalExecutable): Promise<{ path: string; args: string[] }> => {
-	const parts = localExecutable.executable.match(/(?:[^\s"]+|"[^"]*")+/g) || []
-	const execName = parts[0]?.replace(/(^"|"$)/g, "") // Remove surrounding quotes if any
-	const args = parts.slice(1).map((arg) => arg.replace(/(^"|"$)/g, ""))
-	if (!execName) {
-		throw new Error("Invalid executable path")
-	}
-	if (execName.startsWith("/")) {
-		// absolute path
-		return { path: execName, args }
-	}
-	const execPath = await spawn("which", {
-		args: [execName],
-		env: localExecutable.env,
-		cwd: localExecutable.cwd,
-	}).then((r) => r.stdout.trim())
-	if (!execPath.length) {
-		throw new Error(`Executable ${execName} not found in PATH`)
-	}
-	return { path: execPath, args }
 }

@@ -39,11 +39,11 @@ extension CommandType {
     let hasResponded = Atomic(false)
 
     let task = Task {
-      var err: Error?
+      // Catch all errors and pass nil to avoid showing error dialogs to the user
       do {
         try await self.handle(invocation.wrapped)
       } catch {
-        err = error
+        defaultLogger.error("Extension command failed: \(error.localizedDescription)")
       }
 
       let hasAlreadyResponded = hasResponded.mutate { value in
@@ -52,7 +52,7 @@ extension CommandType {
       }
 
       if !hasAlreadyResponded {
-        completionHandler.wrapped(err)
+        completionHandler.wrapped(nil)
       }
     }
 
@@ -69,7 +69,8 @@ extension CommandType {
       }
 
       task.cancel()
-      completionHandler.wrapped(XcodeExtensionError(message: "Timeout"))
+      // Pass nil instead of an error to avoid showing error dialogs to the user on timeout
+      completionHandler.wrapped(nil)
     }
   }
 

@@ -39,7 +39,7 @@ public struct FileChange: Codable, Sendable {
 
 // MARK: - DiffContentType
 
-public enum DiffContentType: String, Sendable, Codable {
+public enum DiffContentType: String, Sendable, Codable, Hashable {
   /// Content that is only present in the previous version.
   case removed
   /// Content that is only present in the new version.
@@ -163,7 +163,7 @@ public struct TextRange: Codable, Sendable {
 // MARK: - CharacterLevelChange
 
 /// Represents a character-level change in a diff.
-public struct CharacterLevelChange: Sendable {
+public struct CharacterLevelChange: Sendable, Hashable {
   public let text: String
   public let type: DiffContentType
 

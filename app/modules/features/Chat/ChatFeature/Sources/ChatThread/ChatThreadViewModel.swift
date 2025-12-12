@@ -120,7 +120,6 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
   var isStreamingResponse = false
   var hasSomeModelsAvailable = true
-
   private(set) var messages = [ChatMessageViewModel]()
 
   private(set) var projectInfo: SelectedProjectInfo?
@@ -137,6 +136,8 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
   /// Whether this tab has completed streaming while not being focused
   var hasUnreadCompletion = false
+
+  var streamingStartTime: Date? { streamingTask?.startTime }
 
   /// Whether this tab is currently focused/selected
   var isFocused = false {
@@ -412,7 +413,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
 
         recordEventAfterReceiving(messages: res.newMessages, startTime: startTime)
       }
-      streamingTask = (task: task, id: taskId)
+      streamingTask = StreamingTask(task: task, id: taskId)
 
       // Retain self while streaming to prevent deallocation when switching tabs
       chatService.keepAlive(self, for: id)
@@ -523,7 +524,7 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
   /// Track the last focused file in Xcode to provide context
   private var lastFocusedFileURL: URL? = nil
 
-  private var streamingTask: (task: Task<Void, any Error>, id: UUID)? = nil {
+  private var streamingTask: StreamingTask? = nil {
     didSet {
       let wasStreaming = oldValue != nil
       let isStreaming = streamingTask != nil
@@ -808,6 +809,20 @@ final class ChatThreadViewModel: Identifiable, Equatable, Sendable {
     }
   }
 
+}
+
+// MARK: - StreamingTask
+
+private struct StreamingTask {
+  let task: Task<Void, any Error>
+  let id: UUID
+  let startTime: Date
+
+  init(task: Task<Void, any Error>, id: UUID) {
+    self.task = task
+    self.id = id
+    startTime = Date()
+  }
 }
 
 // MARK: - ChatEvent

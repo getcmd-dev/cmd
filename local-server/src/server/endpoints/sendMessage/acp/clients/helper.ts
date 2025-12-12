@@ -1,5 +1,7 @@
+import { LocalExecutable } from "@/server/schemas/sendMessageSchema"
 import { ACPTool_Content } from "@/server/schemas/toolsSchema"
 import { ToolCallContent } from "@agentclientprotocol/sdk"
+import { spawn } from "@/utils/spawn-promise"
 
 export const mapToolCallContent = (toolCall: ToolCallContent): ACPTool_Content => {
 	switch (toolCall.type) {
@@ -65,4 +67,31 @@ export const mapToolCallContent = (toolCall: ToolCallContent): ACPTool_Content =
 			}
 		}
 	}
+}
+
+// Extract the executable path and args from the LocalExecutable configuration.
+// `localExecutable.executable` is a string that may contain the executable name or path along with arguments.
+// For instance `claude --dangerously-skip-permissions`
+export const extractExecutableInfo = async (
+	localExecutable: LocalExecutable,
+): Promise<{ path: string; args: string[] }> => {
+	const parts = localExecutable.executable.match(/(?:[^\s"]+|"[^"]*")+/g) || []
+	const execName = parts[0]?.replace(/(^"|"$)/g, "") // Remove surrounding quotes if any
+	const args = parts.slice(1).map((arg) => arg.replace(/(^"|"$)/g, ""))
+	if (!execName) {
+		throw new Error("Invalid executable path")
+	}
+	if (execName.startsWith("/")) {
+		// absolute path
+		return { path: execName, args }
+	}
+	const execPath = await spawn("which", {
+		args: [execName],
+		env: localExecutable.env,
+		cwd: localExecutable.cwd,
+	}).then((r) => r.stdout.trim())
+	if (!execPath.length) {
+		throw new Error(`Executable ${execName} not found in PATH`)
+	}
+	return { path: execPath, args }
 }

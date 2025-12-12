@@ -37,6 +37,7 @@ import {
 } from "ai"
 import { mapResponseError } from "./errorParsing"
 import { sendMessageToClaudeCode } from "./acp/sendMessageToClaudeCode"
+import { sendMessageToGeminiCLI } from "./acp/sendMessageToGeminiCLI"
 import { sendMessageToCodex } from "./acp/sendMessageToCodex"
 import { attachmentAsPart } from "./helpers"
 import { SendMessageToExternalAgent } from "./acp"
@@ -70,7 +71,11 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 
 			const tools = body.tools
 
-			if (body.provider.name == "claude_code" || body.provider.name == "codex") {
+			if (
+				body.provider.name == "claude_code" ||
+				body.provider.name == "codex" ||
+				body.provider.name == "gemini_cli"
+			) {
 				// External agent, route to appropriate handler based on provider.
 				const threadId = body.threadId || uuidv4() // When no thread is provided, we use a random one to support an ephemeral conversation.
 				const localExecutable = body.provider.settings.localExecutable
@@ -83,11 +88,14 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				// Route to appropriate handler based on provider
 				let sendMessageImpl: SendMessageToExternalAgent
 				switch (body.provider.name) {
+					case "claude_code":
+						sendMessageImpl = sendMessageToClaudeCode
+						break
 					case "codex":
 						sendMessageImpl = sendMessageToCodex
 						break
-					case "claude_code":
-						sendMessageImpl = sendMessageToClaudeCode
+					case "gemini_cli":
+						sendMessageImpl = sendMessageToGeminiCLI
 						break
 					default:
 						throw new UserFacingError({

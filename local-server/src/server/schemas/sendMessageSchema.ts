@@ -28,12 +28,13 @@ export type APIProviderName =
 	| "openai"
 	| "anthropic"
 	| "openrouter"
-	| "claude_code"
-	| "codex"
 	| "groq"
 	| "gemini"
 	| "mistral"
 	| "inception"
+	| "claude_code"
+	| "codex"
+	| "gemini_cli"
 
 export type StreamedResponseChunk =
 	| TextDelta

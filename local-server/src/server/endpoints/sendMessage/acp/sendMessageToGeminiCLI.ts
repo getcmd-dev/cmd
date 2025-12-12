@@ -4,15 +4,20 @@ import { Response } from "express"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
 import { AsyncStream } from "@/utils/asyncStream"
 import { askAppForPermission, toACPContentBlocks, toMessageStream } from "../acp/clients/ACPClient"
-import { CodexACPClient } from "../acp/clients/codex/codexACPClient"
+import { GeminiCLIACPClient } from "../acp/clients/geminiCLI/geminiCLIACPClient"
 import { SendMessageToExternalAgent } from "."
 import { extractExecutableInfo } from "./clients/helper"
 
 // TODO: support resuming the conversation after the app restarts.
+// This is not supported by the Gemini CLI yet, nor by ACP.
+// The current setup spawns one shared subprocess to Gemini CLI for all sessions, and uses Gemini CLI's ACP support to manage concurrent sessions. Within this setup it's impossible to resume sessions.
+// An alternative would be to spawn a new subprocess for each session, using the `--resume` parameter and writting our own ACP client using Gemini CLI's API.
+// However, Gemini CLI doesn't have an equivalent to @anthropic-ai/claude-agent-sdk which is an SDK independent of the main library. Without this, we would force the user to use the version of Gemini CLI embedded in cmd, instead of their own (and incure an app size cost for this embedding).
+// We could manage all the configuration, and use `--output-format stream-json` to stream updates to an internal ACP client, but this is a lot of work. Instead we are not supporting resuming sessions for now, and will wait on ACP making progress on this.
 
-let acpClient: CodexACPClient | undefined
+let acpClient: GeminiCLIACPClient | undefined
 
-export const sendMessageToCodex: SendMessageToExternalAgent = async (
+export const sendMessageToGeminiCLI: SendMessageToExternalAgent = async (
 	{
 		messages,
 		threadId,
@@ -74,7 +79,7 @@ const createEventStream = async (
 	})
 	const eventStream = new AsyncStream<ResponseChunkWithoutIndex>()
 
-	// get the id of the Codex session to resume
+	// get the id of the Gemini CLI session to resume
 	const existingSessionId = ((): string | undefined => {
 		for (const message of messages) {
 			if (message.role === "assistant") {
@@ -103,9 +108,16 @@ const createEventStream = async (
 		return eventStream
 	}
 
-	const messageContent = toACPContentBlocks(newUserMessages)
+	const pathToExecutable = process.env.GEMINI_CLI_PROXY || executableInfo.path
 
-	acpClient = acpClient || new CodexACPClient()
+	const messageContent = toACPContentBlocks(newUserMessages)
+	acpClient =
+		acpClient ||
+		new GeminiCLIACPClient({
+			args: executableInfo.args,
+			path: pathToExecutable,
+			env: localExecutable.env,
+		})
 	const { sessionId, events } = await acpClient.prompt(
 		{ cwd: localExecutable.cwd },
 		messageContent,
@@ -114,6 +126,7 @@ const createEventStream = async (
 			return await askAppForPermission({ toolCall, toolName, eventStream })
 		},
 	)
+	eventStream.yield({ type: "internal_content", value: { type: "session_id", sessionId } })
 	abortController.signal.addEventListener("abort", async () => {
 		await acpClient?.cancel(sessionId)
 	})
