@@ -19,41 +19,6 @@ import XcodeControllerServiceInterface
 import XcodeObserverServiceInterface
 import XcodeThemeFoundation
 
-// TODO: Remove performance logging.
-
-// MARK: - KeyEventState
-
-/// Thread-safe state container for key event decision-making.
-/// This allows CGEvent callbacks to check state without blocking on the main actor.
-@ThreadSafe
-final class KeyEventState: Sendable {
-  var hasCompletion = false
-
-  var hasEditorState = false
-
-  var isCompletionExpandable = false
-
-  var isAutomaticCompletionEnabled = true
-
-  var multiLineDisplayModeIsAlwaysShown = false
-
-  func update(
-    hasCompletion: Bool? = nil,
-    hasEditorState: Bool? = nil,
-    isCompletionExpandable: Bool? = nil,
-    isAutomaticCompletionEnabled: Bool? = nil,
-    multiLineDisplayModeIsAlwaysShown: Bool? = nil)
-  {
-    inLock { state in
-      if let hasCompletion { state.hasCompletion = hasCompletion }
-      if let hasEditorState { state.hasEditorState = hasEditorState }
-      if let isCompletionExpandable { state.isCompletionExpandable = isCompletionExpandable }
-      if let isAutomaticCompletionEnabled { state.isAutomaticCompletionEnabled = isAutomaticCompletionEnabled }
-      if let multiLineDisplayModeIsAlwaysShown { state.multiLineDisplayModeIsAlwaysShown = multiLineDisplayModeIsAlwaysShown }
-    }
-  }
-}
-
 // MARK: - CodeCompletionViewModel
 
 @Observable @MainActor
@@ -95,100 +60,7 @@ final class CodeCompletionViewModel {
     Task {
       await loadXcodeTheme()
     }
-    // Initialize Tab key handler (triggered on key down, allows Command modifier)
-    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
-    completionKeyHandlers.append(KeyEventHandler(
-      manager: keyEventHandlerManager,
-      configuration: .tab(allowModifiers: true),
-      callbacks: .init(
-        onKeyDown: { [keyEventState] _, modifiers in
-          guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
-          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
-          guard
-            !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
-              !keyEventState.multiLineDisplayModeIsAlwaysShown)
-          else {
-            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
-            return false
-          }
-          return true
-        },
-        onKeyUp: { [weak self, keyEventState] (_: Bool, modifiers: CGEventFlags) in
-          guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
-          guard modifiers.intersection([.maskShift, .maskControl, .maskSecondaryFn, .maskAlternate]).isEmpty else { return false }
-          guard
-            !modifiers.contains(.maskCommand) || (keyEventState.isCompletionExpandable &&
-              !keyEventState.multiLineDisplayModeIsAlwaysShown)
-          else {
-            // Only allow Tab key handling if Command is not pressed, or if it is used to expand the completion
-            return false
-          }
-          // Dispatch side effect to main actor asynchronously
-          Task { @MainActor in self?.handleTabKeyPressed() }
-          return true
-        })))
-
-    // Initialize Escape key handler (triggered on key up - when press is completed)
-    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
-    escapeKeyHandler = KeyEventHandler(
-      manager: keyEventHandlerManager,
-      configuration: .escape(),
-      callbacks: .init(
-        onKeyDown: { [keyEventState] isDoubleTap, _ in
-          guard keyEventState.hasEditorState else { return false }
-          if isDoubleTap {
-            return true
-          }
-          guard !keyEventState.isAutomaticCompletionEnabled || keyEventState.hasCompletion else {
-            return false
-          }
-          return true
-        },
-        onKeyUp: { [weak self, keyEventState] (isDoubleTap: Bool, _: CGEventFlags) in
-          guard keyEventState.hasEditorState else { return false }
-          if isDoubleTap {
-            // Dispatch side effect to main actor asynchronously
-            Task { @MainActor in self?.handleEscapeDoubleTap() }
-            return true
-          }
-          guard !keyEventState.isAutomaticCompletionEnabled || keyEventState.hasCompletion else {
-            return false
-          }
-          // Dispatch side effect to main actor asynchronously
-          Task { @MainActor in self?.handleEscape() }
-          return true
-        }))
-    escapeKeyHandler?.start()
-
-    // Initialize Command key handlers (triggered on both key down and key up)
-    // Left Command key code is 55, Right Command key code is 54
-    // NOTE: Callbacks run on CGEvent thread - use keyEventState for thread-safe state checks
-    for code in [54, 55] {
-      completionKeyHandlers.append(KeyEventHandler(
-        manager: keyEventHandlerManager,
-        configuration: .key(code),
-        callbacks: .init(
-          onKeyDown: { [weak self, keyEventState] _, _ in
-            guard
-              keyEventState.hasEditorState,
-              keyEventState.isCompletionExpandable,
-              !keyEventState.multiLineDisplayModeIsAlwaysShown
-            else { return false }
-            // Dispatch side effect to main actor asynchronously
-            Task { @MainActor in self?.handleCommandKeyDown() }
-            return true
-          },
-          onKeyUp: { [weak self, keyEventState] (_: Bool, _: CGEventFlags) in
-            guard
-              keyEventState.hasEditorState,
-              keyEventState.isCompletionExpandable,
-              !keyEventState.multiLineDisplayModeIsAlwaysShown
-            else { return false }
-            // Dispatch side effect to main actor asynchronously
-            Task { @MainActor in self?.handleCommandKeyUp() }
-            return true
-          })))
-    }
+    setUpKeyInterception()
 
     // Observe app activation state to start/stop key monitoring
     appsActivationState.sink { @Sendable state in
@@ -200,11 +72,7 @@ final class CodeCompletionViewModel {
           completion = nil
           cachedRequestId = nil
         }
-        if state.isXcodeActive, completion != nil {
-          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
-        } else {
-          for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
-        }
+        updateCompletionKeyHandlers()
       }
     }.store(in: &cancellables)
 
@@ -218,9 +86,6 @@ final class CodeCompletionViewModel {
         }
       }
     }.store(in: &cancellables)
-
-    // Temporarily disable some key listeners
-    escapeKeyHandler?.stop()
     for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 
@@ -251,6 +116,15 @@ final class CodeCompletionViewModel {
   private(set) var isCompletionExpanded = false
   private(set) var showAutomaticCompletionStatusMessage = false
 
+  @ObservationIgnored private(set) var styledCompletionTask: Task<Void, Error>?
+  private(set) var styledCompletion: SyntaxHighlightedCompletion?
+
+  let keyEventHandlerManager: KeyEventHandlerManager
+  var completionKeyHandlers = [KeyEventHandler]()
+  var escapeKeyHandler: KeyEventHandler?
+  /// Thread-safe state for CGEvent callbacks to check without blocking on main actor
+  let keyEventState = KeyEventState()
+
   private(set) var isAutomaticCompletionEnabled = true {
     didSet {
       // Update thread-safe state for CGEvent callbacks
@@ -275,14 +149,20 @@ final class CodeCompletionViewModel {
         isCompletionExpandable: completion?.diff.count ?? 0 > 1,
         multiLineDisplayModeIsAlwaysShown: settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown)
 
-      if completion == nil {
-        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
-        escapeKeyHandler?.stop() // Tmp: remove
-      } else {
+      updateCompletionKeyHandlers()
+
+      if let completion {
         needsLayout()
         screenShotEditorIfNeeded()
-        for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
-        escapeKeyHandler?.start() // Tmp: remove
+        styledCompletionTask?.cancel()
+        styledCompletionTask = Task {
+          let styledCompletion = await CompletionSyntaxHighlighter.highlight(completion, xcodeTheme: xcodeTheme)
+          try Task.checkCancellation()
+          self.styledCompletion = styledCompletion
+        }
+      } else {
+        styledCompletionTask?.cancel()
+        styledCompletion = nil
       }
     }
   }
@@ -308,6 +188,68 @@ final class CodeCompletionViewModel {
     fontHeight = font.size(for: content).height
   }
 
+  func handleTabKeyPressed() {
+    guard let completion, let completionTask, let editorState else { return }
+
+    // Convert completion suggestion to FileChange and apply using XcodeController
+    Task {
+      do {
+        // Convert CompletionSuggestion.LineChange to FileChange.LineChange
+        let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
+          .diff
+
+        let fileChange = FileChange(
+          filePath: completion.file,
+          oldContent: editorState.content,
+          suggestedNewContent: completion.newContent,
+          selectedChange: lineByLineChange,
+          newSelections: [.init(
+            start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
+            end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
+
+        try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
+        self.completion = nil
+        self.cachedRequestId = nil
+      } catch {
+        defaultLogger.error("Failed to apply code completion", error)
+        self.completion = nil
+        self.cachedRequestId = nil
+      }
+    }
+  }
+
+  func handleEscape() {
+    if completion != nil {
+      completion = nil
+      cachedRequestId = nil
+      if let cachedRequestId {
+        codeCompletionService.deleteCachedCompletion(cachedRequestId: cachedRequestId)
+      }
+    } else if !isAutomaticCompletionEnabled {
+      fetchCompletion()
+    }
+  }
+
+  func handleEscapeDoubleTap() {
+    isAutomaticCompletionEnabled.toggle()
+    // Show a message that the status was changed.
+    statusMessageTask?.cancel()
+    showAutomaticCompletionStatusMessage = true
+    statusMessageTask = Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 5_000_000_000)
+      guard !Task.isCancelled else { return }
+      self?.showAutomaticCompletionStatusMessage = false
+    }
+  }
+
+  func handleCommandKeyDown() {
+    isCompletionExpanded = true
+  }
+
+  func handleCommandKeyUp() {
+    isCompletionExpanded = false
+  }
+
   private var cachedRequestId: Int?
 
   private let needsLayout: () -> Void
@@ -325,11 +267,6 @@ final class CodeCompletionViewModel {
   private let keyboardShortcutService: KeyboardShortcutService
   private let themeController: XcodeThemeController
   private var xcodeObservation: AnyCancellable?
-  private let keyEventHandlerManager: KeyEventHandlerManager
-  private var completionKeyHandlers = [KeyEventHandler]()
-  private var escapeKeyHandler: KeyEventHandler?
-  /// Thread-safe state for CGEvent callbacks to check without blocking on main actor
-  private let keyEventState = KeyEventState()
 
   private var statusMessageTask: Task<Void, Never>?
 
@@ -341,6 +278,16 @@ final class CodeCompletionViewModel {
 
   private var isXcodeActive: Bool {
     appsActivationState.value.isXcodeActive
+  }
+
+  /// Activate  / deactivate the completion key handler.
+  /// This should be called when there is a change to Xcode's active state, or to the completion.
+  private func updateCompletionKeyHandlers() {
+    if appsActivationState.value.isXcodeActive, completion != nil {
+      for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
+    } else {
+      for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
+    }
   }
 
   private func enable() {
@@ -467,6 +414,7 @@ final class CodeCompletionViewModel {
     let taskId = UUID()
 
     if let (cacheId, cachedCompletion) = try? codeCompletionService.cachedCompletion(completionRequest) {
+      defaultLogger.log("Using cached completion \(cachedCompletion?.diff.debugDescription ?? "nil")")
       completion = cachedCompletion
       cachedRequestId = cacheId
       completionTask = CompletionTask(
@@ -506,68 +454,6 @@ final class CodeCompletionViewModel {
     completion = nil
     cachedRequestId = nil
     for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
-  }
-
-  private func handleTabKeyPressed() {
-    guard let completion, let completionTask, let editorState else { return }
-
-    // Convert completion suggestion to FileChange and apply using XcodeController
-    Task {
-      do {
-        // Convert CompletionSuggestion.LineChange to FileChange.LineChange
-        let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
-          .diff
-
-        let fileChange = FileChange(
-          filePath: completion.file,
-          oldContent: editorState.content,
-          suggestedNewContent: completion.newContent,
-          selectedChange: lineByLineChange,
-          newSelections: [.init(
-            start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
-            end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
-
-        try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
-        self.completion = nil
-        self.cachedRequestId = nil
-      } catch {
-        defaultLogger.error("Failed to apply code completion", error)
-        self.completion = nil
-        self.cachedRequestId = nil
-      }
-    }
-  }
-
-  private func handleEscape() {
-    if completion != nil {
-      completion = nil
-      cachedRequestId = nil
-      if let cachedRequestId {
-        codeCompletionService.deleteCachedCompletion(cachedRequestId: cachedRequestId)
-      }
-    } else if !isAutomaticCompletionEnabled {
-      fetchCompletion()
-    }
-  }
-
-  private func handleEscapeDoubleTap() {
-    isAutomaticCompletionEnabled.toggle()
-    // Show a message that the status was changed.
-    statusMessageTask?.cancel()
-    showAutomaticCompletionStatusMessage = true
-    statusMessageTask = Task { [weak self] in
-      try? await Task.sleep(nanoseconds: 5_000_000_000)
-      guard !Task.isCancelled else { return }
-      self?.showAutomaticCompletionStatusMessage = false
-    }
-  }
-
-  private func handleCommandKeyDown() {
-    isCompletionExpanded = true
-  }
-
-  private func handleCommandKeyUp() {
-    isCompletionExpanded = false
   }
 
   // MARK: - Screenshot Management

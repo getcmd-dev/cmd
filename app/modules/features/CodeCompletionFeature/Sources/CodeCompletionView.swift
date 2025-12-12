@@ -37,6 +37,7 @@ struct CodeCompletionView: View {
 
           CompletionDiffView(
             completion: completion,
+            styledCompletion: viewModel.styledCompletion,
             font: viewModel.font,
             lineHeight: viewModel.lineHeight,
             lineSpacing: viewModel.lineSpacing,
@@ -79,6 +80,7 @@ struct CodeCompletionView: View {
 struct CompletionDiffView: View {
   init(
     completion: CompletionSuggestion,
+    styledCompletion: SyntaxHighlightedCompletion?,
     font: NSFont,
     lineHeight: CGFloat?,
     lineSpacing: CGFloat,
@@ -88,6 +90,7 @@ struct CompletionDiffView: View {
     showCompletionExpansionInfo: Bool)
   {
     self.completion = completion
+    self.styledCompletion = styledCompletion
     self.font = font
     self.lineHeight = lineHeight
     self.lineSpacing = lineSpacing
@@ -98,6 +101,7 @@ struct CompletionDiffView: View {
   }
 
   let completion: CompletionSuggestion
+  let styledCompletion: SyntaxHighlightedCompletion?
   let font: NSFont
   let lineHeight: CGFloat?
   let lineSpacing: CGFloat
@@ -113,7 +117,7 @@ struct CompletionDiffView: View {
           completion.diff.enumerated().filter { !showCompletionExpansionInfo || $0.offset == 0 },
           id: \.offset)
         { idx, lineCompletion in
-          lineBackgroundView(for: lineCompletion, lineIdx: idx, highlightedLine: highlightedCompletion?.lines[safe: idx])
+          lineBackgroundView(for: lineCompletion, lineIdx: idx)
             .frame(height: lineHeight)
         }
       }
@@ -128,16 +132,13 @@ struct CompletionDiffView: View {
           completion.diff.enumerated().filter { !showCompletionExpansionInfo || $0.offset == 0 },
           id: \.offset)
         { idx, lineCompletion in
-          lineView(for: lineCompletion, lineIdx: idx, highlightedLine: highlightedCompletion?.lines[safe: idx])
+          lineView(for: lineCompletion, lineIdx: idx, highlightedLine: styledCompletion?.lines[safe: idx])
             .frame(height: lineHeight)
         }
       }
       .font(.init(font))
       .onPreferenceChange(LinePrefixWidthPreferenceKey.self, perform: updatePrefixWidth)
       .onPreferenceChange(LineSuggestionWidthPreferenceKey.self, perform: updateSuggestionWidth)
-    }
-    .task {
-      await loadHighlighting()
     }
   }
 
@@ -153,7 +154,6 @@ struct CompletionDiffView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
-  @State private var highlightedCompletion: SyntaxHighlightedCompletion?
   @State private var linePrefixWidths = [Int: CGFloat]()
   @State private var lineSuggestionWidths = [Int: CGFloat]()
 
@@ -204,8 +204,7 @@ struct CompletionDiffView: View {
   @ViewBuilder
   private func lineBackgroundView(
     for line: CompletionSuggestion.LineChange,
-    lineIdx: Int,
-    highlightedLine _: SyntaxHighlightedCompletion.HighlightedLine?)
+    lineIdx: Int)
     -> some View
   {
     HStack(spacing: 0) {
@@ -351,11 +350,6 @@ struct CompletionDiffView: View {
     styledText[fullRange].backgroundColor = .clear
 
     return styledText.trimmingCharacters(in: .newlines)
-  }
-
-  /// Loads syntax highlighting for the current completion.
-  private func loadHighlighting() async {
-    highlightedCompletion = await CompletionSyntaxHighlighter.highlight(completion, xcodeTheme: xcodeTheme)
   }
 
   /// Whether a given chunk of change, at a given line in the suggestion is before any suggested content.

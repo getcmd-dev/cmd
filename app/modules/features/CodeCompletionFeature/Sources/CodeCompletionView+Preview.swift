@@ -266,6 +266,7 @@ let defaultDarkXcodeTheme = """
 
   CompletionDiffView(
     completion: mockCompletion,
+    styledCompletion: nil,
     font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
     lineHeight: nil,
     lineSpacing: 0,

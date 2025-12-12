@@ -68,7 +68,7 @@ public struct CompletionSuggestion: Sendable {
     self.styledNewContent = styledNewContent
   }
 
-  public struct LineChange: Sendable {
+  public struct LineChange: Sendable, Hashable {
     public let changes: [WordChange]
 
     public init(changes: [WordChange]) {

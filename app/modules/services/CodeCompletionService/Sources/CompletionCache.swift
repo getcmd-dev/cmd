@@ -47,10 +47,32 @@ final class CompletionCache: Sendable {
 
   func store(suggestion: CompletionSuggestion?, for request: CompletionCacheRequest) -> Int {
     if let suggestion {
+      // Compute the unchanged prefix / suffix around the suggestion.
+      var offset = 0
+      for (idx, l) in request.content.splitLines().enumerated() {
+        if idx < suggestion.diffLineStart {
+          offset += l.count
+        } else {
+          break
+        }
+      }
+      // Offset of the end of the unchanged prefix in the old content
+      var prefixOffset = offset
+      for change in suggestion.diff.inline {
+        if change.type == .unchanged {
+          prefixOffset += change.text.count
+        } else {
+          break
+        }
+      }
+      // Offset of the start of the unchanged suffix in the old content
+      var suffixOffset = prefixOffset
+      suffixOffset += suggestion.diff.inline.trimming(while: { $0.type == .unchanged }).filter { $0.type != .added }
+        .reduce(0) { $0 + $1.text.count }
+
       let oldContent = request.content
-      let newContent = suggestion.newContent
-      let prefix = oldContent.commonPrefix(with: newContent)
-      let suffix = oldContent.commonSuffix(with: newContent)
+      let prefix = String(oldContent[..<oldContent.safeIndex(oldContent.startIndex, offsetBy: prefixOffset)])
+      let suffix = String(oldContent[oldContent.safeIndex(oldContent.startIndex, offsetBy: suffixOffset)...])
       return cachedSuggestions.insert(.init(
         workspaceURL: request.workspace,
         fileURL: request.file,
@@ -127,25 +149,6 @@ final class CompletionCache: Sendable {
     return Range(start: startPosition, end: endPosition)
   }
 
-}
-
-extension StringProtocol {
-  func commonSuffix(with string: some StringProtocol) -> String {
-    var matchingLength = 0
-    utf8.withContiguousStorageIfAvailable { selfBuf in
-      String(string).utf8.withContiguousStorageIfAvailable { otherBuf in
-        let minLength = Swift.min(selfBuf.count, otherBuf.count)
-        for i in 0..<minLength {
-          if selfBuf[selfBuf.count - 1 - i] == otherBuf[otherBuf.count - 1 - i] {
-            matchingLength += 1
-          } else {
-            break
-          }
-        }
-      }
-    }
-    return String(decoding: utf8.suffix(matchingLength), as: UTF8.self)
-  }
 }
 
 typealias Diff = [CodeCompletionServiceInterface.CompletionSuggestion.LineChange]
