@@ -166,7 +166,7 @@ struct CompletionDiffView: View {
       let borderColor = Color.clear
       let borderWidth: CGFloat = 1
       let borderCornerRadius: CGFloat = 4
-      let leadingPadding: CGFloat = 2
+      let leadingPadding: CGFloat = 0
       let trailingPadding: CGFloat = 4
 
       let shape = SuggestionBorderShape(
