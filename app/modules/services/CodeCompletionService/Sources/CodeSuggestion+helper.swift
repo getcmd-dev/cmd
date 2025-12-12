@@ -72,6 +72,7 @@ extension RawCompletionSuggestion {
 
     return CodeCompletionServiceInterface.CompletionSuggestion(
       file: file,
+      oldContent: content,
       newContent: newContent,
       newCursorSelection: newCursorSelection,
       diffLineStart: firstDiffLine,

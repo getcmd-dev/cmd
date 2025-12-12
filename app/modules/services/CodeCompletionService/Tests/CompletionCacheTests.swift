@@ -418,12 +418,53 @@ struct CompletionCacheTests {
     #expect(result == nil)
   }
 
-  @Test("commonSuffix")
-  func testCommonSuffix() {
-    #expect("foo".commonSuffix(with: "boo") == "oo")
-    #expect("foo".commonSuffix(with: "") == "")
-    #expect("".commonSuffix(with: "boo") == "")
-    #expect("foo!".commonSuffix(with: "boo") == "")
+  /// Our diffing algorithm might interleave existing new lines within the added content, and add new lines at the end.
+  /// This test validates that the prefix/suffix match the diff, and that the cache still works in this case.
+  @Test("store handles existing newline gettting interleaved within the diff")
+  func cacheHandlesDiffWhereSuffixNewlinesAreInDiffBlock() async throws {
+    let sut = CompletionCache()
+    let workspace = URL(fileURLWithPath: "/workspace")
+    let file = URL(fileURLWithPath: "/edge.swift")
+    let oldContent = "func \n\n// last line"
+    let cursor = Position(line: 0, character: 5)
+    let selection = Range(start: cursor, end: cursor)
+
+    let request = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: oldContent,
+      selection: selection)
+
+    let completionText = "foo() -> Int{\n  return 1\n}\n"
+
+    let suggestion = CompletionSuggestion(
+      file: file,
+      oldContent: oldContent,
+      newContent: completionText,
+      newCursorSelection: .init(start: .init(line: 2, character: 2), end: .init(line: 2, character: 2)),
+      diffLineStart: 0,
+      diff: [
+        .init(changes: [
+          .init(text: "func ", type: .unchanged),
+          .init(text: "foo() -> Int{", type: .added),
+          .init(text: "\n", type: .unchanged),
+        ]),
+        .init(changes: [.init(text: "  return 1", type: .added), .init(text: "\n", type: .unchanged)]),
+        .init(changes: [.init(text: "}\n", type: .added)]),
+        .init(changes: [.init(text: "\n", type: .added)]),
+        .init(changes: [.init(text: "\n", type: .added)]),
+      ])
+
+    _ = sut.store(suggestion: suggestion, for: request)
+
+    let newRequest = CompletionCacheRequest(
+      workspace: workspace,
+      file: file,
+      content: "func fo\n\n// last line",
+      selection: .init(start: .init(line: 0, character: 8), end: .init(line: 0, character: 8)))
+
+    let result = sut.get(for: newRequest)
+    #expect(result?.suggestion != nil)
   }
 
   @Test("inline diff")

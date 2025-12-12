@@ -27,29 +27,54 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     appsActivationState.value.isXcodeActive
   }
 
-  /// Register a listener for a specific key code
+  /// Register a listener for a specific key code. Only one listener for a given key code can exist at a time.\
+  /// - Parameters:
+  ///   - configuration: a description of the observed key, with modifiers.
+  ///   - callbacks: callbacks describing which event are listened to (key up/down - intercept/readonly)
   @MainActor
   func register(configuration: KeyEventHandler.Configuration, callbacks: KeyEventHandler.Callbacks) -> KeyEventListener {
     let listener = KeyEventListener(configuration: configuration, callbacks: callbacks)
     listeners[configuration.keyCode] = listener
-    ensureTapIsRunning()
+    // defaultLogger.log("[Key input debug] Registered listener keyCode=\(configuration.keyCode) intercepting=\(listener.isIntercepting)")
+    updateTap()
     return listener
   }
 
   /// Unregister a listener for a specific key code
   func unregister(keyCode: Int) {
     listeners.removeValue(forKey: keyCode)
-    if listeners.isEmpty {
-      stopTap()
+    // defaultLogger.log("[Key input debug] Unregistered listener keyCode=\(keyCode) remaining=\(listeners.count)")
+    runOnMainThread { [weak self] in
+      guard let self else { return }
+      updateTap()
+    }
+  }
+
+  /// Whether the tap should intercept events or simply observe them.
+  private enum TapMode: Equatable {
+    case listenOnly
+    case intercept
+
+    var cgEventTapOption: CGEventTapOptions {
+      switch self {
+      case .listenOnly:
+        .listenOnly
+      case .intercept:
+        .defaultTap
+      }
     }
   }
 
   private let appsActivationState: ReadonlyCurrentValueSubject<AppsActivationState>
   private var cancellables = Set<AnyCancellable>()
 
+  private var tapThread: Thread?
+  private let tapRunLoopReady = DispatchSemaphore(value: 0)
   private var eventTap: CFMachPort?
   private var runLoopSource: CFRunLoopSource?
-  private var runLoop: CFRunLoop?
+  private var tapRunLoop: CFRunLoop?
+  private var keepAliveSource: CFRunLoopSource?
+  private var currentTapMode: TapMode?
   private var listeners = [Int: KeyEventListener]()
 
   /// Moved out of the initializer to work around a compiler bug.
@@ -57,7 +82,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     appsActivationState.sink { @Sendable [weak self] value in
       runOnMainThread {
         if value.isXcodeActive {
-          self?.ensureTapIsRunning()
+          self?.updateTap()
         } else {
           self?.stopTap()
         }
@@ -65,73 +90,32 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     }.store(in: &cancellables)
   }
 
-  @MainActor
-  private func ensureTapIsRunning() {
-    guard eventTap == nil else { return }
-
-    // Create event mask for all events we might need
-    var eventMask: CGEventMask = 0
-    eventMask |= (1 << CGEventType.keyDown.rawValue)
-    eventMask |= (1 << CGEventType.keyUp.rawValue)
-    eventMask |= (1 << CGEventType.flagsChanged.rawValue)
-
-    guard
-      let tap = CGEvent.tapCreate(
-        tap: .cghidEventTap,
-        place: .headInsertEventTap,
-        options: .defaultTap,
-        eventsOfInterest: eventMask,
-        callback: { proxy, type, event, refcon -> Unmanaged<CGEvent>? in
-          let d = Date()
-          guard let refcon else {
-            return Unmanaged.passUnretained(event)
-          }
-
-          let manager = Unmanaged<KeyEventHandlerManager>.fromOpaque(refcon).takeUnretainedValue()
-
-          // Check if Xcode is active before processing any events
-          guard manager.isXcodeActive else {
-            return Unmanaged.passUnretained(event)
-          }
-
-          let result = manager.handleEvent(proxy: proxy, type: type, event: event)
-
-          performanceLogger
-            .trace(
-              "key handled in \(Date().timeIntervalSince(d)) at \(Date().timeIntervalSince1970). Intercepting: \(result == nil)")
-          return result
-        },
-        userInfo: Unmanaged.passUnretained(self).toOpaque())
-    else {
-      return
-    }
-
-    eventTap = tap
-    runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-    runLoop = CFRunLoopGetCurrent()
-
-    if let source = runLoopSource, let runLoop {
-      CFRunLoopAddSource(runLoop, source, .commonModes)
-      CGEvent.tapEnable(tap: tap, enable: true)
-    }
-  }
-
   private func stopTap() {
-    if let tap = eventTap {
-      CGEvent.tapEnable(tap: tap, enable: false)
-      if let source = runLoopSource, let runLoop {
-        CFRunLoopRemoveSource(runLoop, source, .commonModes)
+    guard eventTap != nil, let tapRunLoop else { return }
+
+    CFRunLoopPerformBlock(tapRunLoop, RunLoop.Mode.common.rawValue as CFString) { [weak self] in
+      guard let self else { return }
+      if let tap = eventTap {
+        CGEvent.tapEnable(tap: tap, enable: false)
       }
-      CFMachPortInvalidate(tap)
+      if let source = runLoopSource {
+        CFRunLoopRemoveSource(tapRunLoop, source, .commonModes)
+      }
+      if let tap = eventTap {
+        CFMachPortInvalidate(tap)
+      }
+      eventTap = nil
+      runLoopSource = nil
+      currentTapMode = nil
+      // defaultLogger.log("[Key input debug] Event tap stopped")
     }
-    eventTap = nil
-    runLoopSource = nil
-    runLoop = nil
+    CFRunLoopWakeUp(tapRunLoop)
   }
 
   private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle tap disabled events
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+      // defaultLogger.log("[Key input debug] Event tap disabled: \(type.rawValue) mode=\(currentTapMode.debugDescription) timestamp=\(event.timestamp)")
       if let tap = eventTap {
         CGEvent.tapEnable(tap: tap, enable: true)
       }
@@ -140,10 +124,132 @@ final class KeyEventHandlerManager: @unchecked Sendable {
 
     let keycode = event.getIntegerValueField(.keyboardEventKeycode)
     guard let listener = listeners[Int(keycode)] else {
+      // defaultLogger.log("[Key input debug] No listener for keycode \(keycode) type=\(type.rawValue)")
       return Unmanaged.passUnretained(event)
     }
 
-    return listener.handleEvent(proxy: proxy, type: type, event: event)
+    let canConsume = currentTapMode == .intercept
+    // defaultLogger.log("[Key input debug] Handling keycode=\(keycode) type=\(type.rawValue) canConsume=\(canConsume)")
+    return listener.handleEvent(proxy: proxy, type: type, event: event, canConsume: canConsume)
+  }
+
+  // MARK: Tap lifecycle helpers
+
+  private func updateTap() {
+    // defaultLogger.log("[Key input debug] updateTap called listeners=\(listeners.count) currentMode=\(String(describing: currentTapMode)) eventTapExists=\(eventTap != nil)")
+    let desiredMode = desiredTapMode()
+
+    guard let desiredMode else {
+      // defaultLogger.log("[Key input debug] No listeners registered; stopping tap")
+      stopTap()
+      return
+    }
+
+    if desiredMode == currentTapMode, eventTap != nil {
+      // defaultLogger.log("[Key input debug] Tap already running in mode=\(desiredMode)")
+      return
+    }
+
+    stopTap()
+    startTapThreadIfNeeded()
+    guard let tapRunLoop else { return }
+
+    // Create event mask for all events we might need
+    var eventMask: CGEventMask = 0
+    eventMask |= (1 << CGEventType.keyDown.rawValue)
+    eventMask |= (1 << CGEventType.keyUp.rawValue)
+    eventMask |= (1 << CGEventType.flagsChanged.rawValue)
+
+    CFRunLoopPerformBlock(tapRunLoop, RunLoop.Mode.common.rawValue as CFString) { [weak self] in
+      guard let self else { return }
+      guard
+        let tap = CGEvent.tapCreate(
+          tap: .cghidEventTap,
+          place: .headInsertEventTap,
+          options: desiredMode.cgEventTapOption,
+          eventsOfInterest: eventMask,
+          callback: { proxy, type, event, refcon -> Unmanaged<CGEvent>? in
+            guard let refcon else {
+              return Unmanaged.passUnretained(event)
+            }
+
+            let manager = Unmanaged<KeyEventHandlerManager>.fromOpaque(refcon).takeUnretainedValue()
+
+            // Check if Xcode is active before processing any events
+            guard manager.isXcodeActive else {
+              // defaultLogger.log("[Key input debug] Skipping event: Xcode not active type=\(type.rawValue) keycode=\(event.getIntegerValueField(.keyboardEventKeycode))")
+              return Unmanaged.passUnretained(event)
+            }
+
+            return manager.handleEvent(proxy: proxy, type: type, event: event)
+          },
+          userInfo: Unmanaged.passUnretained(self).toOpaque())
+      else {
+        defaultLogger.error("[Key input debug] Failed to create event tap (mode=\(desiredMode))")
+        return
+      }
+
+      eventTap = tap
+      runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+
+      if let source = runLoopSource {
+        CFRunLoopAddSource(tapRunLoop, source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+        currentTapMode = desiredMode
+        // defaultLogger.log("[Key input debug] Event tap started mode=\(desiredMode) thread=\(String(describing: self.tapThread?.name))")
+      } else {
+        defaultLogger.error("[Key input debug] Failed to create run loop source for tap")
+      }
+    }
+
+    CFRunLoopWakeUp(tapRunLoop)
+  }
+
+  private func startTapThreadIfNeeded() {
+    guard tapThread == nil else { return }
+
+    let thread = Thread { [weak self] in
+      guard let self else { return }
+      tapRunLoop = CFRunLoopGetCurrent()
+
+      // Add a keep-alive source so the run loop doesn't immediately exit even when no tap is installed
+      var context = CFRunLoopSourceContext()
+      if let source = CFRunLoopSourceCreate(kCFAllocatorDefault, 0, &context) {
+        keepAliveSource = source
+        CFRunLoopAddSource(tapRunLoop, source, .commonModes)
+      }
+
+      tapRunLoopReady.signal()
+      // defaultLogger.log("[Key input debug] Tap thread run loop entered")
+      CFRunLoopRun()
+      // defaultLogger.log("[Key input debug] Tap thread run loop exited")
+      tapRunLoop = nil
+      tapThread = nil
+    }
+
+    thread.name = "KeyEventHandlerTapThread"
+    thread.qualityOfService = .userInteractive
+    thread.start()
+    tapThread = thread
+
+    // Wait for the run loop to be ready before scheduling work onto it
+    let readyResult = tapRunLoopReady.wait(timeout: .now() + 1)
+    if readyResult == .timedOut {
+      defaultLogger.error("[Key input debug] Tap run loop did not become ready in time")
+    } else {
+      // defaultLogger.log("[Key input debug] Tap run loop ready")
+    }
+  }
+
+  /// The tap mode that corresponds to the current listeners.
+  private func desiredTapMode() -> TapMode? {
+    guard !listeners.isEmpty else { return nil }
+
+    if listeners.values.contains(where: \.isIntercepting) {
+      return .intercept
+    }
+
+    return .listenOnly
   }
 }
 
@@ -155,15 +261,17 @@ final class KeyEventListener: Sendable {
   init(configuration: KeyEventHandler.Configuration, callbacks: KeyEventHandler.Callbacks) {
     self.configuration = configuration
     self.callbacks = callbacks
+    isIntercepting = callbacks.isIntercepting
   }
 
   let configuration: KeyEventHandler.Configuration
   let callbacks: KeyEventHandler.Callbacks
+  let isIntercepting: Bool
 
-  func handleEvent(proxy _: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+  func handleEvent(proxy _: CGEventTapProxy, type: CGEventType, event: CGEvent, canConsume: Bool) -> Unmanaged<CGEvent>? {
     // Handle flagsChanged for modifier keys
     if type == .flagsChanged, configuration.isModifierKey {
-      return handleModifierFlagsChanged(event: event)
+      return handleModifierFlagsChanged(event: event, canConsume: canConsume)
     }
 
     // Check if it's the configured key
@@ -186,12 +294,14 @@ final class KeyEventListener: Sendable {
     }
 
     // Determine which callback to invoke based on event type
-    let shouldConsume: Bool
+    var shouldConsume = false
     let flags = event.flags
     switch type {
     case .keyDown:
       if let onKeyDown = callbacks.onKeyDown {
         shouldConsume = onKeyDown(false, flags)
+      } else if let onKeyDownListen = callbacks.onKeyDownListen {
+        onKeyDownListen(false, flags)
       } else {
         shouldConsume = false
       }
@@ -216,6 +326,8 @@ final class KeyEventListener: Sendable {
         // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
           shouldConsume = onKeyUp(true, flags)
+        } else if let onKeyUpListen = callbacks.onKeyUpListen {
+          onKeyUpListen(true, flags)
         } else {
           shouldConsume = false
         }
@@ -223,6 +335,8 @@ final class KeyEventListener: Sendable {
         // Not a double-tap - call onKeyUp if it exists
         if let onKeyUp = callbacks.onKeyUp {
           shouldConsume = onKeyUp(false, flags)
+        } else if let onKeyUpListen = callbacks.onKeyUpListen {
+          onKeyUpListen(false, flags)
         } else {
           shouldConsume = false
         }
@@ -235,7 +349,12 @@ final class KeyEventListener: Sendable {
     }
 
     // Return nil to consume the event, or pass it through
-    return shouldConsume ? nil : Unmanaged.passUnretained(event)
+    if shouldConsume, canConsume {
+      // defaultLogger.log("[Key input debug] Consuming keycode=\(keycode) type=\(type.rawValue)")
+      return nil
+    }
+
+    return Unmanaged.passUnretained(event)
   }
 
   /// Track whether the monitored modifier key is currently pressed
@@ -243,7 +362,7 @@ final class KeyEventListener: Sendable {
   /// Track the last time the key was released for double-tap detection
   private var lastKeyUpTime: Date?
 
-  private func handleModifierFlagsChanged(event: CGEvent) -> Unmanaged<CGEvent>? {
+  private func handleModifierFlagsChanged(event: CGEvent, canConsume: Bool) -> Unmanaged<CGEvent>? {
     let flags = event.flags
 
     // Determine which modifier flag corresponds to our key code
@@ -273,6 +392,9 @@ final class KeyEventListener: Sendable {
       modifierKeyPressed = true
       if let onKeyDown = callbacks.onKeyDown {
         shouldConsume = onKeyDown(false, flags)
+      } else if let onKeyDownListen = callbacks.onKeyDownListen {
+        onKeyDownListen(false, flags)
+        shouldConsume = false
       } else {
         shouldConsume = false
       }
@@ -297,6 +419,9 @@ final class KeyEventListener: Sendable {
         // Call onKeyUp with isDoubleTap=true to let it decide if it wants to consume
         if let onKeyUp = callbacks.onKeyUp {
           shouldConsume = onKeyUp(true, flags)
+        } else if let onKeyUpListen = callbacks.onKeyUpListen {
+          onKeyUpListen(true, flags)
+          shouldConsume = false
         } else {
           shouldConsume = false
         }
@@ -304,6 +429,9 @@ final class KeyEventListener: Sendable {
         // Not a double-tap - call onKeyUp if it exists
         if let onKeyUp = callbacks.onKeyUp {
           shouldConsume = onKeyUp(false, flags)
+        } else if let onKeyUpListen = callbacks.onKeyUpListen {
+          onKeyUpListen(false, flags)
+          shouldConsume = false
         } else {
           shouldConsume = false
         }
@@ -316,7 +444,12 @@ final class KeyEventListener: Sendable {
     }
 
     // Return nil to consume the event, or pass it through
-    return shouldConsume ? nil : Unmanaged.passUnretained(event)
+    if shouldConsume, canConsume {
+      // defaultLogger.log("[Key input debug] Consuming modifier keycode=\(configuration.keyCode) flagsChanged")
+      return nil
+    }
+
+    return Unmanaged.passUnretained(event)
   }
 }
 
@@ -360,7 +493,11 @@ extension KeyEventHandler {
     }
 
     /// Creates a configuration for Command key (key code 55 for left, 54 for right)
-    static func command(allowModifiers: Bool = false, useRightCommand: Bool = false) -> Configuration {
+    static func command(
+      allowModifiers: Bool = false,
+      useRightCommand: Bool = false)
+      -> Configuration
+    {
       .key(useRightCommand ? 54 : 55, allowModifiers: allowModifiers)
     }
   }
@@ -395,10 +532,14 @@ final class KeyEventHandler {
     init(
       onKeyDown: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
       onKeyUp: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)? = nil,
+      onKeyDownListen: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Void)? = nil,
+      onKeyUpListen: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Void)? = nil,
       doubleTapInterval: TimeInterval = 0.3)
     {
       self.onKeyDown = onKeyDown
       self.onKeyUp = onKeyUp
+      self.onKeyDownListen = onKeyDownListen
+      self.onKeyUpListen = onKeyUpListen
       self.doubleTapInterval = doubleTapInterval
     }
 
@@ -416,9 +557,25 @@ final class KeyEventHandler {
     /// Return true to consume the event, false to pass it through
     let onKeyUp: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Bool)?
 
+    /// Called when a key down event occurs (if monitored). This callback doesn't consume the event
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
+    let onKeyDownListen: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Void)?
+
+    /// Called when a key up event occurs (if monitored). This callback doesn't consume the event
+    /// Parameters:
+    /// - isDoubleTap: Whether this is part of a double-tap sequence
+    /// - modifiers: The modifier flags (Command, Shift, Option, Control) active during the event
+    let onKeyUpListen: (@Sendable (_ isDoubleTap: Bool, _ modifiers: CGEventFlags) -> Void)?
+
     /// Maximum time interval (in seconds) between taps to be considered a double-tap
     /// Default is 0.3 seconds
     let doubleTapInterval: TimeInterval
+
+    var isIntercepting: Bool {
+      onKeyDown != nil || onKeyUp != nil
+    }
 
   }
 
@@ -443,3 +600,7 @@ final class KeyEventHandler {
   private let configuration: Configuration
   private let callbacks: Callbacks
 }
+
+// MARK: - Thread + @retroactive @unchecked Sendable
+
+extension Thread: @retroactive @unchecked Sendable { }

@@ -86,6 +86,13 @@ public extension XcodeTheme {
         let parser = XcodeThemeParser()
         self = try parser.parse(fileURL: fileURL)
     }
+    #if DEBUG
+    init(string: String) throws {
+        let parser = XcodeThemeParser()
+        let data = string.data(using: .utf8)!
+        self = try parser.parseXCColorTheme(data)
+    }
+    #endif
 }
 
 struct XcodeThemeParser {
@@ -93,7 +100,7 @@ struct XcodeThemeParser {
         case fileNotFound
         case invalidData
     }
-
+    
     func parse(fileURL: URL) throws -> XcodeTheme {
         guard let data = try? Data(contentsOf: fileURL) else {
             throw Error.fileNotFound
@@ -265,5 +272,134 @@ extension XcodeTheme.ThemeColor {
     public func nsColor(windowColorSpace: NSColorSpace) -> NSColor {
         let generic = NSColor(colorSpace: .genericRGB, components: [red, green, blue, alpha], count: 4)
         return generic.usingColorSpace(windowColorSpace) ?? generic
+    }
+}
+
+// MARK: - HighlightJS CSS Theme Builder
+
+extension XcodeTheme {
+    /// Builds a highlight.js CSS theme string from this Xcode theme.
+    /// This maps Xcode syntax colors to highlight.js CSS classes.
+    public func buildHighlightJSCSS() -> String {
+        // Use fallback colors if specific colors are missing
+        let plainText = plainTextColor?.hexString ?? "#000000D8"
+        let background = backgroundColor?.hexString ?? "#FFFFFFFF"
+        let comment = commentColor?.hexString ?? plainText
+        let keyword = keywordsColor?.hexString ?? plainText
+        let string = stringsColor?.hexString ?? plainText
+        let number = numbersColor?.hexString ?? plainText
+        let attribute = attributesColor?.hexString ?? plainText
+        let typeDecl = typeDeclarationsColor?.hexString ?? plainText
+        let otherDecl = otherDeclarationsColor?.hexString ?? plainText
+        let otherType = otherTypeNamesColor?.hexString ?? plainText
+        let otherProps = otherPropertiesAndGlobalsColor?.hexString ?? plainText
+        let regex = regexLiteralsColor?.hexString ?? plainText
+        let url = urlsColor?.hexString ?? plainText
+        let heading = headingColor?.hexString ?? plainText
+        let marks = marksColor?.hexString ?? plainText
+        let selection = selectionColor?.hexString ?? "#A3CCFEFF"
+
+        // swiftformat:disable all
+        return """
+        .hljs {
+          display: block;
+          overflow-x: auto;
+          padding: 0.5em;
+          background: \(background);
+          color: \(plainText);
+        }
+        .xml .hljs-meta {
+          color: \(marks);
+        }
+        .hljs-comment,
+        .hljs-quote {
+          color: \(comment);
+        }
+        .hljs-tag,
+        .hljs-keyword,
+        .hljs-selector-tag,
+        .hljs-literal,
+        .hljs-name {
+          color: \(keyword);
+        }
+        .hljs-attribute {
+          color: \(attribute);
+        }
+        .hljs-variable,
+        .hljs-template-variable {
+          color: \(otherProps);
+        }
+        .hljs-code,
+        .hljs-string,
+        .hljs-meta-string {
+          color: \(string);
+        }
+        .hljs-regexp {
+          color: \(regex);
+        }
+        .hljs-link {
+          color: \(url);
+        }
+        .hljs-title {
+          color: \(heading);
+        }
+        .hljs-symbol,
+        .hljs-bullet {
+          color: \(attribute);
+        }
+        .hljs-number {
+          color: \(number);
+        }
+        .hljs-section {
+          color: \(marks);
+        }
+        .hljs-meta {
+          color: \(keyword);
+        }
+        .hljs-type,
+        .hljs-built_in,
+        .hljs-builtin-name {
+          color: \(otherType);
+        }
+        .hljs-class .hljs-title,
+        .hljs-title .class_ {
+          color: \(typeDecl);
+        }
+        .hljs-function .hljs-title,
+        .hljs-title .function_ {
+          color: \(otherDecl);
+        }
+        .hljs-params {
+          color: \(otherDecl);
+        }
+        .hljs-attr {
+          color: \(attribute);
+        }
+        .hljs-subst {
+          color: \(plainText);
+        }
+        .hljs-formula {
+          background-color: \(selection);
+          font-style: italic;
+        }
+        .hljs-addition {
+          background-color: #baeeba;
+        }
+        .hljs-deletion {
+          background-color: #ffc8bd;
+        }
+        .hljs-selector-id,
+        .hljs-selector-class {
+          color: \(plainText);
+        }
+        .hljs-doctag,
+        .hljs-strong {
+          font-weight: bold;
+        }
+        .hljs-emphasis {
+          font-style: italic;
+        }
+        """
+        // swiftformat:enable all
     }
 }

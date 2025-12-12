@@ -909,6 +909,7 @@ targets.append(
       "AppFoundation",
       "FileDiffTypesFoundation",
       "LoggingServiceInterface",
+      "XcodeThemeFoundation",
     ],
     testsDependencies: [
       .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
