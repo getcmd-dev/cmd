@@ -313,7 +313,7 @@ struct CompletionDiffView: View {
       {
         // Use syntax-highlighted text (without background - it's handled by the parent)
         Text(styledText)
-          .opacity(Constants.suggestedTextOpacity)
+          .opacity(change.type == .unchanged ? 1 : Constants.suggestedTextOpacity)
           .lineSpacing(lineSpacing)
           .background(change.type == .removed ? colorScheme.removedLineDiffBackground : .clear)
           .lineLimit(1)
@@ -322,7 +322,7 @@ struct CompletionDiffView: View {
       } else {
         // Fallback to plain text
         Text(change.text.trimmingCharacters(in: .newlines))
-          .opacity(Constants.suggestedTextOpacity)
+          .opacity(change.type == .unchanged ? 1 : Constants.suggestedTextOpacity)
           .lineSpacing(lineSpacing)
           .foregroundColor(color(for: change.type))
           .background(change.type == .removed ? colorScheme.removedLineDiffBackground : .clear)
