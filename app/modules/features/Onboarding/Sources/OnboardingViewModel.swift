@@ -149,7 +149,7 @@ final class OnboardingViewModel {
       hasSetupAIProvider
 
     case .autocompletion:
-      hasSetupAutocompletionProvider
+      true // "Skip for now"
 
     case .setupComplete:
       true
@@ -171,6 +171,9 @@ final class OnboardingViewModel {
     }
     if currentStep == .providersSetup, hasSetupAIProvider {
       hasSkippedProviderSetup = true
+    }
+    if currentStep == .autocompletion {
+      hasSkippedAutcompletionSetup = true
     }
     if currentStep == .setupComplete {
       userDefaults.set(true, forKey: .hasCompletedOnboardingUserDefaultsKey)
