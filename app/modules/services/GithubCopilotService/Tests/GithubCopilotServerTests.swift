@@ -86,6 +86,9 @@ struct GithubCopilotServerTests {
       fileManager: fileManager,
       jrpcService: mockJRPCService)
 
+    // Wait for initialization to complete
+    _ = try await server.initializedTransport.value
+
     // then
     try await fulfillment(of: [expectInitializeRequest, expectInitializedNotification])
 
