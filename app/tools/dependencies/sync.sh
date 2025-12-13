@@ -4,13 +4,14 @@ set -euo pipefail
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 CURRENT_DIR="$(pwd)"
+SWIFTFORMAT_PATH=~/.cmd/dev/swiftformat/0.58.0/swiftformat
 
 cleanup_function() {
 	# lint
 	cd "${ROOT_DIR}/app"
 	mkdir -p .build/caches/swiftformat
-	swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
-	swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
+	${SWIFTFORMAT_PATH} --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
+	${SWIFTFORMAT_PATH} --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
 
 	cd "${CURRENT_DIR}"
 }
