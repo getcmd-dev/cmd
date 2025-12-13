@@ -194,7 +194,7 @@ struct CompletionDiffView: View {
     let lineCount = showCompletionExpansionInfo ? 1 : completion.diff.count
     return (0..<lineCount).compactMap { idx in
       let xOffset = linePrefixWidths[idx] ?? 0
-      guard let width = lineSuggestionWidths[idx], width > 0 else {
+      guard let width = lineSuggestionWidths[idx] else {
         return nil
       }
       return LineGeometry(xOffset: xOffset, width: width)
