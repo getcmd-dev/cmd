@@ -5,5 +5,5 @@ swift build -c release
 
 ## run the tool
 ```bash
-./sync.sh
+cmd sync:dependencies
 ```

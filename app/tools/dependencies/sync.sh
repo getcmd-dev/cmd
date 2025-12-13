@@ -5,12 +5,19 @@ set -euo pipefail
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 CURRENT_DIR="$(pwd)"
 
+# Verify SWIFTFORMAT_PATH is set (should be set by cmd.sh)
+if [ -z "${SWIFTFORMAT_PATH:-}" ]; then
+	echo "Error: SWIFTFORMAT_PATH is not set. This script should be called via 'cmd sync:dependencies'."
+	exit 1
+fi
+
 cleanup_function() {
 	# lint
 	cd "${ROOT_DIR}/app"
 	mkdir -p .build/caches/swiftformat
-	swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
-	swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
+
+	${SWIFTFORMAT_PATH} --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
+	${SWIFTFORMAT_PATH} --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
 
 	cd "${CURRENT_DIR}"
 }
