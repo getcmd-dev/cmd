@@ -139,6 +139,9 @@ install_swiftformat() {
 	# Clean up zip file
 	rm "$tmp_zip"
 
+	# Remove quarantine attribute
+	xattr -d com.apple.quarantine "$target_path"
+
 	# Set environment variable with binary location
 	export SWIFTFORMAT_PATH="$target_path"
 
