@@ -56,6 +56,9 @@ fi
 mv "$EXTRACTED_BINARY" "$BINARY_PATH"
 chmod +x "$BINARY_PATH"
 
+# Remove quarantine attribute to avoid Gatekeeper prompt
+xattr -d com.apple.quarantine "$BINARY_PATH" 2>/dev/null || true
+
 echo "Language server downloaded successfully" >&2
 
 # Verify it works
