@@ -139,6 +139,9 @@ install_swiftformat() {
 	# Clean up zip file
 	rm "$tmp_zip"
 
+	# Remove quarantine attribute to avoid Gatekeeper prompt
+	xattr -d com.apple.quarantine "$target_path" 2>/dev/null || true
+
 	# Set environment variable with binary location
 	export SWIFTFORMAT_PATH="$target_path"
 
@@ -275,7 +278,8 @@ test)
 		test_ts_command
 	;;
 sync:dependencies)
-	sync_dependencies_command "$@"
+	install_swiftformat &&
+		sync_dependencies_command "$@"
 	;;
 focus)
 	focus_dependency_command "$@"

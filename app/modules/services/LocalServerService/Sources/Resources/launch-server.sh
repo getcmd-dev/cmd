@@ -58,6 +58,8 @@ setup_dependencies() {
 		mv ripgrep-14.1.1-aarch64-apple-darwin/rg ./rg-14.1.1
 		rm -rf ripgrep-14.1.1-aarch64-apple-darwin
 		rm ripgrep-14.1.1.tar.gz
+		# Remove quarantine attribute to avoid Gatekeeper prompt
+		xattr -d com.apple.quarantine ./rg-14.1.1 2>/dev/null || true
 	fi
 
 	# download codex-acp
@@ -67,6 +69,8 @@ setup_dependencies() {
 		tar -xzf codex-acp-0.5.1.tar.gz
 		mv codex-acp ./codex-acp-0.5.1
 		rm codex-acp-0.5.1.tar.gz
+		# Remove quarantine attribute to avoid Gatekeeper prompt
+		xattr -d com.apple.quarantine ./codex-acp-0.5.1 2>/dev/null || true
 	fi
 }
 
