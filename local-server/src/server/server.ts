@@ -25,7 +25,7 @@ import { GeminiAIProvider } from "./providers/gemini"
 import { InceptionAIProvider } from "./providers/inception"
 
 const connectionInfo: ConnectionInfo = {
-	port: 3000, // Default port
+	port: 10534, // Default port
 }
 
 const app = express()
@@ -107,7 +107,7 @@ export const startServer = async () => {
 			return parseInt(process.argv[portArg + 1], 10)
 		} else {
 			// Otherwise, find an available port.
-			return await findAvailablePort(3000)
+			return await findAvailablePort(10534)
 		}
 	})()
 
