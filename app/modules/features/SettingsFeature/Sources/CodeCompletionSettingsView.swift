@@ -215,7 +215,7 @@ private struct CodeCompletionProviderSection: View {
 
       // Exanded selection
       if isSelecting {
-        ForEach(codeCompletionProviders.enumerated(), id: \.offset) { _, provider in
+        ForEach(Array(codeCompletionProviders.enumerated()), id: \.offset) { _, provider in
           VStack(alignment: .leading) {
             if provider.id == "github-copilot" {
               AnyView(router.embed(route: GithubCopilotRoute()))

@@ -100,7 +100,7 @@ struct OnboardingView: View {
       .frame(maxWidth: .infinity)
 
       HStack(spacing: 12) {
-        ForEach(OnboardingStep.allCases.enumerated(), id: \.offset) { _, step in
+        ForEach(Array(OnboardingStep.allCases.enumerated()), id: \.offset) { _, step in
           Circle()
             .fill(step == viewModel.currentStep ? Color.accentColor : Color.gray.opacity(0.5))
             .frame(square: 7)

@@ -17,7 +17,7 @@ func previews(isExpanded: Bool) -> some View {
     .previewWithError(),
   ]
   VStack(spacing: 0) {
-    ForEach(viewModels.enumerated(), id: \.offset) { _, vm in
+    ForEach(Array(viewModels.enumerated()), id: \.offset) { _, vm in
       GithubCopilotStatusView(viewModel: vm, isExpanded: isExpanded)
         .padding()
         .background(.background)
