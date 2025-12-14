@@ -19,6 +19,7 @@ struct OnboardingView: View {
 
   enum Constants {
     static let maxTextWidth: CGFloat = 600
+    static let defaultReferenceSize = CGSize(width: 720, height: 520)
   }
 
   var body: some View {
@@ -29,22 +30,42 @@ struct OnboardingView: View {
           WelcomeView(onGetStarted: {
             viewModel.handleMoveToNextStep()
           })
-          .readingSize($referenceViewSize)
+          .readingSize { newSize in
+            guard referenceViewSize == .zero else { return }
+            guard newSize.width > 0, newSize.height > 0 else { return }
+            referenceViewSize = newSize
+          }
 
         case .osPermissions:
           PermissionsView(viewModel: viewModel)
+            .frame(
+              width: stableReferenceSize.width,
+              height: stableReferenceSize.height,
+              alignment: .top)
 
         case .providersSetup:
           llmProviderSetupView
+            .frame(
+              width: stableReferenceSize.width,
+              height: stableReferenceSize.height,
+              alignment: .top)
 
         case .autocompletion:
           autocompletionSetupView
+            .frame(
+              width: stableReferenceSize.width,
+              height: stableReferenceSize.height,
+              alignment: .top)
 
         case .setupComplete:
           OnboardingCompletedView()
+            .frame(
+              width: stableReferenceSize.width,
+              height: stableReferenceSize.height,
+              alignment: .top)
         }
       }
-      .frame(width: referenceViewSize.width, height: referenceViewSize.height, alignment: .top)
+      .frame(maxWidth: Constants.maxTextWidth, alignment: .top)
       .padding(40)
 
       HStack {
@@ -91,13 +112,20 @@ struct OnboardingView: View {
     .with(backgroundColor: colorScheme.primaryBackground)
   }
 
-  @State private var referenceViewSize = CGSize.zero
-
   @Environment(\.colorScheme) private var colorScheme
 
   @Bindable private var viewModel: OnboardingViewModel
 
   @Environment(Router.self) private var router
+
+  @State private var referenceViewSize = CGSize.zero
+
+  private var stableReferenceSize: CGSize {
+    if referenceViewSize.width > 0, referenceViewSize.height > 0 {
+      return referenceViewSize
+    }
+    return Constants.defaultReferenceSize
+  }
 
   private var nextButtonLabel: String {
     if viewModel.currentStep == .setupComplete {
