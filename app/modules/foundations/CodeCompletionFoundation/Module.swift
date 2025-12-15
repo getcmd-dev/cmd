@@ -1,3 +1,6 @@
 Target.module(
   name: "CodeCompletionFoundation",
-  dependencies: [])
+  dependencies: [
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+  ])

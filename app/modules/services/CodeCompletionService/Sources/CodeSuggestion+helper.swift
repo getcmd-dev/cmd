@@ -7,7 +7,7 @@ import FileDiffFoundation
 import Foundation
 
 extension RawCompletionSuggestion {
-  func applied(to content: String, file: URL, selection _: Range) -> CodeCompletionServiceInterface.CompletionSuggestion? {
+  func applied(to content: String, file: URL, selection _: Selection) -> CompletionSuggestion? {
     // Convert the old content to lines for position calculation
     let lines = content.splitLines()
     let lineOffsets = lines.reduce(into: [0], { acc, l in
@@ -36,47 +36,49 @@ extension RawCompletionSuggestion {
     let afterCompletion = String(content.suffix(from: content.index(content.startIndex, offsetBy: endOffset)))
     let newContent = beforeCompletion + completion + afterCompletion
 
-    // Generate character-level diff
-    guard let diffText = try? FileDiff.getCharacterDiff(oldContent: content, newContent: newContent) else {
-      return nil
-    }
-    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
-      diff: diffText,
-      oldContent: content,
-      newContent: newContent)
-    guard lineChanges.contains(where: { $0.contains(where: { $0.type != .unchanged }) }) else {
-      return nil
-    }
-    // Convert to CompletionSuggestion format
-    let diff = lineChanges.map { lineChanges in
-      CodeCompletionServiceInterface.CompletionSuggestion.LineChange(
-        changes: lineChanges.map { change in
-          CodeCompletionServiceInterface.CompletionSuggestion.LineChange.WordChange(
-            text: change.text,
-            type: change.type)
-        })
-    }
-
-    // Calculate new cursor position (at the end of the inserted completion - only the changed part of the completion)
-    #if DEBUG
-    // Validate the input
-    assert(
-      lineChanges.trimmingSuffix(while: { $0.allSatisfy({ $0.type == .unchanged }) }).count == lineChanges.count,
-      "The last line of a split diff must be unchanged.")
-    #endif
-    let lastLineTrimmed = lineChanges.last?.trimmingSuffix(while: { $0.type == .unchanged })
-    let newCursorCharacter = lastLineTrimmed?.filter { $0.type != .removed }.map(\.text).joined().count ?? 0
-    let newCursorLine = firstDiffLine + lineChanges.filter { !$0.allSatisfy({ $0.type == .removed }) }.count - 1
-    let newCursorPosition = Position(line: newCursorLine, character: newCursorCharacter)
-    let newCursorSelection = Range(start: newCursorPosition, end: newCursorPosition)
-
-    return CodeCompletionServiceInterface.CompletionSuggestion(
-      file: file,
-      oldContent: content,
-      newContent: newContent,
-      newCursorSelection: newCursorSelection,
-      diffLineStart: firstDiffLine,
-      diff: diff)
+    return CompletionSuggestion(file: file, oldContent: content, newContent: newContent)
+//
+//    // Generate character-level diff
+//    guard let diffText = try? FileDiff.getCharacterDiff(oldContent: content, newContent: newContent) else {
+//      return nil
+//    }
+//    let (lineChanges, firstDiffLine) = FileDiff.characterDiffToLineChanges(
+//      diff: diffText,
+//      oldContent: content,
+//      newContent: newContent)
+//    guard lineChanges.contains(where: { $0.contains(where: { $0.type != .unchanged }) }) else {
+//      return nil
+//    }
+//    // Convert to CompletionSuggestion format
+//    let diff = lineChanges.map { lineChanges in
+//      CompletionSuggestion.LineChange(
+//        changes: lineChanges.map { change in
+//          CompletionSuggestion.LineChange.WordChange(
+//            text: change.text,
+//            type: change.type)
+//        })
+//    }
+//
+//    // Calculate new cursor position (at the end of the inserted completion - only the changed part of the completion)
+//    #if DEBUG
+//    // Validate the input
+//    assert(
+//      lineChanges.trimmingSuffix(while: { $0.allSatisfy({ $0.type == .unchanged }) }).count == lineChanges.count,
+//      "The last line of a split diff must be unchanged.")
+//    #endif
+//    let lastLineTrimmed = lineChanges.last?.trimmingSuffix(while: { $0.type == .unchanged })
+//    let newCursorCharacter = lastLineTrimmed?.filter { $0.type != .removed }.map(\.text).joined().count ?? 0
+//    let newCursorLine = firstDiffLine + lineChanges.filter { !$0.allSatisfy({ $0.type == .removed }) }.count - 1
+//    let newCursorPosition = Position(line: newCursorLine, character: newCursorCharacter)
+//    let newCursorSelection = Range(start: newCursorPosition, end: newCursorPosition)
+//
+//    return CompletionSuggestion(
+//      file: file,
+//      oldContent: content,
+//      newContent: newContent,
+//      newCursorSelection: newCursorSelection,
+//      diffLineStart: firstDiffLine,
+//      diff: diff)
   }
 }
 

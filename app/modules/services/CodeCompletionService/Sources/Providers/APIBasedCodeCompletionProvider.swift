@@ -90,7 +90,7 @@ final class APIBasedCodeCompletionProvider: CodeCompletionProvider {
     file: URL,
     content: String,
     version _: Int,
-    selection: Range,
+    selection: Selection,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
     async throws -> RawCompletionSuggestion?

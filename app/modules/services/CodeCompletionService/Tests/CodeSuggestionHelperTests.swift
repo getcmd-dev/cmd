@@ -13,7 +13,7 @@ struct CodeSuggestionHelperTests {
     // given
     let oldContent = "Hello World"
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 0, character: 6), end: Position(line: 0, character: 6))
+    let selection = Selection(start: Position(line: 0, character: 6), end: Position(line: 0, character: 6))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -43,7 +43,7 @@ struct CodeSuggestionHelperTests {
       }
       """
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 0, character: 10), end: Position(line: 0, character: 10))
+    let selection = Selection(start: Position(line: 0, character: 10), end: Position(line: 0, character: 10))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -68,7 +68,7 @@ struct CodeSuggestionHelperTests {
     // given
     let oldContent = "var x = 5"
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 0, character: 8), end: Position(line: 0, character: 8))
+    let selection = Selection(start: Position(line: 0, character: 8), end: Position(line: 0, character: 8))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -98,7 +98,7 @@ struct CodeSuggestionHelperTests {
     // given
     let oldContent = "func test()"
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 0, character: 11), end: Position(line: 0, character: 11))
+    let selection = Selection(start: Position(line: 0, character: 11), end: Position(line: 0, character: 11))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -121,7 +121,7 @@ struct CodeSuggestionHelperTests {
     // given
     let oldContent = "Hello"
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 0, character: 0), end: Position(line: 0, character: 0))
+    let selection = Selection(start: Position(line: 0, character: 0), end: Position(line: 0, character: 0))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -146,7 +146,7 @@ struct CodeSuggestionHelperTests {
       line 3
       """
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 1, character: 5), end: Position(line: 1, character: 5))
+    let selection = Selection(start: Position(line: 1, character: 5), end: Position(line: 1, character: 5))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -172,7 +172,7 @@ struct CodeSuggestionHelperTests {
       line 3
       """
     let file = URL(fileURLWithPath: "/test.swift")
-    let selection = Range(start: Position(line: 1, character: 1), end: Position(line: 1, character: 1))
+    let selection = Selection(start: Position(line: 1, character: 1), end: Position(line: 1, character: 1))
 
     let suggestion = RawCompletionSuggestion(
       file: file,
@@ -196,7 +196,7 @@ struct CodeSuggestionHelperTests {
     let content = "func test() {}"
     let file = URL(fileURLWithPath: "/test.swift")
     let cursor = Position(line: 0, character: 14)
-    let selection = Range(start: cursor, end: cursor)
+    let selection = Selection(start: cursor, end: cursor)
     let suggestion = RawCompletionSuggestion(
       file: file,
       startPosition: cursor,
@@ -217,7 +217,7 @@ struct CodeSuggestionHelperTests {
     let content = "func test() {}"
     let file = URL(fileURLWithPath: "/test.swift")
     let cursor = Position(line: 0, character: 14)
-    let selection = Range(start: cursor, end: cursor)
+    let selection = Selection(start: cursor, end: cursor)
     let suggestion = RawCompletionSuggestion(
       file: file,
       startPosition: cursor,

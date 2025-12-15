@@ -29,8 +29,15 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
 
   public var onSetUp: @Sendable (Workspace) -> Void
   public var onClose: @Sendable (URL) -> Void
-  public var onSuggestCompletion: (@Sendable (Workspace, URL, String, Int, Range, String?, FileFormattingMetadata?) async throws
-    -> RawCompletionSuggestion?)?
+  public var onSuggestCompletion: (@Sendable (
+    Workspace,
+    URL,
+    String,
+    Int,
+    Selection,
+    String?,
+    FileFormattingMetadata?)
+  async throws -> RawCompletionSuggestion?)?
   public var onDidSave: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidOpen: @Sendable (Workspace, URL, String, Int) -> Void
   public var onDidChange: @Sendable (Workspace, URL, String, Int) -> Void
@@ -52,7 +59,7 @@ public final class MockCodeCompletionProvider: CodeCompletionProvider {
     file: URL,
     content: String,
     version: Int,
-    selection: Range,
+    selection: Selection,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
     async throws -> RawCompletionSuggestion?

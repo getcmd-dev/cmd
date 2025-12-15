@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
-import CodeCompletionServiceInterface
+import CodeCompletionFoundation
 import DLS
 import FileDiffTypesFoundation
 import SwiftUI
@@ -266,7 +266,7 @@ struct CompletionDiffView: View {
                 value: [lineIdx: geo.size.width])
             })
           if lineIdx == 0, showCompletionExpansionInfo {
-            Text("⌘ to expand")
+            Text("⌥ to expand")
               .frame(height: lineHeight)
               .padding(.horizontal, 3)
               .with(cornerRadius: 6, backgroundColor: colorScheme.xcodeSidebarBackground)

@@ -650,12 +650,21 @@ targets.append(
       "XcodeObserverWindowsAdapter",
       "XcodeThemeFoundation",
     ],
+    testsDependencies: [
+      "AppFoundation",
+      "CodeCompletionFeature",
+      "CodeCompletionFoundation",
+      "CodeCompletionServiceInterface",
+    ],
     path: "./features/CodeCompletionFeature"))
 
 targets.append(
   contentsOf: Target.module(
     name: "CodeCompletionFoundation",
-    dependencies: [],
+    dependencies: [
+      "FileDiffFoundation",
+      "FileDiffTypesFoundation",
+    ],
     path: "./foundations/CodeCompletionFoundation"))
 
 targets.append(

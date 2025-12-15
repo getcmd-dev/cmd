@@ -15,7 +15,7 @@ struct CompletionCacheRequest: Sendable, Hashable {
   let workspace: URL
   let file: URL
   let content: String
-  let selection: CodeCompletionFoundation.Range
+  let selection: Selection
 }
 
 // MARK: - CompletionCache
@@ -98,7 +98,7 @@ final class CompletionCache: Sendable {
   }
 
   func get(for request: CompletionCacheRequest)
-    -> (cacheId: Int, suggestion: CodeCompletionServiceInterface.CompletionSuggestion?)?
+    -> (cacheId: Int, suggestion: CompletionSuggestion?)?
   {
     let content = request.content
     for (k, cached) in cachedSuggestions {
@@ -133,7 +133,7 @@ final class CompletionCache: Sendable {
 
   private let maxEntries: Int
 
-  private func changedRange(content: String, prefix: String, suffix: String) -> Range {
+  private func changedRange(content: String, prefix: String, suffix: String) -> Selection {
     let oldContent = content
     let oldLines = oldContent.splitLines()
 
@@ -146,12 +146,12 @@ final class CompletionCache: Sendable {
       character: (oldLines[safe: oldLines.count - suffixLines.count]?.count ?? 0) -
         (suffixLines.first?.count ?? 0))
 
-    return Range(start: startPosition, end: endPosition)
+    return Selection(start: startPosition, end: endPosition)
   }
 
 }
 
-typealias Diff = [CodeCompletionServiceInterface.CompletionSuggestion.LineChange]
+typealias Diff = [CompletionSuggestion.LineChange]
 typealias InlineDiff = [CharacterLevelChange]
 
 extension [[CharacterLevelChange]] {
@@ -377,7 +377,7 @@ extension StringProtocol {
 }
 
 extension CompletionSuggestion {
-  func applied(to request: CompletionCacheRequest, changedRange: Range) -> CompletionSuggestion? {
+  func applied(to request: CompletionCacheRequest, changedRange: Selection) -> CompletionSuggestion? {
     let completion = diff.inline
       .trimming(while: { $0.type == .unchanged })
       .filter { $0.type != .removed }
@@ -394,8 +394,8 @@ extension CompletionSuggestion {
   }
 }
 
-extension Range {
-  func contains(_ other: Range) -> Bool {
+extension Selection {
+  func contains(_ other: Selection) -> Bool {
     let startsAfter = other.start.line > start.line ||
       (other.start.line == start.line && other.start.character >= start.character)
     let endsBefore = other.end.line < end.line ||
