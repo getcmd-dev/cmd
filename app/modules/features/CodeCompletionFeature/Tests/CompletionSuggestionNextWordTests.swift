@@ -1,12 +1,12 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import Foundation
 import Testing
 @testable import CodeCompletionFeature
-@testable import CodeCompletionService // TODO: remove
 
 struct CompletionSuggestionNextWordTests {
 
@@ -28,7 +28,7 @@ struct CompletionSuggestionNextWordTests {
     let result = try #require(completion.completionWithNextWord(from: cursorPosition))
 
     // then
-    #expect(result.newContent == "let x = value")
+    #expect(result.newCompletion.newContent == "let x = value")
   }
 
   @Test("Accept next word stops at whitespace")
@@ -48,7 +48,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     // Should accept " " (space) as next word since it's the first character
-    #expect(result.newContent == "func test() { print(\"hello\")")
+    #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
   }
 
   @Test("Accept next word stops at punctuation")
@@ -68,7 +68,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     // Should accept "1" as next word (number is a word)
-    #expect(result.newContent == "let arr = [1,")
+    #expect(result.newCompletion.newContent == "let arr = [1,")
   }
 
   @Test("Accept next word with multiline completion")
@@ -91,11 +91,28 @@ struct CompletionSuggestionNextWordTests {
       cursorPosition: cursorPosition)
 
     // when
-    let result = try #require(completion.completionWithNextWord(from: cursorPosition))
+    let result1 = try #require(completion.completionWithNextWord(from: cursorPosition))
 
     // then
-    // Should accept first word on the completion line
-    #expect(result.newContent.contains("print") || result.newContent.contains("\n"))
+    // First completion moves to the next line
+    #expect(result1.newCompletion.newContent == """
+      func hello() {
+      }
+      """)
+    #expect(result1.newCompletion.newCursorSelection.start.line == 1)
+
+    // when
+    let result2 = try #require(result1.remainingCompletion?
+      .completionWithNextWord(from: result1.newCompletion.newCursorSelection.start))
+
+    // then
+    // Second completion moves to the new line
+    #expect(result2.newCompletion.newContent == """
+      func hello() {
+        print("Hello")
+      }
+      """)
+    #expect(result2.newCompletion.newCursorSelection.start.line == 1)
   }
 
   @Test("Accept next word returns nil when cursor outside diff range")
@@ -137,7 +154,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     // "my_variable" should be treated as one word since underscore is not a delimiter
-    #expect(result.newContent == "let my_variable")
+    #expect(result.newCompletion.newContent == "let my_variable")
   }
 
   @Test("Accept next word from middle of completion")
@@ -157,7 +174,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     // Should accept the quote as a single character (punctuation)
-    #expect(result.newContent == "print(\"Hello")
+    #expect(result.newCompletion.newContent == "print(\"Hello")
   }
 
   @Test("Cursor position is updated after accepting word")
@@ -177,7 +194,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     // Cursor should be at the end of the accepted word
-    #expect(result.newCursorSelection.start.character > cursorPosition.character)
+    #expect(result.newCompletion.newCursorSelection.start.character > cursorPosition.character)
   }
 
   @Test("Completion in the middle of a file")
@@ -231,7 +248,7 @@ struct CompletionSuggestionNextWordTests {
       19
       20 
       """
-    let cursorPosition = Position(line: 10, character: 11)
+    let cursorPosition = Position(line: 10, character: 10)
 
     let completion = try createCompletion(
       oldContent: oldContent,
@@ -242,7 +259,7 @@ struct CompletionSuggestionNextWordTests {
     let result = try #require(completion.completionWithNextWord(from: cursorPosition))
 
     // then
-    #expect(result.newContent == """
+    #expect(result.newCompletion.newContent == """
       0
       1
       2
@@ -274,53 +291,14 @@ struct CompletionSuggestionNextWordTests {
   private func createCompletion(
     oldContent: String,
     newContent: String,
-    cursorPosition: Position)
+    cursorPosition _: Position)
     throws -> CompletionSuggestion
   {
     let file = URL(fileURLWithPath: "/test.swift")
-
-    // Find the insertion point (where old and new content diverge)
-    let oldLines = oldContent.split(separator: "\n", omittingEmptySubsequences: false).map { String($0) }
-
-    // Use RawCompletionSuggestion to create the completion
-    let suggestion = RawCompletionSuggestion(
-      file: file,
-      startPosition: cursorPosition,
-      endPosition: Position(line: oldLines.count - 1, character: oldLines.last?.count ?? 0),
-      completion: extractCompletion(oldContent: oldContent, newContent: newContent, from: cursorPosition),
-      id: UUID())
-
-    let selection = Range(start: cursorPosition, end: cursorPosition)
-    return try #require(suggestion.applied(to: oldContent, file: file, selection: selection))
-  }
-
-  /// Extracts the completion text from old/new content starting at cursor position.
-  private func extractCompletion(oldContent: String, newContent: String, from cursor: Position) -> String {
-    let oldLines = oldContent.split(separator: "\n", omittingEmptySubsequences: false).map { String($0) }
-    let newLines = newContent.split(separator: "\n", omittingEmptySubsequences: false).map { String($0) }
-
-    // Calculate offset in old content
-    var oldOffset = 0
-    for i in 0..<cursor.line {
-      oldOffset += oldLines[i].count + 1 // +1 for newline
+    guard let completion = CompletionSuggestion(file: file, oldContent: oldContent, newContent: newContent) else {
+      throw AppError("Could not create CompletionSuggestion")
     }
-    oldOffset += cursor.character
-
-    // Calculate offset in new content (same position)
-    var newOffset = 0
-    for i in 0..<cursor.line {
-      newOffset += newLines[i].count + 1
-    }
-    newOffset += cursor.character
-
-    let oldSuffix = String(oldContent.suffix(from: oldContent.index(oldContent.startIndex, offsetBy: oldOffset)))
-    let newSuffix = String(newContent.suffix(from: newContent.index(newContent.startIndex, offsetBy: newOffset)))
-
-    // Find where old suffix starts in new suffix and extract the completion
-    if let range = newSuffix.range(of: oldSuffix) {
-      return String(newSuffix[..<range.lowerBound])
-    }
-    return newSuffix
+    return completion
   }
 
 }

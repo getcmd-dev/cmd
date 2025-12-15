@@ -15,9 +15,9 @@ public struct Position: Codable, Equatable, Sendable, Hashable {
   }
 }
 
-// MARK: - Range
+// MARK: - Selection
 
-public struct Range: Codable, Equatable, Sendable, Hashable {
+public struct Selection: Codable, Equatable, Sendable, Hashable {
   public var start: Position
   public var end: Position
 

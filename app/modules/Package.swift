@@ -651,9 +651,9 @@ targets.append(
       "XcodeThemeFoundation",
     ],
     testsDependencies: [
+      "AppFoundation",
       "CodeCompletionFeature",
       "CodeCompletionFoundation",
-      "CodeCompletionService",
       "CodeCompletionServiceInterface",
     ],
     path: "./features/CodeCompletionFeature"))
@@ -661,7 +661,10 @@ targets.append(
 targets.append(
   contentsOf: Target.module(
     name: "CodeCompletionFoundation",
-    dependencies: [],
+    dependencies: [
+      "FileDiffFoundation",
+      "FileDiffTypesFoundation",
+    ],
     path: "./foundations/CodeCompletionFoundation"))
 
 targets.append(

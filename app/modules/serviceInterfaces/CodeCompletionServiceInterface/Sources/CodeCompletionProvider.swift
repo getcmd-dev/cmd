@@ -22,7 +22,7 @@ public protocol CodeCompletionProvider: Sendable {
     file: URL,
     content: String,
     version: Int,
-    selection: Range,
+    selection: Selection,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
     async throws -> RawCompletionSuggestion?

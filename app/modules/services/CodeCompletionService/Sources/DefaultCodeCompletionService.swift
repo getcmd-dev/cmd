@@ -23,7 +23,6 @@ import XcodeObserverServiceInterface
 // MARK: - CodeCompletionIsolation
 
 // TODO: buffer updates for file change (don't do every char)
-// TODO: check if URL is a stable key for dictionaries
 
 // MARK: - CodeCompletionIsolation
 
@@ -526,7 +525,7 @@ final class DefaultCodeCompletionService: CodeCompletionService {
 }
 
 extension CursorRange {
-  var range: Range {
+  var range: Selection {
     .init(
       start: .init(line: start.line, character: start.character),
       end: .init(line: end.line, character: end.character))

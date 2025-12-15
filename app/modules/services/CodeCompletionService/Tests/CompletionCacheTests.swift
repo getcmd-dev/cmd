@@ -236,9 +236,9 @@ struct CompletionCacheTests {
     let diffStr = try FileDiff.getCharacterDiff(oldContent: old, newContent: new)
     let (lineChanges, _) = FileDiff.characterDiffToLineChanges(diff: diffStr, oldContent: old, newContent: new)
     return lineChanges.map { lineChanges in
-      CodeCompletionServiceInterface.CompletionSuggestion.LineChange(
+      CompletionSuggestion.LineChange(
         changes: lineChanges.map { change in
-          CodeCompletionServiceInterface.CompletionSuggestion.LineChange.WordChange(
+          CompletionSuggestion.LineChange.WordChange(
             text: change.text,
             type: change.type)
         })

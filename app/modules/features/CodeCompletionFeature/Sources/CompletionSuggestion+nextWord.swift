@@ -5,9 +5,16 @@ import CodeCompletionFoundation
 import CodeCompletionServiceInterface
 import FileDiffTypesFoundation
 
+// MARK: - NextWorkSuggestion
+
+struct NextWorkSuggestion {
+  let newCompletion: CompletionSuggestion
+  let remainingCompletion: CompletionSuggestion?
+}
+
 extension CompletionSuggestion {
   /// Return the completion that corresponds to accepting the suggested word at the current cursor position.
-  func completionWithNextWord(from cursorPosition: Position) -> CompletionSuggestion? {
+  func completionWithNextWord(from cursorPosition: Position) -> NextWorkSuggestion? {
     guard
       cursorPosition.line >= diffLineStart,
       cursorPosition.line < diffLineStart + self.diff.count,
@@ -18,9 +25,11 @@ extension CompletionSuggestion {
       return nil
     }
     var diff = [LineChange]()
+    var remainingdiff = [LineChange]()
     for i in 0..<cursorPosition.line - diffLineStart {
       diff
         .append(.init(changes: self.diff[i].changes.filter { $0.type != .added }.map { .init(text: $0.text, type: .unchanged) }))
+      remainingdiff.append(self.diff[i])
     }
     // split line by words
     let lineDiff = self.diff[cursorPosition.line - diffLineStart].changes.flatMap { change in
@@ -34,10 +43,20 @@ extension CompletionSuggestion {
         c -= lineDiff[i].text.count
         i += 1
       } else {
+        let isNextChangeNewLine = i == lineDiff.count - 2 && lineDiff.last?.text == "\n"
+        let includedChanges = isNextChangeNewLine ? [i, i + 1] : [i] // When the next change is a new line, include it.
         diff.append(.init(changes: lineDiff
             .enumerated()
-            .filter { $0.element.type != .added || $0.offset == i }
-            .map { CharacterLevelChange(text: $0.element.text, type: $0.offset == i ? $0.element.type : .unchanged) }))
+            .filter { $0.element.type != .added || includedChanges.contains($0.offset) }
+            .map { CharacterLevelChange(
+              text: $0.element.text,
+              type: includedChanges.contains($0.offset) ? $0.element.type : .unchanged) }))
+        remainingdiff.append(.init(changes: lineDiff
+            .enumerated()
+            .map { CharacterLevelChange(
+              text: $0.element.text,
+              type: includedChanges.contains($0.offset) ? .unchanged : $0.element.type) }))
+        // TODO: merge split text back.
         let newLines = lineDiff[i].text.split(separator: "\n", omittingEmptySubsequences: false)
         if newLines.count > 1 {
           newCursorPosition.line += newLines.count - 1
@@ -55,26 +74,45 @@ extension CompletionSuggestion {
     for i in cursorPosition.line - diffLineStart + 1..<self.diff.count {
       diff
         .append(.init(changes: self.diff[i].changes.filter { $0.type != .added }.map { .init(text: $0.text, type: .unchanged) }))
+      remainingdiff.append(self.diff[i])
     }
 
     // Compute new content
     let lines = oldContent.splitLines()
     let prefix = lines.prefix(diffLineStart)
-    let oldLinesInDiff = self.diff
-      .flatMap(\.changes)
-      .filter { $0.type != .added }
+
+    let oldContentInDiff = self.diff
+      .map({ $0.changes.filter { $0.type != .added } })
+      .filter { !$0.isEmpty }
+
+    var oldLinesInDiff = oldContentInDiff
+      .flatMap(\.self)
       .reduce(into: 0) { acc, el in acc += el.text.split(separator: "\n", omittingEmptySubsequences: false).count - 1 }
-    let suffix = lines.suffix(lines.count - diffLineStart - oldLinesInDiff - 1)
+    if oldContentInDiff.last?.last?.text.hasSuffix("\n") != true {
+      // No trailing new line.
+      oldLinesInDiff += 1
+    }
+
+    let suffix = lines.suffix(max(0, lines.count - diffLineStart - oldLinesInDiff))
     let newContent = prefix.joined() + diff.flatMap(\.changes).map { $0.type == .removed ? "" : $0.text }.joined() + suffix
       .joined()
 
-    return CompletionSuggestion(
+    let newCompletion = CompletionSuggestion(
       file: file,
       oldContent: oldContent,
       newContent: newContent,
       newCursorSelection: .init(start: newCursorPosition, end: newCursorPosition),
       diffLineStart: diffLineStart,
       diff: diff)
+    let remainingCompletion = CompletionSuggestion(
+      file: file,
+      oldContent: newContent,
+      newContent: self.newContent,
+      newCursorSelection: newCursorSelection,
+      diffLineStart: diffLineStart,
+      diff: remainingdiff)
+
+    return NextWorkSuggestion(newCompletion: newCompletion, remainingCompletion: remainingCompletion)
   }
 }
 

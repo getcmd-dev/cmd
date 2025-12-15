@@ -24,8 +24,8 @@ Target.module(
     "XcodeThemeFoundation",
   ],
   testsDependencies: [
+    "AppFoundation",
     "CodeCompletionFeature",
     "CodeCompletionFoundation",
-    "CodeCompletionService",
     "CodeCompletionServiceInterface",
   ])

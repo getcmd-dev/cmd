@@ -243,7 +243,7 @@ let defaultDarkXcodeTheme = """
         return items.reduce(0, +)
       }
       """,
-    newCursorSelection: Range(
+    newCursorSelection: Selection(
       start: .init(line: 0, character: 0),
       end: .init(line: 0, character: 0)),
     diffLineStart: 1,

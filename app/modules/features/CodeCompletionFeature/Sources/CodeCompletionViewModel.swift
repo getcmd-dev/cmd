@@ -141,7 +141,7 @@ final class CodeCompletionViewModel {
     }
   }
 
-  private(set) var completion: CodeCompletionServiceInterface.CompletionSuggestion? {
+  private(set) var completion: CompletionSuggestion? {
     didSet {
       // Update thread-safe state for CGEvent callbacks
       keyEventState.update(
@@ -214,7 +214,17 @@ final class CodeCompletionViewModel {
           end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
 
       try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
-      // TODO update editor state to new content
+
+      // Immediately update editor state to new content.
+      let sel = completion.newCursorSelection
+      self.editorState = .init(
+        workspaceURL: editorState.workspaceURL,
+        fileURL: editorState.fileURL,
+        content: fileChange.suggestedNewContent,
+        selection: CursorRange(
+          start: CursorPosition(line: sel.start.line, character: sel.start.character),
+          end: CursorPosition(line: sel.end.line, character: sel.end.character)))
+
       self.completion = nil
       cachedRequestId = nil
     } catch {
@@ -259,10 +269,14 @@ final class CodeCompletionViewModel {
   func handleNextWordAcceptance() {
     guard let editorState else { return }
     let position = editorState.selection.start
-    guard let newCompletion = completion?.completionWithNextWord(from: .init(line: position.line, character: position.character))
+    guard
+      let nextWordCompletion = completion?.completionWithNextWord(from: .init(
+        line: position.line,
+        character: position.character))
     else { return }
     Task {
-      await apply(completion: newCompletion)
+      await apply(completion: nextWordCompletion.newCompletion)
+      completion = nextWordCompletion.remainingCompletion
     }
   }
 
