@@ -292,6 +292,7 @@ final class CodeCompletionViewModel {
 
   private func enable() {
     isEnabled = true
+    escapeKeyHandler?.start()
     xcodeObservation = xcodeObserver.statePublisher.sink { @Sendable state in
       Task { @MainActor [weak self] in
         await self?.handleXcodeStateChange(state)
@@ -453,6 +454,7 @@ final class CodeCompletionViewModel {
     isEnabled = false
     completion = nil
     cachedRequestId = nil
+    escapeKeyHandler?.stop()
     for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
   }
 

@@ -104,7 +104,6 @@ extension CodeCompletionViewModel {
           Task { @MainActor in self?.handleEscape() }
           return true
         }))
-    escapeKeyHandler?.start()
 
     // Initialize Command key handlers (triggered on both key down and key up)
     // Left Command key code is 55, Right Command key code is 54
