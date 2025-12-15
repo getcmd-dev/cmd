@@ -46,7 +46,7 @@ final class CodeCompletionViewModel {
     self.shellService = shellService
     themeController = XcodeThemeController {
       try await shellService
-        .runAndThrows("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
+        .runAndThrow("xcode-select --print-path | awk -F\".app\" '{ print $1 }' | tr -d '\\n' | cat  - <(echo \".app\")") ?? "/Applications/Xcode.app"
     }
 
     // Create the key event handler manager

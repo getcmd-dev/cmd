@@ -237,7 +237,7 @@ extension [URL] {
   func filterOutIgnoredFiles(root: URL, shellService: ShellService) async -> [URL] {
     let isGitRepo = await {
       do {
-        try await shellService.runAndThrows("git rev-parse --show-toplevel", cwd: root.path)
+        try await shellService.runAndThrow("git rev-parse --show-toplevel", cwd: root.path)
         return true
       } catch {
         return false
@@ -254,7 +254,7 @@ extension [URL] {
       #endif
       return self.filter({ !shouldLikelyIgnoreFile($0) })
     }
-    let untrackedFiles = try? await Set(shellService.runAndThrows(
+    let untrackedFiles = try? await Set(shellService.runAndThrow(
       "echo '\(self.map(\.path).joined(separator: "\n"))' | git check-ignore --stdin",
       cwd: root.path)?
       .split(separator: "\n")

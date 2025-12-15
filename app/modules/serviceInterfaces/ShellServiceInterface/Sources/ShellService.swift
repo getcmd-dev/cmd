@@ -131,7 +131,7 @@ extension ShellService {
   /// - Returns: The stdout output as a string, or nil if no output was produced
   /// - Throws: An error if the command exits with a non-zero code
   @discardableResult
-  public func runAndThrows(
+  public func runAndThrow(
     _ command: String,
     cwd: String? = nil,
     useInteractiveShell: Bool = false,

@@ -136,7 +136,7 @@ final class DefaultXcodeController: XcodeController, Sendable {
       do {
         try await Self.openFileWithAppleScript(at: file)
         if let line {
-          try await shellService.runAndThrows("xed --line \(line) '\(file.path)'")
+          try await shellService.runAndThrow("xed --line \(line) '\(file.path)'")
         }
       } catch {
         defaultLogger.error("Failed to open file", error)
