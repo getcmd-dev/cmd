@@ -590,7 +590,7 @@ struct ExternalSettingsCodableTests {
         "toolPreferences" : [
           {
             "alwaysApprove" : true,
-            "toolName" : "BuildTool"
+            "toolId" : "BuildTool"
           }
         ]
       }

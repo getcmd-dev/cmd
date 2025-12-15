@@ -193,20 +193,7 @@ public struct Settings: Sendable, Equatable {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       alwaysApprove = try container.decode(Bool.self, forKey: .alwaysApprove)
-
-      // TODO: remove fallback after 11/15/25
-      // Try to decode toolId first, fall back to toolName for backward compatibility
-      if let toolReferenceId = try? container.decode(String.self, forKey: .toolId) {
-        self.toolReferenceId = toolReferenceId
-      } else if let toolName = try? container.decode(String.self, forKey: .toolName) {
-        toolReferenceId = toolName
-      } else {
-        throw DecodingError.keyNotFound(
-          CodingKeys.toolId,
-          DecodingError.Context(
-            codingPath: decoder.codingPath,
-            debugDescription: "Neither 'toolId' nor 'toolName' key found"))
-      }
+      toolReferenceId = try container.decode(String.self, forKey: .toolId)
     }
 
     public let toolReferenceId: String
@@ -223,7 +210,6 @@ public struct Settings: Sendable, Equatable {
       // This encodes the tool referenceId, which merges tools from different providers (eg edit file from cmd / Claude Code etc)
       // As this key is used facing (it shows up in the local settings file) we simply use toolId here.
       case toolId
-      case toolName
       case alwaysApprove
     }
 
