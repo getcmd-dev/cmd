@@ -229,7 +229,7 @@ final class DefaultGithubCopilotService: GithubCopilotService {
       var env = await shellService.env
       env["COPILOT_LANGUAGE_SERVER_VERSION"] = executableVersion
       env["COPILOT_LANGUAGE_SERVER_INSTALL_PATH"] = executablePath.path
-      try await shellService.runAndThrows("/bin/bash \"\(installScriptPath.path)\"", env: env)
+      try await shellService.runAndThrow("/bin/bash \"\(installScriptPath.path)\"", env: env)
 
       // Clean up old versions after successful installation
       cleanupOldVersions()
