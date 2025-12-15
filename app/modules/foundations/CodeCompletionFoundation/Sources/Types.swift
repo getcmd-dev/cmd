@@ -5,9 +5,9 @@
 
 public struct Position: Codable, Equatable, Sendable, Hashable {
   /// The line offset (0-based index).
-  public let line: Int
+  public var line: Int
   /// The character offset (0-based index).
-  public let character: Int
+  public var character: Int
 
   public init(line: Int, character: Int) {
     self.line = line
@@ -18,8 +18,8 @@ public struct Position: Codable, Equatable, Sendable, Hashable {
 // MARK: - Range
 
 public struct Range: Codable, Equatable, Sendable, Hashable {
-  public let start: Position
-  public let end: Position
+  public var start: Position
+  public var end: Position
 
   public init(start: Position, end: Position) {
     self.start = start

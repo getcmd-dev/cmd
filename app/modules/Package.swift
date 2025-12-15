@@ -650,6 +650,12 @@ targets.append(
       "XcodeObserverWindowsAdapter",
       "XcodeThemeFoundation",
     ],
+    testsDependencies: [
+      "CodeCompletionFeature",
+      "CodeCompletionFoundation",
+      "CodeCompletionService",
+      "CodeCompletionServiceInterface",
+    ],
     path: "./features/CodeCompletionFeature"))
 
 targets.append(

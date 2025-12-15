@@ -500,6 +500,11 @@ extension KeyEventHandler {
     {
       .key(useRightCommand ? 54 : 55, allowModifiers: allowModifiers)
     }
+
+    /// Creates a configuration for Right Arrow key (key code 124)
+    static func rightArrow(allowModifiers: Bool = false) -> Configuration {
+      .key(124, allowModifiers: allowModifiers)
+    }
   }
 }
 

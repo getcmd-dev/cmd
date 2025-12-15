@@ -22,4 +22,10 @@ Target.module(
     "XcodeObserverServiceInterface",
     "XcodeObserverWindowsAdapter",
     "XcodeThemeFoundation",
+  ],
+  testsDependencies: [
+    "CodeCompletionFeature",
+    "CodeCompletionFoundation",
+    "CodeCompletionService",
+    "CodeCompletionServiceInterface",
   ])

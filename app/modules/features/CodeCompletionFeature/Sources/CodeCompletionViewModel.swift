@@ -189,32 +189,38 @@ final class CodeCompletionViewModel {
   }
 
   func handleTabKeyPressed() {
-    guard let completion, let completionTask, let editorState else { return }
+    guard let completion else { return }
+    Task {
+      await apply(completion: completion)
+    }
+  }
+
+  func apply(completion: CompletionSuggestion) async {
+    guard let completionTask, let editorState else { return }
 
     // Convert completion suggestion to FileChange and apply using XcodeController
-    Task {
-      do {
-        // Convert CompletionSuggestion.LineChange to FileChange.LineChange
-        let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
-          .diff
+    do {
+      // Convert CompletionSuggestion.LineChange to FileChange.LineChange
+      let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
+        .diff
 
-        let fileChange = FileChange(
-          filePath: completion.file,
-          oldContent: editorState.content,
-          suggestedNewContent: completion.newContent,
-          selectedChange: lineByLineChange,
-          newSelections: [.init(
-            start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
-            end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
+      let fileChange = FileChange(
+        filePath: completion.file,
+        oldContent: editorState.content,
+        suggestedNewContent: completion.newContent,
+        selectedChange: lineByLineChange,
+        newSelections: [.init(
+          start: .init(line: completion.newCursorSelection.start.line, column: completion.newCursorSelection.start.character),
+          end: .init(line: completion.newCursorSelection.end.line, column: completion.newCursorSelection.end.character))])
 
-        try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
-        self.completion = nil
-        self.cachedRequestId = nil
-      } catch {
-        defaultLogger.error("Failed to apply code completion", error)
-        self.completion = nil
-        self.cachedRequestId = nil
-      }
+      try await xcodeController.apply(fileChange: fileChange, editMode: .xcodeExtension)
+      // TODO update editor state to new content
+      self.completion = nil
+      cachedRequestId = nil
+    } catch {
+      defaultLogger.error("Failed to apply code completion", error)
+      self.completion = nil
+      cachedRequestId = nil
     }
   }
 
@@ -242,12 +248,22 @@ final class CodeCompletionViewModel {
     }
   }
 
-  func handleCommandKeyDown() {
+  func handleOptionKeyDown() {
     isCompletionExpanded = true
   }
 
-  func handleCommandKeyUp() {
+  func handleOptionKeyUp() {
     isCompletionExpanded = false
+  }
+
+  func handleNextWordAcceptance() {
+    guard let editorState else { return }
+    let position = editorState.selection.start
+    guard let newCompletion = completion?.completionWithNextWord(from: .init(line: position.line, character: position.character))
+    else { return }
+    Task {
+      await apply(completion: newCompletion)
+    }
   }
 
   private var cachedRequestId: Int?

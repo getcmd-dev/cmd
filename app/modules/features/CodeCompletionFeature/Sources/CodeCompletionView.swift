@@ -266,7 +266,7 @@ struct CompletionDiffView: View {
                 value: [lineIdx: geo.size.width])
             })
           if lineIdx == 0, showCompletionExpansionInfo {
-            Text("⌘ to expand")
+            Text("⌥ to expand")
               .frame(height: lineHeight)
               .padding(.horizontal, 3)
               .with(cornerRadius: 6, backgroundColor: colorScheme.xcodeSidebarBackground)
