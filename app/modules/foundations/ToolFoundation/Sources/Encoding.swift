@@ -92,9 +92,7 @@ extension KeyedDecodingContainer {
         in: self,
         debugDescription: "The tools plugin was not set in the decoder. Make sure to call `decoder.userInfo.set(toolPlugin:)` before decoding tools.")
     }
-    // TODO: remove fallback after 11/15/25
-    // toolsPlugin.tool(named: toolName) is used as a fallback to decode tools encoding with the previous format.
-    return toolsPlugin.tool(byId: toolId) ?? toolsPlugin.tool(named: toolId) ?? UnknownTool(name: toolId, isExternalAgent: false)
+    return toolsPlugin.tool(byId: toolId) ?? UnknownTool(name: toolId, isExternalAgent: false)
   }
 }
 

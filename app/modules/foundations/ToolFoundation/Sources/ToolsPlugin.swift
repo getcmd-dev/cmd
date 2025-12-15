@@ -42,14 +42,6 @@ public final class ToolsPlugin: Sendable {
     registry.removeValue(forKey: id)
   }
 
-  /// Retrieves a tool by name from the registry or fallback matchers.
-  /// - Parameter name: The name of the tool to retrieve.
-  /// - Returns: The tool if found in the registry or through fallback matchers, otherwise nil.
-  @available(*, deprecated, renamed: "tool(byId:)", message: "Use tool(byId:) instead")
-  public func tool(named name: String) -> (any Tool)? {
-    registry.values.first { $0.name == name }
-  }
-
   /// Retrieves a tool by ID from the registry.
   /// - Parameter id: The ID of the tool to retrieve.
   /// - Returns: The tool if found in the registry, otherwise nil.

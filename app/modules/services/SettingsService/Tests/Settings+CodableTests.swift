@@ -638,7 +638,7 @@ struct SettingsCodableTests {
         "toolPreferences" : [
           {
             "alwaysApprove" : true,
-            "toolName" : "BuildTool"
+            "toolId" : "BuildTool"
           }
         ]
       }
