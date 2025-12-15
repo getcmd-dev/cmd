@@ -361,7 +361,7 @@ struct CompletionCacheTests {
     let sut = CompletionCache()
     let content = "hello"
     let cursor = Position(line: 0, character: content.count)
-    let selection = Range(start: cursor, end: cursor)
+    let selection = Selection(start: cursor, end: cursor)
 
     let fileA = URL(fileURLWithPath: "/a.swift")
     let requestA = CompletionCacheRequest(
@@ -427,7 +427,7 @@ struct CompletionCacheTests {
     let file = URL(fileURLWithPath: "/edge.swift")
     let oldContent = "func \n\n// last line"
     let cursor = Position(line: 0, character: 5)
-    let selection = Range(start: cursor, end: cursor)
+    let selection = Selection(start: cursor, end: cursor)
 
     let request = CompletionCacheRequest(
       workspace: workspace,
@@ -667,7 +667,7 @@ struct CompletionCacheTests {
     completion: String,
     file: URL? = nil,
     cursor: Position,
-    changeRange: Range? = nil)
+    changeRange: Selection? = nil)
     -> CompletionSuggestion?
   {
     let file = file ?? URL(fileURLWithPath: "/test.swift")

@@ -29,6 +29,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     #expect(result.newCompletion.newContent == "let x = value")
+    #expect(result.remainingCompletion?.diff.debugDescription == "let x = value")
   }
 
   @Test("Accept next word stops at whitespace")
@@ -49,6 +50,7 @@ struct CompletionSuggestionNextWordTests {
     // then
     // Should accept " " (space) as next word since it's the first character
     #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
+    #expect(result.remainingCompletion?.diff.debugDescription == "func test() { print(\"hello\"){+ }+}")
   }
 
   @Test("Accept next word stops at punctuation")
@@ -69,6 +71,7 @@ struct CompletionSuggestionNextWordTests {
     // then
     // Should accept "1" as next word (number is a word)
     #expect(result.newCompletion.newContent == "let arr = [1,")
+    #expect(result.remainingCompletion?.diff.debugDescription == "let arr = [1,{+ 2, 3]+}")
   }
 
   @Test("Accept next word with multiline completion")
@@ -94,25 +97,14 @@ struct CompletionSuggestionNextWordTests {
     let result1 = try #require(completion.completionWithNextWord(from: cursorPosition))
 
     // then
-    // First completion moves to the next line
+    // First completion includes the entire added line
     #expect(result1.newCompletion.newContent == """
-      func hello() {
-      }
-      """)
-    #expect(result1.newCompletion.newCursorSelection.start.line == 1)
-
-    // when
-    let result2 = try #require(result1.remainingCompletion?
-      .completionWithNextWord(from: result1.newCompletion.newCursorSelection.start))
-
-    // then
-    // Second completion moves to the new line
-    #expect(result2.newCompletion.newContent == """
       func hello() {
         print("Hello")
       }
       """)
-    #expect(result2.newCompletion.newCursorSelection.start.line == 1)
+    #expect(result1.newCompletion.newCursorSelection.start.line == 1)
+    #expect(result1.remainingCompletion?.diff.debugDescription == "func hello() {\n  print(\"Hello\")\n")
   }
 
   @Test("Accept next word returns nil when cursor outside diff range")
@@ -155,6 +147,7 @@ struct CompletionSuggestionNextWordTests {
     // then
     // "my_variable" should be treated as one word since underscore is not a delimiter
     #expect(result.newCompletion.newContent == "let my_variable")
+    #expect(result.remainingCompletion?.diff.debugDescription == "let my_variable{+ = 5+}")
   }
 
   @Test("Accept next word from middle of completion")
@@ -175,6 +168,7 @@ struct CompletionSuggestionNextWordTests {
     // then
     // Should accept the quote as a single character (punctuation)
     #expect(result.newCompletion.newContent == "print(\"Hello")
+    #expect(result.remainingCompletion?.diff.debugDescription == "print(\"Hello{+ World\")+}")
   }
 
   @Test("Cursor position is updated after accepting word")
@@ -195,6 +189,7 @@ struct CompletionSuggestionNextWordTests {
     // then
     // Cursor should be at the end of the accepted word
     #expect(result.newCompletion.newCursorSelection.start.character > cursorPosition.character)
+    #expect(result.remainingCompletion?.diff.debugDescription == "let x = value")
   }
 
   @Test("Accept next word multiple times with prior line changes")
@@ -242,6 +237,8 @@ struct CompletionSuggestionNextWordTests {
       // End of
       func test() {}
       """)
+    #expect(result1.remainingCompletion?.diff.debugDescription == "// End{+ of file+}\n")
+    #expect(result2.remainingCompletion?.diff.debugDescription == "// End of{+ file+}\n")
   }
 
   @Test("Completion in the middle of a file")
@@ -330,6 +327,7 @@ struct CompletionSuggestionNextWordTests {
       19
       20 
       """)
+    #expect(result.remainingCompletion?.diff.debugDescription == "10 let x = value{+ // Set x+}\n")
   }
 
   @Test("Include next unchanged whitespace")
@@ -349,6 +347,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
+    #expect(result.remainingCompletion?.diff.debugDescription == "func test() { print(\"hello\"){+ }+}")
   }
 
   @Test("Skip through unchanged content at cursor position")
@@ -368,6 +367,7 @@ struct CompletionSuggestionNextWordTests {
 
     // then
     #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
+    #expect(result.remainingCompletion?.diff.debugDescription == "func test() { print(\"hello\"){+ }+}")
   }
 
   @Test("Include change on next line when at the end of an unchanged line")
@@ -398,6 +398,7 @@ struct CompletionSuggestionNextWordTests {
         print(\"hello\")
       }
       """)
+    #expect(result.remainingCompletion?.diff.debugDescription == "func test() {\n  print(\"hello\")\n")
   }
 
   // MARK: - Helper
