@@ -1591,45 +1591,43 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("handleSelectChatThread opens thread in existing tab if already open") // TODO
+  @Test("handleSelectChatThread opens thread in existing tab if already open")
   func handleSelectChatThreadReusesExistingTab() async throws {
     // given
     let threadId = UUID()
     let testThread = ChatThreadModel(
       id: threadId, name: "Test Thread", messages: [], events: [], projectInfo: nil, createdAt: Date())
 
-    let mockChatHistoryService = MockChatHistoryService(chatThreads: [testThread])
+    let mockChatHistoryService = MockChatHistoryService(chatThreads: [])
     let sut = withDependencies {
       $0.chatHistoryService = mockChatHistoryService
     } operation: {
       ChatViewModel()
     }
 
-    // First, open the thread in a tab
+    await sut.loadPersistedChatThreads()
+    try await mockChatHistoryService.save(chatThread: testThread)
     await sut.handleSelectChatThread(id: threadId)
-    try await sut.wait(for: \.currentTabIndex, toBe: 0)
-    let tabIndex = sut.currentTabIndex
-    #expect(tabIndex == 0)
-    #expect(sut.tab.id == threadId)
 
-    // Switch to a different tab
-    sut.addTab(threadId: UUID())
-    try await sut.wait(for: \.currentTabIndex, toBe: 1)
-    #expect(sut.tab.id != threadId)
-    #expect(sut.tabs.count == 2) //
+    let tabIndex = sut.tabs.firstIndex(where: { $0.id == threadId })
+    #expect(tabIndex != nil, "Thread should be loaded in a tab")
+    #expect(sut.tab.id == threadId)
+    let initialTabCount = sut.tabs.count
+
+    let otherThreadId = UUID()
+    let otherThread = ChatThreadModel(
+      id: otherThreadId, name: "Other Thread", messages: [], events: [], projectInfo: nil, createdAt: Date())
+    try await mockChatHistoryService.save(chatThread: otherThread)
+    await sut.handleSelectChatThread(id: otherThreadId)
+
+    #expect(sut.tab.id == otherThreadId)
+    #expect(sut.tabs.count == initialTabCount + 1)
 
     // when
-    // Select the same thread again - it should switch to the existing tab
     await sut.handleSelectChatThread(id: threadId)
 
-    // Wait for the tab to be selected by checking the currentTabIndex
-    // Using wait(for:toBe:) instead of didSet because the value might already be set
-    try await sut.wait(for: \.currentTabIndex, toBe: tabIndex, timeout: 2)
-
     // then
-    // Should switch to existing tab, not create a new one
-    #expect(sut.tabs.count == 2)
-    #expect(sut.currentTabIndex == tabIndex)
+    #expect(sut.tabs.count == initialTabCount + 1)
     #expect(sut.tab.id == threadId)
   }
 
