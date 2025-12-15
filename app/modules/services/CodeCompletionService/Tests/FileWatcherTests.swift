@@ -34,12 +34,17 @@ struct FileWatcherTests {
       directories: [workspace1])
 
     let setupExpectation = expectation(description: "setUp called")
+    let didOpenExpectation = expectation(description: "didOpen called")
     let didSaveExpectation = expectation(description: "didSave called")
 
     let didSaveCalls = Atomic<[(workspace: any Workspace, file: URL, content: String, version: Int)]>([])
 
     mockCodeCompletionProvider.onSetUp = { _ in
       setupExpectation.fulfill()
+    }
+
+    mockCodeCompletionProvider.onDidOpen = { _, _, _, _ in
+      didOpenExpectation.fulfill()
     }
 
     mockCodeCompletionProvider.onDidSave = { workspace, file, content, version in
@@ -66,8 +71,7 @@ struct FileWatcherTests {
     let state1 = createXcodeState(workspace: workspace1, file: file1.path, content: "let x = 1")
     mockXcodeObserver.mutableStatePublisher.send(state1)
 
-    // Wait for initialization
-    try await fulfillment(of: setupExpectation)
+    try await fulfillment(of: [setupExpectation, didOpenExpectation])
 
     // Simulate file save by changing content on disk and triggering watcher
     try mockFileManager.write(string: "let x = 2", to: file1, options: [])
