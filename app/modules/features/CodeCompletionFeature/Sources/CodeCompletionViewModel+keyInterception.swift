@@ -146,13 +146,13 @@ extension CodeCompletionViewModel {
           guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
           // Only handle when Option is pressed without other modifiers (except Shift and Command for text selection)
           guard modifiers.contains(.maskAlternate) else { return false }
-          guard modifiers.intersection([.maskControl, .maskSecondaryFn]).isEmpty else { return false }
+          guard modifiers.intersection([.maskControl]).isEmpty else { return false }
           return true
         },
         onKeyUp: { [weak self, keyEventState] (_: Bool, modifiers: CGEventFlags) in
           guard keyEventState.hasEditorState, keyEventState.hasCompletion else { return false }
           guard modifiers.contains(.maskAlternate) else { return false }
-          guard modifiers.intersection([.maskControl, .maskSecondaryFn]).isEmpty else { return false }
+          guard modifiers.intersection([.maskControl]).isEmpty else { return false }
           // Dispatch side effect to main actor asynchronously
           Task { @MainActor in self?.handleNextWordAcceptance() }
           return true

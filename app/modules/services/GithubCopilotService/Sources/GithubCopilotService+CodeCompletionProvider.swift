@@ -13,12 +13,20 @@ extension DefaultGithubCopilotService {
     "github-copilot"
   }
 
+  var name: String {
+    "GitHub Copilot"
+  }
+
+  var isEnabled: Bool {
+    true
+  }
+
   func suggestCompletion(
     workspace: Workspace,
     file: URL,
     content _: String,
     version: Int,
-    selection: CodeCompletionFoundation.Range,
+    selection: Selection,
     pasteboardContent _: String?,
     formattingMetadata: FileFormattingMetadata?)
     async throws -> RawCompletionSuggestion?

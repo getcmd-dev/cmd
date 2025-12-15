@@ -197,6 +197,53 @@ struct CompletionSuggestionNextWordTests {
     #expect(result.newCompletion.newCursorSelection.start.character > cursorPosition.character)
   }
 
+  @Test("Accept next word multiple times with prior line changes")
+  func acceptNextWordMultipleTimesWithPriorLineChanges() throws {
+    // given - This test reproduces a bug where applying next word completion
+    // multiple times would fail because the remainingCompletion's diff
+    // still referenced the original content instead of the updated content.
+    let oldContent = """
+      //
+      func test() {}
+      """
+    let newContent = """
+      // End of file
+      func test() {}
+      """
+    let cursorPosition = Position(line: 0, character: 2)
+
+    let completion = try createCompletion(
+      oldContent: oldContent,
+      newContent: newContent,
+      cursorPosition: cursorPosition)
+
+    // when - First acceptance: "//" -> "// End"
+    let result1 = try #require(completion.completionWithNextWord(from: cursorPosition))
+
+    // then
+    #expect(result1.newCompletion.newContent == """
+      // End
+      func test() {}
+      """)
+    #expect(result1.newCompletion.newCursorSelection.start == Position(line: 0, character: 6))
+
+    // Verify remainingCompletion's oldContent is updated
+    #expect(result1.remainingCompletion?.oldContent == """
+      // End
+      func test() {}
+      """)
+
+    // when - Second acceptance should work without error
+    let newCursor = result1.newCompletion.newCursorSelection.start
+    let result2 = try #require(result1.remainingCompletion?.completionWithNextWord(from: newCursor))
+
+    // then
+    #expect(result2.newCompletion.newContent == """
+      // End of
+      func test() {}
+      """)
+  }
+
   @Test("Completion in the middle of a file")
   func completionInTheMiddleOfAFile() throws {
     // given
@@ -282,6 +329,74 @@ struct CompletionSuggestionNextWordTests {
       18
       19
       20 
+      """)
+  }
+
+  @Test("Include next unchanged whitespace")
+  func includeNextUnchangedWhiteSpace() throws {
+    // given
+    let oldContent = "func test() { "
+    let newContent = "func test() { print(\"hello\") }"
+    let cursorPosition = Position(line: 0, character: 13) // After the `{`, before the space.
+
+    let completion = try createCompletion(
+      oldContent: oldContent,
+      newContent: newContent,
+      cursorPosition: cursorPosition)
+
+    // when
+    let result = try #require(completion.completionWithNextWord(from: cursorPosition))
+
+    // then
+    #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
+  }
+
+  @Test("Skip through unchanged content at cursor position")
+  func skipThroughUnchangedContentAtCursorPosition() throws {
+    // given
+    let oldContent = "func test() { "
+    let newContent = "func test() { print(\"hello\") }"
+    let cursorPosition = Position(line: 0, character: 6) // After `func t`
+
+    let completion = try createCompletion(
+      oldContent: oldContent,
+      newContent: newContent,
+      cursorPosition: cursorPosition)
+
+    // when
+    let result = try #require(completion.completionWithNextWord(from: cursorPosition))
+
+    // then
+    #expect(result.newCompletion.newContent == "func test() { print(\"hello\")")
+  }
+
+  @Test("Include change on next line when at the end of an unchanged line")
+  func includeChangeOnNextLineWhenAtTheEndOfAnUnchangedLine() throws {
+    // given
+    let oldContent = """
+      func test() {
+      }
+      """
+    let newContent = """
+      func test() {
+        print(\"hello\")
+      }
+      """
+    let cursorPosition = Position(line: 0, character: 13) // After the `{`, before the new line.
+
+    let completion = try createCompletion(
+      oldContent: oldContent,
+      newContent: newContent,
+      cursorPosition: cursorPosition)
+
+    // when
+    let result = try #require(completion.completionWithNextWord(from: cursorPosition))
+
+    // then
+    #expect(result.newCompletion.newContent == """
+      func test() {
+        print(\"hello\")
+      }
       """)
   }
 

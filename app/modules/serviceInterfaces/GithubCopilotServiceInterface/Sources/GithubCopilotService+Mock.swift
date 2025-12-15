@@ -46,7 +46,7 @@ public final class MockGithubCopilotService: GithubCopilotService {
     file: URL,
     content: String,
     version: Int,
-    selection: Range,
+    selection: Selection,
     pasteboardContent: String?,
     formattingMetadata: FileFormattingMetadata?)
     async throws -> RawCompletionSuggestion?

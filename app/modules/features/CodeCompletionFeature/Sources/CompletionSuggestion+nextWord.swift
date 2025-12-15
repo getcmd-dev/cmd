@@ -43,6 +43,17 @@ extension CompletionSuggestion {
         c -= lineDiff[i].text.count
         i += 1
       } else {
+        if lineDiff[i].type == .unchanged {
+          // Skip to the next change.
+          let movedCursorPosition: Position =
+            if lineDiff[i].text.hasSuffix("\n") {
+              .init(line: cursorPosition.line + 1, character: 0)
+            } else {
+              .init(line: cursorPosition.line, character: cursorPosition.character + lineDiff[i].text.count - c)
+            }
+          return completionWithNextWord(from: movedCursorPosition)
+        }
+
         let isNextChangeNewLine = i == lineDiff.count - 2 && lineDiff.last?.text == "\n"
         let includedChanges = isNextChangeNewLine ? [i, i + 1] : [i] // When the next change is a new line, include it.
         diff.append(.init(changes: lineDiff
@@ -50,13 +61,14 @@ extension CompletionSuggestion {
             .filter { $0.element.type != .added || includedChanges.contains($0.offset) }
             .map { CharacterLevelChange(
               text: $0.element.text,
-              type: includedChanges.contains($0.offset) ? $0.element.type : .unchanged) }))
+              type: includedChanges.contains($0.offset) ? $0.element.type : .unchanged) }
+            .merged))
         remainingdiff.append(.init(changes: lineDiff
             .enumerated()
             .map { CharacterLevelChange(
               text: $0.element.text,
-              type: includedChanges.contains($0.offset) ? .unchanged : $0.element.type) }))
-        // TODO: merge split text back.
+              type: includedChanges.contains($0.offset) ? .unchanged : $0.element.type) }
+            .merged))
         let newLines = lineDiff[i].text.split(separator: "\n", omittingEmptySubsequences: false)
         if newLines.count > 1 {
           newCursorPosition.line += newLines.count - 1
@@ -111,7 +123,6 @@ extension CompletionSuggestion {
       newCursorSelection: newCursorSelection,
       diffLineStart: diffLineStart,
       diff: remainingdiff)
-
     return NextWorkSuggestion(newCompletion: newCompletion, remainingCompletion: remainingCompletion)
   }
 }

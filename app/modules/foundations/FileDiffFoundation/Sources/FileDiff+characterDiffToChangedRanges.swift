@@ -162,13 +162,7 @@ extension FileDiff {
     result = result.map(Self.reformatWords(in:))
 
     // Merge consecutives changes of the same type
-    result = result.map { lineChanges in lineChanges.reduce(into: [], { acc, change in
-      if let last = acc.last, last.type == change.type {
-        acc[acc.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
-      } else {
-        acc.append(change)
-      }
-    }) }
+    result = result.map(\.merged)
 
     // Remove context lines that are unchanged (keep one unchanged line if the next line starts with a change).
     firstDiffLine += result.enumerated().prefix(while: { idx, lineChanges in
@@ -221,13 +215,7 @@ extension FileDiff {
     flushCurrentWordChanges()
 
     // Merge consecutives chunks of the same type
-    res = res.reduce(into: [], { acc, change in
-      if let last = acc.last, last.type == change.type {
-        acc[acc.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
-      } else {
-        acc.append(change)
-      }
-    })
+    res = res.merged
 
     #if DEBUG
     assert(
@@ -280,5 +268,18 @@ extension [CharacterLevelChange] {
         "\(change.text)"
       }
     }.joined(separator: "")
+  }
+
+  ///     Merges consecutive CharacterLevelChange elements of the same type.
+  public var merged: [CharacterLevelChange] {
+    var result = [CharacterLevelChange]()
+    for change in self {
+      if let last = result.last, last.type == change.type {
+        result[result.count - 1] = CharacterLevelChange(text: last.text + change.text, type: last.type)
+      } else {
+        result.append(change)
+      }
+    }
+    return result
   }
 }

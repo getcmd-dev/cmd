@@ -35,7 +35,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
   func register(configuration: KeyEventHandler.Configuration, callbacks: KeyEventHandler.Callbacks) -> KeyEventListener {
     let listener = KeyEventListener(configuration: configuration, callbacks: callbacks)
     listeners[configuration.keyCode] = listener
-    // defaultLogger.log("[Key input debug] Registered listener keyCode=\(configuration.keyCode) intercepting=\(listener.isIntercepting)")
     updateTap()
     return listener
   }
@@ -43,7 +42,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
   /// Unregister a listener for a specific key code
   func unregister(keyCode: Int) {
     listeners.removeValue(forKey: keyCode)
-    // defaultLogger.log("[Key input debug] Unregistered listener keyCode=\(keyCode) remaining=\(listeners.count)")
     runOnMainThread { [weak self] in
       guard let self else { return }
       updateTap()
@@ -107,7 +105,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
       eventTap = nil
       runLoopSource = nil
       currentTapMode = nil
-      // defaultLogger.log("[Key input debug] Event tap stopped")
     }
     CFRunLoopWakeUp(tapRunLoop)
   }
@@ -115,7 +112,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
   private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
     // Handle tap disabled events
     if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-      // defaultLogger.log("[Key input debug] Event tap disabled: \(type.rawValue) mode=\(currentTapMode.debugDescription) timestamp=\(event.timestamp)")
       if let tap = eventTap {
         CGEvent.tapEnable(tap: tap, enable: true)
       }
@@ -124,29 +120,24 @@ final class KeyEventHandlerManager: @unchecked Sendable {
 
     let keycode = event.getIntegerValueField(.keyboardEventKeycode)
     guard let listener = listeners[Int(keycode)] else {
-      // defaultLogger.log("[Key input debug] No listener for keycode \(keycode) type=\(type.rawValue)")
       return Unmanaged.passUnretained(event)
     }
 
     let canConsume = currentTapMode == .intercept
-    // defaultLogger.log("[Key input debug] Handling keycode=\(keycode) type=\(type.rawValue) canConsume=\(canConsume)")
     return listener.handleEvent(proxy: proxy, type: type, event: event, canConsume: canConsume)
   }
 
   // MARK: Tap lifecycle helpers
 
   private func updateTap() {
-    // defaultLogger.log("[Key input debug] updateTap called listeners=\(listeners.count) currentMode=\(String(describing: currentTapMode)) eventTapExists=\(eventTap != nil)")
     let desiredMode = desiredTapMode()
 
     guard let desiredMode else {
-      // defaultLogger.log("[Key input debug] No listeners registered; stopping tap")
       stopTap()
       return
     }
 
     if desiredMode == currentTapMode, eventTap != nil {
-      // defaultLogger.log("[Key input debug] Tap already running in mode=\(desiredMode)")
       return
     }
 
@@ -177,7 +168,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
 
             // Check if Xcode is active before processing any events
             guard manager.isXcodeActive else {
-              // defaultLogger.log("[Key input debug] Skipping event: Xcode not active type=\(type.rawValue) keycode=\(event.getIntegerValueField(.keyboardEventKeycode))")
               return Unmanaged.passUnretained(event)
             }
 
@@ -196,7 +186,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
         CFRunLoopAddSource(tapRunLoop, source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
         currentTapMode = desiredMode
-        // defaultLogger.log("[Key input debug] Event tap started mode=\(desiredMode) thread=\(String(describing: self.tapThread?.name))")
       } else {
         defaultLogger.error("[Key input debug] Failed to create run loop source for tap")
       }
@@ -220,9 +209,7 @@ final class KeyEventHandlerManager: @unchecked Sendable {
       }
 
       tapRunLoopReady.signal()
-      // defaultLogger.log("[Key input debug] Tap thread run loop entered")
       CFRunLoopRun()
-      // defaultLogger.log("[Key input debug] Tap thread run loop exited")
       tapRunLoop = nil
       tapThread = nil
     }
@@ -236,8 +223,6 @@ final class KeyEventHandlerManager: @unchecked Sendable {
     let readyResult = tapRunLoopReady.wait(timeout: .now() + 1)
     if readyResult == .timedOut {
       defaultLogger.error("[Key input debug] Tap run loop did not become ready in time")
-    } else {
-      // defaultLogger.log("[Key input debug] Tap run loop ready")
     }
   }
 
@@ -350,7 +335,6 @@ final class KeyEventListener: Sendable {
 
     // Return nil to consume the event, or pass it through
     if shouldConsume, canConsume {
-      // defaultLogger.log("[Key input debug] Consuming keycode=\(keycode) type=\(type.rawValue)")
       return nil
     }
 
@@ -445,7 +429,6 @@ final class KeyEventListener: Sendable {
 
     // Return nil to consume the event, or pass it through
     if shouldConsume, canConsume {
-      // defaultLogger.log("[Key input debug] Consuming modifier keycode=\(configuration.keyCode) flagsChanged")
       return nil
     }
 

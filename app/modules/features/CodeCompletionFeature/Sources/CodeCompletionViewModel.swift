@@ -201,7 +201,7 @@ final class CodeCompletionViewModel {
     // Convert completion suggestion to FileChange and apply using XcodeController
     do {
       // Convert CompletionSuggestion.LineChange to FileChange.LineChange
-      let lineByLineChange = try FileDiff.getFileChange(changing: completionTask.request.content, to: completion.newContent)
+      let lineByLineChange = try FileDiff.getFileChange(changing: editorState.content, to: completion.newContent)
         .diff
 
       let fileChange = FileChange(
