@@ -71,10 +71,10 @@ struct KeyboardShortcutView: View {
 
         Spacer(minLength: 0)
 
-        if keyboardShortcut != nil, keyboardShortcut != defaultValue {
+        if let keyboardShortcut, keyboardShortcut != defaultValue {
           HoveredButton(
             action: {
-              keyboardShortcut = nil
+              self.keyboardShortcut = nil
             },
             onHoverColor: colorScheme.tertiarySystemBackground,
             backgroundColor: colorScheme.secondarySystemBackground,
@@ -130,7 +130,8 @@ struct KeyBindingInputView: View {
           inputShortcut = .init(string: shortcut.display)
           keyboardShortcut = shortcut
         } else if key == .delete {
-          inputShortcut = NSAttributedString(string: "")
+          // Reset to default (nil means use default)
+          inputShortcut = NSAttributedString(string: defaultValue.display)
           keyboardShortcut = nil
         }
         return true

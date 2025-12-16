@@ -161,7 +161,7 @@ final class CodeCompletionViewModel {
         if completion != nil {
           screenShotEditorIfNeeded()
         } else if showChatTooltip, oldValue != nil {
-          // When changed, hide the tooltip instead of showing having a jaggy scrolling
+          // When changed, hide the tooltip instead of having jittery scrolling
           chatTooltipTask?.cancel()
           showChatTooltip = false
           updateChatTooltipVisibility() // Reset a timer to show the tooltip
