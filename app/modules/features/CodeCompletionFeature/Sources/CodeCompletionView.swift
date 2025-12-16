@@ -18,7 +18,11 @@ struct CodeCompletionView: View {
   var body: some View {
     GeometryReader { geometry in
       ZStack(alignment: .topLeading) {
-        if let completion = viewModel.completion, let completionRequest = viewModel.completionTask?.request {
+        if
+          let completion = viewModel.completion,
+          let completionRequest = viewModel.completionTask?.request,
+          let verticalContentOffset = viewModel.verticalContentOffset
+        {
           if let screenshot = viewModel.screenshot, viewModel.isCompletionExpanded {
             VStack(alignment: .leading, spacing: 0) {
               Rectangle().frame(height: max(
@@ -32,7 +36,7 @@ struct CodeCompletionView: View {
               Image(screenshot, scale: XcodeScreenshoter.retinaScale, label: Text(""))
             }
             .padding(.top, viewModel.lineHeight ?? 0)
-            .padding(.top, viewModel.verticalContentOffset)
+            .padding(.top, verticalContentOffset)
           }
 
           CompletionDiffView(
@@ -52,7 +56,24 @@ struct CodeCompletionView: View {
             .padding(.trailing, viewModel.trailingContentOffset + 2) // 2 to not overlap with the scrollbar
             .frame(width: geometry.size.width)
             .fixedSize()
-            .padding(.top, viewModel.verticalContentOffset)
+            .padding(.top, verticalContentOffset)
+        } else if
+          viewModel.showChatTooltip,
+          let verticalContentOffset = viewModel.verticalContentOffset
+        {
+          // Show chat tooltip on the cursor line with trailing alignment
+          HStack {
+            Spacer()
+            Text("⌘L for chat")
+              .frame(height: viewModel.lineHeight)
+              .padding(.horizontal, 3)
+              .with(cornerRadius: 6, backgroundColor: colorScheme.xcodeSidebarBackground)
+              .opacity(0.5)
+          }
+          .padding(.leading, viewModel.leadingContentOffset + 1)
+          .padding(.trailing, viewModel.trailingContentOffset + 2)
+          .frame(width: geometry.size.width)
+          .padding(.top, verticalContentOffset)
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)
@@ -73,6 +94,9 @@ struct CodeCompletionView: View {
       .clipped()
     }
   }
+
+  @Environment(\.colorScheme) private var colorScheme
+
 }
 
 // MARK: - CompletionDiffView

@@ -115,6 +115,8 @@ final class CodeCompletionViewModel {
 
   private(set) var isCompletionExpanded = false
   private(set) var showAutomaticCompletionStatusMessage = false
+  /// Indicates whether to show the chat tooltip.
+  private(set) var showChatTooltip = false
 
   @ObservationIgnored private(set) var styledCompletionTask: Task<Void, Error>?
   private(set) var styledCompletion: SyntaxHighlightedCompletion?
@@ -132,11 +134,27 @@ final class CodeCompletionViewModel {
     }
   }
 
+  /// The line number that needs vertical offset adjustment (either to show tooltip or completion).
+  var lineThatNeedsVerticalOffset: Int? {
+    didSet {
+      if lineThatNeedsVerticalOffset != oldValue {
+        verticalContentOffset = nil
+      }
+    }
+  }
+
   /// The offset between the top of the view and the top of the text being completed.
-  var verticalContentOffset: CGFloat = 0 {
+  var verticalContentOffset: CGFloat? = nil {
     didSet {
       if verticalContentOffset != oldValue {
-        screenShotEditorIfNeeded()
+        if completion != nil {
+          screenShotEditorIfNeeded()
+        } else if showChatTooltip, oldValue != nil {
+          // When changed, hide the tooltip instead of showing having a jaggy scrolling
+          chatTooltipTask?.cancel()
+          showChatTooltip = false
+          updateChatTooltipVisibility() // Reset a timer to show the tooltip
+        }
       }
     }
   }
@@ -160,9 +178,17 @@ final class CodeCompletionViewModel {
           try Task.checkCancellation()
           self.styledCompletion = styledCompletion
         }
+
+        // Hide chat tooltip when completion appears, but don't restart the delay
+        // (the delay is managed by editorState changes)
+        chatTooltipTask?.cancel()
+        showChatTooltip = false
+        lineThatNeedsVerticalOffset = completionTask?.request.selection.start.line
       } else {
         styledCompletionTask?.cancel()
         styledCompletion = nil
+        lineThatNeedsVerticalOffset = nil
+        updateChatTooltipVisibility()
       }
     }
   }
@@ -196,7 +222,7 @@ final class CodeCompletionViewModel {
   }
 
   func apply(completion: CompletionSuggestion) async {
-    guard let completionTask, let editorState else { return }
+    guard let editorState else { return }
 
     // Convert completion suggestion to FileChange and apply using XcodeController
     do {
@@ -299,10 +325,12 @@ final class CodeCompletionViewModel {
   private var xcodeObservation: AnyCancellable?
 
   private var statusMessageTask: Task<Void, Never>?
+  private var chatTooltipTask: Task<Void, Error>?
 
   private var editorState: EditorState? {
     didSet {
       keyEventState.update(hasEditorState: editorState != nil)
+      updateChatTooltipVisibility()
     }
   }
 
@@ -317,6 +345,38 @@ final class CodeCompletionViewModel {
       for completionKeyHandler in completionKeyHandlers { completionKeyHandler.start() }
     } else {
       for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
+    }
+  }
+
+  /// Updates the chat tooltip visibility based on the current editor state.
+  /// Shows the tooltip after a 1-second delay when there's an editor state but no completion.
+  private func updateChatTooltipVisibility() {
+    guard let editorState else { return }
+    guard completion == nil else {
+      showChatTooltip = false
+      return
+    }
+    if editorState.selection.start.line == lineThatNeedsVerticalOffset, chatTooltipTask != nil {
+      // Cursor line not changed and tooltip task already running
+      return
+    }
+    chatTooltipTask?.cancel()
+    showChatTooltip = false
+    lineThatNeedsVerticalOffset = editorState.selection.start.line
+
+    // Show tooltip after 1 second delay
+    let file = editorState.fileURL
+    let workspace = editorState.workspaceURL
+    chatTooltipTask = Task { [weak self] in
+      try await Task.sleep(nanoseconds: 1_000_000_000)
+      try Task.checkCancellation()
+      guard
+        let self,
+        self.editorState?.fileURL == file,
+        self.editorState?.workspaceURL == workspace,
+        completion == nil
+      else { return }
+      showChatTooltip = true
     }
   }
 
