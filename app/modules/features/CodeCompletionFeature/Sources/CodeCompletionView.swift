@@ -64,7 +64,7 @@ struct CodeCompletionView: View {
           // Show chat tooltip on the cursor line with trailing alignment
           HStack {
             Spacer()
-            Text("⌘L for chat")
+            Text(viewModel.showChatShortcutDisplay)
               .frame(height: viewModel.lineHeight)
               .padding(.horizontal, 3)
               .with(cornerRadius: 6, backgroundColor: colorScheme.xcodeSidebarBackground)
@@ -74,6 +74,7 @@ struct CodeCompletionView: View {
           .padding(.trailing, viewModel.trailingContentOffset + 2)
           .frame(width: geometry.size.width)
           .padding(.top, verticalContentOffset)
+          .transition(.asymmetric(insertion: .opacity.animation(.easeIn(duration: 0.3)), removal: .identity))
         } else {
           // Empty state with minimal size
           Color.clear.frame(width: 1, height: 1)

@@ -64,6 +64,9 @@ struct AboutSettingsView: View {
             }
             InfoRow(label: "Build", value: Bundle.main.version)
             InfoRow(label: "Bundle ID", value: Bundle.main.bundleIdentifier ?? "Unknown")
+            #if DEBUG
+            InfoRow(label: "Type", value: "DEBUG")
+            #endif
             Divider()
             PermissionStatusRow(
               permission: .accessibility,

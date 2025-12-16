@@ -127,6 +127,11 @@ final class CodeCompletionViewModel {
   /// Thread-safe state for CGEvent callbacks to check without blocking on main actor
   let keyEventState = KeyEventState()
 
+  /// The display string for the "show chat" keyboard shortcut.
+  var showChatShortcutDisplay: String {
+    "\(settingsService.value(for: \.keyboardShortcuts)[withDefault: .addContextToCurrentChat].display) to chat"
+  }
+
   private(set) var isAutomaticCompletionEnabled = true {
     didSet {
       // Update thread-safe state for CGEvent callbacks
