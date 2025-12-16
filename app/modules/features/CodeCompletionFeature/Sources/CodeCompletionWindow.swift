@@ -79,7 +79,9 @@ final class CodeCompletionWindow: XcodeWindow {
       return nil
     }
     if viewModel.completion != nil, let completionTask = viewModel.completionTask {
-      updateViewModel(editor: editor, editorFrame: editorFrame, scrollViewFrame: scrollViewFrame, completionTask: completionTask)
+      updateViewModel(editor: editor, editorFrame: editorFrame, completionTask: completionTask)
+    } else if viewModel.showChatTooltip, let cursorLine = viewModel.lineThatNeedsVerticalOffset {
+      updateViewModelForChatTooltip(editor: editor, editorFrame: editorFrame, cursorLine: cursorLine)
     } else {
       completionId = nil
       completionRange = nil
@@ -98,34 +100,62 @@ final class CodeCompletionWindow: XcodeWindow {
 
   private var hostingView: NSView?
 
+  /// Updates the view model with position info for the chat tooltip.
+  private func updateViewModelForChatTooltip(
+    editor: XcodeEditorState,
+    editorFrame: CGRect,
+    cursorLine: Int)
+  {
+    let position = CursorPosition(line: cursorLine, character: 0)
+    let selection = CursorRange(start: position, end: position)
+    guard
+      let content = xcodeObserver.state.focusedWorkspace?.tabs.first(where: { $0.isFocused })?.lastKnownContent,
+      let cursorRange = content.nsRange(of: selection)
+    else {
+      return
+    }
+    updateViewModel(
+      editor: editor, editorFrame: editorFrame, selection: selection, selectionRange: cursorRange, content: content)
+  }
+
+  /// Updates the view model with position info for the given completion task.
   private func updateViewModel(
     editor: XcodeEditorState,
     editorFrame: CGRect,
-    scrollViewFrame _: CGRect,
     completionTask: CompletionTask)
   {
+    let content = completionTask.request.content
+    let selection = completionTask.request.selection
     if completionTask.id != completionId || completionRange == nil {
       completionId = completionTask.id
       // Cache `completionRange` as this requires counting characters throughout the completed file
       // which is somewhat resource intensive.
-      completionRange = completionTask.request.content.nsRange(of: completionTask.request.selection)
+      completionRange = content.nsRange(of: selection)
     }
-    guard
-      let completionRange,
-      let completedTextFrame = editor.axElement.getTextFrame(range: completionRange)?.invertedFrame
-    else {
-      return
-    }
-    let request = completionTask.request
-    let lineHeight = completedTextFrame.height / CGFloat(request.selection.end.line - request.selection.start.line + 1)
+    guard let completionRange else { return }
+    updateViewModel(
+      editor: editor, editorFrame: editorFrame, selection: selection, selectionRange: completionRange, content: content)
+  }
+
+  /// Updates the view model with position info for the given selection (either from completion or chat tooltip).
+  private func updateViewModel(
+    editor: XcodeEditorState,
+    editorFrame: CGRect,
+    selection: CursorRange,
+    selectionRange: NSRange,
+    content: String)
+  {
+    guard let completedTextFrame = editor.axElement.getTextFrame(range: selectionRange)?.invertedFrame
+    else { return }
+    let lineHeight = completedTextFrame.height / CGFloat(selection.end.line - selection.start.line + 1)
 
     // Leading offset between editor frame and text area frame
     if
       leadingEditorOffset == nil || viewModel.lineHeight != lineHeight,
-      let range = request.content.nsRange(of:
+      let range = content.nsRange(of:
         .init(
-          start: .init(line: request.selection.start.line, character: 0),
-          end: .init(line: request.selection.start.line, character: 0))),
+          start: .init(line: selection.start.line, character: 0),
+          end: .init(line: selection.start.line, character: 0))),
       let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
     {
       let leadingOffset = baseline.minX - editorFrame.minX
@@ -137,10 +167,10 @@ final class CodeCompletionWindow: XcodeWindow {
     // Trailing offset between editor frame and text area frame
     if
       trailingEditorOffset == nil || viewModel.lineHeight != lineHeight,
-      let range = request.content.nsRange(of:
+      let range = content.nsRange(of:
         .init(
-          start: .init(line: request.selection.start.line, character: 0),
-          end: .init(line: request.selection.start.line + 1, character: 0))),
+          start: .init(line: selection.start.line, character: 0),
+          end: .init(line: selection.start.line + 1, character: 0))),
       let baseline = editor.axElement.getTextFrame(range: range)?.invertedFrame
     {
       let trailingOffset = editorFrame.maxX - baseline.maxX
@@ -152,7 +182,7 @@ final class CodeCompletionWindow: XcodeWindow {
 
     if
       viewModel.lineHeight != lineHeight,
-      let (content, size) = request.content.contentToInferFontSize(around: request.selection, in: editor.axElement)
+      let (content, size) = content.contentToInferFontSize(around: selection, in: editor.axElement)
     {
       viewModel.lineHeight = size.height
       viewModel.updateFont(

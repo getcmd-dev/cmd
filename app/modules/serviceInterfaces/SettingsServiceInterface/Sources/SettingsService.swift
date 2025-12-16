@@ -347,6 +347,11 @@ extension Settings {
       self.key = key
       self.modifiers = modifiers
     }
+
+    /// A string representation of the keyboard shortcut (e.g. "⌘ L").
+    public var display: String {
+      (modifiers.map(\.description) + [key.description]).joined(separator: " ")
+    }
   }
 
   public enum KeyboardShortcutKey: String, Codable, Sendable, CaseIterable, CodingKeyRepresentable {
@@ -359,8 +364,8 @@ extension Settings {
 
     public var defaultShortcut: KeyboardShortcut {
       switch self {
-      case .addContextToCurrentChat: KeyboardShortcut(key: "i", modifiers: [.command])
-      case .addContextToNewChat: KeyboardShortcut(key: "i", modifiers: [.command, .shift])
+      case .addContextToCurrentChat: KeyboardShortcut(key: "l", modifiers: [.command])
+      case .addContextToNewChat: KeyboardShortcut(key: "l", modifiers: [.command, .shift])
       case .dismissChat: KeyboardShortcut(key: .escape, modifiers: [.command])
       }
     }

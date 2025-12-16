@@ -67,14 +67,14 @@ struct KeyboardShortcutView: View {
         Text(title + ":")
           .padding(.trailing, 8)
 
-        KeyBindingInputView(keyboardShortcut: $keyboardShortcut, lineHeight: Constants.lineHeight)
+        KeyBindingInputView(keyboardShortcut: $keyboardShortcut, defaultValue: defaultValue, lineHeight: Constants.lineHeight)
 
         Spacer(minLength: 0)
 
-        if keyboardShortcut != nil, keyboardShortcut != defaultValue {
+        if let keyboardShortcut, keyboardShortcut != defaultValue {
           HoveredButton(
             action: {
-              keyboardShortcut = nil
+              self.keyboardShortcut = nil
             },
             onHoverColor: colorScheme.tertiarySystemBackground,
             backgroundColor: colorScheme.secondarySystemBackground,
@@ -111,24 +111,14 @@ struct KeyboardShortcutView: View {
 
 }
 
-extension KeyboardShortcut {
-  /// A string representation of the key binding.
-  var display: String {
-    (
-      modifiers
-        .map(\.description)
-        + [key.description])
-      .joined(separator: " ")
-  }
-}
-
 // MARK: - KeyBindingInputView
 
 struct KeyBindingInputView: View {
-  init(keyboardShortcut: Binding<KeyboardShortcut?>, lineHeight: CGFloat = 20) {
+  init(keyboardShortcut: Binding<KeyboardShortcut?>, defaultValue: KeyboardShortcut, lineHeight: CGFloat = 20) {
     _keyboardShortcut = keyboardShortcut
+    self.defaultValue = defaultValue
     self.lineHeight = lineHeight
-    _inputShortcut = .init(initialValue: NSAttributedString(string: keyboardShortcut.wrappedValue?.display ?? ""))
+    _inputShortcut = .init(initialValue: NSAttributedString(string: (keyboardShortcut.wrappedValue ?? defaultValue).display))
   }
 
   var body: some View {
@@ -140,7 +130,8 @@ struct KeyBindingInputView: View {
           inputShortcut = .init(string: shortcut.display)
           keyboardShortcut = shortcut
         } else if key == .delete {
-          inputShortcut = NSAttributedString(string: "")
+          // Reset to default (nil means use default)
+          inputShortcut = NSAttributedString(string: defaultValue.display)
           keyboardShortcut = nil
         }
         return true
@@ -152,7 +143,7 @@ struct KeyBindingInputView: View {
         borderColor: colorScheme.textAreaBorderColor,
         borderWidth: 0.5)
       .onChange(of: keyboardShortcut) { newValue in
-        inputShortcut = NSAttributedString(string: newValue?.display ?? "")
+        inputShortcut = NSAttributedString(string: (newValue ?? defaultValue).display)
       }
   }
 
@@ -160,6 +151,7 @@ struct KeyBindingInputView: View {
   @Binding private var keyboardShortcut: KeyboardShortcut?
   @Environment(\.colorScheme) private var colorScheme
 
+  private let defaultValue: KeyboardShortcut
   private let lineHeight: CGFloat
 
 }

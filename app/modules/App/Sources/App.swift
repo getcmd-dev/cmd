@@ -156,6 +156,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
   var handleApplicationDidBecomeActive: (() -> Void)?
 
+  func applicationWillFinishLaunching(_: Notification) {
+    // Hide the dock icon - the app is only accessible via menu bar
+    NSApp.setActivationPolicy(.accessory)
+  }
+
   func applicationDidBecomeActive(_: Notification) {
     isAppActive.send(true)
 
