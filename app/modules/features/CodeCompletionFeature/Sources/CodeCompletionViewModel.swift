@@ -87,6 +87,12 @@ final class CodeCompletionViewModel {
       }
     }.store(in: &cancellables)
     for completionKeyHandler in completionKeyHandlers { completionKeyHandler.stop() }
+
+    xcodeObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      Task { @MainActor [weak self] in
+        await self?.handleXcodeStateChange(state)
+      }
+    }
   }
 
   /// Indicates if code completion is enabled (i.e. service is available)
@@ -388,11 +394,6 @@ final class CodeCompletionViewModel {
   private func enable() {
     isEnabled = true
     escapeKeyHandler?.start()
-    xcodeObservation = xcodeObserver.statePublisher.sink { @Sendable state in
-      Task { @MainActor [weak self] in
-        await self?.handleXcodeStateChange(state)
-      }
-    }
   }
 
   private func handleXcodeStateChange(_ state: AXState<XcodeState>) async {
