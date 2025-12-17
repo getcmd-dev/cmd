@@ -27,6 +27,7 @@
             "pages": [
               "pages/ai-providers",
               "pages/models",
+              "pages/code-completion",
               "pages/chat-modes",
               "pages/claude-code",
               "pages/codex",

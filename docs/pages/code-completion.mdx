@@ -1,0 +1,141 @@
+---
+title: "Code Completion"
+description: "Get intelligent code suggestions while you type in Xcode"
+---
+
+## Overview
+
+Code completion provides natural, context-aware code suggestions as you type in Xcode. This brings AI-powered autocomplete to your Swift development workflow, helping you write code faster and with fewer errors.
+
+<video
+  controls
+  className="w-full"
+  poster="/assets/videos/code-completion.jpg"
+>
+  <source src="/assets/videos/code-completion.mp4" type="video/mp4" />
+</video>
+
+## Supported Providers
+
+cmd supports code completion from three leading providers:
+
+<CardGroup cols={3}>
+  <Card title="GitHub Copilot" icon="github">
+    Use your existing GitHub Copilot subscription for code suggestions
+  </Card>
+  <Card title="Mistral AI" icon="bolt">
+    Fast and accurate completions powered by Mistral's Codestral model
+  </Card>
+  <Card title="Mercury Coder" icon="sparkles">
+    Inception's Mercury Coder for thoughtful, context-aware suggestions
+  </Card>
+</CardGroup>
+
+## Configuration
+
+<Steps>
+  <Step title="Open Settings">
+    Navigate to **Settings** in cmd
+  </Step>
+
+  <Step title="Select Code Completion">
+    Find the **Code Completion** section
+  </Step>
+
+  <Step title="Choose a Provider">
+    Select your preferred completion provider:
+    - **GitHub Copilot**: Requires a GitHub Copilot subscription
+    - **Mistral AI**: Requires a Mistral API key
+    - **Claude**: Uses your configured Anthropic API key
+  </Step>
+
+  <Step title="Configure Trigger Mode">
+    Choose when completions should appear:
+    - **Automatic**: Suggestions appear as you type
+    - **On Demand**: Trigger suggestions manually with a keyboard shortcut
+  </Step>
+</Steps>
+
+## Provider Setup
+
+### GitHub Copilot
+
+<Steps>
+  <Step title="Sign In">
+    Click **Sign in with GitHub** in the Code Completion settings
+  </Step>
+
+  <Step title="Authorize">
+    Complete the GitHub OAuth flow to authorize cmd
+  </Step>
+
+  <Step title="Verify Subscription">
+    Ensure you have an active GitHub Copilot subscription (Individual, Business, or Enterprise)
+  </Step>
+</Steps>
+
+<Info>
+  GitHub Copilot requires an active subscription. Visit [github.com/features/copilot](https://github.com/features/copilot) to subscribe.
+</Info>
+
+### Mistral AI / Mercury Coder
+
+<Steps>
+  <Step title="Get API Key">
+    Create an API key at [console.mistral.ai](https://console.mistral.ai)
+  </Step>
+
+  <Step title="Add to cmd">
+    Enter your Mistral API key in **Settings > AI Providers**
+  </Step>
+
+  <Step title="Select Mistral">
+    Choose Mistral AI as your code completion provider
+  </Step>
+</Steps>
+
+## Trigger Modes
+
+### Automatic Mode
+
+In automatic mode, code completions appear as you type after a brief pause. This provides a seamless experience where suggestions flow naturally with your coding rhythm.
+
+- Suggestions appear automatically after you stop typing
+- Minimal interruption to your workflow
+- Best for developers who want continuous assistance
+
+### On-Demand Mode
+
+In on-demand mode, you control when completions appear by pressing a keyboard shortcut.
+
+- Trigger completions only when you want them
+- Less visual noise while coding
+- Best for developers who prefer explicit control
+
+<Tip>
+  Configure your preferred keyboard shortcut in **Settings > Keyboard Shortcuts** to trigger on-demand completions.
+</Tip>
+
+## Using Code Completion
+
+Once configured, code completion works seamlessly in Xcode:
+
+1. **Start typing** in any Swift file
+2. **View suggestions** that appear inline as ghost text
+3. **Accept** a suggestion by pressing `Tab`
+4. **Dismiss** a suggestion by pressing `Escape` or continuing to type
+
+<Warning>
+  Code completion requires cmd to be running in the background. Ensure cmd is open for completions to work.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Write Clear Comments" icon="comment">
+    Add comments describing what you want to implement. Code completion uses these as context for better suggestions.
+  </Card>
+  <Card title="Use Meaningful Names" icon="tag">
+    Descriptive function and variable names help the AI understand your intent and provide more relevant completions.
+  </Card>
+</CardGroup>
