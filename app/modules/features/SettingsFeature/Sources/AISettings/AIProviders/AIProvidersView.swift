@@ -45,7 +45,7 @@ public struct AIProvidersView: View {
                 viewModel: viewModel,
                 provider: providerInfo.provider,
                 providerSettings: providerInfo.settings,
-                isConnected: providerInfo.isConnected,
+                isConfigured: providerInfo.isConfigured,
                 enabledModels: viewModel.enabledModels,
                 onSettingsChanged: { newSettings in
                   updateProviderSettings(for: providerInfo.provider, with: newSettings)
@@ -88,7 +88,7 @@ public struct AIProvidersView: View {
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
-        isConnected: provider.isConnected(existingSettings))
+        isConfigured: provider.isConfigured(existingSettings))
     }
 
     return searchText.isEmpty
@@ -104,7 +104,7 @@ public struct AIProvidersView: View {
 
   private func setInitialOrder() {
     orderedProviders = AIProvider.allCases.map { provider in
-      (provider, provider.isConnected(viewModel.providerSettings[provider]))
+      (provider, provider.isConfigured(viewModel.providerSettings[provider]))
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
@@ -137,7 +137,7 @@ public struct AIProvidersView: View {
 private struct ProviderInfo {
   let provider: AIProvider
   let settings: AIProviderSettings?
-  let isConnected: Bool
+  let isConfigured: Bool
 }
 
 // MARK: - ProviderModelSelectionView
@@ -164,7 +164,7 @@ private struct ProviderModelSelectionView: View {
           viewModel: viewModel,
           provider: provider,
           providerSettings: providerSettings,
-          isConnected: true,
+          isConfigured: true,
           enabledModels: viewModel.enabledModels,
           onSettingsChanged: nil,
           onSelectModels: nil)

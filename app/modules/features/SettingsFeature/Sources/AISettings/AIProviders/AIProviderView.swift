@@ -14,7 +14,7 @@ struct AIProviderView: View {
     viewModel: LLMSettingsViewModel,
     provider: AIProvider,
     providerSettings: AIProviderSettings?,
-    isConnected: Bool,
+    isConfigured: Bool,
     enabledModels: [AIModelID],
     onSettingsChanged: ((AIProviderSettings?) -> Void)?,
     onSelectModels: (() -> Void)?,
@@ -23,7 +23,7 @@ struct AIProviderView: View {
     self.viewModel = viewModel
     self.provider = provider
     self.providerSettings = providerSettings
-    self.isConnected = isConnected
+    self.isConfigured = isConfigured
     self.enabledModels = enabledModels
     self.onSettingsChanged = onSettingsChanged
     self.onSelectModels = onSelectModels
@@ -41,9 +41,9 @@ struct AIProviderView: View {
               .font(.title2)
               .fontWeight(.medium)
             Spacer()
-            Text(isConnected ? "Connected" : "Not connected")
+            Text(isConfigured ? "Configured" : "Not configured")
               .font(.subheadline)
-              .foregroundColor(isConnected ? colorScheme.addedLineDiffText : .secondary)
+              .foregroundColor(isConfigured ? colorScheme.addedLineDiffText : .secondary)
           }
 
           if let websiteURL = provider.websiteURL {
@@ -102,14 +102,19 @@ struct AIProviderView: View {
           }
         }
 
-        // Local executable section (for providers that are local)
+        // External agent section
         if let externalAgent = provider.externalAgent {
           ExternalAgentView(externalAgent: externalAgent, executable: $executable)
+        }
+
+        // Local inference section
+        if let localInference = provider.localInference {
+          LocalInferenceView(localInference: localInference, baseURL: $baseURL, executable: $executable)
         }
       }
 
       // Models button
-      if isConnected, let onSelectModels, provider.externalAgent == nil {
+      if isConfigured, let onSelectModels, !provider.isExternalAgent {
         Button(action: {
           onSelectModels()
         }) {
@@ -140,6 +145,9 @@ struct AIProviderView: View {
     .onChange(of: apiKey) { _, _ in
       saveSettings()
     }
+    .onChange(of: baseURL) { _, _ in
+      saveSettings()
+    }
     .onChange(of: executable) { _, _ in
       saveSettings()
     }
@@ -159,7 +167,7 @@ struct AIProviderView: View {
 
   private let provider: AIProvider
   private let providerSettings: AIProviderSettings?
-  private let isConnected: Bool
+  private let isConfigured: Bool
   private let onSettingsChanged: ((AIProviderSettings?) -> Void)?
   private let onSelectModels: (() -> Void)?
   private let frameless: Bool
@@ -186,20 +194,25 @@ struct AIProviderView: View {
     let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedExecutable = executable.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    if provider.externalAgent == nil {
+    if provider.needsAPIKey {
       guard !trimmedAPIKey.isEmpty else {
         onSettingsChanged(nil)
         return
       }
-    } else {
+    } else if provider.isExternalAgent {
       guard !trimmedExecutable.isEmpty else {
+        onSettingsChanged(nil)
+        return
+      }
+    } else if provider.isLocalInference {
+      guard !trimmedExecutable.isEmpty || URL(string: trimmedBaseURL) != nil else {
         onSettingsChanged(nil)
         return
       }
     }
 
     let providerSettings = AIProviderSettings(
-      apiKey: trimmedAPIKey,
+      apiKey: trimmedAPIKey.isEmpty ? nil : trimmedAPIKey,
       baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL,
       executable: trimmedExecutable.isEmpty ? nil : trimmedExecutable,
       createdOrder: -1)
@@ -237,7 +250,7 @@ extension AIProvider {
     case .inception:
       "Inception"
     case .ollama:
-      "Local inference with open models"
+      "Chat & build with open models"
     default:
       "Unknown provider"
     }
@@ -245,14 +258,23 @@ extension AIProvider {
 
   /// Whether the provider requires an API key to function (regardless of whether one has already been provided).
   var needsAPIKey: Bool {
-    externalAgent == nil
+    !isExternalAgent && !isLocalInference
   }
 
-  func isConnected(_ providerSettings: AIProviderSettings?) -> Bool {
-    if externalAgent != nil {
-      providerSettings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-    } else {
-      providerSettings?.apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+  func isConfigured(_ providerSettings: AIProviderSettings?) -> Bool {
+    if needsAPIKey {
+      return providerSettings?.apiKey?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    } else if isExternalAgent {
+      return providerSettings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    } else if isLocalInference {
+      if
+        let baseUrl = providerSettings?.baseUrl?.trimmingCharacters(in: .whitespacesAndNewlines),
+        URL(string: baseUrl) != nil
+      {
+        return true
+      }
+      return providerSettings?.executable?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
+    return false
   }
 }

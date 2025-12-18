@@ -225,7 +225,7 @@ private struct CodeCompletionProviderSection: View {
                 viewModel: llmSettingsViewModel,
                 provider: aiProvider,
                 providerSettings: llmSettingsViewModel.providerSettings[aiProvider],
-                isConnected: aiProvider.isConnected(llmSettingsViewModel.providerSettings[aiProvider]),
+                isConfigured: aiProvider.isConfigured(llmSettingsViewModel.providerSettings[aiProvider]),
                 enabledModels: llmSettingsViewModel.enabledModels,
                 onSettingsChanged: { newSettings in
                   updateProviderSettings(for: aiProvider, with: newSettings)
