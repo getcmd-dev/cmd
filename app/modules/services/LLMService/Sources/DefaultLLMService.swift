@@ -420,6 +420,8 @@ extension Schema.APIProvider {
         return .mistral
       case .inception:
         return .inception
+      case .ollama:
+        return .ollama
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }

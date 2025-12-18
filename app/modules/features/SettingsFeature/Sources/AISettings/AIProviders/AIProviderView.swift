@@ -236,6 +236,8 @@ extension AIProvider {
       "Mistral"
     case .inception:
       "Inception"
+    case .ollama:
+      "Local inference with open models"
     default:
       "Unknown provider"
     }

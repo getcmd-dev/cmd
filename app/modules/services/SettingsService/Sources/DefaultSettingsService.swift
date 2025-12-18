@@ -270,7 +270,7 @@ final class DefaultSettingsService: SettingsService {
 
     let keychainKeyPrefix = "cmd-keychain-key-"
     for provider in AIProvider.allCases {
-      let keychainKey = keychainKeyPrefix + provider.keychainKey
+      guard let keychainKey = provider.keychainKey.map({ keychainKeyPrefix + $0 }) else { continue }
       if let settings = settings.llmProviderSettings[provider] {
         privateKeys[keychainKey] = settings.apiKey
         publicSettings.llmProviderSettings[provider]?.apiKey = keychainKey
