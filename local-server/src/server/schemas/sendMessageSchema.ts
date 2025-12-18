@@ -32,6 +32,7 @@ export type APIProviderName =
 	| "gemini"
 	| "mistral"
 	| "inception"
+	| "ollama"
 	| "claude_code"
 	| "codex"
 	| "gemini_cli"

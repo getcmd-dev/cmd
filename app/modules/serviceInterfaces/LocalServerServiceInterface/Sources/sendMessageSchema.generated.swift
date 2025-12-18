@@ -810,6 +810,7 @@ extension Schema {
     case gemini = "gemini"
     case mistral = "mistral"
     case inception = "inception"
+    case ollama = "ollama"
     case claudeCode = "claude_code"
     case codex = "codex"
     case geminiCli = "gemini_cli"

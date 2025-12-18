@@ -55,6 +55,7 @@ export OPENAI_LOCAL_SERVER_PROXY="http://localhost:10003/v1"
 export GROQ_LOCAL_SERVER_PROXY="http://localhost:10004/openai/v1"
 export GEMINI_LOCAL_SERVER_PROXY="http://localhost:10005/v1beta"
 export GITHUB_COPILOT_PROXY="http://localhost:9090"
+export OLLAMA_LOCAL_SERVER_PROXY="http://localhost:1006"
 
 # Claude Code (with Proxyman):
 cat > "$HOME/.claude/start_with_proxy.sh" << 'EOF'
