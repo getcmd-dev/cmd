@@ -42,4 +42,8 @@ export type Model = {
 	 * @format integer
 	 */
 	rankForProgramming: number
+	supportsChat: boolean
+	supportsTools: boolean
+	supportsReasoning: boolean
+	supportsCompletion: boolean
 }

@@ -117,6 +117,10 @@ export const listReferenceModels = async (): Promise<ProviderModelFullInfo[]> =>
 				name,
 				// A model supports reasoning if at least one provider supports it
 				supportsReasoning: !!modelWithProviders.find((provider) => provider.endpoint?.supports_reasoning),
+				// A model supports tools if at least one provider supports it
+				supportsTools: !!modelsWithProviderInfo.find((provider) =>
+					provider.endpoint?.supported_parameters.includes("tools"),
+				),
 				providers: modelWithProviders
 					.map((modelWithProvider) => {
 						if (!modelWithProvider.endpoint) {

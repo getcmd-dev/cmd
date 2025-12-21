@@ -410,12 +410,12 @@ describe("OllamaAIProvider", () => {
 			expect(models[0].architecture.input_modalities).toEqual(["text"])
 		})
 
-		it("should derive supportsCompletion from capabilities", async () => {
+		it("should derive supportsChat from completion capability", async () => {
 			const mockOllamaResponse = {
 				models: [
 					{
-						name: "completion-model:latest",
-						model: "completion-model",
+						name: "chat-model:latest",
+						model: "chat-model",
 						modified_at: "2024-01-01T00:00:00Z",
 						size: 1000000,
 						digest: "test123",
@@ -429,9 +429,8 @@ describe("OllamaAIProvider", () => {
 				],
 			}
 
-			const mockModelDetailsWithCompletion = {
+			const mockModelDetailsWithChat = {
 				model_info: {
-					"general.architecture": "test",
 					"test.context_length": 4096,
 				},
 				details: {
@@ -441,7 +440,7 @@ describe("OllamaAIProvider", () => {
 					parameter_size: "7B",
 					quantization_level: "Q4",
 				},
-				capabilities: ["completion", "tools", "insert"],
+				capabilities: ["completion", "tools"],
 			}
 
 			mockFetch.mockResolvedValueOnce({
@@ -451,22 +450,21 @@ describe("OllamaAIProvider", () => {
 
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
-				json: async () => mockModelDetailsWithCompletion,
+				json: async () => mockModelDetailsWithChat,
 			} as Response)
 
 			const config: ProviderConfig = {}
 			const models = await provider.listModels(config, [])
 
-			expect(models.length).toBe(1)
-			expect(models[0].supportsCompletion).toBe(true)
+			expect(models[0].supportsChat).toBe(true)
 		})
 
-		it("should set supportsCompletion to false when no completion capability", async () => {
+		it("should set supportsChat to false without completion capability", async () => {
 			const mockOllamaResponse = {
 				models: [
 					{
-						name: "no-completion-model:latest",
-						model: "no-completion-model",
+						name: "no-chat-model:latest",
+						model: "no-chat-model",
 						modified_at: "2024-01-01T00:00:00Z",
 						size: 1000000,
 						digest: "test123",
@@ -480,7 +478,56 @@ describe("OllamaAIProvider", () => {
 				],
 			}
 
-			const mockModelDetailsNoCompletion = {
+			const mockModelDetailsNoChat = {
+				model_info: {
+					"test.context_length": 4096,
+				},
+				details: {
+					parent_model: "",
+					format: "gguf",
+					family: "test",
+					parameter_size: "7B",
+					quantization_level: "Q4",
+				},
+				capabilities: ["vision"],
+			}
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => mockOllamaResponse,
+			} as Response)
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => mockModelDetailsNoChat,
+			} as Response)
+
+			const config: ProviderConfig = {}
+			const models = await provider.listModels(config, [])
+
+			expect(models[0].supportsChat).toBe(false)
+		})
+
+		it("should derive supportsTools from capabilities", async () => {
+			const mockOllamaResponse = {
+				models: [
+					{
+						name: "tools-model:latest",
+						model: "tools-model",
+						modified_at: "2024-01-01T00:00:00Z",
+						size: 1000000,
+						digest: "test123",
+						details: {
+							format: "gguf",
+							family: "test",
+							parameter_size: "7B",
+							quantization_level: "Q4",
+						},
+					},
+				],
+			}
+
+			const mockModelDetailsWithTools = {
 				model_info: {
 					"general.architecture": "test",
 					"test.context_length": 4096,
@@ -492,7 +539,7 @@ describe("OllamaAIProvider", () => {
 					parameter_size: "7B",
 					quantization_level: "Q4",
 				},
-				capabilities: ["vision", "tools"],
+				capabilities: ["completion", "tools"],
 			}
 
 			mockFetch.mockResolvedValueOnce({
@@ -502,14 +549,65 @@ describe("OllamaAIProvider", () => {
 
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
-				json: async () => mockModelDetailsNoCompletion,
+				json: async () => mockModelDetailsWithTools,
 			} as Response)
 
 			const config: ProviderConfig = {}
 			const models = await provider.listModels(config, [])
 
 			expect(models.length).toBe(1)
-			expect(models[0].supportsCompletion).toBe(false)
+			expect(models[0].supportsTools).toBe(true)
+		})
+
+		it("should set supportsTools to false when no tools capability", async () => {
+			const mockOllamaResponse = {
+				models: [
+					{
+						name: "no-tools-model:latest",
+						model: "no-tools-model",
+						modified_at: "2024-01-01T00:00:00Z",
+						size: 1000000,
+						digest: "test123",
+						details: {
+							format: "gguf",
+							family: "test",
+							parameter_size: "7B",
+							quantization_level: "Q4",
+						},
+					},
+				],
+			}
+
+			const mockModelDetailsNoTools = {
+				model_info: {
+					"general.architecture": "test",
+					"test.context_length": 4096,
+				},
+				details: {
+					parent_model: "",
+					format: "gguf",
+					family: "test",
+					parameter_size: "7B",
+					quantization_level: "Q4",
+				},
+				capabilities: ["completion", "vision"],
+			}
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => mockOllamaResponse,
+			} as Response)
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => mockModelDetailsNoTools,
+			} as Response)
+
+			const config: ProviderConfig = {}
+			const models = await provider.listModels(config, [])
+
+			expect(models.length).toBe(1)
+			expect(models[0].supportsTools).toBe(false)
 		})
 
 		it("should derive supportsReasoning from capabilities", async () => {
@@ -617,8 +715,8 @@ describe("OllamaAIProvider", () => {
 			const mockOllamaResponse = {
 				models: [
 					{
-						name: "insert-model:latest",
-						model: "insert-model",
+						name: "completion-model:latest",
+						model: "completion-model",
 						modified_at: "2024-01-01T00:00:00Z",
 						size: 1000000,
 						digest: "test123",
@@ -632,10 +730,10 @@ describe("OllamaAIProvider", () => {
 				],
 			}
 
-			const mockModelDetailsWithInsert = {
+			const mockModelDetailsWithCompletion = {
 				model_info: {
 					"general.architecture": "test",
-					"test.context_length": 8192,
+					"test.context_length": 4096,
 				},
 				details: {
 					parent_model: "",
@@ -654,7 +752,7 @@ describe("OllamaAIProvider", () => {
 
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
-				json: async () => mockModelDetailsWithInsert,
+				json: async () => mockModelDetailsWithCompletion,
 			} as Response)
 
 			const config: ProviderConfig = {}
@@ -664,12 +762,12 @@ describe("OllamaAIProvider", () => {
 			expect(models[0].supportsCompletion).toBe(true)
 		})
 
-		it("should set supportsCompletion to false when no insert capability", async () => {
+		it("should set supportsCompletion to false when no completion capability", async () => {
 			const mockOllamaResponse = {
 				models: [
 					{
-						name: "no-insert-model:latest",
-						model: "no-insert-model",
+						name: "no-completion-model:latest",
+						model: "no-completion-model",
 						modified_at: "2024-01-01T00:00:00Z",
 						size: 1000000,
 						digest: "test123",
@@ -683,10 +781,10 @@ describe("OllamaAIProvider", () => {
 				],
 			}
 
-			const mockModelDetailsNoInsert = {
+			const mockModelDetailsNoCompletion = {
 				model_info: {
 					"general.architecture": "test",
-					"test.context_length": 8192,
+					"test.context_length": 4096,
 				},
 				details: {
 					parent_model: "",
@@ -695,6 +793,7 @@ describe("OllamaAIProvider", () => {
 					parameter_size: "7B",
 					quantization_level: "Q4",
 				},
+				capabilities: ["vision", "tools"],
 			}
 
 			mockFetch.mockResolvedValueOnce({
@@ -704,7 +803,7 @@ describe("OllamaAIProvider", () => {
 
 			mockFetch.mockResolvedValueOnce({
 				ok: true,
-				json: async () => mockModelDetailsNoInsert,
+				json: async () => mockModelDetailsNoCompletion,
 			} as Response)
 
 			const config: ProviderConfig = {}
@@ -765,6 +864,7 @@ describe("OllamaAIProvider", () => {
 			expect(models[0].architecture.input_modalities).toContain("text")
 			expect(models[0].architecture.input_modalities).toContain("image")
 			expect(models[0].supportsChat).toBe(true)
+			expect(models[0].supportsTools).toBe(true)
 			expect(models[0].supportsReasoning).toBe(true)
 			expect(models[0].supportsCompletion).toBe(true)
 		})
@@ -944,153 +1044,6 @@ describe("OllamaAIProvider", () => {
 			const models = await provider.listModels(config, [])
 
 			expect(models.length).toBe(0)
-		})
-
-		it("should derive supportsChat from completion capability", async () => {
-			const mockOllamaResponse = {
-				models: [
-					{
-						name: "chat-model:latest",
-						model: "chat-model",
-						modified_at: "2024-01-01T00:00:00Z",
-						size: 1000000,
-						digest: "test123",
-						details: {
-							format: "gguf",
-							family: "test",
-							parameter_size: "7B",
-							quantization_level: "Q4",
-						},
-					},
-				],
-			}
-
-			const mockModelDetailsWithChat = {
-				model_info: {
-					"test.context_length": 4096,
-				},
-				details: {
-					parent_model: "",
-					format: "gguf",
-					family: "test",
-					parameter_size: "7B",
-					quantization_level: "Q4",
-				},
-				capabilities: ["completion", "tools"],
-			}
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockOllamaResponse,
-			} as Response)
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockModelDetailsWithChat,
-			} as Response)
-
-			const config: ProviderConfig = {}
-			const models = await provider.listModels(config, [])
-
-			expect(models[0].supportsChat).toBe(true)
-		})
-
-		it("should set supportsChat to false without completion capability", async () => {
-			const mockOllamaResponse = {
-				models: [
-					{
-						name: "no-chat-model:latest",
-						model: "no-chat-model",
-						modified_at: "2024-01-01T00:00:00Z",
-						size: 1000000,
-						digest: "test123",
-						details: {
-							format: "gguf",
-							family: "test",
-							parameter_size: "7B",
-							quantization_level: "Q4",
-						},
-					},
-				],
-			}
-
-			const mockModelDetailsNoChat = {
-				model_info: {
-					"test.context_length": 4096,
-				},
-				details: {
-					parent_model: "",
-					format: "gguf",
-					family: "test",
-					parameter_size: "7B",
-					quantization_level: "Q4",
-				},
-				capabilities: ["vision"],
-			}
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockOllamaResponse,
-			} as Response)
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockModelDetailsNoChat,
-			} as Response)
-
-			const config: ProviderConfig = {}
-			const models = await provider.listModels(config, [])
-
-			expect(models[0].supportsChat).toBe(false)
-		})
-
-		it("should default to text-only modality with empty capabilities array", async () => {
-			const mockOllamaResponse = {
-				models: [
-					{
-						name: "empty-caps:latest",
-						model: "empty-caps",
-						modified_at: "2024-01-01T00:00:00Z",
-						size: 1000000,
-						digest: "test123",
-						details: {
-							format: "gguf",
-							family: "test",
-							parameter_size: "7B",
-							quantization_level: "Q4",
-						},
-					},
-				],
-			}
-
-			const mockModelDetailsEmptyCaps = {
-				model_info: {
-					"test.context_length": 4096,
-				},
-				details: {
-					parent_model: "",
-					format: "gguf",
-					family: "test",
-					parameter_size: "7B",
-					quantization_level: "Q4",
-				},
-				capabilities: [],
-			}
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockOllamaResponse,
-			} as Response)
-
-			mockFetch.mockResolvedValueOnce({
-				ok: true,
-				json: async () => mockModelDetailsEmptyCaps,
-			} as Response)
-
-			const config: ProviderConfig = {}
-			const models = await provider.listModels(config, [])
-
-			expect(models[0].architecture.input_modalities).toEqual(["text"])
 		})
 	})
 })

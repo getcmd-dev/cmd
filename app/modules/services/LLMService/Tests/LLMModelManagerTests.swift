@@ -1094,6 +1094,10 @@ private func makeSchemaModel(
     maxCompletionTokens: 8_192,
     inputModalities: [.text],
     outputModalities: [.text],
+    supportsChat: true,
+    supportsTools: true,
+    supportsReasoning: false,
+    supportsCompletion: true,
     pricing: pricing ?? Schema.ModelPricing(
       prompt: 1.0,
       completion: 2.0),

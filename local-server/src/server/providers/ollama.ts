@@ -207,9 +207,10 @@ export class OllamaAIProvider implements AIProvider {
 			},
 			created: new Date(model.modified_at).getTime() / 1000,
 			rankForProgramming: rankForProgramming,
+			supportsChat: details.capabilities?.includes("completion") ?? false,
+			supportsTools: details?.capabilities?.includes("tools") ?? false,
 			supportsReasoning: details.capabilities?.includes("thinking") ?? false,
 			supportsCompletion: details.capabilities?.includes("insert") ?? false,
-			supportsChat: details.capabilities?.includes("completion") ?? false,
 		}
 	}
 }

@@ -71,6 +71,10 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 					: undefined,
 				createdAt: model.created,
 				rankForProgramming: model.rankForProgramming,
+				supportsChat: model.supportsChat,
+				supportsTools: model.supportsTools,
+				supportsReasoning: model.supportsReasoning,
+				supportsCompletion: model.supportsCompletion,
 			})),
 		} satisfies ListModelsOutput)
 	})

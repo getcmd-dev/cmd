@@ -5,7 +5,9 @@ import Foundation
 
 // MARK: - LLMReasoning
 
-public struct LLMReasoning: Sendable, Hashable, Codable { }
+public struct LLMReasoning: Sendable, Hashable, Codable {
+  public init() { }
+}
 
 // MARK: - AIProviderModel
 
@@ -42,7 +44,10 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
     documentationURL: URL? = nil,
     reasoning: LLMReasoning? = nil,
     createdAt: TimeInterval,
-    rankForProgramming: Int)
+    rankForProgramming: Int,
+    supportsChat: Bool = true,
+    supportsTools: Bool = true,
+    supportsCompletion: Bool = false)
   {
     self.slug = slug
     self.name = name
@@ -54,6 +59,13 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
     self.reasoning = reasoning
     self.createdAt = createdAt
     self.rankForProgramming = rankForProgramming
+    self.supportsChat = supportsChat
+      // TODO: move to appropriate place
+      && AIModel.modelSupportsChat(id: slug)
+    self.supportsTools = supportsTools
+    self.supportsCompletion = supportsCompletion
+      // TODO: move to appropriate place
+      || AIModel.modelSupportsCompletion(id: slug)
   }
 
   /// A few models for debugging and providing default values.
@@ -122,6 +134,9 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
   public let reasoning: LLMReasoning?
   public let createdAt: TimeInterval
   public let rankForProgramming: Int
+  public let supportsChat: Bool
+  public let supportsTools: Bool
+  public let supportsCompletion: Bool
 
   public var id: String {
     slug
@@ -147,11 +162,11 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
 }
 
 extension AIModel {
-  public var supportsCompletion: Bool {
+  static func modelSupportsCompletion(id: String) -> Bool {
     ["inception/mercury-coder-small", "mistralai/codestral-latest"].contains(id)
   }
 
-  public var supportsChat: Bool {
+  static func modelSupportsChat(id: String) -> Bool {
     id != "inception/mercury-coder-small"
   }
 }
