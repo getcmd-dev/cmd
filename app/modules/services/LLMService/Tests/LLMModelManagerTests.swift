@@ -1094,15 +1094,15 @@ private func makeSchemaModel(
     maxCompletionTokens: 8_192,
     inputModalities: [.text],
     outputModalities: [.text],
-    supportsChat: true,
-    supportsTools: true,
-    supportsReasoning: false,
-    supportsCompletion: true,
     pricing: pricing ?? Schema.ModelPricing(
       prompt: 1.0,
       completion: 2.0),
     createdAt: Date().timeIntervalSince1970,
-    rankForProgramming: 1)
+    rankForProgramming: 1,
+    supportsChat: true,
+    supportsTools: true,
+    supportsReasoning: false,
+    supportsCompletion: true)
 }
 
 private func makeListModelsOutput(models: [Schema.Model]) -> Schema.ListModelsOutput {

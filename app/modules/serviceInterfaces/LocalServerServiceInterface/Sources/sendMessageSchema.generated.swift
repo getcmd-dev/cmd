@@ -10,7 +10,7 @@ extension Schema {
     public let messages: [Message]
     public let system: String?
     public let projectRoot: String?
-    public let tools: [Tool]
+    public let tools: [Tool]?
     public let model: String
     public let enableReasoning: Bool
     public let provider: APIProvider
@@ -31,7 +31,7 @@ extension Schema {
         messages: [Message],
         system: String? = nil,
         projectRoot: String? = nil,
-        tools: [Tool],
+        tools: [Tool]? = nil,
         model: String,
         enableReasoning: Bool,
         provider: APIProvider,
@@ -52,7 +52,7 @@ extension Schema {
       messages = try container.decode([Message].self, forKey: .messages)
       system = try container.decodeIfPresent(String?.self, forKey: .system)
       projectRoot = try container.decodeIfPresent(String?.self, forKey: .projectRoot)
-      tools = try container.decode([Tool].self, forKey: .tools)
+      tools = try container.decodeIfPresent([Tool]?.self, forKey: .tools)
       model = try container.decode(String.self, forKey: .model)
       enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
@@ -64,7 +64,7 @@ extension Schema {
       try container.encode(messages, forKey: .messages)
       try container.encodeIfPresent(system, forKey: .system)
       try container.encodeIfPresent(projectRoot, forKey: .projectRoot)
-      try container.encode(tools, forKey: .tools)
+      try container.encodeIfPresent(tools, forKey: .tools)
       try container.encode(model, forKey: .model)
       try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)

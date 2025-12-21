@@ -30,7 +30,7 @@ describe("OllamaAIProvider", () => {
 			})
 
 			expect(result.model).toBeDefined()
-			expect(result.generalProviderOptions).toEqual({})
+			expect(result.generalProviderOptions).toBeUndefined()
 		})
 
 		it("should create provider with custom baseURL", () => {
@@ -72,6 +72,17 @@ describe("OllamaAIProvider", () => {
 			} else {
 				delete process.env.OLLAMA_LOCAL_SERVER_PROXY
 			}
+		})
+
+		it("should create provider with thinking option when reasoningBudget is set", () => {
+			const result = provider.build({
+				provider: {},
+				modelName: "llama2",
+				reasoningBudget: 100,
+			})
+
+			expect(result.model).toBeDefined()
+			expect(result.generalProviderOptions).toEqual({ ollama: { think: true } })
 		})
 	})
 

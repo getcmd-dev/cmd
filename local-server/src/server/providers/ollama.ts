@@ -1,6 +1,6 @@
 import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig, ModelModality } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
-import { createOllama } from "ollama-ai-provider-v2"
+import { createOllama, OllamaCompletionProviderOptions } from "ollama-ai-provider-v2"
 import { LanguageModel } from "ai"
 import { UserFacingError } from "../errors"
 import { ProviderModelFullInfo } from "./provider"
@@ -88,6 +88,7 @@ export class OllamaAIProvider implements AIProvider {
 		const {
 			provider: { baseUrl },
 			modelName,
+			reasoningBudget,
 		} = params
 
 		let finalBaseUrl = process.env["OLLAMA_LOCAL_SERVER_PROXY"] ?? baseUrl ?? "http://localhost:11434/api"
@@ -99,9 +100,16 @@ export class OllamaAIProvider implements AIProvider {
 			baseURL: finalBaseUrl,
 		})
 
+		const providerOptions: OllamaCompletionProviderOptions = {}
+		if (reasoningBudget) {
+			providerOptions.think = true
+		}
+
+		const generalProviderOptions = Object.keys(providerOptions).length > 0 ? { ollama: providerOptions } : undefined
+
 		return {
 			model: provider(modelName) as unknown as LanguageModel,
-			generalProviderOptions: {},
+			generalProviderOptions,
 		}
 	}
 

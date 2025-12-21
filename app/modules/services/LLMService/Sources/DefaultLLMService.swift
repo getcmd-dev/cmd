@@ -267,12 +267,14 @@ final class DefaultLLMService: LLMService {
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
-      tools: tools
+      tools: model.supportsTools
+        ? tools
         // Unless we are using an external agent, only send to the AI tools that are internal.
         .filter { ($0.canBeExecuted && $0.id == $0.referenceId) || provider.isExternalAgent }
-        .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
+        .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) }
+        : nil,
       model: providerModel.id,
-      enableReasoning: enableReasoning,
+      enableReasoning: model.canReason && enableReasoning,
       provider: .init(
         provider: provider,
         settings: providerSettings,
