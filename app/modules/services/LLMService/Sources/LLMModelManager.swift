@@ -337,11 +337,13 @@ final class AIModelsManager: AIModelsManagerProtocol {
         slug: $0.globalId,
         contextSize: $0.contextLength,
         maxOutputTokens: $0.maxCompletionTokens,
-        defaultPricing: .init(
-          input: $0.pricing.prompt,
-          output: $0.pricing.completion,
-          cacheWrite: $0.pricing.inputCacheWrite ?? 0,
-          cachedInput: $0.pricing.inputCacheRead ?? 0),
+        defaultPricing: $0.pricing != nil
+          ? .init(
+            input: $0.pricing?.prompt ?? 0,
+            output: $0.pricing?.completion ?? 0,
+            cacheWrite: $0.pricing?.inputCacheWrite ?? 0,
+            cachedInput: $0.pricing?.inputCacheRead ?? 0)
+          : nil,
         createdAt: $0.createdAt,
         rankForProgramming: $0.rankForProgramming)) }
   }

@@ -206,10 +206,6 @@ export class OllamaAIProvider implements AIProvider {
 				output_modalities: ["text"],
 			},
 			created: new Date(model.modified_at).getTime() / 1000,
-			pricing: {
-				prompt: "0",
-				completion: "0",
-			},
 			rankForProgramming: rankForProgramming,
 			supportsReasoning: details.capabilities?.includes("thinking") ?? false,
 			supportsCompletion: details.capabilities?.includes("insert") ?? false,

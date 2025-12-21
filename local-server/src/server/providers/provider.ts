@@ -71,7 +71,7 @@ export type ProviderModelFullInfo = {
 		max_completion_tokens?: number
 	}
 	/** Pricing information (values are strings to preserve precision) */
-	pricing: {
+	pricing?: {
 		/** Cost per prompt token */
 		prompt: string
 		/** Cost per completion token */
@@ -140,7 +140,7 @@ export type ProviderModel = {
 		output_modalities: ModelModality[]
 	}
 	/** Pricing information (values are strings to preserve precision) */
-	pricing: {
+	pricing?: {
 		/** Cost per prompt token */
 		prompt: string
 		/** Cost per completion token */

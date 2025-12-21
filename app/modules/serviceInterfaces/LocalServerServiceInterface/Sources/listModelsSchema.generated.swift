@@ -61,7 +61,7 @@ extension Schema {
     public let maxCompletionTokens: Int
     public let inputModalities: [ModelModality]
     public let outputModalities: [ModelModality]
-    public let pricing: ModelPricing
+    public let pricing: ModelPricing?
     public let createdAt: Double
     public let rankForProgramming: Int
   
@@ -88,7 +88,7 @@ extension Schema {
         maxCompletionTokens: Int,
         inputModalities: [ModelModality],
         outputModalities: [ModelModality],
-        pricing: ModelPricing,
+        pricing: ModelPricing? = nil,
         createdAt: Double,
         rankForProgramming: Int
     ) {
@@ -115,7 +115,7 @@ extension Schema {
       maxCompletionTokens = try container.decode(Int.self, forKey: .maxCompletionTokens)
       inputModalities = try container.decode([ModelModality].self, forKey: .inputModalities)
       outputModalities = try container.decode([ModelModality].self, forKey: .outputModalities)
-      pricing = try container.decode(ModelPricing.self, forKey: .pricing)
+      pricing = try container.decodeIfPresent(ModelPricing?.self, forKey: .pricing)
       createdAt = try container.decode(Double.self, forKey: .createdAt)
       rankForProgramming = try container.decode(Int.self, forKey: .rankForProgramming)
     }
@@ -130,7 +130,7 @@ extension Schema {
       try container.encode(maxCompletionTokens, forKey: .maxCompletionTokens)
       try container.encode(inputModalities, forKey: .inputModalities)
       try container.encode(outputModalities, forKey: .outputModalities)
-      try container.encode(pricing, forKey: .pricing)
+      try container.encodeIfPresent(pricing, forKey: .pricing)
       try container.encode(createdAt, forKey: .createdAt)
       try container.encode(rankForProgramming, forKey: .rankForProgramming)
     }

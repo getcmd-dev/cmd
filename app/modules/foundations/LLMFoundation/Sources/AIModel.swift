@@ -38,7 +38,7 @@ public struct AIModel: Hashable, Identifiable, Sendable, Codable {
     description: String? = nil,
     contextSize: Int,
     maxOutputTokens: Int,
-    defaultPricing: ModelPricing?, // TODO: Make non-optional when we have pricing for all models.
+    defaultPricing: ModelPricing?,
     documentationURL: URL? = nil,
     reasoning: LLMReasoning? = nil,
     createdAt: TimeInterval,
