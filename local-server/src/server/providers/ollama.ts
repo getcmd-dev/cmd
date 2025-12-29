@@ -33,6 +33,8 @@ type OllamaModelDetails = {
 		"general.parameter_count"?: number
 		"general.size_label"?: string
 		"general.license"?: string
+		// Ollama's API is not fully typed and some parameters get scoped keys such as `qwen3.context_length` / `llama.context_length`
+		// For this reason this property is a catch all from where the relevant values will be extracted.
 		[key: string]: string | number | null | undefined
 	}
 	details: {
@@ -51,7 +53,7 @@ type OllamaModelDetails = {
 
 // Extract context length from model_info
 function extractContextLength(modelInfo: Record<string, string | number | null | undefined>): number {
-	// Search for any key ending with ".context_length"
+	// Search for any key ending with ".context_length". This is because Ollama uses scoped keys (e.g. `qwen3.context_length` / `llama.context_length`)
 	const contextLengthKey = Object.keys(modelInfo).find((key) => key.endsWith(".context_length"))
 
 	if (contextLengthKey) {
@@ -119,7 +121,7 @@ export class OllamaAIProvider implements AIProvider {
 			baseUrl = `${baseUrl}/api`
 		}
 
-		// List available models
+		// List available models. See https://github.com/ollama/ollama/blob/main/docs/api.md#list-local-models
 		const url = new URL(`${baseUrl}/tags`)
 		const response = await fetch(url.toString())
 
@@ -157,6 +159,7 @@ export class OllamaAIProvider implements AIProvider {
 	 */
 	private async fetchModelDetails(baseUrl: string, modelName: string): Promise<OllamaModelDetails | null> {
 		try {
+			// Fetch model details. See https://github.com/ollama/ollama/blob/main/docs/api.md#show-model-information
 			const response = await fetch(`${baseUrl}/show`, {
 				method: "POST",
 				headers: {
