@@ -115,7 +115,7 @@ export class OllamaAIProvider implements AIProvider {
 		}
 	}
 
-	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
+	async listModels(params: ProviderConfig, _referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
 		let baseUrl = process.env["OLLAMA_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "http://localhost:11434/api"
 		if (!baseUrl.endsWith("/api")) {
 			baseUrl = `${baseUrl}/api`
@@ -174,7 +174,7 @@ export class OllamaAIProvider implements AIProvider {
 			}
 
 			return await response.json()
-		} catch (error) {
+		} catch (_error) {
 			// Silently fail and return null
 			return null
 		}

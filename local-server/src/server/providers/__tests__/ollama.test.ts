@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, jest } from "@jest/globals"
 import { OllamaAIProvider } from "../ollama"
-import { ProviderConfig, ProviderModelFullInfo } from "../provider"
+import { ProviderConfig } from "../provider"
 import { UserFacingError } from "../../errors"
 
 // Mock global fetch
