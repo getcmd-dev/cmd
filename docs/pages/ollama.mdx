@@ -1,0 +1,166 @@
+---
+title: "Ollama"
+description: "Configure Ollama for local AI inference with cmd"
+---
+
+## Overview
+
+Ollama enables you to run AI models locally on your machine or on a private network endpoint. This gives you complete control over your data, eliminates API costs, and enables offline development. Ollama can automatically download and manage models for you, making local inference accessible and straightforward.
+
+## Prerequisites
+
+Before configuring Ollama in cmd, you need to have Ollama installed and running on your system.
+
+<Steps>
+  <Step title="Install Ollama">
+    Download and install Ollama from the [official website](https://ollama.com/) or follow the [Quick Start guide](https://docs.ollama.com/quickstart).
+  </Step>
+
+  <Step title="Start Ollama">
+    Ensure Ollama is running. The default installation sets up autostart, but you can also start it manually:
+
+    ```bash
+    ollama serve
+    ```
+
+    Ollama will run on `http://localhost:11434` by default.
+  </Step>
+
+  <Step title="Install Models">
+    Install one or more AI models. Ollama will automatically download the models when you first request them:
+
+    ```bash
+    # Example: Install a coding-focused model
+    ollama pull devstral-small-2:24b
+
+    # Or install a small model with lower system requirements
+    ollama pull qwen2.5-coder:7b
+
+    # Or install a reasoning model
+    ollama pull deepseek-r1:14b
+    ```
+
+    You can browse available models at [https://ollama.com/search](https://ollama.com/search).
+  </Step>
+
+  <Step title="Verify Installation">
+    Verify Ollama is working correctly:
+
+    ```bash
+    ollama list
+    ```
+
+    This should show your installed models.
+  </Step>
+</Steps>
+
+<Info>
+  Ollama automatically loads models on-demand. You don't need to manually load models before using them with cmd.
+</Info>
+
+## Configuring Ollama in cmd
+
+Once Ollama is installed and running, you can enable it in cmd:
+
+<Steps>
+  <Step title="Open AI Provider Settings">
+    Go to **Settings > AI Providers** in cmd
+  </Step>
+
+  <Step title="Add Ollama Provider">
+    Click **"Add Provider"** or **"Configure"** for Ollama.
+
+    By default, cmd connects to Ollama on `http://localhost:11434`. If you're running Ollama on a different port or on a remote server, you can customize the base URL.
+
+    <AccordionGroup>
+      <Accordion title="Example: Default local configuration">
+        For a standard local Ollama installation, simply toggle **"Enable"**
+      </Accordion>
+
+      <Accordion title="Example: Custom port">
+        If you're running Ollama on a different port:
+
+        ```
+        Base URL: http://localhost:8080
+        ```
+      </Accordion>
+
+      <Accordion title="Example: Remote server">
+        If you're running Ollama on a remote server in your private network:
+
+        ```
+        Base URL: http://192.168.1.100:11434
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Step>
+
+  <Step title="Model discovery">
+    cmd will automatically discover the available models from your Ollama installation when the provider is configured.
+  </Step>
+
+  <Step title="Select Models">
+    Go to **Settings > Models** and enable the models you want to use in cmd. All models installed in Ollama will be available for selection.
+  </Step>
+</Steps>
+
+<Tip>
+  If you install new models in Ollama after configuring the provider, you can refresh the model list by disabling and re-enabling the Ollama provider in **Settings > AI Providers**.
+</Tip>
+
+## Using Ollama
+
+Once enabled and models are selected, you can use Ollama models just like any other AI provider:
+
+<Steps>
+  <Step title="Select an Ollama Model">
+    In the cmd interface, open the model selector and choose one of your Ollama models (e.g., "devstral-small-2:24b")
+  </Step>
+
+  <Step title="Start Using">
+    You can now use Ollama models for:
+    - Chat and code assistance
+    - Agent mode for autonomous tasks (if supported by the model)
+    - All other cmd features such as code completion 
+
+    All inference happens locally on your machine or your private server - no data leaves your network.
+  </Step>
+</Steps>
+
+## Tested Models
+
+The following models have been successfully tested with cmd:
+
+- **qwen3-coder:30b** - High-performance coding model
+- **devstral-small-2:24b** - Efficient development assistant
+- **deepseek-r1:14b** - Reasoning-focused model
+- **qwen2.5-coder:7b** - Lightweight coding model
+
+You can find more models at [https://ollama.com/search](https://ollama.com/search).
+
+## Benefits of Local Inference
+
+Using Ollama with cmd provides several advantages:
+
+<CardGroup cols={2}>
+  <Card title="Data Privacy" icon="shield-halved">
+    All processing happens locally - your code never leaves your machine
+  </Card>
+  <Card title="No API Costs" icon="dollar-sign">
+    Run unlimited inference without per-token charges
+  </Card>
+  <Card title="Offline Development" icon="wifi-slash">
+    Work without internet connectivity
+  </Card>
+  <Card title="Custom Models" icon="sliders">
+    Use specialized or fine-tuned models for your specific needs
+  </Card>
+</CardGroup>
+
+<Warning>
+  Local models require significant computational resources. Larger models provide better results but need more RAM and processing power. Ensure your system meets the requirements for the models you want to run.
+</Warning>
+
+<Tip>
+  For the best coding experience, consider models specifically trained for code. These models understand programming contexts better than general-purpose models.
+</Tip>
