@@ -29,7 +29,7 @@ yarn watch
 
 ## Architecture
 
-- **Express server** on port 3000
+- **Express server** on port 10534
 - **WebSocket support** for real-time communication
 - **Process attachment** to automatically exit when parent process dies
 - **Error tracking** with Sentry integration
