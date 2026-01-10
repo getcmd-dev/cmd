@@ -103,7 +103,7 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 						})
 				}
 
-				await sendMessageImpl({ messages, localExecutable, threadId, tools }, res)
+				await sendMessageImpl({ messages, localExecutable, threadId, tools: tools ?? [] }, res)
 				return
 			}
 
@@ -147,8 +147,8 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				model,
 				abortSignal: abortController.signal,
 				tools: (addProviderOptionsToTools
-					? addProviderOptionsToTools(tools.map(mapTool))
-					: tools.map(mapTool)
+					? addProviderOptionsToTools(tools?.map(mapTool) ?? [])
+					: tools?.map(mapTool)
 				)?.reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool

@@ -26,6 +26,7 @@
             "group": "Configuration",
             "pages": [
               "pages/ai-providers",
+              "pages/ollama",
               "pages/models",
               "pages/code-completion",
               "pages/chat-modes",

@@ -17,11 +17,11 @@ public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRep
   init(
     id: String,
     name: String,
-    keychainKey: String,
+    keychainKey: String? = nil,
     websiteURL: URL? = nil,
     apiKeyCreationURL: URL? = nil,
     lowTierModelId: AIModelID? = nil,
-    modelsEnabledByDefault: [AIModelID])
+    modelsEnabledByDefault: [AIModelID] = [])
   {
     self.id = id
     self.name = name
@@ -44,12 +44,13 @@ public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRep
       .geminiCLI,
       .mistral,
       .inception,
+      .ollama,
     ]
   }
 
   public let id: String
   public let name: String
-  public let keychainKey: String
+  public let keychainKey: String?
   public let websiteURL: URL?
   public let apiKeyCreationURL: URL?
   public let lowTierModelId: AIModelID?

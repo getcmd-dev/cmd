@@ -10,6 +10,7 @@ After configuring your [AI providers](/pages/ai-providers), you need to enable w
 - Which models are available in the model selector
 - Which provider to use when a model is available from multiple sources
 - Default model preferences
+- Local models from [Ollama](/pages/ollama) for private, offline inference
 
 You can configure models during onboarding or anytime through **Settings > Models** or **Settings > AI Providers**.
 
@@ -43,6 +44,7 @@ Some models may be available from multiple providers. For example:
 - **Claude Sonnet** from both Anthropic and OpenRouter
 - **GPT-4** from both OpenAI and Azure OpenAI
 - Popular models from both direct providers and aggregators
+- Local models from Ollama vs. cloud providers
 
 ### Setting Provider Preference
 
@@ -87,3 +89,28 @@ Once you've enabled models, you can switch between them easily in the chat inter
 The model selector shows only the models you've enabled in settings.
 
 <Warning>After changing model mid-conversation, the next message will not have a cached prompt</Warning>
+
+## Local Models
+
+For complete privacy and offline development, you can use local models through [Ollama](/pages/ollama). Once you've configured the Ollama provider, all models installed in your Ollama instance will automatically appear in the model list.
+
+<Steps>
+  <Step title="Install Models in Ollama">
+    Use the Ollama CLI to install models:
+    ```bash
+    ollama pull qwen2.5-coder:7b
+    ```
+  </Step>
+
+  <Step title="Refresh Model List">
+    If you've added new models to Ollama, refresh cmd's model list by disabling and re-enabling the Ollama provider in **Settings > AI Providers**
+  </Step>
+
+  <Step title="Enable Local Models">
+    Go to **Settings > Models** and enable the Ollama models you want to use
+  </Step>
+</Steps>
+
+<Tip>
+  Local models run entirely on your machine, ensuring your code never leaves your infrastructure. This is ideal for sensitive projects or working offline.
+</Tip>

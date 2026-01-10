@@ -5,12 +5,13 @@ description: "Configure AI providers to use with cmd"
 
 ## Overview
 
-cmd connects to AI providers using your API keys. You can configure multiple providers and switch between them as needed. This gives you flexibility to:
+cmd connects to AI providers using your API keys, or use local inference with providers like Ollama. You can configure multiple providers and switch between them as needed. This gives you flexibility to:
 
 - Use different providers for different tasks
+- Run AI models locally for privacy and offline development
 - Have backup options if one provider has issues
 - Compare performance across providers
-- Take advantage of different pricing models
+- Take advantage of different pricing models or eliminate API costs entirely
 
 ## Initial Setup
 
@@ -60,6 +61,12 @@ When multiple providers offer the same model, you can set which provider to use 
     Revoke keys anytime through your provider's console
   </Card>
 </CardGroup>
+
+### Local Inference
+
+For complete data privacy and offline development, you can use [Ollama](/pages/ollama) to run AI models locally on your machine or on a private network server. This eliminates API costs and ensures your code never leaves your infrastructure.
+
+See the [Ollama configuration guide](/pages/ollama) for setup instructions.
 
 <Tip>
   Configure multiple providers to compare costs and performance. You can switch providers anytime from **Settings > Models**.

@@ -57,18 +57,24 @@ export const registerEndpoint = (router: Router, aiProviders: AIProvider[]) => {
 				maxCompletionTokens: model.max_completion_tokens || 16384,
 				inputModalities: model.architecture.input_modalities.filter(isValidModelModality),
 				outputModalities: model.architecture.output_modalities.filter(isValidModelModality),
-				pricing: {
-					prompt: parseTokenCost(model.pricing.prompt),
-					completion: parseTokenCost(model.pricing.completion),
-					image: parseTokenCost(model.pricing.image),
-					request: parseTokenCost(model.pricing.request),
-					web_search: parseTokenCost(model.pricing.web_search),
-					internal_reasoning: parseTokenCost(model.pricing.internal_reasoning),
-					input_cache_read: parseTokenCost(model.pricing.input_cache_read),
-					input_cache_write: parseTokenCost(model.pricing.input_cache_write),
-				},
+				pricing: model.pricing
+					? {
+							prompt: parseTokenCost(model.pricing.prompt),
+							completion: parseTokenCost(model.pricing.completion),
+							image: parseTokenCost(model.pricing.image),
+							request: parseTokenCost(model.pricing.request),
+							web_search: parseTokenCost(model.pricing.web_search),
+							internal_reasoning: parseTokenCost(model.pricing.internal_reasoning),
+							input_cache_read: parseTokenCost(model.pricing.input_cache_read),
+							input_cache_write: parseTokenCost(model.pricing.input_cache_write),
+						}
+					: undefined,
 				createdAt: model.created,
 				rankForProgramming: model.rankForProgramming,
+				supportsChat: model.supportsChat,
+				supportsTools: model.supportsTools,
+				supportsReasoning: model.supportsReasoning,
+				supportsCompletion: model.supportsCompletion,
 			})),
 		} satisfies ListModelsOutput)
 	})

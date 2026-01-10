@@ -1098,7 +1098,11 @@ private func makeSchemaModel(
       prompt: 1.0,
       completion: 2.0),
     createdAt: Date().timeIntervalSince1970,
-    rankForProgramming: 1)
+    rankForProgramming: 1,
+    supportsChat: true,
+    supportsTools: true,
+    supportsReasoning: false,
+    supportsCompletion: true)
 }
 
 private func makeListModelsOutput(models: [Schema.Model]) -> Schema.ListModelsOutput {

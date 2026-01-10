@@ -154,12 +154,12 @@ public struct Settings: Sendable, Equatable {
     /// To help keep track of which Provider was setup first, we use an incrementing order.
     /// This order can be useful for determining which provider to default to when multiple are available.
     public let createdOrder: Int
-    public var apiKey: String
+    public var apiKey: String?
     public var baseUrl: String?
     public var executable: String?
 
     public init(
-      apiKey: String,
+      apiKey: String?,
       baseUrl: String?,
       executable: String?,
       createdOrder: Int)

@@ -36,10 +36,14 @@ export type Model = {
 	maxCompletionTokens: number
 	inputModalities: ModelModality[]
 	outputModalities: ModelModality[]
-	pricing: ModelPricing
+	pricing?: ModelPricing
 	createdAt: number
 	/**
 	 * @format integer
 	 */
 	rankForProgramming: number
+	supportsChat: boolean
+	supportsTools: boolean
+	supportsReasoning: boolean
+	supportsCompletion: boolean
 }

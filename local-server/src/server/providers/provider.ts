@@ -71,7 +71,7 @@ export type ProviderModelFullInfo = {
 		max_completion_tokens?: number
 	}
 	/** Pricing information (values are strings to preserve precision) */
-	pricing: {
+	pricing?: {
 		/** Cost per prompt token */
 		prompt: string
 		/** Cost per completion token */
@@ -106,6 +106,8 @@ export type ProviderModelFullInfo = {
 	created: number
 	/** How this model ranks in programming tasks (from OpenRouter, only available for top models) */
 	rankForProgramming: number
+	/** Whether the model supports tools */
+	supportsTools: boolean
 	/** Whether the model supports extended reasoning/thinking */
 	supportsReasoning: boolean
 }
@@ -140,7 +142,7 @@ export type ProviderModel = {
 		output_modalities: ModelModality[]
 	}
 	/** Pricing information (values are strings to preserve precision) */
-	pricing: {
+	pricing?: {
 		/** Cost per prompt token */
 		prompt: string
 		/** Cost per completion token */
@@ -162,10 +164,14 @@ export type ProviderModel = {
 	created: number
 	/** Ranking for programming tasks */
 	rankForProgramming: number
+	/** Whether the model supports chat */
+	supportsChat: boolean
+	/** Whether the model supports tools */
+	supportsTools: boolean
 	/** Whether the model supports extended reasoning/thinking */
 	supportsReasoning: boolean
+	/** Whether the model supports completion */
 	supportsCompletion: boolean
-	supportsChat: boolean
 }
 
 /**

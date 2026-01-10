@@ -61,9 +61,13 @@ extension Schema {
     public let maxCompletionTokens: Int
     public let inputModalities: [ModelModality]
     public let outputModalities: [ModelModality]
-    public let pricing: ModelPricing
+    public let pricing: ModelPricing?
     public let createdAt: Double
     public let rankForProgramming: Int
+    public let supportsChat: Bool
+    public let supportsTools: Bool
+    public let supportsReasoning: Bool
+    public let supportsCompletion: Bool
   
     private enum CodingKeys: String, CodingKey {
       case providerId = "providerId"
@@ -77,6 +81,10 @@ extension Schema {
       case pricing = "pricing"
       case createdAt = "createdAt"
       case rankForProgramming = "rankForProgramming"
+      case supportsChat = "supportsChat"
+      case supportsTools = "supportsTools"
+      case supportsReasoning = "supportsReasoning"
+      case supportsCompletion = "supportsCompletion"
     }
   
     public init(
@@ -88,9 +96,13 @@ extension Schema {
         maxCompletionTokens: Int,
         inputModalities: [ModelModality],
         outputModalities: [ModelModality],
-        pricing: ModelPricing,
+        pricing: ModelPricing? = nil,
         createdAt: Double,
-        rankForProgramming: Int
+        rankForProgramming: Int,
+        supportsChat: Bool,
+        supportsTools: Bool,
+        supportsReasoning: Bool,
+        supportsCompletion: Bool
     ) {
       self.providerId = providerId
       self.globalId = globalId
@@ -103,6 +115,10 @@ extension Schema {
       self.pricing = pricing
       self.createdAt = createdAt
       self.rankForProgramming = rankForProgramming
+      self.supportsChat = supportsChat
+      self.supportsTools = supportsTools
+      self.supportsReasoning = supportsReasoning
+      self.supportsCompletion = supportsCompletion
     }
   
     public init(from decoder: Decoder) throws {
@@ -115,9 +131,13 @@ extension Schema {
       maxCompletionTokens = try container.decode(Int.self, forKey: .maxCompletionTokens)
       inputModalities = try container.decode([ModelModality].self, forKey: .inputModalities)
       outputModalities = try container.decode([ModelModality].self, forKey: .outputModalities)
-      pricing = try container.decode(ModelPricing.self, forKey: .pricing)
+      pricing = try container.decodeIfPresent(ModelPricing?.self, forKey: .pricing)
       createdAt = try container.decode(Double.self, forKey: .createdAt)
       rankForProgramming = try container.decode(Int.self, forKey: .rankForProgramming)
+      supportsChat = try container.decode(Bool.self, forKey: .supportsChat)
+      supportsTools = try container.decode(Bool.self, forKey: .supportsTools)
+      supportsReasoning = try container.decode(Bool.self, forKey: .supportsReasoning)
+      supportsCompletion = try container.decode(Bool.self, forKey: .supportsCompletion)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -130,9 +150,13 @@ extension Schema {
       try container.encode(maxCompletionTokens, forKey: .maxCompletionTokens)
       try container.encode(inputModalities, forKey: .inputModalities)
       try container.encode(outputModalities, forKey: .outputModalities)
-      try container.encode(pricing, forKey: .pricing)
+      try container.encodeIfPresent(pricing, forKey: .pricing)
       try container.encode(createdAt, forKey: .createdAt)
       try container.encode(rankForProgramming, forKey: .rankForProgramming)
+      try container.encode(supportsChat, forKey: .supportsChat)
+      try container.encode(supportsTools, forKey: .supportsTools)
+      try container.encode(supportsReasoning, forKey: .supportsReasoning)
+      try container.encode(supportsCompletion, forKey: .supportsCompletion)
     }
   }
   public enum ModelModality: String, Codable, Sendable, CaseIterable {

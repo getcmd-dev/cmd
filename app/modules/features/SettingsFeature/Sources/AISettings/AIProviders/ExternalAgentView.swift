@@ -20,7 +20,7 @@ struct ExternalAgentView: View {
     provider = externalAgent.llmProvider
     self.externalAgent = externalAgent
     _executable = executable
-    _executableFinder = .init(initialValue: ExecutableFinder(defaultExecutable: externalAgent.defaultExecutableName))
+    _executableFinder = .init(initialValue: ExecutableFinder(executable: externalAgent.defaultExecutableName))
   }
 
   /// The external agent configuration.
@@ -117,32 +117,6 @@ struct ExternalAgentView: View {
   @State private var executableFinder: ExecutableFinder
 
   @Environment(\.colorScheme) private var colorScheme
-}
-
-// MARK: - ExecutableFinder
-
-/// A helper that finds where a given executable is located on disk by running `which`.
-@MainActor @Observable
-private final class ExecutableFinder {
-  /// Initializes the finder and attempts to locate the executable using `which`.
-  init(defaultExecutable: String) {
-    @Dependency(\.shellService) var shellService
-
-    Task { [weak self] in
-      do {
-        let executablePath = try await shellService.runAndThrow("which \(defaultExecutable)", useInteractiveShell: true)
-        await MainActor.run {
-          guard let self else { return }
-          self.executablePath = executablePath?.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-      } catch {
-        // Silently ignore errors - executable not found is expected
-      }
-    }
-  }
-
-  /// The path where the executable was found, or nil if not found.
-  private(set) var executablePath: String?
 }
 
 extension ExternalAgent {

@@ -5,7 +5,7 @@ TypeScript server embedded in CMD that provides AI integration and third-party l
 ## Purpose
 
 This local HTTP server runs alongside the CMD macOS app and handles:
-- AI provider integrations (Anthropic, OpenAI, Groq, Gemini, OpenRouter)
+- AI provider integrations (Anthropic, OpenAI, Groq, Gemini, OpenRouter, Ollama)
 - Agent Client Protocol (ACP) support
 - Model Context Protocol (MCP) support
 - File operations and search

@@ -329,21 +329,31 @@ final class AIModelsManager: AIModelsManagerProtocol {
       name: apiProvider.name,
       settings: apiProvider.settings)))
     let response: Schema.ListModelsOutput = try await localServer.postRequest(path: "models", data: data)
-    return response.models.map { AIProviderModel(
-      providerId: $0.providerId,
-      provider: provider,
-      modelInfo: .init(
-        name: $0.name,
-        slug: $0.globalId,
-        contextSize: $0.contextLength,
-        maxOutputTokens: $0.maxCompletionTokens,
-        defaultPricing: .init(
-          input: $0.pricing.prompt,
-          output: $0.pricing.completion,
-          cacheWrite: $0.pricing.inputCacheWrite ?? 0,
-          cachedInput: $0.pricing.inputCacheRead ?? 0),
-        createdAt: $0.createdAt,
-        rankForProgramming: $0.rankForProgramming)) }
+    return response.models.map { model in
+      let defaultPricing: ModelPricing? = {
+        guard let pricing = model.pricing else { return nil }
+        return .init(
+          input: pricing.prompt,
+          output: pricing.completion,
+          cacheWrite: pricing.inputCacheWrite ?? 0,
+          cachedInput: pricing.inputCacheRead ?? 0)
+      }()
+      return AIProviderModel(
+        providerId: model.providerId,
+        provider: provider,
+        modelInfo: .init(
+          name: model.name,
+          slug: model.globalId,
+          contextSize: model.contextLength,
+          maxOutputTokens: model.maxCompletionTokens,
+          defaultPricing: defaultPricing,
+          reasoning: model.supportsReasoning ? LLMReasoning() : nil,
+          createdAt: model.createdAt,
+          rankForProgramming: model.rankForProgramming,
+          supportsChat: model.supportsChat,
+          supportsTools: model.supportsTools,
+          supportsCompletion: model.supportsCompletion))
+    }
   }
 
   private func observerChangesToSettings() {

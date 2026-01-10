@@ -191,21 +191,20 @@ struct ModelCard: View {
         .padding(.top, 8)
       }
 
-      if let pricing = model.defaultPricing {
-        HStack {
+      HStack {
+        if let pricing = model.defaultPricing {
           Text("Pricing:")
             .font(.headline)
             .fontWeight(.medium)
           Text("\(displayPrice(pricing.input)) / \(displayPrice(pricing.output))")
             .fontWeight(.medium)
-
-          Spacer()
-
-          Toggle("", isOn: $isActive)
-            .toggleStyle(.switch)
         }
-        .padding(.top, 8)
+        Spacer()
+
+        Toggle("", isOn: $isActive)
+          .toggleStyle(.switch)
       }
+      .padding(.top, 8)
 
       if provider.externalAgent != nil {
         Text("\(model.name) is an external agent")

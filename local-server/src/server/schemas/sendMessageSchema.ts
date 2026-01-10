@@ -2,7 +2,7 @@ export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string
 	projectRoot: string | undefined
-	tools: Tool[]
+	tools?: Tool[]
 	model: string
 	enableReasoning: boolean
 	provider: APIProvider
@@ -32,6 +32,7 @@ export type APIProviderName =
 	| "gemini"
 	| "mistral"
 	| "inception"
+	| "ollama"
 	| "claude_code"
 	| "codex"
 	| "gemini_cli"
