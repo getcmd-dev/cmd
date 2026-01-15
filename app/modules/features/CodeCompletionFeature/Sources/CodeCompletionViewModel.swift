@@ -512,11 +512,14 @@ final class CodeCompletionViewModel {
 
     if let (cacheId, cachedCompletion) = try? codeCompletionService.cachedCompletion(completionRequest) {
       defaultLogger.log("Using cached completion \(cachedCompletion?.diff.debugDescription ?? "nil")")
-      completion = cachedCompletion
       cachedRequestId = cacheId
+      // completionTask must be set before completion to ensure that when completion's didSet
+      // triggers needsLayout() -> getFrame(), the completionTask is available for screenshot capture
       completionTask = CompletionTask(
         id: taskId,
         request: .init(fileURL: editorState.fileURL, content: editorState.content, selection: selection))
+      completion = cachedCompletion
+      isCompletionExpanded = settingsService.value(for: \.multiLineCodeCompletionDisplayMode).isAlwaysShown
     } else {
       let task = Task { [weak self] in
         do {
