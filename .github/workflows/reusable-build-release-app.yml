@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: app/build/derived_data
-          key: ${{ runner.os }}_release_build_${{ hashFiles('app/**') }}
+          key: ${{ runner.os }}_release_build_${{ hashFiles('app/modules/**', 'app/command/**', 'app/fastlane/**', 'app/tools/**', 'app/*.xcconfig') }}
           restore-keys: |
             ${{ runner.os }}_release_build_
       # If more Xcode specific issues arise with caching, consider the less used 3rd party https://github.com/irgaly/xcode-cache
@@ -99,7 +99,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: app/build/derived_data
-          key: ${{ runner.os }}_release_build_${{ hashFiles('app/**') }}
+          key: ${{ runner.os }}_release_build_${{ hashFiles('app/modules/**', 'app/command/**', 'app/fastlane/**', 'app/tools/**', 'app/*.xcconfig') }}
       - name: Save SPM packages cache
         if: ${{ inputs.save_cache }}
         uses: actions/cache/save@v4
