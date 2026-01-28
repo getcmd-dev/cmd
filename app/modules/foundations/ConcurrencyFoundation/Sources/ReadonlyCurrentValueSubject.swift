@@ -58,3 +58,13 @@ extension CurrentValueSubject where Output: Sendable & Equatable, Failure == Nev
     }
   }
 }
+
+extension Publisher where Output: Sendable & Equatable, Failure == Never {
+  public func readonly(currentValue: Output, removingDuplicate: Bool) -> ReadonlyCurrentValueSubject<Output> {
+    if removingDuplicate {
+      ReadonlyCurrentValueSubject(currentValue, publisher: removeDuplicates().eraseToAnyPublisher())
+    } else {
+      ReadonlyCurrentValueSubject(currentValue, publisher: eraseToAnyPublisher())
+    }
+  }
+}

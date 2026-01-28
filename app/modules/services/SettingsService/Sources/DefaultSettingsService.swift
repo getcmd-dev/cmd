@@ -54,7 +54,7 @@ final class DefaultSettingsService: SettingsService {
     settingsFileLocation: URL?,
     sharedUserDefaults: UserDefaultsI,
     releaseSharedUserDefaults: UserDefaultsI?,
-    bundle: Bundle = .main)
+    bundle: Bundle)
   {
     self.fileManager = fileManager
     self.settingsFileLocation = settingsFileLocation
@@ -105,13 +105,17 @@ final class DefaultSettingsService: SettingsService {
   }
 
   func update(to newSettings: Settings) {
+    guard newSettings != settings.value else { return }
+    skipUpdateFromUserDefaults = true
     settings.send(newSettings)
-    Task { @MainActor in
+    runOnMainThread {
       do {
-        try persist(settings: newSettings)
+        try self.persist(settings: newSettings)
+        self.settings.send(self.loadSettings())
       } catch {
         defaultLogger.error("Failed to persist settings", error)
       }
+      self.skipUpdateFromUserDefaults = false
     }
   }
 
@@ -271,7 +275,7 @@ final class DefaultSettingsService: SettingsService {
     let keychainKeyPrefix = "cmd-keychain-key-"
     for provider in AIProvider.allCases {
       guard let keychainKey = provider.keychainKey.map({ keychainKeyPrefix + $0 }) else { continue }
-      if let settings = settings.llmProviderSettings[provider] {
+      if let settings = settings.llmProviderSettings[provider], settings.apiKey != nil {
         privateKeys[keychainKey] = settings.apiKey
         publicSettings.llmProviderSettings[provider]?.apiKey = keychainKey
       } else {
@@ -295,6 +299,9 @@ final class DefaultSettingsService: SettingsService {
     let externalSettings = publicSettings.externalSettings
     if let settingsFileLocation {
       try externalSettings.writeNonDefaultValues(to: settingsFileLocation, fileManager: fileManager)
+    } else {
+      defaultLogger.error("Could not find where to save settings.")
+      throw AppError("Could not find where to save settings.")
     }
     saveSettingsForSandboxedProcesses(externalSettings)
 
