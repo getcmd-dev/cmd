@@ -46,7 +46,11 @@ jobs:
           npm install --global create-dmg
           npm install --global @bugsnag/cli
           brew install graphicsmagick imagemagick sentry-cli
-          cd app/fastlane && gem install bundler && bundle install
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ".ruby-version"
+          bundler-cache: true
+          working-directory: app/fastlane
       - name: Load derived data cache
         uses: actions/cache/restore@v4
         with:

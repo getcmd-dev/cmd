@@ -65,9 +65,11 @@ jobs:
       # If more Xcode specific issues arise with caching, consider the less used 3rd party https://github.com/irgaly/xcode-cache
       - name: Clean module cache to prevent timestamp mismatches
         run: rm -rf app/build/derived_data/ModuleCache.noindex
-      - name: Install fastlane dependencies
-        run: |
-          cd app/fastlane && gem install bundler && bundle install
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ".ruby-version"
+          bundler-cache: true
+          working-directory: app/fastlane
       - name: Build app in Release mode
         run: cd app/fastlane && bundle exec fastlane mac build_release
         env:

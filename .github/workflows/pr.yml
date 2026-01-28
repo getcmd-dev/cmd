@@ -232,8 +232,10 @@ jobs:
       - name: MacOS version
         run: sw_vers
       - uses: actions/checkout@v4
-      - name: Install rubocop
-        run: gem install bundler && bundle install
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ".ruby-version"
+          bundler-cache: true
       - name: Run linter
         run: ./cmd.sh lint:rb
       - name: Verify that `cmd lint:rb` did not change outputs (if it did, please re-run it and re-commit!)
