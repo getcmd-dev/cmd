@@ -45,7 +45,7 @@ jobs:
         run: |
           npm install --global create-dmg
           npm install --global @bugsnag/cli
-          brew install graphicsmagick imagemagick sentry-cli
+          brew install sentry-cli
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ".ruby-version"
