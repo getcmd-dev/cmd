@@ -9,3 +9,4 @@ secrets.json
 .serena
 *.tmp
 !.keep
+**/.bundle/**

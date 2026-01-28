@@ -41,6 +41,8 @@ jobs:
           npm install --global create-dmg
           npm install --global @bugsnag/cli
           brew install sentry-cli
+      - name: Set macOS SDK root
+        run: echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ".ruby-version"
