@@ -1,0 +1,36 @@
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/bigdecimal-3.2.3/ext/bigdecimal
+/Users/runner/hostedtoolcache/Ruby/3.4.6/arm64/bin/ruby extconf.rb
+checking for __builtin_clz()... yes
+checking for __builtin_clzl()... yes
+checking for __builtin_clzll()... yes
+checking for float.h... yes
+checking for math.h... yes
+checking for stdbool.h... yes
+checking for stdlib.h... yes
+checking for x86intrin.h... no
+checking for intrin.h... no
+checking for ruby/atomic.h... yes
+checking for ruby/internal/has/builtin.h... yes
+checking for ruby/internal/static_assert.h... yes
+checking for rb_complex_real() in ruby.h... yes
+checking for rb_complex_imag() in ruby.h... yes
+checking for rb_opts_exception_p() in ruby.h... yes
+checking for rb_category_warn() in ruby.h... yes
+checking for RB_WARN_CATEGORY_DEPRECATED in ruby.h... yes
+creating Makefile
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/bigdecimal-3.2.3/ext/bigdecimal
+make DESTDIR\= sitearchdir\=./.gem.20260128-49188-clusq6 sitelibdir\=./.gem.20260128-49188-clusq6 clean
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/bigdecimal-3.2.3/ext/bigdecimal
+make DESTDIR\= sitearchdir\=./.gem.20260128-49188-clusq6 sitelibdir\=./.gem.20260128-49188-clusq6
+compiling bigdecimal.c
+compiling missing.c
+linking shared-object bigdecimal.bundle
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/bigdecimal-3.2.3/ext/bigdecimal
+make DESTDIR\= sitearchdir\=./.gem.20260128-49188-clusq6 sitelibdir\=./.gem.20260128-49188-clusq6 install
+/usr/bin/install -c -m 0755 bigdecimal.bundle ./.gem.20260128-49188-clusq6
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/bigdecimal-3.2.3/ext/bigdecimal
+make DESTDIR\= sitearchdir\=./.gem.20260128-49188-clusq6 sitelibdir\=./.gem.20260128-49188-clusq6 clean

@@ -1,0 +1,18 @@
+---
+inherit_gem:
+  main_branch_shared_rubocop_config: config/rubocop.yml
+
+Metrics/MethodLength:
+  Exclude:
+    - "spec/spec_helper.rb"
+    - "spec/**/*_spec.rb"
+
+Metrics/AbcSize:
+  Exclude:
+    - "spec/spec_helper.rb"
+    - "spec/**/*_spec.rb"
+
+AllCops:
+  # Pin this project to Ruby 3.1 in case the shared config above is
+  # upgraded to 3.2 or later.
+  TargetRubyVersion: 3.1
