@@ -54,7 +54,7 @@ final class DefaultSettingsService: SettingsService {
     settingsFileLocation: URL?,
     sharedUserDefaults: UserDefaultsI,
     releaseSharedUserDefaults: UserDefaultsI?,
-    bundle: Bundle = .main)
+    bundle: Bundle)
   {
     self.fileManager = fileManager
     self.settingsFileLocation = settingsFileLocation

@@ -271,7 +271,8 @@ struct DefaultSettingsServiceTests {
       fileManager: fileManager,
       settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: nil)
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
 
     let anthropicSettings = AIProviderSettings(
       apiKey: "anthropic-secret-key",
@@ -459,6 +460,59 @@ struct DefaultSettingsServiceTests {
     #expect(sut.value(for: \.llmProviderSettings[.gemini]?.createdOrder) == 5)
   }
 
+  @Test("Providers without API keys survive persist and reload")
+  @MainActor
+  func test_providerWithoutApiKeySurvivesPersistReload() throws {
+    // given
+    let fileManager = MockFileManager()
+    let settingsDirLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd")
+    let settingsFileLocation = settingsDirLocation.appending(path: "settings.json")
+    try fileManager.createDirectory(at: settingsDirLocation, withIntermediateDirectories: true, attributes: nil)
+    let sharedUserDefaults = MockUserDefaults()
+
+    let service = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
+
+    // Configure Claude Code (has keychainKey but no apiKey) alongside Anthropic (has apiKey)
+    let claudeCodeSettings = AIProviderSettings(
+      apiKey: nil,
+      baseUrl: nil,
+      executable: "/usr/local/bin/claude",
+      createdOrder: 1)
+    let anthropicSettings = AIProviderSettings(
+      apiKey: "anthropic-secret-key",
+      baseUrl: nil,
+      executable: nil,
+      createdOrder: 2)
+
+    var providerSettings = service.value(for: \.llmProviderSettings)
+    providerSettings[.claudeCode] = claudeCodeSettings
+    providerSettings[.anthropic] = anthropicSettings
+    service.update(setting: \.llmProviderSettings, to: providerSettings)
+
+    // when - reload settings from disk (simulating app restart)
+    let reloadedService = DefaultSettingsService(
+      fileManager: fileManager,
+      settingsFileLocation: settingsFileLocation,
+      sharedUserDefaults: sharedUserDefaults,
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
+
+    // then - both providers should be present after persist/reload
+    let reloadedClaudeCode = reloadedService.value(for: \.llmProviderSettings[.claudeCode])
+    let reloadedAnthropic = reloadedService.value(for: \.llmProviderSettings[.anthropic])
+
+    #expect(reloadedClaudeCode != nil, "Provider without API key should survive persist/reload")
+    #expect(reloadedClaudeCode?.executable == "/usr/local/bin/claude")
+    #expect(reloadedClaudeCode?.apiKey == nil)
+    #expect(reloadedAnthropic != nil, "Provider with API key should survive persist/reload")
+    #expect(reloadedAnthropic?.apiKey == "anthropic-secret-key")
+  }
+
   @Test("Xcode extension reads from user defaults")
   @MainActor
   func test_xcodeExtensionReadsFromUserDefaults() async throws {
@@ -512,8 +566,10 @@ extension DefaultSettingsService {
   {
     self.init(
       fileManager: fileManager,
+      settingsFileLocation: URL(filePath: "/files/.cmd/test-settings.json"),
       sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: nil)
+      releaseSharedUserDefaults: nil,
+      bundle: .testMain)
   }
 }
 
