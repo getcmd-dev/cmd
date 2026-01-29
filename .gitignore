@@ -10,3 +10,4 @@ secrets.json
 *.tmp
 !.keep
 **/.bundle/**
+**/vendor/**
