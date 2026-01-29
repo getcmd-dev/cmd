@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+##
+# Run this before doing a commit.  To ensure this happens, after cloning this
+# repository, run bin/setup from the projects root directory
+
+echo 'Performing pre-commit checks'
+
+# Make sure we are testing with the latest version of gems
+# since this is what will get installed in the CI build
+#
+echo "Running 'bundle update'..."
+if ! bundle update > /dev/null; then
+    echo 'FAIL: bundle update failed'
+    exit 1
+fi
+
+# Run all the tests, code/doc analysis, gem build, etc.
+#
+echo "Running 'bundle exec rake default'..."
+if ! bundle exec rake default > /dev/null 2>&1; then
+    echo 'FAIL: Rake default task failed'
+    exit 1
+fi
+
+echo 'SUCCESS'

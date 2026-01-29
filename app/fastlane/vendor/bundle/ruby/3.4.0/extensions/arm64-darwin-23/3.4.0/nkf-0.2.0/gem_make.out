@@ -1,0 +1,18 @@
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+/Users/runner/hostedtoolcache/Ruby/3.4.6/arm64/bin/ruby extconf.rb
+creating Makefile
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20260128-6807-ijv6gp sitelibdir\=./.gem.20260128-6807-ijv6gp clean
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20260128-6807-ijv6gp sitelibdir\=./.gem.20260128-6807-ijv6gp
+compiling nkf.c
+linking shared-object nkf.bundle
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20260128-6807-ijv6gp sitelibdir\=./.gem.20260128-6807-ijv6gp install
+/usr/bin/install -c -m 0755 nkf.bundle ./.gem.20260128-6807-ijv6gp
+
+current directory: /Users/runner/work/cmd/cmd/app/fastlane/vendor/bundle/ruby/3.4.0/gems/nkf-0.2.0/ext/nkf
+make DESTDIR\= sitearchdir\=./.gem.20260128-6807-ijv6gp sitelibdir\=./.gem.20260128-6807-ijv6gp clean

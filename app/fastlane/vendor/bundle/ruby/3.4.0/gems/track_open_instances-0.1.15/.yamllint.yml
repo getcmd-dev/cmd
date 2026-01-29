@@ -1,0 +1,12 @@
+---
+extends: default
+
+ignore: |
+  node_modules
+
+rules:
+  braces:
+    min-spaces-inside: 1
+    max-spaces-inside: 1
+  truthy:
+    check-keys: false

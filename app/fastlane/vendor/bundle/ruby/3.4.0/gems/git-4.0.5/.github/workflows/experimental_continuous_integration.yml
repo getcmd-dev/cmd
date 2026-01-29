@@ -1,0 +1,59 @@
+name: CI Experimental
+
+on:
+  push:
+    branches: [main]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Ruby ${{ matrix.ruby }} on ${{ matrix.operating-system }}
+
+    # Skip this job if triggered by pushing a release commit
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore: release '))
+
+    runs-on: ${{ matrix.operating-system }}
+    continue-on-error: true
+    env: { JAVA_OPTS: -Djdk.io.File.enableADS=true }
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - # Building against head version of Ruby is considered experimental
+            ruby: head
+            operating-system: ubuntu-latest
+            experimental: Yes
+            java_version: ""
+
+          - # Since JRuby on Windows is known to not work, consider this experimental
+            ruby: jruby-head
+            operating-system: windows-latest
+            experimental: Yes
+            java_version: "21"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        if: matrix.java_version != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java_version }}
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+
+      - name: Run Build
+        run: bundle exec rake default
+
+      - name: Test Gem
+        run: bundle exec rake test:gem
