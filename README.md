@@ -101,3 +101,5 @@ and much more! `cmd` is early stage, and in active development.
 ## Acknowledgement
 - [CopilotForXcode](https://github.com/intitni/CopilotForXcode) that has been very influential for the Xcode integration
 - [Sentry](http://sentry.io/) and [Github](https://github.com) for their generous support of OSS.
+
+
